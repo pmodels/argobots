@@ -1,3 +1,7 @@
+# -*- Mode: Makefile; -*-
+#
+# See COPYRIGHT in top-level directory.
+#
 
 ACLOCAL_AMFLAGS = -I m4
 
