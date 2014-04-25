@@ -36,3 +36,9 @@ libabt.la
 src/abt.h
 *.lo
 *.o
+*~
+
+# autogen.sh temporary files
+maint/Version
+README
+.tmp
