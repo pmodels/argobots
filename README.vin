@@ -1,0 +1,105 @@
+			Argobots Release %VERSION%
+
+Argobots is a low-level threading and tasking library.  This release
+is an experimental version of Argobots that contains features related
+to user-level threads and a simple scheduler.
+
+This README file should contain enough information to get you started
+with Argobots.
+
+
+-------------------------------------------------------------------------
+
+1. Getting Started
+==================
+
+The following instructions take you through a sequence of steps to get
+the default configuration of Argobots up and running.
+
+(a) You will need the following prerequisites.
+
+    - REQUIRED: This tar file argobots-%VERSION%.tar.gz
+
+    - REQUIRED: A C compiler (gcc is sufficient)
+
+    Also, you need to know what shell you are using since different shell
+    has different command syntax. Command "echo $SHELL" prints out the
+    current shell used by your terminal program.
+
+(b) Unpack the tar file and go to the top level directory:
+
+      tar xzf argobots-%VERSION%.tar.gz
+      cd argobots-%VERSION%
+
+    If your tar doesn't accept the z option, use
+
+      gunzip argobots-%VERSION%.tar.gz
+      tar xf argobots-%VERSION%.tar
+      cd argobots-%VERSION%
+
+(c) Choose an installation directory, say
+    /home/<USERNAME>/argobots-install, which is assumed to non-existent
+    or empty. It will be most convenient if this directory is shared
+    by all of the machines where you intend to run processes. If not,
+    you will have to duplicate it on the other machines after
+    installation.
+
+(d) Configure ARGOBOTS specifying the installation directory:
+
+    for csh and tcsh:
+
+      ./configure --prefix=/home/<USERNAME>/argobots-install |& tee c.txt
+
+    for bash and sh:
+
+      ./configure --prefix=/home/<USERNAME>/argobots-install 2>&1 | tee c.txt
+
+    Bourne-like shells, sh and bash, accept "2>&1 |".  Csh-like shell,
+    csh and tcsh, accept "|&". If a failure occurs, the configure
+    command will display the error. Most errors are straight-forward
+    to follow.
+
+(e) Build ARGOBOTS:
+
+    for csh and tcsh:
+
+      make |& tee m.txt
+
+    for bash and sh:
+
+      make 2>&1 | tee m.txt
+
+    This step should succeed if there were no problems with the
+    preceding step. Check file m.txt. If there were problems, do a
+    "make clean" and then run make again with V=1.
+
+      make V=1 |& tee m.txt       (for csh and tcsh)
+
+      OR
+
+      make V=1 2>&1 | tee m.txt   (for bash and sh)
+
+    Then go to step (2) below, for reporting the issue to the ARGOBOTS
+    developers and other users.
+
+(f) Install the ARGOBOTS commands:
+
+    for csh and tcsh:
+
+      make install |& tee mi.txt
+
+    for bash and sh:
+
+      make install 2>&1 | tee mi.txt
+
+    This step collects all required executables and scripts in the bin
+    subdirectory of the directory specified by the prefix argument to
+    configure.
+
+
+-------------------------------------------------------------------------
+
+2. Testing Argobots
+===================
+
+... To be added ...
