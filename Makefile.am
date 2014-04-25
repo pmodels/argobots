@@ -7,5 +7,7 @@ include src/Makefile.mk
 
 lib_LTLIBRARIES = libabt.la
 libabt_la_SOURCES = $(abt_sources)
+libabt_la_CPPFLAGS = -I$(top_builddir)/src
+libabt_la_LDFLAGS = -version-info @libabt_so_version@
 
 EXTRA_DIST = autogen.sh

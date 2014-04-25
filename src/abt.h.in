@@ -2,7 +2,44 @@
 #define ABT_H_INCLUDED
 
 #include <pthread.h>
+
+#define _XOPEN_SOURCE
 #include <ucontext.h>
+
+/* ABT_VERSION is the version string. ABT_NUMVERSION is the
+ * numeric version that can be used in numeric comparisons.
+ *
+ * ABT_VERSION uses the following format:
+ * Version: [MAJ].[MIN].[REV][EXT][EXT_NUMBER]
+ * Example: 1.0.7rc1 has
+ *          MAJ = 1
+ *          MIN = 0
+ *          REV = 7
+ *          EXT = rc
+ *          EXT_NUMBER = 1
+ *
+ * ABT_NUMVERSION will convert EXT to a format number:
+ *          ALPHA (a) = 0
+ *          BETA (b)  = 1
+ *          RC (rc)   = 2
+ *          PATCH (p) = 3
+ * Regular releases are treated as patch 0
+ *
+ * Numeric version will have 1 digit for MAJ, 2 digits for MIN, 2
+ * digits for REV, 1 digit for EXT and 2 digits for EXT_NUMBER. So,
+ * 1.0.7rc1 will have the numeric version 10007201.
+ */
+#define ABT_VERSION "@ABT_VERSION@"
+#define ABT_NUMVERSION @ABT_NUMVERSION@
+
+#define ABT_RELEASE_TYPE_ALPHA  0
+#define ABT_RELEASE_TYPE_BETA   1
+#define ABT_RELEASE_TYPE_RC     2
+#define ABT_RELEASE_TYPE_PATCH  3
+
+#define ABT_CALC_VERSION(MAJOR, MINOR, REVISION, TYPE, PATCH) \
+    (((MAJOR) * 10000000) + ((MINOR) * 100000) + ((REVISION) * 1000) + ((TYPE) * 100) + (PATCH))
+
 
 /* Constants */
 #define ABT_SUCCESS      0
