@@ -1,0 +1,54 @@
+
+CODE
+----
+
+ * Argobots does not support the implicit "SELF" execution stream yet.
+   The application must be able to launch threads without creating
+   additional execution streams.
+
+ * The argobots public interface needs to be modified, so no ucontext
+   dependencies are exposed to applications.  All this should be
+   hidden in the backend.
+
+ * Tasks support is not included at this time.
+
+ * Only a simple scheduler that allows us to "yield" or "yield_to" is
+   provided.  More schedulers, including a priority scheduler needs to
+   be added.
+
+
+TESTING
+-------
+
+ * Unit tests need to be added.  There are none.
+
+
+DOCUMENTATION
+-------------
+
+ * Some documentation on the argobots implementation is needed.
+   Doxygen text that is pulled from abt.h would be a good starting
+   point.
+
+ * A spec document for argobots is needed that contains both the
+   syntax and semantics for external projects (including other
+   subprojects in Argo) to understand.
+
+
+EXTERNAL PROJECTS
+-----------------
+
+ * Argobots is a very low-level threading and tasking model.  Other
+   models such as qthreads should be implementable on top of argobots.
+   We should provide a simple implementation of qthreads on top of
+   argobots for demonstration purposes.
+
+ * OpenMP over argobots will be useful to get legacy applications to
+   utilize argobots transparently, though it's unlikely it'll be able
+   to use all of argobots' capabilities.
+
+ * MPI interoperability with argobots needs changes in the MPI
+   implementation to learn how to yield within argobots threads.
+
+ * Tasking frameworks (such as PTGE) that can use argobots to schedule
+   tasks need to be implemented.
