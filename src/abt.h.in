@@ -89,19 +89,18 @@ struct ABT_thread {
 
 /* Execution Stream (ES) */
 ABT_stream_t *ABT_stream_create(int *err);
-int ABT_stream_start(ABT_stream_t *stream);
-int ABT_stream_join(ABT_stream_t *stream);
-int ABT_stream_free(ABT_stream_t *stream);
-int ABT_stream_cancel(ABT_stream_t *stream);
+int ABT_stream_start(ABT_stream_t * stream);
+int ABT_stream_join(ABT_stream_t * stream);
+int ABT_stream_free(ABT_stream_t * stream);
+int ABT_stream_cancel(ABT_stream_t * stream);
 int ABT_stream_exit();
 
 
 /* User Level Thread (ULT) */
-ABT_thread_t *ABT_thread_create(ABT_stream_t *stream,
-                              void (*thread_func)(void *), void *arg,
-                              size_t stacksize,
-                              int *err);
+ABT_thread_t *ABT_thread_create(ABT_stream_t * stream,
+                                void (*thread_func) (void *), void *arg,
+                                size_t stacksize, int *err);
 int ABT_thread_yield();
-int ABT_thread_yield_to(ABT_thread_t *thread);
+int ABT_thread_yield_to(ABT_thread_t * thread);
 
 #endif /* ABT_H_INCLUDED */
