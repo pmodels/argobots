@@ -19,9 +19,9 @@ dnl now dump out a shell script header for those looking to change the version s
 # all times w.r.t. the version.m4 file.
 
 dnl now provide shell versions so that simple scripts can still use
-dnl $MPICH_VERSION as before
-MPICH_VERSION=MPICH_VERSION_m4
-export MPICH_VERSION
+dnl $ARGOBOTS_VERSION as before
+ARGOBOTS_VERSION=ARGOBOTS_VERSION_m4
+export ARGOBOTS_VERSION
 
 dnl balance our pushed diversion
 m4_divert_pop([])dnl
