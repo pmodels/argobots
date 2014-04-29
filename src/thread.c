@@ -3,97 +3,134 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "abt.h"
 #include "abti.h"
 
-static void thread_func_wrapper(void (*thread_func)(void *), void *arg);
+static ABTD_Thread_id ABTI_Thread_get_new_id();
+static void ABTI_Thread_func_wrapper(void (*thread_func)(void *), void *arg);
 
-ABT_thread_t *ABT_thread_create(ABT_stream_t *stream,
-                              void (*thread_func)(void *), void *arg,
-                              size_t stacksize,
-                              int *err)
+int ABT_Thread_create(const ABT_Stream stream,
+                      void (*thread_func)(void *), void *arg,
+                      size_t stacksize, ABT_Thread *newthread)
 {
-    int ret = ABT_SUCCESS;
-    ABT_thread_t *thread = (ABT_thread_t *)malloc(sizeof(ABT_thread_t));
-    thread->id = ABT_thread_get_new_id();
-    thread->state = ABT_STATE_READY;
-    thread->stack = malloc(stacksize);
-    thread->stacksize = stacksize;
-    if (getcontext(&thread->ctx) == -1) {
-        HANDLE_ERROR("getcontext");
-        ret = ABT_FAILURE;
-    }
-    thread->ctx.uc_link = &stream->ctx;
-    thread->ctx.uc_stack.ss_sp = thread->stack;
-    thread->ctx.uc_stack.ss_size = stacksize;
-    makecontext(&thread->ctx, (void (*)())thread_func_wrapper,
-                2, thread_func, arg);
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Stream *stream_ptr;
+    ABTD_Thread *newthread_ptr;
 
-    ABT_stream_add_thread(stream, thread);
-
-    if (err) *err = ret;
-    return thread;
-}
-
-int ABT_thread_free(ABT_stream_t *stream, ABT_thread_t *thread)
-{
-    ABT_stream_del_thread(stream, thread);
-    free(thread);
-    return ABT_SUCCESS;
-}
-
-int ABT_thread_yield()
-{
-    // Move this thread to the end of scheduling queue
-    g_stream->last_thread = g_thread;
-    g_stream->first_thread = g_thread->next;
-
-    g_thread->state = ABT_STATE_READY;
-    if (swapcontext(&g_thread->ctx, &g_stream->ctx) == -1) {
-        HANDLE_ERROR("swapcontext");
-        return ABT_FAILURE;
-    }
-    return ABT_SUCCESS;
-}
-
-int ABT_thread_yield_to(ABT_thread_t *thread)
-{
-    // Move this thread to the end of scheduling queue
-    if (thread != g_thread) {
-        g_stream->last_thread = g_thread;
-        g_stream->first_thread = thread;
-        thread->prev->next = thread->next;
-        thread->next->prev = thread->prev;
-        thread->prev = g_thread;
-        thread->next = g_thread->next;
-        g_thread->next->prev = thread;
-        g_thread->next = thread;
+    stream_ptr = (ABTD_Stream *)stream;
+    if (stream_ptr->state == ABT_STREAM_STATE_READY) {
+        abt_errno = ABTI_Stream_start(stream);
+        if (abt_errno != ABT_SUCCESS) goto fn_fail;
     }
 
-    g_thread->state = ABT_STATE_READY;
-    if (swapcontext(&g_thread->ctx, &g_stream->ctx) == -1) {
-        HANDLE_ERROR("swapcontext");
-        return ABT_FAILURE;
+    newthread_ptr = (ABTD_Thread *)ABTU_Malloc(sizeof(ABTD_Thread));
+    if (!newthread_ptr) {
+        HANDLE_ERROR("ABTU_Malloc");
+        *newthread = NULL;
+        abt_errno = ABT_ERR_MEM;
+        goto fn_fail;
     }
-    return ABT_SUCCESS;
+    newthread_ptr->id = ABTI_Thread_get_new_id();
+    newthread_ptr->state = ABT_THREAD_STATE_READY;
+    newthread_ptr->stacksize = stacksize;
+    newthread_ptr->stack = ABTU_Malloc(stacksize);
+    if (!newthread_ptr->stack) {
+        HANDLE_ERROR("ABTU_Malloc");
+        abt_errno = ABT_ERR_MEM;
+        goto fn_fail;
+    }
+
+    abt_errno = ABTA_ULT_make(stream_ptr, newthread_ptr, thread_func, arg);
+    if (abt_errno != ABT_SUCCESS) goto fn_fail;
+
+    ABTI_Stream_add_thread(stream_ptr, newthread_ptr);
+    *newthread = (ABT_Thread)newthread_ptr;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
 }
 
-/* For internal use */
-static ABT_thread_id_t gs_ABT_thread_id = 0;
-ABT_thread_id_t ABT_thread_get_new_id() {
-    /* FIXME */
-    return gs_ABT_thread_id++;
+int ABT_Thread_yield()
+{
+    int abt_errno = ABT_SUCCESS;
+
+    if (g_thread == NULL) {
+        /* This is the case of main program thread
+         * FIXME: Currently, the main program thread waits until all threads
+         * finish their execution. */
+        abt_errno = ABTI_Stream_schedule_main(NULL);
+    } else {
+        abt_errno = ABTI_Stream_schedule_to(g_stream, g_thread->next);
+    }
+
+    return abt_errno;
 }
 
-static void thread_func_wrapper(void (*thread_func)(void *), void *arg)
+int ABT_Thread_yield_to(ABT_Thread thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Thread *thread_ptr = (ABTD_Thread *)thread;
+
+    if (g_thread == NULL) {
+        /* This is the case of main program thread
+         * FIXME: Currently, the main program thread waits until all threads
+         * finish their execution. */
+        abt_errno = ABTI_Stream_schedule_main(thread_ptr);
+    } else {
+        abt_errno = ABTI_Stream_schedule_to(g_stream, thread_ptr);
+    }
+
+    return abt_errno;
+}
+
+ABT_Thread_state ABT_Thread_get_state(ABT_Thread thread)
+{
+    ABTD_Thread *thread_ptr = (ABTD_Thread *)thread;
+    return thread_ptr->state;
+}
+
+
+/* Internal static functions */
+static ABTD_Thread_id g_thread_id = 0;
+static ABTD_Thread_id ABTI_Thread_get_new_id() {
+    /* FIXME: Need to be atomic */
+    return g_thread_id++;
+}
+
+static void ABTI_Thread_func_wrapper(void (*thread_func)(void *), void *arg)
 {
     thread_func(arg);
 
-    // Now, the thread have finished its job.
-    // Change the thread state.
-    g_thread->state = ABT_STATE_TERMINATED;
+    /* Now, the thread has finished its job. Change the thread state. */
+    g_thread->state = ABT_THREAD_STATE_TERMINATED;
+}
+
+
+/* Architectue- or library-dependent code */
+/* FIXME: Should be separated from here */
+int ABTA_ULT_make(ABTD_Stream *stream_ptr, ABTD_Thread *thread_ptr,
+                  void (*thread_func)(void *), void *arg)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    if (getcontext(&thread_ptr->ult) != ABTA_ULT_SUCCESS) {
+        HANDLE_ERROR("getcontext");
+        abt_errno = ABT_ERR_THREAD;
+        goto fn_fail;
+    }
+
+    thread_ptr->ult.uc_link = &stream_ptr->ult;
+    thread_ptr->ult.uc_stack.ss_sp = thread_ptr->stack;
+    thread_ptr->ult.uc_stack.ss_size = thread_ptr->stacksize;
+    makecontext(&thread_ptr->ult, (void (*)())ABTI_Thread_func_wrapper,
+            2, thread_func, arg);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
 }
 

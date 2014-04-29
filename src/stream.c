@@ -3,120 +3,208 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "abt.h"
 #include "abti.h"
 
-static void *ABT_stream_schedule(void *arg);
-
-ABT_stream_t *ABT_stream_create(int *err)
-{
-    ABT_stream_t *stream = (ABT_stream_t *)malloc(sizeof(ABT_stream_t));
-    stream->id = ABT_stream_get_new_id();
-    stream->num_threads = 0;
-    stream->first_thread = NULL;
-    stream->last_thread = NULL;
-    if (err) *err = ABT_SUCCESS;
-    return stream;
-}
-
-int ABT_stream_start(ABT_stream_t *stream)
-{
-    int ret = pthread_create(&stream->es, NULL, ABT_stream_schedule, (void *)stream);
-    if (ret) {
-        HANDLE_ERROR("ABT_stream_create");
-    }
-
-    return ABT_SUCCESS;
-}
-
-int ABT_stream_join(ABT_stream_t *stream)
-{
-    void *status;
-    int ret = pthread_join(stream->es, &status);
-    if (ret) {
-        HANDLE_ERROR("ABT_stream_join");
-    }
-    return ABT_SUCCESS;
-}
-
-int ABT_stream_free(ABT_stream_t *stream)
-{
-    while (stream->num_threads > 0) {
-        ABT_thread_free(stream, stream->first_thread);
-    }
-    free(stream);
-    return ABT_SUCCESS;
-}
-
-int ABT_stream_cancel(ABT_stream_t *stream)
-{
-    /* TODO */
-    return ABT_SUCCESS;
-}
-
-int ABT_stream_exit()
-{
-    /* TODO */
-    return ABT_SUCCESS;
-}
-
-
-/* For internal use */
 /* FIXME: is the global pointer the best way? */
-__thread ABT_stream_t *g_stream = NULL;
-__thread ABT_thread_t *g_thread = NULL;
+__thread ABTD_Stream *g_stream = NULL;  /* Current stream */
+__thread ABTD_Thread *g_thread = NULL;  /* Current running thread */
 
-static void *ABT_stream_schedule(void *arg)
+static ABTD_Stream_id ABTI_Stream_get_new_id();
+static void *ABTI_Stream_loop(void *arg);
+static int ABTI_Stream_schedule(ABTD_Stream *stream);
+static int ABTI_Stream_free_thread(ABTD_Stream *stream, ABTD_Thread *thread);
+static void ABTI_Stream_del_thread(ABTD_Stream *stream, ABTD_Thread *thread);
+static void ABTI_Stream_move_thread_to_first(ABTD_Stream *stream,
+                                             ABTD_Thread *thread);
+
+/*@
+ABT_Stream_create - Creates a new execution stream
+
+Output Parameters:
+. newstream - new execution stream (handle)
+@*/
+int ABT_Stream_create(ABT_Stream *newstream)
 {
-    ABT_stream_t *stream = (ABT_stream_t *)arg;
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Stream *newstream_ptr;
 
-    // Set this stream as the current global stream
-    g_stream = stream;
+    newstream_ptr = (ABTD_Stream *)ABTU_Malloc(sizeof(ABTD_Stream));
+    if (!newstream_ptr) {
+        HANDLE_ERROR("ABTU_Malloc");
+        *newstream = NULL;
+        abt_errno = ABT_ERR_MEM;
+        goto fn_fail;
+    }
+    newstream_ptr->id = ABTI_Stream_get_new_id();
+    newstream_ptr->num_threads = 0;
+    newstream_ptr->first_thread = NULL;
+    newstream_ptr->last_thread = NULL;
+    newstream_ptr->type = ABT_STREAM_TYPE_CREATED;
+    newstream_ptr->state = ABT_STREAM_STATE_READY;
+    *newstream = (ABT_Stream)newstream_ptr;
 
-    DEBUG_PRINT("[S%lu] started\n", stream->id);
-    while (stream->num_threads > 0) {
-        ABT_thread_t *thread = stream->first_thread;
-        thread->state = ABT_STATE_RUNNING;
+  fn_exit:
+    return abt_errno;
 
-        // Set the current thread for this stream as the running thread
-        g_thread = thread;
+  fn_fail:
+    goto fn_exit;
+}
 
-        DEBUG_PRINT("  [S%lu:T%lu] started\n", stream->id, thread->id);
-        swapcontext(&stream->ctx, &thread->ctx);
-        DEBUG_PRINT("  [S%lu:T%lu] ended\n", stream->id, thread->id);
+int ABT_Stream_join(ABT_Stream stream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Stream *stream_ptr;
+    void *status;
 
-        if (thread->state == ABT_STATE_TERMINATED) {
-            ABT_thread_free(stream, thread);
+    stream_ptr = (ABTD_Stream *)stream;
+    if (stream_ptr->state != ABT_STREAM_STATE_RUNNING) goto fn_exit;
+
+    stream_ptr->state = ABT_STREAM_STATE_JOIN;
+    int ret = ABTA_ES_join(stream_ptr->es, &status);
+    if (ret) {
+        HANDLE_ERROR("ABTA_ES_join");
+        abt_errno = ABT_ERR_STREAM;
+        goto fn_fail;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+int ABT_Stream_free(ABT_Stream stream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Stream *stream_ptr;
+
+    stream_ptr = (ABTD_Stream *)stream;
+    while (stream_ptr->num_threads > 0) {
+        abt_errno = ABTI_Stream_free_thread(stream_ptr, stream_ptr->first_thread);
+        if (abt_errno != ABT_SUCCESS) goto fn_fail;
+    }
+    ABTA_ES_lock_free(&stream_ptr->lock);
+    free(stream_ptr);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2)
+{
+    return stream1 == stream2;
+}
+
+ABT_Stream ABT_Stream_self()
+{
+    if (g_stream) {
+        return (ABT_Stream)g_stream;
+    } else {
+        /* This happens when the main execution stream calls this function. */
+        ABT_Stream newstream;
+        int err = ABT_Stream_create(&newstream);
+        if (err != ABT_SUCCESS) {
+            HANDLE_ERROR("ABT_Stream_self");
+        }
+        ABTD_Stream *newstream_ptr = (ABTD_Stream *)newstream;
+        newstream_ptr->type = ABT_STREAM_TYPE_MAIN;
+        g_stream = (ABTD_Stream *)newstream;
+        return newstream;
+    }
+}
+
+
+/* Internal non-static functions */
+int ABTI_Stream_start(ABTD_Stream *stream)
+{
+    assert(stream->state == ABT_STREAM_STATE_READY);
+
+    int abt_errno = ABT_SUCCESS;
+    if (stream->type == ABT_STREAM_TYPE_MAIN) {
+        stream->es = ABTA_ES_self();
+    } else {
+        int ret = ABTA_ES_create(&stream->es, NULL,
+                ABTI_Stream_loop, (void *)stream);
+        if (ret != ABTA_ES_SUCCESS) {
+            HANDLE_ERROR("ABTA_ES_create");
+            abt_errno = ABT_ERR_STREAM;
+            goto fn_fail;
         }
     }
-    g_thread = NULL;
-    g_stream = NULL;
-    DEBUG_PRINT("[S%lu] ended\n", stream->id);
 
-    pthread_exit(NULL);
-    return NULL;
+    /* Initialize stream's lock variable */
+    if (ABTA_ES_lock_create(&stream->lock, NULL) != ABTA_ES_SUCCESS) {
+        HANDLE_ERROR("ABTA_ES_lock_create");
+        abt_errno = ABT_ERR_STREAM;
+        goto fn_fail;
+    }
+
+    stream->state = ABT_STREAM_STATE_RUNNING;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
 }
 
-static ABT_stream_id_t g_ABT_stream_id = 0;
-ABT_stream_id_t ABT_stream_get_new_id()
+/* NOTE: This function is only for the main program thread */
+int ABTI_Stream_schedule_main(ABTD_Thread *thread)
 {
-    /* FIXME */
-    return g_ABT_stream_id++;
+    int abt_errno = ABT_SUCCESS;
+
+    ABTD_Stream *stream = g_stream;
+    if (stream->num_threads < 1) goto fn_exit;
+
+    if (thread && stream->num_threads > 1) {
+        ABTI_Stream_move_thread_to_first(stream, thread);
+    }
+    abt_errno = ABTI_Stream_schedule(stream);
+
+ fn_exit:
+    return abt_errno;
 }
 
-void ABT_stream_add_thread(ABT_stream_t *stream, ABT_thread_t *thread)
+int ABTI_Stream_schedule_to(ABTD_Stream *stream, ABTD_Thread *thread)
 {
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Thread *cur_thread = g_thread;
+    if (stream->num_threads < 2 || cur_thread == thread) goto fn_exit;
+
+    ABTI_Stream_move_thread_to_first(stream, thread);
+
+    /* Change the state of current running thread */
+    cur_thread->state = ABT_THREAD_STATE_READY;
+
+    /* Context-switch to thread */
+    if (ABTA_ULT_swap(&cur_thread->ult, &stream->ult) != ABTA_ULT_SUCCESS) {
+        HANDLE_ERROR("ABTA_ULT_swap");
+        abt_errno = ABT_ERR_THREAD;
+        goto fn_fail;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+void ABTI_Stream_add_thread(ABTD_Stream *stream, ABTD_Thread *thread)
+{
+    ABTA_ES_lock(&stream->lock);
     if (stream->num_threads == 0) {
         thread->prev = thread;
         thread->next = thread;
         stream->first_thread = thread;
         stream->last_thread = thread;
     } else {
-        ABT_thread_t *first_thread = stream->first_thread;
-        ABT_thread_t *last_thread = stream->last_thread;
+        ABTD_Thread *first_thread = stream->first_thread;
+        ABTD_Thread *last_thread = stream->last_thread;
         last_thread->next = thread;
         first_thread->prev = thread;
         thread->prev = last_thread;
@@ -124,11 +212,91 @@ void ABT_stream_add_thread(ABT_stream_t *stream, ABT_thread_t *thread)
         stream->last_thread = thread;
     }
     stream->num_threads++;
+    ABTA_ES_unlock(&stream->lock);
 }
 
-void ABT_stream_del_thread(ABT_stream_t *stream, ABT_thread_t *thread)
+
+/* Internal static functions */
+static ABTD_Stream_id g_stream_id = 0;
+static ABTD_Stream_id ABTI_Stream_get_new_id()
+{
+    /* FIXME: Need to be atomic */
+    return g_stream_id++;
+}
+
+static void *ABTI_Stream_loop(void *arg)
+{
+    ABTD_Stream *stream = (ABTD_Stream *)arg;
+
+    /* Set this stream as the current global stream */
+    g_stream = stream;
+
+    DEBUG_PRINT("[S%lu] started\n", stream->id);
+
+    while (stream->state == ABT_STREAM_STATE_RUNNING ||
+           stream->num_threads > 0) {
+        if (ABTI_Stream_schedule(stream) != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTI_Stream_schedule");
+            goto fn_exit;
+        }
+        ABTA_ES_yield();
+    }
+    assert(stream->state == ABT_STREAM_STATE_JOIN);
+
+  fn_exit:
+    stream->state = ABT_STREAM_STATE_TERMINATED;
+    DEBUG_PRINT("[S%lu] ended\n", stream->id);
+
+    g_stream = NULL;
+
+    ABTA_ES_exit(NULL);
+    return NULL;
+}
+
+static int ABTI_Stream_schedule(ABTD_Stream *stream)
+{
+    int abt_errno = ABT_SUCCESS;
+    while (stream->num_threads > 0) {
+        ABTD_Thread *thread = stream->first_thread;
+        thread->state = ABT_THREAD_STATE_RUNNING;
+
+        /* Set the current thread of this stream as the running thread */
+        g_thread = thread;
+
+        DEBUG_PRINT("  [S%lu:T%lu] started\n", stream->id, thread->id);
+        if (ABTA_ULT_swap(&stream->ult, &thread->ult) != ABTA_ULT_SUCCESS) {
+            HANDLE_ERROR("ABTA_ULT_swap");
+            abt_errno = ABT_ERR_THREAD;
+            goto fn_fail;
+        }
+        DEBUG_PRINT("  [S%lu:T%lu] ended\n", stream->id, thread->id);
+
+        if (thread->state == ABT_THREAD_STATE_TERMINATED) {
+            ABTI_Stream_free_thread(stream, thread);
+        }
+    }
+    g_thread = NULL;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+static int ABTI_Stream_free_thread(ABTD_Stream *stream, ABTD_Thread *thread)
+{
+    ABTI_Stream_del_thread(stream, thread);
+    free(thread->stack);
+    free(thread);
+    return ABT_SUCCESS;
+}
+
+static void ABTI_Stream_del_thread(ABTD_Stream *stream, ABTD_Thread *thread)
 {
     if (stream->num_threads == 0) return;
+
+    ABTA_ES_lock(&stream->lock);
     if (stream->num_threads == 1) {
         thread->prev = NULL;
         thread->next = NULL;
@@ -143,5 +311,26 @@ void ABT_stream_del_thread(ABT_stream_t *stream, ABT_thread_t *thread)
             stream->last_thread = thread->prev;
     }
     stream->num_threads--;
+    ABTA_ES_unlock(&stream->lock);
+}
+
+static void ABTI_Stream_move_thread_to_first(ABTD_Stream *stream,
+                                             ABTD_Thread *thread)
+{
+    ABTD_Thread *cur_thread = stream->first_thread;
+    if (cur_thread == thread) return;
+
+    stream->last_thread = cur_thread;
+    stream->first_thread = thread;
+
+    if (thread != cur_thread->next) {
+        /* thread is not next to stream's first_thread */
+        thread->prev->next = thread->next;
+        thread->next->prev = thread->prev;
+        thread->prev = cur_thread;
+        thread->next = cur_thread->next;
+        cur_thread->next->prev = thread;
+        cur_thread->next = thread;
+    }
 }
 

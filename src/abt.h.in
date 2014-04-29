@@ -6,10 +6,12 @@
 #ifndef ABT_H_INCLUDED
 #define ABT_H_INCLUDED
 
-#include <pthread.h>
+/* user include file for ARGOBOTS programs */
 
-#define _XOPEN_SOURCE
-#include <ucontext.h>
+/* Keep C++ compilers from getting confused */
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 /* ABT_VERSION is the version string. ABT_NUMVERSION is the
  * numeric version that can be used in numeric comparisons.
@@ -46,61 +48,41 @@
     (((MAJOR) * 10000000) + ((MINOR) * 100000) + ((REVISION) * 1000) + ((TYPE) * 100) + (PATCH))
 
 
-/* Constants */
-#define ABT_SUCCESS      0
-#define ABT_FAILURE      1
-
-typedef enum ABT_thread_state {
-    ABT_STATE_READY,
-    ABT_STATE_RUNNING,
-    ABT_STATE_BLOCKED,
-    ABT_STATE_TERMINATED
-} ABT_thread_state_t;
+/* ARGOBOTS error classes */
+#define ABT_SUCCESS         0   /* Successful return code */
+#define ABT_ERR_INV_STREAM  1   /* Invalid stream */
+#define ABT_ERR_INV_THREAD  2   /* Invalid thread */
+#define ABT_ERR_MEM         3   /* Memeory allocation failure */
+#define ABT_ERR_STREAM      4   /* Stream-related error */
+#define ABT_ERR_THREAD      5   /* Thread-related error */
+#define ABT_ERR_OTHER       6   /* Other error */
 
 /* Definitions */
-typedef struct ABT_stream ABT_stream_t;
-typedef struct ABT_thread ABT_thread_t;
-typedef size_t ABT_stream_id_t;
-typedef size_t ABT_thread_id_t;
-
-
-/* Data Structures */
-struct ABT_stream {
-    ABT_stream_id_t id;
-    pthread_t es;
-    ucontext_t ctx;
-    size_t num_threads;
-    ABT_thread_t *first_thread;
-    ABT_thread_t *last_thread;
-};
-
-struct ABT_thread {
-    ABT_stream_t *stream;
-
-    ABT_thread_id_t id;
-    ABT_thread_state_t state;
-    void *stack;
-    size_t stacksize;
-    ucontext_t ctx;
-    ABT_thread_t *prev;
-    ABT_thread_t *next;
-};
-
+typedef void * ABT_Stream;
+typedef void * ABT_Thread;
+typedef enum ABT_Thread_state {
+    ABT_THREAD_STATE_READY,
+    ABT_THREAD_STATE_RUNNING,
+    ABT_THREAD_STATE_TERMINATED
+} ABT_Thread_state;
 
 /* Execution Stream (ES) */
-ABT_stream_t *ABT_stream_create(int *err);
-int ABT_stream_start(ABT_stream_t * stream);
-int ABT_stream_join(ABT_stream_t * stream);
-int ABT_stream_free(ABT_stream_t * stream);
-int ABT_stream_cancel(ABT_stream_t * stream);
-int ABT_stream_exit();
-
+int ABT_Stream_create(ABT_Stream *newstream);
+int ABT_Stream_join(ABT_Stream stream);
+int ABT_Stream_free(ABT_Stream stream);
+int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2);
+ABT_Stream ABT_Stream_self();
 
 /* User Level Thread (ULT) */
-ABT_thread_t *ABT_thread_create(ABT_stream_t * stream,
-                                void (*thread_func) (void *), void *arg,
-                                size_t stacksize, int *err);
-int ABT_thread_yield();
-int ABT_thread_yield_to(ABT_thread_t * thread);
+int ABT_Thread_create(const ABT_Stream stream,
+                      void (*thread_func)(void *), void *arg,
+                      size_t stacksize, ABT_Thread *newthread);
+int ABT_Thread_yield();
+int ABT_Thread_yield_to(ABT_Thread thread);
+ABT_Thread_state ABT_Thread_get_state(ABT_Thread thread);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* ABT_H_INCLUDED */
