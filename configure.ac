@@ -75,4 +75,5 @@ LT_INIT
 AC_PROG_INSTALL
 
 AC_OUTPUT(Makefile
-	src/abt.h)
+	src/abt.h
+    test/Makefile)

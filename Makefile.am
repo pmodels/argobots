@@ -14,4 +14,6 @@ libabt_la_SOURCES = $(abt_sources)
 libabt_la_CPPFLAGS = -I$(top_builddir)/src -pthread
 libabt_la_LDFLAGS = -version-info @libabt_so_version@ -pthread
 
+DIST_SUBDIRS = test
+
 EXTRA_DIST = autogen.sh
