@@ -77,9 +77,14 @@ int ABTI_Stream_start(ABTD_Stream *stream);
 int ABTI_Stream_schedule_main(ABTD_Thread *thread);
 int ABTI_Stream_schedule_to(ABTD_Stream *stream, ABTD_Thread *thread);
 void ABTI_Stream_add_thread(ABTD_Stream *stream, ABTD_Thread *thread);
+#define ABTI_Stream_get_ptr(a)      (ABTD_Stream *)(a)
+#define ABTI_Stream_get_handle(a)   (ABT_Stream)(a)
 
 /* Internal functions for User Level Thread */
 extern __thread ABTD_Thread *g_thread;
+#define ABTI_Thread_get_ptr(a)      (ABTD_Thread *)(a)
+#define ABTI_Thread_get_handle(a)   (ABT_Thread)(a)
+
 
 #define HANDLE_ERROR(msg) \
     fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)

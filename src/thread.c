@@ -44,7 +44,7 @@ int ABT_Thread_create(const ABT_Stream stream,
     if (abt_errno != ABT_SUCCESS) goto fn_fail;
 
     ABTI_Stream_add_thread(stream_ptr, newthread_ptr);
-    *newthread = (ABT_Thread)newthread_ptr;
+    *newthread = ABTI_Thread_get_handle(newthread_ptr);
 
   fn_exit:
     return abt_errno;
@@ -72,7 +72,7 @@ int ABT_Thread_yield()
 int ABT_Thread_yield_to(ABT_Thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTD_Thread *thread_ptr = (ABTD_Thread *)thread;
+    ABTD_Thread *thread_ptr = ABTI_Thread_get_ptr(thread);
 
     if (g_thread == NULL) {
         /* This is the case of main program thread
@@ -86,16 +86,23 @@ int ABT_Thread_yield_to(ABT_Thread thread)
     return abt_errno;
 }
 
+int ABT_Thread_equal(ABT_Thread thread1, ABT_Thread thread2)
+{
+    ABTD_Thread *thread1_ptr = ABTI_Thread_get_ptr(thread1);
+    ABTD_Thread *thread2_ptr = ABTI_Thread_get_ptr(thread2);
+    return thread1_ptr == thread2_ptr;
+}
+
 ABT_Thread_state ABT_Thread_get_state(ABT_Thread thread)
 {
-    ABTD_Thread *thread_ptr = (ABTD_Thread *)thread;
+    ABTD_Thread *thread_ptr = ABTI_Thread_get_ptr(thread);
     return thread_ptr->state;
 }
 
 int ABT_Thread_set_name(ABT_Thread thread, const char *name)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTD_Thread *thread_ptr = (ABTD_Thread *)thread;
+    ABTD_Thread *thread_ptr = ABTI_Thread_get_ptr(thread);
 
     size_t len = strlen(name);
     if (thread_ptr->name) free(thread_ptr->name);
@@ -117,7 +124,7 @@ int ABT_Thread_set_name(ABT_Thread thread, const char *name)
 int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t len)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTD_Thread *thread_ptr = (ABTD_Thread *)thread;
+    ABTD_Thread *thread_ptr = ABTI_Thread_get_ptr(thread);
 
     size_t name_len = strlen(thread_ptr->name);
     if (name_len >= len) {

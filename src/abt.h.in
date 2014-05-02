@@ -81,6 +81,7 @@ int ABT_Thread_create(const ABT_Stream stream,
                       size_t stacksize, ABT_Thread *newthread);
 int ABT_Thread_yield();
 int ABT_Thread_yield_to(ABT_Thread thread);
+int ABT_Thread_equal(ABT_Thread thread1, ABT_Thread thread2);
 ABT_Thread_state ABT_Thread_get_state(ABT_Thread thread);
 int ABT_Thread_set_name(ABT_Thread thread, const char *name);
 int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t len);

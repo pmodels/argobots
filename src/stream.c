@@ -42,7 +42,7 @@ int ABT_Stream_create(ABT_Stream *newstream)
     newstream_ptr->type = ABT_STREAM_TYPE_CREATED;
     newstream_ptr->state = ABT_STREAM_STATE_READY;
     newstream_ptr->name = NULL;
-    *newstream = (ABT_Stream)newstream_ptr;
+    *newstream = ABTI_Stream_get_handle(newstream_ptr);
 
   fn_exit:
     return abt_errno;
@@ -57,7 +57,7 @@ int ABT_Stream_join(ABT_Stream stream)
     ABTD_Stream *stream_ptr;
     void *status;
 
-    stream_ptr = (ABTD_Stream *)stream;
+    stream_ptr = ABTI_Stream_get_ptr(stream);
     if (stream_ptr->state != ABT_STREAM_STATE_RUNNING) goto fn_exit;
 
     stream_ptr->state = ABT_STREAM_STATE_JOIN;
@@ -80,7 +80,7 @@ int ABT_Stream_free(ABT_Stream stream)
     int abt_errno = ABT_SUCCESS;
     ABTD_Stream *stream_ptr;
 
-    stream_ptr = (ABTD_Stream *)stream;
+    stream_ptr = ABTI_Stream_get_ptr(stream);
     while (stream_ptr->num_threads > 0) {
         abt_errno = ABTI_Stream_free_thread(stream_ptr, stream_ptr->first_thread);
         if (abt_errno != ABT_SUCCESS) goto fn_fail;
@@ -98,13 +98,15 @@ int ABT_Stream_free(ABT_Stream stream)
 
 int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2)
 {
-    return stream1 == stream2;
+    ABTD_Stream *stream1_ptr = ABTI_Stream_get_ptr(stream1);
+    ABTD_Stream *stream2_ptr = ABTI_Stream_get_ptr(stream2);
+    return stream1_ptr == stream2_ptr;
 }
 
 ABT_Stream ABT_Stream_self()
 {
     if (g_stream) {
-        return (ABT_Stream)g_stream;
+        return ABTI_Stream_get_handle(g_stream);
     } else {
         /* This happens when the main execution stream calls this function. */
         ABT_Stream newstream;
@@ -112,9 +114,9 @@ ABT_Stream ABT_Stream_self()
         if (err != ABT_SUCCESS) {
             HANDLE_ERROR("ABT_Stream_self");
         }
-        ABTD_Stream *newstream_ptr = (ABTD_Stream *)newstream;
+        ABTD_Stream *newstream_ptr = ABTI_Stream_get_ptr(newstream);
         newstream_ptr->type = ABT_STREAM_TYPE_MAIN;
-        g_stream = (ABTD_Stream *)newstream;
+        g_stream = newstream_ptr;
         return newstream;
     }
 }
@@ -122,7 +124,7 @@ ABT_Stream ABT_Stream_self()
 int ABT_Stream_set_name(ABT_Stream stream, const char *name)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTD_Stream *stream_ptr = (ABTD_Stream *)stream;
+    ABTD_Stream *stream_ptr = ABTI_Stream_get_ptr(stream);
 
     size_t len = strlen(name);
     if (stream_ptr->name) free(stream_ptr->name);
@@ -144,7 +146,7 @@ int ABT_Stream_set_name(ABT_Stream stream, const char *name)
 int ABT_Stream_get_name(ABT_Stream stream, char *name, size_t len)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTD_Stream *stream_ptr = (ABTD_Stream *)stream;
+    ABTD_Stream *stream_ptr = ABTI_Stream_get_ptr(stream);
 
     size_t name_len = strlen(stream_ptr->name);
     if (name_len >= len) {
