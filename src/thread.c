@@ -33,6 +33,7 @@ int ABT_Thread_create(const ABT_Stream stream,
     newthread_ptr->state = ABT_THREAD_STATE_READY;
     newthread_ptr->stacksize = stacksize;
     newthread_ptr->stack = ABTU_Malloc(stacksize);
+    newthread_ptr->name = NULL;
     if (!newthread_ptr->stack) {
         HANDLE_ERROR("ABTU_Malloc");
         abt_errno = ABT_ERR_MEM;
@@ -89,6 +90,45 @@ ABT_Thread_state ABT_Thread_get_state(ABT_Thread thread)
 {
     ABTD_Thread *thread_ptr = (ABTD_Thread *)thread;
     return thread_ptr->state;
+}
+
+int ABT_Thread_set_name(ABT_Thread thread, const char *name)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Thread *thread_ptr = (ABTD_Thread *)thread;
+
+    size_t len = strlen(name);
+    if (thread_ptr->name) free(thread_ptr->name);
+    thread_ptr->name = (char *)ABTU_Malloc(len + 1);
+    if (!thread_ptr->name) {
+        HANDLE_ERROR("ABTU_Malloc");
+        abt_errno = ABT_ERR_MEM;
+        goto fn_fail;
+    }
+    strcpy(thread_ptr->name, name);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t len)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Thread *thread_ptr = (ABTD_Thread *)thread;
+
+    size_t name_len = strlen(thread_ptr->name);
+    if (name_len >= len) {
+        strncpy(name, thread_ptr->name, len - 1);
+        name[len - 1] = '\0';
+    } else {
+        strncpy(name, thread_ptr->name, name_len);
+        name[name_len] = '\0';
+    }
+
+    return abt_errno;
 }
 
 

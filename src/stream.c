@@ -41,6 +41,7 @@ int ABT_Stream_create(ABT_Stream *newstream)
     newstream_ptr->last_thread = NULL;
     newstream_ptr->type = ABT_STREAM_TYPE_CREATED;
     newstream_ptr->state = ABT_STREAM_STATE_READY;
+    newstream_ptr->name = NULL;
     *newstream = (ABT_Stream)newstream_ptr;
 
   fn_exit:
@@ -85,6 +86,7 @@ int ABT_Stream_free(ABT_Stream stream)
         if (abt_errno != ABT_SUCCESS) goto fn_fail;
     }
     ABTA_ES_lock_free(&stream_ptr->lock);
+    if (stream_ptr->name) free(stream_ptr->name);
     free(stream_ptr);
 
   fn_exit:
@@ -115,6 +117,45 @@ ABT_Stream ABT_Stream_self()
         g_stream = (ABTD_Stream *)newstream;
         return newstream;
     }
+}
+
+int ABT_Stream_set_name(ABT_Stream stream, const char *name)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Stream *stream_ptr = (ABTD_Stream *)stream;
+
+    size_t len = strlen(name);
+    if (stream_ptr->name) free(stream_ptr->name);
+    stream_ptr->name = (char *)ABTU_Malloc(len + 1);
+    if (!stream_ptr->name) {
+        HANDLE_ERROR("ABTU_Malloc");
+        abt_errno = ABT_ERR_MEM;
+        goto fn_fail;
+    }
+    strcpy(stream_ptr->name, name);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+int ABT_Stream_get_name(ABT_Stream stream, char *name, size_t len)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Stream *stream_ptr = (ABTD_Stream *)stream;
+
+    size_t name_len = strlen(stream_ptr->name);
+    if (name_len >= len) {
+        strncpy(name, stream_ptr->name, len - 1);
+        name[len - 1] = '\0';
+    } else {
+        strncpy(name, stream_ptr->name, name_len);
+        name[name_len] = '\0';
+    }
+
+    return abt_errno;
 }
 
 
@@ -288,6 +329,7 @@ static int ABTI_Stream_free_thread(ABTD_Stream *stream, ABTD_Thread *thread)
 {
     ABTI_Stream_del_thread(stream, thread);
     free(thread->stack);
+    if (thread->name) free(thread->name);
     free(thread);
     return ABT_SUCCESS;
 }

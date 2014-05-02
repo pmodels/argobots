@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include "abt.h"
@@ -49,6 +50,7 @@ struct ABTD_Stream {
     ABTA_ULT_t ult;             /* Internal ULT (scheduler) data structure */
     ABT_Stream_type type;       /* Type of execution stream */
     volatile ABT_Stream_state state;  /* Stream state */
+    char *name;                 /* Stream name */
 };
 
 /*S
@@ -65,6 +67,7 @@ struct ABTD_Thread {
     void *stack;                /* Pointer to this thread's stack */
     ABTD_Thread *prev;          /* Previous thread in list */
     ABTD_Thread *next;          /* Next thread in list */
+    char *name;                 /* Thread name */
 };
 
 

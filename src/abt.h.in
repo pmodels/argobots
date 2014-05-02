@@ -72,6 +72,8 @@ int ABT_Stream_join(ABT_Stream stream);
 int ABT_Stream_free(ABT_Stream stream);
 int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2);
 ABT_Stream ABT_Stream_self();
+int ABT_Stream_set_name(ABT_Stream stream, const char *name);
+int ABT_Stream_get_name(ABT_Stream stream, char *name, size_t len);
 
 /* User Level Thread (ULT) */
 int ABT_Thread_create(const ABT_Stream stream,
@@ -80,6 +82,8 @@ int ABT_Thread_create(const ABT_Stream stream,
 int ABT_Thread_yield();
 int ABT_Thread_yield_to(ABT_Thread thread);
 ABT_Thread_state ABT_Thread_get_state(ABT_Thread thread);
+int ABT_Thread_set_name(ABT_Thread thread, const char *name);
+int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t len);
 
 #if defined(__cplusplus)
 }
