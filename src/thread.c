@@ -33,24 +33,40 @@ int ABT_Thread_create(const ABT_Stream stream,
     newthread_ptr->state = ABT_THREAD_STATE_READY;
     newthread_ptr->stacksize = stacksize;
     newthread_ptr->stack = ABTU_Malloc(stacksize);
-    newthread_ptr->name = NULL;
     if (!newthread_ptr->stack) {
         HANDLE_ERROR("ABTU_Malloc");
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
     }
+    newthread_ptr->name = NULL;
+    newthread_ptr->refcount = (newthread != NULL) ? 1 : 0;
 
     abt_errno = ABTA_ULT_make(stream_ptr, newthread_ptr, thread_func, arg);
     if (abt_errno != ABT_SUCCESS) goto fn_fail;
 
     ABTI_Stream_add_thread(stream_ptr, newthread_ptr);
-    *newthread = ABTI_Thread_get_handle(newthread_ptr);
+    if (newthread) {
+        *newthread = ABTI_Thread_get_handle(newthread_ptr);
+    }
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
     goto fn_exit;
+}
+
+int ABT_Thread_free(ABT_Thread thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTD_Thread *thread_ptr = ABTI_Thread_get_ptr(thread);
+    if (thread_ptr->state == ABT_THREAD_STATE_TERMINATED &&
+        thread_ptr->refcount > 0) {
+        abt_errno = ABTI_Stream_release_thread(thread_ptr->stream, thread_ptr);
+    } else {
+        abt_errno = ABTI_Stream_free_thread(thread_ptr->stream, thread_ptr);
+    }
+    return abt_errno;
 }
 
 int ABT_Thread_yield()

@@ -90,10 +90,19 @@ int main(int argc, char *argv[])
     /* Switch to other user level threads */
     ABT_Thread_yield();
 
+    /* Free threads */
+    for (i = 0; i < num_threads; i++) {
+        ret = ABT_Thread_free(threads[i]);
+        if (ret != ABT_SUCCESS) {
+            fprintf(stderr, "ERROR: ABT_Thread_free\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
     /* Free streams */
     ret = ABT_Stream_free(stream);
     if (ret != ABT_SUCCESS) {
-        fprintf(stderr, "ERROR: AB_stream_free\n");
+        fprintf(stderr, "ERROR: ABT_Stream_free\n");
         exit(EXIT_FAILURE);
     }
 

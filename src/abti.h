@@ -51,6 +51,7 @@ struct ABTD_Stream {
     ABT_Stream_type type;       /* Type of execution stream */
     volatile ABT_Stream_state state;  /* Stream state */
     char *name;                 /* Stream name */
+    ABTD_Thread *term_thread;   /* Terminated threads but referenced */
 };
 
 /*S
@@ -68,6 +69,7 @@ struct ABTD_Thread {
     ABTD_Thread *prev;          /* Previous thread in list */
     ABTD_Thread *next;          /* Next thread in list */
     char *name;                 /* Thread name */
+    unsigned int refcount;      /* Reference count */
 };
 
 
@@ -76,6 +78,8 @@ extern __thread ABTD_Stream *g_stream;
 int ABTI_Stream_start(ABTD_Stream *stream);
 int ABTI_Stream_schedule_main(ABTD_Thread *thread);
 int ABTI_Stream_schedule_to(ABTD_Stream *stream, ABTD_Thread *thread);
+int ABTI_Stream_free_thread(ABTD_Stream *stream, ABTD_Thread *thread);
+int ABTI_Stream_release_thread(ABTD_Stream *stream, ABTD_Thread *thread);
 void ABTI_Stream_add_thread(ABTD_Stream *stream, ABTD_Thread *thread);
 #define ABTI_Stream_get_ptr(a)      (ABTD_Stream *)(a)
 #define ABTI_Stream_get_handle(a)   (ABT_Stream)(a)

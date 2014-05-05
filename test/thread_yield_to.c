@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     if (argc > 2) num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
 
-    //srand(time(NULL));
+    srand(time(NULL));
 
     ABT_Stream *streams;
     ABT_Thread **threads;
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     for (i = 1; i < num_streams; i++) {
         ret = ABT_Stream_join(streams[i]);
         if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: AB_Stream_join for ES%d\n", i);
+            fprintf(stderr, "ERROR: ABT_Stream_join for ES%d\n", i);
             exit(EXIT_FAILURE);
         }
     }
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     for (i = 0; i < num_streams; i++) {
         ret = ABT_Stream_free(streams[i]);
         if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: AB_stream_free for ES%d\n", i);
+            fprintf(stderr, "ERROR: ABT_Stream_free for ES%d\n", i);
             exit(EXIT_FAILURE);
         }
     }
