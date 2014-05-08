@@ -4,6 +4,9 @@
 #
 
 abt_sources += src/stream.c \
-	src/thread.c
+	src/thread.c \
+	src/sched.c \
+	src/pool.c \
+	src/unit.c
 
 include_HEADERS = src/abt.h

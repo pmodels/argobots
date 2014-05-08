@@ -9,7 +9,7 @@
 void thread_func(void *arg)
 {
     size_t my_id = (size_t)arg;
-    printf("    [T%lu]: Hello, world!\n", my_id);
+    printf("[T%lu]: Hello, world!\n", my_id);
 
 }
 
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     /* Create streams */
     streams[0] = ABT_Stream_self();
     for (i = 1; i < num_streams; i++) {
-        ret = ABT_Stream_create(&streams[i]);
+        ret = ABT_Stream_create(ABT_SCHEDULER_NULL, &streams[i]);
         if (ret != ABT_SUCCESS) {
             fprintf(stderr, "ERROR: ABT_Stream_create for ES%d\n", i);
             exit(EXIT_FAILURE);
@@ -42,10 +42,11 @@ int main(int argc, char *argv[])
         for (j = 0; j < num_threads; j++) {
             size_t tid = i * num_threads + j;
             ret = ABT_Thread_create(streams[i],
-                    thread_func, (void *)tid, 8192,
+                    thread_func, (void *)tid, 16384,
                     NULL);
             if (ret != ABT_SUCCESS) {
-                fprintf(stderr, "ERROR: ABT_Thread_create for ES%d-LUT%d\n", i, j);
+                fprintf(stderr, "ERROR: ABT_Thread_create for ES%d-LUT%d\n",
+                        i, j);
                 exit(EXIT_FAILURE);
             }
         }

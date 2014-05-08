@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <time.h>
 #include "abt.h"
 
 #define DEFAULT_NUM_STREAMS     2
@@ -29,15 +28,15 @@ void thread_func(void *arg)
     thread_arg_t *t_arg = (thread_arg_t *)arg;
     ABT_Thread next;
 
-    printf("    [T%d]: brefore yield\n", t_arg->id);
+    printf("[T%d]: brefore yield\n", t_arg->id); fflush(stdout);
     next = pick_one(t_arg->threads, t_arg->num_threads);
     ABT_Thread_yield_to(next);
 
-    printf("    [T%d]: doing something ...\n", t_arg->id);
+    printf("[T%d]: doing something ...\n", t_arg->id); fflush(stdout);
     next = pick_one(t_arg->threads, t_arg->num_threads);
     ABT_Thread_yield_to(next);
 
-    printf("    [T%d]: after yield\n", t_arg->id);
+    printf("[T%d]: after yield\n", t_arg->id); fflush(stdout);
 }
 
 int main(int argc, char *argv[])
@@ -50,8 +49,6 @@ int main(int argc, char *argv[])
     assert(num_streams >= 0);
     if (argc > 2) num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
-
-    srand(time(NULL));
 
     ABT_Stream *streams;
     ABT_Thread **threads;
@@ -67,7 +64,7 @@ int main(int argc, char *argv[])
     /* Create streams */
     streams[0] = ABT_Stream_self();
     for (i = 1; i < num_streams; i++) {
-        ret = ABT_Stream_create(&streams[i]);
+        ret = ABT_Stream_create(ABT_SCHEDULER_NULL, &streams[i]);
         if (ret != ABT_SUCCESS) {
             fprintf(stderr, "ERROR: ABT_Stream_create for ES%d\n", i);
             exit(EXIT_FAILURE);
@@ -82,10 +79,11 @@ int main(int argc, char *argv[])
             args[i][j].num_threads = num_threads;
             args[i][j].threads = &threads[i][0];
             ret = ABT_Thread_create(streams[i],
-                    thread_func, (void *)&args[i][j], 8192,
+                    thread_func, (void *)&args[i][j], 16384,
                     &threads[i][j]);
             if (ret != ABT_SUCCESS) {
-                fprintf(stderr, "ERROR: ABT_Thread_create for ES%d-LUT%d\n", i, j);
+                fprintf(stderr, "ERROR: ABT_Thread_create for ES%d-LUT%d\n",
+                        i, j);
                 exit(EXIT_FAILURE);
             }
         }

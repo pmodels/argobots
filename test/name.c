@@ -19,7 +19,7 @@ typedef struct thread_arg {
 void thread_func(void *arg)
 {
     thread_arg_t *t_arg = (thread_arg_t *)arg;
-    printf("    [T%d]: My name is %s.\n", t_arg->id, t_arg->name);
+    printf("[T%d]: My name is %s.\n", t_arg->id, t_arg->name);
 }
 
 int main(int argc, char *argv[])

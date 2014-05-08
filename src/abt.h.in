@@ -57,23 +57,80 @@ extern "C" {
 #define ABT_ERR_THREAD      5   /* Thread-related error */
 #define ABT_ERR_OTHER       6   /* Other error */
 
+#define ABT_STREAM_NULL     (NULL)
+#define ABT_SCHEDULER_NULL  (NULL)
+#define ABT_POOL_NULL       (NULL)
+#define ABT_UNIT_NULL       (NULL)
+#define ABT_THREAD_NULL     (NULL)
+#define ABT_TASK_NULL       (NULL)
+
+
 /* Definitions */
-typedef void * ABT_Stream;
-typedef void * ABT_Thread;
-typedef enum ABT_Thread_state {
+typedef enum {
+    ABT_UNIT_TYPE_THREAD,
+    ABT_UNIT_TYPE_TASK,
+    ABT_UNIT_TYPE_NONE
+} ABT_Unit_type;
+
+typedef enum {
     ABT_THREAD_STATE_READY,
     ABT_THREAD_STATE_RUNNING,
     ABT_THREAD_STATE_TERMINATED
 } ABT_Thread_state;
 
+typedef size_t ABT_Stream_id;
+typedef size_t ABT_Thread_id;
+
+typedef void * ABT_Stream;      /* Execution Stream */
+typedef void * ABT_Scheduler;   /* Scheduler */
+typedef void * ABT_Pool;        /* Pool of work units */
+typedef void * ABT_Unit;        /* A work unit, e.g., thread and task */
+typedef void * ABT_Thread;      /* User Level Thread */
+typedef void * ABT_Task;        /* Tasklet */
+
+/* Functions for creating a user scheduler */
+typedef ABT_Unit_type (*ABT_Unit_get_type_fn)(ABT_Unit);
+typedef ABT_Thread (*ABT_Unit_get_thread_fn)(ABT_Unit);
+typedef ABT_Task (*ABT_Unit_get_task_fn)(ABT_Unit);
+typedef ABT_Unit (*ABT_Unit_create_from_thread_fn)(ABT_Thread);
+typedef ABT_Unit (*ABT_Unit_create_from_task_fn)(ABT_Task);
+typedef void     (*ABT_Unit_free_fn)(ABT_Unit);
+
+typedef size_t   (*ABT_Pool_get_size_fn)(ABT_Pool);
+typedef void     (*ABT_Pool_push_fn)(ABT_Pool, ABT_Unit);
+typedef ABT_Unit (*ABT_Pool_pop_fn)(ABT_Pool);
+typedef void     (*ABT_Pool_remove_fn)(ABT_Pool, ABT_Unit);
+
+typedef struct {
+    ABT_Unit_get_type_fn           u_get_type;
+    ABT_Unit_get_thread_fn         u_get_thread;
+    ABT_Unit_get_task_fn           u_get_task;
+    ABT_Unit_create_from_thread_fn u_create_from_thread;
+    ABT_Unit_create_from_task_fn   u_create_from_task;
+    ABT_Unit_free_fn               u_free;
+
+    ABT_Pool_get_size_fn p_get_size;
+    ABT_Pool_push_fn     p_push;
+    ABT_Pool_pop_fn      p_pop;
+    ABT_Pool_remove_fn   p_remove;
+} ABT_Scheduler_funcs;
+
+
 /* Execution Stream (ES) */
-int ABT_Stream_create(ABT_Stream *newstream);
+int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream);
+int ABT_Stream_set_scheduler(ABT_Stream stream, ABT_Scheduler sched);
 int ABT_Stream_join(ABT_Stream stream);
 int ABT_Stream_free(ABT_Stream stream);
 int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2);
 ABT_Stream ABT_Stream_self();
 int ABT_Stream_set_name(ABT_Stream stream, const char *name);
 int ABT_Stream_get_name(ABT_Stream stream, char *name, size_t len);
+
+/* Scheduler */
+int ABT_Scheduler_create(ABT_Pool pool,
+                         const ABT_Scheduler_funcs *funcs,
+                         ABT_Scheduler *newsched);
+int ABT_Scheduler_free(ABT_Scheduler sched);
 
 /* User Level Thread (ULT) */
 int ABT_Thread_create(const ABT_Stream stream,
