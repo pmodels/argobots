@@ -5,24 +5,24 @@
 
 #include "abti.h"
 
-int ABTI_Pool_create(ABTD_Pool **newpool)
+int ABTI_Pool_create(ABTI_Pool **newpool)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTD_Pool *pool;
+    ABTI_Pool *p_pool;
 
-    pool = (ABTD_Pool *)ABTU_Malloc(sizeof(ABTD_Pool));
-    if (!pool) {
+    p_pool = (ABTI_Pool *)ABTU_Malloc(sizeof(ABTI_Pool));
+    if (!p_pool) {
         HANDLE_ERROR("ABTU_Malloc");
         *newpool = NULL;
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
     }
 
-    pool->num_units = 0;
-    pool->head = NULL;
-    pool->tail = NULL;
+    p_pool->num_units = 0;
+    p_pool->p_head = NULL;
+    p_pool->p_tail = NULL;
 
-    *newpool = pool;
+    *newpool = p_pool;
 
   fn_exit:
     return abt_errno;
@@ -31,15 +31,15 @@ int ABTI_Pool_create(ABTD_Pool **newpool)
     goto fn_exit;
 }
 
-int ABTI_Pool_free(ABTD_Pool *pool)
+int ABTI_Pool_free(ABTI_Pool *p_pool)
 {
     int abt_errno = ABT_SUCCESS;
 
-    if (pool != NULL) {
+    if (p_pool != NULL) {
         /* NOTE: pool should be empty. */
-        assert(pool->num_units == 0);
+        assert(p_pool->num_units == 0);
 
-        free(pool);
+        free(p_pool);
     }
 
     return abt_errno;
@@ -47,86 +47,86 @@ int ABTI_Pool_free(ABTD_Pool *pool)
 
 size_t ABTI_Pool_get_size(ABT_Pool pool)
 {
-    ABTD_Pool *pool_ptr = ABTI_Pool_get_ptr(pool);
-    return pool_ptr->num_units;
+    ABTI_Pool *p_pool = ABTI_Pool_get_ptr(pool);
+    return p_pool->num_units;
 }
 
 void ABTI_Pool_push(ABT_Pool pool, ABT_Unit unit)
 {
-    ABTD_Pool *pool_ptr = ABTI_Pool_get_ptr(pool);
-    ABTD_Unit *unit_ptr = ABTI_Unit_get_ptr(unit);
+    ABTI_Pool *p_pool = ABTI_Pool_get_ptr(pool);
+    ABTI_Unit *p_unit = ABTI_Unit_get_ptr(unit);
 
-    unit_ptr->pool = pool_ptr;
+    p_unit->p_pool = p_pool;
 
-    if (pool_ptr->num_units == 0) {
-        unit_ptr->prev = unit_ptr;
-        unit_ptr->next = unit_ptr;
-        pool_ptr->head = unit_ptr;
-        pool_ptr->tail = unit_ptr;
+    if (p_pool->num_units == 0) {
+        p_unit->p_prev = p_unit;
+        p_unit->p_next = p_unit;
+        p_pool->p_head = p_unit;
+        p_pool->p_tail = p_unit;
     } else {
-        ABTD_Unit *head = pool_ptr->head;
-        ABTD_Unit *tail = pool_ptr->tail;
-        tail->next = unit_ptr;
-        head->prev = unit_ptr;
-        unit_ptr->prev = tail;
-        unit_ptr->next = head;
-        pool_ptr->tail = unit_ptr;
+        ABTI_Unit *p_head = p_pool->p_head;
+        ABTI_Unit *p_tail = p_pool->p_tail;
+        p_tail->p_next = p_unit;
+        p_head->p_prev = p_unit;
+        p_unit->p_prev = p_tail;
+        p_unit->p_next = p_head;
+        p_pool->p_tail = p_unit;
     }
-    pool_ptr->num_units++;
+    p_pool->num_units++;
 }
 
 ABT_Unit ABTI_Pool_pop(ABT_Pool pool)
 {
-    ABTD_Pool *pool_ptr = ABTI_Pool_get_ptr(pool);
-    ABTD_Unit *unit_ptr = NULL;
+    ABTI_Pool *p_pool = ABTI_Pool_get_ptr(pool);
+    ABTI_Unit *p_unit = NULL;
 
-    if (pool_ptr->num_units > 0) {
-        unit_ptr = pool_ptr->head;
-        if (pool_ptr->num_units == 1) {
-            pool_ptr->head = NULL;
-            pool_ptr->tail = NULL;
+    if (p_pool->num_units > 0) {
+        p_unit = p_pool->p_head;
+        if (p_pool->num_units == 1) {
+            p_pool->p_head = NULL;
+            p_pool->p_tail = NULL;
         } else {
-            unit_ptr->prev->next = unit_ptr->next;
-            unit_ptr->next->prev = unit_ptr->prev;
-            pool_ptr->head = unit_ptr->next;
+            p_unit->p_prev->p_next = p_unit->p_next;
+            p_unit->p_next->p_prev = p_unit->p_prev;
+            p_pool->p_head = p_unit->p_next;
         }
-        pool_ptr->num_units--;
+        p_pool->num_units--;
 
-        unit_ptr->pool = NULL;
-        unit_ptr->prev = NULL;
-        unit_ptr->next = NULL;
+        p_unit->p_pool = NULL;
+        p_unit->p_prev = NULL;
+        p_unit->p_next = NULL;
     }
-    return ABTI_Unit_get_handle(unit_ptr);
+    return ABTI_Unit_get_handle(p_unit);
 }
 
 void ABTI_Pool_remove(ABT_Pool pool, ABT_Unit unit)
 {
-    ABTD_Pool *pool_ptr;
-    ABTD_Unit *unit_ptr;
+    ABTI_Pool *p_pool;
+    ABTI_Unit *p_unit;
 
-    pool_ptr = ABTI_Pool_get_ptr(pool);
-    if (pool_ptr->num_units == 0) return;
+    p_pool = ABTI_Pool_get_ptr(pool);
+    if (p_pool->num_units == 0) return;
 
-    unit_ptr = ABTI_Unit_get_ptr(unit);
-    if (unit_ptr->pool != pool_ptr) {
+    p_unit = ABTI_Unit_get_ptr(unit);
+    if (p_unit->p_pool != p_pool) {
         HANDLE_ERROR("Not my pool");
     }
 
-    if (pool_ptr->num_units == 1) {
-        pool_ptr->head = NULL;
-        pool_ptr->tail = NULL;
+    if (p_pool->num_units == 1) {
+        p_pool->p_head = NULL;
+        p_pool->p_tail = NULL;
     } else {
-        unit_ptr->prev->next = unit_ptr->next;
-        unit_ptr->next->prev = unit_ptr->prev;
-        if (unit_ptr == pool_ptr->head)
-            pool_ptr->head = unit_ptr->next;
-        else if (unit_ptr == pool_ptr->tail)
-            pool_ptr->tail = unit_ptr->prev;
+        p_unit->p_prev->p_next = p_unit->p_next;
+        p_unit->p_next->p_prev = p_unit->p_prev;
+        if (p_unit == p_pool->p_head)
+            p_pool->p_head = p_unit->p_next;
+        else if (p_unit == p_pool->p_tail)
+            p_pool->p_tail = p_unit->p_prev;
     }
-    pool_ptr->num_units--;
+    p_pool->num_units--;
 
-    unit_ptr->pool = NULL;
-    unit_ptr->prev = NULL;
-    unit_ptr->next = NULL;
+    p_unit->p_pool = NULL;
+    p_unit->p_prev = NULL;
+    p_unit->p_next = NULL;
 }
 

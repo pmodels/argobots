@@ -73,6 +73,13 @@ typedef enum {
 } ABT_Unit_type;
 
 typedef enum {
+    ABT_STREAM_STATE_READY,
+    ABT_STREAM_STATE_RUNNING,
+    ABT_STREAM_STATE_JOIN,
+    ABT_STREAM_STATE_TERMINATED
+} ABT_Stream_state;
+
+typedef enum {
     ABT_THREAD_STATE_READY,
     ABT_THREAD_STATE_RUNNING,
     ABT_THREAD_STATE_TERMINATED

@@ -8,61 +8,53 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 
 #include "abt.h"
-#include "abtmem.h"
+#include "abtu.h"
 
 /* Type Definitions */
 typedef unsigned int          unit;
-typedef struct ABTD_Stream    ABTD_Stream;
-typedef struct ABTD_Scheduler ABTD_Scheduler;
-typedef struct ABTD_Pool      ABTD_Pool;
-typedef struct ABTD_Unit      ABTD_Unit;
-typedef struct ABTD_Thread    ABTD_Thread;
-typedef struct ABTD_Task      ABTD_Task;
+typedef struct ABTI_Stream    ABTI_Stream;
+typedef struct ABTI_Scheduler ABTI_Scheduler;
+typedef struct ABTI_Pool      ABTI_Pool;
+typedef struct ABTI_Unit      ABTI_Unit;
+typedef struct ABTI_Thread    ABTI_Thread;
+typedef struct ABTI_Task      ABTI_Task;
 
-#include "abtarch.h"
-
-typedef enum {
-    ABT_STREAM_TYPE_MAIN,       /* Main program stream */
-    ABT_STREAM_TYPE_CREATED     /* Explicitly created stream */
-} ABT_Stream_type;
+#include "abtd.h"
 
 typedef enum {
-    ABT_STREAM_STATE_READY,
-    ABT_STREAM_STATE_RUNNING,
-    ABT_STREAM_STATE_JOIN,
-    ABT_STREAM_STATE_TERMINATED
-} ABT_Stream_state;
+    ABTI_STREAM_TYPE_MAIN,       /* Main program stream */
+    ABTI_STREAM_TYPE_CREATED     /* Explicitly created stream */
+} ABTI_Stream_type;
 
 /*S
-  ABTD_Stream - Description of the Stream data structure
+  ABTI_Stream - Description of the Stream data structure
 
   Each stream internally has one thread, which schedules other threads.
   S*/
-struct ABTD_Stream {
-    ABT_Stream_id   id;     /* Stream ID */
-    ABT_Stream_type type;   /* Type of execution stream */
-    char           *name;   /* Stream name */
+struct ABTI_Stream {
+    ABT_Stream_id    id;      /* Stream ID */
+    ABTI_Stream_type type;    /* Type of execution stream */
+    char            *p_name;  /* Stream name */
     volatile ABT_Stream_state state;  /* Stream state */
-    ABTD_Scheduler *sched;  /* Scheduler */
-    ABTA_ES_lock_t  lock;   /* Internal lock variable */
-    ABT_Pool        deads;  /* Work units terminated but still referenced */
-    ABTA_ULT_t      ult;    /* Internal ULT (scheduler) data structure */
-    ABTA_ES_t       es;     /* Internal ES data structure */
+    ABTI_Scheduler  *p_sched; /* Scheduler */
+    ABT_Pool         deads;   /* Work units terminated but still referenced */
+    ABTD_ES_lock     lock;    /* Internal lock variable */
+    ABTD_ES          es;      /* Internal ES data structure */
+    ABTD_ULT         ult;     /* Internal ULT (scheduler) data structure */
 };
 
 
 typedef enum {
-    ABT_SCHEDULER_TYPE_BASE,    /* Runtime-provided scheduler */
-    ABT_SCHEDULER_TYPE_USER     /* User-provided scheduler */
-} ABT_Scheduler_type;
+    ABTI_SCHEDULER_TYPE_BASE,    /* Runtime-provided scheduler */
+    ABTI_SCHEDULER_TYPE_USER     /* User-provided scheduler */
+} ABTI_Scheduler_type;
 
-struct ABTD_Scheduler {
-    ABT_Scheduler_type type;
-    ABT_Pool           pool;
+struct ABTI_Scheduler {
+    ABTI_Scheduler_type type;
+    ABT_Pool            pool;
 
     ABT_Unit_get_type_fn           u_get_type;
     ABT_Unit_get_thread_fn         u_get_thread;
@@ -78,70 +70,70 @@ struct ABTD_Scheduler {
 };
 
 
-struct ABTD_Pool {
-    size_t num_units;
-    ABTD_Unit *head;
-    ABTD_Unit *tail;
+struct ABTI_Pool {
+    size_t     num_units;
+    ABTI_Unit *p_head;
+    ABTI_Unit *p_tail;
 };
 
 
-/* ABTD_Unit is maintained as a circular doubly-linked list. */
-struct ABTD_Unit {
-    ABTD_Pool    *pool;
+/* ABTI_Unit is maintained as a circular doubly-linked list. */
+struct ABTI_Unit {
+    ABTI_Pool    *p_pool;
     ABT_Unit_type type;
-    void         *unit;     /* ABTD_Thread or ABTD_Task */
-    ABTD_Unit    *prev;
-    ABTD_Unit    *next;
+    void         *p_unit;    /* ABTI_Thread or ABTI_Task */
+    ABTI_Unit    *p_prev;
+    ABTI_Unit    *p_next;
 };
 
 
 /*S
-  ABTD_Thread - Description of the Thread data structure
+  ABTI_Thread - Description of the Thread data structure
 
   All threads are linked in a circular doubly-linked list.
   S*/
-struct ABTD_Thread {
-    ABTD_Stream     *stream;    /* Stream to which this thread belongs */
+struct ABTI_Thread {
+    ABTI_Stream     *p_stream;  /* Stream to which this thread belongs */
     ABT_Thread_id    id;        /* Thread ID */
-    char            *name;      /* Thread name */
+    char            *p_name;    /* Thread name */
     uint             refcount;  /* Reference count */
     ABT_Thread_state state;     /* Thread state */
     size_t           stacksize; /* Stack size in bytes */
-    void            *stack;     /* Pointer to this thread's stack */
-    ABTA_ULT_t       ult;       /* Internal ULT data structure */
+    void            *p_stack;   /* Pointer to this thread's stack */
     ABT_Unit         unit;      /* Work unit enclosing this thread */
+    ABTD_ULT         ult;       /* Internal ULT data structure */
 };
 
 
-struct ABTD_Task {
+struct ABTI_Task {
     /* TODO */
 };
 
 
 /* Internal functions for Execution Stream */
-extern __thread ABTD_Stream *g_stream;
-int   ABTI_Stream_start(ABTD_Stream *stream);
-void *ABTI_Stream_loop(void *arg);
-int   ABTI_Stream_schedule(ABTD_Stream *stream);
-int   ABTI_Stream_keep_thread(ABTD_Stream *stream, ABTD_Thread *thread);
-#define ABTI_Stream_get_ptr(a)      (ABTD_Stream *)(a)
+extern __thread ABTI_Stream *gp_stream;
+int   ABTI_Stream_start(ABTI_Stream *p_stream);
+void *ABTI_Stream_loop(void *p_arg);
+int   ABTI_Stream_schedule(ABTI_Stream *p_stream);
+int   ABTI_Stream_keep_thread(ABTI_Stream *p_stream, ABTI_Thread *p_thread);
+#define ABTI_Stream_get_ptr(a)      (ABTI_Stream *)(a)
 #define ABTI_Stream_get_handle(a)   (ABT_Stream)(a)
 
 
 /* Internal functions for Scheduler */
-int ABTI_Scheduler_create_default(ABTD_Scheduler **newsched);
-#define ABTI_Scheduler_get_ptr(a)       (ABTD_Scheduler *)(a)
+int ABTI_Scheduler_create_default(ABTI_Scheduler **newsched);
+#define ABTI_Scheduler_get_ptr(a)       (ABTI_Scheduler *)(a)
 #define ABTI_Scheduler_get_handle(a)    (ABT_Scheduler)(a)
 
 
 /* Internal functions for Pool */
-int      ABTI_Pool_create(ABTD_Pool **newpool);
-int      ABTI_Pool_free(ABTD_Pool *pool);
+int      ABTI_Pool_create(ABTI_Pool **newpool);
+int      ABTI_Pool_free(ABTI_Pool *p_pool);
 size_t   ABTI_Pool_get_size(ABT_Pool pool);
 void     ABTI_Pool_push(ABT_Pool pool, ABT_Unit unit);
 ABT_Unit ABTI_Pool_pop(ABT_Pool pool);
 void     ABTI_Pool_remove(ABT_Pool pool, ABT_Unit unit);
-#define ABTI_Pool_get_ptr(a)        (ABTD_Pool *)(a)
+#define ABTI_Pool_get_ptr(a)        (ABTI_Pool *)(a)
 #define ABTI_Pool_get_handle(a)     (ABT_Pool)(a)
 
 
@@ -152,13 +144,14 @@ ABT_Task      ABTI_Unit_get_task(ABT_Unit unit);
 ABT_Unit      ABTI_Unit_create_from_thread(ABT_Thread thread);
 ABT_Unit      ABTI_Unit_create_from_task(ABT_Task task);
 void          ABTI_Unit_free(ABT_Unit unit);
-#define ABTI_Unit_get_ptr(a)            (ABTD_Unit *)(a)
+#define ABTI_Unit_get_ptr(a)            (ABTI_Unit *)(a)
 #define ABTI_Unit_get_handle(a)         (ABT_Unit)(a)
 
 
 /* Internal functions for User Level Thread */
-extern __thread ABTD_Thread *g_thread;
-#define ABTI_Thread_get_ptr(a)      (ABTD_Thread *)(a)
+extern __thread ABTI_Thread *gp_thread;
+void ABTI_Thread_func_wrapper(void (*thread_func)(void *), void *p_arg);
+#define ABTI_Thread_get_ptr(a)      (ABTI_Thread *)(a)
 #define ABTI_Thread_get_handle(a)   (ABT_Thread)(a)
 
 

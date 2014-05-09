@@ -7,6 +7,8 @@ abt_sources += src/stream.c \
 	src/thread.c \
 	src/sched.c \
 	src/pool.c \
-	src/unit.c
+	src/unit.c \
+	src/abtd.c \
+	src/abtu.c
 
 include_HEADERS = src/abt.h
