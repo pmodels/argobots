@@ -87,6 +87,8 @@ struct ABTI_Unit {
 };
 
 
+#define ABTI_THREAD_DEFAULT_STACKSIZE   16384
+
 /*S
   ABTI_Thread - Description of the Thread data structure
 

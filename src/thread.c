@@ -38,8 +38,9 @@ int ABT_Thread_create(const ABT_Stream stream,
     p_newthread->state    = ABT_THREAD_STATE_READY;
 
     /* Create a stack for this thread */
-    p_newthread->stacksize = stacksize;
-    p_newthread->p_stack = ABTU_Malloc(stacksize);
+    p_newthread->stacksize = (stacksize == 0) ? ABTI_THREAD_DEFAULT_STACKSIZE
+                           : stacksize;
+    p_newthread->p_stack = ABTU_Malloc(p_newthread->stacksize);
     if (!p_newthread->p_stack) {
         HANDLE_ERROR("ABTU_Malloc");
         abt_errno = ABT_ERR_MEM;
