@@ -26,7 +26,7 @@ int ABT_Thread_create(const ABT_Stream stream,
     p_newthread = (ABTI_Thread *)ABTU_Malloc(sizeof(ABTI_Thread));
     if (!p_newthread) {
         HANDLE_ERROR("ABTU_Malloc");
-        *newthread = NULL;
+        if (newthread) *newthread = NULL;
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
     }
@@ -62,9 +62,7 @@ int ABT_Thread_create(const ABT_Stream stream,
     ABTD_ES_unlock(&p_stream->lock);
 
     /* Return value */
-    if (newthread) {
-        *newthread = h_newthread;
-    }
+    if (newthread) *newthread = h_newthread;
 
   fn_exit:
     return abt_errno;
