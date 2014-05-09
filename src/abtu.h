@@ -11,7 +11,7 @@
 
 /* Utility Functions */
 #define ABTU_Malloc(a)          malloc((size_t)(a))
-#define ABTU_Callos(a,b)        calloc((size_t)(a),(size_t)b)
+#define ABTU_Calloc(a,b)        calloc((size_t)(a),(size_t)b)
 #define ABTU_Free(a)            free((void *)(a))
 #define ABTU_Realloc(a,b)       realloc((void *)(a),(size_t)(b))
 
