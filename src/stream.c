@@ -145,8 +145,16 @@ int ABT_Stream_free(ABT_Stream stream)
             if (p_thread->p_name) ABTU_Free(p_thread->p_name);
             ABTU_Free(p_thread->p_stack);
             ABTU_Free(p_thread);
+        } else if (type == ABT_UNIT_TYPE_TASK) {
+            /* Free the ABTI_Task structure */
+            ABT_Task task = p_sched->u_get_task(unit);
+            ABTI_Task *p_task = ABTI_Task_get_ptr(task);
+            if (p_task->p_name) ABTU_Free(p_task->p_name);
+            ABTU_Free(p_task);
         } else {
-            /* TODO: ABT_UNIT_TYPE_TASK */
+            HANDLE_ERROR("Not a valid work unit type");
+            abt_errno = ABT_ERR_STREAM;
+            goto fn_fail;
         }
 
         /* Release the associated work unit */
