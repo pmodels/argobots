@@ -39,7 +39,7 @@ int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream)
         abt_errno = ABTI_Scheduler_create_default(&p_newstream->p_sched);
         if (abt_errno != ABT_SUCCESS) {
             HANDLE_ERROR("ABTI_Scheduler_create_default");
-            free(p_newstream);
+            ABTU_Free(p_newstream);
             *newstream = NULL;
             goto fn_fail;
         }
@@ -128,7 +128,7 @@ int ABT_Stream_free(ABT_Stream stream)
     ABTI_Stream *p_stream;
 
     p_stream = ABTI_Stream_get_ptr(stream);
-    if (p_stream->p_name) free(p_stream->p_name);
+    if (p_stream->p_name) ABTU_Free(p_stream->p_name);
     ABTD_ES_lock_free(&p_stream->lock);
 
     ABTI_Scheduler *p_sched = p_stream->p_sched;
@@ -142,9 +142,9 @@ int ABT_Stream_free(ABT_Stream stream)
             /* Free thd ABTI_Thread structure */
             ABT_Thread thread = p_sched->u_get_thread(unit);
             ABTI_Thread *p_thread = ABTI_Thread_get_ptr(thread);
-            if (p_thread->p_name) free(p_thread->p_name);
-            free(p_thread->p_stack);
-            free(p_thread);
+            if (p_thread->p_name) ABTU_Free(p_thread->p_name);
+            ABTU_Free(p_thread->p_stack);
+            ABTU_Free(p_thread);
         } else {
             /* TODO: ABT_UNIT_TYPE_TASK */
         }
@@ -172,9 +172,9 @@ int ABT_Stream_free(ABT_Stream stream)
 
             /* Free thd ABTI_Thread structure */
             ABTI_Thread *p_thread = ABTI_Thread_get_ptr(thread);
-            if (p_thread->p_name) free(p_thread->p_name);
-            free(p_thread->p_stack);
-            free(p_thread);
+            if (p_thread->p_name) ABTU_Free(p_thread->p_name);
+            ABTU_Free(p_thread->p_stack);
+            ABTU_Free(p_thread);
 
             /* Release the associated work unit */
             ABTI_Unit_free(unit);
@@ -196,7 +196,7 @@ int ABT_Stream_free(ABT_Stream stream)
     }
     ABTI_Unit_free(p_stream->unit);
 
-    free(p_stream);
+    ABTU_Free(p_stream);
 
   fn_exit:
     return abt_errno;
@@ -236,7 +236,7 @@ int ABT_Stream_set_name(ABT_Stream stream, const char *name)
     ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
 
     size_t len = strlen(name);
-    if (p_stream->p_name) free(p_stream->p_name);
+    if (p_stream->p_name) ABTU_Free(p_stream->p_name);
     p_stream->p_name = (char *)ABTU_Malloc(len + 1);
     if (!p_stream->p_name) {
         HANDLE_ERROR("ABTU_Malloc");

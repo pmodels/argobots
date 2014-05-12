@@ -60,7 +60,7 @@ int ABT_Scheduler_free(ABT_Scheduler sched)
         }
     }
 
-    free(p_sched);
+    ABTU_Free(p_sched);
 
   fn_exit:
     return abt_errno;

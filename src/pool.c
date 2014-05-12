@@ -39,7 +39,7 @@ int ABTI_Pool_free(ABTI_Pool *p_pool)
         /* NOTE: pool should be empty. */
         assert(p_pool->num_units == 0);
 
-        free(p_pool);
+        ABTU_Free(p_pool);
     }
 
     return abt_errno;

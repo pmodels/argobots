@@ -98,9 +98,9 @@ int ABT_Thread_free(ABT_Thread thread)
     }
 
     /* Free thd ABTI_Thread structure */
-    if (p_thread->p_name) free(p_thread->p_name);
-    free(p_thread->p_stack);
-    free(p_thread);
+    if (p_thread->p_name) ABTU_Free(p_thread->p_name);
+    ABTU_Free(p_thread->p_stack);
+    ABTU_Free(p_thread);
 
     return abt_errno;
 }
@@ -249,7 +249,7 @@ int ABT_Thread_set_name(ABT_Thread thread, const char *name)
     ABTI_Thread *p_thread = ABTI_Thread_get_ptr(thread);
 
     size_t len = strlen(name);
-    if (p_thread->p_name) free(p_thread->p_name);
+    if (p_thread->p_name) ABTU_Free(p_thread->p_name);
     p_thread->p_name = (char *)ABTU_Malloc(len + 1);
     if (!p_thread->p_name) {
         HANDLE_ERROR("ABTU_Malloc");

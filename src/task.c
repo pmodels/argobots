@@ -80,8 +80,8 @@ int ABT_Task_free(ABT_Task task)
     }
 
     /* Free the ABTI_Task structure */
-    if (p_task->p_name) free(p_task->p_name);
-    free(p_task);
+    if (p_task->p_name) ABTU_Free(p_task->p_name);
+    ABTU_Free(p_task);
 
   fn_exit:
     return abt_errno;
@@ -109,7 +109,7 @@ int ABT_Task_set_name(ABT_Task task, const char *name)
     ABTI_Task *p_task = ABTI_Task_get_ptr(task);
 
     size_t len = strlen(name);
-    if (p_task->p_name) free(p_task->p_name);
+    if (p_task->p_name) ABTU_Free(p_task->p_name);
     p_task->p_name = (char *)ABTU_Malloc(len + 1);
     if (!p_task->p_name) {
         HANDLE_ERROR("ABTU_Malloc");

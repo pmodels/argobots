@@ -104,6 +104,6 @@ ABT_Unit ABTI_Unit_create_from_task(ABT_Task task)
 void ABTI_Unit_free(ABT_Unit unit)
 {
     ABTI_Unit *p_unit = ABTI_Unit_get_ptr(unit);
-    free(p_unit);
+    ABTU_Free(p_unit);
 }
 
