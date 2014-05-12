@@ -21,7 +21,10 @@ typedef struct ABTI_Pool      ABTI_Pool;
 typedef struct ABTI_Unit      ABTI_Unit;
 typedef struct ABTI_Thread    ABTI_Thread;
 typedef struct ABTI_Task      ABTI_Task;
-typedef struct ABTI_Task_pool ABTI_Task_pool;
+
+typedef struct ABTI_Global      ABTI_Global;
+typedef struct ABTI_Stream_pool ABTI_Stream_pool;
+typedef struct ABTI_Task_pool   ABTI_Task_pool;
 
 #include "abtd.h"
 
@@ -46,6 +49,7 @@ struct ABTI_Stream {
     ABTD_ES          es;      /* Internal ES data structure */
     ABTD_ULT         ult;     /* Internal ULT (scheduler) data structure */
     volatile int     joinreq; /* Whether join is requested */
+    ABT_Unit         unit;    /* Unit enclosing this stream */
 };
 
 
@@ -120,14 +124,32 @@ struct ABTI_Task {
     ABT_Unit       unit;        /* Work unit enclosing this task */
 };
 
+
+struct ABTI_Global {
+    ABTI_Stream_pool *p_streams;
+    ABTI_Task_pool   *p_tasks;
+};
+
+struct ABTI_Stream_pool {
+    volatile size_t num_active;
+    ABT_Pool        pool;
+    ABTD_ES_lock    lock;
+};
+
 struct ABTI_Task_pool {
     ABT_Pool     pool;
     ABT_Pool     deads;
     ABTD_ES_lock lock;
 };
 
+
+extern ABTI_Global *gp_ABT;
+
+
 /* Internal functions for Execution Stream */
 extern __thread ABTI_Stream *gp_stream;
+int   ABTI_Stream_init(ABTI_Stream_pool *p_streams);
+int   ABTI_Stream_finalize(ABTI_Stream_pool *p_streams);
 int   ABTI_Stream_start(ABTI_Stream *p_stream);
 void *ABTI_Stream_loop(void *p_arg);
 int   ABTI_Stream_schedule(ABTI_Stream *p_stream);
@@ -156,8 +178,10 @@ void     ABTI_Pool_remove(ABT_Pool pool, ABT_Unit unit);
 
 /* Internal functions for Work Unit */
 ABT_Unit_type ABTI_Unit_get_type(ABT_Unit unit);
+ABT_Stream    ABTI_Unit_get_stream(ABT_Unit unit);
 ABT_Thread    ABTI_Unit_get_thread(ABT_Unit unit);
 ABT_Task      ABTI_Unit_get_task(ABT_Unit unit);
+ABT_Unit      ABTI_Unit_create_from_stream(ABT_Stream stream);
 ABT_Unit      ABTI_Unit_create_from_thread(ABT_Thread thread);
 ABT_Unit      ABTI_Unit_create_from_task(ABT_Task task);
 void          ABTI_Unit_free(ABT_Unit unit);
@@ -173,7 +197,8 @@ void ABTI_Thread_func_wrapper(void (*thread_func)(void *), void *p_arg);
 
 
 /* Internal functions for Tasklet */
-extern ABTI_Task_pool *gp_tasks;
+int  ABTI_Task_init(ABTI_Task_pool *p_tasks);
+int  ABTI_Task_finalize(ABTI_Task_pool *p_tasks);
 int  ABTI_Task_execute();
 void ABTI_Task_keep(ABTI_Task *p_task);
 #define ABTI_Task_get_ptr(a)        (ABTI_Task *)(a)

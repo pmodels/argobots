@@ -36,6 +36,13 @@ int main(int argc, char *argv[])
     threads = (ABT_Thread *)malloc(sizeof(ABT_Thread *) * num_threads);
     args = (thread_arg_t *)malloc(sizeof(thread_arg_t) * num_threads);
 
+    /* Initialize */
+    ret = ABT_Init(argc, argv);
+    if (ret != ABT_SUCCESS) {
+        fprintf(stderr, "ERROR: ABT_Init\n");
+        exit(EXIT_FAILURE);
+    }
+
     /* Get the SELF stream */
     stream = ABT_Stream_self();
 
@@ -105,6 +112,9 @@ int main(int argc, char *argv[])
         fprintf(stderr, "ERROR: ABT_Stream_free\n");
         exit(EXIT_FAILURE);
     }
+
+    /* Finalize */
+    ABT_Finalize();
 
     free(args);
     free(threads);

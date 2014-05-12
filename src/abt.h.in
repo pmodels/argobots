@@ -71,7 +71,7 @@ extern "C" {
 typedef enum {
     ABT_UNIT_TYPE_THREAD,
     ABT_UNIT_TYPE_TASK,
-    ABT_UNIT_TYPE_NONE
+    ABT_UNIT_TYPE_OTHER
 } ABT_Unit_type;
 
 typedef enum {
@@ -134,6 +134,10 @@ typedef struct {
 } ABT_Scheduler_funcs;
 
 
+/* Initialzation & Finalization */
+int ABT_Init(int argc, char **argv);
+int ABT_Finalize();
+
 /* Execution Stream (ES) */
 int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream);
 int ABT_Stream_set_scheduler(ABT_Stream stream, ABT_Scheduler sched);
@@ -163,8 +167,6 @@ int ABT_Thread_set_name(ABT_Thread thread, const char *name);
 int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t len);
 
 /* Tasklet */
-int ABT_Task_init();
-int ABT_Task_finalize();
 int ABT_Task_create(void (*task_func)(void *), void *arg, ABT_Task *newtask);
 int ABT_Task_free(ABT_Task task);
 int ABT_Task_equal(ABT_Task task1, ABT_Task task2);

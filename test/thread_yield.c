@@ -30,6 +30,13 @@ int main(int argc, char *argv[])
     ABT_Stream *streams;
     streams = (ABT_Stream *)malloc(sizeof(ABT_Stream) * num_streams);
 
+    /* Initialize */
+    ret = ABT_Init(argc, argv);
+    if (ret != ABT_SUCCESS) {
+        fprintf(stderr, "ERROR: ABT_Init\n");
+        exit(EXIT_FAILURE);
+    }
+
     /* Create streams */
     streams[0] = ABT_Stream_self();
     for (i = 1; i < num_streams; i++) {
@@ -75,6 +82,9 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
     }
+
+    /* Finalize */
+    ABT_Finalize();
 
     free(streams);
 
