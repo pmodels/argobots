@@ -282,8 +282,15 @@ void ABTI_Task_keep(ABTI_Task *p_task)
 
 /* Internal static functions */
 static ABT_Task_id g_task_id = 0;
-static ABT_Task_id ABTI_Task_get_new_id() {
-    /* FIXME: Need to be atomic */
-    return g_task_id++;
+static ABT_Task_id ABTI_Task_get_new_id()
+{
+    ABT_Task_id new_id;
+
+    ABTI_Task_pool *p_tasks = gp_ABT->p_tasks;
+    ABTD_ES_lock(&p_tasks->lock);
+    new_id = g_task_id++;
+    ABTD_ES_unlock(&p_tasks->lock);
+
+    return new_id;
 }
 

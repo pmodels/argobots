@@ -538,7 +538,13 @@ int ABTI_Stream_keep_task(ABTI_Stream *p_stream, ABTI_Task *p_task)
 static ABT_Stream_id g_stream_id = 0;
 static ABT_Stream_id ABTI_Stream_get_new_id()
 {
-    /* FIXME: Need to be atomic */
-    return g_stream_id++;
+    ABT_Stream_id new_id;
+
+    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
+    ABTD_ES_lock(&p_streams->lock);
+    new_id = g_stream_id++;
+    ABTD_ES_unlock(&p_streams->lock);
+
+    return new_id;
 }
 
