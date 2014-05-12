@@ -39,12 +39,13 @@ struct ABTI_Stream {
     ABT_Stream_id    id;      /* Stream ID */
     ABTI_Stream_type type;    /* Type of execution stream */
     char            *p_name;  /* Stream name */
-    volatile ABT_Stream_state state;  /* Stream state */
+    ABT_Stream_state state;   /* Stream state */
     ABTI_Scheduler  *p_sched; /* Scheduler */
     ABT_Pool         deads;   /* Work units terminated but still referenced */
     ABTD_ES_lock     lock;    /* Internal lock variable */
     ABTD_ES          es;      /* Internal ES data structure */
     ABTD_ULT         ult;     /* Internal ULT (scheduler) data structure */
+    volatile int     joinreq; /* Whether join is requested */
 };
 
 

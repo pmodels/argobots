@@ -29,7 +29,8 @@ int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream)
     p_stream->id     = ABTI_Stream_get_new_id();
     p_stream->type   = ABTI_STREAM_TYPE_CREATED;
     p_stream->p_name = NULL;
-    p_stream->state  = ABT_STREAM_STATE_READY;
+    p_stream->state  = ABT_STREAM_STATE_CREATED;
+    p_stream->joinreq = 0;
 
     /* Set the scheduler */
     if (sched == ABT_SCHEDULER_NULL) {
@@ -89,9 +90,12 @@ int ABT_Stream_join(ABT_Stream stream)
     void *p_status;
 
     p_stream = ABTI_Stream_get_ptr(stream);
-    if (p_stream->state != ABT_STREAM_STATE_RUNNING) goto fn_exit;
+    if (p_stream->state == ABT_STREAM_STATE_CREATED) {
+        p_stream->state = ABT_STREAM_STATE_TERMINATED;
+        goto fn_exit;
+    }
 
-    p_stream->state = ABT_STREAM_STATE_JOIN;
+    p_stream->joinreq = 1;
     int ret = ABTD_ES_join(p_stream->es, &p_status);
     if (ret) {
         HANDLE_ERROR("ABTD_ES_join");
@@ -246,7 +250,7 @@ int ABT_Stream_get_name(ABT_Stream stream, char *name, size_t len)
 /* Internal non-static functions */
 int ABTI_Stream_start(ABTI_Stream *p_stream)
 {
-    assert(p_stream->state == ABT_STREAM_STATE_READY);
+    assert(p_stream->state == ABT_STREAM_STATE_CREATED);
 
     int abt_errno = ABT_SUCCESS;
     if (p_stream->type == ABTI_STREAM_TYPE_MAIN) {
@@ -261,7 +265,7 @@ int ABTI_Stream_start(ABTI_Stream *p_stream)
         }
     }
 
-    p_stream->state = ABT_STREAM_STATE_RUNNING;
+    p_stream->state = ABT_STREAM_STATE_READY;
 
   fn_exit:
     return abt_errno;
@@ -282,15 +286,13 @@ void *ABTI_Stream_loop(void *p_arg)
     ABTI_Scheduler *p_sched = p_stream->p_sched;
     ABT_Pool pool = p_sched->pool;
 
-    while (p_stream->state == ABT_STREAM_STATE_RUNNING ||
-           p_sched->p_get_size(pool) > 0) {
+    while (!p_stream->joinreq || p_sched->p_get_size(pool) > 0) {
         if (ABTI_Stream_schedule(p_stream) != ABT_SUCCESS) {
             HANDLE_ERROR("ABTI_Stream_schedule");
             goto fn_exit;
         }
         ABTD_ES_yield();
     }
-    assert(p_stream->state == ABT_STREAM_STATE_JOIN);
 
   fn_exit:
     p_stream->state = ABT_STREAM_STATE_TERMINATED;
@@ -305,6 +307,8 @@ void *ABTI_Stream_loop(void *p_arg)
 int ABTI_Stream_schedule(ABTI_Stream *p_stream)
 {
     int abt_errno = ABT_SUCCESS;
+
+    p_stream->state = ABT_STREAM_STATE_RUNNING;
 
     ABTI_Scheduler *p_sched = p_stream->p_sched;
     ABT_Pool pool = p_sched->pool;
@@ -378,6 +382,7 @@ int ABTI_Stream_schedule(ABTI_Stream *p_stream)
     }
 
   fn_exit:
+    p_stream->state = ABT_STREAM_STATE_READY;
     return abt_errno;
 
   fn_fail:
