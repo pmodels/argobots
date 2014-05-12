@@ -21,6 +21,7 @@ typedef struct ABTI_Pool      ABTI_Pool;
 typedef struct ABTI_Unit      ABTI_Unit;
 typedef struct ABTI_Thread    ABTI_Thread;
 typedef struct ABTI_Task      ABTI_Task;
+typedef struct ABTI_Task_pool ABTI_Task_pool;
 
 #include "abtd.h"
 
@@ -108,9 +109,21 @@ struct ABTI_Thread {
 
 
 struct ABTI_Task {
-    /* TODO */
+    ABTI_Stream   *p_stream;    /* Stream to which this task belongs to */
+    ABT_Task_id    id;          /* Task ID */
+    char          *p_name;      /* Task name */
+    unit           refcount;    /* Reference count */
+    ABT_Task_state state;       /* Task state */
+    void (*f_task)(void *);     /* Task function */
+    void          *p_arg;       /* Arguments for the task function */
+    ABT_Unit       unit;        /* Work unit enclosing this task */
 };
 
+struct ABTI_Task_pool {
+    ABT_Pool     pool;
+    ABT_Pool     deads;
+    ABTD_ES_lock lock;
+};
 
 /* Internal functions for Execution Stream */
 extern __thread ABTI_Stream *gp_stream;
@@ -118,6 +131,7 @@ int   ABTI_Stream_start(ABTI_Stream *p_stream);
 void *ABTI_Stream_loop(void *p_arg);
 int   ABTI_Stream_schedule(ABTI_Stream *p_stream);
 int   ABTI_Stream_keep_thread(ABTI_Stream *p_stream, ABTI_Thread *p_thread);
+int   ABTI_Stream_keep_task(ABTI_Stream *p_stream, ABTI_Task *p_task);
 #define ABTI_Stream_get_ptr(a)      (ABTI_Stream *)(a)
 #define ABTI_Stream_get_handle(a)   (ABT_Stream)(a)
 
@@ -155,6 +169,14 @@ extern __thread ABTI_Thread *gp_thread;
 void ABTI_Thread_func_wrapper(void (*thread_func)(void *), void *p_arg);
 #define ABTI_Thread_get_ptr(a)      (ABTI_Thread *)(a)
 #define ABTI_Thread_get_handle(a)   (ABT_Thread)(a)
+
+
+/* Internal functions for Tasklet */
+extern ABTI_Task_pool *gp_tasks;
+int  ABTI_Task_execute();
+void ABTI_Task_keep(ABTI_Task *p_task);
+#define ABTI_Task_get_ptr(a)        (ABTI_Task *)(a)
+#define ABTI_Task_get_handle(a)     (ABT_Task)(a)
 
 
 #define HANDLE_ERROR(msg) \

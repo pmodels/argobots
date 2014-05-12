@@ -49,13 +49,15 @@ extern "C" {
 
 
 /* ARGOBOTS error classes */
+#define ABT_INVALID         -1  /* Invalid condition */
 #define ABT_SUCCESS         0   /* Successful return code */
 #define ABT_ERR_INV_STREAM  1   /* Invalid stream */
 #define ABT_ERR_INV_THREAD  2   /* Invalid thread */
 #define ABT_ERR_MEM         3   /* Memeory allocation failure */
 #define ABT_ERR_STREAM      4   /* Stream-related error */
 #define ABT_ERR_THREAD      5   /* Thread-related error */
-#define ABT_ERR_OTHER       6   /* Other error */
+#define ABT_ERR_TASK        6   /* Task-related error */
+#define ABT_ERR_OTHER       7   /* Other error */
 
 #define ABT_STREAM_NULL     (NULL)
 #define ABT_SCHEDULER_NULL  (NULL)
@@ -85,8 +87,17 @@ typedef enum {
     ABT_THREAD_STATE_TERMINATED
 } ABT_Thread_state;
 
+typedef enum {
+    ABT_TASK_STATE_CREATED,
+    ABT_TASK_STATE_DELAYED,
+    ABT_TASK_STATE_RUNNING,
+    ABT_TASK_STATE_COMPLETED,
+    ABT_TASK_STATE_CANCELED
+} ABT_Task_state;
+
 typedef size_t ABT_Stream_id;
 typedef size_t ABT_Thread_id;
+typedef size_t ABT_Task_id;
 
 typedef void * ABT_Stream;      /* Execution Stream */
 typedef void * ABT_Scheduler;   /* Scheduler */
@@ -150,6 +161,16 @@ int ABT_Thread_equal(ABT_Thread thread1, ABT_Thread thread2);
 ABT_Thread_state ABT_Thread_get_state(ABT_Thread thread);
 int ABT_Thread_set_name(ABT_Thread thread, const char *name);
 int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t len);
+
+/* Tasklet */
+int ABT_Task_init();
+int ABT_Task_finalize();
+int ABT_Task_create(void (*task_func)(void *), void *arg, ABT_Task *newtask);
+int ABT_Task_free(ABT_Task task);
+int ABT_Task_equal(ABT_Task task1, ABT_Task task2);
+ABT_Task_state ABT_Task_get_state(ABT_Task task);
+int ABT_Task_set_name(ABT_Task task, const char *name);
+int ABT_Task_get_name(ABT_Task task, char *name, size_t len);
 
 #if defined(__cplusplus)
 }

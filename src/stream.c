@@ -5,12 +5,7 @@
 
 #include "abti.h"
 
-/* FIXME: is the global pointer the best way? */
-__thread ABTI_Stream *gp_stream = NULL;  /* Current stream */
-__thread ABTI_Thread *gp_thread = NULL;  /* Current running thread */
-
 static ABT_Stream_id ABTI_Stream_get_new_id();
-
 
 /*@
 ABT_Stream_create - Creates a new execution stream
@@ -314,6 +309,13 @@ int ABTI_Stream_schedule(ABTI_Stream *p_stream)
     ABTI_Scheduler *p_sched = p_stream->p_sched;
     ABT_Pool pool = p_sched->pool;
     while (p_sched->p_get_size(pool) > 0) {
+        /* If there exist tasks in thte global task pool, steal one and
+         * execute it. */
+        if (gp_tasks && ABTI_Pool_get_size(gp_tasks->pool) > 0) {
+            if (ABTI_Task_execute() == ABT_SUCCESS)
+                continue;
+        }
+
         ABTD_ES_lock(&p_stream->lock);
         ABT_Unit unit = p_sched->p_pop(pool);
         ABTD_ES_unlock(&p_stream->lock);
@@ -354,7 +356,22 @@ int ABTI_Stream_schedule(ABTI_Stream *p_stream)
 
             gp_thread = NULL;
         } else if (type == ABT_UNIT_TYPE_TASK) {
-            /* TODO */
+            ABT_Task task = p_sched->u_get_task(unit);
+            ABTI_Task *p_task = ABTI_Task_get_ptr(task);
+
+            /* Change the task state */
+            p_task->state = ABT_TASK_STATE_RUNNING;
+
+            /* Execute the task */
+            p_task->f_task(p_task->p_arg);
+
+            /* Change the task state */
+            p_task->state = ABT_TASK_STATE_COMPLETED;
+            if (p_task->refcount == 0) {
+                ABT_Task_free(task);
+            } else {
+                ABTI_Stream_keep_task(p_stream, p_task);
+            }
         } else {
             HANDLE_ERROR("Not supported type!");
         }
@@ -379,6 +396,22 @@ int ABTI_Stream_keep_thread(ABTI_Stream *p_stream, ABTI_Thread *p_thread)
 
     /* Save the unit in the deads pool */
     ABTI_Pool_push(p_stream->deads, p_thread->unit);
+
+    return ABT_SUCCESS;
+}
+
+int ABTI_Stream_keep_task(ABTI_Stream *p_stream, ABTI_Task *p_task)
+{
+    /* FIXME: need to be improved */
+    ABTI_Scheduler *p_sched = p_stream->p_sched;
+    p_sched->u_free(p_task->unit);
+
+    /* Create a new unit in order to deal with it */
+    ABT_Task task = ABTI_Task_get_handle(p_task);
+    p_task->unit = ABTI_Unit_create_from_task(task);
+
+    /* Save the task in the deads pool */
+    ABTI_Task_keep(p_task);
 
     return ABT_SUCCESS;
 }

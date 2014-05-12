@@ -24,9 +24,13 @@ ABT_Thread ABTI_Unit_get_thread(ABT_Unit unit)
 
 ABT_Task ABTI_Unit_get_task(ABT_Unit unit)
 {
-    /* TODO */
     ABTI_Unit *p_unit = ABTI_Unit_get_ptr(unit);
-    return (ABT_Task)(p_unit->p_unit);
+    if (p_unit->type == ABT_UNIT_TYPE_TASK) {
+        ABTI_Task *p_task = (ABTI_Task *)p_unit->p_unit;
+        return ABTI_Task_get_handle(p_task);
+    } else {
+        return ABT_TASK_NULL;
+    }
 }
 
 ABT_Unit ABTI_Unit_create_from_thread(ABT_Thread thread)
@@ -50,8 +54,21 @@ ABT_Unit ABTI_Unit_create_from_thread(ABT_Thread thread)
 
 ABT_Unit ABTI_Unit_create_from_task(ABT_Task task)
 {
-    /* TODO */
-    return ABT_UNIT_NULL;
+    ABTI_Unit *p_unit;
+
+    p_unit = (ABTI_Unit *)ABTU_Malloc(sizeof(ABTI_Unit));
+    if (!p_unit) {
+        HANDLE_ERROR("ABTU_Malloc");
+        return ABT_UNIT_NULL;
+    }
+
+    p_unit->p_pool = NULL;
+    p_unit->type   = ABT_UNIT_TYPE_TASK;
+    p_unit->p_unit = (void *)ABTI_Task_get_ptr(task);
+    p_unit->p_prev = NULL;
+    p_unit->p_next = NULL;
+
+    return ABTI_Unit_get_handle(p_unit);
 }
 
 void ABTI_Unit_free(ABT_Unit unit)
