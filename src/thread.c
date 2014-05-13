@@ -124,7 +124,7 @@ int ABT_Thread_yield()
         /* Start the scheduling */
         abt_errno = ABTI_Stream_schedule(gp_stream);
     } else {
-        if (pool_size == 1) goto fn_exit;
+        if (pool_size < 1) goto fn_exit;
 
         /* Change the state of current running thread */
         gp_thread->state = ABT_THREAD_STATE_READY;
