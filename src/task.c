@@ -103,18 +103,24 @@ int ABT_Task_free(ABT_Task task)
         p_task->state == ABT_TASK_STATE_CANCELED) {
         /* The task has been completed */
         if (p_task->refcount > 0) {
+            ABTD_ES_lock(&p_tasks->lock);
             ABTI_Pool_remove(p_tasks->deads, p_task->unit);
+            ABTD_ES_unlock(&p_tasks->lock);
             ABTI_Unit_free(p_task->unit);
         } else {
             ABTI_Unit_free(p_task->unit);
         }
     } else if (p_task->state == ABT_TASK_STATE_CREATED) {
+        ABTD_ES_lock(&p_tasks->lock);
         ABTI_Pool_remove(p_tasks->pool, p_task->unit);
+        ABTD_ES_unlock(&p_tasks->lock);
         ABTI_Unit_free(p_task->unit);
     } else if (p_task->state == ABT_TASK_STATE_DELAYED) {
         ABTI_Stream *p_stream = p_task->p_stream;
         ABTI_Scheduler *p_sched = p_stream->p_sched;
+        ABTD_ES_lock(&p_stream->lock);
         p_sched->p_remove(p_sched->pool, p_task->unit);
+        ABTD_ES_unlock(&p_stream->lock);
         p_sched->u_free(p_task->unit);
     } else {
         HANDLE_ERROR("Cannot free the task");
@@ -306,12 +312,13 @@ int ABTI_Task_execute()
     DEBUG_PRINT("[S%lu:TK%lu] START\n", gp_stream->id, p_task->id);
     p_task->f_task(p_task->p_arg);
     DEBUG_PRINT("[S%lu:TK%lu] END\n", gp_stream->id, p_task->id);
-    p_task->state = ABT_TASK_STATE_COMPLETED;
 
     if (p_task->refcount == 0) {
+        p_task->state = ABT_TASK_STATE_COMPLETED;
         ABT_Task_free(task);
     } else {
         ABTI_Task_keep(p_task);
+        p_task->state = ABT_TASK_STATE_COMPLETED;
     }
 
   fn_exit:
@@ -321,7 +328,9 @@ int ABTI_Task_execute()
 void ABTI_Task_keep(ABTI_Task *p_task)
 {
     ABTI_Task_pool *p_tasks = gp_ABT->p_tasks;
+    ABTD_ES_lock(&p_tasks->lock);
     ABTI_Pool_push(p_tasks->deads, p_task->unit);
+    ABTD_ES_unlock(&p_tasks->lock);
 }
 
 

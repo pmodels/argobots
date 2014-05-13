@@ -295,7 +295,7 @@ void ABTI_Thread_func_wrapper(void (*thread_func)(void *), void *p_arg)
     thread_func(p_arg);
 
     /* Now, the thread has finished its job. Change the thread state. */
-    gp_thread->state = ABT_THREAD_STATE_TERMINATED;
+    gp_thread->state = ABT_THREAD_STATE_COMPLETED;
 }
 
 

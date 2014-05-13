@@ -84,6 +84,7 @@ typedef enum {
 typedef enum {
     ABT_THREAD_STATE_READY,
     ABT_THREAD_STATE_RUNNING,
+    ABT_THREAD_STATE_COMPLETED,
     ABT_THREAD_STATE_TERMINATED
 } ABT_Thread_state;
 

@@ -488,11 +488,13 @@ int ABTI_Stream_schedule(ABTI_Stream *p_stream)
             }
             DEBUG_PRINT("[S%lu:TH%lu] END\n", p_stream->id, gp_thread->id);
 
-            if (gp_thread->state == ABT_THREAD_STATE_TERMINATED) {
+            if (gp_thread->state == ABT_THREAD_STATE_COMPLETED) {
                 if (gp_thread->refcount == 0) {
+                    gp_thread->state = ABT_THREAD_STATE_TERMINATED;
                     ABT_Thread_free(ABTI_Thread_get_handle(gp_thread));
                 } else {
                     ABTI_Stream_keep_thread(p_stream, gp_thread);
+                    gp_thread->state = ABT_THREAD_STATE_TERMINATED;
                 }
             } else {
                 /* The thread did not finish its execution.
@@ -516,11 +518,12 @@ int ABTI_Stream_schedule(ABTI_Stream *p_stream)
             DEBUG_PRINT("[S%lu:TK%lu] END\n", p_stream->id, p_task->id);
 
             /* Change the task state */
-            p_task->state = ABT_TASK_STATE_COMPLETED;
             if (p_task->refcount == 0) {
+                p_task->state = ABT_TASK_STATE_COMPLETED;
                 ABT_Task_free(task);
             } else {
                 ABTI_Stream_keep_task(p_stream, p_task);
+                p_task->state = ABT_TASK_STATE_COMPLETED;
             }
         } else {
             HANDLE_ERROR("Not supported type!");
@@ -546,7 +549,9 @@ int ABTI_Stream_keep_thread(ABTI_Stream *p_stream, ABTI_Thread *p_thread)
     p_thread->unit = ABTI_Unit_create_from_thread(thread);
 
     /* Save the unit in the deads pool */
+    ABTD_ES_lock(&p_stream->lock);
     ABTI_Pool_push(p_stream->deads, p_thread->unit);
+    ABTD_ES_unlock(&p_stream->lock);
 
     return ABT_SUCCESS;
 }
