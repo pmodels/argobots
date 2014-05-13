@@ -14,6 +14,16 @@ int ABT_Task_create(void (*task_func)(void *), void *arg, ABT_Task *newtask)
     ABTI_Task *p_newtask;
     ABT_Task h_newtask;
 
+    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
+    if (p_streams->num_active == 0 &&
+        ABTI_Pool_get_size(p_streams->pool) > 0) {
+        abt_errno = ABTI_Stream_start_any();
+        if (abt_errno != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTI_Stream_start_any");
+            goto fn_fail;
+        }
+    }
+
     p_newtask = (ABTI_Task *)ABTU_Malloc(sizeof(ABTI_Task));
     if (!p_newtask) {
         HANDLE_ERROR("ABTU_Malloc");

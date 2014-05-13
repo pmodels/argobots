@@ -20,7 +20,10 @@ int ABT_Thread_create(const ABT_Stream stream,
     p_stream = ABTI_Stream_get_ptr(stream);
     if (p_stream->state == ABT_STREAM_STATE_CREATED) {
         abt_errno = ABTI_Stream_start(p_stream);
-        if (abt_errno != ABT_SUCCESS) goto fn_fail;
+        if (abt_errno != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTI_Stream_start");
+            goto fn_fail;
+        }
     }
 
     p_newthread = (ABTI_Thread *)ABTU_Malloc(sizeof(ABTI_Thread));

@@ -283,7 +283,7 @@ int ABTI_Stream_init(ABTI_Stream_pool *p_streams)
 {
     int abt_errno = ABT_SUCCESS;
 
-    p_streams->num_active = 1;
+    p_streams->num_active = 0;
 
     /* Create a stream pool */
     ABTI_Pool *p_pool;
@@ -369,6 +369,38 @@ int ABTI_Stream_start(ABTI_Stream *p_stream)
     ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
     ABTD_ES_lock(&p_streams->lock);
     p_streams->num_active++;
+    ABTD_ES_unlock(&p_streams->lock);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+int ABTI_Stream_start_any()
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
+    ABT_Pool pool = p_streams->pool;
+    if (ABTI_Pool_get_size(pool) < 1) goto fn_exit;
+
+    ABTD_ES_lock(&p_streams->lock);
+    ABT_Unit unit = ABTI_Pool_pop(pool);
+    ABTD_ES_unlock(&p_streams->lock);
+
+    ABT_Stream stream = ABTI_Unit_get_stream(unit);
+    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
+    if (p_stream->state == ABT_STREAM_STATE_CREATED) {
+        abt_errno = ABTI_Stream_start(p_stream);
+        if (abt_errno != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTI_Stream_start");
+            goto fn_fail;
+        }
+    }
+
+    ABTD_ES_lock(&p_streams->lock);
+    ABTI_Pool_push(pool, unit);
     ABTD_ES_unlock(&p_streams->lock);
 
   fn_exit:

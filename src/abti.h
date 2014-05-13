@@ -151,6 +151,7 @@ extern __thread ABTI_Stream *gp_stream;
 int   ABTI_Stream_init(ABTI_Stream_pool *p_streams);
 int   ABTI_Stream_finalize(ABTI_Stream_pool *p_streams);
 int   ABTI_Stream_start(ABTI_Stream *p_stream);
+int   ABTI_Stream_start_any();
 void *ABTI_Stream_loop(void *p_arg);
 int   ABTI_Stream_schedule(ABTI_Stream *p_stream);
 int   ABTI_Stream_keep_thread(ABTI_Stream *p_stream, ABTI_Thread *p_thread);
