@@ -17,6 +17,11 @@ int ABT_Thread_create(const ABT_Stream stream,
     ABTI_Thread *p_newthread;
     ABT_Thread h_newthread;
 
+    if (stream == ABT_STREAM_NULL) {
+        HANDLE_ERROR("stream cannot be ABT_STREAM_NULL");
+        goto fn_fail;
+    }
+
     p_stream = ABTI_Stream_get_ptr(stream);
     if (p_stream->state == ABT_STREAM_STATE_CREATED) {
         abt_errno = ABTI_Stream_start(p_stream);

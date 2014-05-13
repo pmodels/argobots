@@ -8,21 +8,13 @@
 static ABT_Task_id ABTI_Task_get_new_id();
 
 
-int ABT_Task_create(void (*task_func)(void *), void *arg, ABT_Task *newtask)
+int ABT_Task_create(const ABT_Stream stream,
+                    void (*task_func)(void *), void *arg,
+                    ABT_Task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_Task *p_newtask;
     ABT_Task h_newtask;
-
-    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
-    if (p_streams->num_active == 0 &&
-        ABTI_Pool_get_size(p_streams->pool) > 0) {
-        abt_errno = ABTI_Stream_start_any();
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTI_Stream_start_any");
-            goto fn_fail;
-        }
-    }
 
     p_newtask = (ABTI_Task *)ABTU_Malloc(sizeof(ABTI_Task));
     if (!p_newtask) {
@@ -32,7 +24,6 @@ int ABT_Task_create(void (*task_func)(void *), void *arg, ABT_Task *newtask)
         goto fn_fail;
     }
 
-    p_newtask->p_stream = NULL;
     p_newtask->id       = ABTI_Task_get_new_id();
     p_newtask->p_name   = NULL;
     p_newtask->refcount = (newtask != NULL) ? 1 : 0;
@@ -40,69 +31,57 @@ int ABT_Task_create(void (*task_func)(void *), void *arg, ABT_Task *newtask)
     p_newtask->f_task   = task_func;
     p_newtask->p_arg    = arg;
 
-    /* Create a wrapper work unit */
-    h_newtask = ABTI_Task_get_handle(p_newtask);
-    p_newtask->unit = ABTI_Unit_create_from_task(h_newtask);
+    if (stream == ABT_STREAM_NULL) {
+        p_newtask->p_stream = NULL;
 
-    /* Add this task to the global task pool */
-    ABTI_Task_pool *p_tasks = gp_ABT->p_tasks;
-    ABTD_ES_lock(&p_tasks->lock);
-    ABTI_Pool_push(p_tasks->pool, p_newtask->unit);
-    ABTD_ES_unlock(&p_tasks->lock);
+        /* Create a wrapper work unit */
+        h_newtask = ABTI_Task_get_handle(p_newtask);
+        p_newtask->unit = ABTI_Unit_create_from_task(h_newtask);
 
-    /* Return value */
-    if (newtask) *newtask = h_newtask;
+        /* Add this task to the global task pool */
+        ABTI_Task_pool *p_tasks = gp_ABT->p_tasks;
+        ABTD_ES_lock(&p_tasks->lock);
+        ABTI_Pool_push(p_tasks->pool, p_newtask->unit);
+        ABTD_ES_unlock(&p_tasks->lock);
 
-  fn_exit:
-    return abt_errno;
+        /* Start any stream if there is no running stream */
+        ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
+        if (p_streams->num_active == 0 &&
+            ABTI_Pool_get_size(p_streams->pool) > 0) {
+            abt_errno = ABTI_Stream_start_any();
+            if (abt_errno != ABT_SUCCESS) {
+                HANDLE_ERROR("ABTI_Stream_start_any");
+                goto fn_fail;
+            }
+        }
+    } else {
+        ABTI_Stream *p_stream;
+        ABTI_Scheduler *p_sched;
 
-  fn_fail:
-    goto fn_exit;
-}
+        p_stream = ABTI_Stream_get_ptr(stream);
+        p_sched = p_stream->p_sched;
 
-int ABT_Task_create_for_stream(const ABT_Stream stream,
-                    void (*task_func)(void *), void *arg, ABT_Task *newtask)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_Stream *p_stream;
-    ABTI_Scheduler *p_sched;
-    ABTI_Task *p_newtask;
-    ABT_Task h_newtask;
+        /* Set the stream for this task */
+        p_newtask->p_stream = p_stream;
 
-    p_stream = ABTI_Stream_get_ptr(stream);
-    if (p_stream->state == ABT_STREAM_STATE_CREATED) {
-        abt_errno = ABTI_Stream_start(p_stream);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTI_Stream_start");
-            goto fn_fail;
+        /* Create a wrapper work unit */
+        h_newtask = ABTI_Task_get_handle(p_newtask);
+        p_newtask->unit = p_sched->u_create_from_task(h_newtask);
+
+        /* Add this task to the scheduler's pool */
+        ABTD_ES_lock(&p_stream->lock);
+        p_sched->p_push(p_sched->pool, p_newtask->unit);
+        ABTD_ES_unlock(&p_stream->lock);
+
+        /* Start the stream if it is not running */
+        if (p_stream->state == ABT_STREAM_STATE_CREATED) {
+            abt_errno = ABTI_Stream_start(p_stream);
+            if (abt_errno != ABT_SUCCESS) {
+                HANDLE_ERROR("ABTI_Stream_start");
+                goto fn_fail;
+            }
         }
     }
-
-    p_newtask = (ABTI_Task *)ABTU_Malloc(sizeof(ABTI_Task));
-    if (!p_newtask) {
-        HANDLE_ERROR("ABTU_Malloc");
-        if (newtask) *newtask = NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
-
-    p_newtask->p_stream = p_stream;
-    p_newtask->id       = ABTI_Task_get_new_id();
-    p_newtask->p_name   = NULL;
-    p_newtask->refcount = (newtask != NULL) ? 1 : 0;
-    p_newtask->state    = ABT_TASK_STATE_CREATED;
-    p_newtask->f_task   = task_func;
-    p_newtask->p_arg    = arg;
-
-    /* Create a wrapper work unit */
-    p_sched = p_stream->p_sched;
-    h_newtask = ABTI_Task_get_handle(p_newtask);
-    p_newtask->unit = p_sched->u_create_from_task(h_newtask);
-
-    /* Add this task to the scheduler's pool */
-    ABTD_ES_lock(&p_stream->lock);
-    p_sched->p_push(p_sched->pool, p_newtask->unit);
-    ABTD_ES_unlock(&p_stream->lock);
 
     /* Return value */
     if (newtask) *newtask = h_newtask;
@@ -302,7 +281,7 @@ int ABTI_Task_finalize(ABTI_Task_pool *p_tasks)
     goto fn_exit;
 }
 
-int  ABTI_Task_execute()
+int ABTI_Task_execute()
 {
     int ret = ABT_SUCCESS;
 
@@ -324,7 +303,9 @@ int  ABTI_Task_execute()
     ABT_Task task = ABTI_Unit_get_task(unit);
     ABTI_Task *p_task = ABTI_Task_get_ptr(task);
     p_task->state = ABT_TASK_STATE_RUNNING;
+    DEBUG_PRINT("[S%lu:TK%lu] START\n", gp_stream->id, p_task->id);
     p_task->f_task(p_task->p_arg);
+    DEBUG_PRINT("[S%lu:TK%lu] END\n", gp_stream->id, p_task->id);
     p_task->state = ABT_TASK_STATE_COMPLETED;
 
     if (p_task->refcount == 0) {

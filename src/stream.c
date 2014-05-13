@@ -479,14 +479,14 @@ int ABTI_Stream_schedule(ABTI_Stream *p_stream)
             gp_thread->state = ABT_THREAD_STATE_RUNNING;
 
             /* Switch the context */
-            DEBUG_PRINT("[S%lu:T%lu] started\n", p_stream->id, gp_thread->id);
+            DEBUG_PRINT("[S%lu:TH%lu] START\n", p_stream->id, gp_thread->id);
             int ret = ABTD_ULT_swap(&p_stream->ult, &gp_thread->ult);
             if (ret != ABTD_ULT_SUCCESS) {
                 HANDLE_ERROR("ABTD_ULT_swap");
                 abt_errno = ABT_ERR_THREAD;
                 goto fn_fail;
             }
-            DEBUG_PRINT("[S%lu:T%lu] ended\n", p_stream->id, gp_thread->id);
+            DEBUG_PRINT("[S%lu:TH%lu] END\n", p_stream->id, gp_thread->id);
 
             if (gp_thread->state == ABT_THREAD_STATE_TERMINATED) {
                 if (gp_thread->refcount == 0) {
@@ -511,7 +511,9 @@ int ABTI_Stream_schedule(ABTI_Stream *p_stream)
             p_task->state = ABT_TASK_STATE_RUNNING;
 
             /* Execute the task */
+            DEBUG_PRINT("[S%lu:TK%lu] START\n", p_stream->id, p_task->id);
             p_task->f_task(p_task->p_arg);
+            DEBUG_PRINT("[S%lu:TK%lu] END\n", p_stream->id, p_task->id);
 
             /* Change the task state */
             p_task->state = ABT_TASK_STATE_COMPLETED;
