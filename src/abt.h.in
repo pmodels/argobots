@@ -168,6 +168,8 @@ int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t len);
 
 /* Tasklet */
 int ABT_Task_create(void (*task_func)(void *), void *arg, ABT_Task *newtask);
+int ABT_Task_create_for_stream(const ABT_Stream stream,
+                    void (*task_func)(void *), void *arg, ABT_Task *newtask);
 int ABT_Task_free(ABT_Task task);
 int ABT_Task_equal(ABT_Task task1, ABT_Task task2);
 ABT_Task_state ABT_Task_get_state(ABT_Task task);
