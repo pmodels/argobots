@@ -11,6 +11,7 @@ abt_sources += src/stream.c \
 	src/abtd.c \
 	src/abtu.c \
 	src/task.c \
-	src/global.c
+	src/global.c \
+	src/futures.c
 
 include_HEADERS = src/abt.h

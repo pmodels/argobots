@@ -290,6 +290,26 @@ int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t len)
     return abt_errno;
 }
 
+int ABT_Thread_set_ready(ABT_Thread thread)
+{
+    ABTI_Thread *p_thread = ABTI_Thread_get_ptr(thread);
+    ABTI_Scheduler *p_sched = gp_stream->p_sched;
+    p_thread->state = ABT_THREAD_STATE_READY;
+    ABTD_ES_lock(&gp_stream->lock);
+    p_sched->p_push(p_sched->pool, p_thread->unit);
+    ABTD_ES_unlock(&gp_stream->lock);
+}
+
+int ABT_Thread_suspend()
+{
+    ABT_Thread_yield();
+}
+
+ABT_Thread*  ABT_Thread_current()
+{
+    return (ABT_Thread*)gp_thread;
+}
+
 void ABTI_Thread_func_wrapper(void (*thread_func)(void *), void *p_arg)
 {
     thread_func(p_arg);

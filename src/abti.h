@@ -208,7 +208,7 @@ void ABTI_Task_keep(ABTI_Task *p_task);
 
 #define HANDLE_ERROR(msg) \
     fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
-
+#define DEBUG 1 
 /* #define DEBUG */
 #ifdef DEBUG
 #define DEBUG_PRINT(...)    fprintf(stderr, __VA_ARGS__); fflush(stderr)
