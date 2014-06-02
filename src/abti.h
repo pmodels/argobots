@@ -104,7 +104,7 @@ struct ABTI_Thread {
     ABTI_Stream     *p_stream;  /* Stream to which this thread belongs */
     ABT_Thread_id    id;        /* Thread ID */
     char            *p_name;    /* Thread name */
-    uint             refcount;  /* Reference count */
+    unsigned int             refcount;  /* Reference count */
     ABT_Thread_state state;     /* Thread state */
     size_t           stacksize; /* Stack size in bytes */
     void            *p_stack;   /* Pointer to this thread's stack */
