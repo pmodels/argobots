@@ -31,7 +31,7 @@ void *ABT_Future_wait(ABT_Future *fut)
     ABT_Future_data *data = (ABT_Future_data*)fut->data;
     if (!data->ready) {
         ABT_Thread_entry *cur = (ABT_Thread_entry*) malloc(sizeof(ABT_Thread_entry));
-        cur->current = ATH_thread_current();
+        cur->current = ABT_Thread_current();
         cur->next = NULL;
         if(data->waiters.tail != NULL)
             data->waiters.tail->next = cur;
