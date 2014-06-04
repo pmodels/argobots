@@ -5,13 +5,16 @@
 
 abt_sources += src/stream.c \
 	src/thread.c \
-	src/sched.c \
-	src/pool.c \
-	src/unit.c \
-	src/abtd.c \
-	src/abtu.c \
 	src/task.c \
+	src/mutex.c \
+	src/futures.c \
+	src/condition.c \
+	src/sched.c \
+	src/unit.c \
+	src/pool.c \
 	src/global.c \
-	src/futures.c
+	src/local.c \
+	src/abtd.c \
+	src/abtu.c
 
 include_HEADERS = src/abt.h

@@ -17,22 +17,40 @@
         exit(EXIT_FAILURE);                             \
     }
 
+int num_threads = DEFAULT_NUM_THREADS;
+
 void thread_func(void *arg)
 {
     size_t my_id = (size_t)arg;
-    printf("[TH%lu]: brefore yield\n", my_id);
-    ABT_Thread_yield();
-    printf("[TH%lu]: doing something ...\n", my_id);
-    ABT_Thread_yield();
-    printf("[TH%lu]: after yield\n", my_id);
+    printf("[TH%lu]: Hello, world!\n", my_id);
+}
+
+void thread_create(void *arg)
+{
+    int i, ret;
+    size_t my_id = (size_t)arg;
+    ABT_Stream my_stream;
+
+    ret = ABT_Stream_self(&my_stream);
+    HANDLE_ERROR(ret, "ABT_Stream_self");
+
+    /* Create threads */
+    for (i = 0; i < num_threads; i++) {
+        size_t tid = 100 * my_id + i;
+        ret = ABT_Thread_create(my_stream,
+                thread_func, (void *)tid, 16384,
+                NULL);
+        HANDLE_ERROR(ret, "ABT_Thread_create");
+    }
+
+    printf("[TH%lu]: created %d threads\n", my_id, num_threads);
 }
 
 int main(int argc, char *argv[])
 {
-    int i, j;
+    int i;
     int ret;
     int num_streams = DEFAULT_NUM_STREAMS;
-    int num_threads = DEFAULT_NUM_THREADS;
     if (argc > 1) num_streams = atoi(argv[1]);
     assert(num_streams >= 0);
     if (argc > 2) num_threads = atoi(argv[2]);
@@ -53,15 +71,13 @@ int main(int argc, char *argv[])
         HANDLE_ERROR(ret, "ABT_Stream_create");
     }
 
-    /* Create threads */
+    /* Create one thread for each stream */
     for (i = 0; i < num_streams; i++) {
-        for (j = 0; j < num_threads; j++) {
-            size_t tid = i * num_threads + j + 1;
-            ret = ABT_Thread_create(streams[i],
-                    thread_func, (void *)tid, 16384,
-                    NULL);
-            HANDLE_ERROR(ret, "ABT_Thread_create");
-        }
+        size_t tid = i + 1;
+        ret = ABT_Thread_create(streams[i],
+                thread_create, (void *)tid, 16384,
+                NULL);
+        HANDLE_ERROR(ret, "ABT_Thread_create");
     }
 
     /* Switch to other user level threads */
@@ -87,3 +103,4 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
+

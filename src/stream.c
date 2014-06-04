@@ -5,14 +5,10 @@
 
 #include "abti.h"
 
-static ABT_Stream_id ABTI_Stream_get_new_id();
+static uint64_t ABTI_Stream_get_new_id();
+static void *ABTI_Stream_loop(void *p_arg);
 
-/*@
-ABT_Stream_create - Creates a new execution stream
 
-Output Parameters:
-. newstream - new execution stream (handle)
-@*/
 int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -22,16 +18,24 @@ int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream)
     p_newstream = (ABTI_Stream *)ABTU_Malloc(sizeof(ABTI_Stream));
     if (!p_newstream) {
         HANDLE_ERROR("ABTU_Malloc");
-        *newstream = NULL;
+        *newstream = ABT_STREAM_NULL;
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
     }
 
-    p_newstream->id     = ABTI_Stream_get_new_id();
-    p_newstream->type   = ABTI_STREAM_TYPE_CREATED;
-    p_newstream->p_name = NULL;
-    p_newstream->state  = ABT_STREAM_STATE_CREATED;
-    p_newstream->joinreq = 0;
+    /* Create a wrapper unit */
+    h_newstream = ABTI_Stream_get_handle(p_newstream);
+    p_newstream->unit = ABTI_Unit_create_from_stream(h_newstream);
+
+    p_newstream->id      = ABTI_Stream_get_new_id();
+    p_newstream->p_name  = NULL;
+    p_newstream->type    = ABTI_STREAM_TYPE_SECONDARY;
+    p_newstream->state   = ABT_STREAM_STATE_CREATED;
+    p_newstream->request = 0;
+
+    /* Create a mutex */
+    abt_errno = ABT_Mutex_create(&p_newstream->mutex);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Set the scheduler */
     if (sched == ABT_SCHEDULER_NULL) {
@@ -40,7 +44,7 @@ int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream)
         if (abt_errno != ABT_SUCCESS) {
             HANDLE_ERROR("ABTI_Scheduler_create_default");
             ABTU_Free(p_newstream);
-            *newstream = NULL;
+            *newstream = ABT_STREAM_NULL;
             goto fn_fail;
         }
     } else {
@@ -48,30 +52,11 @@ int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream)
     }
 
     /* Create a work unit pool that contains terminated work units */
-    ABTI_Pool *p_deads;
-    if (ABTI_Pool_create(&p_deads) != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_Pool_create");
-        abt_errno = ABT_ERR_STREAM;
-        goto fn_fail;
-    }
-    p_newstream->deads = ABTI_Pool_get_handle(p_deads);
+    abt_errno = ABTI_Pool_create(&p_newstream->deads);
+    ABTI_CHECK_ERROR(abt_errno);
 
-    /* Initialize the lock variable */
-    if (ABTD_ES_lock_create(&p_newstream->lock, NULL) != ABTD_ES_SUCCESS) {
-        HANDLE_ERROR("ABTD_ES_lock_create");
-        abt_errno = ABT_ERR_STREAM;
-        goto fn_fail;
-    }
-
-    /* Create a wrapper unit */
-    h_newstream = ABTI_Stream_get_handle(p_newstream);
-    p_newstream->unit = ABTI_Unit_create_from_stream(h_newstream);
-
-    /* Add this stream to global stream pool */
-    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
-    ABTD_ES_lock(&p_streams->lock);
-    ABTI_Pool_push(p_streams->pool, p_newstream->unit);
-    ABTD_ES_unlock(&p_streams->lock);
+    /* Add this stream to the global stream pool */
+    ABTI_Global_add_stream(p_newstream);
 
     /* Return value */
     *newstream = h_newstream;
@@ -80,38 +65,111 @@ int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_Stream_create", abt_errno);
     goto fn_exit;
 }
 
-int ABT_Stream_set_scheduler(ABT_Stream stream, ABT_Scheduler sched)
+int ABT_Stream_free(ABT_Stream *stream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
-    ABTI_Scheduler *p_sched = ABTI_Scheduler_get_ptr(sched);
+    ABT_Stream h_stream = *stream;
 
-    p_stream->p_sched = p_sched;
+    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(h_stream);
+    if (p_stream == NULL) goto fn_exit;
 
+    if (p_stream == ABTI_Local_get_stream()) {
+        HANDLE_ERROR("The current stream cannot be freed.");
+        abt_errno = ABT_ERR_INV_STREAM;
+        goto fn_fail;
+    }
+
+    if (p_stream->type == ABTI_STREAM_TYPE_PRIMARY) {
+        HANDLE_ERROR("The primary stream cannot be freed explicitly.");
+        abt_errno = ABT_ERR_INV_STREAM;
+        goto fn_fail;
+    }
+
+    /* If the stream is running, wait until it terminates */
+    if (p_stream->state == ABT_STREAM_STATE_RUNNING) {
+        abt_errno = ABT_Stream_join(h_stream);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+
+    /* Remove this stream from the global stream pool */
+    abt_errno = ABTI_Global_del_stream(p_stream);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Free the stream object */
+    abt_errno = ABTI_Stream_free(p_stream);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Return value */
+    *stream = ABT_STREAM_NULL;
+
+  fn_exit:
     return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_Stream_free", abt_errno);
+    goto fn_exit;
 }
 
 int ABT_Stream_join(ABT_Stream stream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Stream *p_stream;
-    void *p_status;
+    uint32_t old;
+    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
 
-    p_stream = ABTI_Stream_get_ptr(stream);
+    /* The target stream must not be the same as the calling thread's
+     * stream */
+    if (p_stream == ABTI_Local_get_stream()) {
+        HANDLE_ERROR("The target stream should be different.");
+        abt_errno = ABT_ERR_INV_STREAM;
+        goto fn_fail;
+    }
+
+    if (p_stream->type == ABTI_STREAM_TYPE_PRIMARY) {
+        HANDLE_ERROR("The primary stream cannot be joined.");
+        abt_errno = ABT_ERR_INV_STREAM;
+        goto fn_fail;
+    }
+
     if (p_stream->state == ABT_STREAM_STATE_CREATED) {
-        p_stream->state = ABT_STREAM_STATE_TERMINATED;
+        ABTI_Mutex_waitlock(p_stream->mutex);
+        /* If stream's state was changed, we cannot terminate it here */
+        if (ABTD_Atomic_cas_int32((int32_t *)&p_stream->state,
+                                  ABT_STREAM_STATE_CREATED,
+                                  ABT_STREAM_STATE_TERMINATED)
+            != ABT_STREAM_STATE_CREATED) {
+            ABT_Mutex_unlock(p_stream->mutex);
+            goto fn_body;
+        }
+        abt_errno = ABTI_Global_move_stream(p_stream);
+        ABT_Mutex_unlock(p_stream->mutex);
+        if (abt_errno != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTI_Global_move_stream");
+            goto fn_fail;
+        }
         goto fn_exit;
     }
 
-    p_stream->joinreq = 1;
-    int ret = ABTD_ES_join(p_stream->es, &p_status);
-    if (ret) {
-        HANDLE_ERROR("ABTD_ES_join");
-        abt_errno = ABT_ERR_STREAM;
-        goto fn_fail;
+  fn_body:
+    /* Set the join request */
+    old = ABTD_Atomic_fetch_or_uint32(&p_stream->request,
+                                      ABTI_STREAM_REQ_JOIN);
+    if (old & ABTI_STREAM_REQ_JOIN) {
+        /* If the join reqeust has aleady been checked, wait until
+         * the stream is terminated */
+        do {
+            ABT_Thread_yield();
+        } while (p_stream->state != ABT_STREAM_STATE_TERMINATED);
+    } else {
+        /* Normal join request */
+        abt_errno = ABTD_Stream_context_join(p_stream->ctx);
+        if (abt_errno != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTD_Stream_context_join");
+            goto fn_fail;
+        }
     }
 
   fn_exit:
@@ -121,88 +179,220 @@ int ABT_Stream_join(ABT_Stream stream)
     goto fn_exit;
 }
 
-int ABT_Stream_free(ABT_Stream stream)
+int ABT_Stream_exit()
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
-    ABTI_Stream *p_stream;
 
-    p_stream = ABTI_Stream_get_ptr(stream);
-    if (p_stream->p_name) ABTU_Free(p_stream->p_name);
-    ABTD_ES_lock_free(&p_stream->lock);
+    ABTI_Stream *p_stream = ABTI_Local_get_stream();
 
-    ABTI_Scheduler *p_sched = p_stream->p_sched;
+    /* Set the exit request */
+    ABTD_Atomic_fetch_or_uint32(&p_stream->request, ABTI_STREAM_REQ_EXIT);
 
-    /* Clean up work units if there remain */
-    ABT_Pool pool = p_sched->pool;
-    while (p_sched->p_get_size(pool) > 0) {
-        ABT_Unit unit = p_sched->p_pop(pool);
-        ABT_Unit_type type = p_sched->u_get_type(unit);
-        if (type == ABT_UNIT_TYPE_THREAD) {
-            /* Free thd ABTI_Thread structure */
-            ABT_Thread thread = p_sched->u_get_thread(unit);
-            ABTI_Thread *p_thread = ABTI_Thread_get_ptr(thread);
-            if (p_thread->p_name) ABTU_Free(p_thread->p_name);
-            ABTU_Free(p_thread->p_stack);
-            ABTU_Free(p_thread);
-        } else if (type == ABT_UNIT_TYPE_TASK) {
-            /* Free the ABTI_Task structure */
-            ABT_Task task = p_sched->u_get_task(unit);
-            ABTI_Task *p_task = ABTI_Task_get_ptr(task);
-            if (p_task->p_name) ABTU_Free(p_task->p_name);
-            ABTU_Free(p_task);
-        } else {
-            HANDLE_ERROR("Not a valid work unit type");
-            abt_errno = ABT_ERR_STREAM;
-            goto fn_fail;
-        }
+    /* Wait until the stream terminates */
+    do {
+        ABT_Thread_yield();
+    } while (p_stream->state != ABT_STREAM_STATE_TERMINATED);
 
-        /* Release the associated work unit */
-        p_sched->u_free(unit);
-    }
+    return abt_errno;
+}
 
-    /* Free the scheduler */
-    ABT_Scheduler sched = ABTI_Scheduler_get_handle(p_sched);
-    abt_errno = ABT_Scheduler_free(sched);
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABT_Scheduler_free");
+int ABT_Stream_cancel(ABT_Stream stream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
+
+    if (p_stream->type == ABTI_STREAM_TYPE_PRIMARY) {
+        HANDLE_ERROR("The primary stream cannot be canceled.");
+        abt_errno = ABT_ERR_INV_STREAM;
         goto fn_fail;
     }
 
+    /* Set the cancel request */
+    ABTD_Atomic_fetch_or_uint32(&p_stream->request, ABTI_STREAM_REQ_CANCEL);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+int ABT_Stream_self(ABT_Stream *stream)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_Stream *p_stream = ABTI_Local_get_stream();
+    if (p_stream == NULL) {
+        HANDLE_ERROR("NULL STREAM");
+        abt_errno = ABT_ERR_STREAM;
+        goto fn_fail;
+    }
+
+    /* Return value */
+    *stream = ABTI_Stream_get_handle(p_stream);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2, int *result)
+{
+    ABTI_Stream *p_stream1 = ABTI_Stream_get_ptr(stream1);
+    ABTI_Stream *p_stream2 = ABTI_Stream_get_ptr(stream2);
+    *result = p_stream1 == p_stream2;
+    return ABT_SUCCESS;
+}
+
+int ABT_Stream_set_scheduler(ABT_Stream stream, ABT_Scheduler sched)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
+    if (p_stream == NULL) {
+        abt_errno = ABT_ERR_INV_STREAM;
+        goto fn_fail;
+    }
+
+    ABTI_Scheduler *p_sched = ABTI_Scheduler_get_ptr(sched);
+    if (p_sched == NULL) {
+        abt_errno = ABT_ERR_INV_SCHEDULER;
+        goto fn_fail;
+    }
+
+    /* Set the scheduler */
+    p_stream->p_sched = p_sched;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_Stream_set_scheduler", abt_errno);
+    goto fn_exit;
+}
+
+int ABT_Stream_get_state(ABT_Stream stream, ABT_Stream_state *state)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
+    if (p_stream == NULL) {
+        abt_errno = ABT_ERR_INV_STREAM;
+        goto fn_fail;
+    }
+
+    /* Return value */
+    *state = p_stream->state;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_Stream_get_state", abt_errno);
+    goto fn_exit;
+}
+
+int ABT_Stream_set_name(ABT_Stream stream, const char *name)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
+    if (p_stream == NULL) {
+        abt_errno = ABT_ERR_INV_STREAM;
+        goto fn_fail;
+    }
+
+    size_t len = strlen(name);
+    ABTI_Mutex_waitlock(p_stream->mutex);
+    if (p_stream->p_name) ABTU_Free(p_stream->p_name);
+    p_stream->p_name = (char *)ABTU_Malloc(len + 1);
+    if (!p_stream->p_name) {
+        ABT_Mutex_unlock(p_stream->mutex);
+        abt_errno = ABT_ERR_MEM;
+        goto fn_fail;
+    }
+    ABTU_Strcpy(p_stream->p_name, name);
+    ABT_Mutex_unlock(p_stream->mutex);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_Stream_set_name", abt_errno);
+    goto fn_exit;
+}
+
+int ABT_Stream_get_name(ABT_Stream stream, char *name, size_t *len)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
+    if (p_stream == NULL) {
+        abt_errno = ABT_ERR_INV_STREAM;
+        goto fn_fail;
+    }
+
+    *len = strlen(p_stream->p_name);
+    if (name != NULL) {
+        ABTU_Strcpy(name, p_stream->p_name);
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_Stream_get_name", abt_errno);
+    goto fn_exit;
+}
+
+
+/* Private APIs */
+ABTI_Stream *ABTI_Stream_get_ptr(ABT_Stream stream)
+{
+    ABTI_Stream *p_stream;
+    if (stream == ABT_STREAM_NULL) {
+        p_stream = NULL;
+    } else {
+        p_stream = (ABTI_Stream *)stream;
+    }
+    return p_stream;
+}
+
+ABT_Stream ABTI_Stream_get_handle(ABTI_Stream *p_stream)
+{
+    ABT_Stream h_stream;
+    if (p_stream == NULL) {
+        h_stream = ABT_STREAM_NULL;
+    } else {
+        h_stream = (ABT_Stream)p_stream;
+    }
+    return h_stream;
+}
+
+int ABTI_Stream_free(ABTI_Stream *p_stream)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_Unit_free(&p_stream->unit);
+    if (p_stream->p_name) ABTU_Free(p_stream->p_name);
+
+    /* Free the scheduler */
+    ABT_Scheduler h_sched = ABTI_Scheduler_get_handle(p_stream->p_sched);
+    abt_errno = ABT_Scheduler_free(&h_sched);
+    ABTI_CHECK_ERROR(abt_errno);
+
     /* Clean up the deads pool */
-    if (p_stream->deads != ABT_POOL_NULL) {
-        ABT_Pool deads = p_stream->deads;
-        ABTI_Pool *p_deads = ABTI_Pool_get_ptr(deads);
-        while (p_deads->num_units > 0) {
-            ABT_Unit unit = ABTI_Pool_pop(deads);
-            ABT_Thread thread = ABTI_Unit_get_thread(unit);
-            assert(thread != ABT_THREAD_NULL);
+    ABTI_Mutex_waitlock(p_stream->mutex);
+    ABTI_Pool_free(&p_stream->deads);
+    ABT_Mutex_unlock(p_stream->mutex);
 
-            /* Free thd ABTI_Thread structure */
-            ABTI_Thread *p_thread = ABTI_Thread_get_ptr(thread);
-            if (p_thread->p_name) ABTU_Free(p_thread->p_name);
-            ABTU_Free(p_thread->p_stack);
-            ABTU_Free(p_thread);
+    /* Free the mutex */
+    abt_errno = ABT_Mutex_free(&p_stream->mutex);
+    ABTI_CHECK_ERROR(abt_errno);
 
-            /* Release the associated work unit */
-            ABTI_Unit_free(unit);
-        }
-
-        abt_errno = ABTI_Pool_free(deads);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTI_Pool_free");
-            goto fn_fail;
-        }
-    }
-
-    /* Remove this stream from the global stream pool */
-    ABTI_Unit *p_unit = ABTI_Unit_get_ptr(p_stream->unit);
-    if (p_unit->p_pool) {
-        ABTD_ES_lock(&p_streams->lock);
-        ABTI_Pool_remove(p_streams->pool, p_stream->unit);
-        ABTD_ES_unlock(&p_streams->lock);
-    }
-    ABTI_Unit_free(p_stream->unit);
+    /* Free the context */
+    abt_errno = ABTD_Stream_context_free(&p_stream->ctx);
+    ABTI_CHECK_ERROR(abt_errno);
 
     ABTU_Free(p_stream);
 
@@ -210,140 +400,7 @@ int ABT_Stream_free(ABT_Stream stream)
     return abt_errno;
 
   fn_fail:
-    goto fn_exit;
-}
-
-int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2)
-{
-    ABTI_Stream *p_stream1 = ABTI_Stream_get_ptr(stream1);
-    ABTI_Stream *p_stream2 = ABTI_Stream_get_ptr(stream2);
-    return p_stream1 == p_stream2;
-}
-
-ABT_Stream ABT_Stream_self()
-{
-    if (gp_stream) {
-        return ABTI_Stream_get_handle(gp_stream);
-    } else {
-        /* When the main execution stream calls this function. */
-        ABT_Stream newstream;
-        int err = ABT_Stream_create(ABT_SCHEDULER_NULL, &newstream);
-        if (err != ABT_SUCCESS) {
-            HANDLE_ERROR("ABT_Stream_self");
-        }
-        ABTI_Stream *p_newstream = ABTI_Stream_get_ptr(newstream);
-        p_newstream->type = ABTI_STREAM_TYPE_MAIN;
-        gp_stream = p_newstream;
-        return newstream;
-    }
-}
-
-int ABT_Stream_set_name(ABT_Stream stream, const char *name)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
-
-    size_t len = strlen(name);
-    if (p_stream->p_name) ABTU_Free(p_stream->p_name);
-    p_stream->p_name = (char *)ABTU_Malloc(len + 1);
-    if (!p_stream->p_name) {
-        HANDLE_ERROR("ABTU_Malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
-    ABTU_Strcpy(p_stream->p_name, name);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    goto fn_exit;
-}
-
-int ABT_Stream_get_name(ABT_Stream stream, char *name, size_t len)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
-
-    size_t name_len = strlen(p_stream->p_name);
-    if (name_len >= len) {
-        ABTU_Strncpy(name, p_stream->p_name, len - 1);
-        name[len - 1] = '\0';
-    } else {
-        ABTU_Strncpy(name, p_stream->p_name, name_len);
-        name[name_len] = '\0';
-    }
-
-    return abt_errno;
-}
-
-
-/* Internal non-static functions */
-int ABTI_Stream_init(ABTI_Stream_pool *p_streams)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    p_streams->num_active = 0;
-
-    /* Create a stream pool */
-    ABTI_Pool *p_pool;
-    if (ABTI_Pool_create(&p_pool) != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_Pool_create");
-        abt_errno = ABT_ERR_STREAM;
-        goto fn_fail;
-    }
-    p_streams->pool = ABTI_Pool_get_handle(p_pool);
-
-    /* Initialize the lock variable */
-    if (ABTD_ES_lock_create(&p_streams->lock, NULL) != ABTD_ES_SUCCESS) {
-        HANDLE_ERROR("ABTD_ES_lock_create");
-        abt_errno = ABT_ERR_STREAM;
-        goto fn_fail;
-    }
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    goto fn_exit;
-}
-
-int ABTI_Stream_finalize(ABTI_Stream_pool *p_streams)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    /* FIXME: Do we have to wait for all streams to finish their execution? */
-    /*
-    while (p_streams->num_active > 0) {
-        ABTD_ES_yield();
-    }
-    */
-
-    /* Release all stream objects */
-    ABT_Pool pool = p_streams->pool;
-    ABTI_Pool *p_pool = ABTI_Pool_get_ptr(pool);
-    while (p_pool->num_units > 0) {
-        ABT_Unit unit = ABTI_Pool_pop(pool);
-
-        /* Free the stream */
-        ABT_Stream stream = ABTI_Unit_get_stream(unit);
-        ABT_Stream_free(stream);
-    }
-
-    /* Free the pool obejct */
-    abt_errno = ABTI_Pool_free(pool);
-    if (abt_errno  != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_Pool_free");
-        goto fn_fail;
-    }
-
-    /* Destroy the lock variable */
-    ABTD_ES_lock_free(&p_streams->lock);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_Stream_free", abt_errno);
     goto fn_exit;
 }
 
@@ -351,25 +408,30 @@ int ABTI_Stream_start(ABTI_Stream *p_stream)
 {
     assert(p_stream->state == ABT_STREAM_STATE_CREATED);
 
+    /* Set the stream's state as READY */
+    ABT_Stream_state old_state;
+    old_state = ABTD_Atomic_cas_int32((int32_t *)&p_stream->state,
+            ABT_STREAM_STATE_CREATED, ABT_STREAM_STATE_READY);
+    if (old_state != ABT_STREAM_STATE_CREATED) goto fn_exit;
+
     int abt_errno = ABT_SUCCESS;
-    if (p_stream->type == ABTI_STREAM_TYPE_MAIN) {
-        p_stream->es = ABTD_ES_self();
+    if (p_stream->type == ABTI_STREAM_TYPE_PRIMARY) {
+        abt_errno = ABTD_Stream_context_self(&p_stream->ctx);
+        if (abt_errno != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTD_Stream_context_self");
+            goto fn_fail;
+        }
     } else {
-        int ret = ABTD_ES_create(&p_stream->es, NULL,
-                                 ABTI_Stream_loop, (void *)p_stream);
-        if (ret != ABTD_ES_SUCCESS) {
-            HANDLE_ERROR("ABTD_ES_create");
-            abt_errno = ABT_ERR_STREAM;
+        abt_errno = ABTD_Stream_context_create(
+                ABTI_Stream_loop, (void *)p_stream, &p_stream->ctx);
+        if (abt_errno != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTD_Stream_context_create");
             goto fn_fail;
         }
     }
 
-    p_stream->state = ABT_STREAM_STATE_READY;
-
-    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
-    ABTD_ES_lock(&p_streams->lock);
-    p_streams->num_active++;
-    ABTD_ES_unlock(&p_streams->lock);
+    /* Move the stream to the global active stream pool */
+    ABTI_Global_move_stream(p_stream);
 
   fn_exit:
     return abt_errno;
@@ -381,16 +443,20 @@ int ABTI_Stream_start(ABTI_Stream *p_stream)
 int ABTI_Stream_start_any()
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
-    ABT_Pool pool = p_streams->pool;
-    if (ABTI_Pool_get_size(pool) < 1) goto fn_exit;
 
-    ABTD_ES_lock(&p_streams->lock);
-    ABT_Unit unit = ABTI_Pool_pop(pool);
-    ABTD_ES_unlock(&p_streams->lock);
+    ABTI_Stream_pool *p_streams = gp_ABTI_Global->p_streams;
 
-    ABT_Stream stream = ABTI_Unit_get_stream(unit);
-    ABTI_Stream *p_stream = ABTI_Stream_get_ptr(stream);
+    /* If there exist one or more active streams or there is no stream
+     * created, we have nothing to do. */
+    if (ABTI_Pool_get_size(p_streams->active) > 0) goto fn_exit;
+    if (ABTI_Pool_get_size(p_streams->created) == 0) goto fn_exit;
+
+    /* Pop one stream from the global stream pool and start it */
+    ABTI_Stream *p_stream;
+    abt_errno = ABTI_Global_get_created_stream(&p_stream);
+    ABTI_CHECK_ERROR(abt_errno);
+    if (p_stream == NULL) goto fn_exit;
+
     if (p_stream->state == ABT_STREAM_STATE_CREATED) {
         abt_errno = ABTI_Stream_start(p_stream);
         if (abt_errno != ABT_SUCCESS) {
@@ -399,10 +465,6 @@ int ABTI_Stream_start_any()
         }
     }
 
-    ABTD_ES_lock(&p_streams->lock);
-    ABTI_Pool_push(pool, unit);
-    ABTD_ES_unlock(&p_streams->lock);
-
   fn_exit:
     return abt_errno;
 
@@ -410,47 +472,11 @@ int ABTI_Stream_start_any()
     goto fn_exit;
 }
 
-void *ABTI_Stream_loop(void *p_arg)
-{
-    ABTI_Stream *p_stream = (ABTI_Stream *)p_arg;
-
-    /* Set this stream as the current global stream */
-    gp_stream = p_stream;
-
-    DEBUG_PRINT("[S%lu] started\n", p_stream->id);
-
-    ABTI_Scheduler *p_sched = p_stream->p_sched;
-    ABT_Pool pool = p_sched->pool;
-
-    while (!p_stream->joinreq || p_sched->p_get_size(pool) > 0) {
-        if (ABTI_Stream_schedule(p_stream) != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTI_Stream_schedule");
-            goto fn_exit;
-        }
-        ABTD_ES_yield();
-    }
-
-  fn_exit:
-    p_stream->state = ABT_STREAM_STATE_TERMINATED;
-
-    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
-    ABTD_ES_lock(&p_streams->lock);
-    p_streams->num_active--;
-    ABTD_ES_unlock(&p_streams->lock);
-
-    DEBUG_PRINT("[S%lu] ended\n", p_stream->id);
-
-    gp_stream = NULL;
-
-    ABTD_ES_exit(NULL);
-    return NULL;
-}
-
 int ABTI_Stream_schedule(ABTI_Stream *p_stream)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_Task_pool *p_tasks = gp_ABT->p_tasks;
+    ABTI_Task_pool *p_tasks = gp_ABTI_Global->p_tasks;
 
     p_stream->state = ABT_STREAM_STATE_RUNNING;
 
@@ -459,74 +485,40 @@ int ABTI_Stream_schedule(ABTI_Stream *p_stream)
     while (p_sched->p_get_size(pool) > 0) {
         /* If there exist tasks in thte global task pool, steal one and
          * execute it. */
-        if (p_tasks && ABTI_Pool_get_size(p_tasks->pool) > 0) {
-            if (ABTI_Task_execute() == ABT_SUCCESS)
-                continue;
+        if (ABTI_Pool_get_size(p_tasks->pool) > 0) {
+            ABTI_Task *p_task;
+            abt_errno = ABTI_Global_pop_task(&p_task);
+            ABTI_CHECK_ERROR(abt_errno);
+            if (!p_task) continue;
+
+            /* Set the associated stream and execute */
+            p_task->p_stream = p_stream;
+            abt_errno = ABTI_Stream_schedule_task(p_task);
+            ABTI_CHECK_ERROR(abt_errno);
         }
 
-        ABTD_ES_lock(&p_stream->lock);
-        ABT_Unit unit = p_sched->p_pop(pool);
-        ABTD_ES_unlock(&p_stream->lock);
+        /* Pop one work unit */
+        ABT_Unit unit = ABTI_Scheduler_pop(p_sched);
 
         ABT_Unit_type type = p_sched->u_get_type(unit);
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABT_Thread thread = p_sched->u_get_thread(unit);
-
-            /* Set the current thread of this stream as the running thread */
-            gp_thread = ABTI_Thread_get_ptr(thread);
-
-            /* Change the thread state */
-            gp_thread->state = ABT_THREAD_STATE_RUNNING;
+            ABTI_Thread *p_thread = ABTI_Thread_get_ptr(thread);
 
             /* Switch the context */
-            DEBUG_PRINT("[S%lu:TH%lu] START\n", p_stream->id, gp_thread->id);
-            int ret = ABTD_ULT_swap(&p_stream->ult, &gp_thread->ult);
-            if (ret != ABTD_ULT_SUCCESS) {
-                HANDLE_ERROR("ABTD_ULT_swap");
-                abt_errno = ABT_ERR_THREAD;
-                goto fn_fail;
-            }
-            DEBUG_PRINT("[S%lu:TH%lu] END\n", p_stream->id, gp_thread->id);
-
-            if (gp_thread->state == ABT_THREAD_STATE_COMPLETED) {
-                if (gp_thread->refcount == 0) {
-                    gp_thread->state = ABT_THREAD_STATE_TERMINATED;
-                    ABT_Thread_free(ABTI_Thread_get_handle(gp_thread));
-                } else {
-                    ABTI_Stream_keep_thread(p_stream, gp_thread);
-                    gp_thread->state = ABT_THREAD_STATE_TERMINATED;
-                }
-            } else {
-                /* The thread did not finish its execution.
-                 * Add it to the pool again. */
-                ABTD_ES_lock(&p_stream->lock);
-                p_sched->p_push(pool, gp_thread->unit);
-                ABTD_ES_unlock(&p_stream->lock);
-            }
-
-            gp_thread = NULL;
+            abt_errno = ABTI_Stream_schedule_thread(p_thread);
+            ABTI_CHECK_ERROR(abt_errno);
         } else if (type == ABT_UNIT_TYPE_TASK) {
             ABT_Task task = p_sched->u_get_task(unit);
             ABTI_Task *p_task = ABTI_Task_get_ptr(task);
 
-            /* Change the task state */
-            p_task->state = ABT_TASK_STATE_RUNNING;
-
             /* Execute the task */
-            DEBUG_PRINT("[S%lu:TK%lu] START\n", p_stream->id, p_task->id);
-            p_task->f_task(p_task->p_arg);
-            DEBUG_PRINT("[S%lu:TK%lu] END\n", p_stream->id, p_task->id);
-
-            /* Change the task state */
-            if (p_task->refcount == 0) {
-                p_task->state = ABT_TASK_STATE_COMPLETED;
-                ABT_Task_free(task);
-            } else {
-                ABTI_Stream_keep_task(p_stream, p_task);
-                p_task->state = ABT_TASK_STATE_COMPLETED;
-            }
+            abt_errno = ABTI_Stream_schedule_task(p_task);
+            ABTI_CHECK_ERROR(abt_errno);
         } else {
             HANDLE_ERROR("Not supported type!");
+            abt_errno = ABT_ERR_INV_UNIT;
+            goto fn_fail;
         }
     }
 
@@ -538,52 +530,292 @@ int ABTI_Stream_schedule(ABTI_Stream *p_stream)
     goto fn_exit;
 }
 
-int ABTI_Stream_keep_thread(ABTI_Stream *p_stream, ABTI_Thread *p_thread)
+int ABTI_Stream_schedule_thread(ABTI_Thread *p_thread)
 {
-    /* FIXME: need to be improved */
+    int abt_errno = ABT_SUCCESS;
+
+    if ((p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
+        (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
+        abt_errno = ABTI_Stream_terminate_thread(p_thread);
+        ABTI_CHECK_ERROR(abt_errno);
+        goto fn_exit;
+    }
+
+    ABTI_Stream *p_stream = p_thread->p_stream;
     ABTI_Scheduler *p_sched = p_stream->p_sched;
-    p_sched->u_free(p_thread->unit);
 
-    /* Create a new unit in order to deal with it */
-    ABT_Thread thread = ABTI_Thread_get_handle(p_thread);
-    p_thread->unit = ABTI_Unit_create_from_thread(thread);
+    ABTI_Local_set_thread(p_thread);
 
-    /* Save the unit in the deads pool */
-    ABTD_ES_lock(&p_stream->lock);
-    ABTI_Pool_push(p_stream->deads, p_thread->unit);
-    ABTD_ES_unlock(&p_stream->lock);
+    /* Change the thread state */
+    p_thread->state = ABT_THREAD_STATE_RUNNING;
+
+    /* Switch the context */
+    DEBUG_PRINT("[S%lu:TH%lu] START\n", p_stream->id, p_thread->id);
+    abt_errno = ABTD_Thread_context_switch(&p_sched->ctx, &p_thread->ctx);
+
+    /* The scheduler continues from here. */
+    if (abt_errno != ABT_SUCCESS) {
+        HANDLE_ERROR("ABTD_Thread_context_switch");
+        goto fn_fail;
+    }
+
+    /* The previous thread may not be the same as one to which the
+     * context has been switched. */
+    p_thread = ABTI_Local_get_thread();
+    p_stream = p_thread->p_stream;
+    DEBUG_PRINT("[S%lu:TH%lu] END\n", p_stream->id, p_thread->id);
+
+    if ((p_thread->state == ABT_THREAD_STATE_COMPLETED) ||
+        (p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
+        (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
+        abt_errno = ABTI_Stream_terminate_thread(p_thread);
+    } else {
+        /* The thread did not finish its execution.
+         * Change the state of current running thread and
+         * add it to the pool again. */
+        abt_errno = ABTI_Stream_add_thread(p_thread);
+    }
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Now, no thread is running */
+    ABTI_Local_set_thread(NULL);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_Stream_schedule_thread", abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_Stream_schedule_task(ABTI_Task *p_task)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    if (p_task->request & ABTI_TASK_REQ_CANCEL) {
+        abt_errno = ABTI_Stream_terminate_task(p_task);
+        ABTI_CHECK_ERROR(abt_errno);
+        goto fn_exit;
+    }
+
+    /* Change the task state */
+    p_task->state = ABT_TASK_STATE_RUNNING;
+
+    /* Execute the task function */
+    DEBUG_PRINT("[S%lu:TK%lu] START\n", p_task->p_stream->id, p_task->id);
+    p_task->f_task(p_task->p_arg);
+    p_task->state = ABT_TASK_STATE_COMPLETED;
+    DEBUG_PRINT("[S%lu:TK%lu] END\n", p_task->p_stream->id, p_task->id);
+
+    abt_errno = ABTI_Stream_terminate_task(p_task);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_Stream_schedule_task", abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_Stream_terminate_thread(ABTI_Thread *p_thread)
+{
+    int abt_errno;
+    if (p_thread->refcount == 0) {
+        p_thread->state = ABT_THREAD_STATE_TERMINATED;
+        abt_errno = ABTI_Thread_free(p_thread);
+    } else {
+        abt_errno = ABTI_Stream_keep_thread(p_thread);
+    }
+    return abt_errno;
+}
+
+int ABTI_Stream_terminate_task(ABTI_Task *p_task)
+{
+    int abt_errno;
+    if (p_task->refcount == 0) {
+        p_task->state = ABT_TASK_STATE_TERMINATED;
+        abt_errno = ABTI_Task_free(p_task);
+    } else {
+        abt_errno = ABTI_Stream_keep_task(p_task);
+    }
+    return abt_errno;
+}
+
+int ABTI_Stream_add_thread(ABTI_Thread *p_thread)
+{
+    /* The thread's stream must not be changed during this function.
+     * So, its mutex is used to guarantee it. */
+    ABTI_Mutex_waitlock(p_thread->mutex);
+
+    ABTI_Stream *p_stream = p_thread->p_stream;
+    ABTI_Scheduler *p_sched = p_stream->p_sched;
+
+    /* Add the unit to the scheduler's pool */
+    ABTI_Scheduler_push(p_sched, p_thread->unit);
+
+    /* Set the thread's state as READY */
+    p_thread->state = ABT_THREAD_STATE_READY;
+
+    ABT_Mutex_unlock(p_thread->mutex);
 
     return ABT_SUCCESS;
 }
 
-int ABTI_Stream_keep_task(ABTI_Stream *p_stream, ABTI_Task *p_task)
+int ABTI_Stream_keep_thread(ABTI_Thread *p_thread)
 {
-    /* FIXME: need to be improved */
+    /* The thread's stream must not be changed during this function.
+     * So, its mutex is used to guarantee it. */
+    ABTI_Mutex_waitlock(p_thread->mutex);
+
+    ABTI_Stream *p_stream = p_thread->p_stream;
+
+    /* If the scheduler is not a default one, free the unit and create
+     * an internal unit to add to the deads pool. */
     ABTI_Scheduler *p_sched = p_stream->p_sched;
-    p_sched->u_free(p_task->unit);
+    if (p_sched->type != ABTI_SCHEDULER_TYPE_DEFAULT) {
+        p_sched->u_free(&p_thread->unit);
 
-    /* Create a new unit in order to deal with it */
-    ABT_Task task = ABTI_Task_get_handle(p_task);
-    p_task->unit = ABTI_Unit_create_from_task(task);
+        ABT_Thread thread = ABTI_Thread_get_handle(p_thread);
+        p_thread->unit = ABTI_Unit_create_from_thread(thread);
+    }
 
-    /* Save the task in the deads pool */
-    ABTI_Task_keep(p_task);
+    /* Add the unit to the deads pool */
+    ABTI_Mutex_waitlock(p_stream->mutex);
+    ABTI_Pool_push(p_stream->deads, p_thread->unit);
+    ABT_Mutex_unlock(p_stream->mutex);
+
+    /* Set the thread's state as TERMINATED */
+    p_thread->state = ABT_THREAD_STATE_TERMINATED;
+
+    ABT_Mutex_unlock(p_thread->mutex);
 
     return ABT_SUCCESS;
+}
+
+int ABTI_Stream_keep_task(ABTI_Task *p_task)
+{
+    ABTI_Stream *p_stream = p_task->p_stream;
+    ABTI_Scheduler *p_sched = p_stream->p_sched;
+
+    /* If the scheduler is not a default one, free the unit and create
+     * an internal unit to add to the deads pool. */
+    if (p_sched->type != ABTI_SCHEDULER_TYPE_DEFAULT) {
+        p_sched->u_free(&p_task->unit);
+
+        ABT_Task task = ABTI_Task_get_handle(p_task);
+        p_task->unit = ABTI_Unit_create_from_task(task);
+    }
+
+    /* Add the unit to the deads pool */
+    ABTI_Mutex_waitlock(p_stream->mutex);
+    ABTI_Pool_push(p_stream->deads, p_task->unit);
+    ABT_Mutex_unlock(p_stream->mutex);
+
+    /* Set the task's state as TERMINATED */
+    p_task->state = ABT_TASK_STATE_TERMINATED;
+
+    return ABT_SUCCESS;
+}
+
+int ABTI_Stream_print(ABTI_Stream *p_stream)
+{
+    int abt_errno = ABT_SUCCESS;
+    if (p_stream == NULL) {
+        printf("NULL STREAM\n");
+        goto fn_exit;
+    }
+
+    printf("== STREAM (%p) ==\n", p_stream);
+    printf("unit   : ");
+    ABTI_Unit_print(p_stream->unit);
+    printf("id     : %lu\n", p_stream->id);
+    printf("name   : %s\n", p_stream->p_name);
+    printf("type   : ");
+    switch (p_stream->type) {
+        case ABTI_STREAM_TYPE_PRIMARY:   printf("PRIMARY\n"); break;
+        case ABTI_STREAM_TYPE_SECONDARY: printf("SECONDARY\n"); break;
+        default: printf("UNKNOWN\n"); break;
+    }
+    printf("state  : ");
+    switch (p_stream->state) {
+        case ABT_STREAM_STATE_CREATED:    printf("CREATED\n"); break;
+        case ABT_STREAM_STATE_READY:      printf("READY\n"); break;
+        case ABT_STREAM_STATE_RUNNING:    printf("RUNNING\n"); break;
+        case ABT_STREAM_STATE_TERMINATED: printf("TERMINATED\n"); break;
+        default: printf("UNKNOWN\n"); break;
+    }
+    printf("request: %x\n", p_stream->request);
+
+    printf("sched  : %p\n", p_stream->p_sched);
+    abt_errno = ABTI_Scheduler_print(p_stream->p_sched);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    printf("deads  :");
+    abt_errno = ABTI_Pool_print(p_stream->deads);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_Stream_print", abt_errno);
+    goto fn_exit;
 }
 
 
 /* Internal static functions */
-static ABT_Stream_id g_stream_id = 0;
-static ABT_Stream_id ABTI_Stream_get_new_id()
+static uint64_t ABTI_Stream_get_new_id()
 {
-    ABT_Stream_id new_id;
+    static uint64_t stream_id = 0;
+    return ABTD_Atomic_fetch_add_uint64(&stream_id, 1);
+}
 
-    ABTI_Stream_pool *p_streams = gp_ABT->p_streams;
-    ABTD_ES_lock(&p_streams->lock);
-    new_id = g_stream_id++;
-    ABTD_ES_unlock(&p_streams->lock);
+static void *ABTI_Stream_loop(void *p_arg)
+{
+    ABTI_Stream *p_stream = (ABTI_Stream *)p_arg;
 
-    return new_id;
+    DEBUG_PRINT("[S%lu] START\n", p_stream->id);
+
+    /* Set this stream as the current global stream */
+    ABTI_Local_init(p_stream);
+
+    ABTI_Scheduler *p_sched = p_stream->p_sched;
+    ABT_Pool pool = p_sched->pool;
+
+    while (1) {
+        /* If there is an exit or a cancel request, the stream terminates
+         * regardless of remaining work units. */
+        if ((p_stream->request & ABTI_STREAM_REQ_EXIT) ||
+            (p_stream->request & ABTI_STREAM_REQ_CANCEL))
+            break;
+
+        /* When join is requested, the stream terminates after finishing
+         * execution of all work units. */
+        if ((p_stream->request & ABTI_STREAM_REQ_JOIN) &&
+            (p_sched->p_get_size(pool) == 0))
+            break;
+
+        if (ABTI_Stream_schedule(p_stream) != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTI_Stream_schedule");
+            goto fn_exit;
+        }
+    }
+
+  fn_exit:
+    /* Set the stream's state as TERMINATED */
+    p_stream->state = ABT_STREAM_STATE_TERMINATED;
+
+    /* Move the stream to the deads pool */
+    ABTI_Global_move_stream(p_stream);
+
+    /* Reset the current stream and thread info. */
+    ABTI_Local_finalize();
+
+    DEBUG_PRINT("[S%lu] END\n", p_stream->id);
+
+    ABTD_Stream_context_exit();
+
+    return NULL;
 }
 

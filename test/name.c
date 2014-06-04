@@ -6,10 +6,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "abt.h"
+#include <abt.h>
 
-#define DEFAULT_NUM_THREADS     2
+#define DEFAULT_NUM_THREADS     4
 #define DEFAULT_NAME_LEN        16
+
+#define HANDLE_ERROR(ret,msg)                           \
+    if (ret != ABT_SUCCESS) {                           \
+        fprintf(stderr, "ERROR[%d]: %s\n", ret, msg);   \
+        exit(EXIT_FAILURE);                             \
+    }
 
 typedef struct thread_arg {
     int id;
@@ -19,7 +25,7 @@ typedef struct thread_arg {
 void thread_func(void *arg)
 {
     thread_arg_t *t_arg = (thread_arg_t *)arg;
-    printf("[T%d]: My name is %s.\n", t_arg->id, t_arg->name);
+    printf("[TH%d]: My name is %s.\n", t_arg->id, t_arg->name);
 }
 
 int main(int argc, char *argv[])
@@ -33,65 +39,54 @@ int main(int argc, char *argv[])
     ABT_Thread *threads;
     thread_arg_t *args;
     char stream_name[16];
+    size_t name_len;
+    char *name;
     threads = (ABT_Thread *)malloc(sizeof(ABT_Thread *) * num_threads);
     args = (thread_arg_t *)malloc(sizeof(thread_arg_t) * num_threads);
 
     /* Initialize */
     ret = ABT_Init(argc, argv);
-    if (ret != ABT_SUCCESS) {
-        fprintf(stderr, "ERROR: ABT_Init\n");
-        exit(EXIT_FAILURE);
-    }
+    HANDLE_ERROR(ret, "ABT_Init");
 
     /* Get the SELF stream */
-    stream = ABT_Stream_self();
+    ret = ABT_Stream_self(&stream);
+    HANDLE_ERROR(ret, "ABT_Stream_self");
 
     /* Set the stream's name */
     sprintf(stream_name, "SELF-stream");
     printf("Set the stream's name as '%s'\n", stream_name);
     ret = ABT_Stream_set_name(stream, stream_name);
-    if (ret != ABT_SUCCESS) {
-        fprintf(stderr, "ERROR: ABT_Stream_set_name\n");
-        exit(EXIT_FAILURE);
-    }
+    HANDLE_ERROR(ret, "ABT_Stream_set_name");
 
     /* Create threads */
     for (i = 0; i < num_threads; i++) {
-        args[i].id = i;
+        args[i].id = i + 1;
         sprintf(args[i].name, "arogobot-%d", i);
         ret = ABT_Thread_create(stream,
                 thread_func, (void *)&args[i], 4096,
                 &threads[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Thread_create for LUT%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        HANDLE_ERROR(ret, "ABT_Thread_create");
 
         /* Set the thread's name */
         ret = ABT_Thread_set_name(threads[i], args[i].name);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Thread_set_name for LUT%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        HANDLE_ERROR(ret, "ABT_Thread_set_name");
     }
 
     /* Get the stream's name */
-    ret = ABT_Stream_get_name(stream, stream_name, DEFAULT_NAME_LEN);
-    if (ret != ABT_SUCCESS) {
-        fprintf(stderr, "ERROR: ABT_Stream_set_name\n");
-        exit(EXIT_FAILURE);
-    }
+    ret = ABT_Stream_get_name(stream, NULL, &name_len);
+    HANDLE_ERROR(ret, "ABT_Stream_get_name");
+    name = (char *)malloc(sizeof(char) * (name_len + 1));
+    ret = ABT_Stream_get_name(stream, stream_name, &name_len);
+    HANDLE_ERROR(ret, "ABT_Stream_get_name");
     printf("Stream's name: %s\n", stream_name);
+    free(name);
 
     /* Get the threads' names */
     for (i = 0; i < num_threads; i++) {
         char thread_name[16];
-        ret = ABT_Thread_get_name(threads[i], thread_name, 16);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Thread_get_name for LUT%d\n", i);
-            exit(EXIT_FAILURE);
-        }
-        printf("T%d's name: %s\n", i, thread_name);
+        ret = ABT_Thread_get_name(threads[i], thread_name, &name_len);
+        HANDLE_ERROR(ret, "ABT_Thread_get_name");
+        printf("TH%d's name: %s\n", i + 1, thread_name);
     }
 
     /* Switch to other user level threads */
@@ -99,22 +94,13 @@ int main(int argc, char *argv[])
 
     /* Free threads */
     for (i = 0; i < num_threads; i++) {
-        ret = ABT_Thread_free(threads[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Thread_free\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    /* Free streams */
-    ret = ABT_Stream_free(stream);
-    if (ret != ABT_SUCCESS) {
-        fprintf(stderr, "ERROR: ABT_Stream_free\n");
-        exit(EXIT_FAILURE);
+        ret = ABT_Thread_free(&threads[i]);
+        HANDLE_ERROR(ret, "ABT_Thread_free");
     }
 
     /* Finalize */
-    ABT_Finalize();
+    ret = ABT_Finalize();
+    HANDLE_ERROR(ret, "ABT_Finalize");
 
     free(args);
     free(threads);

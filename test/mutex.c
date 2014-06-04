@@ -17,14 +17,24 @@
         exit(EXIT_FAILURE);                             \
     }
 
+int g_counter = 0;
+
+typedef struct thread_arg {
+    int id;
+    ABT_Mutex mutex;
+} thread_arg_t;
+
 void thread_func(void *arg)
 {
-    size_t my_id = (size_t)arg;
-    printf("[TH%lu]: brefore yield\n", my_id);
+    thread_arg_t *t_arg = (thread_arg_t *)arg;
+
     ABT_Thread_yield();
-    printf("[TH%lu]: doing something ...\n", my_id);
+
+    ABT_Mutex_lock(t_arg->mutex);
+    g_counter++;
+    ABT_Mutex_unlock(t_arg->mutex);
+
     ABT_Thread_yield();
-    printf("[TH%lu]: after yield\n", my_id);
 }
 
 int main(int argc, char *argv[])
@@ -38,8 +48,14 @@ int main(int argc, char *argv[])
     if (argc > 2) num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
 
+    ABT_Mutex mutex;
     ABT_Stream *streams;
+    thread_arg_t **args;
     streams = (ABT_Stream *)malloc(sizeof(ABT_Stream) * num_streams);
+    args = (thread_arg_t **)malloc(sizeof(thread_arg_t *) * num_streams);
+    for (i = 0; i < num_streams; i++) {
+        args[i] = (thread_arg_t *)malloc(sizeof(thread_arg_t) * num_threads);
+    }
 
     /* Initialize */
     ret = ABT_Init(argc, argv);
@@ -53,12 +69,18 @@ int main(int argc, char *argv[])
         HANDLE_ERROR(ret, "ABT_Stream_create");
     }
 
+    /* Create a mutex */
+    ret = ABT_Mutex_create(&mutex);
+    HANDLE_ERROR(ret, "ABT_Mutex_create");
+
     /* Create threads */
     for (i = 0; i < num_streams; i++) {
         for (j = 0; j < num_threads; j++) {
-            size_t tid = i * num_threads + j + 1;
+            int tid = i * num_threads + j + 1;
+            args[i][j].id = tid;
+            args[i][j].mutex = mutex;
             ret = ABT_Thread_create(streams[i],
-                    thread_func, (void *)tid, 16384,
+                    thread_func, (void *)&args[i][j], 16384,
                     NULL);
             HANDLE_ERROR(ret, "ABT_Thread_create");
         }
@@ -73,6 +95,10 @@ int main(int argc, char *argv[])
         HANDLE_ERROR(ret, "ABT_Stream_join");
     }
 
+    /* Free the mutex */
+    ret = ABT_Mutex_free(&mutex);
+    HANDLE_ERROR(ret, "ABT_Mutex_free");
+
     /* Free streams */
     for (i = 1; i < num_streams; i++) {
         ret = ABT_Stream_free(&streams[i]);
@@ -83,7 +109,14 @@ int main(int argc, char *argv[])
     ret = ABT_Finalize();
     HANDLE_ERROR(ret, "ABT_Finalize");
 
+    printf("g_counter = %d\n", g_counter);
+
+    for (i = 0; i < num_streams; i++) {
+        free(args[i]);
+    }
+    free(args);
     free(streams);
 
     return EXIT_SUCCESS;
 }
+

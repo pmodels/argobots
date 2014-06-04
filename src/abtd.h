@@ -18,26 +18,34 @@
 #define _XOPEN_SOURCE
 #include <ucontext.h>
 
-typedef pthread_t       ABTD_ES;
-typedef pthread_mutex_t ABTD_ES_lock;
-typedef ucontext_t      ABTD_ULT;
+/* Data Types */
+typedef pthread_t           ABTD_Stream_context;
+typedef pthread_mutex_t     ABTD_Stream_mutex;
+typedef ucontext_t          ABTD_Thread_context;
 
-#define ABTD_ES_SUCCESS             0
-#define ABTD_ES_ERR_OTHER           1
-#define ABTD_ES_create(a,b,c,d)     pthread_create(a,b,c,d)
-#define ABTD_ES_join(a,b)           pthread_join(a,b)
-#define ABTD_ES_exit(a)             pthread_exit(a)
-#define ABTD_ES_self()              pthread_self()
-#define ABTD_ES_yield()             pthread_yield()
-#define ABTD_ES_lock_create(a,b)    pthread_mutex_init(a,b)
-#define ABTD_ES_lock_free(a)        pthread_mutex_destroy(a)
-#define ABTD_ES_lock(a)             pthread_mutex_lock(a)
-#define ABTD_ES_unlock(a)           pthread_mutex_unlock(a)
+/* ES Storage Qualifier */
+#define ABTD_STREAM_LOCAL   __thread
 
-#define ABTD_ULT_SUCCESS            0
-#define ABTD_ULT_ERR_OTHER          1
-#define ABTD_ULT_swap(a,b)          swapcontext(a,b)
-int ABTD_ULT_make(ABTI_Stream *p_stream, ABTI_Thread *p_thread,
-                  void (*thread_func)(void *), void *p_arg);
+/* ES Context */
+int ABTD_Stream_context_create(void *(*f_stream)(void *), void *p_arg,
+                               ABTD_Stream_context *p_ctx);
+int ABTD_Stream_context_free(ABTD_Stream_context *p_ctx);
+int ABTD_Stream_context_join(ABTD_Stream_context ctx);
+int ABTD_Stream_context_exit();
+int ABTD_Stream_context_self(ABTD_Stream_context *p_ctx);
+
+/* ULT Context */
+int ABTD_Thread_context_create(ABTD_Thread_context *p_link,
+                               void (*f_thread)(void *), void *p_arg,
+                               size_t stacksize, void *p_stack,
+                               ABTD_Thread_context *p_newctx);
+int ABTD_Thread_context_free(ABTD_Thread_context *p_ctx);
+int ABTD_Thread_context_switch(ABTD_Thread_context *p_old,
+                               ABTD_Thread_context *p_new);
+int ABTD_Thread_context_change_link(ABTD_Thread_context *p_ctx,
+                                    ABTD_Thread_context *p_link);
+
+/* Atomic Functions */
+#include "abtd_atomic.h"
 
 #endif /* ABTD_H_INCLUDED */

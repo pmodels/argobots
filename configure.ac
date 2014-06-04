@@ -6,7 +6,7 @@
 AC_PREREQ(2.63)
 
 m4_include([maint/version.m4])
-AC_INIT([argobots],ARGOBOTS_VERSION_m4)
+AC_INIT([argobots],ABT_VERSION_m4)
 
 ABT_VERSION=ABT_VERSION_m4
 AC_SUBST([ABT_VERSION])
@@ -75,5 +75,6 @@ LT_INIT
 AC_PROG_INSTALL
 
 AC_OUTPUT(Makefile
+	Doxyfile
 	src/abt.h
     test/Makefile)

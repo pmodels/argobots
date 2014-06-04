@@ -10,6 +10,7 @@ config.log
 config.status
 libtool
 stamp-h1
+Doxyfile
 
 # m4 additions
 m4/ar-lib

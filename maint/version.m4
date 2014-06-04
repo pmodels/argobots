@@ -4,8 +4,8 @@
 #     See COPYRIGHT in top-level directory.
 #
 
-m4_define([ARGOBOTS_VERSION_m4],[0.1])dnl
-m4_define([ARGOBOTS_RELEASE_DATE_m4],[unreleased development copy])dnl
+m4_define([ABT_VERSION_m4],[0.1])dnl
+m4_define([ABT_RELEASE_DATE_m4],[unreleased development copy])dnl
 
 # For libtool ABI versioning rules see:
 # http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info

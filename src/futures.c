@@ -3,7 +3,7 @@
  * */
 #include <stdlib.h>
 #include <string.h>
-#include "abt.h"
+#include "abti.h"
 #include "futures.h"
 
 typedef struct ABT_Thread_entry_t {
@@ -31,14 +31,14 @@ void *ABT_Future_wait(ABT_Future *fut)
     ABT_Future_data *data = (ABT_Future_data*)fut->data;
     if (!data->ready) {
         ABT_Thread_entry *cur = (ABT_Thread_entry*) malloc(sizeof(ABT_Thread_entry));
-        cur->current = ATH_thread_current();
+        cur->current = ABTI_Thread_current();
         cur->next = NULL;
         if(data->waiters.tail != NULL)
             data->waiters.tail->next = cur;
         data->waiters.tail = cur;
         if(data->waiters.head == NULL)
             data->waiters.head = cur;
-        ABT_Thread_suspend();
+        ABTI_Thread_suspend();
     }
     return data->value;
 }
@@ -49,7 +49,7 @@ void ABT_Future_signal(ABT_Future_data *fut)
     while(cur!=NULL)
     {
         ABT_Thread *mythread = cur->current;
-        ABT_Thread_set_ready(mythread);
+        ABTI_Thread_set_ready(mythread);
         ABT_Thread_entry *tmp = cur;
         cur=cur->next;
         free(tmp);

@@ -7,12 +7,18 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <assert.h>
-#include "abt.h"
+#include <abt.h>
 
-#define DEFAULT_NUM_STREAMS     2
-#define DEFAULT_NUM_THREADS     2
-#define DEFAULT_NUM_TASKS       2
+#define DEFAULT_NUM_STREAMS     4
+#define DEFAULT_NUM_THREADS     4
+#define DEFAULT_NUM_TASKS       4
 #define DEFAULT_POOL_SIZE       16
+
+#define HANDLE_ERROR(ret,msg)                           \
+    if (ret != ABT_SUCCESS) {                           \
+        fprintf(stderr, "ERROR[%d]: %s\n", ret, msg);   \
+        exit(EXIT_FAILURE);                             \
+    }
 
 typedef struct {
     size_t num;
@@ -22,11 +28,11 @@ typedef struct {
 void thread_func(void *arg)
 {
     size_t my_id = (size_t)arg;
-    printf("[T%lu]: brefore yield\n", my_id);
+    printf("[TH%lu]: brefore yield\n", my_id);
     ABT_Thread_yield();
-    printf("[T%lu]: doing something ...\n", my_id);
+    printf("[TH%lu]: doing something ...\n", my_id);
     ABT_Thread_yield();
-    printf("[T%lu]: after yield\n", my_id);
+    printf("[TH%lu]: after yield\n", my_id);
 }
 
 void task_func1(void *arg)
@@ -163,10 +169,11 @@ ABT_Unit unit_create_from_task(ABT_Task task)
     return (ABT_Unit)my_unit;
 }
 
-void unit_free(ABT_Unit unit)
+void unit_free(ABT_Unit *unit)
 {
-    unit_t *my_unit = (unit_t *)unit;
+    unit_t *my_unit = (unit_t *)(*unit);
     free(my_unit);
+    *unit = ABT_UNIT_NULL;
 }
 
 size_t pool_get_size(ABT_Pool pool)
@@ -248,10 +255,7 @@ int main(int argc, char *argv[])
 
     /* Initialize */
     ret = ABT_Init(argc, argv);
-    if (ret != ABT_SUCCESS) {
-        fprintf(stderr, "ERROR: ABT_Init\n");
-        exit(EXIT_FAILURE);
-    }
+    HANDLE_ERROR(ret, "ABT_Init");
 
     /* Create a scheduler */
     sched_funcs.u_get_type = unit_get_type;
@@ -270,21 +274,16 @@ int main(int argc, char *argv[])
         pool_init(&pools[i]);
 
         ret = ABT_Scheduler_create(&pools[i], &sched_funcs, &scheds[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Scheduler_create for ES%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        HANDLE_ERROR(ret, "ABT_Scheduler_create");
     }
 
     /* Create streams */
-    streams[0] = ABT_Stream_self();
+    ret = ABT_Stream_self(&streams[0]);
+    HANDLE_ERROR(ret, "ABT_Stream_self");
     ABT_Stream_set_scheduler(streams[0], scheds[0]);
     for (i = 1; i < num_streams; i++) {
         ret = ABT_Stream_create(scheds[i], &streams[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Stream_create for ES%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        HANDLE_ERROR(ret, "ABT_Stream_create");
     }
 
     /* Create tasks with task_func1 */
@@ -293,24 +292,17 @@ int main(int argc, char *argv[])
         ret = ABT_Task_create(ABT_STREAM_NULL,
                               task_func1, (void *)num,
                               NULL);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Task_create for %d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        HANDLE_ERROR(ret, "ABT_Task_create");
     }
 
     /* Create threads */
     for (i = 0; i < num_streams; i++) {
         for (j = 0; j < num_threads; j++) {
-            size_t tid = i * num_threads + j;
+            size_t tid = i * num_threads + j + 1;
             ret = ABT_Thread_create(streams[i],
                     thread_func, (void *)tid, 16384,
                     NULL);
-            if (ret != ABT_SUCCESS) {
-                fprintf(stderr, "ERROR: ABT_Thread_create for ES%d-LUT%d\n",
-                        i, j);
-                exit(EXIT_FAILURE);
-            }
+            HANDLE_ERROR(ret, "ABT_Thread_create");
         }
     }
 
@@ -320,10 +312,7 @@ int main(int argc, char *argv[])
         ret = ABT_Task_create(streams[i % num_streams],
                               task_func2, (void *)&task_args[i],
                               &tasks[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Task_create for %d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        HANDLE_ERROR(ret, "ABT_Task_create");
     }
 
     /* Switch to other user level threads */
@@ -331,40 +320,35 @@ int main(int argc, char *argv[])
 
     /* Results of task_funcs2 */
     for (i = 0; i < num_tasks; i++) {
-        while (ABT_Task_get_state(tasks[i]) != ABT_TASK_STATE_COMPLETED)
+        ABT_Task_state state;
+        do {
+            ABT_Task_get_state(tasks[i], &state);
             ABT_Thread_yield();
+        } while (state != ABT_TASK_STATE_TERMINATED);
 
         printf("task_func2: num=%lu result=%llu\n",
                task_args[i].num, task_args[i].result);
 
         /* Free named tasks */
-        ret = ABT_Task_free(tasks[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Task_free for TK%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        ret = ABT_Task_free(&tasks[i]);
+        HANDLE_ERROR(ret, "ABT_Task_free");
     }
 
     /* Join streams */
     for (i = 1; i < num_streams; i++) {
         ret = ABT_Stream_join(streams[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Stream_join for ES%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        HANDLE_ERROR(ret, "ABT_Stream_join");
     }
 
     /* Free streams */
-    for (i = 0; i < num_streams; i++) {
-        ret = ABT_Stream_free(streams[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Stream_free for ES%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+    for (i = 1; i < num_streams; i++) {
+        ret = ABT_Stream_free(&streams[i]);
+        HANDLE_ERROR(ret, "ABT_Stream_free");
     }
 
     /* Finalize */
-    ABT_Finalize();
+    ret = ABT_Finalize();
+    HANDLE_ERROR(ret, "ABT_Finalize");
 
     free(task_args);
     free(tasks);

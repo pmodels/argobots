@@ -6,10 +6,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "abt.h"
+#include <abt.h>
 
-#define DEFAULT_NUM_STREAMS     2
-#define DEFAULT_NUM_THREADS     2
+#define DEFAULT_NUM_STREAMS     4
+#define DEFAULT_NUM_THREADS     4
+
+#define HANDLE_ERROR(ret,msg)                           \
+    if (ret != ABT_SUCCESS) {                           \
+        fprintf(stderr, "ERROR[%d]: %s\n", ret, msg);   \
+        exit(EXIT_FAILURE);                             \
+    }
 
 typedef struct thread_arg {
     int id;
@@ -21,10 +27,12 @@ ABT_Thread pick_one(ABT_Thread *threads, int num_threads)
 {
     int i;
     ABT_Thread next;
+    ABT_Thread_state state;
     do {
         i = rand() % num_threads;
         next = threads[i];
-    } while (ABT_Thread_get_state(next) == ABT_THREAD_STATE_TERMINATED);
+        ABT_Thread_get_state(next, &state);
+    } while (state == ABT_THREAD_STATE_TERMINATED);
     return next;
 }
 
@@ -33,15 +41,15 @@ void thread_func(void *arg)
     thread_arg_t *t_arg = (thread_arg_t *)arg;
     ABT_Thread next;
 
-    printf("[T%d]: brefore yield\n", t_arg->id); fflush(stdout);
+    printf("[TH%d]: brefore yield\n", t_arg->id); fflush(stdout);
     next = pick_one(t_arg->threads, t_arg->num_threads);
     ABT_Thread_yield_to(next);
 
-    printf("[T%d]: doing something ...\n", t_arg->id); fflush(stdout);
+    printf("[TH%d]: doing something ...\n", t_arg->id); fflush(stdout);
     next = pick_one(t_arg->threads, t_arg->num_threads);
     ABT_Thread_yield_to(next);
 
-    printf("[T%d]: after yield\n", t_arg->id); fflush(stdout);
+    printf("[TH%d]: after yield\n", t_arg->id); fflush(stdout);
 }
 
 int main(int argc, char *argv[])
@@ -68,36 +76,27 @@ int main(int argc, char *argv[])
 
     /* Initialize */
     ret = ABT_Init(argc, argv);
-    if (ret != ABT_SUCCESS) {
-        fprintf(stderr, "ERROR: ABT_Init\n");
-        exit(EXIT_FAILURE);
-    }
+    HANDLE_ERROR(ret, "ABT_Init");
 
     /* Create streams */
-    streams[0] = ABT_Stream_self();
+    ret = ABT_Stream_self(&streams[0]);
+    HANDLE_ERROR(ret, "ABT_Stream_self");
     for (i = 1; i < num_streams; i++) {
         ret = ABT_Stream_create(ABT_SCHEDULER_NULL, &streams[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Stream_create for ES%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        HANDLE_ERROR(ret, "ABT_Stream_create");
     }
 
     /* Create threads */
     for (i = 0; i < num_streams; i++) {
         for (j = 0; j < num_threads; j++) {
-            int tid = i * num_threads + j;
+            int tid = i * num_threads + j + 1;
             args[i][j].id = tid;
             args[i][j].num_threads = num_threads;
             args[i][j].threads = &threads[i][0];
             ret = ABT_Thread_create(streams[i],
                     thread_func, (void *)&args[i][j], 16384,
                     &threads[i][j]);
-            if (ret != ABT_SUCCESS) {
-                fprintf(stderr, "ERROR: ABT_Thread_create for ES%d-LUT%d\n",
-                        i, j);
-                exit(EXIT_FAILURE);
-            }
+            HANDLE_ERROR(ret, "ABT_Thread_create");
         }
     }
 
@@ -107,33 +106,25 @@ int main(int argc, char *argv[])
     /* Join streams */
     for (i = 1; i < num_streams; i++) {
         ret = ABT_Stream_join(streams[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Stream_join for ES%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        HANDLE_ERROR(ret, "ABT_Stream_join");
     }
 
-    /* Free streams */
+    /* Free threads and streams */
     for (i = 0; i < num_streams; i++) {
-        /* Free threads */
         for (j = 0; j < num_threads; j++) {
-            ret = ABT_Thread_free(threads[i][j]);
-            if (ret != ABT_SUCCESS) {
-                fprintf(stderr, "ERROR: ABT_Thread_free for ES%d-LUT%d\n",
-                        i, j);
-                exit(EXIT_FAILURE);
-            }
+            ret = ABT_Thread_free(&threads[i][j]);
+            HANDLE_ERROR(ret, "ABT_Thread_free");
         }
 
-        ret = ABT_Stream_free(streams[i]);
-        if (ret != ABT_SUCCESS) {
-            fprintf(stderr, "ERROR: ABT_Stream_free for ES%d\n", i);
-            exit(EXIT_FAILURE);
-        }
+        if (i == 0) continue;
+
+        ret = ABT_Stream_free(&streams[i]);
+        HANDLE_ERROR(ret, "ABT_Stream_free");
     }
 
     /* Finalize */
-    ABT_Finalize();
+    ret = ABT_Finalize();
+    HANDLE_ERROR(ret, "ABT_Finalize");
 
     for (i = 0; i < num_streams; i++) {
         free(args[i]);
