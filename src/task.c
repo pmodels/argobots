@@ -8,6 +8,29 @@
 static uint64_t ABTI_Task_get_new_id();
 
 
+/** @defgroup TASK Tasklet
+ * This group is for Tasklet.
+ */
+
+
+/**
+ * @ingroup TASK
+ * @brief   Create a new task and return its handle through newtask.
+ *
+ * If this is ABT_STREAM_NULL, the new task is managed globally and it can be
+ * executed by any stream. Otherwise, the task is scheduled and runs in the
+ * specified stream.
+ * If newtask is NULL, the task object will be automatically released when
+ * this \a unnamed task completes the execution of task_func. Otherwise,
+ * ABT_Task_free() can be used to explicitly release the task object.
+ *
+ * @param[in]  stream     handle to the associated stream
+ * @param[in]  task_func  function to be executed by a new task
+ * @param[in]  arg        argument for task_func
+ * @param[out] newtask    handle to a newly created task
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Task_create(ABT_Stream stream,
                     void (*task_func)(void *), void *arg,
                     ABT_Task *newtask)
@@ -89,6 +112,19 @@ int ABT_Task_create(ABT_Stream stream,
     goto fn_exit;
 }
 
+/**
+ * @ingroup TASK
+ * @brief   Release the task object associated with task handle.
+ *
+ * This routine deallocates memory used for the task object. If the task is
+ * still running when this routine is called, the deallocation happens after
+ * the task terminates and then this routine returns. If it is successfully
+ * processed, task is set as ABT_TASK_NULL.
+ *
+ * @param[in,out] task  handle to the target task
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Task_free(ABT_Task *task)
 {
     int abt_errno = ABT_SUCCESS;
@@ -131,6 +167,14 @@ int ABT_Task_free(ABT_Task *task)
     goto fn_exit;
 }
 
+/**
+ * @ingroup TASK
+ * @brief   Request the cancelation of the target task.
+ *
+ * @param[in] task  handle to the target task
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Task_cancel(ABT_Task task)
 {
     int abt_errno = ABT_SUCCESS;
@@ -159,6 +203,17 @@ int ABT_Task_cancel(ABT_Task task)
     goto fn_exit;
 }
 
+/**
+ * @ingroup TASK
+ * @brief   Increment the task reference count.
+ *
+ * ABT_Task_create() with non-null newtask argument performs an implicit
+ * retain.
+ *
+ * @param[in] task  handle to the task to retain
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Task_retain(ABT_Task task)
 {
     int abt_errno = ABT_SUCCESS;
@@ -179,6 +234,17 @@ int ABT_Task_retain(ABT_Task task)
     goto fn_exit;
 }
 
+/**
+ * @ingroup TASK
+ * @brief   Decrement the task reference count.
+ *
+ * After the task reference count becomes zero, the task object corresponding
+ * task handle is deleted.
+ *
+ * @param[in] task  handle to the task to release
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Task_release(ABT_Task task)
 {
     int abt_errno = ABT_SUCCESS;
@@ -205,6 +271,16 @@ int ABT_Task_release(ABT_Task task)
     goto fn_exit;
 }
 
+/**
+ * @ingroup TASK
+ * @brief   Compare two task handles for equality.
+ *
+ * @param[in]  task1   handle to the task 1
+ * @param[in]  task2   handle to the task 2
+ * @param[out] result  0: not same, 1: same
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Task_equal(ABT_Task task1, ABT_Task task2, int *result)
 {
     ABTI_Task *p_task1 = ABTI_Task_get_ptr(task1);
@@ -213,6 +289,15 @@ int ABT_Task_equal(ABT_Task task1, ABT_Task task2, int *result)
     return ABT_SUCCESS;
 }
 
+/**
+ * @ingroup TASK
+ * @brief   Return the state of task.
+ *
+ * @param[in]  task   handle to the target task
+ * @param[out] state  the task's state
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Task_get_state(ABT_Task task, ABT_Task_state *state)
 {
     int abt_errno = ABT_SUCCESS;
@@ -234,6 +319,15 @@ int ABT_Task_get_state(ABT_Task task, ABT_Task_state *state)
     goto fn_exit;
 }
 
+/**
+ * @ingroup TASK
+ * @brief   Set the task's name.
+ *
+ * @param[in] task  handle to the target task
+ * @param[in] name  task name
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Task_set_name(ABT_Task task, const char *name)
 {
     int abt_errno = ABT_SUCCESS;
@@ -263,6 +357,18 @@ int ABT_Task_set_name(ABT_Task task, const char *name)
     goto fn_exit;
 }
 
+/**
+ * @ingroup TASK
+ * @brief   Return the task's name and its length.
+ *
+ * If name is NULL, only len is returned.
+ *
+ * @param[in]  task  handle to the target task
+ * @param[out] name  task name
+ * @param[out] len   the length of name in bytes
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Task_get_name(ABT_Task task, char *name, size_t *len)
 {
     int abt_errno = ABT_SUCCESS;

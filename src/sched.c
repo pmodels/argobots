@@ -5,6 +5,25 @@
 
 #include "abti.h"
 
+/** @defgroup SCHED Scheduler
+ * This group is for Scheduler.
+ */
+
+
+/**
+ * @ingroup SCHED
+ * @brief   Create a new scheduler and return its handle through newsched.
+ *
+ * newsched must be used for a single stream because pool cannot be shared
+ * between different streams.
+ *
+ * @param[in]  pool      a user-defined data structure containing work units
+ *                       scheduled by a new scheduler
+ * @param[in]  funcs     functions required for scheduler creation
+ * @param[out] newsched  handle to a new scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Scheduler_create(ABT_Pool pool,
                          const ABT_Scheduler_funcs *funcs,
                          ABT_Scheduler *newsched)
@@ -62,6 +81,16 @@ int ABT_Scheduler_create(ABT_Pool pool,
     goto fn_exit;
 }
 
+/**
+ * @ingroup SCHED
+ * @brief   Release the scheduler object associated with sched handle.
+ *
+ * If this routine successfully returns, sched is set as ABT_SCHEDULER_NULL.
+ *
+ * @param[in,out] sched  handle to the target scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Scheduler_free(ABT_Scheduler *sched)
 {
     int abt_errno = ABT_SUCCESS;

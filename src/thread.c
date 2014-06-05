@@ -8,6 +8,28 @@
 static uint64_t ABTI_Thread_get_new_id();
 
 
+/** @defgroup ULT User-level Thread (ULT)
+ * This group is for User-level Thread (ULT).
+ */
+
+
+/**
+ * @ingroup ULT
+ * @brief   Create a new thread and return its handle through newthread.
+ *
+ * If newthread is NULL, the thread object will be automatically released when
+ * this \a unnamed thread completes the execution of thread_func. Otherwise,
+ * ABT_Thread_free() can be used to explicitly release the thread object.
+ *
+ * @param[in]  stream       handle to the associated stream
+ * @param[in]  thread_func  function to be executed by a new thread
+ * @param[in]  arg          argument for thread_func
+ * @param[in]  stacksize    stack size (in bytes) for a new thread.
+ *                          If it is 0, the default stack size is used.
+ * @param[out] newthread    handle to a newly created thread
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_create(ABT_Stream stream,
                       void (*thread_func)(void *), void *arg,
                       size_t stacksize, ABT_Thread *newthread)
@@ -90,6 +112,19 @@ int ABT_Thread_create(ABT_Stream stream,
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Release the thread object associated with thread handle.
+ *
+ * This routine deallocates memory used for the thread object. If the thread
+ * is still running when this routine is called, the deallocation happens
+ * after the thread terminates and then this routine returns. If it is
+ * successfully processed, thread is set as ABT_THREAD_NULL.
+ *
+ * @param[in,out] thread  handle to the target thread
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_free(ABT_Thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -139,6 +174,16 @@ int ABT_Thread_free(ABT_Thread *thread)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Wait for thread to terminate.
+ *
+ * The target thread cannot be the same as the calling thread.
+ *
+ * @param[in] thread  handle to the target thread
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_join(ABT_Thread thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -167,6 +212,15 @@ int ABT_Thread_join(ABT_Thread thread)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   The calling thread terminates its execution.
+ *
+ * Since the calling thread terminates, this routine never returns.
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_exit()
 {
     int abt_errno = ABT_SUCCESS;
@@ -182,6 +236,14 @@ int ABT_Thread_exit()
     return abt_errno;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Request the cancelation of the target thread.
+ *
+ * @param[in] thread  handle to the target thread
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_cancel(ABT_Thread thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -209,6 +271,17 @@ int ABT_Thread_cancel(ABT_Thread thread)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Yield the processor from the current running thread to a next
+ *          thread.
+ *
+ * The next thread is selected by the stream's scheduler. If there is no more
+ * thread to, the calling thread resumes its execution immediately.
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_yield()
 {
     int abt_errno = ABT_SUCCESS;
@@ -251,6 +324,18 @@ int ABT_Thread_yield()
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Yield the processor from the current running thread to the
+ *          specific thread.
+ *
+ * This function can be used for users to explicitly schedule the next thread
+ * to execute.
+ *
+ * @param[in] thread  handle to the target thread
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_yield_to(ABT_Thread thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -317,6 +402,16 @@ int ABT_Thread_yield_to(ABT_Thread thread)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Set the callback function.
+ *
+ * @param[in] thread         handle to the target thread
+ * @param[in] callback_func  callback function
+ * @param[in] arg            argument for callback function
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_set_callback(ABT_Thread thread,
                             void (*callback_func)(void *arg), void *arg)
 {
@@ -338,6 +433,14 @@ int ABT_Thread_set_callback(ABT_Thread thread,
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Return the thread handle of the calling thread.
+ *
+ * @param[out] thread  thread handle
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_self(ABT_Thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -359,6 +462,17 @@ int ABT_Thread_self(ABT_Thread *thread)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Increment the thread reference count.
+ *
+ * ABT_Thread_create() with non-null newthread argument and ABT_Thread_self()
+ * perform an implicit retain.
+ *
+ * @param[in] thread  handle to the thread to retain
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_retain(ABT_Thread thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -379,6 +493,17 @@ int ABT_Thread_retain(ABT_Thread thread)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Decrement the thread reference count.
+ *
+ * After the thread reference count becomes zero, the thread object
+ * corresponding thread handle is deleted.
+ *
+ * @param[in] thread  handle to the thread to release
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_release(ABT_Thread thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -405,6 +530,16 @@ int ABT_Thread_release(ABT_Thread thread)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Compare two thread handles for equality.
+ *
+ * @param[in]  thread1  handle to the thread 1
+ * @param[in]  thread2  handle to the thread 2
+ * @param[out] result   0: not same, 1: same
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_equal(ABT_Thread thread1, ABT_Thread thread2, int *result)
 {
     ABTI_Thread *p_thread1 = ABTI_Thread_get_ptr(thread1);
@@ -413,6 +548,15 @@ int ABT_Thread_equal(ABT_Thread thread1, ABT_Thread thread2, int *result)
     return ABT_SUCCESS;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Return the state of thread.
+ *
+ * @param[in]  thread  handle to the target thread
+ * @param[out] state   the thread's state
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_get_state(ABT_Thread thread, ABT_Thread_state *state)
 {
     int abt_errno = ABT_SUCCESS;
@@ -434,6 +578,15 @@ int ABT_Thread_get_state(ABT_Thread thread, ABT_Thread_state *state)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Set the thread's name.
+ *
+ * @param[in] thread  handle to the target thread
+ * @param[in] name    thread name
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_set_name(ABT_Thread thread, const char *name)
 {
     int abt_errno = ABT_SUCCESS;
@@ -463,6 +616,18 @@ int ABT_Thread_set_name(ABT_Thread thread, const char *name)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Return the thread's name and its length.
+ *
+ * If name is NULL, only len is returned.
+ *
+ * @param[in]  thread  handle to the target thread
+ * @param[out] name    thread name
+ * @param[out] len     the length of name in bytes
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t *len)
 {
     int abt_errno = ABT_SUCCESS;

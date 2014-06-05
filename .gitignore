@@ -47,3 +47,6 @@ README
 # editor temporary files
 .*.swp
 .*.swo
+
+# etc.
+.DS_Store

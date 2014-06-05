@@ -13,8 +13,14 @@ indent_code()
     $indent --k-and-r-style --line-length80 --else-endif-column1 --start-left-side-of-comments \
 	--break-after-boolean-operator --dont-cuddle-else --dont-format-comments \
 	--comment-indentation1 --indent-level4 --no-tabs --no-space-after-casts \
-	-T ABT_Stream -T ABT_Scheduler -T ABT_Pool -T ABT_Unit -T ABT_Thread -T ABT_Task \
-	-T ABTI_Stream -T ABTI_Scheduler -T ABTI_Pool -T ABTI_Unit -T ABTI_Thread -T ABTI_Task \
+    -T ABT_Stream -T ABT_Stream_state -T ABT_Thread -T ABT_Thread_state \
+    -T ABT_Task -T ABT_Task_state -T ABT_Mutex -T ABT_Condition \
+    -T ABT_Scheduler -T ABT_Unit_type -T ABT_Unit -T ABT_Pool \
+    -T ABT_Scheduler_funcs \
+    -T ABTI_Stream -T ABTI_Stream_type -T ABTI_Thread -T ABTI_Thread_type \
+    -T ABTI_Task -T ABTI_Mutex -T ABTI_Condition -T ABTI_Scheduler \
+    -T ABTI_Scheduler_type -T ABTI_Unit -T ABTI_Pool \
+    -T ABTI_Stream_pool -T ABTI_Task_pool -T ABTI_Global -T ABTI_Local \
 	${file}
     rm -f ${file}~
     cp ${file} /tmp/${USER}.__tmp__ && \

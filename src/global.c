@@ -5,9 +5,25 @@
 
 #include "abti.h"
 
+/** @defgroup ENV Init & Finalize
+ * This group is for initialization and finalization of the Argobots environment.
+ */
+
 /* Global Data */
 ABTI_Global *gp_ABTI_Global = NULL;
 
+/**
+ * @ingroup ENV
+ * @brief   Initialize the Argobots execution environment.
+ *
+ * This must be called by the main thread before using any other Argobots APIs.
+ * The stream object for primary stream is created in this routine.
+ *
+ * @param[in] argc the number of arguments
+ * @param[in] argv the argument vector
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Init(int argc, char **argv)
 {
     assert(gp_ABTI_Global == NULL);
@@ -90,6 +106,17 @@ int ABT_Init(int argc, char **argv)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ENV
+ * @brief   Terminate the Argobots execution environment.
+ *
+ * This must be called by the main thread. Invoking the Argobots APIs after
+ * ABT_Finalize() is not allowed. This routine also contains deallocation of
+ * stream object for the primary stream.
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Finalize()
 {
     assert(gp_ABTI_Global != NULL);

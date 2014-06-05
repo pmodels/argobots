@@ -5,7 +5,19 @@
 
 #include "abti.h"
 
+/** @defgroup MUTEX Mutex
+ * This group is for Mutex.
+ */
 
+
+/**
+ * @ingroup MUTEX
+ * @brief   Create a new mutex.
+ *
+ * @param[out] newmutex  handle to a new mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Mutex_create(ABT_Mutex *newmutex)
 {
     int abt_errno = ABT_SUCCESS;
@@ -31,6 +43,16 @@ int ABT_Mutex_create(ABT_Mutex *newmutex)
     goto fn_exit;
 }
 
+/**
+ * @ingroup MUTEX
+ * @brief   Release the mutex object associated with mutex handle.
+ *
+ * If this routine successfully returns, mutex is set as ABT_MUTEX_NULL.
+ *
+ * @param[in,out] mutex  handle to the mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Mutex_free(ABT_Mutex *mutex)
 {
     int abt_errno = ABT_SUCCESS;
@@ -41,6 +63,17 @@ int ABT_Mutex_free(ABT_Mutex *mutex)
     return abt_errno;
 }
 
+/**
+ * @ingroup MUTEX
+ * @brief   Lock the mutex.
+ *
+ * If the mutex is already locked, the calling thread will block until it
+ * becomes available.
+ *
+ * @param[in] mutex  handle to the mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Mutex_lock(ABT_Mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
@@ -51,6 +84,18 @@ int ABT_Mutex_lock(ABT_Mutex mutex)
     return abt_errno;
 }
 
+/**
+ * @ingroup MUTEX
+ * @brief   Attempt to lock a mutex without blocking.
+ *
+ * If the mutex is already locked, ABT_ERR_MUTEX_LOCKED will be returned
+ * immediately without blocking the calling thread.
+ *
+ * @param[in] mutex  handle to the mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ * @retval ABT_ERR_MUTEX_LOCKED when mutex has already been locked
+ */
 int ABT_Mutex_trylock(ABT_Mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
@@ -61,6 +106,18 @@ int ABT_Mutex_trylock(ABT_Mutex mutex)
     return abt_errno;
 }
 
+/**
+ * @ingroup MUTEX
+ * @brief   Unlock the mutex.
+ *
+ * If the calling thread locked the mutex, this function unlocks the mutex.
+ * However, if the calling thread did not lock the mutex, this function may
+ * result in undefined behavior.
+ *
+ * @param[in] mutex  handle to the mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Mutex_unlock(ABT_Mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;

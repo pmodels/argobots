@@ -9,6 +9,22 @@ static uint64_t ABTI_Stream_get_new_id();
 static void *ABTI_Stream_loop(void *p_arg);
 
 
+/** @defgroup ES Execution Stream (ES)
+ * This group is for Execution Stream.
+ */
+
+
+/**
+ * @ingroup ES
+ * @brief   Create a new stream and return its handle through newstream.
+ *
+ * @param[in]  sched  handle to the scheduler used for a new stream. If this is
+ *                    ABT_SCHEDULER_NULL, the runtime-provided scheduler is used.
+ * @param[out] newstream  handle to a newly created stream. This cannot be NULL
+ *                    because unnamed stream is not allowed.
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -69,6 +85,20 @@ int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Release the stream object associated with stream handle.
+ *
+ * This routine deallocates memory used for the stream object. If the stream
+ * is still running when this routine is called, the deallocation happens
+ * after the stream terminates and then this routine returns. If it is
+ * successfully processed, stream is set as ABT_STREAM_NULL. The primary
+ * stream cannot be freed with this routine.
+ *
+ * @param[in,out] stream  handle to the target stream
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_free(ABT_Stream *stream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -114,6 +144,18 @@ int ABT_Stream_free(ABT_Stream *stream)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Wait for stream to terminate.
+ *
+ * The target stream cannot be the same as the stream associated with calling
+ * thread. If they are identical, this routine returns immediately without
+ * waiting for the stream's termination.
+ *
+ * @param[in] stream  handle to the target stream
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_join(ABT_Stream stream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -179,6 +221,15 @@ int ABT_Stream_join(ABT_Stream stream)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ES
+ * @brief   The calling thread terminates its associated stream.
+ *
+ * Since the calling thread's stream terminates, this routine never returns.
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_exit()
 {
     int abt_errno = ABT_SUCCESS;
@@ -196,6 +247,14 @@ int ABT_Stream_exit()
     return abt_errno;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Request the cancelation of the target stream.
+ *
+ * @param[in] stream  handle to the target stream
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_cancel(ABT_Stream stream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -217,6 +276,14 @@ int ABT_Stream_cancel(ABT_Stream stream)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Return the stream handle of the calling thread.
+ *
+ * @param[out] stream  stream handle
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_self(ABT_Stream *stream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -238,6 +305,16 @@ int ABT_Stream_self(ABT_Stream *stream)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Compare two stream handles for equality.
+ *
+ * @param[in]  stream1  handle to the stream 1
+ * @param[in]  stream2  handle to the stream 2
+ * @param[out] result   0: not same, 1: same
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2, int *result)
 {
     ABTI_Stream *p_stream1 = ABTI_Stream_get_ptr(stream1);
@@ -246,6 +323,15 @@ int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2, int *result)
     return ABT_SUCCESS;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Set sched as stream’s scheduler.
+ *
+ * @param[in] stream  handle to the target stream
+ * @param[in] sched   handle to the scheduler used for stream
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_set_scheduler(ABT_Stream stream, ABT_Scheduler sched)
 {
     int abt_errno = ABT_SUCCESS;
@@ -273,6 +359,15 @@ int ABT_Stream_set_scheduler(ABT_Stream stream, ABT_Scheduler sched)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Return the state of stream.
+ *
+ * @param[in]  stream  handle to the target stream
+ * @param[out] state   the stream's state
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_get_state(ABT_Stream stream, ABT_Stream_state *state)
 {
     int abt_errno = ABT_SUCCESS;
@@ -294,6 +389,15 @@ int ABT_Stream_get_state(ABT_Stream stream, ABT_Stream_state *state)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Set the stream's name.
+ *
+ * @param[in] stream  handle to the target stream
+ * @param[in] name    stream name
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_set_name(ABT_Stream stream, const char *name)
 {
     int abt_errno = ABT_SUCCESS;
@@ -323,6 +427,18 @@ int ABT_Stream_set_name(ABT_Stream stream, const char *name)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Return the stream's name and its length.
+ *
+ * If name is NULL, only len is returned.
+ *
+ * @param[in]  stream  handle to the target stream
+ * @param[out] name    stream name
+ * @param[out] len     the length of name in bytes
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_Stream_get_name(ABT_Stream stream, char *name, size_t *len)
 {
     int abt_errno = ABT_SUCCESS;
