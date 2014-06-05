@@ -9,73 +9,73 @@
 #include <stdint.h>
 
 static inline
-int32_t ABTD_Atomic_cas_int32(int32_t *ptr, int32_t oldv, int32_t newv)
+int32_t ABTD_atomic_cas_int32(int32_t *ptr, int32_t oldv, int32_t newv)
 {
     return __sync_val_compare_and_swap(ptr, oldv, newv);
 }
 
 static inline
-uint32_t ABTD_Atomic_cas_uint32(uint32_t *ptr, uint32_t oldv, uint32_t newv)
+uint32_t ABTD_atomic_cas_uint32(uint32_t *ptr, uint32_t oldv, uint32_t newv)
 {
     return __sync_val_compare_and_swap(ptr, oldv, newv);
 }
 
 static inline
-int64_t ABTD_Atomic_cas_int64(int64_t *ptr, int64_t oldv, int64_t newv)
+int64_t ABTD_atomic_cas_int64(int64_t *ptr, int64_t oldv, int64_t newv)
 {
     return __sync_val_compare_and_swap(ptr, oldv, newv);
 }
 
 static inline
-uint64_t ABTD_Atomic_cas_uint64(uint64_t *ptr, uint64_t oldv, uint64_t newv)
+uint64_t ABTD_atomic_cas_uint64(uint64_t *ptr, uint64_t oldv, uint64_t newv)
 {
     return __sync_val_compare_and_swap(ptr, oldv, newv);
 }
 
 static inline
-int32_t ABTD_Atomic_fetch_add_int32(int32_t *ptr, int32_t v)
+int32_t ABTD_atomic_fetch_add_int32(int32_t *ptr, int32_t v)
 {
     return __sync_fetch_and_add(ptr, v);
 }
 
 static inline
-uint32_t ABTD_Atomic_fetch_add_uint32(uint32_t *ptr, uint32_t v)
+uint32_t ABTD_atomic_fetch_add_uint32(uint32_t *ptr, uint32_t v)
 {
     return __sync_fetch_and_add(ptr, v);
 }
 
 static inline
-int64_t ABTD_Atomic_fetch_add_int64(int64_t *ptr, int64_t v)
+int64_t ABTD_atomic_fetch_add_int64(int64_t *ptr, int64_t v)
 {
     return __sync_fetch_and_add(ptr, v);
 }
 
 static inline
-uint64_t ABTD_Atomic_fetch_add_uint64(uint64_t *ptr, uint64_t v)
+uint64_t ABTD_atomic_fetch_add_uint64(uint64_t *ptr, uint64_t v)
 {
     return __sync_fetch_and_add(ptr, v);
 }
 
 static inline
-int32_t ABTD_Atomic_fetch_and_int32(int32_t *ptr, int32_t v)
+int32_t ABTD_atomic_fetch_and_int32(int32_t *ptr, int32_t v)
 {
     return __sync_fetch_and_and(ptr, v);
 }
 
 static inline
-uint32_t ABTD_Atomic_fetch_and_uint32(uint32_t *ptr, uint32_t v)
+uint32_t ABTD_atomic_fetch_and_uint32(uint32_t *ptr, uint32_t v)
 {
     return __sync_fetch_and_and(ptr, v);
 }
 
 static inline
-int32_t ABTD_Atomic_fetch_or_int32(int32_t *ptr, int32_t v)
+int32_t ABTD_atomic_fetch_or_int32(int32_t *ptr, int32_t v)
 {
     return __sync_fetch_and_or(ptr, v);
 }
 
 static inline
-uint32_t ABTD_Atomic_fetch_or_uint32(uint32_t *ptr, uint32_t v)
+uint32_t ABTD_atomic_fetch_or_uint32(uint32_t *ptr, uint32_t v)
 {
     return __sync_fetch_and_or(ptr, v);
 }

@@ -5,8 +5,8 @@
 
 #include "abti.h"
 
-int ABTD_Stream_context_create(void *(*f_stream)(void *), void *p_arg,
-                               ABTD_Stream_context *p_ctx)
+int ABTD_stream_context_create(void *(*f_stream)(void *), void *p_arg,
+                               ABTD_stream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
     int ret = pthread_create(p_ctx, NULL, f_stream, p_arg);
@@ -17,14 +17,14 @@ int ABTD_Stream_context_create(void *(*f_stream)(void *), void *p_arg,
     return abt_errno;
 }
 
-int ABTD_Stream_context_free(ABTD_Stream_context *p_ctx)
+int ABTD_stream_context_free(ABTD_stream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
     /* Currently, nothing to do */
     return abt_errno;
 }
 
-int ABTD_Stream_context_join(ABTD_Stream_context ctx)
+int ABTD_stream_context_join(ABTD_stream_context ctx)
 {
     int abt_errno = ABT_SUCCESS;
     int ret = pthread_join(ctx, NULL);
@@ -35,23 +35,23 @@ int ABTD_Stream_context_join(ABTD_Stream_context ctx)
     return abt_errno;
 }
 
-int ABTD_Stream_context_exit()
+int ABTD_stream_context_exit()
 {
     pthread_exit(NULL);
     return ABT_SUCCESS;
 }
 
-int ABTD_Stream_context_self(ABTD_Stream_context *p_ctx)
+int ABTD_stream_context_self(ABTD_stream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
     *p_ctx = pthread_self();
     return abt_errno;
 }
 
-int ABTD_Thread_context_create(ABTD_Thread_context *p_link,
+int ABTD_thread_context_create(ABTD_thread_context *p_link,
                                void (*f_thread)(void *), void *p_arg,
                                size_t stacksize, void *p_stack,
-                               ABTD_Thread_context *p_newctx)
+                               ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -67,7 +67,7 @@ int ABTD_Thread_context_create(ABTD_Thread_context *p_link,
     p_newctx->uc_link = p_link;
     p_newctx->uc_stack.ss_sp = p_stack;
     p_newctx->uc_stack.ss_size = stacksize;
-    makecontext(p_newctx, (void (*)())ABTI_Thread_func_wrapper,
+    makecontext(p_newctx, (void (*)())ABTI_thread_func_wrapper,
                 2, f_thread, p_arg);
 
   fn_exit:
@@ -77,15 +77,15 @@ int ABTD_Thread_context_create(ABTD_Thread_context *p_link,
     goto fn_exit;
 }
 
-int ABTD_Thread_context_free(ABTD_Thread_context *p_ctx)
+int ABTD_thread_context_free(ABTD_thread_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
     /* Currently, nothing to do */
     return abt_errno;
 }
 
-int ABTD_Thread_context_switch(ABTD_Thread_context *p_old,
-                               ABTD_Thread_context *p_new)
+int ABTD_thread_context_switch(ABTD_thread_context *p_old,
+                               ABTD_thread_context *p_new)
 {
     int abt_errno = ABT_SUCCESS;
     int ret = swapcontext(p_old, p_new);
@@ -96,8 +96,8 @@ int ABTD_Thread_context_switch(ABTD_Thread_context *p_old,
     return abt_errno;
 }
 
-int ABTD_Thread_context_change_link(ABTD_Thread_context *p_ctx,
-                                    ABTD_Thread_context *p_link)
+int ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
+                                    ABTD_thread_context *p_link)
 {
     int abt_errno = ABT_SUCCESS;
     p_ctx->uc_link = p_link;

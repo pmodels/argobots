@@ -72,18 +72,18 @@ extern "C" {
 
 
 /* Data Types */
-typedef void *                ABT_Stream;       /* Execution Stream */
-typedef enum ABT_Stream_state ABT_Stream_state; /* ES state */
-typedef void *                ABT_Thread;       /* User-level Thread */
-typedef enum ABT_Thread_state ABT_Thread_state; /* ULT state */
-typedef void *                ABT_Task;         /* Tasklet */
-typedef enum ABT_Task_state   ABT_Task_state;   /* Tasklet state */
-typedef void *                ABT_Mutex;        /* Mutex */
-typedef void *                ABT_Condition;    /* Condition */
-typedef void *                ABT_Scheduler;    /* Scheduler */
-typedef enum ABT_Unit_type    ABT_Unit_type;    /* Work unit type */
-typedef void *                ABT_Unit;         /* A work unit */
-typedef void *                ABT_Pool;         /* Pool of work units */
+typedef void *                ABT_stream;       /* Execution Stream */
+typedef enum ABT_stream_state ABT_stream_state; /* ES state */
+typedef void *                ABT_thread;       /* User-level Thread */
+typedef enum ABT_thread_state ABT_thread_state; /* ULT state */
+typedef void *                ABT_task;         /* Tasklet */
+typedef enum ABT_task_state   ABT_task_state;   /* Tasklet state */
+typedef void *                ABT_mutex;        /* Mutex */
+typedef void *                ABT_condition;    /* Condition */
+typedef void *                ABT_scheduler;    /* Scheduler */
+typedef enum ABT_unit_type    ABT_unit_type;    /* Work unit type */
+typedef void *                ABT_unit;         /* A work unit */
+typedef void *                ABT_pool;         /* Pool of work units */
 
 
 /* Null Objects */
@@ -98,14 +98,14 @@ typedef void *                ABT_Pool;         /* Pool of work units */
 
 
 /* Contants */
-enum ABT_Stream_state {
+enum ABT_stream_state {
     ABT_STREAM_STATE_CREATED,
     ABT_STREAM_STATE_READY,
     ABT_STREAM_STATE_RUNNING,
     ABT_STREAM_STATE_TERMINATED
 };
 
-enum ABT_Thread_state {
+enum ABT_thread_state {
     ABT_THREAD_STATE_READY,
     ABT_THREAD_STATE_RUNNING,
     ABT_THREAD_STATE_BLOCKED,
@@ -113,7 +113,7 @@ enum ABT_Thread_state {
     ABT_THREAD_STATE_TERMINATED
 };
 
-enum ABT_Task_state {
+enum ABT_task_state {
     ABT_TASK_STATE_CREATED,
     ABT_TASK_STATE_DELAYED,
     ABT_TASK_STATE_RUNNING,
@@ -121,7 +121,7 @@ enum ABT_Task_state {
     ABT_TASK_STATE_TERMINATED
 };
 
-enum ABT_Unit_type {
+enum ABT_unit_type {
     ABT_UNIT_TYPE_THREAD,
     ABT_UNIT_TYPE_TASK,
     ABT_UNIT_TYPE_OTHER
@@ -129,94 +129,94 @@ enum ABT_Unit_type {
 
 
 /* Scheduler Functions */
-typedef ABT_Unit_type (*ABT_Unit_get_type_fn)(ABT_Unit);
-typedef ABT_Thread (*ABT_Unit_get_thread_fn)(ABT_Unit);
-typedef ABT_Task (*ABT_Unit_get_task_fn)(ABT_Unit);
-typedef ABT_Unit (*ABT_Unit_create_from_thread_fn)(ABT_Thread);
-typedef ABT_Unit (*ABT_Unit_create_from_task_fn)(ABT_Task);
-typedef void (*ABT_Unit_free_fn)(ABT_Unit *);
-typedef size_t (*ABT_Pool_get_size_fn)(ABT_Pool);
-typedef void (*ABT_Pool_push_fn)(ABT_Pool, ABT_Unit);
-typedef ABT_Unit (*ABT_Pool_pop_fn)(ABT_Pool);
-typedef void (*ABT_Pool_remove_fn)(ABT_Pool, ABT_Unit);
+typedef ABT_unit_type (*ABT_unit_get_type_fn)(ABT_unit);
+typedef ABT_thread (*ABT_unit_get_thread_fn)(ABT_unit);
+typedef ABT_task (*ABT_unit_get_task_fn)(ABT_unit);
+typedef ABT_unit (*ABT_unit_create_from_thread_fn)(ABT_thread);
+typedef ABT_unit (*ABT_unit_create_from_task_fn)(ABT_task);
+typedef void (*ABT_unit_free_fn)(ABT_unit *);
+typedef size_t (*ABT_pool_get_size_fn)(ABT_pool);
+typedef void (*ABT_pool_push_fn)(ABT_pool, ABT_unit);
+typedef ABT_unit (*ABT_pool_pop_fn)(ABT_pool);
+typedef void (*ABT_pool_remove_fn)(ABT_pool, ABT_unit);
 
 typedef struct {
-    ABT_Unit_get_type_fn           u_get_type;
-    ABT_Unit_get_thread_fn         u_get_thread;
-    ABT_Unit_get_task_fn           u_get_task;
-    ABT_Unit_create_from_thread_fn u_create_from_thread;
-    ABT_Unit_create_from_task_fn   u_create_from_task;
-    ABT_Unit_free_fn               u_free;
+    ABT_unit_get_type_fn           u_get_type;
+    ABT_unit_get_thread_fn         u_get_thread;
+    ABT_unit_get_task_fn           u_get_task;
+    ABT_unit_create_from_thread_fn u_create_from_thread;
+    ABT_unit_create_from_task_fn   u_create_from_task;
+    ABT_unit_free_fn               u_free;
 
-    ABT_Pool_get_size_fn p_get_size;
-    ABT_Pool_push_fn     p_push;
-    ABT_Pool_pop_fn      p_pop;
-    ABT_Pool_remove_fn   p_remove;
-} ABT_Scheduler_funcs;
+    ABT_pool_get_size_fn p_get_size;
+    ABT_pool_push_fn     p_push;
+    ABT_pool_pop_fn      p_pop;
+    ABT_pool_remove_fn   p_remove;
+} ABT_scheduler_funcs;
 
 
 /* Init & Finalize */
-int ABT_Init(int argc, char **argv);
-int ABT_Finalize();
+int ABT_init(int argc, char **argv);
+int ABT_finalize();
 
 /* Execution Stream (ES) */
-int ABT_Stream_create(ABT_Scheduler sched, ABT_Stream *newstream);
-int ABT_Stream_free(ABT_Stream *stream);
-int ABT_Stream_join(ABT_Stream stream);
-int ABT_Stream_exit();
-int ABT_Stream_cancel(ABT_Stream stream);
-int ABT_Stream_self(ABT_Stream *stream);
-int ABT_Stream_equal(ABT_Stream stream1, ABT_Stream stream2, int *result);
-int ABT_Stream_set_scheduler(ABT_Stream stream, ABT_Scheduler sched);
-int ABT_Stream_get_state(ABT_Stream stream, ABT_Stream_state *state);
-int ABT_Stream_set_name(ABT_Stream stream, const char *name);
-int ABT_Stream_get_name(ABT_Stream stream, char *name, size_t *len);
+int ABT_stream_create(ABT_scheduler sched, ABT_stream *newstream);
+int ABT_stream_free(ABT_stream *stream);
+int ABT_stream_join(ABT_stream stream);
+int ABT_stream_exit();
+int ABT_stream_cancel(ABT_stream stream);
+int ABT_stream_self(ABT_stream *stream);
+int ABT_stream_equal(ABT_stream stream1, ABT_stream stream2, int *result);
+int ABT_stream_set_scheduler(ABT_stream stream, ABT_scheduler sched);
+int ABT_stream_get_state(ABT_stream stream, ABT_stream_state *state);
+int ABT_stream_set_name(ABT_stream stream, const char *name);
+int ABT_stream_get_name(ABT_stream stream, char *name, size_t *len);
 
 /* User-level Thread (ULT) */
-int ABT_Thread_create(ABT_Stream stream,
+int ABT_thread_create(ABT_stream stream,
                       void (*thread_func)(void *), void *arg,
-                      size_t stacksize, ABT_Thread *newthread);
-int ABT_Thread_free(ABT_Thread *thread);
-int ABT_Thread_join(ABT_Thread thread);
-int ABT_Thread_exit();
-int ABT_Thread_cancel(ABT_Thread thread);
-int ABT_Thread_yield();
-int ABT_Thread_yield_to(ABT_Thread thread);
-int ABT_Thread_set_callback(ABT_Thread thread,
+                      size_t stacksize, ABT_thread *newthread);
+int ABT_thread_free(ABT_thread *thread);
+int ABT_thread_join(ABT_thread thread);
+int ABT_thread_exit();
+int ABT_thread_cancel(ABT_thread thread);
+int ABT_thread_yield();
+int ABT_thread_yield_to(ABT_thread thread);
+int ABT_thread_set_callback(ABT_thread thread,
                             void (*callback_func)(void *arg), void *arg);
-int ABT_Thread_self(ABT_Thread *thread);
-int ABT_Thread_retain(ABT_Thread thread);
-int ABT_Thread_release(ABT_Thread thread);
-int ABT_Thread_equal(ABT_Thread thread1, ABT_Thread thread2, int *result);
-int ABT_Thread_get_state(ABT_Thread thread, ABT_Thread_state *state);
-int ABT_Thread_set_name(ABT_Thread thread, const char *name);
-int ABT_Thread_get_name(ABT_Thread thread, char *name, size_t *len);
+int ABT_thread_self(ABT_thread *thread);
+int ABT_thread_retain(ABT_thread thread);
+int ABT_thread_release(ABT_thread thread);
+int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, int *result);
+int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
+int ABT_thread_set_name(ABT_thread thread, const char *name);
+int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len);
 
 /* Tasklet */
-int ABT_Task_create(ABT_Stream stream,
+int ABT_task_create(ABT_stream stream,
                     void (*task_func)(void *), void *arg,
-                    ABT_Task *newtask);
-int ABT_Task_free(ABT_Task *task);
-int ABT_Task_cancel(ABT_Task task);
-int ABT_Task_retain(ABT_Task task);
-int ABT_Task_release(ABT_Task task);
-int ABT_Task_equal(ABT_Task task1, ABT_Task task2, int *result);
-int ABT_Task_get_state(ABT_Task task, ABT_Task_state *state);
-int ABT_Task_set_name(ABT_Task task, const char *name);
-int ABT_Task_get_name(ABT_Task task, char *name, size_t *len);
+                    ABT_task *newtask);
+int ABT_task_free(ABT_task *task);
+int ABT_task_cancel(ABT_task task);
+int ABT_task_retain(ABT_task task);
+int ABT_task_release(ABT_task task);
+int ABT_task_equal(ABT_task task1, ABT_task task2, int *result);
+int ABT_task_get_state(ABT_task task, ABT_task_state *state);
+int ABT_task_set_name(ABT_task task, const char *name);
+int ABT_task_get_name(ABT_task task, char *name, size_t *len);
 
 /* Scheduler */
-int ABT_Scheduler_create(ABT_Pool pool,
-                         const ABT_Scheduler_funcs *funcs,
-                         ABT_Scheduler *newsched);
-int ABT_Scheduler_free(ABT_Scheduler *sched);
+int ABT_scheduler_create(ABT_pool pool,
+                         const ABT_scheduler_funcs *funcs,
+                         ABT_scheduler *newsched);
+int ABT_scheduler_free(ABT_scheduler *sched);
 
 /* Mutex */
-int ABT_Mutex_create(ABT_Mutex *newmutex);
-int ABT_Mutex_free(ABT_Mutex *mutex);
-int ABT_Mutex_lock(ABT_Mutex mutex);
-int ABT_Mutex_trylock(ABT_Mutex mutex);
-int ABT_Mutex_unlock(ABT_Mutex mutex);
+int ABT_mutex_create(ABT_mutex *newmutex);
+int ABT_mutex_free(ABT_mutex *mutex);
+int ABT_mutex_lock(ABT_mutex mutex);
+int ABT_mutex_trylock(ABT_mutex mutex);
+int ABT_mutex_unlock(ABT_mutex mutex);
 
 /* Condition */
 

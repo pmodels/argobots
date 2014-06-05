@@ -13,14 +13,14 @@ indent_code()
     $indent --k-and-r-style --line-length80 --else-endif-column1 --start-left-side-of-comments \
 	--break-after-boolean-operator --dont-cuddle-else --dont-format-comments \
 	--comment-indentation1 --indent-level4 --no-tabs --no-space-after-casts \
-    -T ABT_Stream -T ABT_Stream_state -T ABT_Thread -T ABT_Thread_state \
-    -T ABT_Task -T ABT_Task_state -T ABT_Mutex -T ABT_Condition \
-    -T ABT_Scheduler -T ABT_Unit_type -T ABT_Unit -T ABT_Pool \
-    -T ABT_Scheduler_funcs \
-    -T ABTI_Stream -T ABTI_Stream_type -T ABTI_Thread -T ABTI_Thread_type \
-    -T ABTI_Task -T ABTI_Mutex -T ABTI_Condition -T ABTI_Scheduler \
-    -T ABTI_Scheduler_type -T ABTI_Unit -T ABTI_Pool \
-    -T ABTI_Stream_pool -T ABTI_Task_pool -T ABTI_Global -T ABTI_Local \
+    -T ABT_stream -T ABT_stream_state -T ABT_thread -T ABT_thread_state \
+    -T ABT_task -T ABT_task_state -T ABT_mutex -T ABT_condition \
+    -T ABT_scheduler -T ABT_unit_type -T ABT_unit -T ABT_pool \
+    -T ABT_scheduler_funcs \
+    -T ABTI_stream -T ABTI_stream_type -T ABTI_thread -T ABTI_thread_type \
+    -T ABTI_task -T ABTI_mutex -T ABTI_condition -T ABTI_scheduler \
+    -T ABTI_scheduler_type -T ABTI_unit -T ABTI_pool \
+    -T ABTI_stream_pool -T ABTI_task_pool -T ABTI_global -T ABTI_local \
 	${file}
     rm -f ${file}~
     cp ${file} /tmp/${USER}.__tmp__ && \

@@ -6,141 +6,141 @@
 #include "abti.h"
 
 
-ABTI_Unit *ABTI_Unit_get_ptr(ABT_Unit unit)
+ABTI_unit *ABTI_unit_get_ptr(ABT_unit unit)
 {
-    ABTI_Unit *p_unit;
+    ABTI_unit *p_unit;
     if (unit == ABT_UNIT_NULL) {
         p_unit = NULL;
     } else {
-        p_unit = (ABTI_Unit *)unit;
+        p_unit = (ABTI_unit *)unit;
     }
     return p_unit;
 }
 
-ABT_Unit ABTI_Unit_get_handle(ABTI_Unit *p_unit)
+ABT_unit ABTI_unit_get_handle(ABTI_unit *p_unit)
 {
-    ABT_Unit h_unit;
+    ABT_unit h_unit;
     if (p_unit == NULL) {
         h_unit = ABT_UNIT_NULL;
     } else {
-        h_unit = (ABT_Unit)p_unit;
+        h_unit = (ABT_unit)p_unit;
     }
     return h_unit;
 }
 
-ABT_Unit_type ABTI_Unit_get_type(ABT_Unit unit)
+ABT_unit_type ABTI_unit_get_type(ABT_unit unit)
 {
-    ABTI_Unit *p_unit = ABTI_Unit_get_ptr(unit);
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
     return p_unit->type;
 }
 
-ABT_Stream ABTI_Unit_get_stream(ABT_Unit unit)
+ABT_stream ABTI_unit_get_stream(ABT_unit unit)
 {
-    ABT_Stream h_stream;
-    ABTI_Unit *p_unit = ABTI_Unit_get_ptr(unit);
+    ABT_stream h_stream;
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
     if (p_unit->type == ABT_UNIT_TYPE_OTHER) {
-        ABTI_Stream *p_stream = (ABTI_Stream *)p_unit->p_unit;
-        h_stream = ABTI_Stream_get_handle(p_stream);
+        ABTI_stream *p_stream = (ABTI_stream *)p_unit->p_unit;
+        h_stream = ABTI_stream_get_handle(p_stream);
     } else {
         h_stream = ABT_STREAM_NULL;
     }
     return h_stream;
 }
 
-ABT_Thread ABTI_Unit_get_thread(ABT_Unit unit)
+ABT_thread ABTI_unit_get_thread(ABT_unit unit)
 {
-    ABT_Thread h_thread;
-    ABTI_Unit *p_unit = ABTI_Unit_get_ptr(unit);
+    ABT_thread h_thread;
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
     if (p_unit->type == ABT_UNIT_TYPE_THREAD) {
-        ABTI_Thread *p_thread = (ABTI_Thread *)p_unit->p_unit;
-        h_thread = ABTI_Thread_get_handle(p_thread);
+        ABTI_thread *p_thread = (ABTI_thread *)p_unit->p_unit;
+        h_thread = ABTI_thread_get_handle(p_thread);
     } else {
         h_thread = ABT_THREAD_NULL;
     }
     return h_thread;
 }
 
-ABT_Task ABTI_Unit_get_task(ABT_Unit unit)
+ABT_task ABTI_unit_get_task(ABT_unit unit)
 {
-    ABT_Task h_task;
-    ABTI_Unit *p_unit = ABTI_Unit_get_ptr(unit);
+    ABT_task h_task;
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
     if (p_unit->type == ABT_UNIT_TYPE_TASK) {
-        ABTI_Task *p_task = (ABTI_Task *)p_unit->p_unit;
-        h_task = ABTI_Task_get_handle(p_task);
+        ABTI_task *p_task = (ABTI_task *)p_unit->p_unit;
+        h_task = ABTI_task_get_handle(p_task);
     } else {
         h_task = ABT_TASK_NULL;
     }
     return h_task;
 }
 
-ABT_Unit ABTI_Unit_create_from_stream(ABT_Stream stream)
+ABT_unit ABTI_unit_create_from_stream(ABT_stream stream)
 {
-    ABTI_Unit *p_unit;
+    ABTI_unit *p_unit;
 
-    p_unit = (ABTI_Unit *)ABTU_Malloc(sizeof(ABTI_Unit));
+    p_unit = (ABTI_unit *)ABTU_malloc(sizeof(ABTI_unit));
     if (!p_unit) {
-        HANDLE_ERROR("ABTU_Malloc");
+        HANDLE_ERROR("ABTU_malloc");
         return ABT_UNIT_NULL;
     }
 
     p_unit->p_pool = NULL;
     p_unit->type   = ABT_UNIT_TYPE_OTHER;
-    p_unit->p_unit = (void *)ABTI_Stream_get_ptr(stream);
+    p_unit->p_unit = (void *)ABTI_stream_get_ptr(stream);
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
 
-    return ABTI_Unit_get_handle(p_unit);
+    return ABTI_unit_get_handle(p_unit);
 }
 
-ABT_Unit ABTI_Unit_create_from_thread(ABT_Thread thread)
+ABT_unit ABTI_unit_create_from_thread(ABT_thread thread)
 {
-    ABTI_Unit *p_unit;
+    ABTI_unit *p_unit;
 
-    p_unit = (ABTI_Unit *)ABTU_Malloc(sizeof(ABTI_Unit));
+    p_unit = (ABTI_unit *)ABTU_malloc(sizeof(ABTI_unit));
     if (!p_unit) {
-        HANDLE_ERROR("ABTU_Malloc");
+        HANDLE_ERROR("ABTU_malloc");
         return ABT_UNIT_NULL;
     }
 
     p_unit->p_pool = NULL;
     p_unit->type   = ABT_UNIT_TYPE_THREAD;
-    p_unit->p_unit = (void *)ABTI_Thread_get_ptr(thread);
+    p_unit->p_unit = (void *)ABTI_thread_get_ptr(thread);
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
 
-    return ABTI_Unit_get_handle(p_unit);
+    return ABTI_unit_get_handle(p_unit);
 }
 
-ABT_Unit ABTI_Unit_create_from_task(ABT_Task task)
+ABT_unit ABTI_unit_create_from_task(ABT_task task)
 {
-    ABTI_Unit *p_unit;
+    ABTI_unit *p_unit;
 
-    p_unit = (ABTI_Unit *)ABTU_Malloc(sizeof(ABTI_Unit));
+    p_unit = (ABTI_unit *)ABTU_malloc(sizeof(ABTI_unit));
     if (!p_unit) {
-        HANDLE_ERROR("ABTU_Malloc");
+        HANDLE_ERROR("ABTU_malloc");
         return ABT_UNIT_NULL;
     }
 
     p_unit->p_pool = NULL;
     p_unit->type   = ABT_UNIT_TYPE_TASK;
-    p_unit->p_unit = (void *)ABTI_Task_get_ptr(task);
+    p_unit->p_unit = (void *)ABTI_task_get_ptr(task);
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
 
-    return ABTI_Unit_get_handle(p_unit);
+    return ABTI_unit_get_handle(p_unit);
 }
 
-void ABTI_Unit_free(ABT_Unit *unit)
+void ABTI_unit_free(ABT_unit *unit)
 {
-    ABTI_Unit *p_unit = ABTI_Unit_get_ptr(*unit);
-    ABTU_Free(p_unit);
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(*unit);
+    ABTU_free(p_unit);
     *unit = ABT_UNIT_NULL;
 }
 
-int ABTI_Unit_print(ABT_Unit unit)
+int ABTI_unit_print(ABT_unit unit)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Unit *p_unit = ABTI_Unit_get_ptr(unit);
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
 
     printf("<");
     printf("pool:%p ", p_unit->p_pool);
@@ -148,14 +148,14 @@ int ABTI_Unit_print(ABT_Unit unit)
     switch (p_unit->type) {
         case ABT_UNIT_TYPE_THREAD:
             printf("thread");
-            ABTI_Thread *p_thread = (ABTI_Thread *)p_unit->p_unit;
-            ABTI_Thread_print(p_thread);
+            ABTI_thread *p_thread = (ABTI_thread *)p_unit->p_unit;
+            ABTI_thread_print(p_thread);
             break;
 
         case ABT_UNIT_TYPE_TASK:
             printf("task");
-            ABTI_Task *p_task = (ABTI_Task *)p_unit->p_unit;
-            ABTI_Task_print(p_task);
+            ABTI_task *p_task = (ABTI_task *)p_unit->p_unit;
+            ABTI_task_print(p_task);
             break;
 
         case ABT_UNIT_TYPE_OTHER:

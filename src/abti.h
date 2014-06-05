@@ -15,22 +15,21 @@
 #include "abtu.h"
 
 /* Data Types */
-typedef struct ABTI_Stream       ABTI_Stream;
-typedef enum ABTI_Stream_type    ABTI_Stream_type;
-typedef struct ABTI_Thread       ABTI_Thread;
-typedef enum ABTI_Thread_type    ABTI_Thread_type;
-typedef struct ABTI_Task         ABTI_Task;
-typedef struct ABTI_Mutex        ABTI_Mutex;
-typedef struct ABTI_Condition    ABTI_Condition;
-typedef struct ABTI_Barrier      ABTI_Barrier;
-typedef struct ABTI_Scheduler    ABTI_Scheduler;
-typedef enum ABTI_Scheduler_type ABTI_Scheduler_type;
-typedef struct ABTI_Unit         ABTI_Unit;
-typedef struct ABTI_Pool         ABTI_Pool;
-typedef struct ABTI_Stream_pool  ABTI_Stream_pool;
-typedef struct ABTI_Task_pool    ABTI_Task_pool;
-typedef struct ABTI_Global       ABTI_Global;
-typedef struct ABTI_Local        ABTI_Local;
+typedef struct ABTI_stream       ABTI_stream;
+typedef enum ABTI_stream_type    ABTI_stream_type;
+typedef struct ABTI_thread       ABTI_thread;
+typedef enum ABTI_thread_type    ABTI_thread_type;
+typedef struct ABTI_task         ABTI_task;
+typedef struct ABTI_mutex        ABTI_mutex;
+typedef struct ABTI_condition    ABTI_condition;
+typedef struct ABTI_scheduler    ABTI_scheduler;
+typedef enum ABTI_scheduler_type ABTI_scheduler_type;
+typedef struct ABTI_unit         ABTI_unit;
+typedef struct ABTI_pool         ABTI_pool;
+typedef struct ABTI_stream_pool  ABTI_stream_pool;
+typedef struct ABTI_task_pool    ABTI_task_pool;
+typedef struct ABTI_global       ABTI_global;
+typedef struct ABTI_local        ABTI_local;
 
 
 /* Architecture-Dependent Definitions */
@@ -50,45 +49,45 @@ typedef struct ABTI_Local        ABTI_Local;
 
 #define ABTI_TASK_REQ_CANCEL        0x1
 
-enum ABTI_Stream_type {
+enum ABTI_stream_type {
     ABTI_STREAM_TYPE_PRIMARY,
     ABTI_STREAM_TYPE_SECONDARY
 };
 
-enum ABTI_Thread_type {
+enum ABTI_thread_type {
     ABTI_THREAD_TYPE_MAIN,
     ABTI_THREAD_TYPE_USER
 };
 
-enum ABTI_Scheduler_type {
+enum ABTI_scheduler_type {
     ABTI_SCHEDULER_TYPE_DEFAULT,
     ABTI_SCHEDULER_TYPE_USER
 };
 
 
 /* Definitions */
-struct ABTI_Stream {
-    ABT_Unit unit;             /* Unit enclosing this stream */
+struct ABTI_stream {
+    ABT_unit unit;             /* Unit enclosing this stream */
     uint64_t id;               /* ID */
     char *p_name;              /* Name */
-    ABTI_Stream_type type;     /* Type */
-    ABT_Stream_state state;    /* State */
+    ABTI_stream_type type;     /* Type */
+    ABT_stream_state state;    /* State */
 
     uint32_t request;          /* Request */
-    ABT_Mutex mutex;           /* Mutex */
-    ABTI_Scheduler *p_sched;   /* Scheduler */
-    ABT_Pool deads;            /* Units terminated but still referenced */
+    ABT_mutex mutex;           /* Mutex */
+    ABTI_scheduler *p_sched;   /* Scheduler */
+    ABT_pool deads;            /* Units terminated but still referenced */
 
-    ABTD_Stream_context ctx;   /* Stream context */
+    ABTD_stream_context ctx;   /* Stream context */
 };
 
-struct ABTI_Thread {
-    ABT_Unit unit;              /* Unit enclosing this thread */
-    ABTI_Stream *p_stream;      /* Associated stream */
+struct ABTI_thread {
+    ABT_unit unit;              /* Unit enclosing this thread */
+    ABTI_stream *p_stream;      /* Associated stream */
     uint64_t id;                /* ID */
     char *p_name;               /* Name */
-    ABTI_Thread_type type;      /* Type */
-    ABT_Thread_state state;     /* State */
+    ABTI_thread_type type;      /* Type */
+    ABT_thread_state state;     /* State */
     size_t stacksize;           /* Stack size */
     uint32_t refcount;          /* Reference count */
 
@@ -97,203 +96,203 @@ struct ABTI_Thread {
 
     uint32_t request;           /* Request */
     void *p_req_arg;            /* Request argument */
-    ABT_Mutex mutex;            /* Mutex */
+    ABT_mutex mutex;            /* Mutex */
     void *p_stack;              /* Stack */
 
-    ABTD_Thread_context ctx;    /* Context */
+    ABTD_thread_context ctx;    /* Context */
 };
 
-struct ABTI_Task {
-    ABT_Unit unit;             /* Unit enclosing this task */
-    ABTI_Stream *p_stream;     /* Associated stream */
+struct ABTI_task {
+    ABT_unit unit;             /* Unit enclosing this task */
+    ABTI_stream *p_stream;     /* Associated stream */
     uint64_t id;               /* ID */
     char *p_name;              /* Name */
-    ABT_Task_state state;      /* State */
+    ABT_task_state state;      /* State */
     uint32_t refcount;         /* Reference count */
 
     uint32_t request;          /* Request */
-    ABT_Mutex mutex;           /* Mutex */
+    ABT_mutex mutex;           /* Mutex */
     void (*f_task)(void *);    /* Task function */
     void *p_arg;               /* Task arguments */
 };
 
-struct ABTI_Mutex {
+struct ABTI_mutex {
     uint32_t val;
 };
 
-struct ABTI_Condition {
+struct ABTI_condition {
 };
 
-struct ABTI_Scheduler {
-    ABTI_Scheduler_type type; /* Type */
-    ABT_Mutex mutex;          /* Mutex */
-    ABTD_Thread_context ctx;  /* Scheduler context */
-    ABT_Pool pool;            /* Work unit pool */
+struct ABTI_scheduler {
+    ABTI_scheduler_type type; /* Type */
+    ABT_mutex mutex;          /* Mutex */
+    ABTD_thread_context ctx;  /* Scheduler context */
+    ABT_pool pool;            /* Work unit pool */
 
     /* Scheduler functions */
-    ABT_Unit_get_type_fn           u_get_type;
-    ABT_Unit_get_thread_fn         u_get_thread;
-    ABT_Unit_get_task_fn           u_get_task;
-    ABT_Unit_create_from_thread_fn u_create_from_thread;
-    ABT_Unit_create_from_task_fn   u_create_from_task;
-    ABT_Unit_free_fn               u_free;
-    ABT_Pool_get_size_fn           p_get_size;
-    ABT_Pool_push_fn               p_push;
-    ABT_Pool_pop_fn                p_pop;
-    ABT_Pool_remove_fn             p_remove;
+    ABT_unit_get_type_fn           u_get_type;
+    ABT_unit_get_thread_fn         u_get_thread;
+    ABT_unit_get_task_fn           u_get_task;
+    ABT_unit_create_from_thread_fn u_create_from_thread;
+    ABT_unit_create_from_task_fn   u_create_from_task;
+    ABT_unit_free_fn               u_free;
+    ABT_pool_get_size_fn           p_get_size;
+    ABT_pool_push_fn               p_push;
+    ABT_pool_pop_fn                p_pop;
+    ABT_pool_remove_fn             p_remove;
 };
 
-struct ABTI_Unit {
-    ABTI_Pool    *p_pool; /* Pool to which this unit belongs */
-    ABT_Unit_type type;   /* Work unit type */
+struct ABTI_unit {
+    ABTI_pool    *p_pool; /* Pool to which this unit belongs */
+    ABT_unit_type type;   /* Work unit type */
     void         *p_unit; /* Work unit object,
-                             e.g., ABTI_Thread or ABTI_Task */
-    ABTI_Unit    *p_prev; /* Previous unit in list */
-    ABTI_Unit    *p_next; /* Next unit in list */
+                             e.g., ABTI_thread or ABTI_task */
+    ABTI_unit    *p_prev; /* Previous unit in list */
+    ABTI_unit    *p_next; /* Next unit in list */
 };
 
-struct ABTI_Pool {
+struct ABTI_pool {
     size_t     num_units; /* Number of units */
-    ABTI_Unit *p_head;    /* The first unit */
-    ABTI_Unit *p_tail;    /* The last unit */
+    ABTI_unit *p_head;    /* The first unit */
+    ABTI_unit *p_tail;    /* The last unit */
 };
 
-struct ABTI_Stream_pool {
-    ABT_Pool created;  /* Streams in CREATED state */
-    ABT_Pool active;   /* Streams in READY or RUNNING state */
-    ABT_Pool deads;    /* Streams in TERMINATED state but not freed */
-    ABT_Mutex mutex;   /* Mutex */
+struct ABTI_stream_pool {
+    ABT_pool created;  /* Streams in CREATED state */
+    ABT_pool active;   /* Streams in READY or RUNNING state */
+    ABT_pool deads;    /* Streams in TERMINATED state but not freed */
+    ABT_mutex mutex;   /* Mutex */
 };
 
-struct ABTI_Task_pool {
-    ABT_Pool pool;     /* Tasks created but not assigned */
-    ABT_Mutex mutex;   /* Mutex */
+struct ABTI_task_pool {
+    ABT_pool pool;     /* Tasks created but not assigned */
+    ABT_mutex mutex;   /* Mutex */
 };
 
-struct ABTI_Global {
-    ABTI_Stream_pool *p_streams;  /* Stream pool */
-    ABTI_Task_pool   *p_tasks;    /* Task pool */
+struct ABTI_global {
+    ABTI_stream_pool *p_streams;  /* Stream pool */
+    ABTI_task_pool   *p_tasks;    /* Task pool */
 };
 
-struct ABTI_Local {
-    ABTI_Stream *p_stream;  /* Current stream */
-    ABTI_Thread *p_thread;  /* Current running thread */
+struct ABTI_local {
+    ABTI_stream *p_stream;  /* Current stream */
+    ABTI_thread *p_thread;  /* Current running thread */
 };
 
 
 /* Global Data */
-extern ABTI_Global *gp_ABTI_Global;
+extern ABTI_global *gp_ABTI_global;
 
 
 /* ES Local Data */
-extern ABTD_STREAM_LOCAL ABTI_Local *lp_ABTI_Local;
+extern ABTD_STREAM_LOCAL ABTI_local *lp_ABTI_local;
 
 
 /* Init & Finalize */
-int ABTI_Stream_pool_init(ABTI_Stream_pool *p_streams);
-int ABTI_Stream_pool_finalize(ABTI_Stream_pool *p_streams);
-int ABTI_Task_pool_init(ABTI_Task_pool *p_tasks);
-int ABTI_Task_pool_finalize(ABTI_Task_pool *p_tasks);
+int ABTI_stream_pool_init(ABTI_stream_pool *p_streams);
+int ABTI_stream_pool_finalize(ABTI_stream_pool *p_streams);
+int ABTI_task_pool_init(ABTI_task_pool *p_tasks);
+int ABTI_task_pool_finalize(ABTI_task_pool *p_tasks);
 
 /* Global Data */
-int ABTI_Global_add_stream(ABTI_Stream *p_stream);
-int ABTI_Global_move_stream(ABTI_Stream *p_stream);
-int ABTI_Global_del_stream(ABTI_Stream *p_stream);
-int ABTI_Global_get_created_stream(ABTI_Stream **p_stream);
-int ABTI_Global_add_task(ABTI_Task *p_task);
-int ABTI_Global_del_task(ABTI_Task *p_task);
-int ABTI_Global_pop_task(ABTI_Task **p_task);
-int ABTI_Global_has_task(int *result);
+int ABTI_global_add_stream(ABTI_stream *p_stream);
+int ABTI_global_move_stream(ABTI_stream *p_stream);
+int ABTI_global_del_stream(ABTI_stream *p_stream);
+int ABTI_global_get_created_stream(ABTI_stream **p_stream);
+int ABTI_global_add_task(ABTI_task *p_task);
+int ABTI_global_del_task(ABTI_task *p_task);
+int ABTI_global_pop_task(ABTI_task **p_task);
+int ABTI_global_has_task(int *result);
 
 /* ES Local Data */
-int ABTI_Local_init(ABTI_Stream *p_stream);
-int ABTI_Local_finalize();
-static inline ABTI_Stream *ABTI_Local_get_stream() {
-    return lp_ABTI_Local->p_stream;
+int ABTI_local_init(ABTI_stream *p_stream);
+int ABTI_local_finalize();
+static inline ABTI_stream *ABTI_local_get_stream() {
+    return lp_ABTI_local->p_stream;
 }
-static inline void ABTI_Local_set_stream(ABTI_Stream *p_stream) {
-    lp_ABTI_Local->p_stream = p_stream;
+static inline void ABTI_local_set_stream(ABTI_stream *p_stream) {
+    lp_ABTI_local->p_stream = p_stream;
 }
-static inline ABTI_Thread *ABTI_Local_get_thread() {
-    return lp_ABTI_Local->p_thread;
+static inline ABTI_thread *ABTI_local_get_thread() {
+    return lp_ABTI_local->p_thread;
 }
-static inline void ABTI_Local_set_thread(ABTI_Thread *p_thread) {
-    lp_ABTI_Local->p_thread = p_thread;
+static inline void ABTI_local_set_thread(ABTI_thread *p_thread) {
+    lp_ABTI_local->p_thread = p_thread;
 }
 
 /* Execution Stream (ES) */
-ABTI_Stream *ABTI_Stream_get_ptr(ABT_Stream stream);
-ABT_Stream   ABTI_Stream_get_handle(ABTI_Stream *p_stream);
-int ABTI_Stream_free(ABTI_Stream *p_stream);
-int ABTI_Stream_start(ABTI_Stream *p_stream);
-int ABTI_Stream_start_any();
-int ABTI_Stream_schedule(ABTI_Stream *p_stream);
-int ABTI_Stream_schedule_thread(ABTI_Thread *p_thread);
-int ABTI_Stream_schedule_task(ABTI_Task *p_task);
-int ABTI_Stream_terminate_thread(ABTI_Thread *p_thread);
-int ABTI_Stream_terminate_task(ABTI_Task *p_task);
-int ABTI_Stream_add_thread(ABTI_Thread *p_thread);
-int ABTI_Stream_keep_thread(ABTI_Thread *p_thread);
-int ABTI_Stream_keep_task(ABTI_Task *p_task);
-int ABTI_Stream_print(ABTI_Stream *p_stream);
+ABTI_stream *ABTI_stream_get_ptr(ABT_stream stream);
+ABT_stream   ABTI_stream_get_handle(ABTI_stream *p_stream);
+int ABTI_stream_free(ABTI_stream *p_stream);
+int ABTI_stream_start(ABTI_stream *p_stream);
+int ABTI_stream_start_any();
+int ABTI_stream_schedule(ABTI_stream *p_stream);
+int ABTI_stream_schedule_thread(ABTI_thread *p_thread);
+int ABTI_stream_schedule_task(ABTI_task *p_task);
+int ABTI_stream_terminate_thread(ABTI_thread *p_thread);
+int ABTI_stream_terminate_task(ABTI_task *p_task);
+int ABTI_stream_add_thread(ABTI_thread *p_thread);
+int ABTI_stream_keep_thread(ABTI_thread *p_thread);
+int ABTI_stream_keep_task(ABTI_task *p_task);
+int ABTI_stream_print(ABTI_stream *p_stream);
 
 /* User-level Thread (ULT) */
-ABTI_Thread *ABTI_Thread_get_ptr(ABT_Thread thread);
-ABT_Thread   ABTI_Thread_get_handle(ABTI_Thread *p_thread);
-int ABTI_Thread_create_main(ABTI_Stream *p_stream, ABTI_Thread **p_thread);
-int ABTI_Thread_free_main(ABTI_Thread *p_thread);
-int ABTI_Thread_free(ABTI_Thread *p_thread);
-int ABTI_Thread_print(ABTI_Thread *p_thread);
-void ABTI_Thread_func_wrapper(void (*thread_func)(void *), void *p_arg);
-int ABTI_Thread_set_ready(ABT_Thread thread);
-int ABTI_Thread_suspend();
-ABT_Thread *ABTI_Thread_current();
+ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread);
+ABT_thread   ABTI_thread_get_handle(ABTI_thread *p_thread);
+int ABTI_thread_create_main(ABTI_stream *p_stream, ABTI_thread **p_thread);
+int ABTI_thread_free_main(ABTI_thread *p_thread);
+int ABTI_thread_free(ABTI_thread *p_thread);
+int ABTI_thread_print(ABTI_thread *p_thread);
+void ABTI_thread_func_wrapper(void (*thread_func)(void *), void *p_arg);
+int ABTI_thread_set_ready(ABT_thread thread);
+int ABTI_thread_suspend();
+ABT_thread *ABTI_thread_current();
 
 /* Tasklet */
-ABTI_Task *ABTI_Task_get_ptr(ABT_Task task);
-ABT_Task   ABTI_Task_get_handle(ABTI_Task *p_task);
-int ABTI_Task_free(ABTI_Task *p_task);
-int ABTI_Task_print(ABTI_Task *p_task);
+ABTI_task *ABTI_task_get_ptr(ABT_task task);
+ABT_task   ABTI_task_get_handle(ABTI_task *p_task);
+int ABTI_task_free(ABTI_task *p_task);
+int ABTI_task_print(ABTI_task *p_task);
 
 /* Mutex */
-ABTI_Mutex *ABTI_Mutex_get_ptr(ABT_Mutex mutex);
-ABT_Mutex   ABTI_Mutex_get_handle(ABTI_Mutex *p_mutex);
-int ABTI_Mutex_waitlock(ABT_Mutex mutex);
+ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex);
+ABT_mutex   ABTI_mutex_get_handle(ABTI_mutex *p_mutex);
+int ABTI_mutex_waitlock(ABT_mutex mutex);
 
 /* Condition */
 
 /* Scheduler */
-ABTI_Scheduler *ABTI_Scheduler_get_ptr(ABT_Scheduler sched);
-ABT_Scheduler   ABTI_Scheduler_get_handle(ABTI_Scheduler *p_sched);
-int  ABTI_Scheduler_create_default(ABTI_Scheduler **p_newsched);
-void ABTI_Scheduler_push(ABTI_Scheduler *p_sched, ABT_Unit unit);
-ABT_Unit ABTI_Scheduler_pop(ABTI_Scheduler *p_sched);
-void ABTI_Scheduler_remove(ABTI_Scheduler *p_sched, ABT_Unit unit);
-int  ABTI_Scheduler_print(ABTI_Scheduler *p_sched);
+ABTI_scheduler *ABTI_scheduler_get_ptr(ABT_scheduler sched);
+ABT_scheduler   ABTI_scheduler_get_handle(ABTI_scheduler *p_sched);
+int  ABTI_scheduler_create_default(ABTI_scheduler **p_newsched);
+void ABTI_scheduler_push(ABTI_scheduler *p_sched, ABT_unit unit);
+ABT_unit ABTI_scheduler_pop(ABTI_scheduler *p_sched);
+void ABTI_scheduler_remove(ABTI_scheduler *p_sched, ABT_unit unit);
+int  ABTI_scheduler_print(ABTI_scheduler *p_sched);
 
 /* Unit */
-ABTI_Unit *ABTI_Unit_get_ptr(ABT_Unit unit);
-ABT_Unit   ABTI_Unit_get_handle(ABTI_Unit *p_unit);
-ABT_Unit_type ABTI_Unit_get_type(ABT_Unit unit);
-ABT_Stream    ABTI_Unit_get_stream(ABT_Unit unit);
-ABT_Thread    ABTI_Unit_get_thread(ABT_Unit unit);
-ABT_Task      ABTI_Unit_get_task(ABT_Unit unit);
-ABT_Unit      ABTI_Unit_create_from_stream(ABT_Stream stream);
-ABT_Unit      ABTI_Unit_create_from_thread(ABT_Thread thread);
-ABT_Unit      ABTI_Unit_create_from_task(ABT_Task task);
-void          ABTI_Unit_free(ABT_Unit *unit);
-int           ABTI_Unit_print(ABT_Unit unit);
+ABTI_unit *ABTI_unit_get_ptr(ABT_unit unit);
+ABT_unit   ABTI_unit_get_handle(ABTI_unit *p_unit);
+ABT_unit_type ABTI_unit_get_type(ABT_unit unit);
+ABT_stream    ABTI_unit_get_stream(ABT_unit unit);
+ABT_thread    ABTI_unit_get_thread(ABT_unit unit);
+ABT_task      ABTI_unit_get_task(ABT_unit unit);
+ABT_unit      ABTI_unit_create_from_stream(ABT_stream stream);
+ABT_unit      ABTI_unit_create_from_thread(ABT_thread thread);
+ABT_unit      ABTI_unit_create_from_task(ABT_task task);
+void          ABTI_unit_free(ABT_unit *unit);
+int           ABTI_unit_print(ABT_unit unit);
 
 /* Pool */
-ABTI_Pool *ABTI_Pool_get_ptr(ABT_Pool pool);
-ABT_Pool   ABTI_Pool_get_handle(ABTI_Pool *p_pool);
-int ABTI_Pool_create(ABT_Pool *newpool);
-int ABTI_Pool_free(ABT_Pool *pool);
-size_t   ABTI_Pool_get_size(ABT_Pool pool);
-void     ABTI_Pool_push(ABT_Pool pool, ABT_Unit unit);
-ABT_Unit ABTI_Pool_pop(ABT_Pool pool);
-void     ABTI_Pool_remove(ABT_Pool pool, ABT_Unit unit);
-int      ABTI_Pool_print(ABT_Pool pool);
+ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool);
+ABT_pool   ABTI_pool_get_handle(ABTI_pool *p_pool);
+int ABTI_pool_create(ABT_pool *newpool);
+int ABTI_pool_free(ABT_pool *pool);
+size_t   ABTI_pool_get_size(ABT_pool pool);
+void     ABTI_pool_push(ABT_pool pool, ABT_unit unit);
+ABT_unit ABTI_pool_pop(ABT_pool pool);
+void     ABTI_pool_remove(ABT_pool pool, ABT_unit unit);
+int      ABTI_pool_print(ABT_pool pool);
 
 
 #define ABTI_CHECK_ERROR(abt_errno)  \

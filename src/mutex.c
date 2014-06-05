@@ -18,14 +18,14 @@
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_Mutex_create(ABT_Mutex *newmutex)
+int ABT_mutex_create(ABT_mutex *newmutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Mutex *p_newmutex;
+    ABTI_mutex *p_newmutex;
 
-    p_newmutex = (ABTI_Mutex *)ABTU_Malloc(sizeof(ABTI_Mutex));
+    p_newmutex = (ABTI_mutex *)ABTU_malloc(sizeof(ABTI_mutex));
     if (!p_newmutex) {
-        HANDLE_ERROR("ABTU_Malloc");
+        HANDLE_ERROR("ABTU_malloc");
         *newmutex = ABT_MUTEX_NULL;
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
@@ -34,7 +34,7 @@ int ABT_Mutex_create(ABT_Mutex *newmutex)
     p_newmutex->val = 0;
 
     /* Return value */
-    *newmutex = ABTI_Mutex_get_handle(p_newmutex);
+    *newmutex = ABTI_mutex_get_handle(p_newmutex);
 
   fn_exit:
     return abt_errno;
@@ -53,12 +53,12 @@ int ABT_Mutex_create(ABT_Mutex *newmutex)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_Mutex_free(ABT_Mutex *mutex)
+int ABT_mutex_free(ABT_mutex *mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_Mutex h_mutex = *mutex;
-    ABTI_Mutex *p_mutex = ABTI_Mutex_get_ptr(h_mutex);
-    ABTU_Free(p_mutex);
+    ABT_mutex h_mutex = *mutex;
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(h_mutex);
+    ABTU_free(p_mutex);
     *mutex = ABT_MUTEX_NULL;
     return abt_errno;
 }
@@ -74,12 +74,12 @@ int ABT_Mutex_free(ABT_Mutex *mutex)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_Mutex_lock(ABT_Mutex mutex)
+int ABT_mutex_lock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Mutex *p_mutex = ABTI_Mutex_get_ptr(mutex);
-    while (ABTD_Atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
-        ABT_Thread_yield();
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+        ABT_thread_yield();
     }
     return abt_errno;
 }
@@ -96,11 +96,11 @@ int ABT_Mutex_lock(ABT_Mutex mutex)
  * @retval ABT_SUCCESS on success
  * @retval ABT_ERR_MUTEX_LOCKED when mutex has already been locked
  */
-int ABT_Mutex_trylock(ABT_Mutex mutex)
+int ABT_mutex_trylock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Mutex *p_mutex = ABTI_Mutex_get_ptr(mutex);
-    if (ABTD_Atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    if (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
         abt_errno = ABT_ERR_MUTEX_LOCKED;
     }
     return abt_errno;
@@ -118,43 +118,43 @@ int ABT_Mutex_trylock(ABT_Mutex mutex)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_Mutex_unlock(ABT_Mutex mutex)
+int ABT_mutex_unlock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Mutex *p_mutex = ABTI_Mutex_get_ptr(mutex);
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     p_mutex->val = 0;
     return abt_errno;
 }
 
 
 /* Private APIs */
-ABTI_Mutex *ABTI_Mutex_get_ptr(ABT_Mutex mutex)
+ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
 {
-    ABTI_Mutex *p_mutex;
+    ABTI_mutex *p_mutex;
     if (mutex == ABT_MUTEX_NULL) {
         p_mutex = NULL;
     } else {
-        p_mutex = (ABTI_Mutex *)mutex;
+        p_mutex = (ABTI_mutex *)mutex;
     }
     return p_mutex;
 }
 
-ABT_Mutex ABTI_Mutex_get_handle(ABTI_Mutex *p_mutex)
+ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 {
-    ABT_Mutex h_mutex;
+    ABT_mutex h_mutex;
     if (p_mutex == NULL) {
         h_mutex = ABT_MUTEX_NULL;
     } else {
-        h_mutex = (ABT_Mutex)p_mutex;
+        h_mutex = (ABT_mutex)p_mutex;
     }
     return h_mutex;
 }
 
-int ABTI_Mutex_waitlock(ABT_Mutex mutex)
+int ABTI_mutex_waitlock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_Mutex *p_mutex = ABTI_Mutex_get_ptr(mutex);
-    while (ABTD_Atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
     }
     return abt_errno;
 }

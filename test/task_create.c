@@ -54,77 +54,77 @@ int main(int argc, char *argv[])
     if (argc > 2) num_tasks = atoi(argv[2]);
     assert(num_tasks >= 0);
 
-    ABT_Stream *streams;
-    ABT_Task *tasks;
+    ABT_stream *streams;
+    ABT_task *tasks;
     task_arg_t *args;
-    streams = (ABT_Stream *)malloc(sizeof(ABT_Stream) * num_streams);
-    tasks = (ABT_Task *)malloc(sizeof(ABT_Task) * num_tasks);
+    streams = (ABT_stream *)malloc(sizeof(ABT_stream) * num_streams);
+    tasks = (ABT_task *)malloc(sizeof(ABT_task) * num_tasks);
     args = (task_arg_t *)malloc(sizeof(task_arg_t) * num_tasks);
 
     /* Initialize */
-    ret = ABT_Init(argc, argv);
-    HANDLE_ERROR(ret, "ABT_Init");
+    ret = ABT_init(argc, argv);
+    HANDLE_ERROR(ret, "ABT_init");
 
     /* Create streams */
-    ret = ABT_Stream_self(&streams[0]);
-    HANDLE_ERROR(ret, "ABT_Stream_self");
+    ret = ABT_stream_self(&streams[0]);
+    HANDLE_ERROR(ret, "ABT_stream_self");
     for (i = 1; i < num_streams; i++) {
-        ret = ABT_Stream_create(ABT_SCHEDULER_NULL, &streams[i]);
-        HANDLE_ERROR(ret, "ABT_Stream_create");
+        ret = ABT_stream_create(ABT_SCHEDULER_NULL, &streams[i]);
+        HANDLE_ERROR(ret, "ABT_stream_create");
     }
 
     /* Create tasks with task_func1 */
     for (i = 0; i < num_tasks; i++) {
         size_t num = 100 + i;
-        ret = ABT_Task_create(ABT_STREAM_NULL,
+        ret = ABT_task_create(ABT_STREAM_NULL,
                               task_func1, (void *)num,
                               NULL);
-        HANDLE_ERROR(ret, "ABT_Task_create");
+        HANDLE_ERROR(ret, "ABT_task_create");
     }
 
     /* Create tasks with task_func2 */
     for (i = 0; i < num_tasks; i++) {
         args[i].num = 100 + i;
-        ret = ABT_Task_create(streams[i % num_streams],
+        ret = ABT_task_create(streams[i % num_streams],
                               task_func2, (void *)&args[i],
                               &tasks[i]);
-        HANDLE_ERROR(ret, "ABT_Task_create");
+        HANDLE_ERROR(ret, "ABT_task_create");
     }
 
     /* Switch to other work units */
-    ABT_Thread_yield();
+    ABT_thread_yield();
 
     /* Results of task_funcs2 */
     for (i = 0; i < num_tasks; i++) {
-        ABT_Task_state state;
+        ABT_task_state state;
         do {
-            ABT_Task_get_state(tasks[i], &state);
-            ABT_Thread_yield();
+            ABT_task_get_state(tasks[i], &state);
+            ABT_thread_yield();
         } while (state != ABT_TASK_STATE_TERMINATED);
 
         printf("task_func2: num=%lu result=%llu\n",
                args[i].num, args[i].result);
 
         /* Free named tasks */
-        ret = ABT_Task_free(&tasks[i]);
-        HANDLE_ERROR(ret, "ABT_Task_free");
+        ret = ABT_task_free(&tasks[i]);
+        HANDLE_ERROR(ret, "ABT_task_free");
     }
 
     /* Join streams */
     for (i = 1; i < num_streams; i++) {
-        ret = ABT_Stream_join(streams[i]);
-        HANDLE_ERROR(ret, "ABT_Stream_join");
+        ret = ABT_stream_join(streams[i]);
+        HANDLE_ERROR(ret, "ABT_stream_join");
     }
 
     /* Free streams */
     for (i = 1; i < num_streams; i++) {
-        ret = ABT_Stream_free(&streams[i]);
-        HANDLE_ERROR(ret, "ABT_Stream_free");
+        ret = ABT_stream_free(&streams[i]);
+        HANDLE_ERROR(ret, "ABT_stream_free");
     }
 
     /* Finalize */
-    ret = ABT_Finalize();
-    HANDLE_ERROR(ret, "ABT_Finalize");
+    ret = ABT_finalize();
+    HANDLE_ERROR(ret, "ABT_finalize");
 
     free(args);
     free(tasks);

@@ -20,18 +20,18 @@
 typedef struct thread_arg {
     int id;
     int num_threads;
-    ABT_Thread *threads;
+    ABT_thread *threads;
 } thread_arg_t;
 
-ABT_Thread pick_one(ABT_Thread *threads, int num_threads)
+ABT_thread pick_one(ABT_thread *threads, int num_threads)
 {
     int i;
-    ABT_Thread next;
-    ABT_Thread_state state;
+    ABT_thread next;
+    ABT_thread_state state;
     do {
         i = rand() % num_threads;
         next = threads[i];
-        ABT_Thread_get_state(next, &state);
+        ABT_thread_get_state(next, &state);
     } while (state == ABT_THREAD_STATE_TERMINATED);
     return next;
 }
@@ -39,15 +39,15 @@ ABT_Thread pick_one(ABT_Thread *threads, int num_threads)
 void thread_func(void *arg)
 {
     thread_arg_t *t_arg = (thread_arg_t *)arg;
-    ABT_Thread next;
+    ABT_thread next;
 
     printf("[TH%d]: brefore yield\n", t_arg->id); fflush(stdout);
     next = pick_one(t_arg->threads, t_arg->num_threads);
-    ABT_Thread_yield_to(next);
+    ABT_thread_yield_to(next);
 
     printf("[TH%d]: doing something ...\n", t_arg->id); fflush(stdout);
     next = pick_one(t_arg->threads, t_arg->num_threads);
-    ABT_Thread_yield_to(next);
+    ABT_thread_yield_to(next);
 
     printf("[TH%d]: after yield\n", t_arg->id); fflush(stdout);
 }
@@ -63,27 +63,27 @@ int main(int argc, char *argv[])
     if (argc > 2) num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
 
-    ABT_Stream *streams;
-    ABT_Thread **threads;
+    ABT_stream *streams;
+    ABT_thread **threads;
     thread_arg_t **args;
-    streams = (ABT_Stream *)malloc(sizeof(ABT_Stream) * num_streams);
-    threads = (ABT_Thread **)malloc(sizeof(ABT_Thread *) * num_streams);
+    streams = (ABT_stream *)malloc(sizeof(ABT_stream) * num_streams);
+    threads = (ABT_thread **)malloc(sizeof(ABT_thread *) * num_streams);
     args = (thread_arg_t **)malloc(sizeof(thread_arg_t *) * num_streams);
     for (i = 0; i < num_streams; i++) {
-        threads[i] = (ABT_Thread *)malloc(sizeof(ABT_Thread) * num_threads);
+        threads[i] = (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);
         args[i] = (thread_arg_t *)malloc(sizeof(thread_arg_t) * num_threads);
     }
 
     /* Initialize */
-    ret = ABT_Init(argc, argv);
-    HANDLE_ERROR(ret, "ABT_Init");
+    ret = ABT_init(argc, argv);
+    HANDLE_ERROR(ret, "ABT_init");
 
     /* Create streams */
-    ret = ABT_Stream_self(&streams[0]);
-    HANDLE_ERROR(ret, "ABT_Stream_self");
+    ret = ABT_stream_self(&streams[0]);
+    HANDLE_ERROR(ret, "ABT_stream_self");
     for (i = 1; i < num_streams; i++) {
-        ret = ABT_Stream_create(ABT_SCHEDULER_NULL, &streams[i]);
-        HANDLE_ERROR(ret, "ABT_Stream_create");
+        ret = ABT_stream_create(ABT_SCHEDULER_NULL, &streams[i]);
+        HANDLE_ERROR(ret, "ABT_stream_create");
     }
 
     /* Create threads */
@@ -93,38 +93,38 @@ int main(int argc, char *argv[])
             args[i][j].id = tid;
             args[i][j].num_threads = num_threads;
             args[i][j].threads = &threads[i][0];
-            ret = ABT_Thread_create(streams[i],
+            ret = ABT_thread_create(streams[i],
                     thread_func, (void *)&args[i][j], 16384,
                     &threads[i][j]);
-            HANDLE_ERROR(ret, "ABT_Thread_create");
+            HANDLE_ERROR(ret, "ABT_thread_create");
         }
     }
 
     /* Switch to other user level threads */
-    ABT_Thread_yield();
+    ABT_thread_yield();
 
     /* Join streams */
     for (i = 1; i < num_streams; i++) {
-        ret = ABT_Stream_join(streams[i]);
-        HANDLE_ERROR(ret, "ABT_Stream_join");
+        ret = ABT_stream_join(streams[i]);
+        HANDLE_ERROR(ret, "ABT_stream_join");
     }
 
     /* Free threads and streams */
     for (i = 0; i < num_streams; i++) {
         for (j = 0; j < num_threads; j++) {
-            ret = ABT_Thread_free(&threads[i][j]);
-            HANDLE_ERROR(ret, "ABT_Thread_free");
+            ret = ABT_thread_free(&threads[i][j]);
+            HANDLE_ERROR(ret, "ABT_thread_free");
         }
 
         if (i == 0) continue;
 
-        ret = ABT_Stream_free(&streams[i]);
-        HANDLE_ERROR(ret, "ABT_Stream_free");
+        ret = ABT_stream_free(&streams[i]);
+        HANDLE_ERROR(ret, "ABT_stream_free");
     }
 
     /* Finalize */
-    ret = ABT_Finalize();
-    HANDLE_ERROR(ret, "ABT_Finalize");
+    ret = ABT_finalize();
+    HANDLE_ERROR(ret, "ABT_finalize");
 
     for (i = 0; i < num_streams; i++) {
         free(args[i]);

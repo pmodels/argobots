@@ -10,12 +10,12 @@
 #include <string.h>
 
 /* Utility Functions */
-#define ABTU_Malloc(a)          malloc((size_t)(a))
-#define ABTU_Calloc(a,b)        calloc((size_t)(a),(size_t)b)
-#define ABTU_Free(a)            free((void *)(a))
-#define ABTU_Realloc(a,b)       realloc((void *)(a),(size_t)(b))
+#define ABTU_malloc(a)          malloc((size_t)(a))
+#define ABTU_calloc(a,b)        calloc((size_t)(a),(size_t)b)
+#define ABTU_free(a)            free((void *)(a))
+#define ABTU_realloc(a,b)       realloc((void *)(a),(size_t)(b))
 
-#define ABTU_Strcpy(d,s)        strcpy(d,s)
-#define ABTU_Strncpy(d,s,n)     strncpy(d,s,n)
+#define ABTU_strcpy(d,s)        strcpy(d,s)
+#define ABTU_strncpy(d,s,n)     strncpy(d,s,n)
 
 #endif /* ABTU_H_INCLUDED */

@@ -6,22 +6,22 @@
 #include "abti.h"
 
 /* ES Local Data */
-ABTD_STREAM_LOCAL ABTI_Local *lp_ABTI_Local = NULL;
+ABTD_STREAM_LOCAL ABTI_local *lp_ABTI_local = NULL;
 
-int ABTI_Local_init(ABTI_Stream *p_stream)
+int ABTI_local_init(ABTI_stream *p_stream)
 {
-    assert(lp_ABTI_Local == NULL);
+    assert(lp_ABTI_local == NULL);
     int abt_errno = ABT_SUCCESS;
 
-    lp_ABTI_Local = (ABTI_Local *)ABTU_Malloc(sizeof(ABTI_Local));
-    if (!lp_ABTI_Local) {
-        HANDLE_ERROR("ABTU_Malloc");
+    lp_ABTI_local = (ABTI_local *)ABTU_malloc(sizeof(ABTI_local));
+    if (!lp_ABTI_local) {
+        HANDLE_ERROR("ABTU_malloc");
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
     }
 
-    lp_ABTI_Local->p_stream = p_stream;
-    lp_ABTI_Local->p_thread = NULL;
+    lp_ABTI_local->p_stream = p_stream;
+    lp_ABTI_local->p_thread = NULL;
 
   fn_exit:
     return abt_errno;
@@ -30,12 +30,12 @@ int ABTI_Local_init(ABTI_Stream *p_stream)
     goto fn_exit;
 }
 
-int ABTI_Local_finalize()
+int ABTI_local_finalize()
 {
-    assert(lp_ABTI_Local != NULL);
+    assert(lp_ABTI_local != NULL);
     int abt_errno = ABT_SUCCESS;
-    ABTU_Free(lp_ABTI_Local);
-    lp_ABTI_Local = NULL;
+    ABTU_free(lp_ABTI_local);
+    lp_ABTI_local = NULL;
     return abt_errno;
 }
 

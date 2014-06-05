@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-int ABTI_Template(ABTI_Stream *p_stream, ABTI_Thread *p_thread, void *p_arg)
+int ABTI_template(ABTI_stream *p_stream, ABTI_thread *p_thread, void *p_arg)
 {
     int abt_errno = ABT_SUCCESS;
 
