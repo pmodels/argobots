@@ -15,6 +15,12 @@ int ABTI_Template(ABTI_Stream *p_stream, ABTI_Thread *p_thread, void *p_arg)
         goto fn_fail;
     }
 
+    if (p_thread == NULL) {
+        HANDLE_ERROR("NULL THREAD");
+        abt_errno = ABT_ERR_INV_THREAD;
+        goto fn_fail;
+    }
+
     /* Implementation */
     /* ... */
 
