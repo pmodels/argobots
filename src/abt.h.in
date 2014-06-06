@@ -84,7 +84,7 @@ typedef void *                ABT_scheduler;    /* Scheduler */
 typedef enum ABT_unit_type    ABT_unit_type;    /* Work unit type */
 typedef void *                ABT_unit;         /* A work unit */
 typedef void *                ABT_pool;         /* Pool of work units */
-
+typedef void *                ABT_future;       /* Future */
 
 /* Null Objects */
 #define ABT_STREAM_NULL     (NULL)
@@ -95,7 +95,7 @@ typedef void *                ABT_pool;         /* Pool of work units */
 #define ABT_SCHEDULER_NULL  (NULL)
 #define ABT_POOL_NULL       (NULL)
 #define ABT_UNIT_NULL       (NULL)
-
+#define ABT_FUTURE_NULL     (NULL)
 
 /* Contants */
 enum ABT_stream_state {
@@ -218,8 +218,12 @@ int ABT_mutex_lock(ABT_mutex mutex);
 int ABT_mutex_trylock(ABT_mutex mutex);
 int ABT_mutex_unlock(ABT_mutex mutex);
 
-/* Condition */
+/* Futures */
+ABT_future ABT_future_create(int n, ABT_stream stream);
+void ABT_future_set(ABT_future fut, void *value, int nbytes);
+void *ABT_future_wait(ABT_future fut);
 
+/* Condition */
 
 #if defined(__cplusplus)
 }
