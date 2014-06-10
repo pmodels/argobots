@@ -219,9 +219,9 @@ int ABT_mutex_trylock(ABT_mutex mutex);
 int ABT_mutex_unlock(ABT_mutex mutex);
 
 /* Futures */
-ABT_future ABT_future_create(int n, ABT_stream stream);
-void ABT_future_set(ABT_future fut, void *value, int nbytes);
-void *ABT_future_wait(ABT_future fut);
+int ABT_future_create(int n, ABT_stream stream, ABT_future *newfuture);
+int ABT_future_set(ABT_future fut, void *value, int nbytes);
+int ABT_future_wait(ABT_future fut, void **value);
 
 /* Condition */
 
