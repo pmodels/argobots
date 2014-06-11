@@ -51,7 +51,7 @@ int ABT_future_wait(ABT_future future, void **value)
         data->waiters.tail = cur;
         if(data->waiters.head == NULL)
             data->waiters.head = cur;
-        ABT_thread_yield();
+        ABTI_thread_suspend();
     }
     *value = data->value;
 	return abt_errno;
@@ -62,7 +62,7 @@ int ABT_future_wait(ABT_future future, void **value)
  * @brief   Signals all threads blocking on a future once the result has been calculated.
  * 
  * @param[in]  data       Pointer to future's data
- * @return No valud returned
+ * @return No value returned
  */
 void ABTI_future_signal(ABT_future_data *data)
 {
