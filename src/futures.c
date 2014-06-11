@@ -3,12 +3,13 @@
  * See COPYRIGHT in top-level directory.
  */
 
-/**
- *  futures are used to wait for values asynchronously
- * */
 #include <stdlib.h>
 #include <string.h>
 #include "abti.h"
+
+/** @defgroup Future Future
+ * Futures are used to wait for values asynchronously.
+ */
 
 typedef struct ABT_thread_entry_t {
     ABT_thread current;
