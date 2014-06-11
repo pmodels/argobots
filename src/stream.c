@@ -685,7 +685,7 @@ int ABTI_stream_schedule_thread(ABTI_thread *p_thread)
         (p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
         (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
         abt_errno = ABTI_stream_terminate_thread(p_thread);
-    } else {
+    } else if (p_thread->state != ABT_THREAD_STATE_BLOCKED) {
         /* The thread did not finish its execution.
          * Change the state of current running thread and
          * add it to the pool again. */

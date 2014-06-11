@@ -246,10 +246,10 @@ ABT_thread   ABTI_thread_get_handle(ABTI_thread *p_thread);
 int ABTI_thread_create_main(ABTI_stream *p_stream, ABTI_thread **p_thread);
 int ABTI_thread_free_main(ABTI_thread *p_thread);
 int ABTI_thread_free(ABTI_thread *p_thread);
+int ABTI_thread_suspend();
+int ABTI_thread_set_ready(ABT_thread thread);
 int ABTI_thread_print(ABTI_thread *p_thread);
 void ABTI_thread_func_wrapper(void (*thread_func)(void *), void *p_arg);
-int ABTI_thread_set_ready(ABT_thread thread);
-int ABTI_thread_suspend();
 ABT_thread *ABTI_thread_current();
 
 /* Tasklet */

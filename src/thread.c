@@ -297,6 +297,9 @@ int ABT_thread_yield()
         if (!has_global_task) goto fn_exit;
     }
 
+    /* Change the state of current running thread */
+    p_thread->state = ABT_THREAD_STATE_READY;
+
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
         /* Currently, the main program thread waits until all threads
          * finish their execution. */
@@ -304,10 +307,9 @@ int ABT_thread_yield()
         /* Start the scheduling */
         abt_errno = ABTI_stream_schedule(p_stream);
         ABTI_CHECK_ERROR(abt_errno);
-    } else {
-        /* Change the state of current running thread */
-        p_thread->state = ABT_THREAD_STATE_READY;
 
+        p_thread->state = ABT_THREAD_STATE_RUNNING;
+    } else {
         /* Switch to the scheduler */
         abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
         ABTI_CHECK_ERROR(abt_errno);
@@ -773,6 +775,61 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     goto fn_exit;
 }
 
+int ABTI_thread_suspend()
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_local_get_thread();
+    ABTI_stream *p_stream = ABTI_local_get_stream();
+    assert(p_thread->p_stream == p_stream);
+
+    /* Change the state of current running thread */
+    p_thread->state = ABT_THREAD_STATE_BLOCKED;
+
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
+        /* Currently, the main program thread waits until all threads
+         * finish their execution. */
+
+        /* Start the scheduling */
+        abt_errno = ABTI_stream_schedule(p_stream);
+        ABTI_CHECK_ERROR(abt_errno);
+
+        p_thread->state = ABT_THREAD_STATE_RUNNING;
+    } else {
+        /* Switch to the scheduler */
+        ABTI_scheduler *p_sched = p_stream->p_sched;
+        abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+
+    /* Back to the original thread */
+    ABTI_local_set_thread(p_thread);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_suspend", abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_thread_set_ready(ABT_thread thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+
+    /* Add the thread to its associated stream */
+    abt_errno = ABTI_stream_add_thread(p_thread);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_set_ready", abt_errno);
+    goto fn_exit;
+}
+
 int ABTI_thread_print(ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -820,22 +877,6 @@ void ABTI_thread_func_wrapper(void (*thread_func)(void *), void *p_arg)
     /* Now, the thread has finished its job. Change the thread state. */
     ABTI_thread *p_thread = ABTI_local_get_thread();
     p_thread->state = ABT_THREAD_STATE_COMPLETED;
-}
-
-int ABTI_thread_set_ready(ABT_thread thread)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_stream *p_stream = ABTI_local_get_stream();
-    ABTI_scheduler *p_sched = p_stream->p_sched;
-    p_thread->state = ABT_THREAD_STATE_READY;
-    ABTI_scheduler_push(p_sched, p_thread->unit);
-    return abt_errno;
-}
-
-int ABTI_thread_suspend()
-{
-    return ABT_thread_yield();
 }
 
 ABT_thread *ABTI_thread_current()
