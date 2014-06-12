@@ -179,9 +179,23 @@ struct ABTI_local {
     ABTI_thread *p_thread;  /* Current running thread */
 };
 
+/* Futures */
+typedef struct ABTI_thread_entry_t {
+    ABT_thread current;
+    struct ABTI_thread_entry_t *next;
+} ABTI_thread_entry;
+
+typedef struct {
+    ABTI_thread_entry *head;
+    ABTI_thread_entry *tail;
+} ABTI_threads_list;
+
 struct ABTI_future{
-   int pe;
-   void *data;
+	ABT_stream stream;
+    int ready;
+    void *value;
+    int nbytes;
+    ABTI_threads_list waiters;
 };
 
 /* Global Data */

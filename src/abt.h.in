@@ -222,6 +222,7 @@ int ABT_mutex_unlock(ABT_mutex mutex);
 int ABT_future_create(int n, ABT_stream stream, ABT_future *newfuture);
 int ABT_future_set(ABT_future fut, void *value, int nbytes);
 int ABT_future_wait(ABT_future fut, void **value);
+int ABT_future_free(ABT_future *fut);
 
 /* Condition */
 

@@ -11,24 +11,6 @@
  * Futures are used to wait for values asynchronously.
  */
 
-typedef struct ABT_thread_entry_t {
-    ABT_thread current;
-    struct ABT_thread_entry_t *next;
-} ABT_thread_entry;
-
-typedef struct {
-    ABT_thread_entry *head;
-    ABT_thread_entry *tail;
-} ABT_threads_list;
-
-typedef struct {
-    ABT_stream stream;
-    int ready;
-    void *value;
-    int nbytes;
-    ABT_threads_list waiters;
-} ABT_future_data;
-
 /**
  * @ingroup Future
  * @brief   Blocks current thread until the feature has finished its computation.
@@ -41,19 +23,18 @@ int ABT_future_wait(ABT_future future, void **value)
 {
 	int abt_errno = ABT_SUCCESS;
 	ABTI_future *p_future = ABTI_future_get_ptr(future);	
-    ABT_future_data *data = (ABT_future_data*)p_future->data;
-    if (!data->ready) {
-        ABT_thread_entry *cur = (ABT_thread_entry*) malloc(sizeof(ABT_thread_entry));
+    if (!p_future->ready) {
+        ABTI_thread_entry *cur = (ABTI_thread_entry*) ABTU_malloc(sizeof(ABTI_thread_entry));
         cur->current = ABTI_thread_current();
         cur->next = NULL;
-        if(data->waiters.tail != NULL)
-            data->waiters.tail->next = cur;
-        data->waiters.tail = cur;
-        if(data->waiters.head == NULL)
-            data->waiters.head = cur;
+        if(p_future->waiters.tail != NULL)
+            p_future->waiters.tail->next = cur;
+        p_future->waiters.tail = cur;
+        if(p_future->waiters.head == NULL)
+            p_future->waiters.head = cur;
         ABTI_thread_suspend();
     }
-    *value = data->value;
+    *value = p_future->value;
 	return abt_errno;
 }
 
@@ -64,14 +45,14 @@ int ABT_future_wait(ABT_future future, void **value)
  * @param[in]  data       Pointer to future's data
  * @return No value returned
  */
-void ABTI_future_signal(ABT_future_data *data)
+void ABTI_future_signal(ABTI_future *p_future)
 {
-    ABT_thread_entry *cur = data->waiters.head;
+    ABTI_thread_entry *cur = p_future->waiters.head;
     while(cur!=NULL)
     {
         ABT_thread mythread = cur->current;
         ABTI_thread_set_ready(mythread);
-        ABT_thread_entry *tmp = cur;
+        ABTI_thread_entry *tmp = cur;
         cur=cur->next;
         free(tmp);
     }
@@ -90,10 +71,9 @@ int ABT_future_set(ABT_future future, void *value, int nbytes)
 {
 	int abt_errno = ABT_SUCCESS;
 	ABTI_future *p_future = ABTI_future_get_ptr(future);	
-    ABT_future_data *data = (ABT_future_data*)p_future->data;
-    data->ready = 1;
-    memcpy(data->value, value, nbytes);
-    ABTI_future_signal(data);
+    p_future->ready = 1;
+    memcpy(p_future->value, value, nbytes);
+    ABTI_future_signal(p_future);
 	return abt_errno;
 }
 
@@ -109,15 +89,29 @@ int ABT_future_set(ABT_future future, void *value, int nbytes)
 int ABT_future_create(int n, ABT_stream stream, ABT_future *future)
 {
 	int abt_errno = ABT_SUCCESS;
-    ABT_future_data *data = (ABT_future_data *) malloc(sizeof(ABT_future_data));
-    data->stream = stream;
-    data->ready = 0;
-    data->nbytes = n;
-    data->value = malloc(n);;
-    data->waiters.head = data->waiters.tail = NULL;
-    ABTI_future *p_future = (ABTI_future*)malloc(sizeof(ABTI_future));
-    p_future->data = data;
+    ABTI_future *p_future = (ABTI_future*)ABTU_malloc(sizeof(ABTI_future));
+    p_future->stream = stream;
+    p_future->ready = 0;
+    p_future->nbytes = n;
+    p_future->value = ABTU_malloc(n);
+    p_future->waiters.head = p_future->waiters.tail = NULL;
     *future = p_future;
+	return abt_errno;
+}
+
+/**
+ * @ingroup Future
+ * @brief   Releases the memory of a future.
+ * 
+ * @param[out] future       Reference to the future
+ * @return Error code
+ */
+int ABT_future_free(ABT_future *future)
+{
+	int abt_errno = ABT_SUCCESS;
+	ABTI_future *p_future = ABTI_future_get_ptr(*future);
+	ABTU_free(p_future->value);
+	ABTU_free(p_future);
 	return abt_errno;
 }
 
