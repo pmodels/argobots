@@ -24,7 +24,7 @@ void fibonacci(void *arguments){
 	int n, result, *n1, *n2;
 	thread_args a1, a2;
 	ABT_thread t1, t2;
-	ABT_stream stream;
+	ABT_xstream xstream;
 	ABT_future future, f1, f2;
 
 	thread_args *args = (thread_args *) arguments;
@@ -36,15 +36,15 @@ void fibonacci(void *arguments){
 	if(n <= 2)
 		result = 1;
 	else {
-		ABT_stream_self(&stream);
-		ABT_future_create(sizeof(int), stream, &f1);
+		ABT_xstream_self(&xstream);
+		ABT_future_create(sizeof(int), xstream, &f1);
 		a1.n = n-1;
 		a1.future = f1;
-    	ABT_thread_create(stream, fibonacci, &a1, 16384, &t1);
-		ABT_future_create(sizeof(int), stream, &f2);
+    	ABT_thread_create(xstream, fibonacci, &a1, 16384, &t1);
+		ABT_future_create(sizeof(int), xstream, &f2);
 		a2.n = n-2;
 		a2.future = f2;
-    	ABT_thread_create(stream, fibonacci, &a2, 16384, &t2);
+    	ABT_thread_create(xstream, fibonacci, &a2, 16384, &t2);
 		ABT_future_wait(f1, (void **) &n1);
 		ABT_future_wait(f2, (void **) &n2);
 		result = *n1 + *n2;
@@ -62,7 +62,7 @@ void fibonacci(void *arguments){
 int main(int argc, char *argv[])
 {
 	int n;
-	ABT_stream stream;
+	ABT_xstream xstream;
 	ABT_thread thread;
 	thread_args args;
 
@@ -74,8 +74,8 @@ int main(int argc, char *argv[])
 		n = N;
 	args.n = n;
 	args.future = ABT_FUTURE_NULL;
-	ABT_stream_self(&stream);
-    ABT_thread_create(stream, fibonacci, &args, 16384, &thread);
+	ABT_xstream_self(&xstream);
+    ABT_thread_create(xstream, fibonacci, &args, 16384, &thread);
 
 	/* switch to other user-level threads */
 	ABT_thread_yield();

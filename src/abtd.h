@@ -19,20 +19,20 @@
 #include <ucontext.h>
 
 /* Data Types */
-typedef pthread_t           ABTD_stream_context;
-typedef pthread_mutex_t     ABTD_stream_mutex;
+typedef pthread_t           ABTD_xstream_context;
+typedef pthread_mutex_t     ABTD_xstream_mutex;
 typedef ucontext_t          ABTD_thread_context;
 
 /* ES Storage Qualifier */
-#define ABTD_STREAM_LOCAL   __thread
+#define ABTD_XSTREAM_LOCAL  __thread
 
 /* ES Context */
-int ABTD_stream_context_create(void *(*f_stream)(void *), void *p_arg,
-                               ABTD_stream_context *p_ctx);
-int ABTD_stream_context_free(ABTD_stream_context *p_ctx);
-int ABTD_stream_context_join(ABTD_stream_context ctx);
-int ABTD_stream_context_exit();
-int ABTD_stream_context_self(ABTD_stream_context *p_ctx);
+int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
+                                ABTD_xstream_context *p_ctx);
+int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx);
+int ABTD_xstream_context_join(ABTD_xstream_context ctx);
+int ABTD_xstream_context_exit();
+int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx);
 
 /* ULT Context */
 int ABTD_thread_context_create(ABTD_thread_context *p_link,

@@ -17,21 +17,21 @@ static uint64_t ABTI_task_get_new_id();
  * @ingroup TASK
  * @brief   Create a new task and return its handle through newtask.
  *
- * If this is ABT_STREAM_NULL, the new task is managed globally and it can be
- * executed by any stream. Otherwise, the task is scheduled and runs in the
- * specified stream.
+ * If this is ABT_XSTREAM_NULL, the new task is managed globally and it can be
+ * executed by any ES. Otherwise, the task is scheduled and runs in the
+ * specified ES.
  * If newtask is NULL, the task object will be automatically released when
  * this \a unnamed task completes the execution of task_func. Otherwise,
  * ABT_task_free() can be used to explicitly release the task object.
  *
- * @param[in]  stream     handle to the associated stream
+ * @param[in]  xstream    handle to the associated ES
  * @param[in]  task_func  function to be executed by a new task
  * @param[in]  arg        argument for task_func
  * @param[out] newtask    handle to a newly created task
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_create(ABT_stream stream,
+int ABT_task_create(ABT_xstream xstream,
                     void (*task_func)(void *), void *arg,
                     ABT_task *newtask)
 {
@@ -61,8 +61,8 @@ int ABT_task_create(ABT_stream stream,
 
     h_newtask = ABTI_task_get_handle(p_newtask);
 
-    if (stream == ABT_STREAM_NULL) {
-        p_newtask->p_stream = NULL;
+    if (xstream == ABT_XSTREAM_NULL) {
+        p_newtask->p_xstream = NULL;
 
         /* Create a wrapper work unit */
         p_newtask->unit = ABTI_unit_create_from_task(h_newtask);
@@ -71,22 +71,22 @@ int ABT_task_create(ABT_stream stream,
         abt_errno = ABTI_global_add_task(p_newtask);
         ABTI_CHECK_ERROR(abt_errno);
 
-        /* Start any stream if there is no running stream */
-        ABTI_stream_pool *p_streams = gp_ABTI_global->p_streams;
-        if (ABTI_pool_get_size(p_streams->active) <= 1 &&
-            ABTI_pool_get_size(p_streams->created) > 0) {
-            abt_errno = ABTI_stream_start_any();
+        /* Start any ES if there is no running ES */
+        ABTI_xstream_pool *p_xstreams = gp_ABTI_global->p_xstreams;
+        if (ABTI_pool_get_size(p_xstreams->active) <= 1 &&
+            ABTI_pool_get_size(p_xstreams->created) > 0) {
+            abt_errno = ABTI_xstream_start_any();
             ABTI_CHECK_ERROR(abt_errno);
         }
     } else {
-        ABTI_stream *p_stream = ABTI_stream_get_ptr(stream);
-        ABTI_scheduler *p_sched = p_stream->p_sched;
+        ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+        ABTI_scheduler *p_sched = p_xstream->p_sched;
 
         /* Set the state as DELAYED */
         p_newtask->state = ABT_TASK_STATE_DELAYED;
 
-        /* Set the stream for this task */
-        p_newtask->p_stream = p_stream;
+        /* Set the ES for this task */
+        p_newtask->p_xstream = p_xstream;
 
         /* Create a wrapper work unit */
         p_newtask->unit = p_sched->u_create_from_task(h_newtask);
@@ -94,9 +94,9 @@ int ABT_task_create(ABT_stream stream,
         /* Add this task to the scheduler's pool */
         ABTI_scheduler_push(p_sched, p_newtask->unit);
 
-        /* Start the stream if it is not running */
-        if (p_stream->state == ABT_STREAM_STATE_CREATED) {
-            abt_errno = ABTI_stream_start(p_stream);
+        /* Start the ES if it is not running */
+        if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
+            abt_errno = ABTI_xstream_start(p_xstream);
             ABTI_CHECK_ERROR(abt_errno);
         }
     }
@@ -145,11 +145,11 @@ int ABT_task_free(ABT_task *task)
 
     if (p_task->refcount > 0) {
         /* The task has finished but it is still referenced.
-         * Thus it exists in the stream's deads pool. */
-        ABTI_stream *p_stream = p_task->p_stream;
-        ABTI_mutex_waitlock(p_stream->mutex);
-        ABTI_pool_remove(p_stream->deads, p_task->unit);
-        ABT_mutex_unlock(p_stream->mutex);
+         * Thus it exists in the deads pool of ES. */
+        ABTI_xstream *p_xstream = p_task->p_xstream;
+        ABTI_mutex_waitlock(p_xstream->mutex);
+        ABTI_pool_remove(p_xstream->deads, p_task->unit);
+        ABT_mutex_unlock(p_xstream->mutex);
     }
 
     /* Free the ABTI_task structure */
@@ -423,7 +423,7 @@ int ABTI_task_free(ABTI_task *p_task)
     if (p_task->refcount > 0) {
         ABTI_unit_free(&p_task->unit);
     } else {
-        p_task->p_stream->p_sched->u_free(&p_task->unit);
+        p_task->p_xstream->p_sched->u_free(&p_task->unit);
     }
 
     if (p_task->p_name) ABTU_free(p_task->p_name);
@@ -451,7 +451,7 @@ int ABTI_task_print(ABTI_task *p_task)
 
     printf("[");
     printf("id:%lu ", p_task->id);
-    printf("stream:%lu ", p_task->p_stream->id);
+    printf("xstream:%lu ", p_task->p_xstream->id);
     printf("name:%s ", p_task->p_name);
     printf("state:");
     switch (p_task->state) {

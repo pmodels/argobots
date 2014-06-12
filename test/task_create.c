@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <abt.h>
 
-#define DEFAULT_NUM_STREAMS     4
+#define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_TASKS       4
 
 #define HANDLE_ERROR(ret,msg)                           \
@@ -47,17 +47,17 @@ void task_func2(void *arg)
 int main(int argc, char *argv[])
 {
     int i, ret;
-    int num_streams = DEFAULT_NUM_STREAMS;
+    int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_tasks = DEFAULT_NUM_TASKS;
-    if (argc > 1) num_streams = atoi(argv[1]);
-    assert(num_streams >= 0);
+    if (argc > 1) num_xstreams = atoi(argv[1]);
+    assert(num_xstreams >= 0);
     if (argc > 2) num_tasks = atoi(argv[2]);
     assert(num_tasks >= 0);
 
-    ABT_stream *streams;
+    ABT_xstream *xstreams;
     ABT_task *tasks;
     task_arg_t *args;
-    streams = (ABT_stream *)malloc(sizeof(ABT_stream) * num_streams);
+    xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
     tasks = (ABT_task *)malloc(sizeof(ABT_task) * num_tasks);
     args = (task_arg_t *)malloc(sizeof(task_arg_t) * num_tasks);
 
@@ -65,18 +65,18 @@ int main(int argc, char *argv[])
     ret = ABT_init(argc, argv);
     HANDLE_ERROR(ret, "ABT_init");
 
-    /* Create streams */
-    ret = ABT_stream_self(&streams[0]);
-    HANDLE_ERROR(ret, "ABT_stream_self");
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_create(ABT_SCHEDULER_NULL, &streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_create");
+    /* Create Execution Streams */
+    ret = ABT_xstream_self(&xstreams[0]);
+    HANDLE_ERROR(ret, "ABT_xstream_self");
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_create(ABT_SCHEDULER_NULL, &xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create tasks with task_func1 */
     for (i = 0; i < num_tasks; i++) {
         size_t num = 100 + i;
-        ret = ABT_task_create(ABT_STREAM_NULL,
+        ret = ABT_task_create(ABT_XSTREAM_NULL,
                               task_func1, (void *)num,
                               NULL);
         HANDLE_ERROR(ret, "ABT_task_create");
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     /* Create tasks with task_func2 */
     for (i = 0; i < num_tasks; i++) {
         args[i].num = 100 + i;
-        ret = ABT_task_create(streams[i % num_streams],
+        ret = ABT_task_create(xstreams[i % num_xstreams],
                               task_func2, (void *)&args[i],
                               &tasks[i]);
         HANDLE_ERROR(ret, "ABT_task_create");
@@ -110,16 +110,16 @@ int main(int argc, char *argv[])
         HANDLE_ERROR(ret, "ABT_task_free");
     }
 
-    /* Join streams */
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_join(streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_join");
+    /* Join Execution Streams */
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_join(xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_join");
     }
 
-    /* Free streams */
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_free(&streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_free");
+    /* Free Execution Streams */
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_free(&xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 
     free(args);
     free(tasks);
-    free(streams);
+    free(xstreams);
 
     return EXIT_SUCCESS;
 }

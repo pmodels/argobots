@@ -45,15 +45,15 @@ void fn3()
 
 int main(int argc, char *argv[])
 {
-	ABT_stream stream;
+	ABT_xstream xstream;
 
 	/* init and thread creation */
     ABT_init(argc, argv);
-	ABT_stream_self(&stream);
-    ABT_thread_create(stream, fn1, NULL, 0, &th1);
-    ABT_thread_create(stream, fn2, NULL, 0, &th2);
-    ABT_thread_create(stream, fn3, NULL, 0, &th3);
-	ABT_future_create(FUTURE_SIZE,stream,&myfuture);	
+	ABT_xstream_self(&xstream);
+    ABT_thread_create(xstream, fn1, NULL, 0, &th1);
+    ABT_thread_create(xstream, fn2, NULL, 0, &th2);
+    ABT_thread_create(xstream, fn3, NULL, 0, &th3);
+	ABT_future_create(FUTURE_SIZE,xstream,&myfuture);	
     printf("START \n");
 
 	/* switch to other user-level threads */

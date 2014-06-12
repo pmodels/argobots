@@ -17,7 +17,7 @@ ABTI_global *gp_ABTI_global = NULL;
  * @brief   Initialize the Argobots execution environment.
  *
  * This must be called by the main thread before using any other Argobots APIs.
- * The stream object for primary stream is created in this routine.
+ * The ES object for primary ES is created in this routine.
  *
  * @param[in] argc the number of arguments
  * @param[in] argv the argument vector
@@ -28,7 +28,7 @@ int ABT_init(int argc, char **argv)
 {
     assert(gp_ABTI_global == NULL);
     int abt_errno = ABT_SUCCESS;
-    ABTI_stream_pool *p_streams;
+    ABTI_xstream_pool *p_xstreams;
     ABTI_task_pool *p_tasks;
 
     gp_ABTI_global = (ABTI_global *)ABTU_malloc(sizeof(ABTI_global));
@@ -38,19 +38,19 @@ int ABT_init(int argc, char **argv)
         goto fn_fail;
     }
 
-    /* Initialize the stream pool */
-    p_streams = (ABTI_stream_pool *)ABTU_malloc(sizeof(ABTI_stream_pool));
-    if (!p_streams) {
+    /* Initialize the ES pool */
+    p_xstreams = (ABTI_xstream_pool *)ABTU_malloc(sizeof(ABTI_xstream_pool));
+    if (!p_xstreams) {
         HANDLE_ERROR("ABTU_malloc");
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
     }
-    abt_errno = ABTI_stream_pool_init(p_streams);
+    abt_errno = ABTI_xstream_pool_init(p_xstreams);
     if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_stream_pool_init");
+        HANDLE_ERROR("ABTI_xstream_pool_init");
         goto fn_fail;
     }
-    gp_ABTI_global->p_streams = p_streams;
+    gp_ABTI_global->p_xstreams = p_xstreams;
 
     /* Initialize the task pool */
     p_tasks = (ABTI_task_pool *)ABTU_malloc(sizeof(ABTI_task_pool));
@@ -66,25 +66,25 @@ int ABT_init(int argc, char **argv)
     }
     gp_ABTI_global->p_tasks = p_tasks;
 
-    /* Create the primary stream */
-    ABT_stream stream;
-    abt_errno = ABT_stream_create(ABT_SCHEDULER_NULL, &stream);
+    /* Create the primary ES */
+    ABT_xstream xstream;
+    abt_errno = ABT_xstream_create(ABT_SCHEDULER_NULL, &xstream);
     if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABT_stream_create");
+        HANDLE_ERROR("ABT_xstream_create");
         goto fn_fail;
     }
-    ABTI_stream *p_stream = ABTI_stream_get_ptr(stream);
-    p_stream->type = ABTI_STREAM_TYPE_PRIMARY;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    p_xstream->type = ABTI_XSTREAM_TYPE_PRIMARY;
 
-    /* Start the primary stream */
-    abt_errno = ABTI_stream_start(p_stream);
+    /* Start the primary ES */
+    abt_errno = ABTI_xstream_start(p_xstream);
     if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_stream_start");
+        HANDLE_ERROR("ABTI_xstream_start");
         goto fn_fail;
     }
 
     /* Init the ES local data */
-    abt_errno = ABTI_local_init(p_stream);
+    abt_errno = ABTI_local_init(p_xstream);
     if (abt_errno != ABT_SUCCESS) {
         HANDLE_ERROR("ABTI_local_init");
         goto fn_fail;
@@ -92,7 +92,7 @@ int ABT_init(int argc, char **argv)
 
     /* Create the main thread */
     ABTI_thread *p_thread;
-    abt_errno = ABTI_thread_create_main(p_stream, &p_thread);
+    abt_errno = ABTI_thread_create_main(p_xstream, &p_thread);
     if (abt_errno != ABT_SUCCESS) {
         HANDLE_ERROR("ABTI_thread_create_main");
         goto fn_fail;
@@ -112,7 +112,7 @@ int ABT_init(int argc, char **argv)
  *
  * This must be called by the main thread. Invoking the Argobots APIs after
  * ABT_finalize() is not allowed. This routine also contains deallocation of
- * stream object for the primary stream.
+ * ES object for the primary ES.
  *
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -122,16 +122,16 @@ int ABT_finalize()
     assert(gp_ABTI_global != NULL);
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_stream *p_stream = ABTI_local_get_stream();
-    if (p_stream->type != ABTI_STREAM_TYPE_PRIMARY) {
-        HANDLE_ERROR("ABT_finalize must be called by the primary stream.");
-        abt_errno = ABT_ERR_INV_STREAM;
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    if (p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
+        HANDLE_ERROR("ABT_finalize must be called by the primary xstream.");
+        abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_fail;
     }
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
     if (p_thread->type != ABTI_THREAD_TYPE_MAIN) {
-        HANDLE_ERROR("ABT_finalize must be called by the main stream.");
+        HANDLE_ERROR("ABT_finalize must be called by the main xstream.");
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_fail;
     }
@@ -140,25 +140,25 @@ int ABT_finalize()
     abt_errno = ABTI_thread_free_main(p_thread);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Remove the primary stream from the global stream pool */
-    abt_errno = ABTI_global_del_stream(p_stream);
+    /* Remove the primary ES from the global ES pool */
+    abt_errno = ABTI_global_del_xstream(p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Finalize the ES local data */
     abt_errno = ABTI_local_finalize();
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Free the stream */
-    abt_errno = ABTI_stream_free(p_stream);
+    /* Free the ES */
+    abt_errno = ABTI_xstream_free(p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Finalize the stream pool */
-    abt_errno = ABTI_stream_pool_finalize(gp_ABTI_global->p_streams);
+    /* Finalize the ES pool */
+    abt_errno = ABTI_xstream_pool_finalize(gp_ABTI_global->p_xstreams);
     if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_stream_finalize");
+        HANDLE_ERROR("ABTI_xstream_finalize");
         goto fn_fail;
     }
-    ABTU_free(gp_ABTI_global->p_streams);
+    ABTU_free(gp_ABTI_global->p_xstreams);
 
     /* Finalize the task pool */
     abt_errno = ABTI_task_pool_finalize(gp_ABTI_global->p_tasks);
@@ -182,57 +182,57 @@ int ABT_finalize()
 
 
 /* Private APIs */
-int ABTI_stream_pool_init(ABTI_stream_pool *p_streams)
+int ABTI_xstream_pool_init(ABTI_xstream_pool *p_xstreams)
 {
     int abt_errno = ABT_SUCCESS;
 
-    /* Create stream pools */
-    abt_errno = ABTI_pool_create(&p_streams->created);
+    /* Create ES pools */
+    abt_errno = ABTI_pool_create(&p_xstreams->created);
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = ABTI_pool_create(&p_streams->active);
+    abt_errno = ABTI_pool_create(&p_xstreams->active);
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = ABTI_pool_create(&p_streams->deads);
+    abt_errno = ABTI_pool_create(&p_xstreams->deads);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Initialize the mutex */
-    abt_errno = ABT_mutex_create(&p_streams->mutex);
+    abt_errno = ABT_mutex_create(&p_xstreams->mutex);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_stream_pool_init", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_xstream_pool_init", abt_errno);
     goto fn_exit;
 }
 
-int ABTI_stream_pool_finalize(ABTI_stream_pool *p_streams)
+int ABTI_xstream_pool_finalize(ABTI_xstream_pool *p_xstreams)
 {
     int abt_errno = ABT_SUCCESS;
 
-    /* Wait until all running streams are terminated */
-    while (ABTI_pool_get_size(p_streams->active) > 0) {
+    /* Wait until all running xstreams are terminated */
+    while (ABTI_pool_get_size(p_xstreams->active) > 0) {
         ABT_thread_yield();
     }
 
     /* Free all pools */
-    ABTI_mutex_waitlock(p_streams->mutex);
-    ABTI_pool_free(&p_streams->created);
-    ABTI_pool_free(&p_streams->active);
-    ABTI_pool_free(&p_streams->deads);
-    ABT_mutex_unlock(p_streams->mutex);
+    ABTI_mutex_waitlock(p_xstreams->mutex);
+    ABTI_pool_free(&p_xstreams->created);
+    ABTI_pool_free(&p_xstreams->active);
+    ABTI_pool_free(&p_xstreams->deads);
+    ABT_mutex_unlock(p_xstreams->mutex);
 
     /* Destroy the mutex */
-    abt_errno = ABT_mutex_free(&p_streams->mutex);
+    abt_errno = ABT_mutex_free(&p_xstreams->mutex);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_stream_pool_finalize", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_xstream_pool_finalize", abt_errno);
     goto fn_exit;
 }
 
@@ -278,94 +278,94 @@ int ABTI_task_pool_finalize(ABTI_task_pool *p_tasks)
     goto fn_exit;
 }
 
-int ABTI_global_add_stream(ABTI_stream *p_stream)
+int ABTI_global_add_xstream(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_stream_pool *p_gstreams = gp_ABTI_global->p_streams;
+    ABTI_xstream_pool *p_gxstreams = gp_ABTI_global->p_xstreams;
 
-    ABTI_mutex_waitlock(p_gstreams->mutex);
-    switch (p_stream->state) {
-        case ABT_STREAM_STATE_CREATED:
-            ABTI_pool_push(p_gstreams->created, p_stream->unit);
+    ABTI_mutex_waitlock(p_gxstreams->mutex);
+    switch (p_xstream->state) {
+        case ABT_XSTREAM_STATE_CREATED:
+            ABTI_pool_push(p_gxstreams->created, p_xstream->unit);
             break;
-        case ABT_STREAM_STATE_READY:
-        case ABT_STREAM_STATE_RUNNING:
-            ABTI_pool_push(p_gstreams->active, p_stream->unit);
+        case ABT_XSTREAM_STATE_READY:
+        case ABT_XSTREAM_STATE_RUNNING:
+            ABTI_pool_push(p_gxstreams->active, p_xstream->unit);
             break;
-        case ABT_STREAM_STATE_TERMINATED:
-            ABTI_pool_push(p_gstreams->deads, p_stream->unit);
+        case ABT_XSTREAM_STATE_TERMINATED:
+            ABTI_pool_push(p_gxstreams->deads, p_xstream->unit);
             break;
         default:
-            HANDLE_ERROR("Unknown stream type");
-            abt_errno = ABT_ERR_INV_STREAM;
+            HANDLE_ERROR("Unknown xstream type");
+            abt_errno = ABT_ERR_INV_XSTREAM;
             break;
     }
-    ABT_mutex_unlock(p_gstreams->mutex);
+    ABT_mutex_unlock(p_gxstreams->mutex);
 
     return abt_errno;
 }
 
-int ABTI_global_move_stream(ABTI_stream *p_stream)
+int ABTI_global_move_xstream(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_stream_pool *p_gstreams = gp_ABTI_global->p_streams;
+    ABTI_xstream_pool *p_gxstreams = gp_ABTI_global->p_xstreams;
 
-    ABTI_unit *p_unit = ABTI_unit_get_ptr(p_stream->unit);
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(p_xstream->unit);
     ABT_pool prev_pool = ABTI_pool_get_handle(p_unit->p_pool);
 
     /* Remove from the previous pool and add to the new pool */
-    ABTI_mutex_waitlock(p_gstreams->mutex);
-    ABTI_pool_remove(prev_pool, p_stream->unit);
-    switch (p_stream->state) {
-        case ABT_STREAM_STATE_CREATED:
+    ABTI_mutex_waitlock(p_gxstreams->mutex);
+    ABTI_pool_remove(prev_pool, p_xstream->unit);
+    switch (p_xstream->state) {
+        case ABT_XSTREAM_STATE_CREATED:
             HANDLE_ERROR("SHOULD NOT REACH HERE");
-            abt_errno = ABT_ERR_STREAM;
+            abt_errno = ABT_ERR_XSTREAM;
             break;
-        case ABT_STREAM_STATE_READY:
-        case ABT_STREAM_STATE_RUNNING:
-            ABTI_pool_push(p_gstreams->active, p_stream->unit);
+        case ABT_XSTREAM_STATE_READY:
+        case ABT_XSTREAM_STATE_RUNNING:
+            ABTI_pool_push(p_gxstreams->active, p_xstream->unit);
             break;
-        case ABT_STREAM_STATE_TERMINATED:
-            ABTI_pool_push(p_gstreams->deads, p_stream->unit);
+        case ABT_XSTREAM_STATE_TERMINATED:
+            ABTI_pool_push(p_gxstreams->deads, p_xstream->unit);
             break;
         default:
-            HANDLE_ERROR("UNKNOWN STREAM TYPE");
-            abt_errno = ABT_ERR_INV_STREAM;
+            HANDLE_ERROR("UNKNOWN XSTREAM TYPE");
+            abt_errno = ABT_ERR_INV_XSTREAM;
             break;
     }
-    ABT_mutex_unlock(p_gstreams->mutex);
+    ABT_mutex_unlock(p_gxstreams->mutex);
 
     return abt_errno;
 }
 
-int ABTI_global_del_stream(ABTI_stream *p_stream)
+int ABTI_global_del_xstream(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_stream_pool *p_gstreams = gp_ABTI_global->p_streams;
+    ABTI_xstream_pool *p_gxstreams = gp_ABTI_global->p_xstreams;
 
-    ABTI_unit *p_unit = ABTI_unit_get_ptr(p_stream->unit);
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(p_xstream->unit);
     ABT_pool prev_pool = ABTI_pool_get_handle(p_unit->p_pool);
 
-    ABTI_mutex_waitlock(p_gstreams->mutex);
-    ABTI_pool_remove(prev_pool, p_stream->unit);
-    ABT_mutex_unlock(p_gstreams->mutex);
+    ABTI_mutex_waitlock(p_gxstreams->mutex);
+    ABTI_pool_remove(prev_pool, p_xstream->unit);
+    ABT_mutex_unlock(p_gxstreams->mutex);
 
     return abt_errno;
 }
 
-int ABTI_global_get_created_stream(ABTI_stream **p_stream)
+int ABTI_global_get_created_xstream(ABTI_xstream **p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_stream_pool *p_gstreams = gp_ABTI_global->p_streams;
+    ABTI_xstream_pool *p_gxstreams = gp_ABTI_global->p_xstreams;
 
-    /* Pop one stream */
-    ABTI_mutex_waitlock(p_gstreams->mutex);
-    ABT_unit unit = ABTI_pool_pop(p_gstreams->created);
-    ABT_mutex_unlock(p_gstreams->mutex);
+    /* Pop one ES */
+    ABTI_mutex_waitlock(p_gxstreams->mutex);
+    ABT_unit unit = ABTI_pool_pop(p_gxstreams->created);
+    ABT_mutex_unlock(p_gxstreams->mutex);
 
     /* Return value */
-    ABT_stream stream = ABTI_unit_get_stream(unit);
-    *p_stream = ABTI_stream_get_ptr(stream);
+    ABT_xstream xstream = ABTI_unit_get_xstream(unit);
+    *p_xstream = ABTI_xstream_get_ptr(xstream);
 
     return abt_errno;
 }

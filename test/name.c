@@ -35,10 +35,10 @@ int main(int argc, char *argv[])
     if (argc > 1) num_threads = atoi(argv[1]);
     assert(num_threads >= 0);
 
-    ABT_stream stream;
+    ABT_xstream xstream;
     ABT_thread *threads;
     thread_arg_t *args;
-    char stream_name[16];
+    char xstream_name[16];
     size_t name_len;
     char *name;
     threads = (ABT_thread *)malloc(sizeof(ABT_thread *) * num_threads);
@@ -48,21 +48,21 @@ int main(int argc, char *argv[])
     ret = ABT_init(argc, argv);
     HANDLE_ERROR(ret, "ABT_init");
 
-    /* Get the SELF stream */
-    ret = ABT_stream_self(&stream);
-    HANDLE_ERROR(ret, "ABT_stream_self");
+    /* Get the SELF Execution Stream */
+    ret = ABT_xstream_self(&xstream);
+    HANDLE_ERROR(ret, "ABT_xstream_self");
 
-    /* Set the stream's name */
-    sprintf(stream_name, "SELF-stream");
-    printf("Set the stream's name as '%s'\n", stream_name);
-    ret = ABT_stream_set_name(stream, stream_name);
-    HANDLE_ERROR(ret, "ABT_stream_set_name");
+    /* Set the name for ES */
+    sprintf(xstream_name, "SELF-xstream");
+    printf("Set the xstream's name as '%s'\n", xstream_name);
+    ret = ABT_xstream_set_name(xstream, xstream_name);
+    HANDLE_ERROR(ret, "ABT_xstream_set_name");
 
     /* Create threads */
     for (i = 0; i < num_threads; i++) {
         args[i].id = i + 1;
         sprintf(args[i].name, "arogobot-%d", i);
-        ret = ABT_thread_create(stream,
+        ret = ABT_thread_create(xstream,
                 thread_func, (void *)&args[i], 4096,
                 &threads[i]);
         HANDLE_ERROR(ret, "ABT_thread_create");
@@ -72,13 +72,13 @@ int main(int argc, char *argv[])
         HANDLE_ERROR(ret, "ABT_thread_set_name");
     }
 
-    /* Get the stream's name */
-    ret = ABT_stream_get_name(stream, NULL, &name_len);
-    HANDLE_ERROR(ret, "ABT_stream_get_name");
+    /* Get the name of ES */
+    ret = ABT_xstream_get_name(xstream, NULL, &name_len);
+    HANDLE_ERROR(ret, "ABT_xstream_get_name");
     name = (char *)malloc(sizeof(char) * (name_len + 1));
-    ret = ABT_stream_get_name(stream, stream_name, &name_len);
-    HANDLE_ERROR(ret, "ABT_stream_get_name");
-    printf("Stream's name: %s\n", stream_name);
+    ret = ABT_xstream_get_name(xstream, xstream_name, &name_len);
+    HANDLE_ERROR(ret, "ABT_xstream_get_name");
+    printf("Stream's name: %s\n", xstream_name);
     free(name);
 
     /* Get the threads' names */

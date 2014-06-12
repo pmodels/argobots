@@ -34,17 +34,17 @@ ABT_unit_type ABTI_unit_get_type(ABT_unit unit)
     return p_unit->type;
 }
 
-ABT_stream ABTI_unit_get_stream(ABT_unit unit)
+ABT_xstream ABTI_unit_get_xstream(ABT_unit unit)
 {
-    ABT_stream h_stream;
+    ABT_xstream h_xstream;
     ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
     if (p_unit->type == ABT_UNIT_TYPE_OTHER) {
-        ABTI_stream *p_stream = (ABTI_stream *)p_unit->p_unit;
-        h_stream = ABTI_stream_get_handle(p_stream);
+        ABTI_xstream *p_xstream = (ABTI_xstream *)p_unit->p_unit;
+        h_xstream = ABTI_xstream_get_handle(p_xstream);
     } else {
-        h_stream = ABT_STREAM_NULL;
+        h_xstream = ABT_XSTREAM_NULL;
     }
-    return h_stream;
+    return h_xstream;
 }
 
 ABT_thread ABTI_unit_get_thread(ABT_unit unit)
@@ -73,7 +73,7 @@ ABT_task ABTI_unit_get_task(ABT_unit unit)
     return h_task;
 }
 
-ABT_unit ABTI_unit_create_from_stream(ABT_stream stream)
+ABT_unit ABTI_unit_create_from_xstream(ABT_xstream xstream)
 {
     ABTI_unit *p_unit;
 
@@ -85,7 +85,7 @@ ABT_unit ABTI_unit_create_from_stream(ABT_stream stream)
 
     p_unit->p_pool = NULL;
     p_unit->type   = ABT_UNIT_TYPE_OTHER;
-    p_unit->p_unit = (void *)ABTI_stream_get_ptr(stream);
+    p_unit->p_unit = (void *)ABTI_xstream_get_ptr(xstream);
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
 

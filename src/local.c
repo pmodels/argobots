@@ -6,9 +6,9 @@
 #include "abti.h"
 
 /* ES Local Data */
-ABTD_STREAM_LOCAL ABTI_local *lp_ABTI_local = NULL;
+ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local = NULL;
 
-int ABTI_local_init(ABTI_stream *p_stream)
+int ABTI_local_init(ABTI_xstream *p_xstream)
 {
     assert(lp_ABTI_local == NULL);
     int abt_errno = ABT_SUCCESS;
@@ -20,7 +20,7 @@ int ABTI_local_init(ABTI_stream *p_stream)
         goto fn_fail;
     }
 
-    lp_ABTI_local->p_stream = p_stream;
+    lp_ABTI_local->p_xstream = p_xstream;
     lp_ABTI_local->p_thread = NULL;
 
   fn_exit:

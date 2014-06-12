@@ -14,8 +14,8 @@
  * @ingroup SCHED
  * @brief   Create a new scheduler and return its handle through newsched.
  *
- * newsched must be used for a single stream because pool cannot be shared
- * between different streams.
+ * newsched must be used for a single ES because pool cannot be shared
+ * between different Execution Streams.
  *
  * @param[in]  pool      a user-defined data structure containing work units
  *                       scheduled by a new scheduler

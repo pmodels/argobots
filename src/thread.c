@@ -21,7 +21,7 @@ static uint64_t ABTI_thread_get_new_id();
  * this \a unnamed thread completes the execution of thread_func. Otherwise,
  * ABT_thread_free() can be used to explicitly release the thread object.
  *
- * @param[in]  stream       handle to the associated stream
+ * @param[in]  xstream      handle to the associated ES
  * @param[in]  thread_func  function to be executed by a new thread
  * @param[in]  arg          argument for thread_func
  * @param[in]  stacksize    stack size (in bytes) for a new thread.
@@ -30,26 +30,26 @@ static uint64_t ABTI_thread_get_new_id();
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_create(ABT_stream stream,
+int ABT_thread_create(ABT_xstream xstream,
                       void (*thread_func)(void *), void *arg,
                       size_t stacksize, ABT_thread *newthread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_stream *p_stream;
+    ABTI_xstream *p_xstream;
     ABTI_scheduler *p_sched;
     ABTI_thread *p_newthread;
     ABT_thread h_newthread;
 
-    if (stream == ABT_STREAM_NULL) {
-        HANDLE_ERROR("stream cannot be ABT_STREAM_NULL");
+    if (xstream == ABT_XSTREAM_NULL) {
+        HANDLE_ERROR("xstream cannot be ABT_XSTREAM_NULL");
         goto fn_fail;
     }
 
-    p_stream = ABTI_stream_get_ptr(stream);
-    if (p_stream->state == ABT_STREAM_STATE_CREATED) {
-        abt_errno = ABTI_stream_start(p_stream);
+    p_xstream = ABTI_xstream_get_ptr(xstream);
+    if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
+        abt_errno = ABTI_xstream_start(p_xstream);
         if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTI_stream_start");
+            HANDLE_ERROR("ABTI_xstream_start");
             goto fn_fail;
         }
     }
@@ -63,11 +63,11 @@ int ABT_thread_create(ABT_stream stream,
     }
 
     /* Create a wrapper unit */
-    p_sched = p_stream->p_sched;
+    p_sched = p_xstream->p_sched;
     h_newthread = ABTI_thread_get_handle(p_newthread);
     p_newthread->unit = p_sched->u_create_from_thread(h_newthread);
 
-    p_newthread->p_stream   = p_stream;
+    p_newthread->p_xstream  = p_xstream;
     p_newthread->id         = ABTI_thread_get_new_id();
     p_newthread->p_name     = NULL;
     p_newthread->type       = ABTI_THREAD_TYPE_USER;
@@ -152,11 +152,11 @@ int ABT_thread_free(ABT_thread *thread)
 
     if (p_thread->refcount > 0) {
         /* The thread has finished but it is still referenced.
-         * Thus it exists in the stream's deads pool. */
-        ABTI_stream *p_stream = p_thread->p_stream;
-        ABTI_mutex_waitlock(p_stream->mutex);
-        ABTI_pool_remove(p_stream->deads, p_thread->unit);
-        ABT_mutex_unlock(p_stream->mutex);
+         * Thus it exists in the xstream's deads pool. */
+        ABTI_xstream *p_xstream = p_thread->p_xstream;
+        ABTI_mutex_waitlock(p_xstream->mutex);
+        ABTI_pool_remove(p_xstream->deads, p_thread->unit);
+        ABT_mutex_unlock(p_xstream->mutex);
     }
 
     /* Free the ABTI_thread structure */
@@ -276,7 +276,7 @@ int ABT_thread_cancel(ABT_thread thread)
  * @brief   Yield the processor from the current running thread to a next
  *          thread.
  *
- * The next thread is selected by the stream's scheduler. If there is no more
+ * The next thread is selected by the scheduler of ES. If there is no more
  * thread to, the calling thread resumes its execution immediately.
  *
  * @return Error code
@@ -287,10 +287,10 @@ int ABT_thread_yield()
     int abt_errno = ABT_SUCCESS;
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
-    ABTI_stream *p_stream = ABTI_local_get_stream();
-    assert(p_thread->p_stream == p_stream);
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    assert(p_thread->p_xstream == p_xstream);
 
-    ABTI_scheduler *p_sched = p_stream->p_sched;
+    ABTI_scheduler *p_sched = p_xstream->p_sched;
     if (p_sched->p_get_size(p_sched->pool) < 1) {
         int has_global_task;
         ABTI_global_has_task(&has_global_task);
@@ -305,7 +305,7 @@ int ABT_thread_yield()
          * finish their execution. */
 
         /* Start the scheduling */
-        abt_errno = ABTI_stream_schedule(p_stream);
+        abt_errno = ABTI_xstream_schedule(p_xstream);
         ABTI_CHECK_ERROR(abt_errno);
 
         p_thread->state = ABT_THREAD_STATE_RUNNING;
@@ -357,21 +357,21 @@ int ABT_thread_yield_to(ABT_thread thread)
         goto fn_fail;
     }
 
-    /* Both threads must be associated with the same stream. */
-    ABTI_stream *p_stream = p_cur_thread->p_stream;
-    if (p_stream != p_tar_thread->p_stream) {
-        HANDLE_ERROR("The target thread's stream is not the same as mine.");
+    /* Both threads must be associated with the same ES. */
+    ABTI_xstream *p_xstream = p_cur_thread->p_xstream;
+    if (p_xstream != p_tar_thread->p_xstream) {
+        HANDLE_ERROR("The target thread's ES is not the same as mine.");
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_fail;
     }
 
-    ABTI_scheduler *p_sched = p_stream->p_sched;
+    ABTI_scheduler *p_sched = p_xstream->p_sched;
 
     if (p_cur_thread->type == ABTI_THREAD_TYPE_MAIN) {
         /* Remove the target thread from the pool */
         ABTI_scheduler_remove(p_sched, p_tar_thread->unit);
 
-        abt_errno = ABTI_stream_schedule_thread(p_tar_thread);
+        abt_errno = ABTI_xstream_schedule_thread(p_tar_thread);
         ABTI_CHECK_ERROR(abt_errno);
 
         ABTI_local_set_thread(p_cur_thread);
@@ -676,7 +676,7 @@ ABT_thread ABTI_thread_get_handle(ABTI_thread *p_thread)
     return h_thread;
 }
 
-int ABTI_thread_create_main(ABTI_stream *p_stream, ABTI_thread **p_thread)
+int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
@@ -693,8 +693,8 @@ int ABTI_thread_create_main(ABTI_stream *p_stream, ABTI_thread **p_thread)
     /* The main thread does not need to create context and stack.
      * And, it is not added to the scheduler's pool. */
     h_newthread = ABTI_thread_get_handle(p_newthread);
-    p_newthread->unit = p_stream->p_sched->u_create_from_thread(h_newthread);
-    p_newthread->p_stream   = p_stream;
+    p_newthread->unit = p_xstream->p_sched->u_create_from_thread(h_newthread);
+    p_newthread->p_xstream  = p_xstream;
     p_newthread->id         = ABTI_thread_get_new_id();
     p_newthread->p_name     = NULL;
     p_newthread->type       = ABTI_THREAD_TYPE_MAIN;
@@ -727,7 +727,7 @@ int ABTI_thread_free_main(ABTI_thread *p_thread)
     int abt_errno = ABT_SUCCESS;
 
     /* Free the unit */
-    p_thread->p_stream->p_sched->u_free(&p_thread->unit);
+    p_thread->p_xstream->p_sched->u_free(&p_thread->unit);
 
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
 
@@ -752,7 +752,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     if (p_thread->refcount > 0) {
         ABTI_unit_free(&p_thread->unit);
     } else {
-        p_thread->p_stream->p_sched->u_free(&p_thread->unit);
+        p_thread->p_xstream->p_sched->u_free(&p_thread->unit);
     }
 
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
@@ -780,8 +780,8 @@ int ABTI_thread_suspend()
     int abt_errno = ABT_SUCCESS;
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
-    ABTI_stream *p_stream = ABTI_local_get_stream();
-    assert(p_thread->p_stream == p_stream);
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    assert(p_thread->p_xstream == p_xstream);
 
     /* Change the state of current running thread */
     p_thread->state = ABT_THREAD_STATE_BLOCKED;
@@ -791,13 +791,13 @@ int ABTI_thread_suspend()
          * finish their execution. */
 
         /* Start the scheduling */
-        abt_errno = ABTI_stream_schedule(p_stream);
+        abt_errno = ABTI_xstream_schedule(p_xstream);
         ABTI_CHECK_ERROR(abt_errno);
 
         p_thread->state = ABT_THREAD_STATE_RUNNING;
     } else {
         /* Switch to the scheduler */
-        ABTI_scheduler *p_sched = p_stream->p_sched;
+        ABTI_scheduler *p_sched = p_xstream->p_sched;
         abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
         ABTI_CHECK_ERROR(abt_errno);
     }
@@ -818,8 +818,8 @@ int ABTI_thread_set_ready(ABT_thread thread)
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 
-    /* Add the thread to its associated stream */
-    abt_errno = ABTI_stream_add_thread(p_thread);
+    /* Add the thread to its associated ES */
+    abt_errno = ABTI_xstream_add_thread(p_thread);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -840,7 +840,7 @@ int ABTI_thread_print(ABTI_thread *p_thread)
 
     printf("[");
     printf("id:%lu ", p_thread->id);
-    printf("stream:%lu ", p_thread->p_stream->id);
+    printf("xstream:%lu ", p_thread->p_xstream->id);
     printf("name:%s ", p_thread->p_name);
     printf("type:");
     switch (p_thread->type) {

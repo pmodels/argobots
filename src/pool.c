@@ -88,11 +88,11 @@ int ABTI_pool_free(ABT_pool *pool)
                 break;
             }
             case ABT_UNIT_TYPE_OTHER: {
-                ABT_stream h_stream = ABTI_unit_get_stream(unit);
-                ABTI_stream *p_stream = ABTI_stream_get_ptr(h_stream);
-                abt_errno = ABTI_stream_free(p_stream);
+                ABT_xstream h_xstream = ABTI_unit_get_xstream(unit);
+                ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(h_xstream);
+                abt_errno = ABTI_xstream_free(p_xstream);
                 if (abt_errno != ABT_SUCCESS) {
-                    HANDLE_ERROR("ABTI_stream_free");
+                    HANDLE_ERROR("ABTI_xstream_free");
                     goto fn_fail;
                 }
                 break;

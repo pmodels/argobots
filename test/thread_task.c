@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <abt.h>
 
-#define DEFAULT_NUM_STREAMS     4
+#define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_THREADS     4
 #define DEFAULT_NUM_TASKS       4
 
@@ -83,26 +83,26 @@ void task_func2(void *arg)
 int main(int argc, char *argv[])
 {
     int i, j, ret;
-    int num_streams = DEFAULT_NUM_STREAMS;
+    int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
     int num_tasks = DEFAULT_NUM_TASKS;
-    if (argc > 1) num_streams = atoi(argv[1]);
-    assert(num_streams >= 0);
+    if (argc > 1) num_xstreams = atoi(argv[1]);
+    assert(num_xstreams >= 0);
     if (argc > 2) num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
     if (argc > 3) num_tasks = atoi(argv[3]);
     assert(num_tasks >= 0);
 
-    ABT_stream *streams;
+    ABT_xstream *xstreams;
     ABT_thread **threads;
     thread_arg_t **thread_args;
     ABT_task *tasks;
     task_arg_t *task_args;
 
-    streams = (ABT_stream *)malloc(sizeof(ABT_stream) * num_streams);
-    threads = (ABT_thread **)malloc(sizeof(ABT_thread *) * num_streams);
-    thread_args = (thread_arg_t **)malloc(sizeof(thread_arg_t*) * num_streams);
-    for (i = 0; i < num_streams; i++) {
+    xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
+    threads = (ABT_thread **)malloc(sizeof(ABT_thread *) * num_xstreams);
+    thread_args = (thread_arg_t **)malloc(sizeof(thread_arg_t*) * num_xstreams);
+    for (i = 0; i < num_xstreams; i++) {
         threads[i] = (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);
         thread_args[i] = (thread_arg_t *)malloc(sizeof(thread_arg_t) *
                                                 num_threads);
@@ -114,22 +114,22 @@ int main(int argc, char *argv[])
     ret = ABT_init(argc, argv);
     HANDLE_ERROR(ret, "ABT_init");
 
-    /* Create streams */
-    ret = ABT_stream_self(&streams[0]);
-    HANDLE_ERROR(ret, "ABT_stream_self");
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_create(ABT_SCHEDULER_NULL, &streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_create");
+    /* Create Execution Streams */
+    ret = ABT_xstream_self(&xstreams[0]);
+    HANDLE_ERROR(ret, "ABT_xstream_self");
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_create(ABT_SCHEDULER_NULL, &xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create threads */
-    for (i = 0; i < num_streams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             int tid = i * num_threads + j + 1;
             thread_args[i][j].id = tid;
             thread_args[i][j].num_threads = num_threads;
             thread_args[i][j].threads = &threads[i][0];
-            ret = ABT_thread_create(streams[i],
+            ret = ABT_thread_create(xstreams[i],
                     thread_func, (void *)&thread_args[i][j], 0,
                     &threads[i][j]);
             HANDLE_ERROR(ret, "ABT_thread_create");
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
     /* Create tasks with task_func1 */
     for (i = 0; i < num_tasks; i++) {
         size_t num = 100 + i;
-        ret = ABT_task_create(ABT_STREAM_NULL,
+        ret = ABT_task_create(ABT_XSTREAM_NULL,
                               task_func1, (void *)num,
                               NULL);
         HANDLE_ERROR(ret, "ABT_task_create");
@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
     /* Create tasks with task_func2 */
     for (i = 0; i < num_tasks; i++) {
         task_args[i].num = 100 + i;
-        ret = ABT_task_create(streams[i % num_streams],
+        ret = ABT_task_create(xstreams[i % num_xstreams],
                               task_func2, (void *)&task_args[i],
                               &tasks[i]);
         HANDLE_ERROR(ret, "ABT_task_create");
@@ -173,14 +173,14 @@ int main(int argc, char *argv[])
         HANDLE_ERROR(ret, "ABT_task_free");
     }
 
-    /* Join streams */
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_join(streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_join");
+    /* Join Execution Streams */
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_join(xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_join");
     }
 
-    /* Free threads and streams */
-    for (i = 0; i < num_streams; i++) {
+    /* Free Execution Streams */
+    for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             ret = ABT_thread_free(&threads[i][j]);
             HANDLE_ERROR(ret, "ABT_thread_free");
@@ -188,15 +188,15 @@ int main(int argc, char *argv[])
 
         if (i == 0) continue;
 
-        ret = ABT_stream_free(&streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_free");
+        ret = ABT_xstream_free(&xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
     ret = ABT_finalize();
     HANDLE_ERROR(ret, "ABT_finalize");
 
-    for (i = 0; i < num_streams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         free(thread_args[i]);
         free(threads[i]);
     }
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
     free(threads);
     free(task_args);
     free(tasks);
-    free(streams);
+    free(xstreams);
 
     return EXIT_SUCCESS;
 }

@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <abt.h>
 
-#define DEFAULT_NUM_STREAMS     4
+#define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_THREADS     4
 #define DEFAULT_NUM_TASKS       4
 #define DEFAULT_POOL_SIZE       16
@@ -230,11 +230,11 @@ int main(int argc, char *argv[])
 {
     int i, j;
     int ret;
-    int num_streams = DEFAULT_NUM_STREAMS;
+    int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
     int num_tasks = DEFAULT_NUM_TASKS;
-    if (argc > 1) num_streams = atoi(argv[1]);
-    assert(num_streams >= 0);
+    if (argc > 1) num_xstreams = atoi(argv[1]);
+    assert(num_xstreams >= 0);
     if (argc > 2) num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
     if (argc > 3) num_tasks = atoi(argv[3]);
@@ -243,13 +243,13 @@ int main(int argc, char *argv[])
     pool_t *pools;
     ABT_scheduler *scheds;
     ABT_scheduler_funcs sched_funcs;
-    ABT_stream *streams;
+    ABT_xstream *xstreams;
     ABT_task *tasks;
     task_arg_t *task_args;
 
-    pools = (pool_t *)malloc(sizeof(pool_t) * num_streams);
-    scheds = (ABT_scheduler *)malloc(sizeof(ABT_scheduler) * num_streams);
-    streams = (ABT_stream *)malloc(sizeof(ABT_stream) * num_streams);
+    pools = (pool_t *)malloc(sizeof(pool_t) * num_xstreams);
+    scheds = (ABT_scheduler *)malloc(sizeof(ABT_scheduler) * num_xstreams);
+    xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
     tasks = (ABT_task *)malloc(sizeof(ABT_task) * num_tasks);
     task_args = (task_arg_t *)malloc(sizeof(task_arg_t) * num_tasks);
 
@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
     sched_funcs.p_pop = pool_pop;
     sched_funcs.p_remove = pool_remove;
 
-    for (i = 0; i < num_streams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         /* Create a work unit pool */
         pool_init(&pools[i]);
 
@@ -277,29 +277,29 @@ int main(int argc, char *argv[])
         HANDLE_ERROR(ret, "ABT_scheduler_create");
     }
 
-    /* Create streams */
-    ret = ABT_stream_self(&streams[0]);
-    HANDLE_ERROR(ret, "ABT_stream_self");
-    ABT_stream_set_scheduler(streams[0], scheds[0]);
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_create(scheds[i], &streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_create");
+    /* Create Execution Streams */
+    ret = ABT_xstream_self(&xstreams[0]);
+    HANDLE_ERROR(ret, "ABT_xstream_self");
+    ABT_xstream_set_scheduler(xstreams[0], scheds[0]);
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_create(scheds[i], &xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create tasks with task_func1 */
     for (i = 0; i < num_tasks; i++) {
         size_t num = 100 + i;
-        ret = ABT_task_create(ABT_STREAM_NULL,
+        ret = ABT_task_create(ABT_XSTREAM_NULL,
                               task_func1, (void *)num,
                               NULL);
         HANDLE_ERROR(ret, "ABT_task_create");
     }
 
     /* Create threads */
-    for (i = 0; i < num_streams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             size_t tid = i * num_threads + j + 1;
-            ret = ABT_thread_create(streams[i],
+            ret = ABT_thread_create(xstreams[i],
                     thread_func, (void *)tid, 16384,
                     NULL);
             HANDLE_ERROR(ret, "ABT_thread_create");
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
     /* Create tasks with task_func2 */
     for (i = 0; i < num_tasks; i++) {
         task_args[i].num = 100 + i;
-        ret = ABT_task_create(streams[i % num_streams],
+        ret = ABT_task_create(xstreams[i % num_xstreams],
                               task_func2, (void *)&task_args[i],
                               &tasks[i]);
         HANDLE_ERROR(ret, "ABT_task_create");
@@ -334,16 +334,16 @@ int main(int argc, char *argv[])
         HANDLE_ERROR(ret, "ABT_task_free");
     }
 
-    /* Join streams */
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_join(streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_join");
+    /* Join Execution Streams */
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_join(xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_join");
     }
 
-    /* Free streams */
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_free(&streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_free");
+    /* Free Execution Streams */
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_free(&xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
@@ -352,9 +352,9 @@ int main(int argc, char *argv[])
 
     free(task_args);
     free(tasks);
-    free(streams);
+    free(xstreams);
     free(scheds);
-    for (i = 0; i < num_streams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         free(pools[i].units);
     }
     free(pools);

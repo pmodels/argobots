@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <abt.h>
 
-#define DEFAULT_NUM_STREAMS     4
+#define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_THREADS     4
 
 #define HANDLE_ERROR(ret,msg)                           \
@@ -31,33 +31,33 @@ int main(int argc, char *argv[])
 {
     int i, j;
     int ret;
-    int num_streams = DEFAULT_NUM_STREAMS;
+    int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
-    if (argc > 1) num_streams = atoi(argv[1]);
-    assert(num_streams >= 0);
+    if (argc > 1) num_xstreams = atoi(argv[1]);
+    assert(num_xstreams >= 0);
     if (argc > 2) num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
 
-    ABT_stream *streams;
-    streams = (ABT_stream *)malloc(sizeof(ABT_stream) * num_streams);
+    ABT_xstream *xstreams;
+    xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
 
     /* Initialize */
     ret = ABT_init(argc, argv);
     HANDLE_ERROR(ret, "ABT_init");
 
-    /* Create streams */
-    ret = ABT_stream_self(&streams[0]);
-    HANDLE_ERROR(ret, "ABT_stream_self");
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_create(ABT_SCHEDULER_NULL, &streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_create");
+    /* Create Execution Streams */
+    ret = ABT_xstream_self(&xstreams[0]);
+    HANDLE_ERROR(ret, "ABT_xstream_self");
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_create(ABT_SCHEDULER_NULL, &xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create threads */
-    for (i = 0; i < num_streams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             size_t tid = i * num_threads + j + 1;
-            ret = ABT_thread_create(streams[i],
+            ret = ABT_thread_create(xstreams[i],
                     thread_func, (void *)tid, 16384,
                     NULL);
             HANDLE_ERROR(ret, "ABT_thread_create");
@@ -67,23 +67,23 @@ int main(int argc, char *argv[])
     /* Switch to other user level threads */
     ABT_thread_yield();
 
-    /* Join streams */
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_join(streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_join");
+    /* Join Execution Streams */
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_join(xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_join");
     }
 
-    /* Free streams */
-    for (i = 1; i < num_streams; i++) {
-        ret = ABT_stream_free(&streams[i]);
-        HANDLE_ERROR(ret, "ABT_stream_free");
+    /* Free Execution Streams */
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_free(&xstreams[i]);
+        HANDLE_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
     ret = ABT_finalize();
     HANDLE_ERROR(ret, "ABT_finalize");
 
-    free(streams);
+    free(xstreams);
 
     return EXIT_SUCCESS;
 }

@@ -82,15 +82,15 @@ int ABT_future_set(ABT_future future, void *value, int nbytes)
  * @brief   Creates a future.
  * 
  * @param[in]  n            Number of bytes in the buffer containing the result of the future
- * @param[in]  stream       Stream on which this future will run
+ * @param[in]  xstream      ES on which this future will run
  * @param[out] future       Reference to the newly created future
  * @return Error code
  */
-int ABT_future_create(int n, ABT_stream stream, ABT_future *future)
+int ABT_future_create(int n, ABT_xstream xstream, ABT_future *future)
 {
 	int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future = (ABTI_future*)ABTU_malloc(sizeof(ABTI_future));
-    p_future->stream = stream;
+    p_future->xstream = xstream;
     p_future->ready = 0;
     p_future->nbytes = n;
     p_future->value = ABTU_malloc(n);
