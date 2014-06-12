@@ -24,28 +24,27 @@
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_scheduler_create(ABT_pool pool,
-                         const ABT_scheduler_funcs *funcs,
-                         ABT_scheduler *newsched)
+int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
+                     ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_scheduler *p_sched;
+    ABTI_sched *p_sched;
 
     if (newsched == NULL) {
         HANDLE_ERROR("newsched is NULL");
-        abt_errno = ABT_ERR_SCHEDULER;
+        abt_errno = ABT_ERR_SCHED;
         goto fn_fail;
     }
 
-    p_sched = (ABTI_scheduler *)ABTU_malloc(sizeof(ABTI_scheduler));
+    p_sched = (ABTI_sched *)ABTU_malloc(sizeof(ABTI_sched));
     if (!p_sched) {
         HANDLE_ERROR("ABTU_malloc");
-        *newsched = ABT_SCHEDULER_NULL;
+        *newsched = ABT_SCHED_NULL;
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
     }
 
-    p_sched->type = ABTI_SCHEDULER_TYPE_USER;
+    p_sched->type = ABTI_SCHED_TYPE_USER;
     p_sched->pool = pool;
 
     /* Create a mutex */
@@ -71,13 +70,13 @@ int ABT_scheduler_create(ABT_pool pool,
     p_sched->p_remove = funcs->p_remove;
 
     /* Return value */
-    *newsched = ABTI_scheduler_get_handle(p_sched);
+    *newsched = ABTI_sched_get_handle(p_sched);
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_scheduler_create", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_sched_create", abt_errno);
     goto fn_exit;
 }
 
@@ -85,26 +84,26 @@ int ABT_scheduler_create(ABT_pool pool,
  * @ingroup SCHED
  * @brief   Release the scheduler object associated with sched handle.
  *
- * If this routine successfully returns, sched is set as ABT_SCHEDULER_NULL.
+ * If this routine successfully returns, sched is set as ABT_SCHED_NULL.
  *
  * @param[in,out] sched  handle to the target scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_scheduler_free(ABT_scheduler *sched)
+int ABT_sched_free(ABT_sched *sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_scheduler h_sched = *sched;
-    ABTI_scheduler *p_sched = ABTI_scheduler_get_ptr(h_sched);
+    ABT_sched h_sched = *sched;
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(h_sched);
     if (p_sched == NULL) {
         HANDLE_ERROR("NULL SCHEDULER");
-        abt_errno = ABT_ERR_INV_SCHEDULER;
+        abt_errno = ABT_ERR_INV_SCHED;
         goto fn_fail;
     }
 
     /* If sched is a default provided one, it should free its pool here.
      * Otherwise, freeing the pool is the user's reponsibility. */
-    if (p_sched->type == ABTI_SCHEDULER_TYPE_DEFAULT) {
+    if (p_sched->type == ABTI_SCHED_TYPE_DEFAULT) {
         abt_errno = ABTI_pool_free(&p_sched->pool);
         ABTI_CHECK_ERROR(abt_errno);
     }
@@ -120,46 +119,46 @@ int ABT_scheduler_free(ABT_scheduler *sched)
     ABTU_free(p_sched);
 
     /* Return value */
-    *sched = ABT_SCHEDULER_NULL;
+    *sched = ABT_SCHED_NULL;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_scheduler_free", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_sched_free", abt_errno);
     goto fn_exit;
 }
 
 
 /* Private APIs */
-ABTI_scheduler *ABTI_scheduler_get_ptr(ABT_scheduler sched)
+ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched)
 {
-    ABTI_scheduler *p_sched;
-    if (sched == ABT_SCHEDULER_NULL) {
+    ABTI_sched *p_sched;
+    if (sched == ABT_SCHED_NULL) {
         p_sched = NULL;
     } else {
-        p_sched = (ABTI_scheduler *)sched;
+        p_sched = (ABTI_sched *)sched;
     }
     return p_sched;
 }
 
-ABT_scheduler ABTI_scheduler_get_handle(ABTI_scheduler *p_sched)
+ABT_sched ABTI_sched_get_handle(ABTI_sched *p_sched)
 {
-    ABT_scheduler h_sched;
+    ABT_sched h_sched;
     if (p_sched == NULL) {
-        h_sched = ABT_SCHEDULER_NULL;
+        h_sched = ABT_SCHED_NULL;
     } else {
-        h_sched = (ABT_scheduler)p_sched;
+        h_sched = (ABT_sched)p_sched;
     }
     return h_sched;
 }
 
-int ABTI_scheduler_create_default(ABTI_scheduler **newsched)
+int ABTI_sched_create_default(ABTI_sched **newsched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_scheduler sched;
+    ABT_sched sched;
     ABT_pool pool;
-    ABT_scheduler_funcs funcs;
+    ABT_sched_funcs funcs;
 
     /* Create a work unit pool */
     abt_errno = ABTI_pool_create(&pool);
@@ -178,12 +177,12 @@ int ABTI_scheduler_create_default(ABTI_scheduler **newsched)
     funcs.p_remove = ABTI_pool_remove;
 
     /* Create a scheduler */
-    abt_errno = ABT_scheduler_create(pool, &funcs, &sched);
+    abt_errno = ABT_sched_create(pool, &funcs, &sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Mark this as a runtime-provided scheduler */
-    ABTI_scheduler *p_sched = ABTI_scheduler_get_ptr(sched);
-    p_sched->type = ABTI_SCHEDULER_TYPE_DEFAULT;
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    p_sched->type = ABTI_SCHED_TYPE_DEFAULT;
 
     /* Return value */
     *newsched = p_sched;
@@ -192,18 +191,18 @@ int ABTI_scheduler_create_default(ABTI_scheduler **newsched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_scheduler_create_default", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_sched_create_default", abt_errno);
     goto fn_exit;
 }
 
-void ABTI_scheduler_push(ABTI_scheduler *p_sched, ABT_unit unit)
+void ABTI_sched_push(ABTI_sched *p_sched, ABT_unit unit)
 {
     ABTI_mutex_waitlock(p_sched->mutex);
     p_sched->p_push(p_sched->pool, unit);
     ABT_mutex_unlock(p_sched->mutex);
 }
 
-ABT_unit ABTI_scheduler_pop(ABTI_scheduler *p_sched)
+ABT_unit ABTI_sched_pop(ABTI_sched *p_sched)
 {
     ABTI_mutex_waitlock(p_sched->mutex);
     ABT_unit unit = p_sched->p_pop(p_sched->pool);
@@ -211,14 +210,14 @@ ABT_unit ABTI_scheduler_pop(ABTI_scheduler *p_sched)
     return unit;
 }
 
-void ABTI_scheduler_remove(ABTI_scheduler *p_sched, ABT_unit unit)
+void ABTI_sched_remove(ABTI_sched *p_sched, ABT_unit unit)
 {
     ABTI_mutex_waitlock(p_sched->mutex);
     p_sched->p_remove(p_sched->pool, unit);
     ABT_mutex_unlock(p_sched->mutex);
 }
 
-int ABTI_scheduler_print(ABTI_scheduler *p_sched)
+int ABTI_sched_print(ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
     if (p_sched == NULL) {
@@ -229,8 +228,8 @@ int ABTI_scheduler_print(ABTI_scheduler *p_sched)
     printf("== SCHEDULER (%p) ==\n", p_sched);
     printf("type: ");
     switch (p_sched->type) {
-        case ABTI_SCHEDULER_TYPE_DEFAULT: printf("DEFAULT\n"); break;
-        case ABTI_SCHEDULER_TYPE_USER:    printf("USER\n"); break;
+        case ABTI_SCHED_TYPE_DEFAULT: printf("DEFAULT\n"); break;
+        case ABTI_SCHED_TYPE_USER:    printf("USER\n"); break;
         default: printf("UNKNOWN\n"); break;
     }
     printf("pool: ");
@@ -241,7 +240,7 @@ int ABTI_scheduler_print(ABTI_scheduler *p_sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_scheduler_print", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_sched_print", abt_errno);
     goto fn_exit;
 }
 

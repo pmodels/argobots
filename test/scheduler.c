@@ -241,14 +241,14 @@ int main(int argc, char *argv[])
     assert(num_tasks >= 0);
 
     pool_t *pools;
-    ABT_scheduler *scheds;
-    ABT_scheduler_funcs sched_funcs;
+    ABT_sched *scheds;
+    ABT_sched_funcs sched_funcs;
     ABT_xstream *xstreams;
     ABT_task *tasks;
     task_arg_t *task_args;
 
     pools = (pool_t *)malloc(sizeof(pool_t) * num_xstreams);
-    scheds = (ABT_scheduler *)malloc(sizeof(ABT_scheduler) * num_xstreams);
+    scheds = (ABT_sched *)malloc(sizeof(ABT_sched) * num_xstreams);
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
     tasks = (ABT_task *)malloc(sizeof(ABT_task) * num_tasks);
     task_args = (task_arg_t *)malloc(sizeof(task_arg_t) * num_tasks);
@@ -273,14 +273,14 @@ int main(int argc, char *argv[])
         /* Create a work unit pool */
         pool_init(&pools[i]);
 
-        ret = ABT_scheduler_create(&pools[i], &sched_funcs, &scheds[i]);
-        HANDLE_ERROR(ret, "ABT_scheduler_create");
+        ret = ABT_sched_create(&pools[i], &sched_funcs, &scheds[i]);
+        HANDLE_ERROR(ret, "ABT_sched_create");
     }
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
     HANDLE_ERROR(ret, "ABT_xstream_self");
-    ABT_xstream_set_scheduler(xstreams[0], scheds[0]);
+    ABT_xstream_set_sched(xstreams[0], scheds[0]);
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(scheds[i], &xstreams[i]);
         HANDLE_ERROR(ret, "ABT_xstream_create");

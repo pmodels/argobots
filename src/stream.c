@@ -19,13 +19,13 @@ static void *ABTI_xstream_loop(void *p_arg);
  * @brief   Create a new ES and return its handle through newxstream.
  *
  * @param[in]  sched  handle to the scheduler used for a new ES. If this is
- *                    ABT_SCHEDULER_NULL, the runtime-provided scheduler is used.
+ *                    ABT_SCHED_NULL, the runtime-provided scheduler is used.
  * @param[out] newxstream  handle to a newly created ES. This cannot be NULL
  *                    because unnamed ES is not allowed.
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_create(ABT_scheduler sched, ABT_xstream *newxstream)
+int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_newxstream;
@@ -54,17 +54,17 @@ int ABT_xstream_create(ABT_scheduler sched, ABT_xstream *newxstream)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Set the scheduler */
-    if (sched == ABT_SCHEDULER_NULL) {
+    if (sched == ABT_SCHED_NULL) {
         /* Default scheduler */
-        abt_errno = ABTI_scheduler_create_default(&p_newxstream->p_sched);
+        abt_errno = ABTI_sched_create_default(&p_newxstream->p_sched);
         if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTI_scheduler_create_default");
+            HANDLE_ERROR("ABTI_sched_create_default");
             ABTU_free(p_newxstream);
             *newxstream = ABT_XSTREAM_NULL;
             goto fn_fail;
         }
     } else {
-        p_newxstream->p_sched = ABTI_scheduler_get_ptr(sched);
+        p_newxstream->p_sched = ABTI_sched_get_ptr(sched);
     }
 
     /* Create a work unit pool that contains terminated work units */
@@ -331,7 +331,7 @@ int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2, int *result)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_set_scheduler(ABT_xstream xstream, ABT_scheduler sched)
+int ABT_xstream_set_sched(ABT_xstream xstream, ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -341,9 +341,9 @@ int ABT_xstream_set_scheduler(ABT_xstream xstream, ABT_scheduler sched)
         goto fn_fail;
     }
 
-    ABTI_scheduler *p_sched = ABTI_scheduler_get_ptr(sched);
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     if (p_sched == NULL) {
-        abt_errno = ABT_ERR_INV_SCHEDULER;
+        abt_errno = ABT_ERR_INV_SCHED;
         goto fn_fail;
     }
 
@@ -354,7 +354,7 @@ int ABT_xstream_set_scheduler(ABT_xstream xstream, ABT_scheduler sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_set_scheduler", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_set_sched", abt_errno);
     goto fn_exit;
 }
 
@@ -492,8 +492,8 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     if (p_xstream->p_name) ABTU_free(p_xstream->p_name);
 
     /* Free the scheduler */
-    ABT_scheduler h_sched = ABTI_scheduler_get_handle(p_xstream->p_sched);
-    abt_errno = ABT_scheduler_free(&h_sched);
+    ABT_sched h_sched = ABTI_sched_get_handle(p_xstream->p_sched);
+    abt_errno = ABT_sched_free(&h_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Clean up the deads pool */
@@ -595,7 +595,7 @@ int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
 
     p_xstream->state = ABT_XSTREAM_STATE_RUNNING;
 
-    ABTI_scheduler *p_sched = p_xstream->p_sched;
+    ABTI_sched *p_sched = p_xstream->p_sched;
     ABT_pool pool = p_sched->pool;
     while (p_sched->p_get_size(pool) > 0) {
         /* If there exist tasks in thte global task pool, steal one and
@@ -613,7 +613,7 @@ int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
         }
 
         /* Pop one work unit */
-        ABT_unit unit = ABTI_scheduler_pop(p_sched);
+        ABT_unit unit = ABTI_sched_pop(p_sched);
 
         ABT_unit_type type = p_sched->u_get_type(unit);
         if (type == ABT_UNIT_TYPE_THREAD) {
@@ -657,7 +657,7 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
     }
 
     ABTI_xstream *p_xstream = p_thread->p_xstream;
-    ABTI_scheduler *p_sched = p_xstream->p_sched;
+    ABTI_sched *p_sched = p_xstream->p_sched;
 
     ABTI_local_set_thread(p_thread);
 
@@ -764,10 +764,10 @@ int ABTI_xstream_add_thread(ABTI_thread *p_thread)
     ABTI_mutex_waitlock(p_thread->mutex);
 
     ABTI_xstream *p_xstream = p_thread->p_xstream;
-    ABTI_scheduler *p_sched = p_xstream->p_sched;
+    ABTI_sched *p_sched = p_xstream->p_sched;
 
     /* Add the unit to the scheduler's pool */
-    ABTI_scheduler_push(p_sched, p_thread->unit);
+    ABTI_sched_push(p_sched, p_thread->unit);
 
     /* Set the thread's state as READY */
     p_thread->state = ABT_THREAD_STATE_READY;
@@ -787,8 +787,8 @@ int ABTI_xstream_keep_thread(ABTI_thread *p_thread)
 
     /* If the scheduler is not a default one, free the unit and create
      * an internal unit to add to the deads pool. */
-    ABTI_scheduler *p_sched = p_xstream->p_sched;
-    if (p_sched->type != ABTI_SCHEDULER_TYPE_DEFAULT) {
+    ABTI_sched *p_sched = p_xstream->p_sched;
+    if (p_sched->type != ABTI_SCHED_TYPE_DEFAULT) {
         p_sched->u_free(&p_thread->unit);
 
         ABT_thread thread = ABTI_thread_get_handle(p_thread);
@@ -811,11 +811,11 @@ int ABTI_xstream_keep_thread(ABTI_thread *p_thread)
 int ABTI_xstream_keep_task(ABTI_task *p_task)
 {
     ABTI_xstream *p_xstream = p_task->p_xstream;
-    ABTI_scheduler *p_sched = p_xstream->p_sched;
+    ABTI_sched *p_sched = p_xstream->p_sched;
 
     /* If the scheduler is not a default one, free the unit and create
      * an internal unit to add to the deads pool. */
-    if (p_sched->type != ABTI_SCHEDULER_TYPE_DEFAULT) {
+    if (p_sched->type != ABTI_SCHED_TYPE_DEFAULT) {
         p_sched->u_free(&p_task->unit);
 
         ABT_task task = ABTI_task_get_handle(p_task);
@@ -863,7 +863,7 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
     printf("request: %x\n", p_xstream->request);
 
     printf("sched  : %p\n", p_xstream->p_sched);
-    abt_errno = ABTI_scheduler_print(p_xstream->p_sched);
+    abt_errno = ABTI_sched_print(p_xstream->p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     printf("deads  :");
@@ -895,7 +895,7 @@ static void *ABTI_xstream_loop(void *p_arg)
     /* Set this ES as the current ES */
     ABTI_local_init(p_xstream);
 
-    ABTI_scheduler *p_sched = p_xstream->p_sched;
+    ABTI_sched *p_sched = p_xstream->p_sched;
     ABT_pool pool = p_sched->pool;
 
     while (1) {

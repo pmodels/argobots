@@ -68,7 +68,7 @@ int ABT_init(int argc, char **argv)
 
     /* Create the primary ES */
     ABT_xstream xstream;
-    abt_errno = ABT_xstream_create(ABT_SCHEDULER_NULL, &xstream);
+    abt_errno = ABT_xstream_create(ABT_SCHED_NULL, &xstream);
     if (abt_errno != ABT_SUCCESS) {
         HANDLE_ERROR("ABT_xstream_create");
         goto fn_fail;

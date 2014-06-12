@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     ret = ABT_xstream_self(&xstreams[0]);
     HANDLE_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
-        ret = ABT_xstream_create(ABT_SCHEDULER_NULL, &xstreams[i]);
+        ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
         HANDLE_ERROR(ret, "ABT_xstream_create");
     }
 

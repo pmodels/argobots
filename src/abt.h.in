@@ -52,7 +52,7 @@ extern "C" {
 #define ABT_SUCCESS             0   /* Successful return code */
 #define ABT_ERR_MEM             1   /* Memeory allocation failure */
 #define ABT_ERR_INV_XSTREAM     2   /* Invalid ES */
-#define ABT_ERR_INV_SCHEDULER   3   /* Invalid scheduler */
+#define ABT_ERR_INV_SCHED       3   /* Invalid scheduler */
 #define ABT_ERR_INV_THREAD      4   /* Invalid ULT */
 #define ABT_ERR_INV_TASK        5   /* Invalid task */
 #define ABT_ERR_INV_MUTEX       6   /* Invalid mutex */
@@ -60,7 +60,7 @@ extern "C" {
 #define ABT_ERR_INV_UNIT        8   /* Invalid work unit */
 #define ABT_ERR_INV_POOL        9   /* Invalid pool */
 #define ABT_ERR_XSTREAM         10  /* ES-related error */
-#define ABT_ERR_SCHEDULER       11  /* Scheduler-related error */
+#define ABT_ERR_SCHED           11  /* Scheduler-related error */
 #define ABT_ERR_THREAD          12  /* ULT-related error */
 #define ABT_ERR_TASK            13  /* Task-related error */
 #define ABT_ERR_MUTEX_LOCKED    14  /* Return value when mutex is locked */
@@ -80,7 +80,7 @@ typedef void *                 ABT_task;          /* Tasklet */
 typedef enum ABT_task_state    ABT_task_state;    /* Tasklet state */
 typedef void *                 ABT_mutex;         /* Mutex */
 typedef void *                 ABT_condition;     /* Condition */
-typedef void *                 ABT_scheduler;     /* Scheduler */
+typedef void *                 ABT_sched;         /* Scheduler */
 typedef enum ABT_unit_type     ABT_unit_type;     /* Work unit type */
 typedef void *                 ABT_unit;          /* A work unit */
 typedef void *                 ABT_pool;          /* Pool of work units */
@@ -92,7 +92,7 @@ typedef void *                 ABT_future;        /* Future */
 #define ABT_TASK_NULL       (NULL)
 #define ABT_MUTEX_NULL      (NULL)
 #define ABT_CONDITION_NULL  (NULL)
-#define ABT_SCHEDULER_NULL  (NULL)
+#define ABT_SCHED_NULL      (NULL)
 #define ABT_POOL_NULL       (NULL)
 #define ABT_UNIT_NULL       (NULL)
 #define ABT_FUTURE_NULL     (NULL)
@@ -152,7 +152,7 @@ typedef struct {
     ABT_pool_push_fn     p_push;
     ABT_pool_pop_fn      p_pop;
     ABT_pool_remove_fn   p_remove;
-} ABT_scheduler_funcs;
+} ABT_sched_funcs;
 
 
 /* Init & Finalize */
@@ -160,14 +160,14 @@ int ABT_init(int argc, char **argv);
 int ABT_finalize();
 
 /* Execution Stream (ES) */
-int ABT_xstream_create(ABT_scheduler sched, ABT_xstream *newxstream);
+int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream);
 int ABT_xstream_free(ABT_xstream *xstream);
 int ABT_xstream_join(ABT_xstream xstream);
 int ABT_xstream_exit();
 int ABT_xstream_cancel(ABT_xstream xstream);
 int ABT_xstream_self(ABT_xstream *xstream);
 int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2, int *result);
-int ABT_xstream_set_scheduler(ABT_xstream xstream, ABT_scheduler sched);
+int ABT_xstream_set_sched(ABT_xstream xstream, ABT_sched sched);
 int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state);
 int ABT_xstream_set_name(ABT_xstream xstream, const char *name);
 int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len);
@@ -206,10 +206,9 @@ int ABT_task_set_name(ABT_task task, const char *name);
 int ABT_task_get_name(ABT_task task, char *name, size_t *len);
 
 /* Scheduler */
-int ABT_scheduler_create(ABT_pool pool,
-                         const ABT_scheduler_funcs *funcs,
-                         ABT_scheduler *newsched);
-int ABT_scheduler_free(ABT_scheduler *sched);
+int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
+                     ABT_sched *newsched);
+int ABT_sched_free(ABT_sched *sched);
 
 /* Mutex */
 int ABT_mutex_create(ABT_mutex *newmutex);

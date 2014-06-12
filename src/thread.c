@@ -36,7 +36,7 @@ int ABT_thread_create(ABT_xstream xstream,
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream;
-    ABTI_scheduler *p_sched;
+    ABTI_sched *p_sched;
     ABTI_thread *p_newthread;
     ABT_thread h_newthread;
 
@@ -99,7 +99,7 @@ int ABT_thread_create(ABT_xstream xstream,
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Add this thread to the scheduler's pool */
-    ABTI_scheduler_push(p_sched, p_newthread->unit);
+    ABTI_sched_push(p_sched, p_newthread->unit);
 
     /* Return value */
     if (newthread) *newthread = h_newthread;
@@ -290,7 +290,7 @@ int ABT_thread_yield()
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     assert(p_thread->p_xstream == p_xstream);
 
-    ABTI_scheduler *p_sched = p_xstream->p_sched;
+    ABTI_sched *p_sched = p_xstream->p_sched;
     if (p_sched->p_get_size(p_sched->pool) < 1) {
         int has_global_task;
         ABTI_global_has_task(&has_global_task);
@@ -365,11 +365,11 @@ int ABT_thread_yield_to(ABT_thread thread)
         goto fn_fail;
     }
 
-    ABTI_scheduler *p_sched = p_xstream->p_sched;
+    ABTI_sched *p_sched = p_xstream->p_sched;
 
     if (p_cur_thread->type == ABTI_THREAD_TYPE_MAIN) {
         /* Remove the target thread from the pool */
-        ABTI_scheduler_remove(p_sched, p_tar_thread->unit);
+        ABTI_sched_remove(p_sched, p_tar_thread->unit);
 
         abt_errno = ABTI_xstream_schedule_thread(p_tar_thread);
         ABTI_CHECK_ERROR(abt_errno);
@@ -382,10 +382,10 @@ int ABT_thread_yield_to(ABT_thread thread)
         p_cur_thread->state = ABT_THREAD_STATE_READY;
 
         /* Add the current thread to the pool again */
-        ABTI_scheduler_push(p_sched, p_cur_thread->unit);
+        ABTI_sched_push(p_sched, p_cur_thread->unit);
 
         /* Remove the target thread from the pool */
-        ABTI_scheduler_remove(p_sched, p_tar_thread->unit);
+        ABTI_sched_remove(p_sched, p_tar_thread->unit);
 
         /* Switch the context */
         ABTI_local_set_thread(p_tar_thread);
@@ -797,7 +797,7 @@ int ABTI_thread_suspend()
         p_thread->state = ABT_THREAD_STATE_RUNNING;
     } else {
         /* Switch to the scheduler */
-        ABTI_scheduler *p_sched = p_xstream->p_sched;
+        ABTI_sched *p_sched = p_xstream->p_sched;
         abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
         ABTI_CHECK_ERROR(abt_errno);
     }

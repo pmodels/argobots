@@ -22,8 +22,8 @@ typedef enum ABTI_thread_type     ABTI_thread_type;
 typedef struct ABTI_task          ABTI_task;
 typedef struct ABTI_mutex         ABTI_mutex;
 typedef struct ABTI_condition     ABTI_condition;
-typedef struct ABTI_scheduler     ABTI_scheduler;
-typedef enum ABTI_scheduler_type  ABTI_scheduler_type;
+typedef struct ABTI_sched         ABTI_sched;
+typedef enum ABTI_sched_type      ABTI_sched_type;
 typedef struct ABTI_unit          ABTI_unit;
 typedef struct ABTI_pool          ABTI_pool;
 typedef struct ABTI_xstream_pool  ABTI_xstream_pool;
@@ -59,9 +59,9 @@ enum ABTI_thread_type {
     ABTI_THREAD_TYPE_USER
 };
 
-enum ABTI_scheduler_type {
-    ABTI_SCHEDULER_TYPE_DEFAULT,
-    ABTI_SCHEDULER_TYPE_USER
+enum ABTI_sched_type {
+    ABTI_SCHED_TYPE_DEFAULT,
+    ABTI_SCHED_TYPE_USER
 };
 
 
@@ -75,7 +75,7 @@ struct ABTI_xstream {
 
     uint32_t request;          /* Request */
     ABT_mutex mutex;           /* Mutex */
-    ABTI_scheduler *p_sched;   /* Scheduler */
+    ABTI_sched *p_sched;       /* Scheduler */
     ABT_pool deads;            /* Units terminated but still referenced */
 
     ABTD_xstream_context ctx;  /* ES context */
@@ -123,8 +123,8 @@ struct ABTI_mutex {
 struct ABTI_condition {
 };
 
-struct ABTI_scheduler {
-    ABTI_scheduler_type type; /* Type */
+struct ABTI_sched {
+    ABTI_sched_type type;     /* Type */
     ABT_mutex mutex;          /* Mutex */
     ABTD_thread_context ctx;  /* Scheduler context */
     ABT_pool pool;            /* Work unit pool */
@@ -145,8 +145,7 @@ struct ABTI_scheduler {
 struct ABTI_unit {
     ABTI_pool    *p_pool; /* Pool to which this unit belongs */
     ABT_unit_type type;   /* Work unit type */
-    void         *p_unit; /* Work unit object,
-                             e.g., ABTI_thread or ABTI_task */
+    void         *p_unit; /* Work unit object, e.g., ABTI_thread or ABTI_task */
     ABTI_unit    *p_prev; /* Previous unit in list */
     ABTI_unit    *p_next; /* Next unit in list */
 };
@@ -283,13 +282,13 @@ ABTI_future *ABTI_future_get_ptr(ABT_future future);
 /* Condition */
 
 /* Scheduler */
-ABTI_scheduler *ABTI_scheduler_get_ptr(ABT_scheduler sched);
-ABT_scheduler   ABTI_scheduler_get_handle(ABTI_scheduler *p_sched);
-int  ABTI_scheduler_create_default(ABTI_scheduler **p_newsched);
-void ABTI_scheduler_push(ABTI_scheduler *p_sched, ABT_unit unit);
-ABT_unit ABTI_scheduler_pop(ABTI_scheduler *p_sched);
-void ABTI_scheduler_remove(ABTI_scheduler *p_sched, ABT_unit unit);
-int  ABTI_scheduler_print(ABTI_scheduler *p_sched);
+ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched);
+ABT_sched   ABTI_sched_get_handle(ABTI_sched *p_sched);
+int  ABTI_sched_create_default(ABTI_sched **p_newsched);
+void ABTI_sched_push(ABTI_sched *p_sched, ABT_unit unit);
+ABT_unit ABTI_sched_pop(ABTI_sched *p_sched);
+void ABTI_sched_remove(ABTI_sched *p_sched, ABT_unit unit);
+int  ABTI_sched_print(ABTI_sched *p_sched);
 
 /* Unit */
 ABTI_unit *ABTI_unit_get_ptr(ABT_unit unit);

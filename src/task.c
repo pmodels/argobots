@@ -80,7 +80,7 @@ int ABT_task_create(ABT_xstream xstream,
         }
     } else {
         ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-        ABTI_scheduler *p_sched = p_xstream->p_sched;
+        ABTI_sched *p_sched = p_xstream->p_sched;
 
         /* Set the state as DELAYED */
         p_newtask->state = ABT_TASK_STATE_DELAYED;
@@ -92,7 +92,7 @@ int ABT_task_create(ABT_xstream xstream,
         p_newtask->unit = p_sched->u_create_from_task(h_newtask);
 
         /* Add this task to the scheduler's pool */
-        ABTI_scheduler_push(p_sched, p_newtask->unit);
+        ABTI_sched_push(p_sched, p_newtask->unit);
 
         /* Start the ES if it is not running */
         if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
