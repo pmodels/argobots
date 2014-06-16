@@ -24,7 +24,7 @@ typedef struct task_args_t {
 /* Function to compute Fibonacci numbers */
 void fibonacci(void *arguments){
 	int n, result;
-	task_args a1, a2, *parent;
+	task_args *a1, *a2, *parent;
 	ABT_task t1, t2;
 	ABT_xstream xstream;
 
@@ -32,8 +32,7 @@ void fibonacci(void *arguments){
 	n = args->n;
 	parent = args->parent;
 
-printf("Computing Fibonacci of %d, result %d\n",n,args->result);
-sleep(1);
+//printf("Computing Fibonacci of %d, result %d\n",n,args->result);
 	/* checking for base cases */
 	if(n <= 2){
 		args->result = 1;
@@ -41,24 +40,26 @@ sleep(1);
 		int flag = 1;
 		while(flag && parent != NULL){
 			ABT_mutex_lock(parent->mutex);
-			parent->result =+ result;
+			parent->result = parent->result + result;
 			if(result == parent->result) flag = 0;
 			ABT_mutex_unlock(parent->mutex);
 			result = parent->result;
 			parent = parent->parent;
 		}
 	} else {
+		a1 = (task_args *) malloc (sizeof(task_args));
+		a2 = (task_args *) malloc (sizeof(task_args));
 		ABT_xstream_self(&xstream);
-		a1.n = n-1;
-		a1.result = 0;
-		ABT_mutex_create(&a1.mutex);
-		a1.parent = args;
-    	ABT_task_create(xstream, fibonacci, &a1, &t1);
-		a2.n = n-2;
-		a2.result = 0;
-		ABT_mutex_create(&a2.mutex);
-		a2.parent = args;
-    	ABT_task_create(xstream, fibonacci, &a2, &t2);
+		a1->n = n-1;
+		a1->result = 0;
+		ABT_mutex_create(&a1->mutex);
+		a1->parent = args;
+    	ABT_task_create(xstream, fibonacci, a1, &t1);
+		a2->n = n-2;
+		a2->result = 0;
+		ABT_mutex_create(&a2->mutex);
+		a2->parent = args;
+    	ABT_task_create(xstream, fibonacci, a2, &t2);
 	}
 
 }
