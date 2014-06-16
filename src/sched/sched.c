@@ -82,6 +82,53 @@ int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
 
 /**
  * @ingroup SCHED
+ * @brief   Create a new scheduler with a provided scheduling policy.
+ *
+ * newsched must be used for a single stream because pool cannot be shared
+ * between different streams.
+ *
+ * @param[in]  kind      scheduling policy provided by the Argobots library
+ * @param[out] newsched  handle to a new scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_create_basic(ABT_sched_kind kind, ABT_sched *newsched)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_sched *p_newsched;
+
+    switch (kind) {
+        case ABT_SCHED_FIFO:
+            abt_errno = ABTI_sched_create_fifo(&p_newsched);
+            break;
+        case ABT_SCHED_LIFO:
+            abt_errno = ABTI_sched_create_lifo(&p_newsched);
+            break;
+        case ABT_SCHED_PRIO:
+            abt_errno = ABTI_sched_create_prio(&p_newsched);
+            break;
+        default:
+            abt_errno = ABT_ERR_INV_SCHED_KIND;
+            break;
+    }
+    if (abt_errno != ABT_SUCCESS) {
+        *newsched = ABT_SCHED_NULL;
+        goto fn_fail;
+    }
+
+    /* Return value */
+    *newsched = ABTI_sched_get_handle(p_newsched);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_create_basic", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
  * @brief   Release the scheduler object associated with sched handle.
  *
  * If this routine successfully returns, sched is set as ABT_SCHED_NULL.
@@ -105,6 +152,9 @@ int ABT_sched_free(ABT_sched *sched)
      * Otherwise, freeing the pool is the user's reponsibility. */
     if (p_sched->type == ABTI_SCHED_TYPE_DEFAULT) {
         abt_errno = ABTI_pool_free(&p_sched->pool);
+        ABTI_CHECK_ERROR(abt_errno);
+    } else if (p_sched->type == ABTI_SCHED_TYPE_BASIC) {
+        abt_errno = ABTI_sched_free_basic(p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     }
 
@@ -195,6 +245,33 @@ int ABTI_sched_create_default(ABTI_sched **newsched)
     goto fn_exit;
 }
 
+int ABTI_sched_free_basic(ABTI_sched *p_sched)
+{
+    int abt_errno = ABT_SUCCESS;
+    switch (p_sched->kind) {
+        case ABT_SCHED_FIFO:
+            abt_errno = ABTI_sched_free_fifo(p_sched);
+            break;
+        case ABT_SCHED_LIFO:
+            abt_errno = ABTI_sched_free_lifo(p_sched);
+            break;
+        case ABT_SCHED_PRIO:
+            abt_errno = ABTI_sched_free_prio(p_sched);
+            break;
+        default:
+            abt_errno = ABT_ERR_INV_SCHED;
+            break;
+    }
+    if (abt_errno != ABT_SUCCESS) goto fn_fail;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_sched_free_basic", abt_errno);
+    goto fn_exit;
+}
+
 void ABTI_sched_push(ABTI_sched *p_sched, ABT_unit unit)
 {
     ABTI_mutex_waitlock(p_sched->mutex);
@@ -229,8 +306,18 @@ int ABTI_sched_print(ABTI_sched *p_sched)
     printf("type: ");
     switch (p_sched->type) {
         case ABTI_SCHED_TYPE_DEFAULT: printf("DEFAULT\n"); break;
+        case ABTI_SCHED_TYPE_BASIC:   printf("BASIC\n"); break;
         case ABTI_SCHED_TYPE_USER:    printf("USER\n"); break;
         default: printf("UNKNOWN\n"); break;
+    }
+    if (p_sched->type == ABTI_SCHED_TYPE_BASIC) {
+        printf("kind: ");
+        switch (p_sched->kind) {
+            case ABT_SCHED_FIFO: printf("FIFO\n"); break;
+            case ABT_SCHED_LIFO: printf("LIFO\n"); break;
+            case ABT_SCHED_PRIO: printf("PRIO\n"); break;
+            default: printf("UNKNOWN\n"); break;
+        }
     }
     printf("pool: ");
     abt_errno = ABTI_pool_print(p_sched->pool);

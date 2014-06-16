@@ -61,6 +61,7 @@ enum ABTI_thread_type {
 
 enum ABTI_sched_type {
     ABTI_SCHED_TYPE_DEFAULT,
+    ABTI_SCHED_TYPE_BASIC,
     ABTI_SCHED_TYPE_USER
 };
 
@@ -125,6 +126,7 @@ struct ABTI_condition {
 
 struct ABTI_sched {
     ABTI_sched_type type;     /* Type */
+    ABT_sched_kind  kind;     /* Kind */
     ABT_mutex mutex;          /* Mutex */
     ABTD_thread_context ctx;  /* Scheduler context */
     ABT_pool pool;            /* Work unit pool */
@@ -284,7 +286,14 @@ ABTI_future *ABTI_future_get_ptr(ABT_future future);
 /* Scheduler */
 ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched);
 ABT_sched   ABTI_sched_get_handle(ABTI_sched *p_sched);
-int  ABTI_sched_create_default(ABTI_sched **p_newsched);
+int ABTI_sched_create_default(ABTI_sched **p_newsched);
+int ABTI_sched_create_fifo(ABTI_sched **p_newsched);
+int ABTI_sched_create_lifo(ABTI_sched **p_newsched);
+int ABTI_sched_create_prio(ABTI_sched **p_newsched);
+int ABTI_sched_free_basic(ABTI_sched *p_sched);
+int ABTI_sched_free_fifo(ABTI_sched *p_sched);
+int ABTI_sched_free_lifo(ABTI_sched *p_sched);
+int ABTI_sched_free_prio(ABTI_sched *p_sched);
 void ABTI_sched_push(ABTI_sched *p_sched, ABT_unit unit);
 ABT_unit ABTI_sched_pop(ABTI_sched *p_sched);
 void ABTI_sched_remove(ABTI_sched *p_sched, ABT_unit unit);

@@ -36,7 +36,7 @@ int ABTI_pool_create(ABT_pool *newpool)
     p_pool = (ABTI_pool *)ABTU_malloc(sizeof(ABTI_pool));
     if (!p_pool) {
         HANDLE_ERROR("ABTU_malloc");
-        *newpool = NULL;
+        *newpool = ABT_POOL_NULL;
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
     }

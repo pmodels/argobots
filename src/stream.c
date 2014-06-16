@@ -347,6 +347,16 @@ int ABT_xstream_set_sched(ABT_xstream xstream, ABT_sched sched)
         goto fn_fail;
     }
 
+    /* If the type of current scheduler is DEFAULT, free it */
+    ABTI_sched *p_cursched = p_xstream->p_sched;
+    if (p_cursched != NULL) {
+        if (p_cursched->type == ABTI_SCHED_TYPE_DEFAULT) {
+            ABT_sched h_cursched = ABTI_sched_get_handle(p_cursched);
+            abt_errno = ABT_sched_free(&h_cursched);
+            ABTI_CHECK_ERROR(abt_errno);
+        }
+    }
+
     /* Set the scheduler */
     p_xstream->p_sched = p_sched;
 

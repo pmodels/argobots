@@ -53,22 +53,23 @@ extern "C" {
 #define ABT_ERR_MEM             1   /* Memeory allocation failure */
 #define ABT_ERR_INV_XSTREAM     2   /* Invalid ES */
 #define ABT_ERR_INV_SCHED       3   /* Invalid scheduler */
-#define ABT_ERR_INV_THREAD      4   /* Invalid ULT */
-#define ABT_ERR_INV_TASK        5   /* Invalid task */
-#define ABT_ERR_INV_MUTEX       6   /* Invalid mutex */
-#define ABT_ERR_INV_CONDITION   7   /* Invalid condition */
-#define ABT_ERR_INV_UNIT        8   /* Invalid work unit */
-#define ABT_ERR_INV_POOL        9   /* Invalid pool */
-#define ABT_ERR_XSTREAM         10  /* ES-related error */
-#define ABT_ERR_SCHED           11  /* Scheduler-related error */
-#define ABT_ERR_THREAD          12  /* ULT-related error */
-#define ABT_ERR_TASK            13  /* Task-related error */
-#define ABT_ERR_MUTEX_LOCKED    14  /* Return value when mutex is locked */
-#define ABT_ERR_MUTEX           15  /* Mutex-related error */
-#define ABT_ERR_CONDITION       16  /* Condition-related error */
-#define ABT_ERR_UNIT            17  /* Work unit-related error */
-#define ABT_ERR_POOL            18  /* Pool-related error */
-#define ABT_ERR_OTHER           19  /* Other error */
+#define ABT_ERR_INV_SCHED_KIND  4   /* Invalid scheduler kind */
+#define ABT_ERR_INV_THREAD      5   /* Invalid ULT */
+#define ABT_ERR_INV_TASK        6   /* Invalid task */
+#define ABT_ERR_INV_MUTEX       7   /* Invalid mutex */
+#define ABT_ERR_INV_CONDITION   8   /* Invalid condition */
+#define ABT_ERR_INV_UNIT        9   /* Invalid work unit */
+#define ABT_ERR_INV_POOL        10  /* Invalid pool */
+#define ABT_ERR_XSTREAM         11  /* ES-related error */
+#define ABT_ERR_SCHED           12  /* Scheduler-related error */
+#define ABT_ERR_THREAD          13  /* ULT-related error */
+#define ABT_ERR_TASK            14  /* Task-related error */
+#define ABT_ERR_MUTEX_LOCKED    15  /* Return value when mutex is locked */
+#define ABT_ERR_MUTEX           16  /* Mutex-related error */
+#define ABT_ERR_CONDITION       17  /* Condition-related error */
+#define ABT_ERR_UNIT            18  /* Work unit-related error */
+#define ABT_ERR_POOL            19  /* Pool-related error */
+#define ABT_ERR_OTHER           20  /* Other error */
 
 
 /* Data Types */
@@ -81,6 +82,7 @@ typedef enum ABT_task_state    ABT_task_state;    /* Tasklet state */
 typedef void *                 ABT_mutex;         /* Mutex */
 typedef void *                 ABT_condition;     /* Condition */
 typedef void *                 ABT_sched;         /* Scheduler */
+typedef enum ABT_sched_kind    ABT_sched_kind;    /* Scheduler kind */
 typedef enum ABT_unit_type     ABT_unit_type;     /* Work unit type */
 typedef void *                 ABT_unit;          /* A work unit */
 typedef void *                 ABT_pool;          /* Pool of work units */
@@ -119,6 +121,12 @@ enum ABT_task_state {
     ABT_TASK_STATE_RUNNING,
     ABT_TASK_STATE_COMPLETED,
     ABT_TASK_STATE_TERMINATED
+};
+
+enum ABT_sched_kind {
+    ABT_SCHED_FIFO,
+    ABT_SCHED_LIFO,
+    ABT_SCHED_PRIO
 };
 
 enum ABT_unit_type {
@@ -208,6 +216,7 @@ int ABT_task_get_name(ABT_task task, char *name, size_t *len);
 /* Scheduler */
 int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
                      ABT_sched *newsched);
+int ABT_sched_create_basic(ABT_sched_kind kind, ABT_sched *newsched);
 int ABT_sched_free(ABT_sched *sched);
 
 /* Mutex */
