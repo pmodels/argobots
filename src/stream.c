@@ -67,6 +67,9 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
         p_newxstream->p_sched = ABTI_sched_get_ptr(sched);
     }
 
+    /* Set this ES as the associated ES in the scheduler */
+    p_newxstream->p_sched->p_xstream = p_newxstream;
+
     /* Create a work unit pool that contains terminated work units */
     abt_errno = ABTI_pool_create(&p_newxstream->deads);
     ABTI_CHECK_ERROR(abt_errno);
@@ -357,6 +360,9 @@ int ABT_xstream_set_sched(ABT_xstream xstream, ABT_sched sched)
         }
     }
 
+    /* Set this ES as the associated ES in the scheduler */
+    p_sched->p_xstream = p_xstream;
+
     /* Set the scheduler */
     p_xstream->p_sched = p_sched;
 
@@ -502,9 +508,11 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     if (p_xstream->p_name) ABTU_free(p_xstream->p_name);
 
     /* Free the scheduler */
-    ABT_sched h_sched = ABTI_sched_get_handle(p_xstream->p_sched);
-    abt_errno = ABT_sched_free(&h_sched);
-    ABTI_CHECK_ERROR(abt_errno);
+    if (p_xstream->p_sched) {
+        ABT_sched h_sched = ABTI_sched_get_handle(p_xstream->p_sched);
+        abt_errno = ABT_sched_free(&h_sched);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
 
     /* Clean up the deads pool */
     ABTI_mutex_waitlock(p_xstream->mutex);

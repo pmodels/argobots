@@ -44,6 +44,7 @@ int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
         goto fn_fail;
     }
 
+    p_sched->p_xstream = NULL;
     p_sched->type = ABTI_SCHED_TYPE_USER;
     p_sched->pool = pool;
 
@@ -147,6 +148,9 @@ int ABT_sched_free(ABT_sched *sched)
         abt_errno = ABT_ERR_INV_SCHED;
         goto fn_fail;
     }
+
+    /* Disconnect this scheduler from ES */
+    p_sched->p_xstream->p_sched = NULL;
 
     /* If sched is a default provided one, it should free its pool here.
      * Otherwise, freeing the pool is the user's reponsibility. */
@@ -303,6 +307,7 @@ int ABTI_sched_print(ABTI_sched *p_sched)
     }
 
     printf("== SCHEDULER (%p) ==\n", p_sched);
+    printf("xstream: %p\n", p_sched->p_xstream);
     printf("type: ");
     switch (p_sched->type) {
         case ABTI_SCHED_TYPE_DEFAULT: printf("DEFAULT\n"); break;

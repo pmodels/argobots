@@ -127,6 +127,7 @@ struct ABTI_condition {
 };
 
 struct ABTI_sched {
+    ABTI_xstream *p_xstream;  /* Associated ES */
     ABTI_sched_type type;     /* Type */
     ABT_sched_kind  kind;     /* Kind */
     ABT_mutex mutex;          /* Mutex */

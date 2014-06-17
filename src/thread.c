@@ -521,6 +521,8 @@ int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
         goto fn_fail;
     }
 
+    if (prio == p_thread->prio) goto fn_exit;
+
     switch (prio) {
         case ABT_SCHED_PRIO_LOW:
         case ABT_SCHED_PRIO_NORMAL:
@@ -532,8 +534,29 @@ int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
             goto fn_fail;
     }
 
+    ABTI_mutex_waitlock(p_thread->mutex);
+    ABTI_xstream *p_xstream = p_thread->p_xstream;
+    ABTI_sched *p_sched = p_xstream->p_sched;
+
+    if (p_sched->kind != ABT_SCHED_PRIO) {
+        /* Set the priority */
+        p_thread->prio = prio;
+        ABT_mutex_unlock(p_thread->mutex);
+        goto fn_exit;
+    }
+
+    /* The thread in READY needs to be moved to the appropriate queue */
+    if (p_thread->state == ABT_THREAD_STATE_READY) {
+        ABTI_sched_remove(p_sched, p_thread->unit);
+    }
+
     /* Set the priority */
     p_thread->prio = prio;
+
+    if (p_thread->state == ABT_THREAD_STATE_READY) {
+        ABTI_sched_push(p_sched, p_thread->unit);
+    }
+    ABT_mutex_unlock(p_thread->mutex);
 
   fn_exit:
     return abt_errno;
@@ -758,7 +781,6 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
-    ABT_thread h_newthread;
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
     if (!p_newthread) {
@@ -770,8 +792,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 
     /* The main thread does not need to create context and stack.
      * And, it is not added to the scheduler's pool. */
-    h_newthread = ABTI_thread_get_handle(p_newthread);
-    p_newthread->unit = p_xstream->p_sched->u_create_from_thread(h_newthread);
+    p_newthread->unit       = ABT_UNIT_NULL;
     p_newthread->p_xstream  = p_xstream;
     p_newthread->id         = ABTI_thread_get_new_id();
     p_newthread->p_name     = NULL;
@@ -804,9 +825,6 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 int ABTI_thread_free_main(ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
-
-    /* Free the unit */
-    p_thread->p_xstream->p_sched->u_free(&p_thread->unit);
 
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
 
