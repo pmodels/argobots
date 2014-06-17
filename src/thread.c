@@ -74,6 +74,7 @@ int ABT_thread_create(ABT_xstream xstream,
     p_newthread->state      = ABT_THREAD_STATE_READY;
     p_newthread->stacksize  = (stacksize == 0)
                             ? ABTI_THREAD_DEFAULT_STACKSIZE : stacksize;
+    p_newthread->prio       = ABT_SCHED_PRIO_NORMAL;
     p_newthread->refcount   = (newthread != NULL) ? 1 : 0;
     p_newthread->f_callback = NULL;
     p_newthread->p_cb_arg   = NULL;
@@ -466,6 +467,83 @@ int ABT_thread_self(ABT_thread *thread)
 
 /**
  * @ingroup ULT
+ * @brief   Get the scheduling priority of thread.
+ *
+ * The \c ABT_thread_get_prio() returns the scheduling priority of the thread
+ * \c thread through \c prio.
+ *
+ * @param[in]  thread  handle to the target thread
+ * @param[out] prio    scheduling priority
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+
+    if (p_thread == NULL) {
+        HANDLE_ERROR("NULL THREAD");
+        abt_errno = ABT_ERR_INV_THREAD;
+        goto fn_fail;
+    }
+
+    /* Return value */
+    *prio = p_thread->prio;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Set the scheduling priority of thread.
+ *
+ * The \c ABT_thread_set_prio() set the scheduling priority of the thread
+ * \c thread to the value \c prio.
+ *
+ * @param[in] thread  handle to the target thread
+ * @param[in] prio    scheduling priority
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+
+    if (p_thread == NULL) {
+        HANDLE_ERROR("NULL THREAD");
+        abt_errno = ABT_ERR_INV_THREAD;
+        goto fn_fail;
+    }
+
+    switch (prio) {
+        case ABT_SCHED_PRIO_LOW:
+        case ABT_SCHED_PRIO_NORMAL:
+        case ABT_SCHED_PRIO_HIGH:
+            break;
+        default:
+            HANDLE_ERROR("Invalid Priority Value");
+            abt_errno = ABT_ERR_OTHER;
+            goto fn_fail;
+    }
+
+    /* Set the priority */
+    p_thread->prio = prio;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Increment the thread reference count.
  *
  * ABT_thread_create() with non-null newthread argument and ABT_thread_self()
@@ -700,6 +778,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     p_newthread->type       = ABTI_THREAD_TYPE_MAIN;
     p_newthread->state      = ABT_THREAD_STATE_RUNNING;
     p_newthread->stacksize  = ABTI_THREAD_DEFAULT_STACKSIZE;
+    p_newthread->prio       = ABT_SCHED_PRIO_NORMAL;
     p_newthread->refcount   = 0;
     p_newthread->f_callback = NULL;
     p_newthread->p_cb_arg   = NULL;

@@ -83,6 +83,7 @@ typedef void *                 ABT_mutex;         /* Mutex */
 typedef void *                 ABT_condition;     /* Condition */
 typedef void *                 ABT_sched;         /* Scheduler */
 typedef enum ABT_sched_kind    ABT_sched_kind;    /* Scheduler kind */
+typedef enum ABT_sched_prio    ABT_sched_prio;    /* Scheduling priority */
 typedef enum ABT_unit_type     ABT_unit_type;     /* Work unit type */
 typedef void *                 ABT_unit;          /* A work unit */
 typedef void *                 ABT_pool;          /* Pool of work units */
@@ -127,6 +128,12 @@ enum ABT_sched_kind {
     ABT_SCHED_FIFO,
     ABT_SCHED_LIFO,
     ABT_SCHED_PRIO
+};
+
+enum ABT_sched_prio {
+    ABT_SCHED_PRIO_LOW    = 0,
+    ABT_SCHED_PRIO_NORMAL = 1,
+    ABT_SCHED_PRIO_HIGH   = 2
 };
 
 enum ABT_unit_type {
@@ -193,6 +200,8 @@ int ABT_thread_yield_to(ABT_thread thread);
 int ABT_thread_set_callback(ABT_thread thread,
                             void (*callback_func)(void *arg), void *arg);
 int ABT_thread_self(ABT_thread *thread);
+int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio);
+int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio);
 int ABT_thread_retain(ABT_thread thread);
 int ABT_thread_release(ABT_thread thread);
 int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, int *result);

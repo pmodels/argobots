@@ -279,7 +279,7 @@ static int pool_free(ABT_pool *pool)
     if (p_pool == NULL || h_pool == ABT_POOL_NULL) goto fn_exit;
 
     while (p_pool->num_units > 0) {
-        unit_t *p_unit = pool_pop(h_pool);
+        unit_t *p_unit = (unit_t *)pool_pop(h_pool);
 
         switch (p_unit->type) {
             case ABT_UNIT_TYPE_THREAD: {

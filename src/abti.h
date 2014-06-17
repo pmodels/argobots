@@ -38,6 +38,7 @@ typedef struct ABTI_future        ABTI_future;
 
 /* Constants and Enums */
 #define ABTI_THREAD_DEFAULT_STACKSIZE   16384
+#define ABTI_SCHED_PRIO_NUM             3
 
 #define ABTI_XSTREAM_REQ_JOIN       0x1
 #define ABTI_XSTREAM_REQ_EXIT       0x2
@@ -90,6 +91,7 @@ struct ABTI_thread {
     ABTI_thread_type type;      /* Type */
     ABT_thread_state state;     /* State */
     size_t stacksize;           /* Stack size */
+    ABT_sched_prio prio;        /* Priority */
     uint32_t refcount;          /* Reference count */
 
     void (*f_callback)(void *); /* Callback function */
