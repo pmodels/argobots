@@ -22,7 +22,8 @@
 int ABT_future_wait(ABT_future future, void **value)
 {
 	int abt_errno = ABT_SUCCESS;
-	ABTI_future *p_future = ABTI_future_get_ptr(future);	
+	ABTI_future *p_future = ABTI_future_get_ptr(future);
+	ABT_mutex_lock(p_future->mutex);	
     if (!p_future->ready) {
         ABTI_thread_entry *cur = (ABTI_thread_entry*) ABTU_malloc(sizeof(ABTI_thread_entry));
         cur->current = ABTI_thread_current();
@@ -32,8 +33,11 @@ int ABT_future_wait(ABT_future future, void **value)
         p_future->waiters.tail = cur;
         if(p_future->waiters.head == NULL)
             p_future->waiters.head = cur;
+		ABT_mutex_unlock(p_future->mutex);
         ABTI_thread_suspend();
-    }
+    } else {
+		ABT_mutex_unlock(p_future->mutex);
+	}
     *value = p_future->value;
 	return abt_errno;
 }
@@ -70,9 +74,11 @@ void ABTI_future_signal(ABTI_future *p_future)
 int ABT_future_set(ABT_future future, void *value, int nbytes)
 {
 	int abt_errno = ABT_SUCCESS;
-	ABTI_future *p_future = ABTI_future_get_ptr(future);	
+	ABTI_future *p_future = ABTI_future_get_ptr(future);
+	ABT_mutex_lock(p_future->mutex);
     p_future->ready = 1;
     memcpy(p_future->value, value, nbytes);
+	ABT_mutex_unlock(p_future->mutex);
     ABTI_future_signal(p_future);
 	return abt_errno;
 }
@@ -82,20 +88,19 @@ int ABT_future_set(ABT_future future, void *value, int nbytes)
  * @brief   Creates a future.
  * 
  * @param[in]  n            Number of bytes in the buffer containing the result of the future
- * @param[in]  xstream      ES on which this future will run
- * @param[out] future       Reference to the newly created future
+ * @param[out] newfuture       Reference to the newly created future
  * @return Error code
  */
-int ABT_future_create(int n, ABT_xstream xstream, ABT_future *future)
+int ABT_future_create(int n, ABT_future *newfuture)
 {
 	int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future = (ABTI_future*)ABTU_malloc(sizeof(ABTI_future));
-    p_future->xstream = xstream;
+    ABT_mutex_create(&p_future->mutex);
     p_future->ready = 0;
     p_future->nbytes = n;
     p_future->value = ABTU_malloc(n);
     p_future->waiters.head = p_future->waiters.tail = NULL;
-    *future = p_future;
+    *newfuture = p_future;
 	return abt_errno;
 }
 
@@ -110,6 +115,7 @@ int ABT_future_free(ABT_future *future)
 {
 	int abt_errno = ABT_SUCCESS;
 	ABTI_future *p_future = ABTI_future_get_ptr(*future);
+	ABT_mutex_free(&p_future->mutex);
 	ABTU_free(p_future->value);
 	ABTU_free(p_future);
 	return abt_errno;

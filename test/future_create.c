@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     ABT_thread_create(xstream, fn1, NULL, 0, &th1);
     ABT_thread_create(xstream, fn2, NULL, 0, &th2);
     ABT_thread_create(xstream, fn3, NULL, 0, &th3);
-	ABT_future_create(FUTURE_SIZE,xstream,&myfuture);	
+	ABT_future_create(FUTURE_SIZE,&myfuture);	
     printf("START \n");
 
 	/* switch to other user-level threads */

@@ -37,11 +37,11 @@ void fibonacci(void *arguments){
 		result = 1;
 	else {
 		ABT_xstream_self(&xstream);
-		ABT_future_create(sizeof(int), xstream, &f1);
+		ABT_future_create(sizeof(int), &f1);
 		a1.n = n-1;
 		a1.future = f1;
     	ABT_thread_create(xstream, fibonacci, &a1, 16384, &t1);
-		ABT_future_create(sizeof(int), xstream, &f2);
+		ABT_future_create(sizeof(int), &f2);
 		a2.n = n-2;
 		a2.future = f2;
     	ABT_thread_create(xstream, fibonacci, &a2, 16384, &t2);

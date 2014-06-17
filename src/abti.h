@@ -190,7 +190,7 @@ typedef struct {
 } ABTI_threads_list;
 
 struct ABTI_future{
-	ABT_xstream xstream;
+	ABT_mutex mutex;
     int ready;
     void *value;
     int nbytes;

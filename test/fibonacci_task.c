@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <abt.h>
 
-#define N 2
+#define N 5
 
 /* structure to pass arguments to threads */
 typedef struct task_args_t {
