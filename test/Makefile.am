@@ -3,7 +3,22 @@ AM_CPPFLAGS += -I../src
 AM_LDFLAGS = $(DEPS_LDFLAGS)
 
 LDADD = ../libabt.la
-noinst_PROGRAMS = thread_create thread_create2 thread_yield thread_yield_to task_create thread_task name scheduler_basic scheduler_prio scheduler_user mutex future_create fibonacci_future fibonacci_task fibonacci_thread_task
+noinst_PROGRAMS =    \
+	thread_create    \
+	thread_create2   \
+	thread_yield     \
+	thread_yield_to  \
+	task_create      \
+	thread_task      \
+	name             \
+	scheduler_basic  \
+	scheduler_prio   \
+	scheduler_user   \
+	mutex            \
+	future_create    \
+	fibonacci_future \
+	fibonacci_task   \
+	fibonacci_thread_task
 
 thread_create_SOURCES = thread_create.c
 thread_create2_SOURCES = thread_create2.c
