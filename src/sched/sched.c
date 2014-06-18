@@ -134,10 +134,11 @@ int ABT_sched_create_basic(ABT_sched_kind kind, ABT_sched *newsched)
  *
  * For ABT_SCHED_PRIO, the range is defined in enum ABT_sched_prio. For
  * ABT_SCHED_FIFO and ABT_SCHED_LIFO, both ABT_sched_get_prio_min and
- * ABT_sched_get_prio_max will set prio to ABT_SCHED_PRIO_LOW.
+ * ABT_sched_get_prio_max will set prio to ABT_SCHED_PRIO_NORMAL.
  *
- * @param[in]  kind      scheduling policy provided by the Argobots library
- * @param[out] prio  the  minimum priority value that can be used with the scheduling algorithm
+ * @param[in]  kind  scheduling policy provided by the Argobots library
+ * @param[out] prio  the minimum priority value that can be used with
+ *                   the scheduling algorithm
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -148,7 +149,7 @@ int ABT_sched_get_prio_min(ABT_sched_kind kind, ABT_sched_prio *prio)
     switch (kind) {
         case ABT_SCHED_FIFO:
         case ABT_SCHED_LIFO:
-            *prio = ABT_SCHED_PRIO_LOW;
+            *prio = ABT_SCHED_PRIO_NORMAL;
             break;
         case ABT_SCHED_PRIO:
             *prio = ABT_SCHED_PRIO_LOW;
@@ -175,10 +176,11 @@ int ABT_sched_get_prio_min(ABT_sched_kind kind, ABT_sched_prio *prio)
  *
  * For ABT_SCHED_PRIO, the range is defined in enum ABT_sched_prio. For
  * ABT_SCHED_FIFO and ABT_SCHED_LIFO, both ABT_sched_get_prio_min and
- * ABT_sched_get_prio_max will set prio to ABT_SCHED_PRIO_LOW.
+ * ABT_sched_get_prio_max will set prio to ABT_SCHED_PRIO_NORMAL.
  *
- * @param[in]  kind      scheduling policy provided by the Argobots library
- * @param[out] prio  the  maximum priority value that can be used with the scheduling algorithm
+ * @param[in]  kind  scheduling policy provided by the Argobots library
+ * @param[out] prio  the maximum priority value that can be used with
+ *                   the scheduling algorithm
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -189,7 +191,7 @@ int ABT_sched_get_prio_max(ABT_sched_kind kind, ABT_sched_prio *prio)
     switch (kind) {
         case ABT_SCHED_FIFO:
         case ABT_SCHED_LIFO:
-            *prio = ABT_SCHED_PRIO_LOW;
+            *prio = ABT_SCHED_PRIO_NORMAL;
             break;
         case ABT_SCHED_PRIO:
             *prio = ABT_SCHED_PRIO_HIGH;

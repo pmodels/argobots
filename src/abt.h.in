@@ -227,6 +227,8 @@ int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
                      ABT_sched *newsched);
 int ABT_sched_create_basic(ABT_sched_kind kind, ABT_sched *newsched);
 int ABT_sched_free(ABT_sched *sched);
+int ABT_sched_get_prio_min(ABT_sched_kind kind, ABT_sched_prio *prio);
+int ABT_sched_get_prio_max(ABT_sched_kind kind, ABT_sched_prio *prio);
 
 /* Mutex */
 int ABT_mutex_create(ABT_mutex *newmutex);
