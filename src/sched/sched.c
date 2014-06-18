@@ -130,6 +130,88 @@ int ABT_sched_create_basic(ABT_sched_kind kind, ABT_sched *newsched)
 
 /**
  * @ingroup SCHED
+ * @brief   Get the minimum priority of a scheduler kind.
+ *
+ * For ABT_SCHED_PRIO, the range is defined in enum ABT_sched_prio. For
+ * ABT_SCHED_FIFO and ABT_SCHED_LIFO, both ABT_sched_get_prio_min and
+ * ABT_sched_get_prio_max will set prio to ABT_SCHED_PRIO_LOW.
+ *
+ * @param[in]  kind      scheduling policy provided by the Argobots library
+ * @param[out] prio  the  minimum priority value that can be used with the scheduling algorithm
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_get_prio_min(ABT_sched_kind kind, ABT_sched_prio *prio)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    switch (kind) {
+        case ABT_SCHED_FIFO:
+        case ABT_SCHED_LIFO:
+            *prio = ABT_SCHED_PRIO_LOW;
+            break;
+        case ABT_SCHED_PRIO:
+            *prio = ABT_SCHED_PRIO_LOW;
+            break;
+        default:
+            abt_errno = ABT_ERR_INV_SCHED_KIND;
+            break;
+    }
+    if (abt_errno != ABT_SUCCESS) {
+        goto fn_fail;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_get_prio_min", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
+ * @brief   Get the maximum priority of a scheduler kind.
+ *
+ * For ABT_SCHED_PRIO, the range is defined in enum ABT_sched_prio. For
+ * ABT_SCHED_FIFO and ABT_SCHED_LIFO, both ABT_sched_get_prio_min and
+ * ABT_sched_get_prio_max will set prio to ABT_SCHED_PRIO_LOW.
+ *
+ * @param[in]  kind      scheduling policy provided by the Argobots library
+ * @param[out] prio  the  maximum priority value that can be used with the scheduling algorithm
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_get_prio_max(ABT_sched_kind kind, ABT_sched_prio *prio)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    switch (kind) {
+        case ABT_SCHED_FIFO:
+        case ABT_SCHED_LIFO:
+            *prio = ABT_SCHED_PRIO_LOW;
+            break;
+        case ABT_SCHED_PRIO:
+            *prio = ABT_SCHED_PRIO_HIGH;
+            break;
+        default:
+            abt_errno = ABT_ERR_INV_SCHED_KIND;
+            break;
+    }
+    if (abt_errno != ABT_SUCCESS) {
+        goto fn_fail;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_get_prio_max", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
  * @brief   Release the scheduler object associated with sched handle.
  *
  * If this routine successfully returns, sched is set as ABT_SCHED_NULL.
