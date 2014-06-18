@@ -169,13 +169,8 @@ int main(int argc, char *argv[])
         HANDLE_ERROR(ret, "ABT_xstream_join");
     }
 
-    /* Free schedulers and Execution Streams */
-    ret = ABT_sched_free(&scheds[0]);
-    HANDLE_ERROR(ret, "ABT_sched_free");
+    /* Free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
-        ret = ABT_sched_free(&scheds[i]);
-        HANDLE_ERROR(ret, "ABT_sched_free");
-
         ret = ABT_xstream_free(&xstreams[i]);
         HANDLE_ERROR(ret, "ABT_xstream_free");
     }

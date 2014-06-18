@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
         /* Create a work unit pool */
         pool_init(&pools[i]);
 
-        ret = ABT_sched_create(&pools[i], &sched_funcs, &scheds[i]);
+        ret = ABT_sched_create((ABT_pool)&pools[i], &sched_funcs, &scheds[i]);
         HANDLE_ERROR(ret, "ABT_sched_create");
     }
 
