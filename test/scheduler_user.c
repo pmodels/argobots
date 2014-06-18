@@ -89,6 +89,11 @@ void pool_init(pool_t *pool)
     pool->units = (unit_t **)calloc(pool->num_max, sizeof(unit_t *));
 }
 
+void pool_free(pool_t *pool)
+{
+    free(pool->units);
+}
+
 void pool_set_next_empty_pos(pool_t *pool)
 {
     if (pool->num_units == pool->num_max) {
@@ -355,7 +360,7 @@ int main(int argc, char *argv[])
     free(xstreams);
     free(scheds);
     for (i = 0; i < num_xstreams; i++) {
-        free(pools[i].units);
+        pool_free(&pools[i]);
     }
     free(pools);
 
