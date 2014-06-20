@@ -20,7 +20,12 @@
 void thread_func(void *arg)
 {
     size_t my_id = (size_t)arg;
-    printf("[TH%lu]: Hello, world!\n", my_id);
+    size_t stacksize;
+    ABT_thread thread;
+    ABT_thread_self(&thread);
+    ABT_thread_get_stacksize(thread, &stacksize);
+    printf("[TH%lu]: stacksize=%lu\n", my_id, stacksize);
+    ABT_thread_release(thread);
 }
 
 int main(int argc, char *argv[])
@@ -60,7 +65,8 @@ int main(int argc, char *argv[])
         for (j = 0; j < num_threads; j++) {
             size_t tid = i * num_threads + j + 1;
             ret = ABT_thread_create(xstreams[i],
-                    thread_func, (void *)tid, attr,
+                    thread_func, (void *)tid,
+                    (tid % 2 ? attr : ABT_THREAD_ATTR_NULL),
                     NULL);
             HANDLE_ERROR(ret, "ABT_thread_create");
         }
@@ -68,6 +74,10 @@ int main(int argc, char *argv[])
 
     /* Switch to other user level threads */
     ABT_thread_yield();
+
+    /* Free the attribute */
+    ret = ABT_thread_attr_free(&attr);
+    HANDLE_ERROR(ret, "ABT_thread_attr_free");
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {

@@ -746,6 +746,38 @@ int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Get the ULT's stack size.
+ *
+ * \c ABT_thread_get_stacksize() returns the stack size of \c thread in bytes.
+ *
+ * @param[in]  thread     handle to the target thread
+ * @param[out] stacksize  stack size in bytes
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    if (p_thread == NULL) {
+        abt_errno = ABT_ERR_INV_THREAD;
+        goto fn_fail;
+    }
+
+    /* Return value */
+    *stacksize = p_thread->attr.stacksize;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_get_stacksize", abt_errno);
+    goto fn_exit;
+}
+
 
 /* Private APIs */
 ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread)
