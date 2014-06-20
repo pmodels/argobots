@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
             args[i][j].id = tid;
             args[i][j].mutex = mutex;
             ret = ABT_thread_create(xstreams[i],
-                    thread_func, (void *)&args[i][j], 16384,
+                    thread_func, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
                     NULL);
             HANDLE_ERROR(ret, "ABT_thread_create");
         }

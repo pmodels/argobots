@@ -38,7 +38,7 @@ void thread_create(void *arg)
     for (i = 0; i < num_threads; i++) {
         size_t tid = 100 * my_id + i;
         ret = ABT_thread_create(my_xstream,
-                thread_func, (void *)tid, 16384,
+                thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
                 NULL);
         HANDLE_ERROR(ret, "ABT_thread_create");
     }
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     for (i = 0; i < num_xstreams; i++) {
         size_t tid = i + 1;
         ret = ABT_thread_create(xstreams[i],
-                thread_create, (void *)tid, 16384,
+                thread_create, (void *)tid, ABT_THREAD_ATTR_NULL,
                 NULL);
         HANDLE_ERROR(ret, "ABT_thread_create");
     }

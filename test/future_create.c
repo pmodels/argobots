@@ -50,9 +50,9 @@ int main(int argc, char *argv[])
 	/* init and thread creation */
     ABT_init(argc, argv);
 	ABT_xstream_self(&xstream);
-    ABT_thread_create(xstream, fn1, NULL, 0, &th1);
-    ABT_thread_create(xstream, fn2, NULL, 0, &th2);
-    ABT_thread_create(xstream, fn3, NULL, 0, &th3);
+    ABT_thread_create(xstream, fn1, NULL, ABT_THREAD_ATTR_NULL, &th1);
+    ABT_thread_create(xstream, fn2, NULL, ABT_THREAD_ATTR_NULL, &th2);
+    ABT_thread_create(xstream, fn3, NULL, ABT_THREAD_ATTR_NULL, &th3);
 	ABT_future_create(FUTURE_SIZE,&myfuture);	
     printf("START \n");
 

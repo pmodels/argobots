@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
         for (j = 0; j < num_threads; j++) {
             size_t tid = i * num_threads + j + 1;
             ret = ABT_thread_create(xstreams[i],
-                    thread_func, (void *)tid, 16384,
+                    thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
                     NULL);
             HANDLE_ERROR(ret, "ABT_thread_create");
         }

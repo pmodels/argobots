@@ -19,6 +19,7 @@ typedef struct ABTI_xstream       ABTI_xstream;
 typedef enum ABTI_xstream_type    ABTI_xstream_type;
 typedef struct ABTI_thread        ABTI_thread;
 typedef enum ABTI_thread_type     ABTI_thread_type;
+typedef struct ABTI_thread_attr   ABTI_thread_attr;
 typedef struct ABTI_task          ABTI_task;
 typedef struct ABTI_mutex         ABTI_mutex;
 typedef struct ABTI_condition     ABTI_condition;
@@ -83,6 +84,13 @@ struct ABTI_xstream {
     ABTD_xstream_context ctx;  /* ES context */
 };
 
+struct ABTI_thread_attr {
+    size_t stacksize;           /* Stack size */
+    ABT_sched_prio prio;        /* Priority */
+    void (*f_callback)(void *); /* Callback function */
+    void *p_cb_arg;             /* Callback function argument */
+};
+
 struct ABTI_thread {
     ABT_unit unit;              /* Unit enclosing this thread */
     ABTI_xstream *p_xstream;    /* Associated ES */
@@ -90,12 +98,8 @@ struct ABTI_thread {
     char *p_name;               /* Name */
     ABTI_thread_type type;      /* Type */
     ABT_thread_state state;     /* State */
-    size_t stacksize;           /* Stack size */
-    ABT_sched_prio prio;        /* Priority */
+    ABTI_thread_attr attr;      /* Attributes */
     uint32_t refcount;          /* Reference count */
-
-    void (*f_callback)(void *); /* Callback function */
-    void *p_cb_arg;             /* Argument for callback function */
 
     uint32_t request;           /* Request */
     void *p_req_arg;            /* Request argument */
@@ -266,9 +270,15 @@ int ABTI_thread_free_main(ABTI_thread *p_thread);
 int ABTI_thread_free(ABTI_thread *p_thread);
 int ABTI_thread_suspend();
 int ABTI_thread_set_ready(ABT_thread thread);
+int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr);
 int ABTI_thread_print(ABTI_thread *p_thread);
 void ABTI_thread_func_wrapper(void (*thread_func)(void *), void *p_arg);
 ABT_thread *ABTI_thread_current();
+
+/* ULT Attributes */
+ABTI_thread_attr *ABTI_thread_attr_get_ptr(ABT_thread_attr attr);
+ABT_thread_attr ABTI_thread_attr_get_handle(ABTI_thread_attr *p_attr);
+int ABTI_thread_attr_print(ABTI_thread_attr *p_attr);
 
 /* Tasklet */
 ABTI_task *ABTI_task_get_ptr(ABT_task task);
@@ -329,6 +339,18 @@ int      ABTI_pool_print(ABT_pool pool);
 
 #define ABTI_CHECK_ERROR(abt_errno)  \
     if (abt_errno != ABT_SUCCESS) goto fn_fail
+
+#define ABTI_CHECK_THREAD_ATTR_P(p_attr)        \
+    if (p_attr == NULL) {                       \
+        abt_errno = ABT_ERR_INV_THREAD_ATTR;    \
+        goto fn_fail;                           \
+    }
+
+#define ABTI_CHECK_SCHED_PRIO(prio)             \
+    if (prio > ABT_SCHED_PRIO_HIGH) {           \
+        abt_errno = ABT_ERR_INV_SCHED_PRIO;     \
+        goto fn_fail;                           \
+    }
 
 #define HANDLE_ERROR(msg) \
     fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); exit(-1)

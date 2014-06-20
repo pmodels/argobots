@@ -130,7 +130,8 @@ int main(int argc, char *argv[])
             thread_args[i][j].num_threads = num_threads;
             thread_args[i][j].threads = &threads[i][0];
             ret = ABT_thread_create(xstreams[i],
-                    thread_func, (void *)&thread_args[i][j], 0,
+                    thread_func, (void *)&thread_args[i][j],
+                    ABT_THREAD_ATTR_NULL,
                     &threads[i][j]);
             HANDLE_ERROR(ret, "ABT_thread_create");
         }

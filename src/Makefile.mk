@@ -5,6 +5,7 @@
 
 abt_sources += src/stream.c \
 	src/thread.c \
+	src/thread_attr.c \
 	src/task.c \
 	src/mutex.c \
 	src/futures.c \

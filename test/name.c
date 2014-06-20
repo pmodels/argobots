@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
         args[i].id = i + 1;
         sprintf(args[i].name, "arogobot-%d", i);
         ret = ABT_thread_create(xstream,
-                thread_func, (void *)&args[i], 4096,
+                thread_func, (void *)&args[i], ABT_THREAD_ATTR_NULL,
                 &threads[i]);
         HANDLE_ERROR(ret, "ABT_thread_create");
 

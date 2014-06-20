@@ -24,21 +24,23 @@ static uint64_t ABTI_thread_get_new_id();
  * @param[in]  xstream      handle to the associated ES
  * @param[in]  thread_func  function to be executed by a new thread
  * @param[in]  arg          argument for thread_func
- * @param[in]  stacksize    stack size (in bytes) for a new thread.
- *                          If it is 0, the default stack size is used.
+ * @param[in]  attr         thread attribute. If it is ABT_THREAD_ATTR_NULL,
+ *                          the default attribute is used.
  * @param[out] newthread    handle to a newly created thread
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_thread_create(ABT_xstream xstream,
                       void (*thread_func)(void *), void *arg,
-                      size_t stacksize, ABT_thread *newthread)
+                      ABT_thread_attr attr, ABT_thread *newthread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream;
     ABTI_sched *p_sched;
     ABTI_thread *p_newthread;
     ABT_thread h_newthread;
+    ABTI_thread_attr *p_attr;
+    size_t stacksize;
 
     if (xstream == ABT_XSTREAM_NULL) {
         HANDLE_ERROR("xstream cannot be ABT_XSTREAM_NULL");
@@ -72,21 +74,21 @@ int ABT_thread_create(ABT_xstream xstream,
     p_newthread->p_name     = NULL;
     p_newthread->type       = ABTI_THREAD_TYPE_USER;
     p_newthread->state      = ABT_THREAD_STATE_READY;
-    p_newthread->stacksize  = (stacksize == 0)
-                            ? ABTI_THREAD_DEFAULT_STACKSIZE : stacksize;
-    p_newthread->prio       = ABT_SCHED_PRIO_NORMAL;
     p_newthread->refcount   = (newthread != NULL) ? 1 : 0;
-    p_newthread->f_callback = NULL;
-    p_newthread->p_cb_arg   = NULL;
     p_newthread->request    = 0;
     p_newthread->p_req_arg  = NULL;
+
+    /* Set attributes */
+    p_attr = ABTI_thread_attr_get_ptr(attr);
+    ABTI_thread_set_attr(p_newthread, p_attr);
 
     /* Create a mutex */
     abt_errno = ABT_mutex_create(&p_newthread->mutex);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Create a stack for this thread */
-    p_newthread->p_stack = ABTU_malloc(p_newthread->stacksize);
+    stacksize = p_newthread->attr.stacksize;
+    p_newthread->p_stack = ABTU_malloc(stacksize);
     if (!p_newthread->p_stack) {
         HANDLE_ERROR("ABTU_malloc");
         abt_errno = ABT_ERR_MEM;
@@ -95,7 +97,7 @@ int ABT_thread_create(ABT_xstream xstream,
 
     /* Create a thread context */
     abt_errno = ABTD_thread_context_create(&p_sched->ctx,
-            thread_func, arg, p_newthread->stacksize, p_newthread->p_stack,
+            thread_func, arg, stacksize, p_newthread->p_stack,
             &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -426,8 +428,8 @@ int ABT_thread_set_callback(ABT_thread thread,
         goto fn_fail;
     }
 
-    p_thread->f_callback = callback_func;
-    p_thread->p_cb_arg = arg;
+    p_thread->attr.f_callback = callback_func;
+    p_thread->attr.p_cb_arg   = arg;
 
   fn_exit:
     return abt_errno;
@@ -467,12 +469,12 @@ int ABT_thread_self(ABT_thread *thread)
 
 /**
  * @ingroup ULT
- * @brief   Get the scheduling priority of thread.
+ * @brief   Get the scheduling priority of ULT.
  *
- * The \c ABT_thread_get_prio() returns the scheduling priority of the thread
+ * The \c ABT_thread_get_prio() returns the scheduling priority of the ULT
  * \c thread through \c prio.
  *
- * @param[in]  thread  handle to the target thread
+ * @param[in]  thread  handle to the target ULT
  * @param[out] prio    scheduling priority
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -483,18 +485,18 @@ int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 
     if (p_thread == NULL) {
-        HANDLE_ERROR("NULL THREAD");
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_fail;
     }
 
     /* Return value */
-    *prio = p_thread->prio;
+    *prio = p_thread->attr.prio;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_get_prio", abt_errno);
     goto fn_exit;
 }
 
@@ -516,23 +518,13 @@ int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 
     if (p_thread == NULL) {
-        HANDLE_ERROR("NULL THREAD");
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_fail;
     }
 
-    if (prio == p_thread->prio) goto fn_exit;
+    ABTI_CHECK_SCHED_PRIO(prio);
 
-    switch (prio) {
-        case ABT_SCHED_PRIO_LOW:
-        case ABT_SCHED_PRIO_NORMAL:
-        case ABT_SCHED_PRIO_HIGH:
-            break;
-        default:
-            HANDLE_ERROR("Invalid Priority Value");
-            abt_errno = ABT_ERR_OTHER;
-            goto fn_fail;
-    }
+    if (prio == p_thread->attr.prio) goto fn_exit;
 
     ABTI_mutex_waitlock(p_thread->mutex);
     ABTI_xstream *p_xstream = p_thread->p_xstream;
@@ -540,7 +532,7 @@ int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
 
     if (p_sched->kind != ABT_SCHED_PRIO) {
         /* Set the priority */
-        p_thread->prio = prio;
+        p_thread->attr.prio = prio;
         ABT_mutex_unlock(p_thread->mutex);
         goto fn_exit;
     }
@@ -551,7 +543,7 @@ int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
     }
 
     /* Set the priority */
-    p_thread->prio = prio;
+    p_thread->attr.prio = prio;
 
     if (p_thread->state == ABT_THREAD_STATE_READY) {
         ABTI_sched_push(p_sched, p_thread->unit);
@@ -562,6 +554,7 @@ int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_set_prio", abt_errno);
     goto fn_exit;
 }
 
@@ -798,13 +791,12 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     p_newthread->p_name     = NULL;
     p_newthread->type       = ABTI_THREAD_TYPE_MAIN;
     p_newthread->state      = ABT_THREAD_STATE_RUNNING;
-    p_newthread->stacksize  = ABTI_THREAD_DEFAULT_STACKSIZE;
-    p_newthread->prio       = ABT_SCHED_PRIO_NORMAL;
     p_newthread->refcount   = 0;
-    p_newthread->f_callback = NULL;
-    p_newthread->p_cb_arg   = NULL;
     p_newthread->request    = 0;
     p_newthread->p_req_arg  = NULL;
+
+    /* Set attributes */
+    ABTI_thread_set_attr(p_newthread, NULL);
 
     /* Create a mutex */
     abt_errno = ABT_mutex_create(&p_newthread->mutex);
@@ -826,6 +818,7 @@ int ABTI_thread_free_main(ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
 
+    /* Free the name */
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
 
     /* Free the mutex */
@@ -838,6 +831,7 @@ int ABTI_thread_free_main(ABTI_thread *p_thread)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_thread_free_main", abt_errno);
     goto fn_exit;
 }
 
@@ -852,6 +846,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
         p_thread->p_xstream->p_sched->u_free(&p_thread->unit);
     }
 
+    /* Free the name */
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
 
     /* Free the mutex */
@@ -869,6 +864,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_thread_free", abt_errno);
     goto fn_exit;
 }
 
@@ -927,6 +923,23 @@ int ABTI_thread_set_ready(ABT_thread thread)
     goto fn_exit;
 }
 
+int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr)
+{
+    ABTI_thread_attr *my_attr = &p_thread->attr;
+    if (p_attr) {
+        my_attr->stacksize  = p_attr->stacksize;
+        my_attr->prio       = p_attr->prio;
+        my_attr->f_callback = p_attr->f_callback;
+        my_attr->p_cb_arg   = p_attr->p_cb_arg;
+    } else {
+        my_attr->stacksize  = ABTI_THREAD_DEFAULT_STACKSIZE;
+        my_attr->prio       = ABT_SCHED_PRIO_NORMAL;
+        my_attr->f_callback = NULL;
+        my_attr->p_cb_arg   = NULL;
+    }
+    return ABT_SUCCESS;
+}
+
 int ABTI_thread_print(ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -954,13 +967,12 @@ int ABTI_thread_print(ABTI_thread *p_thread)
         case ABT_THREAD_STATE_TERMINATED: printf("TERMINATED "); break;
         default: printf("UNKNOWN ");
     }
-    printf("stacksize:%lu ", p_thread->stacksize);
+    printf("attr:");
+    ABTI_thread_attr_print(&p_thread->attr);
     printf("refcount:%u ", p_thread->refcount);
-    printf("callback:%p ", p_thread->f_callback);
-    printf("cb_arg:%p ", p_thread->p_cb_arg);
     printf("request:%x ", p_thread->request);
     printf("req_arg:%p ", p_thread->p_req_arg);
-    printf("stack:%p ", p_thread->p_stack);
+    printf("stack:%p", p_thread->p_stack);
     printf("]");
 
   fn_exit:
