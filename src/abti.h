@@ -23,7 +23,6 @@ typedef enum ABTI_thread_type     ABTI_thread_type;
 typedef struct ABTI_thread_attr   ABTI_thread_attr;
 typedef struct ABTI_task          ABTI_task;
 typedef struct ABTI_mutex         ABTI_mutex;
-typedef struct ABTI_condition     ABTI_condition;
 typedef struct ABTI_sched         ABTI_sched;
 typedef enum ABTI_sched_type      ABTI_sched_type;
 typedef struct ABTI_unit          ABTI_unit;
@@ -126,9 +125,6 @@ struct ABTI_task {
 
 struct ABTI_mutex {
     uint32_t val;
-};
-
-struct ABTI_condition {
 };
 
 struct ABTI_sched {
@@ -295,8 +291,6 @@ int ABTI_mutex_waitlock(ABT_mutex mutex);
 /* Future */
 ABTI_future *ABTI_future_get_ptr(ABT_future future);
 ABT_future ABTI_future_get_handle(ABTI_future *p_future);
-
-/* Condition */
 
 /* Scheduler */
 ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched);

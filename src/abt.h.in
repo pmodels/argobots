@@ -83,7 +83,6 @@ typedef enum ABT_thread_state  ABT_thread_state;  /* ULT state */
 typedef void *                 ABT_task;          /* Tasklet */
 typedef enum ABT_task_state    ABT_task_state;    /* Tasklet state */
 typedef void *                 ABT_mutex;         /* Mutex */
-typedef void *                 ABT_condition;     /* Condition */
 typedef void *                 ABT_sched;         /* Scheduler */
 typedef enum ABT_sched_kind    ABT_sched_kind;    /* Scheduler kind */
 typedef enum ABT_sched_prio    ABT_sched_prio;    /* Scheduling priority */
@@ -98,7 +97,6 @@ typedef void *                 ABT_future;        /* Future */
 #define ABT_THREAD_ATTR_NULL    (NULL)
 #define ABT_TASK_NULL           (NULL)
 #define ABT_MUTEX_NULL          (NULL)
-#define ABT_CONDITION_NULL      (NULL)
 #define ABT_SCHED_NULL          (NULL)
 #define ABT_POOL_NULL           (NULL)
 #define ABT_UNIT_NULL           (NULL)
@@ -255,8 +253,6 @@ int ABT_future_create(int n, ABT_future *newfuture);
 int ABT_future_set(ABT_future fut, void *value, int nbytes);
 int ABT_future_wait(ABT_future fut, void **value);
 int ABT_future_free(ABT_future *fut);
-
-/* Condition */
 
 #if defined(__cplusplus)
 }

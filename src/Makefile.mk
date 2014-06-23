@@ -9,7 +9,6 @@ abt_sources += src/stream.c \
 	src/task.c \
 	src/mutex.c \
 	src/futures.c \
-	src/condition.c \
 	src/unit.c \
 	src/pool.c \
 	src/global.c \
