@@ -72,9 +72,7 @@ int ABT_thread_attr_free(ABT_thread_attr *attr)
     int abt_errno = ABT_SUCCESS;
     ABT_thread_attr h_attr = *attr;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(h_attr);
-
-    /* Sanity check */
-    ABTI_CHECK_THREAD_ATTR_P(p_attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     /* Free the memory */
     ABTU_free(p_attr);
@@ -103,9 +101,7 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-
-    /* Sanity check */
-    ABTI_CHECK_THREAD_ATTR_P(p_attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     /* Set the value */
     p_attr->stacksize = stacksize;
@@ -136,7 +132,7 @@ int ABT_thread_attr_set_prio(ABT_thread_attr attr, ABT_sched_prio prio)
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
 
     /* Sanity check */
-    ABTI_CHECK_THREAD_ATTR_P(p_attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
     ABTI_CHECK_SCHED_PRIO(prio);
 
     /* Set the value */
@@ -168,9 +164,7 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-
-    /* Sanity check */
-    ABTI_CHECK_THREAD_ATTR_P(p_attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     /* Set the value */
     p_attr->f_callback = callback_func;

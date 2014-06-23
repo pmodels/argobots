@@ -291,11 +291,7 @@ int ABT_xstream_self(ABT_xstream *xstream)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    if (p_xstream == NULL) {
-        HANDLE_ERROR("NULL XSTREAM");
-        abt_errno = ABT_ERR_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     /* Return value */
     *xstream = ABTI_xstream_get_handle(p_xstream);
@@ -304,6 +300,7 @@ int ABT_xstream_self(ABT_xstream *xstream)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_self", abt_errno);
     goto fn_exit;
 }
 
@@ -339,16 +336,10 @@ int ABT_xstream_set_sched(ABT_xstream xstream, ABT_sched sched)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    if (p_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
-    if (p_sched == NULL) {
-        abt_errno = ABT_ERR_INV_SCHED;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* If the type of current scheduler is DEFAULT, free it */
     ABTI_sched *p_cursched = p_xstream->p_sched;
@@ -388,10 +379,7 @@ int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    if (p_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     /* Return value */
     *state = p_xstream->state;
@@ -417,10 +405,7 @@ int ABT_xstream_set_name(ABT_xstream xstream, const char *name)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    if (p_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     size_t len = strlen(name);
     ABTI_mutex_waitlock(p_xstream->mutex);
@@ -458,10 +443,7 @@ int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    if (p_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     *len = strlen(p_xstream->p_name);
     if (name != NULL) {

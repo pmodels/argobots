@@ -59,7 +59,7 @@ extern "C" {
 #define ABT_ERR_INV_THREAD_ATTR  7   /* Invalid ULT attribute */
 #define ABT_ERR_INV_TASK         8   /* Invalid task */
 #define ABT_ERR_INV_MUTEX        9   /* Invalid mutex */
-#define ABT_ERR_INV_CONDITION    10  /* Invalid condition */
+#define ABT_ERR_INV_FUTURE       10  /* Invalid future */
 #define ABT_ERR_INV_UNIT         11  /* Invalid work unit */
 #define ABT_ERR_INV_POOL         12  /* Invalid pool */
 #define ABT_ERR_XSTREAM          13  /* ES-related error */
@@ -68,7 +68,7 @@ extern "C" {
 #define ABT_ERR_TASK             16  /* Task-related error */
 #define ABT_ERR_MUTEX_LOCKED     17  /* Return value when mutex is locked */
 #define ABT_ERR_MUTEX            18  /* Mutex-related error */
-#define ABT_ERR_CONDITION        19  /* Condition-related error */
+#define ABT_ERR_FUTURE           19  /* Future-related error */
 #define ABT_ERR_UNIT             20  /* Work unit-related error */
 #define ABT_ERR_POOL             21  /* Pool-related error */
 #define ABT_ERR_OTHER            22  /* Other error */

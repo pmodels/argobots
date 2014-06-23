@@ -128,15 +128,15 @@ int ABT_task_create(ABT_xstream xstream,
 int ABT_task_free(ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
+    ABT_task h_task = *task;
+    ABTI_task *p_task = ABTI_task_get_ptr(h_task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     if (ABTI_local_get_thread() == NULL) {
         HANDLE_ERROR("ABT_task_free cannot be called by task.");
         abt_errno = ABT_ERR_TASK;
         goto fn_fail;
     }
-
-    ABT_task h_task = *task;
-    ABTI_task *p_task = ABTI_task_get_ptr(h_task);
 
     /* Wait until the task terminates */
     while (p_task->state != ABT_TASK_STATE_TERMINATED) {
@@ -178,18 +178,12 @@ int ABT_task_free(ABT_task *task)
 int ABT_task_cancel(ABT_task task)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     if (ABTI_local_get_thread() == NULL) {
         HANDLE_ERROR("ABT_task_cancel cannot be called by task.");
         abt_errno = ABT_ERR_TASK;
-        goto fn_fail;
-    }
-
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
-
-    if (p_task == NULL) {
-        HANDLE_ERROR("NULL TASK");
-        abt_errno = ABT_ERR_INV_TASK;
         goto fn_fail;
     }
 
@@ -200,6 +194,7 @@ int ABT_task_cancel(ABT_task task)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_task_cancel", abt_errno);
     goto fn_exit;
 }
 
@@ -218,12 +213,7 @@ int ABT_task_retain(ABT_task task)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_task = ABTI_task_get_ptr(task);
-
-    if (p_task == NULL) {
-        HANDLE_ERROR("NULL TASK");
-        abt_errno = ABT_ERR_INV_TASK;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     ABTD_atomic_fetch_add_uint32(&p_task->refcount, 1);
 
@@ -231,6 +221,7 @@ int ABT_task_retain(ABT_task task)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_task_retain", abt_errno);
     goto fn_exit;
 }
 
@@ -248,14 +239,9 @@ int ABT_task_retain(ABT_task task)
 int ABT_task_release(ABT_task task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
     uint32_t refcount;
-
-    if (p_task == NULL) {
-        HANDLE_ERROR("NULL TASK");
-        abt_errno = ABT_ERR_INV_TASK;
-        goto fn_fail;
-    }
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     while ((refcount = p_task->refcount) > 0) {
         if (ABTD_atomic_cas_uint32(&p_task->refcount, refcount,
@@ -268,6 +254,7 @@ int ABT_task_release(ABT_task task)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_task_release", abt_errno);
     goto fn_exit;
 }
 
@@ -303,10 +290,7 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_task *p_task = ABTI_task_get_ptr(task);
-    if (p_task == NULL) {
-        abt_errno = ABT_ERR_INV_TASK;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Return value */
     *state = p_task->state;
@@ -332,10 +316,7 @@ int ABT_task_set_name(ABT_task task, const char *name)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_task = ABTI_task_get_ptr(task);
-    if (p_task == NULL) {
-        abt_errno = ABT_ERR_INV_TASK;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     size_t len = strlen(name);
     ABTI_mutex_waitlock(p_task->mutex);
@@ -373,10 +354,7 @@ int ABT_task_get_name(ABT_task task, char *name, size_t *len)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_task = ABTI_task_get_ptr(task);
-    if (p_task == NULL) {
-        abt_errno = ABT_ERR_INV_TASK;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     *len = strlen(p_task->p_name);
     if (name != NULL) {

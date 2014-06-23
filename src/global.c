@@ -103,6 +103,7 @@ int ABT_init(int argc, char **argv)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_init", abt_errno);
     goto fn_exit;
 }
 

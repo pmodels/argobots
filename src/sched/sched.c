@@ -158,9 +158,7 @@ int ABT_sched_get_prio_min(ABT_sched_kind kind, ABT_sched_prio *prio)
             abt_errno = ABT_ERR_INV_SCHED_KIND;
             break;
     }
-    if (abt_errno != ABT_SUCCESS) {
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
     return abt_errno;
@@ -200,9 +198,7 @@ int ABT_sched_get_prio_max(ABT_sched_kind kind, ABT_sched_prio *prio)
             abt_errno = ABT_ERR_INV_SCHED_KIND;
             break;
     }
-    if (abt_errno != ABT_SUCCESS) {
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
     return abt_errno;
@@ -227,11 +223,7 @@ int ABT_sched_free(ABT_sched *sched)
     int abt_errno = ABT_SUCCESS;
     ABT_sched h_sched = *sched;
     ABTI_sched *p_sched = ABTI_sched_get_ptr(h_sched);
-    if (p_sched == NULL) {
-        HANDLE_ERROR("NULL SCHEDULER");
-        abt_errno = ABT_ERR_INV_SCHED;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* Disconnect this scheduler from ES */
     p_sched->p_xstream->p_sched = NULL;
@@ -350,7 +342,7 @@ int ABTI_sched_free_basic(ABTI_sched *p_sched)
             abt_errno = ABT_ERR_INV_SCHED;
             break;
     }
-    if (abt_errno != ABT_SUCCESS) goto fn_fail;
+    ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
     return abt_errno;

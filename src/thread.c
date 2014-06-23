@@ -42,12 +42,9 @@ int ABT_thread_create(ABT_xstream xstream,
     ABTI_thread_attr *p_attr;
     size_t stacksize;
 
-    if (xstream == ABT_XSTREAM_NULL) {
-        HANDLE_ERROR("xstream cannot be ABT_XSTREAM_NULL");
-        goto fn_fail;
-    }
-
     p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
     if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
         abt_errno = ABTI_xstream_start(p_xstream);
         if (abt_errno != ABT_SUCCESS) {
@@ -135,6 +132,7 @@ int ABT_thread_free(ABT_thread *thread)
     if (h_thread == ABT_THREAD_NULL) goto fn_exit;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(h_thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     if (p_thread == ABTI_local_get_thread()) {
         HANDLE_ERROR("The current thread cannot be freed.");
@@ -191,6 +189,7 @@ int ABT_thread_join(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     if (p_thread == ABTI_local_get_thread()) {
         HANDLE_ERROR("The target thread should be different.");
@@ -212,6 +211,7 @@ int ABT_thread_join(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_join", abt_errno);
     goto fn_exit;
 }
 
@@ -251,12 +251,7 @@ int ABT_thread_cancel(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-
-    if (p_thread == NULL) {
-        HANDLE_ERROR("NULL THREAD");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
         HANDLE_ERROR("The main thread cannot be canceled.");
@@ -271,6 +266,7 @@ int ABT_thread_cancel(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_cancel", abt_errno);
     goto fn_exit;
 }
 
@@ -347,6 +343,7 @@ int ABT_thread_yield_to(ABT_thread thread)
 
     ABTI_thread *p_cur_thread = ABTI_local_get_thread();
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
     DEBUG_PRINT("YIELD_TO: TH%lu -> TH%lu\n",
                 p_cur_thread->id, p_tar_thread->id);
 
@@ -404,6 +401,7 @@ int ABT_thread_yield_to(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_yield_to", abt_errno);
     goto fn_exit;
 }
 
@@ -422,11 +420,7 @@ int ABT_thread_set_callback(ABT_thread thread,
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    if (p_thread == NULL) {
-        HANDLE_ERROR("NULL THREAD");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     p_thread->attr.f_callback = callback_func;
     p_thread->attr.p_cb_arg   = arg;
@@ -435,6 +429,7 @@ int ABT_thread_set_callback(ABT_thread thread,
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_set_callback", abt_errno);
     goto fn_exit;
 }
 
@@ -451,11 +446,7 @@ int ABT_thread_self(ABT_thread *thread)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
-    if (p_thread == NULL) {
-        HANDLE_ERROR("NULL THREAD");
-        abt_errno = ABT_ERR_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
     *thread = ABTI_thread_get_handle(p_thread);
@@ -464,6 +455,7 @@ int ABT_thread_self(ABT_thread *thread)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_self", abt_errno);
     goto fn_exit;
 }
 
@@ -483,11 +475,7 @@ int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-
-    if (p_thread == NULL) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
     *prio = p_thread->attr.prio;
@@ -517,11 +505,8 @@ int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 
-    if (p_thread == NULL) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
-
+    /* Sanity check */
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_CHECK_SCHED_PRIO(prio);
 
     if (prio == p_thread->attr.prio) goto fn_exit;
@@ -573,12 +558,7 @@ int ABT_thread_retain(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-
-    if (p_thread == NULL) {
-        HANDLE_ERROR("NULL THREAD");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     ABTD_atomic_fetch_add_uint32(&p_thread->refcount, 1);
 
@@ -586,6 +566,7 @@ int ABT_thread_retain(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_retain", abt_errno);
     goto fn_exit;
 }
 
@@ -603,14 +584,9 @@ int ABT_thread_retain(ABT_thread thread)
 int ABT_thread_release(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     uint32_t refcount;
-
-    if (p_thread == NULL) {
-        HANDLE_ERROR("NULL THREAD");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     while ((refcount = p_thread->refcount) > 0) {
         if (ABTD_atomic_cas_uint32(&p_thread->refcount, refcount,
@@ -623,6 +599,7 @@ int ABT_thread_release(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_release", abt_errno);
     goto fn_exit;
 }
 
@@ -658,10 +635,7 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    if (p_thread == NULL) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
     *state = p_thread->state;
@@ -687,10 +661,7 @@ int ABT_thread_set_name(ABT_thread thread, const char *name)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    if (p_thread == NULL) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     size_t len = strlen(name);
     ABTI_mutex_waitlock(p_thread->mutex);
@@ -728,10 +699,7 @@ int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    if (p_thread == NULL) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     *len = strlen(p_thread->p_name);
     if (name != NULL) {
@@ -762,10 +730,7 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    if (p_thread == NULL) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
     *stacksize = p_thread->attr.stacksize;
@@ -843,6 +808,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_thread_create_main", abt_errno);
     goto fn_exit;
 }
 

@@ -27,6 +27,7 @@ int ABTI_local_init(ABTI_xstream *p_xstream)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_local_init", abt_errno);
     goto fn_exit;
 }
 

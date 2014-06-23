@@ -13,6 +13,7 @@
 
 #include "abt.h"
 #include "abtu.h"
+#include "abti_error.h"
 
 /* Data Types */
 typedef struct ABTI_xstream       ABTI_xstream;
@@ -293,6 +294,7 @@ int ABTI_mutex_waitlock(ABT_mutex mutex);
 
 /* Future */
 ABTI_future *ABTI_future_get_ptr(ABT_future future);
+ABT_future ABTI_future_get_handle(ABTI_future *p_future);
 
 /* Condition */
 
@@ -336,27 +338,6 @@ ABT_unit ABTI_pool_pop(ABT_pool pool);
 void     ABTI_pool_remove(ABT_pool pool, ABT_unit unit);
 int      ABTI_pool_print(ABT_pool pool);
 
-
-#define ABTI_CHECK_ERROR(abt_errno)  \
-    if (abt_errno != ABT_SUCCESS) goto fn_fail
-
-#define ABTI_CHECK_THREAD_ATTR_P(p_attr)        \
-    if (p_attr == NULL) {                       \
-        abt_errno = ABT_ERR_INV_THREAD_ATTR;    \
-        goto fn_fail;                           \
-    }
-
-#define ABTI_CHECK_SCHED_PRIO(prio)             \
-    if (prio > ABT_SCHED_PRIO_HIGH) {           \
-        abt_errno = ABT_ERR_INV_SCHED_PRIO;     \
-        goto fn_fail;                           \
-    }
-
-#define HANDLE_ERROR(msg) \
-    fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); exit(-1)
-
-#define HANDLE_ERROR_WITH_CODE(msg,n) \
-    fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n); exit(-1)
 
 #define DEBUG 0
 #if (DEBUG == 1)
