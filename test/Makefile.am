@@ -4,6 +4,7 @@ AM_LDFLAGS = $(DEPS_LDFLAGS)
 
 LDADD = ../libabt.la
 noinst_PROGRAMS =    		\
+	xstream_create    		\
 	thread_create    		\
 	thread_create2   		\
 	thread_attr      		\
@@ -21,6 +22,7 @@ noinst_PROGRAMS =    		\
 	fibonacci_task   		\
 	fibonacci_thread_task
 
+xstream_create_SOURCES = xstream_create.c
 thread_create_SOURCES = thread_create.c
 thread_create2_SOURCES = thread_create2.c
 thread_attr_SOURCES = thread_attr.c
@@ -39,6 +41,7 @@ fibonacci_task_SOURCES = fibonacci_task.c
 fibonacci_thread_task_SOURCES = fibonacci_thread_task.c
 
 testing:
+	./xstream_create
 	./thread_create
 	./thread_create2
 	./thread_attr
