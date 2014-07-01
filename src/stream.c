@@ -597,7 +597,7 @@ int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
 
     ABTI_sched *p_sched = p_xstream->p_sched;
     ABT_pool pool = p_sched->pool;
-    while (p_sched->p_get_size(pool) > 0) {
+    while (1) {
         /* If there exist tasks in thte global task pool, steal one and
          * execute it. */
         if (ABTI_pool_get_size(p_tasks->pool) > 0) {
@@ -610,7 +610,12 @@ int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
             p_task->p_xstream = p_xstream;
             abt_errno = ABTI_xstream_schedule_task(p_task);
             ABTI_CHECK_ERROR(abt_errno);
+
+            continue;
         }
+
+        /* Execute one work unit from the scheduler's pool */
+        if (p_sched->p_get_size(pool) == 0) break;
 
         /* Pop one work unit */
         ABT_unit unit = ABTI_sched_pop(p_sched);
