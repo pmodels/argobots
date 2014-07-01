@@ -61,8 +61,6 @@ void fibonacci_thread(void *arguments){
 	/* checking whether to signal the future */
 	if(future != ABT_FUTURE_NULL){
 		ABT_future_set(future, &result, sizeof(int));
-	} else {
-//		printf("The %d-th number in the Fibonacci sequence is: %d\n",n,result);
 	}
 }
 

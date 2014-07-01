@@ -31,7 +31,6 @@ void fibonacci(void *arguments){
 	n = args->n;
 	future = args->future;
 
-//printf("Computing Fibonacci of %d\n",n);
 	/* checking for base cases */
 	if(n <= 2)
 		result = 1;
