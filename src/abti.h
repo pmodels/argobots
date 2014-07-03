@@ -134,6 +134,7 @@ struct ABTI_sched {
     ABT_mutex mutex;          /* Mutex */
     ABTD_thread_context ctx;  /* Scheduler context */
     ABT_pool pool;            /* Work unit pool */
+    uint32_t num_blocked;     /* Number of blocked ULTs */
 
     /* Scheduler functions */
     ABT_unit_get_type_fn           u_get_type;
@@ -306,6 +307,8 @@ int ABTI_sched_free_prio(ABTI_sched *p_sched);
 void ABTI_sched_push(ABTI_sched *p_sched, ABT_unit unit);
 ABT_unit ABTI_sched_pop(ABTI_sched *p_sched);
 void ABTI_sched_remove(ABTI_sched *p_sched, ABT_unit unit);
+int ABTI_sched_inc_num_blocked(ABTI_sched *p_sched);
+int ABTI_sched_dec_num_blocked(ABTI_sched *p_sched);
 int  ABTI_sched_print(ABTI_sched *p_sched);
 
 /* Unit */

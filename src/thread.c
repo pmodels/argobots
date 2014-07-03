@@ -877,6 +877,10 @@ int ABTI_thread_suspend()
     /* Change the state of current running thread */
     p_thread->state = ABT_THREAD_STATE_BLOCKED;
 
+    /* Increase the number of blocked threads */
+    ABTI_sched *p_sched = p_xstream->p_sched;
+    ABTI_sched_inc_num_blocked(p_sched);
+
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
         /* Currently, the main program thread waits until all threads
          * finish their execution. */
@@ -888,7 +892,6 @@ int ABTI_thread_suspend()
         p_thread->state = ABT_THREAD_STATE_RUNNING;
     } else {
         /* Switch to the scheduler */
-        ABTI_sched *p_sched = p_xstream->p_sched;
         abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
         ABTI_CHECK_ERROR(abt_errno);
     }
@@ -908,6 +911,11 @@ int ABTI_thread_set_ready(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+
+    /* Decrease the number of blocked threads */
+    if (p_thread->state == ABT_THREAD_STATE_BLOCKED) {
+        ABTI_sched_dec_num_blocked(p_thread->p_xstream->p_sched);
+    }
 
     /* Add the thread to its associated ES */
     abt_errno = ABTI_xstream_add_thread(p_thread);

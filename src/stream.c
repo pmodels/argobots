@@ -615,30 +615,34 @@ int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
         }
 
         /* Execute one work unit from the scheduler's pool */
-        if (p_sched->p_get_size(pool) == 0) break;
+        if (p_sched->p_get_size(pool) > 0) {
+            /* Pop one work unit */
+            ABT_unit unit = ABTI_sched_pop(p_sched);
 
-        /* Pop one work unit */
-        ABT_unit unit = ABTI_sched_pop(p_sched);
+            ABT_unit_type type = p_sched->u_get_type(unit);
+            if (type == ABT_UNIT_TYPE_THREAD) {
+                ABT_thread thread = p_sched->u_get_thread(unit);
+                ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 
-        ABT_unit_type type = p_sched->u_get_type(unit);
-        if (type == ABT_UNIT_TYPE_THREAD) {
-            ABT_thread thread = p_sched->u_get_thread(unit);
-            ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+                /* Switch the context */
+                abt_errno = ABTI_xstream_schedule_thread(p_thread);
+                ABTI_CHECK_ERROR(abt_errno);
+            } else if (type == ABT_UNIT_TYPE_TASK) {
+                ABT_task task = p_sched->u_get_task(unit);
+                ABTI_task *p_task = ABTI_task_get_ptr(task);
 
-            /* Switch the context */
-            abt_errno = ABTI_xstream_schedule_thread(p_thread);
-            ABTI_CHECK_ERROR(abt_errno);
-        } else if (type == ABT_UNIT_TYPE_TASK) {
-            ABT_task task = p_sched->u_get_task(unit);
-            ABTI_task *p_task = ABTI_task_get_ptr(task);
-
-            /* Execute the task */
-            abt_errno = ABTI_xstream_schedule_task(p_task);
-            ABTI_CHECK_ERROR(abt_errno);
-        } else {
-            HANDLE_ERROR("Not supported type!");
-            abt_errno = ABT_ERR_INV_UNIT;
-            goto fn_fail;
+                /* Execute the task */
+                abt_errno = ABTI_xstream_schedule_task(p_task);
+                ABTI_CHECK_ERROR(abt_errno);
+            } else {
+                HANDLE_ERROR("Not supported type!");
+                abt_errno = ABT_ERR_INV_UNIT;
+                goto fn_fail;
+            }
+        } else if (p_sched->num_blocked == 0) {
+            /* Excape the loop when there is no work unit in the pool and
+             * no ULT blocked. */
+            break;
         }
     }
 
@@ -900,6 +904,7 @@ static void *ABTI_xstream_loop(void *p_arg)
     /* Set this ES as the current ES */
     ABTI_local_init(p_xstream);
 
+    ABTI_task_pool *p_tasks = gp_ABTI_global->p_tasks;
     ABTI_sched *p_sched = p_xstream->p_sched;
     ABT_pool pool = p_sched->pool;
 
@@ -913,7 +918,9 @@ static void *ABTI_xstream_loop(void *p_arg)
         /* When join is requested, the ES terminates after finishing
          * execution of all work units. */
         if ((p_xstream->request & ABTI_XSTREAM_REQ_JOIN) &&
-            (p_sched->p_get_size(pool) == 0))
+            (ABTI_pool_get_size(p_tasks->pool) == 0) &&
+            (p_sched->p_get_size(pool) == 0) &&
+            (p_sched->num_blocked == 0))
             break;
 
         if (ABTI_xstream_schedule(p_xstream) != ABT_SUCCESS) {

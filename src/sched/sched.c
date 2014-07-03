@@ -47,6 +47,7 @@ int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
     p_sched->p_xstream = NULL;
     p_sched->type = ABTI_SCHED_TYPE_USER;
     p_sched->pool = pool;
+    p_sched->num_blocked = 0;
 
     /* Create a mutex */
     abt_errno = ABT_mutex_create(&p_sched->mutex);
@@ -374,6 +375,18 @@ void ABTI_sched_remove(ABTI_sched *p_sched, ABT_unit unit)
     ABT_mutex_unlock(p_sched->mutex);
 }
 
+int ABTI_sched_inc_num_blocked(ABTI_sched *p_sched)
+{
+    ABTD_atomic_fetch_add_uint32(&p_sched->num_blocked, 1);
+    return ABT_SUCCESS;
+}
+
+int ABTI_sched_dec_num_blocked(ABTI_sched *p_sched)
+{
+    ABTD_atomic_fetch_sub_uint32(&p_sched->num_blocked, 1);
+    return ABT_SUCCESS;
+}
+
 int ABTI_sched_print(ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
@@ -403,6 +416,7 @@ int ABTI_sched_print(ABTI_sched *p_sched)
     printf("pool: ");
     abt_errno = ABTI_pool_print(p_sched->pool);
     ABTI_CHECK_ERROR(abt_errno);
+    printf("num_blockeed: %u\n", p_sched->num_blocked);
 
   fn_exit:
     return abt_errno;
