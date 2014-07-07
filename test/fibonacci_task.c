@@ -20,8 +20,8 @@
 #include <assert.h>
 #include <abt.h>
 
-#define N 5 
-#define DEFAULT_NUM_XSTREAMS    4
+#define N 20 
+#define DEFAULT_NUM_XSTREAMS    20
 
 #define HANDLE_ERROR(ret,msg)                           \
     if (ret != ABT_SUCCESS) {                           \
@@ -32,6 +32,7 @@
 /* global variables */
 int num_xstreams;
 ABT_xstream *xstreams;
+ABT_future future;
 
 /* forward declaration */
 void aggregate_fibonacci(void *arguments);
@@ -65,6 +66,7 @@ void expand_fibonacci(void *arguments){
 	if(n <= 2){
 
 		/* creating an aggregate task */
+		args->result = 1;
 		agg_args = (agg_task_args *) malloc (sizeof(agg_task_args));
 		agg_args->result = 1;
 		agg_args->parent = parent;
@@ -79,7 +81,7 @@ void expand_fibonacci(void *arguments){
 		exp_args1->flag = 0;
 		ABT_mutex_create(&exp_args1->mutex);
 		exp_args1->parent = args;
-    	ABT_task_create(ABT_XSTREAM_NULL, expand_fibonacci, exp_args1, NULL);
+    	ABT_task_create(xstreams[n%num_xstreams], expand_fibonacci, exp_args1, NULL);
 		
 		/* creating task to compute Fib(n-2) */
 		exp_args2 = (exp_task_args *) malloc (sizeof(exp_task_args));
@@ -96,6 +98,7 @@ void expand_fibonacci(void *arguments){
 void aggregate_fibonacci(void *arguments){
 	exp_task_args *parent;
 	agg_task_args *args, *agg_args;
+	int data;
 
 	args = (agg_task_args *) arguments;
 	parent = args->parent;
@@ -114,15 +117,48 @@ void aggregate_fibonacci(void *arguments){
 			parent->flag = 1;
 		}
 		ABT_mutex_unlock(parent->mutex);
+	} else {
+		ABT_future_set(future, &data, sizeof(int));
 	}
 
 }
 
+/* Control thread function */
+void fibonacci_control(void *arguments){
+	exp_task_args args;
+	size_t n;
+	int *data, ret;
+
+	n = (size_t) arguments;
+
+	/* creating future */
+	ABT_future_create(sizeof(int), &future);	
+
+	/* creating parent task to compute Fib(n) */
+	args.n = n;
+	args.result = 0;
+	args.flag = 0;
+	ABT_mutex_create(&args.mutex);
+	args.parent = NULL;
+    ret = ABT_task_create(ABT_XSTREAM_NULL, expand_fibonacci, &args, NULL);
+    HANDLE_ERROR(ret, "ABT_task_create");
+
+
+	/* switch to other user-level threads */
+	ABT_thread_yield();
+
+	/* block until the future is signaled */
+	ABT_future_wait(future, (void **)&data);
+
+	printf("The %lu-th value in the Fibonacci sequence is: %d\n",n,args.result);
+}
+
 /* Main function */
 int main(int argc, char *argv[]){
-	int n, i, ret;
-	exp_task_args args;
+	size_t n, i;
+	int ret;
     num_xstreams = DEFAULT_NUM_XSTREAMS;
+	ABT_thread thread;
 
 	/* initialization */
     ABT_init(argc, argv);
@@ -143,26 +179,20 @@ int main(int argc, char *argv[]){
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
     	HANDLE_ERROR(ret, "ABT_xstream_create");
     }
-	
-	/* creating parent task to compute Fib(n) */
-	args.n = n;
-	args.result = 0;
-	args.flag = 0;
-	ABT_mutex_create(&args.mutex);
-	args.parent = NULL;
-    ret = ABT_task_create(ABT_XSTREAM_NULL, expand_fibonacci, &args, NULL);
-    HANDLE_ERROR(ret, "ABT_task_create");
 
-	/* switch to other user-level threads */
+	/* control thread creation */
+	ABT_thread_create(xstreams[0], fibonacci_control, (void *)n, ABT_THREAD_ATTR_NULL, &thread);
 	ABT_thread_yield();
 
-    /* join streams */
+	/* joining control thread */
+	ret = ABT_thread_join(thread);
+   	HANDLE_ERROR(ret, "ABT_thread_join");
+    
+	/* join streams */
     for(i=1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
     	HANDLE_ERROR(ret, "ABT_xstream_join");
     }
-
-	printf("The %d-th value in the Fibonacci sequence is: %d\n",n,args.result);
 	
     /* deallocating streams */
     for(i=1; i < num_xstreams; i++) {
