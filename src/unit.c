@@ -64,7 +64,7 @@ ABT_task ABTI_unit_get_task(ABT_unit unit)
 {
     ABT_task h_task;
     ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
-    if (p_unit->type == ABT_UNIT_TYPE_TASK) {
+    if (p_unit != NULL && p_unit->type == ABT_UNIT_TYPE_TASK) {
         ABTI_task *p_task = (ABTI_task *)p_unit->p_unit;
         h_task = ABTI_task_get_handle(p_task);
     } else {
