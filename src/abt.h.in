@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
+
 /* ABT_VERSION is the version string. ABT_NUMVERSION is the
  * numeric version that can be used in numeric comparisons.
  *
