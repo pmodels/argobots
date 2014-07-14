@@ -200,6 +200,21 @@ int ABT_task_cancel(ABT_task task)
 
 /**
  * @ingroup TASK
+ * @brief   Return the task handle of the calling task.
+ *
+ * @param[out] task  task handle
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_self(ABT_task *task)
+{
+    /* TODO */
+    HANDLE_ERROR("Not implemented");
+    return ABT_ERR_OTHER;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Increment the task reference count.
  *
  * ABT_task_create() with non-null newtask argument performs an implicit

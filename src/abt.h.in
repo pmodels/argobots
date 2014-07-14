@@ -228,6 +228,7 @@ int ABT_task_create(ABT_xstream xstream,
                     ABT_task *newtask);
 int ABT_task_free(ABT_task *task);
 int ABT_task_cancel(ABT_task task);
+int ABT_task_self(ABT_task *task);
 int ABT_task_retain(ABT_task task);
 int ABT_task_release(ABT_task task);
 int ABT_task_equal(ABT_task task1, ABT_task task2, int *result);
