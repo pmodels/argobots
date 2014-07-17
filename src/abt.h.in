@@ -213,6 +213,8 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
 int ABT_thread_set_name(ABT_thread thread, const char *name);
 int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len);
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize);
+int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream);
+int ABT_thread_migrate(ABT_thread thread);
 
 /* ULT Attributes */
 int ABT_thread_attr_create(ABT_thread_attr *newattr);

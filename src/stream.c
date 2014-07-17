@@ -664,6 +664,12 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
+    
+	if (p_thread->request & ABTI_THREAD_REQ_MIGRATE) {
+		abt_errno = ABTI_xstream_migrate_thread(p_thread);
+        ABTI_CHECK_ERROR(abt_errno);
+		goto fn_exit;	
+	}
 
     ABTI_xstream *p_xstream = p_thread->p_xstream;
     ABTI_sched *p_sched = p_xstream->p_sched;
@@ -740,6 +746,25 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABTI_xstream_schedule_task", abt_errno);
     goto fn_exit;
+}
+
+int ABTI_xstream_migrate_thread(ABTI_thread *p_thread){
+	int abt_errno = ABT_SUCCESS;
+
+	/* extracting argument in migration request */
+	ABT_xstream xstream = (ABT_xstream) ABTI_thread_extract_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE);
+	ABTD_atomic_fetch_and_uint32(&p_thread->request, ~ABTI_THREAD_REQ_MIGRATE);
+	
+	/* checking the state destination xstream */
+	ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+	if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
+        abt_errno = ABTI_xstream_start(p_xstream);
+    }
+
+	/* effectively migrating the thread */
+	abt_errno = ABTI_unit_migrate(p_thread->unit, p_thread->p_xstream, xstream);
+	p_thread->p_xstream = xstream;	
+	return abt_errno;
 }
 
 int ABTI_xstream_terminate_thread(ABTI_thread *p_thread)

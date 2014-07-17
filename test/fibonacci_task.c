@@ -20,8 +20,8 @@
 #include <assert.h>
 #include <abt.h>
 
-#define N 20 
-#define DEFAULT_NUM_XSTREAMS    20
+#define N 10
+#define DEFAULT_NUM_XSTREAMS    4
 
 #define HANDLE_ERROR(ret,msg)                           \
     if (ret != ABT_SUCCESS) {                           \

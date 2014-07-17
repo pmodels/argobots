@@ -1006,3 +1006,118 @@ static uint64_t ABTI_thread_get_new_id() {
     return ABTD_atomic_fetch_add_uint64(&thread_id, 1);
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Migrates a thread to a specific stream.
+ *
+ * The actual migration occurs asynchronously with this function call. In other words, this function may return
+ * immediately without the thread being migrated. The migration request will be posted on the thread, such that 
+ * next time a scheduler picks it up, migration will happen.
+ *
+ * @param[in] thread  handle to the thread to migrate
+ * @param[in] xstream  handle to the xstream to migrate the thread to
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+	
+	/* checking for cases when migration is not allowed */
+	if (p_thread->state == ABT_THREAD_STATE_TERMINATED || 
+			p_thread->state == ABT_THREAD_STATE_COMPLETED ||
+            p_xstream->state == ABT_XSTREAM_STATE_TERMINATED || 
+            p_thread->type == ABTI_THREAD_TYPE_MAIN){
+		abt_errno = ABT_ERR_THREAD;
+		goto fn_fail;
+	}
+
+	/* checking for migration to the same xstream */
+	if (p_thread->p_xstream->id == p_xstream->id)
+		goto fn_exit;
+	
+	/* adding request to the thread */
+	ABT_mutex_lock(p_thread->mutex);
+	ABTI_thread_add_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE, xstream);
+	ABT_mutex_unlock(p_thread->mutex);
+    ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_MIGRATE);
+
+	/* yielding if it is the same thread */
+	if (p_thread->id == ABTI_local_get_thread()->id){
+		ABT_thread_yield();
+	}
+	goto fn_exit;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_migrate_to", abt_errno);
+    goto fn_exit;
+
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Migrates a thread to a different stream.
+ *
+ *
+ * @param[in] thread  handle to the thread to migrate
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_migrate(ABT_thread thread)
+{
+    int abt_errno = ABT_SUCCESS;
+	ABT_xstream xstream;
+	
+	/* choosing the destination xstream */
+
+	abt_errno = ABT_thread_migrate_to(thread, xstream);
+
+    return abt_errno;
+}
+
+void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg){
+	ABTI_thread_req_arg *new = (ABTI_thread_req_arg *) ABTU_malloc(sizeof(ABTI_thread_req_arg));
+	ABTI_thread_req_arg *p_head = p_thread->p_req_arg;
+
+	/* filling the new argument data structure */
+	new->request = req;
+	new->p_arg = arg;
+	new->next = NULL;
+
+assert(new->p_arg != NULL);
+
+	if(p_head == NULL){
+		p_thread->p_req_arg = new;
+	} else {
+		while(p_head->next != NULL)
+			p_head = p_head->next;
+		p_head->next = new;
+	}
+}
+ 
+void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req){
+	void *result = NULL;
+	ABTI_thread_req_arg *p_last = NULL, *p_head = p_thread->p_req_arg;
+
+	while(p_head != NULL) {
+		if(p_head->request == req) {
+			result = p_head->p_arg;
+			if(p_last == NULL)
+				p_thread->p_req_arg = p_head->next;
+			else
+				p_last->next = p_head->next;
+			ABTU_free(p_head);
+			break;
+		}
+		p_last = p_head;
+		p_head = p_head->next;
+	}
+
+	return result;
+}
+
