@@ -21,6 +21,7 @@ typedef enum ABTI_xstream_type    ABTI_xstream_type;
 typedef struct ABTI_thread        ABTI_thread;
 typedef enum ABTI_thread_type     ABTI_thread_type;
 typedef struct ABTI_thread_attr   ABTI_thread_attr;
+typedef struct ABTI_thread_req_arg ABTI_thread_req_arg;
 typedef struct ABTI_task          ABTI_task;
 typedef struct ABTI_mutex         ABTI_mutex;
 typedef struct ABTI_sched         ABTI_sched;
@@ -48,6 +49,7 @@ typedef struct ABTI_future        ABTI_future;
 #define ABTI_THREAD_REQ_JOIN        0x1
 #define ABTI_THREAD_REQ_EXIT        0x2
 #define ABTI_THREAD_REQ_CANCEL      0x4
+#define ABTI_THREAD_REQ_MIGRATE     0x8
 
 #define ABTI_TASK_REQ_CANCEL        0x1
 
@@ -91,22 +93,28 @@ struct ABTI_thread_attr {
     void *p_cb_arg;             /* Callback function argument */
 };
 
+struct ABTI_thread_req_arg {
+    uint32_t request;
+	void *p_arg;
+    ABTI_thread_req_arg *next;
+};
+
 struct ABTI_thread {
-    ABT_unit unit;              /* Unit enclosing this thread */
-    ABTI_xstream *p_xstream;    /* Associated ES */
-    uint64_t id;                /* ID */
-    char *p_name;               /* Name */
-    ABTI_thread_type type;      /* Type */
-    ABT_thread_state state;     /* State */
-    ABTI_thread_attr attr;      /* Attributes */
-    uint32_t refcount;          /* Reference count */
+    ABT_unit unit;              	/* Unit enclosing this thread */
+    ABTI_xstream *p_xstream;    	/* Associated ES */
+    uint64_t id;                	/* ID */
+    char *p_name;               	/* Name */
+    ABTI_thread_type type;      	/* Type */
+    ABT_thread_state state;     	/* State */
+    ABTI_thread_attr attr;      	/* Attributes */
+    uint32_t refcount;              /* Reference count */
 
-    uint32_t request;           /* Request */
-    void *p_req_arg;            /* Request argument */
-    ABT_mutex mutex;            /* Mutex */
-    void *p_stack;              /* Stack */
+    uint32_t request;               /* Request */
+    ABTI_thread_req_arg *p_req_arg; /* Request argument */
+    ABT_mutex mutex;                /* Mutex */
+    void *p_stack;                  /* Stack */
 
-    ABTD_thread_context ctx;    /* Context */
+    ABTD_thread_context ctx;    	/* Context */
 };
 
 struct ABTI_task {
@@ -254,6 +262,7 @@ int ABTI_xstream_schedule(ABTI_xstream *p_xstream);
 int ABTI_xstream_schedule_thread(ABTI_thread *p_thread);
 int ABTI_xstream_schedule_task(ABTI_task *p_task);
 int ABTI_xstream_terminate_thread(ABTI_thread *p_thread);
+int ABTI_xstream_migrate_thread(ABTI_thread *p_thread);
 int ABTI_xstream_terminate_task(ABTI_task *p_task);
 int ABTI_xstream_add_thread(ABTI_thread *p_thread);
 int ABTI_xstream_keep_thread(ABTI_thread *p_thread);
@@ -272,6 +281,8 @@ int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr);
 int ABTI_thread_print(ABTI_thread *p_thread);
 void ABTI_thread_func_wrapper(void (*thread_func)(void *), void *p_arg);
 ABT_thread *ABTI_thread_current();
+void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
+void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
 
 /* ULT Attributes */
 ABTI_thread_attr *ABTI_thread_attr_get_ptr(ABT_thread_attr attr);
@@ -323,6 +334,7 @@ ABT_unit      ABTI_unit_create_from_thread(ABT_thread thread);
 ABT_unit      ABTI_unit_create_from_task(ABT_task task);
 void          ABTI_unit_free(ABT_unit *unit);
 int           ABTI_unit_print(ABT_unit unit);
+int           ABTI_unit_migrate(ABT_unit unit, ABTI_xstream *p_source, ABTI_xstream *p_dest);
 
 /* Pool */
 ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool);
