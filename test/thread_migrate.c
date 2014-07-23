@@ -16,23 +16,22 @@
 
 void thread_func(void *arg)
 {
-	int i;
+    int i;
     size_t my_id = (size_t)arg;
     printf("[TH%lu]: Hello, world!\n", my_id);
 
-	for(i=0; i<2; i++){
-		printf("Thread %lu, it %d\n",my_id,i);
-		ABT_thread_yield();
-	}
+    for(i=0; i<2; i++){
+        printf("Thread %lu, it %d\n",my_id,i);
+        ABT_thread_yield();
+    }
 }
 
 int main(int argc, char *argv[])
 {
-    int i, j;
     int ret;
 
     ABT_xstream xstream, myxstream;
-	ABT_thread thread;
+    ABT_thread thread;
 
     /* Initialize */
     ret = ABT_init(argc, argv);
@@ -41,19 +40,19 @@ int main(int argc, char *argv[])
     /* Create Execution Streams */
     ret = ABT_xstream_create(ABT_SCHED_NULL, &xstream);
     HANDLE_ERROR(ret, "ABT_xstream_create");
-	ABT_xstream_self(&myxstream);
+    ABT_xstream_self(&myxstream);
 
     /* Create threads */
     size_t tid = 1;
-   	ret = ABT_thread_create(myxstream,
+       ret = ABT_thread_create(myxstream,
           thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
           &thread);
     HANDLE_ERROR(ret, "ABT_thread_create");
 
-	printf("[MAIN] Migrating thread\n");
+    printf("[MAIN] Migrating thread\n");
 
-    /* migrating threads from main xstream */    
-	ABT_thread_migrate_to(thread, xstream);
+    /* migrating threads from main xstream */
+    ABT_thread_migrate_to(thread, xstream);
 
     /* Switch to other user level threads */
     ABT_thread_yield();
@@ -62,7 +61,7 @@ int main(int argc, char *argv[])
     ret = ABT_xstream_join(xstream);
     HANDLE_ERROR(ret, "ABT_xstream_join");
 
-	/* Free Execution Streams */
+    /* Free Execution Streams */
     ret = ABT_xstream_free(&xstream);
     HANDLE_ERROR(ret, "ABT_xstream_free");
 

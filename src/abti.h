@@ -16,23 +16,23 @@
 #include "abti_error.h"
 
 /* Data Types */
-typedef struct ABTI_xstream       ABTI_xstream;
-typedef enum ABTI_xstream_type    ABTI_xstream_type;
-typedef struct ABTI_thread        ABTI_thread;
-typedef enum ABTI_thread_type     ABTI_thread_type;
-typedef struct ABTI_thread_attr   ABTI_thread_attr;
+typedef struct ABTI_xstream        ABTI_xstream;
+typedef enum ABTI_xstream_type     ABTI_xstream_type;
+typedef struct ABTI_thread         ABTI_thread;
+typedef enum ABTI_thread_type      ABTI_thread_type;
+typedef struct ABTI_thread_attr    ABTI_thread_attr;
 typedef struct ABTI_thread_req_arg ABTI_thread_req_arg;
-typedef struct ABTI_task          ABTI_task;
-typedef struct ABTI_mutex         ABTI_mutex;
-typedef struct ABTI_sched         ABTI_sched;
-typedef enum ABTI_sched_type      ABTI_sched_type;
-typedef struct ABTI_unit          ABTI_unit;
-typedef struct ABTI_pool          ABTI_pool;
-typedef struct ABTI_xstream_pool  ABTI_xstream_pool;
-typedef struct ABTI_task_pool     ABTI_task_pool;
-typedef struct ABTI_global        ABTI_global;
-typedef struct ABTI_local         ABTI_local;
-typedef struct ABTI_future        ABTI_future;
+typedef struct ABTI_task           ABTI_task;
+typedef struct ABTI_mutex          ABTI_mutex;
+typedef struct ABTI_sched          ABTI_sched;
+typedef enum ABTI_sched_type       ABTI_sched_type;
+typedef struct ABTI_unit           ABTI_unit;
+typedef struct ABTI_pool           ABTI_pool;
+typedef struct ABTI_xstream_pool   ABTI_xstream_pool;
+typedef struct ABTI_task_pool      ABTI_task_pool;
+typedef struct ABTI_global         ABTI_global;
+typedef struct ABTI_local          ABTI_local;
+typedef struct ABTI_future         ABTI_future;
 
 /* Architecture-Dependent Definitions */
 #include "abtd.h"
@@ -95,18 +95,18 @@ struct ABTI_thread_attr {
 
 struct ABTI_thread_req_arg {
     uint32_t request;
-	void *p_arg;
+    void *p_arg;
     ABTI_thread_req_arg *next;
 };
 
 struct ABTI_thread {
-    ABT_unit unit;              	/* Unit enclosing this thread */
-    ABTI_xstream *p_xstream;    	/* Associated ES */
-    uint64_t id;                	/* ID */
-    char *p_name;               	/* Name */
-    ABTI_thread_type type;      	/* Type */
-    ABT_thread_state state;     	/* State */
-    ABTI_thread_attr attr;      	/* Attributes */
+    ABT_unit unit;                  /* Unit enclosing this thread */
+    ABTI_xstream *p_xstream;        /* Associated ES */
+    uint64_t id;                    /* ID */
+    char *p_name;                   /* Name */
+    ABTI_thread_type type;          /* Type */
+    ABT_thread_state state;         /* State */
+    ABTI_thread_attr attr;          /* Attributes */
     uint32_t refcount;              /* Reference count */
 
     uint32_t request;               /* Request */
@@ -114,7 +114,7 @@ struct ABTI_thread {
     ABT_mutex mutex;                /* Mutex */
     void *p_stack;                  /* Stack */
 
-    ABTD_thread_context ctx;    	/* Context */
+    ABTD_thread_context ctx;        /* Context */
 };
 
 struct ABTI_task {
@@ -204,8 +204,8 @@ typedef struct {
     ABTI_thread_entry *tail;
 } ABTI_threads_list;
 
-struct ABTI_future{
-	ABT_mutex mutex;
+struct ABTI_future {
+    ABT_mutex mutex;
     int ready;
     void *value;
     int nbytes;
@@ -334,7 +334,6 @@ ABT_unit      ABTI_unit_create_from_thread(ABT_thread thread);
 ABT_unit      ABTI_unit_create_from_task(ABT_task task);
 void          ABTI_unit_free(ABT_unit *unit);
 int           ABTI_unit_print(ABT_unit unit);
-int           ABTI_unit_migrate(ABT_unit unit, ABTI_xstream *p_source, ABTI_xstream *p_dest);
 
 /* Pool */
 ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool);

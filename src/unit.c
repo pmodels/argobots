@@ -170,15 +170,3 @@ int ABTI_unit_print(ABT_unit unit)
     return abt_errno;
 }
 
-int ABTI_unit_migrate(ABT_unit unit, ABTI_xstream *p_source, ABTI_xstream *p_dest)
-{
-	int abt_errno = ABT_SUCCESS;
-	
-	/* removing unit from source */
-	ABTI_sched_remove(p_source->p_sched, unit);	
-
-	/* adding unit to destination */
-	ABTI_sched_push(p_dest->p_sched, unit);
-
-	return abt_errno;
-}
