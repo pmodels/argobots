@@ -10,6 +10,7 @@ noinst_PROGRAMS =    		\
 	thread_attr      		\
 	thread_yield     		\
 	thread_yield_to  		\
+	thread_migrate_to  		\
 	thread_migrate  		\
 	task_create      		\
 	thread_task      		\
@@ -29,6 +30,7 @@ thread_create2_SOURCES = thread_create2.c
 thread_attr_SOURCES = thread_attr.c
 thread_yield_SOURCES = thread_yield.c
 thread_yield_to_SOURCES = thread_yield_to.c
+thread_migrate_to_SOURCES = thread_migrate_to.c
 thread_migrate_SOURCES = thread_migrate.c
 task_create_SOURCES = task_create.c
 thread_task_SOURCES = thread_task.c
@@ -49,6 +51,7 @@ testing:
 	./thread_attr
 	./thread_yield
 	./thread_yield_to
+	./thread_migrate_to
 	./thread_migrate
 	./task_create
 	./thread_task

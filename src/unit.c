@@ -73,6 +73,13 @@ ABT_task ABTI_unit_get_task(ABT_unit unit)
     return h_task;
 }
 
+ABT_unit ABTI_unit_get_next(ABT_unit unit)
+{
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
+    ABTI_unit *p_next = p_unit->p_next;
+    return ABTI_unit_get_handle(p_next);
+}
+
 ABT_unit ABTI_unit_create_from_xstream(ABT_xstream xstream)
 {
     ABTI_unit *p_unit;

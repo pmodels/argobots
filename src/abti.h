@@ -329,6 +329,7 @@ ABT_unit_type ABTI_unit_get_type(ABT_unit unit);
 ABT_xstream   ABTI_unit_get_xstream(ABT_unit unit);
 ABT_thread    ABTI_unit_get_thread(ABT_unit unit);
 ABT_task      ABTI_unit_get_task(ABT_unit unit);
+ABT_unit      ABTI_unit_get_next(ABT_unit unit);
 ABT_unit      ABTI_unit_create_from_xstream(ABT_xstream xstream);
 ABT_unit      ABTI_unit_create_from_thread(ABT_thread thread);
 ABT_unit      ABTI_unit_create_from_task(ABT_task task);

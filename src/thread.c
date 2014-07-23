@@ -505,9 +505,14 @@ int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream)
 
 /**
  * @ingroup ULT
- * @brief   Migrate a thread to a different stream.
+ * @brief   Request migration of the thread to an any available ES.
  *
- * @param[in] thread  handle to the thread to migrate
+ * ABT_thread_migrate() requests migration of the thread but does not specify
+ * the target ES. The target ES will be determined among available ESs by the
+ * runtime. Other semantics of this routine are the same as those of
+ * \c ABT_thread_migrate_to()
+ *
+ * @param[in] thread  handle to the thread
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -516,12 +521,31 @@ int ABT_thread_migrate(ABT_thread thread)
     int abt_errno = ABT_SUCCESS;
     ABT_xstream xstream;
 
-    /* choosing the destination xstream */
-    HANDLE_ERROR("Not implemented!");
+    ABTI_xstream_pool *p_xstreams = gp_ABTI_global->p_xstreams;
+
+    /* Choose the destination xstream */
+    /* FIXME: Currenlty, the target xstream is randomly chosen. We need a
+     * better selection strategy. */
+    if (ABTI_pool_get_size(p_xstreams->created) > 0) {
+        ABTI_xstream *p_xstream;
+        abt_errno = ABTI_global_get_created_xstream(&p_xstream);
+        ABTI_CHECK_ERROR(abt_errno);
+        xstream = ABTI_xstream_get_handle(p_xstream);
+    } else {
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+        ABT_unit next = ABTI_unit_get_next(p_thread->p_xstream->unit);
+        xstream = ABTI_unit_get_xstream(next);
+    }
 
     abt_errno = ABT_thread_migrate_to(thread, xstream);
+    ABTI_CHECK_ERROR(abt_errno);
 
+  fn_exit:
     return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_migrate", abt_errno);
+    goto fn_exit;
 }
 
 /**
