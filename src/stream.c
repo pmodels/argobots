@@ -162,7 +162,6 @@ int ABT_xstream_free(ABT_xstream *xstream)
 int ABT_xstream_join(ABT_xstream xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    uint32_t old;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
 
     /* The target ES must not be the same as the calling thread's ES */
@@ -199,21 +198,18 @@ int ABT_xstream_join(ABT_xstream xstream)
 
   fn_body:
     /* Set the join request */
-    old = ABTD_atomic_fetch_or_uint32(&p_xstream->request,
-                                      ABTI_XSTREAM_REQ_JOIN);
-    if (old & ABTI_XSTREAM_REQ_JOIN) {
-        /* If the join reqeust has aleady been checked, wait until
-         * the xstream is terminated */
-        do {
-            ABT_thread_yield();
-        } while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED);
-    } else {
-        /* Normal join request */
-        abt_errno = ABTD_xstream_context_join(p_xstream->ctx);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTD_xstream_context_join");
-            goto fn_fail;
-        }
+    ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_JOIN);
+
+    /* Wait until the target ES terminates */
+    while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
+        ABT_thread_yield();
+    }
+
+    /* Normal join request */
+    abt_errno = ABTD_xstream_context_join(p_xstream->ctx);
+    if (abt_errno != ABT_SUCCESS) {
+        HANDLE_ERROR("ABTD_xstream_context_join");
+        goto fn_fail;
     }
 
   fn_exit:
@@ -664,12 +660,12 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
-    
-	if (p_thread->request & ABTI_THREAD_REQ_MIGRATE) {
-		abt_errno = ABTI_xstream_migrate_thread(p_thread);
+
+    if (p_thread->request & ABTI_THREAD_REQ_MIGRATE) {
+        abt_errno = ABTI_xstream_migrate_thread(p_thread);
         ABTI_CHECK_ERROR(abt_errno);
-		goto fn_exit;	
-	}
+        goto fn_exit;
+    }
 
     ABTI_xstream *p_xstream = p_thread->p_xstream;
     ABTI_sched *p_sched = p_xstream->p_sched;
@@ -748,23 +744,58 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
     goto fn_exit;
 }
 
-int ABTI_xstream_migrate_thread(ABTI_thread *p_thread){
-	int abt_errno = ABT_SUCCESS;
+int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream;
+    ABTI_sched *p_sched;
 
-	/* extracting argument in migration request */
-	ABT_xstream xstream = (ABT_xstream) ABTI_thread_extract_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE);
-	ABTD_atomic_fetch_and_uint32(&p_thread->request, ~ABTI_THREAD_REQ_MIGRATE);
-	
-	/* checking the state destination xstream */
-	ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-	if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
-        abt_errno = ABTI_xstream_start(p_xstream);
+    /* callback function */
+    if (p_thread->attr.f_callback) {
+        p_thread->attr.f_callback(p_thread->attr.p_cb_arg);
     }
 
-	/* effectively migrating the thread */
-	abt_errno = ABTI_unit_migrate(p_thread->unit, p_thread->p_xstream, xstream);
-	p_thread->p_xstream = xstream;	
-	return abt_errno;
+    ABTI_mutex_waitlock(p_thread->mutex);
+    {
+        /* extracting argument in migration request */
+        p_xstream = (ABTI_xstream *)ABTI_thread_extract_req_arg(p_thread,
+                ABTI_THREAD_REQ_MIGRATE);
+        ABTD_atomic_fetch_and_uint32(&p_thread->request,
+                ~ABTI_THREAD_REQ_MIGRATE);
+
+        DEBUG_PRINT("[TH%lu] Migration: S%lu -> S%lu\n",
+                p_thread->id, p_thread->p_xstream->id, p_xstream->id);
+
+        /* Change the associated ES */
+        p_thread->p_xstream = p_xstream;
+
+        ABTI_mutex_waitlock(p_xstream->mutex);
+        {
+            p_sched = p_xstream->p_sched;
+            ABTD_thread_context_change_link(&p_thread->ctx, &p_sched->ctx);
+
+            /* Add the unit to the scheduler's pool */
+            ABTI_sched_push(p_sched, p_thread->unit);
+        }
+        ABT_mutex_unlock(p_xstream->mutex);
+    }
+    ABT_mutex_unlock(p_thread->mutex);
+
+    /* checking the state destination xstream */
+    if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
+        abt_errno = ABTI_xstream_start(p_xstream);
+        if (abt_errno != ABT_SUCCESS) {
+            HANDLE_ERROR("ABTI_xstream_start");
+            goto fn_fail;
+        }
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_xstream_migrate_thread", abt_errno);
+    goto fn_exit;
 }
 
 int ABTI_xstream_terminate_thread(ABTI_thread *p_thread)

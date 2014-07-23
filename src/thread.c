@@ -191,7 +191,9 @@ int ABT_thread_join(ABT_thread thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (p_thread == ABTI_local_get_thread()) {
+    ABTI_thread *p_caller = ABTI_local_get_thread();
+
+    if (p_thread == p_caller) {
         HANDLE_ERROR("The target thread should be different.");
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_fail;
@@ -204,7 +206,10 @@ int ABT_thread_join(ABT_thread thread)
     }
 
     while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
-        ABT_thread_yield_to(thread);
+        if (p_thread->p_xstream == p_caller->p_xstream)
+            ABT_thread_yield_to(thread);
+        else
+            ABT_thread_yield();
     }
 
   fn_exit:
@@ -1023,32 +1028,44 @@ int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-	
-	/* checking for cases when migration is not allowed */
-	if (p_thread->state == ABT_THREAD_STATE_TERMINATED || 
-			p_thread->state == ABT_THREAD_STATE_COMPLETED ||
-            p_xstream->state == ABT_XSTREAM_STATE_TERMINATED || 
-            p_thread->type == ABTI_THREAD_TYPE_MAIN){
-		abt_errno = ABT_ERR_THREAD;
-		goto fn_fail;
-	}
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-	/* checking for migration to the same xstream */
-	if (p_thread->p_xstream->id == p_xstream->id)
-		goto fn_exit;
-	
-	/* adding request to the thread */
-	ABT_mutex_lock(p_thread->mutex);
-	ABTI_thread_add_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE, xstream);
-	ABT_mutex_unlock(p_thread->mutex);
+    /* checking for cases when migration is not allowed */
+    if (p_xstream->state == ABT_XSTREAM_STATE_TERMINATED) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_fail;
+    }
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
+        abt_errno = ABT_ERR_INV_THREAD;
+        goto fn_fail;
+    }
+    if (p_thread->state == ABT_THREAD_STATE_TERMINATED ||
+        p_thread->state == ABT_THREAD_STATE_COMPLETED) {
+        goto fn_exit;
+    }
+
+    /* checking for migration to the same xstream */
+    if (p_thread->p_xstream == p_xstream) {
+        /* Invoke the callback function */
+        if (p_thread->attr.f_callback) {
+            p_thread->attr.f_callback(p_thread->attr.p_cb_arg);
+        }
+        goto fn_exit;
+    }
+
+    /* adding request to the thread */
+    ABTI_mutex_waitlock(p_thread->mutex);
+    ABTI_thread_add_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE, p_xstream);
+    ABT_mutex_unlock(p_thread->mutex);
     ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_MIGRATE);
 
-	/* yielding if it is the same thread */
-	if (p_thread->id == ABTI_local_get_thread()->id){
-		ABT_thread_yield();
-	}
-	goto fn_exit;
+    /* yielding if it is the same thread */
+    if (p_thread == ABTI_local_get_thread()) {
+        ABT_thread_yield();
+    }
+    goto fn_exit;
 
   fn_exit:
     return abt_errno;
@@ -1056,7 +1073,6 @@ int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream)
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_thread_migrate_to", abt_errno);
     goto fn_exit;
-
 }
 
 /**
@@ -1071,53 +1087,65 @@ int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream)
 int ABT_thread_migrate(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-	ABT_xstream xstream;
-	
-	/* choosing the destination xstream */
+    ABT_xstream xstream;
 
-	abt_errno = ABT_thread_migrate_to(thread, xstream);
+    /* choosing the destination xstream */
+    HANDLE_ERROR("Not implemented!");
+
+    abt_errno = ABT_thread_migrate_to(thread, xstream);
 
     return abt_errno;
 }
 
-void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg){
-	ABTI_thread_req_arg *new = (ABTI_thread_req_arg *) ABTU_malloc(sizeof(ABTI_thread_req_arg));
-	ABTI_thread_req_arg *p_head = p_thread->p_req_arg;
+void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg)
+{
+    ABTI_thread_req_arg *new;
+    ABTI_thread_req_arg *p_head = p_thread->p_req_arg;
 
-	/* filling the new argument data structure */
-	new->request = req;
-	new->p_arg = arg;
-	new->next = NULL;
+    /* Overwrite the previous same request if exists */
+    while (p_head != NULL) {
+        if (p_head->request == req) {
+            p_head->p_arg = arg;
+            return;
+        }
+    }
 
-assert(new->p_arg != NULL);
+    new = (ABTI_thread_req_arg *)ABTU_malloc(sizeof(ABTI_thread_req_arg));
+    assert(new != NULL);
 
-	if(p_head == NULL){
-		p_thread->p_req_arg = new;
-	} else {
-		while(p_head->next != NULL)
-			p_head = p_head->next;
-		p_head->next = new;
-	}
+    /* filling the new argument data structure */
+    new->request = req;
+    new->p_arg = arg;
+    new->next = NULL;
+
+    if (p_head == NULL) {
+        p_thread->p_req_arg = new;
+    } else {
+        while (p_head->next != NULL)
+            p_head = p_head->next;
+        p_head->next = new;
+    }
 }
- 
-void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req){
-	void *result = NULL;
-	ABTI_thread_req_arg *p_last = NULL, *p_head = p_thread->p_req_arg;
 
-	while(p_head != NULL) {
-		if(p_head->request == req) {
-			result = p_head->p_arg;
-			if(p_last == NULL)
-				p_thread->p_req_arg = p_head->next;
-			else
-				p_last->next = p_head->next;
-			ABTU_free(p_head);
-			break;
-		}
-		p_last = p_head;
-		p_head = p_head->next;
-	}
+void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req)
+{
+    void *result = NULL;
+    ABTI_thread_req_arg *p_last = NULL, *p_head = p_thread->p_req_arg;
 
-	return result;
+    while (p_head != NULL) {
+        if (p_head->request == req) {
+            result = p_head->p_arg;
+            if (p_last == NULL)
+                p_thread->p_req_arg = p_head->next;
+            else
+                p_last->next = p_head->next;
+            ABTU_free(p_head);
+            break;
+        }
+        p_last = p_head;
+        p_head = p_head->next;
+    }
+
+    return result;
 }
 
