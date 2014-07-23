@@ -100,7 +100,25 @@ int ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
                                     ABTD_thread_context *p_link)
 {
     int abt_errno = ABT_SUCCESS;
+
+#ifdef __GLIBC__
+    /* FIXME: this will work only with glibc. */
+    unsigned long int *sp;
+    unsigned long int idx_uc_link = 1;
+
+    /* Calulate the position where uc_link is saved. */
+    sp = (unsigned long int *)
+         ((uintptr_t)p_ctx->uc_stack.ss_sp + p_ctx->uc_stack.ss_size);
+    sp -= 1;
+    sp = (unsigned long int *)((((uintptr_t)sp) & -16L) - 8);
+
+    /* The value in stack must be the same as that in the thread context. */
+    assert(sp[idx_uc_link] == (unsigned long int)p_ctx->uc_link);
+    sp[idx_uc_link] = (unsigned long int)p_link;
+#endif
+
     p_ctx->uc_link = p_link;
+
     return abt_errno;
 }
 
