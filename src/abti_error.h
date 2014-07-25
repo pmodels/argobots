@@ -45,6 +45,12 @@
         goto fn_fail;                           \
     }
 
+#define ABTI_CHECK_NULL_COND_PTR(p)             \
+    if (p == NULL) {                            \
+        abt_errno = ABT_ERR_INV_COND;           \
+        goto fn_fail;                           \
+    }
+
 #define ABTI_CHECK_NULL_FUTURE_PTR(p)           \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_FUTURE;         \

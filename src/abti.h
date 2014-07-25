@@ -24,6 +24,7 @@ typedef struct ABTI_thread_attr    ABTI_thread_attr;
 typedef struct ABTI_thread_req_arg ABTI_thread_req_arg;
 typedef struct ABTI_task           ABTI_task;
 typedef struct ABTI_mutex          ABTI_mutex;
+typedef struct ABTI_cond           ABTI_cond;
 typedef struct ABTI_sched          ABTI_sched;
 typedef enum ABTI_sched_type       ABTI_sched_type;
 typedef struct ABTI_unit           ABTI_unit;
@@ -212,6 +213,13 @@ struct ABTI_future {
     ABTI_threads_list waiters;
 };
 
+struct ABTI_cond {
+    ABT_mutex mutex;
+    ABT_mutex waiter_mutex;
+    size_t num_waiters;
+    ABTI_threads_list waiters;
+};
+
 /* Global Data */
 extern ABTI_global *gp_ABTI_global;
 
@@ -299,6 +307,11 @@ int ABTI_task_print(ABTI_task *p_task);
 ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex);
 ABT_mutex   ABTI_mutex_get_handle(ABTI_mutex *p_mutex);
 int ABTI_mutex_waitlock(ABT_mutex mutex);
+int ABTI_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, int *result);
+
+/* Condition Variable */
+ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond);
+ABT_cond   ABTI_cond_get_handle(ABTI_cond *p_cond);
 
 /* Future */
 ABTI_future *ABTI_future_get_ptr(ABT_future future);

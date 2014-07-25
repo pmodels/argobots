@@ -227,3 +227,11 @@ int ABTI_mutex_waitlock(ABT_mutex mutex)
     return abt_errno;
 }
 
+int ABTI_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, int *result)
+{
+    ABTI_mutex *p_mutex1 = ABTI_mutex_get_ptr(mutex1);
+    ABTI_mutex *p_mutex2 = ABTI_mutex_get_ptr(mutex2);
+    *result = p_mutex1 == p_mutex2;
+    return ABT_SUCCESS;
+}
+

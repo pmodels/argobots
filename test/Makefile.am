@@ -19,6 +19,7 @@ noinst_PROGRAMS =    		\
 	scheduler_prio   		\
 	scheduler_user   		\
 	mutex            		\
+	condition          		\
 	future_create    		\
 	fibonacci_future 		\
 	fibonacci_task   		\
@@ -39,6 +40,7 @@ scheduler_basic_SOURCES = scheduler_basic.c
 scheduler_prio_SOURCES = scheduler_prio.c
 scheduler_user_SOURCES = scheduler_user.c
 mutex_SOURCES = mutex.c
+condition_SOURCES = condition.c
 future_create_SOURCES = future_create.c
 fibonacci_future_SOURCES = fibonacci_future.c
 fibonacci_task_SOURCES = fibonacci_task.c
@@ -60,6 +62,7 @@ testing:
 	./scheduler_prio
 	./scheduler_user
 	./mutex
+	./condition
 	./future_create
 	./fibonacci_future
 	./fibonacci_task

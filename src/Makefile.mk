@@ -8,6 +8,7 @@ abt_sources += src/stream.c \
 	src/thread_attr.c \
 	src/task.c \
 	src/mutex.c \
+	src/cond.c \
 	src/futures.c \
 	src/unit.c \
 	src/pool.c \
