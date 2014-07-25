@@ -81,6 +81,22 @@ int ABT_mutex_free(ABT_mutex *mutex)
  * If the mutex is already locked, the calling thread will block until it
  * becomes available.
  *
+ * @param[in] mutex  handle pointer to the mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_mutex_lock_ptr(ABT_mutex *mutex)
+{
+    return ABT_mutex_lock(*mutex);
+}
+
+/**
+ * @ingroup MUTEX
+ * @brief   Lock the mutex.
+ *
+ * If the mutex is already locked, the calling thread will block until it
+ * becomes available.
+ *
  * @param[in] mutex  handle to the mutex
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -131,6 +147,23 @@ int ABT_mutex_trylock(ABT_mutex mutex)
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_mutex_trylock", abt_errno);
     goto fn_exit;
+}
+
+/**
+ * @ingroup MUTEX
+ * @brief   Unlock the mutex.
+ *
+ * If the calling thread locked the mutex, this function unlocks the mutex.
+ * However, if the calling thread did not lock the mutex, this function may
+ * result in undefined behavior.
+ *
+ * @param[in] mutex  handle pointer to the mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_mutex_unlock_ptr(ABT_mutex *mutex)
+{
+    return ABT_mutex_unlock(*mutex);
 }
 
 /**
