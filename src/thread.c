@@ -859,6 +859,34 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
 }
 
 
+/**
+ * @ingroup ULT
+ * @brief   Get the ULT's id
+ *
+ * \c ABT_thread_get_id() returns the id of \c a thread.
+ *
+ * @param[in]  thread     handle to the target thread
+ * @param[out] thread_id  thread id
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_id(ABT_thread thread, size_t *thread_id)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    *thread_id = p_thread->id;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_get_id", abt_errno);
+    goto fn_exit;
+}
+
 /* Private APIs */
 ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread)
 {

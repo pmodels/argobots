@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 #include <stddef.h>
+#include <stdint.h>
 
 /* ABT_VERSION is the version string. ABT_NUMVERSION is the
  * numeric version that can be used in numeric comparisons.
@@ -84,6 +85,7 @@ typedef enum ABT_xstream_state ABT_xstream_state; /* ES state */
 typedef void *                 ABT_thread;        /* User-level Thread */
 typedef void *                 ABT_thread_attr;   /* ULT attribute */
 typedef enum ABT_thread_state  ABT_thread_state;  /* ULT state */
+typedef uint64_t               ABT_thread_id;     /* ULT id */
 typedef void *                 ABT_task;          /* Tasklet */
 typedef enum ABT_task_state    ABT_task_state;    /* Tasklet state */
 typedef void *                 ABT_mutex;         /* Mutex */
@@ -219,6 +221,7 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
 int ABT_thread_set_name(ABT_thread thread, const char *name);
 int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len);
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize);
+int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id);
 
 /* ULT Attributes */
 int ABT_thread_attr_create(ABT_thread_attr *newattr);
