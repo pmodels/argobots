@@ -34,6 +34,7 @@ typedef struct ABTI_task_pool      ABTI_task_pool;
 typedef struct ABTI_global         ABTI_global;
 typedef struct ABTI_local          ABTI_local;
 typedef struct ABTI_future         ABTI_future;
+typedef struct ABTI_eventual       ABTI_eventual;
 
 /* Architecture-Dependent Definitions */
 #include "abtd.h"
@@ -208,6 +209,15 @@ typedef struct {
 struct ABTI_future {
     ABT_mutex mutex;
     int ready;
+    int counter;
+    void **array;
+	void (*p_callback)(void **arg);
+    ABTI_threads_list waiters;
+};
+
+struct ABTI_eventual {
+    ABT_mutex mutex;
+    int ready;
     void *value;
     int nbytes;
     ABTI_threads_list waiters;
@@ -316,6 +326,10 @@ ABT_cond   ABTI_cond_get_handle(ABTI_cond *p_cond);
 /* Future */
 ABTI_future *ABTI_future_get_ptr(ABT_future future);
 ABT_future ABTI_future_get_handle(ABTI_future *p_future);
+
+/* Eventual */
+ABTI_eventual *ABTI_eventual_get_ptr(ABT_eventual eventual);
+ABT_eventual ABTI_eventual_get_handle(ABTI_eventual *p_eventual);
 
 /* Scheduler */
 ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched);

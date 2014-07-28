@@ -57,6 +57,12 @@
         goto fn_fail;                           \
     }
 
+#define ABTI_CHECK_NULL_EVENTUAL_PTR(p)         \
+    if (p == NULL) {                            \
+        abt_errno = ABT_ERR_INV_EVENTUAL;       \
+        goto fn_fail;                           \
+    }
+
 #define ABTI_CHECK_SCHED_PRIO(prio)             \
     if (prio > ABT_SCHED_PRIO_HIGH) {           \
         abt_errno = ABT_ERR_INV_SCHED_PRIO;     \

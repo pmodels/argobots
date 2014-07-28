@@ -16,10 +16,9 @@
  * @brief   Blocks current thread until the feature has finished its computation.
  *
  * @param[in]  future       Reference to the future
- * @param[out] value        Reference to value of future
  * @return Error code
  */
-int ABT_future_wait(ABT_future future, void **value)
+int ABT_future_wait(ABT_future future)
 {
 	int abt_errno = ABT_SUCCESS;
 	ABTI_future *p_future = ABTI_future_get_ptr(future);
@@ -40,13 +39,39 @@ int ABT_future_wait(ABT_future future, void **value)
     } else {
 		ABT_mutex_unlock(p_future->mutex);
 	}
-    *value = p_future->value;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_future_wait", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup Future
+ * @brief   Tests whether the future is ready
+ *
+ * @param[in]  		future       Reference to future
+ * @param[out]		flag		 Holds 1 if future is ready; 0 otherwise
+ * @return No value returned
+ */
+int ABT_future_test(ABT_future future, int *flag)
+{
+	int abt_errno = ABT_SUCCESS;
+	ABTI_future *p_future = ABTI_future_get_ptr(future);
+    ABTI_CHECK_NULL_FUTURE_PTR(p_future);
+
+	if(p_future->ready)
+		*flag = 1;
+	else
+		*flag = 0;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_future_test", abt_errno);
     goto fn_exit;
 }
 
@@ -72,24 +97,29 @@ void ABTI_future_signal(ABTI_future *p_future)
 
 /**
  * @ingroup Future
- * @brief   Sets a nbytes-value into a future for all threads blocking on the future to resume.
+ * @brief   Sets another compartment in the future array of pointers. If the future is ready, it awakens all threads
+ * blocked on the future, and executes the callback.
  *
  * @param[in]  future       Reference to the future
- * @param[in]  value        Pointer to the buffer containing the result
- * @param[in]  nbytes       Number of bytes in the buffer
+ * @param[in]  value        Pointer to a buffer containing a result
  * @return Error code
  */
-int ABT_future_set(ABT_future future, void *value, int nbytes)
+int ABT_future_set(ABT_future future, void *value)
 {
 	int abt_errno = ABT_SUCCESS;
 	ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
 	ABT_mutex_lock(p_future->mutex);
-    p_future->ready = 1;
-    memcpy(p_future->value, value, nbytes);
+	p_future->counter--;
+	p_future->array[p_future->counter] = value;
+	if(p_future->counter == 0) {
+	    p_future->ready = 1;
+		if(p_future->p_callback != NULL)
+			(*p_future->p_callback)(p_future->array);
+    	ABTI_future_signal(p_future);
+	}
 	ABT_mutex_unlock(p_future->mutex);
-    ABTI_future_signal(p_future);
 
   fn_exit:
     return abt_errno;
@@ -103,11 +133,12 @@ int ABT_future_set(ABT_future future, void *value, int nbytes)
  * @ingroup Future
  * @brief   Creates a future.
  *
- * @param[in]  n            Number of bytes in the buffer containing the result of the future
- * @param[out] newfuture       Reference to the newly created future
+ * @param[in]  n            Number of compartments in the array of pointers the future will hold
+ * @param[in]  callback     Pointer to callback function that is executed when future is ready
+ * @param[out] newfuture    Reference to the newly created future
  * @return Error code
  */
-int ABT_future_create(int n, ABT_future *newfuture)
+int ABT_future_create(int n, void (*callback)(void **arg), ABT_future *newfuture)
 {
 	int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future = (ABTI_future*)ABTU_malloc(sizeof(ABTI_future));
@@ -120,8 +151,9 @@ int ABT_future_create(int n, ABT_future *newfuture)
 
     ABT_mutex_create(&p_future->mutex);
     p_future->ready = 0;
-    p_future->nbytes = n;
-    p_future->value = ABTU_malloc(n);
+    p_future->counter = n;
+    p_future->array = ABTU_malloc(n * sizeof(void *));
+    p_future->p_callback = callback;
     p_future->waiters.head = p_future->waiters.tail = NULL;
     *newfuture = ABTI_future_get_handle(p_future);
 
@@ -147,7 +179,7 @@ int ABT_future_free(ABT_future *future)
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
 	ABT_mutex_free(&p_future->mutex);
-	ABTU_free(p_future->value);
+	ABTU_free(p_future->array);
 	ABTU_free(p_future);
 
     *future = ABT_FUTURE_NULL;

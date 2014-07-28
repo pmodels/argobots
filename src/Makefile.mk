@@ -10,6 +10,7 @@ abt_sources += src/stream.c \
 	src/mutex.c \
 	src/cond.c \
 	src/futures.c \
+	src/eventual.c \
 	src/unit.c \
 	src/pool.c \
 	src/global.c \
