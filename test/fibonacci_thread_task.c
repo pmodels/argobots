@@ -16,7 +16,7 @@
 /* structure to pass arguments to threads */
 typedef struct {
     int n;
-    ABT_future future;
+    ABT_eventual eventual;
 } thread_args;
 
 /* structure to pass arguments to threads */
@@ -33,11 +33,11 @@ void fibonacci_thread(void *arguments){
     thread_args a1, a2;
     ABT_thread t1, t2;
     ABT_xstream xstream;
-    ABT_future future, f1, f2;
+    ABT_eventual eventual, f1, f2;
 
     thread_args *args = (thread_args *) arguments;
     n = args->n;
-    future = args->future;
+    eventual = args->eventual;
 
     printf("Thread computing Fibonacci of %d\n",n);
     /* checking for base cases */
@@ -45,22 +45,22 @@ void fibonacci_thread(void *arguments){
         result = 1;
     else {
         ABT_xstream_self(&xstream);
-        ABT_future_create(sizeof(int), &f1);
+        ABT_eventual_create(sizeof(int), &f1);
         a1.n = n-1;
-        a1.future = f1;
+        a1.eventual = f1;
         ABT_thread_create(xstream, fibonacci_thread, &a1, ABT_THREAD_ATTR_NULL, &t1);
-        ABT_future_create(sizeof(int), &f2);
+        ABT_eventual_create(sizeof(int), &f2);
         a2.n = n-2;
-        a2.future = f2;
+        a2.eventual = f2;
         ABT_thread_create(xstream, fibonacci_thread, &a2, ABT_THREAD_ATTR_NULL, &t2);
-        ABT_future_wait(f1, (void **) &n1);
-        ABT_future_wait(f2, (void **) &n2);
+        ABT_eventual_wait(f1, (void **) &n1);
+        ABT_eventual_wait(f2, (void **) &n2);
         result = *n1 + *n2;
     }
 
-    /* checking whether to signal the future */
-    if(future != ABT_FUTURE_NULL){
-        ABT_future_set(future, &result, sizeof(int));
+    /* checking whether to signal the eventual */
+    if(eventual != ABT_EVENTUAL_NULL){
+        ABT_eventual_set(eventual, &result, sizeof(int));
     }
 }
 
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 
     /* creating thread */
     args_thread.n = n-1;
-    args_thread.future = ABT_FUTURE_NULL;
+    args_thread.eventual = ABT_EVENTUAL_NULL;
     ABT_xstream_self(&xstream);
     ABT_thread_create(xstream, fibonacci_thread, &args_thread, ABT_THREAD_ATTR_NULL, &thread);
 

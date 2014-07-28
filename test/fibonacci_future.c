@@ -16,16 +16,26 @@
 /* structure to pass arguments to threads */
 typedef struct {
     int n;
+	int result;
     ABT_future future;
 } thread_args;
 
+/* Callback function passed to future */
+void callback(void **args){
+	int n1,n2;
+
+	n1 = ((int *)args[0])[0];
+	n2 = ((int *)args[1])[0];
+	((int *)args[2])[0] = n1+n2;
+}
+
 /* Function to compute Fibonacci numbers */
 void fibonacci(void *arguments){
-    int n, result, *n1, *n2;
+    int n;
     thread_args a1, a2;
     ABT_thread t1, t2;
     ABT_xstream xstream;
-    ABT_future future, f1, f2;
+    ABT_future future, fut;
 
     thread_args *args = (thread_args *) arguments;
     n = args->n;
@@ -33,28 +43,25 @@ void fibonacci(void *arguments){
 
     /* checking for base cases */
     if(n <= 2)
-        result = 1;
+        args->result = 1;
     else {
         ABT_xstream_self(&xstream);
-        ABT_future_create(sizeof(int), &f1);
+        ABT_future_create(3,&callback,&fut);
+		ABT_future_set(fut, (void *)&args->result);
         a1.n = n-1;
-        a1.future = f1;
+        a1.future = fut;
         ABT_thread_create(xstream, fibonacci, &a1, ABT_THREAD_ATTR_NULL, &t1);
-        ABT_future_create(sizeof(int), &f2);
         a2.n = n-2;
-        a2.future = f2;
+        a2.future = fut;
         ABT_thread_create(xstream, fibonacci, &a2, ABT_THREAD_ATTR_NULL, &t2);
-        ABT_future_wait(f1, (void **) &n1);
-        ABT_future_wait(f2, (void **) &n2);
-        result = *n1 + *n2;
+        ABT_future_wait(fut);
+		ABT_future_free(&fut);
     }
 
     /* checking whether to signal the future */
     if(future != ABT_FUTURE_NULL){
-        ABT_future_set(future, &result, sizeof(int));
-    } else {
-        printf("The %d-th number in the Fibonacci sequence is: %d\n",n,result);
-    }
+        ABT_future_set(future, (void *)&args->result);
+    } 
 }
 
 /* Main function */
@@ -81,6 +88,8 @@ int main(int argc, char *argv[])
 
     /* join other threads */
     ABT_thread_join(thread);
+
+	printf("The %d-th number in the Fibonacci sequence is: %d\n",n,args.result);
 
     ABT_finalize();
     return 0;

@@ -32,7 +32,7 @@
 /* global variables */
 int num_xstreams;
 ABT_xstream *xstreams;
-ABT_future future;
+ABT_eventual eventual;
 
 /* forward declaration */
 void aggregate_fibonacci(void *arguments);
@@ -118,7 +118,7 @@ void aggregate_fibonacci(void *arguments){
         }
         ABT_mutex_unlock(parent->mutex);
     } else {
-        ABT_future_set(future, &data, sizeof(int));
+        ABT_eventual_set(eventual, &data, sizeof(int));
     }
 
 }
@@ -131,8 +131,8 @@ void fibonacci_control(void *arguments){
 
     n = (size_t) arguments;
 
-    /* creating future */
-    ABT_future_create(sizeof(int), &future);
+    /* creating eventual */
+    ABT_eventual_create(sizeof(int), &eventual);
 
     /* creating parent task to compute Fib(n) */
     args.n = n;
@@ -147,8 +147,8 @@ void fibonacci_control(void *arguments){
     /* switch to other user-level threads */
     ABT_thread_yield();
 
-    /* block until the future is signaled */
-    ABT_future_wait(future, (void **)&data);
+    /* block until the eventual is signaled */
+    ABT_eventual_wait(eventual, (void **)&data);
 
     printf("The %lu-th value in the Fibonacci sequence is: %d\n",n,args.result);
 }
