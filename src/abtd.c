@@ -54,6 +54,9 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
                                ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
+    int func_upper, func_lower;
+    int arg_upper, arg_lower;
+    size_t ptr_size, int_size;
 
     /* If stack is NULL, we don't need to make a new context */
     if (p_stack == NULL) goto fn_exit;
@@ -67,8 +70,26 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
     p_newctx->uc_link = p_link;
     p_newctx->uc_stack.ss_sp = p_stack;
     p_newctx->uc_stack.ss_size = stacksize;
+
+    ptr_size = sizeof(void *);
+    int_size = sizeof(int);
+    if (ptr_size == int_size) {
+        func_upper = 0;
+        func_lower = (int)(uintptr_t)f_thread;
+        arg_upper = 0;
+        arg_lower = (int)(uintptr_t)p_arg;
+    } else if (ptr_size == int_size * 2) {
+        uintptr_t shift_bits = CHAR_BIT * int_size;
+        func_upper = (int)((uintptr_t)f_thread >> shift_bits);
+        func_lower = (int)(uintptr_t)f_thread;
+        arg_upper = (int)((uintptr_t)p_arg >> shift_bits);
+        arg_lower = (int)(uintptr_t)p_arg;
+    } else {
+        assert(0);
+    }
+
     makecontext(p_newctx, (void (*)())ABTI_thread_func_wrapper,
-                2, f_thread, p_arg);
+                4, func_upper, func_lower, arg_upper, arg_lower);
 
   fn_exit:
     return abt_errno;

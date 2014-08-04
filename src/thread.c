@@ -1128,14 +1128,38 @@ int ABTI_thread_print(ABTI_thread *p_thread)
     return abt_errno;
 }
 
-void ABTI_thread_func_wrapper(void (*thread_func)(void *), void *p_arg)
+void ABTI_thread_func_wrapper(int func_upper, int func_lower,
+                              int arg_upper, int arg_lower)
 {
+    void (*thread_func)(void *);
+    void *p_arg;
+    size_t ptr_size, int_size;
+
+    ptr_size = sizeof(void *);
+    int_size = sizeof(int);
+    if (ptr_size == int_size) {
+        thread_func = (void (*)(void *))(uintptr_t)func_lower;
+        p_arg = (void *)(uintptr_t)arg_lower;
+    } else if (ptr_size == int_size * 2) {
+        uintptr_t shift_bits = CHAR_BIT * int_size;
+        uintptr_t mask = ((uintptr_t)1 << shift_bits) - 1;
+        thread_func = (void (*)(void *))(
+                ((uintptr_t)func_upper << shift_bits) |
+                ((uintptr_t)func_lower & mask));
+        p_arg = (void *)(
+                ((uintptr_t)arg_upper << shift_bits) |
+                ((uintptr_t)arg_lower & mask));
+    } else {
+        assert(0);
+    }
+
     thread_func(p_arg);
 
     /* Now, the thread has finished its job. Change the thread state. */
     ABTI_thread *p_thread = ABTI_local_get_thread();
     p_thread->state = ABT_THREAD_STATE_COMPLETED;
 }
+
 
 ABT_thread *ABTI_thread_current()
 {
