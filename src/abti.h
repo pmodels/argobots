@@ -104,7 +104,7 @@ struct ABTI_thread_req_arg {
 struct ABTI_thread {
     ABT_unit unit;                  /* Unit enclosing this thread */
     ABTI_xstream *p_xstream;        /* Associated ES */
-    uint64_t id;                    /* ID */
+    ABT_thread_id id;               /* ID */
     char *p_name;                   /* Name */
     ABTI_thread_type type;          /* Type */
     ABT_thread_state state;         /* State */

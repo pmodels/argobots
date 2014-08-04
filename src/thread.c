@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static uint64_t ABTI_thread_get_new_id();
+static ABT_thread_id ABTI_thread_get_new_id();
 
 
 /** @defgroup ULT User-level Thread (ULT)
@@ -870,7 +870,7 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_get_id(ABT_thread thread, size_t *thread_id)
+int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1196,8 +1196,8 @@ void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req)
 
 
 /* Internal static functions */
-static uint64_t ABTI_thread_get_new_id() {
+static ABT_thread_id ABTI_thread_get_new_id() {
     static uint64_t thread_id = 0;
-    return ABTD_atomic_fetch_add_uint64(&thread_id, 1);
+    return (ABT_thread_id)ABTD_atomic_fetch_add_uint64(&thread_id, 1);
 }
 
