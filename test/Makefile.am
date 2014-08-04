@@ -22,9 +22,6 @@ noinst_PROGRAMS =    		\
 	mutex            		\
 	condition          		\
 	future_create    		\
-	fibonacci_future 		\
-	fibonacci_task   		\
-	fibonacci_thread_task   \
 	eventual_create
 
 xstream_create_SOURCES = xstream_create.c
@@ -45,9 +42,6 @@ scheduler_user_SOURCES = scheduler_user.c
 mutex_SOURCES = mutex.c
 condition_SOURCES = condition.c
 future_create_SOURCES = future_create.c
-fibonacci_future_SOURCES = fibonacci_future.c
-fibonacci_task_SOURCES = fibonacci_task.c
-fibonacci_thread_task_SOURCES = fibonacci_thread_task.c
 eventual_create_SOURCES = eventual_create.c
 
 testing:
@@ -69,7 +63,4 @@ testing:
 	./mutex
 	./condition
 	./future_create
-	./fibonacci_future
-	./fibonacci_task
-	./fibonacci_thread_task
 	./eventual_create

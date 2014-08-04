@@ -77,4 +77,5 @@ AC_PROG_INSTALL
 AC_OUTPUT(Makefile
 	Doxyfile
 	src/abt.h
-    test/Makefile)
+    test/Makefile
+    examples/Makefile)
