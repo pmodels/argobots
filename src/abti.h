@@ -76,7 +76,7 @@ enum ABTI_sched_type {
 /* Definitions */
 struct ABTI_xstream {
     ABT_unit unit;             /* Unit enclosing this ES */
-    uint64_t id;               /* ID */
+    uint64_t rank;             /* Rank */
     char *p_name;              /* Name */
     ABTI_xstream_type type;    /* Type */
     ABT_xstream_state state;   /* State */

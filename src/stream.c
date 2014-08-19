@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static uint64_t ABTI_xstream_get_new_id();
+static uint64_t ABTI_xstream_get_new_rank();
 static void *ABTI_xstream_loop(void *p_arg);
 
 
@@ -43,7 +43,7 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     h_newxstream = ABTI_xstream_get_handle(p_newxstream);
     p_newxstream->unit = ABTI_unit_create_from_xstream(h_newxstream);
 
-    p_newxstream->id      = ABTI_xstream_get_new_id();
+    p_newxstream->rank    = ABTI_xstream_get_new_rank();
     p_newxstream->p_name  = NULL;
     p_newxstream->type    = ABTI_XSTREAM_TYPE_SECONDARY;
     p_newxstream->state   = ABT_XSTREAM_STATE_CREATED;
@@ -302,6 +302,81 @@ int ABT_xstream_self(ABT_xstream *xstream)
 
 /**
  * @ingroup ES
+ * @brief   Return the rank of ES associated with the calling thread.
+ *
+ * @param[out] rank  ES rank
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_self_rank(int *rank)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    /* Return value */
+    *rank = (int)p_xstream->rank;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_self_rank", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
+ * @brief   Set the rank for target ES
+ *
+ * @param[in] xstream  handle to the target ES
+ * @param[in] rank     ES rank
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_set_rank(ABT_xstream xstream, const int rank)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    p_xstream->rank = (uint64_t)rank;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_set_rank", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
+ * @brief   Return the rank of ES
+ *
+ * @param[in]  xstream  handle to the target ES
+ * @param[out] rank     ES rank
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+    *rank = (int)p_xstream->rank;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_rank", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
  * @brief   Compare two ES handles for equality.
  *
  * @param[in]  xstream1  handle to the ES 1
@@ -543,7 +618,6 @@ int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len)
     HANDLE_ERROR_WITH_CODE("ABT_xstream_get_name", abt_errno);
     goto fn_exit;
 }
-
 
 /* Private APIs */
 ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream)
@@ -999,7 +1073,7 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
     printf("== XSTREAM (%p) ==\n", p_xstream);
     printf("unit   : ");
     ABTI_unit_print(p_xstream->unit);
-    printf("id     : %lu\n", p_xstream->id);
+    printf("rank   : %lu\n", p_xstream->rank);
     printf("name   : %s\n", p_xstream->p_name);
     printf("type   : ");
     switch (p_xstream->type) {
@@ -1033,12 +1107,11 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
     goto fn_exit;
 }
 
-
 /* Internal static functions */
-static uint64_t ABTI_xstream_get_new_id()
+static uint64_t ABTI_xstream_get_new_rank()
 {
-    static uint64_t xstream_id = 0;
-    return ABTD_atomic_fetch_add_uint64(&xstream_id, 1);
+    static uint64_t xstream_rank = 0;
+    return ABTD_atomic_fetch_add_uint64(&xstream_rank, 1);
 }
 
 static void *ABTI_xstream_loop(void *p_arg)

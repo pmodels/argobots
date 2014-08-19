@@ -1099,7 +1099,7 @@ int ABTI_thread_print(ABTI_thread *p_thread)
 
     printf("[");
     printf("id:%lu ", p_thread->id);
-    printf("xstream:%lu ", p_thread->p_xstream->id);
+    printf("xstream:%lu ", p_thread->p_xstream->rank);
     printf("name:%s ", p_thread->p_name);
     printf("type:");
     switch (p_thread->type) {
