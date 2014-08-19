@@ -363,6 +363,36 @@ int ABT_xstream_set_sched(ABT_xstream xstream, ABT_sched sched)
 
 /**
  * @ingroup ES
+ * @brief   Get the scheduler for the ES.
+ *
+ * \c ABT_xstream_get_sched() gets the handle to the ES's scheduler through
+ * \c sched.
+ *
+ * @param[in] xstream  handle to the target ES
+ * @param[out] sched   handle to the scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_get_sched(ABT_xstream xstream, ABT_sched *sched)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    /* Return value */
+    *sched = ABTI_sched_get_handle(p_xstream->p_sched);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_sched", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
  * @brief   Return the state of xstream.
  *
  * @param[in]  xstream  handle to the target ES
