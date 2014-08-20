@@ -47,6 +47,8 @@ int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
     p_sched->p_xstream = NULL;
     p_sched->type = ABTI_SCHED_TYPE_USER;
     p_sched->pool = pool;
+    p_sched->num_threads = 0;
+    p_sched->num_tasks   = 0;
     p_sched->num_blocked = 0;
 
     /* Create a mutex */
@@ -355,15 +357,31 @@ int ABTI_sched_free_basic(ABTI_sched *p_sched)
 
 void ABTI_sched_push(ABTI_sched *p_sched, ABT_unit unit)
 {
+    ABT_unit_type type = ABTI_unit_get_type(unit);
+
     ABTI_mutex_waitlock(p_sched->mutex);
+    switch (type) {
+        case ABT_UNIT_TYPE_THREAD: p_sched->num_threads++; break;
+        case ABT_UNIT_TYPE_TASK:   p_sched->num_tasks++;   break;
+        default: break;
+    }
     p_sched->p_push(p_sched->pool, unit);
     ABT_mutex_unlock(p_sched->mutex);
 }
 
 ABT_unit ABTI_sched_pop(ABTI_sched *p_sched)
 {
+    ABT_unit unit;
+    ABT_unit_type type;
+
     ABTI_mutex_waitlock(p_sched->mutex);
-    ABT_unit unit = p_sched->p_pop(p_sched->pool);
+    unit = p_sched->p_pop(p_sched->pool);
+    type = ABTI_unit_get_type(unit);
+    switch (type) {
+        case ABT_UNIT_TYPE_THREAD: p_sched->num_threads--; break;
+        case ABT_UNIT_TYPE_TASK:   p_sched->num_tasks--;   break;
+        default: break;
+    }
     ABT_mutex_unlock(p_sched->mutex);
     return unit;
 }
@@ -416,6 +434,8 @@ int ABTI_sched_print(ABTI_sched *p_sched)
     printf("pool: ");
     abt_errno = ABTI_pool_print(p_sched->pool);
     ABTI_CHECK_ERROR(abt_errno);
+    printf("num_threads: %u\n", p_sched->num_threads);
+    printf("num_tasks: %u\n", p_sched->num_tasks);
     printf("num_blockeed: %u\n", p_sched->num_blocked);
 
   fn_exit:

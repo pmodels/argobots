@@ -15,6 +15,7 @@ noinst_PROGRAMS =    		\
 	thread_id             	\
 	task_create      		\
 	thread_task      		\
+	thread_task_num    		\
 	name             		\
 	scheduler_basic  		\
 	scheduler_prio   		\
@@ -35,6 +36,7 @@ thread_migrate_SOURCES = thread_migrate.c
 thread_id_SOURCES = thread_id.c
 task_create_SOURCES = task_create.c
 thread_task_SOURCES = thread_task.c
+thread_task_num_SOURCES = thread_task_num.c
 name_SOURCES = name.c
 scheduler_basic_SOURCES = scheduler_basic.c
 scheduler_prio_SOURCES = scheduler_prio.c
@@ -56,6 +58,7 @@ testing:
 	./thread_id
 	./task_create
 	./thread_task
+	./thread_task_num
 	./name
 	./scheduler_basic
 	./scheduler_prio

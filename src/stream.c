@@ -393,6 +393,66 @@ int ABT_xstream_get_sched(ABT_xstream xstream, ABT_sched *sched)
 
 /**
  * @ingroup ES
+ * @brief   Return the number of ULTs associated with the ES.
+ *
+ * \c ABT_xstream_get_num_threads() returns the number of ULTs currently
+ * associated with the target ES.
+ *
+ * @param[in]  xstream      handle to the target ES
+ * @param[out] num_threads  the number of ULTs
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_get_num_threads(ABT_xstream xstream, int *num_threads)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    /* Return value */
+    *num_threads = (int)p_xstream->p_sched->num_threads;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_num_threads", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
+ * @brief   Return the number of tasklets associated with the ES.
+ *
+ * \c ABT_xstream_get_num_tasks() returns the number of tasklets currently
+ * associated with the target ES.
+ *
+ * @param[in]  xstream    handle to the target ES
+ * @param[out] num_tasks  the number of tasklets
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_get_num_tasks(ABT_xstream xstream, int *num_tasks)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    /* Return value */
+    *num_tasks = (int)p_xstream->p_sched->num_tasks;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_num_tasks", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
  * @brief   Return the state of xstream.
  *
  * @param[in]  xstream  handle to the target ES

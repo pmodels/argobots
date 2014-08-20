@@ -145,6 +145,8 @@ struct ABTI_sched {
     ABT_mutex mutex;          /* Mutex */
     ABTD_thread_context ctx;  /* Scheduler context */
     ABT_pool pool;            /* Work unit pool */
+    uint32_t num_threads;     /* Number of ULTs */
+    uint32_t num_tasks;       /* Number of tasklets */
     uint32_t num_blocked;     /* Number of blocked ULTs */
 
     /* Scheduler functions */

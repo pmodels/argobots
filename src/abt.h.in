@@ -198,6 +198,8 @@ int ABT_xstream_self(ABT_xstream *xstream);
 int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2, int *result);
 int ABT_xstream_set_sched(ABT_xstream xstream, ABT_sched sched);
 int ABT_xstream_get_sched(ABT_xstream xstream, ABT_sched *sched);
+int ABT_xstream_get_num_threads(ABT_xstream xstream, int *num_threads);
+int ABT_xstream_get_num_tasks(ABT_xstream xstream, int *num_tasks);
 int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state);
 int ABT_xstream_set_name(ABT_xstream xstream, const char *name);
 int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len);
