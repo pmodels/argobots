@@ -35,8 +35,9 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         p_eventual->waiters.tail = cur;
         if(p_eventual->waiters.head == NULL)
             p_eventual->waiters.head = cur;
+		ABTI_thread_set_blocked(ABTI_thread_current());
 		ABT_mutex_unlock(p_eventual->mutex);
-        ABTI_thread_suspend();
+        ABTI_thread_relinquish();
     } else {
 		ABT_mutex_unlock(p_eventual->mutex);
 	}

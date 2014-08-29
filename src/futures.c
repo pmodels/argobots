@@ -34,8 +34,9 @@ int ABT_future_wait(ABT_future future)
         p_future->waiters.tail = cur;
         if(p_future->waiters.head == NULL)
             p_future->waiters.head = cur;
+		ABTI_thread_set_blocked(ABTI_thread_current());
 		ABT_mutex_unlock(p_future->mutex);
-        ABTI_thread_suspend();
+        ABTI_thread_relinquish();
     } else {
 		ABT_mutex_unlock(p_future->mutex);
 	}

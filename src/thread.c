@@ -1050,6 +1050,46 @@ int ABTI_thread_suspend()
     goto fn_exit;
 }
 
+/**
+ * This function relinquishes the processor without changing the state of the thread. Its main purpose
+ * is to avoid a race condition with synchronization primitives (future, eventual, barrier).
+ */
+int ABTI_thread_relinquish()
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_local_get_thread();
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    assert(p_thread->p_xstream == p_xstream);
+    
+	ABTI_sched *p_sched = p_thread->p_xstream->p_sched;
+
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
+        /* Currently, the main program thread waits until all threads
+         * finish their execution. */
+
+        /* Start the scheduling */
+        abt_errno = ABTI_xstream_schedule(p_xstream);
+        ABTI_CHECK_ERROR(abt_errno);
+
+        p_thread->state = ABT_THREAD_STATE_RUNNING;
+    } else {
+        /* Switch to the scheduler */
+        abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+
+    /* Back to the original thread */
+    ABTI_local_set_thread(p_thread);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_suspend", abt_errno);
+    goto fn_exit;
+}
+
 int ABTI_thread_set_ready(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -1071,6 +1111,27 @@ int ABTI_thread_set_ready(ABT_thread thread)
     HANDLE_ERROR_WITH_CODE("ABT_thread_set_ready", abt_errno);
     goto fn_exit;
 }
+
+int ABTI_thread_set_blocked(ABT_thread thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+
+    /* Change the state of current running thread */
+    p_thread->state = ABT_THREAD_STATE_BLOCKED;
+
+    /* Increase the number of blocked threads */
+    ABTI_sched *p_sched = p_thread->p_xstream->p_sched;
+    ABTI_sched_inc_num_blocked(p_sched);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_set_ready", abt_errno);
+    goto fn_exit;
+}
+
 
 int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr)
 {

@@ -291,14 +291,15 @@ int ABTI_xstream_keep_thread(ABTI_thread *p_thread);
 int ABTI_xstream_keep_task(ABTI_task *p_task);
 int ABTI_xstream_print(ABTI_xstream *p_xstream);
 
-/* User-level Thread (ULT) */
+/* User-level Thread (ULT)  */
 ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread);
 ABT_thread   ABTI_thread_get_handle(ABTI_thread *p_thread);
 int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread);
 int ABTI_thread_free_main(ABTI_thread *p_thread);
 int ABTI_thread_free(ABTI_thread *p_thread);
-int ABTI_thread_suspend();
 int ABTI_thread_set_ready(ABT_thread thread);
+int ABTI_thread_set_blocked(ABT_thread thread);
+int ABTI_thread_suspend();
 int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr);
 int ABTI_thread_print(ABTI_thread *p_thread);
 void ABTI_thread_func_wrapper(int func_upper, int func_lower,
