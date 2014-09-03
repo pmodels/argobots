@@ -469,8 +469,8 @@ int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream)
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_fail;
     }
-    if (p_thread->state == ABT_THREAD_STATE_TERMINATED ||
-        p_thread->state == ABT_THREAD_STATE_COMPLETED) {
+    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) {
+        abt_errno = ABT_ERR_INV_THREAD;
         goto fn_exit;
     }
 
@@ -1112,7 +1112,6 @@ int ABTI_thread_print(ABTI_thread *p_thread)
         case ABT_THREAD_STATE_READY:      printf("READY "); break;
         case ABT_THREAD_STATE_RUNNING:    printf("RUNNING "); break;
         case ABT_THREAD_STATE_BLOCKED:    printf("BLOCKED "); break;
-        case ABT_THREAD_STATE_COMPLETED:  printf("COMPLETED "); break;
         case ABT_THREAD_STATE_TERMINATED: printf("TERMINATED "); break;
         default: printf("UNKNOWN ");
     }
@@ -1155,9 +1154,11 @@ void ABTI_thread_func_wrapper(int func_upper, int func_lower,
 
     thread_func(p_arg);
 
-    /* Now, the thread has finished its job. Change the thread state. */
+    /* Now, the ULT has finished its job. Terminate the ULT.
+     * We don't need to use the atomic operation here because the ULT will be
+     * terminated regardless of other requests. */
     ABTI_thread *p_thread = ABTI_local_get_thread();
-    p_thread->state = ABT_THREAD_STATE_COMPLETED;
+    p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
 }
 
 

@@ -855,7 +855,7 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
     p_xstream = p_thread->p_xstream;
     DEBUG_PRINT("[S%lu:TH%lu] END\n", p_xstream->id, p_thread->id);
 
-    if ((p_thread->state == ABT_THREAD_STATE_COMPLETED) ||
+    if ((p_thread->request & ABTI_THREAD_REQ_TERMINATE) ||
         (p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
         (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
         abt_errno = ABTI_xstream_terminate_thread(p_thread);

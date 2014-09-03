@@ -45,16 +45,17 @@ typedef struct ABTI_eventual       ABTI_eventual;
 #define ABTI_THREAD_DEFAULT_STACKSIZE   16384
 #define ABTI_SCHED_PRIO_NUM             3
 
-#define ABTI_XSTREAM_REQ_JOIN       0x1
-#define ABTI_XSTREAM_REQ_EXIT       0x2
-#define ABTI_XSTREAM_REQ_CANCEL     0x4
+#define ABTI_XSTREAM_REQ_JOIN       (1 << 0)
+#define ABTI_XSTREAM_REQ_EXIT       (1 << 1)
+#define ABTI_XSTREAM_REQ_CANCEL     (1 << 2)
 
-#define ABTI_THREAD_REQ_JOIN        0x1
-#define ABTI_THREAD_REQ_EXIT        0x2
-#define ABTI_THREAD_REQ_CANCEL      0x4
-#define ABTI_THREAD_REQ_MIGRATE     0x8
+#define ABTI_THREAD_REQ_JOIN        (1 << 0)
+#define ABTI_THREAD_REQ_EXIT        (1 << 1)
+#define ABTI_THREAD_REQ_CANCEL      (1 << 2)
+#define ABTI_THREAD_REQ_MIGRATE     (1 << 3)
+#define ABTI_THREAD_REQ_TERMINATE   (1 << 4)
 
-#define ABTI_TASK_REQ_CANCEL        0x1
+#define ABTI_TASK_REQ_CANCEL        (1 << 0)
 
 enum ABTI_xstream_type {
     ABTI_XSTREAM_TYPE_PRIMARY,
