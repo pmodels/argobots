@@ -49,7 +49,7 @@ int ABT_task_create(ABT_xstream xstream,
 
     p_newtask->id       = ABTI_task_get_new_id();
     p_newtask->p_name   = NULL;
-    p_newtask->state    = ABT_TASK_STATE_CREATED;
+    p_newtask->state    = ABT_TASK_STATE_READY;
     p_newtask->refcount = (newtask != NULL) ? 1 : 0;
     p_newtask->request  = 0;
     p_newtask->f_task   = task_func;
@@ -81,9 +81,6 @@ int ABT_task_create(ABT_xstream xstream,
     } else {
         ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
         ABTI_sched *p_sched = p_xstream->p_sched;
-
-        /* Set the state as DELAYED */
-        p_newtask->state = ABT_TASK_STATE_DELAYED;
 
         /* Set the ES for this task */
         p_newtask->p_xstream = p_xstream;
@@ -448,10 +445,8 @@ int ABTI_task_print(ABTI_task *p_task)
     printf("name:%s ", p_task->p_name);
     printf("state:");
     switch (p_task->state) {
-        case ABT_TASK_STATE_CREATED:    printf("CREATED "); break;
-        case ABT_TASK_STATE_DELAYED:    printf("DELAYED "); break;
+        case ABT_TASK_STATE_READY:      printf("READY "); break;
         case ABT_TASK_STATE_RUNNING:    printf("RUNNING "); break;
-        case ABT_TASK_STATE_COMPLETED:  printf("COMPLETED "); break;
         case ABT_TASK_STATE_TERMINATED: printf("TERMINATED "); break;
         default: printf("UNKNOWN ");
     }

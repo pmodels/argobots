@@ -894,7 +894,6 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
     /* Execute the task function */
     DEBUG_PRINT("[S%lu:TK%lu] START\n", p_task->p_xstream->id, p_task->id);
     p_task->f_task(p_task->p_arg);
-    p_task->state = ABT_TASK_STATE_COMPLETED;
     DEBUG_PRINT("[S%lu:TK%lu] END\n", p_task->p_xstream->id, p_task->id);
 
     abt_errno = ABTI_xstream_terminate_task(p_task);
