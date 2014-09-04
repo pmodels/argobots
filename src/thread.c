@@ -1017,6 +1017,12 @@ int ABTI_thread_suspend()
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     assert(p_thread->p_xstream == p_xstream);
 
+	/* the main thread is not supposed to call thread suspend*/
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
+		abt_errno = ABT_ERR_THREAD; 
+		goto fn_fail; 
+	}
+
     /* Change the state of current running thread */
     p_thread->state = ABT_THREAD_STATE_BLOCKED;
 
@@ -1024,20 +1030,9 @@ int ABTI_thread_suspend()
     ABTI_sched *p_sched = p_xstream->p_sched;
     ABTI_sched_inc_num_blocked(p_sched);
 
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
-        /* Currently, the main program thread waits until all threads
-         * finish their execution. */
-
-        /* Start the scheduling */
-        abt_errno = ABTI_xstream_schedule(p_xstream);
-        ABTI_CHECK_ERROR(abt_errno);
-
-        p_thread->state = ABT_THREAD_STATE_RUNNING;
-    } else {
-        /* Switch to the scheduler */
-        abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
-        ABTI_CHECK_ERROR(abt_errno);
-    }
+    /* Switch to the scheduler */
+    abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Back to the original thread */
     ABTI_local_set_thread(p_thread);
@@ -1092,17 +1087,19 @@ int ABTI_thread_relinquish()
 
 int ABTI_thread_set_ready(ABT_thread thread)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno = ABT_SUCCESS, flag = 0;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 
-    /* Decrease the number of blocked threads */
-    if (p_thread->state == ABT_THREAD_STATE_BLOCKED) {
-        ABTI_sched_dec_num_blocked(p_thread->p_xstream->p_sched);
-    }
+    if (p_thread->state == ABT_THREAD_STATE_BLOCKED) flag = 1;
 
     /* Add the thread to its associated ES */
     abt_errno = ABTI_xstream_add_thread(p_thread);
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Decrease the number of blocked threads */
+	if(flag){
+        ABTI_sched_dec_num_blocked(p_thread->p_xstream->p_sched);
+    }
 
   fn_exit:
     return abt_errno;
