@@ -1059,15 +1059,10 @@ int ABTI_thread_relinquish()
     
 	ABTI_sched *p_sched = p_thread->p_xstream->p_sched;
 
+	/* the main thread should not call thread relinquish */
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
-        /* Currently, the main program thread waits until all threads
-         * finish their execution. */
-
-        /* Start the scheduling */
-        abt_errno = ABTI_xstream_schedule(p_xstream);
-        ABTI_CHECK_ERROR(abt_errno);
-
-        p_thread->state = ABT_THREAD_STATE_RUNNING;
+		abt_errno = ABT_ERR_THREAD; 
+		goto fn_fail; 
     } else {
         /* Switch to the scheduler */
         abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
@@ -1081,7 +1076,7 @@ int ABTI_thread_relinquish()
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_suspend", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_thread_relinquish", abt_errno);
     goto fn_exit;
 }
 
