@@ -33,12 +33,14 @@ ABT_thread pick_one(ABT_thread *threads, int num_threads)
 {
     int i;
     ABT_thread next;
-    ABT_thread_state state;
-    do {
+    ABT_thread_state state = ABT_THREAD_STATE_TERMINATED;
+    while (state == ABT_THREAD_STATE_TERMINATED) {
         i = rand() % num_threads;
         next = threads[i];
-        ABT_thread_get_state(next, &state);
-    } while (state == ABT_THREAD_STATE_TERMINATED);
+        if (next != ABT_THREAD_NULL) {
+            ABT_thread_get_state(next, &state);
+        }
+    }
     return next;
 }
 
@@ -104,6 +106,9 @@ int main(int argc, char *argv[])
     thread_args = (thread_arg_t **)malloc(sizeof(thread_arg_t*) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
         threads[i] = (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);
+        for (j = 0; j < num_threads; j++) {
+            threads[i][j] = ABT_THREAD_NULL;
+        }
         thread_args[i] = (thread_arg_t *)malloc(sizeof(thread_arg_t) *
                                                 num_threads);
     }
