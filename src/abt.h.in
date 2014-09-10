@@ -55,29 +55,29 @@ extern "C" {
 #define ABT_SUCCESS              0   /* Successful return code */
 #define ABT_ERR_MEM              1   /* Memeory allocation failure */
 #define ABT_ERR_INV_XSTREAM      2   /* Invalid ES */
-#define ABT_ERR_INV_SCHED        3   /* Invalid scheduler */
-#define ABT_ERR_INV_SCHED_KIND   4   /* Invalid scheduler kind */
-#define ABT_ERR_INV_SCHED_PRIO   5   /* Invalid priority */
-#define ABT_ERR_INV_THREAD       6   /* Invalid ULT */
-#define ABT_ERR_INV_THREAD_ATTR  7   /* Invalid ULT attribute */
-#define ABT_ERR_INV_TASK         8   /* Invalid task */
-#define ABT_ERR_INV_MUTEX        9   /* Invalid mutex */
-#define ABT_ERR_INV_COND         10  /* Invalid condition variable */
-#define ABT_ERR_INV_FUTURE       11  /* Invalid future */
-#define ABT_ERR_INV_EVENTUAL     12  /* Invalid eventual */
-#define ABT_ERR_INV_UNIT         13  /* Invalid scheduling unit */
-#define ABT_ERR_INV_POOL         14  /* Invalid pool */
+#define ABT_ERR_INV_THREAD       3   /* Invalid ULT */
+#define ABT_ERR_INV_THREAD_ATTR  4   /* Invalid ULT attribute */
+#define ABT_ERR_INV_TASK         5   /* Invalid task */
+#define ABT_ERR_INV_SCHED        6   /* Invalid scheduler */
+#define ABT_ERR_INV_SCHED_KIND   7   /* Invalid scheduler kind */
+#define ABT_ERR_INV_SCHED_PRIO   8   /* Invalid priority */
+#define ABT_ERR_INV_UNIT         9   /* Invalid scheduling unit */
+#define ABT_ERR_INV_POOL         10  /* Invalid pool */
+#define ABT_ERR_INV_MUTEX        11  /* Invalid mutex */
+#define ABT_ERR_INV_COND         12  /* Invalid condition variable */
+#define ABT_ERR_INV_EVENTUAL     13  /* Invalid eventual */
+#define ABT_ERR_INV_FUTURE       14  /* Invalid future */
 #define ABT_ERR_XSTREAM          15  /* ES-related error */
-#define ABT_ERR_SCHED            16  /* Scheduler-related error */
-#define ABT_ERR_THREAD           17  /* ULT-related error */
-#define ABT_ERR_TASK             18  /* Task-related error */
-#define ABT_ERR_MUTEX_LOCKED     19  /* Return value when mutex is locked */
-#define ABT_ERR_MUTEX            20  /* Mutex-related error */
-#define ABT_ERR_COND             21  /* Condition-related error */
-#define ABT_ERR_FUTURE           22  /* Future-related error */
-#define ABT_ERR_EVENTUAL         23  /* Eventual-related error */
-#define ABT_ERR_UNIT             24  /* Scheduling unit-related error */
-#define ABT_ERR_POOL             25  /* Pool-related error */
+#define ABT_ERR_THREAD           16  /* ULT-related error */
+#define ABT_ERR_TASK             17  /* Task-related error */
+#define ABT_ERR_SCHED            18  /* Scheduler-related error */
+#define ABT_ERR_UNIT             19  /* Scheduling unit-related error */
+#define ABT_ERR_POOL             20  /* Pool-related error */
+#define ABT_ERR_MUTEX_LOCKED     21  /* Return value when mutex is locked */
+#define ABT_ERR_MUTEX            22  /* Mutex-related error */
+#define ABT_ERR_COND             23  /* Condition-related error */
+#define ABT_ERR_EVENTUAL         24  /* Eventual-related error */
+#define ABT_ERR_FUTURE           25  /* Future-related error */
 #define ABT_ERR_OTHER            26  /* Other error */
 
 
@@ -90,31 +90,31 @@ typedef enum ABT_thread_state  ABT_thread_state;  /* ULT state */
 typedef uint64_t               ABT_thread_id;     /* ULT id */
 typedef void *                 ABT_task;          /* Tasklet */
 typedef enum ABT_task_state    ABT_task_state;    /* Tasklet state */
-typedef void *                 ABT_mutex;         /* Mutex */
-typedef void *                 ABT_cond;          /* Condition variable */
 typedef void *                 ABT_sched;         /* Scheduler */
 typedef enum ABT_sched_kind    ABT_sched_kind;    /* Scheduler kind */
 typedef enum ABT_sched_prio    ABT_sched_prio;    /* Scheduling priority */
-typedef enum ABT_unit_type     ABT_unit_type;     /* Work unit type */
-typedef void *                 ABT_unit;          /* A work unit */
-typedef void *                 ABT_pool;          /* Pool of work units */
-typedef void *                 ABT_future;        /* Future */
+typedef enum ABT_unit_type     ABT_unit_type;     /* Scheduling unit type */
+typedef void *                 ABT_unit;          /* Scheduling unit */
+typedef void *                 ABT_pool;          /* Pool */
+typedef void *                 ABT_mutex;         /* Mutex */
+typedef void *                 ABT_cond;          /* Condition variable */
 typedef void *                 ABT_eventual;      /* Eventual */
+typedef void *                 ABT_future;        /* Future */
 
 /* Null Objects */
 #define ABT_XSTREAM_NULL        (NULL)
 #define ABT_THREAD_NULL         (NULL)
 #define ABT_THREAD_ATTR_NULL    (NULL)
 #define ABT_TASK_NULL           (NULL)
+#define ABT_SCHED_NULL          (NULL)
+#define ABT_UNIT_NULL           (NULL)
+#define ABT_POOL_NULL           (NULL)
 #define ABT_MUTEX_NULL          (NULL)
 #define ABT_COND_NULL           (NULL)
-#define ABT_SCHED_NULL          (NULL)
-#define ABT_POOL_NULL           (NULL)
-#define ABT_UNIT_NULL           (NULL)
-#define ABT_FUTURE_NULL         (NULL)
 #define ABT_EVENTUAL_NULL       (NULL)
+#define ABT_FUTURE_NULL         (NULL)
 
-/* Contants */
+/* Constants */
 enum ABT_xstream_state {
     ABT_XSTREAM_STATE_CREATED,
     ABT_XSTREAM_STATE_READY,
@@ -193,16 +193,16 @@ int ABT_xstream_exit();
 int ABT_xstream_cancel(ABT_xstream xstream);
 int ABT_xstream_self(ABT_xstream *xstream);
 int ABT_xstream_self_rank(int *rank);
-int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2, int *result);
-int ABT_xstream_set_sched(ABT_xstream xstream, ABT_sched sched);
-int ABT_xstream_get_sched(ABT_xstream xstream, ABT_sched *sched);
-int ABT_xstream_get_num_threads(ABT_xstream xstream, int *num_threads);
-int ABT_xstream_get_num_tasks(ABT_xstream xstream, int *num_tasks);
-int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state);
-int ABT_xstream_set_name(ABT_xstream xstream, const char *name);
-int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len);
 int ABT_xstream_set_rank(ABT_xstream xstream, const int rank);
 int ABT_xstream_get_rank(ABT_xstream xstream, int *rank);
+int ABT_xstream_set_sched(ABT_xstream xstream, ABT_sched sched);
+int ABT_xstream_get_sched(ABT_xstream xstream, ABT_sched *sched);
+int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state);
+int ABT_xstream_get_num_threads(ABT_xstream xstream, int *num_threads);
+int ABT_xstream_get_num_tasks(ABT_xstream xstream, int *num_tasks);
+int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2, int *result);
+int ABT_xstream_set_name(ABT_xstream xstream, const char *name);
+int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len);
 
 /* User-level Thread (ULT) */
 int ABT_thread_create(ABT_xstream xstream,
@@ -212,22 +212,22 @@ int ABT_thread_free(ABT_thread *thread);
 int ABT_thread_join(ABT_thread thread);
 int ABT_thread_exit();
 int ABT_thread_cancel(ABT_thread thread);
-int ABT_thread_yield();
+int ABT_thread_self(ABT_thread *thread);
+int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
 int ABT_thread_yield_to(ABT_thread thread);
+int ABT_thread_yield();
 int ABT_thread_set_callback(ABT_thread thread,
                             void (*callback_func)(void *arg), void *arg);
 int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream);
 int ABT_thread_migrate(ABT_thread thread);
-int ABT_thread_self(ABT_thread *thread);
-int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio);
-int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio);
+int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, int *result);
 int ABT_thread_retain(ABT_thread thread);
 int ABT_thread_release(ABT_thread thread);
-int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, int *result);
-int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
+int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize);
+int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio);
+int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio);
 int ABT_thread_set_name(ABT_thread thread, const char *name);
 int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len);
-int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize);
 int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id);
 
 /* ULT Attributes */
@@ -245,10 +245,10 @@ int ABT_task_create(ABT_xstream xstream,
 int ABT_task_free(ABT_task *task);
 int ABT_task_cancel(ABT_task task);
 int ABT_task_self(ABT_task *task);
+int ABT_task_get_state(ABT_task task, ABT_task_state *state);
+int ABT_task_equal(ABT_task task1, ABT_task task2, int *result);
 int ABT_task_retain(ABT_task task);
 int ABT_task_release(ABT_task task);
-int ABT_task_equal(ABT_task task1, ABT_task task2, int *result);
-int ABT_task_get_state(ABT_task task, ABT_task_state *state);
 int ABT_task_set_name(ABT_task task, const char *name);
 int ABT_task_get_name(ABT_task task, char *name, size_t *len);
 
@@ -276,18 +276,18 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex);
 int ABT_cond_signal(ABT_cond cond);
 int ABT_cond_broadcast(ABT_cond cond);
 
+/* Eventual */
+int ABT_eventual_create(int n, ABT_eventual *neweventual);
+int ABT_eventual_free(ABT_eventual *fut);
+int ABT_eventual_wait(ABT_eventual fut, void **value);
+int ABT_eventual_set(ABT_eventual fut, void *value, int nbytes);
+
 /* Futures */
 int ABT_future_create(int compartments, void (*callback_func)(void **arg), ABT_future *newfuture);
+int ABT_future_free(ABT_future *future);
 int ABT_future_wait(ABT_future future);
 int ABT_future_test(ABT_future future, int *flag);
 int ABT_future_set(ABT_future future, void *value);
-int ABT_future_free(ABT_future *future);
-
-/* Eventual */
-int ABT_eventual_create(int n, ABT_eventual *neweventual);
-int ABT_eventual_set(ABT_eventual fut, void *value, int nbytes);
-int ABT_eventual_wait(ABT_eventual fut, void **value);
-int ABT_eventual_free(ABT_eventual *fut);
 
 #if defined(__cplusplus)
 }

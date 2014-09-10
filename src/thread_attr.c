@@ -12,7 +12,6 @@
  * can be specified with an \c ABT_thread_attr object.
  */
 
-
 /**
  * @ingroup ULT_ATTR
  * @brief   Create a new ULT attribute object.
@@ -178,6 +177,10 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
     goto fn_exit;
 }
 
+
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
 
 /** @defgroup ULT_ATTR_PRIVATE ULT Attributes (Private)
  * This group combines private APIs for ULT attributes.

@@ -12,7 +12,6 @@ static uint64_t ABTI_task_get_new_id();
  * This group is for Tasklet.
  */
 
-
 /**
  * @ingroup TASK
  * @brief   Create a new task and return its handle through newtask.
@@ -212,6 +211,51 @@ int ABT_task_self(ABT_task *task)
 
 /**
  * @ingroup TASK
+ * @brief   Return the state of task.
+ *
+ * @param[in]  task   handle to the target task
+ * @param[out] state  the task's state
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_get_state(ABT_task task, ABT_task_state *state)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    /* Return value */
+    *state = p_task->state;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_task_get_state", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
+ * @brief   Compare two task handles for equality.
+ *
+ * @param[in]  task1   handle to the task 1
+ * @param[in]  task2   handle to the task 2
+ * @param[out] result  0: not same, 1: same
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_equal(ABT_task task1, ABT_task task2, int *result)
+{
+    ABTI_task *p_task1 = ABTI_task_get_ptr(task1);
+    ABTI_task *p_task2 = ABTI_task_get_ptr(task2);
+    *result = p_task1 == p_task2;
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Increment the task reference count.
  *
  * ABT_task_create() with non-null newtask argument performs an implicit
@@ -267,51 +311,6 @@ int ABT_task_release(ABT_task task)
 
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_task_release", abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup TASK
- * @brief   Compare two task handles for equality.
- *
- * @param[in]  task1   handle to the task 1
- * @param[in]  task2   handle to the task 2
- * @param[out] result  0: not same, 1: same
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_task_equal(ABT_task task1, ABT_task task2, int *result)
-{
-    ABTI_task *p_task1 = ABTI_task_get_ptr(task1);
-    ABTI_task *p_task2 = ABTI_task_get_ptr(task2);
-    *result = p_task1 == p_task2;
-    return ABT_SUCCESS;
-}
-
-/**
- * @ingroup TASK
- * @brief   Return the state of task.
- *
- * @param[in]  task   handle to the target task
- * @param[out] state  the task's state
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_task_get_state(ABT_task task, ABT_task_state *state)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    /* Return value */
-    *state = p_task->state;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_get_state", abt_errno);
     goto fn_exit;
 }
 
@@ -382,7 +381,10 @@ int ABT_task_get_name(ABT_task task, char *name, size_t *len)
 }
 
 
-/* Private APIs */
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
+
 ABTI_task *ABTI_task_get_ptr(ABT_task task)
 {
     ABTI_task *p_task;
@@ -459,7 +461,10 @@ int ABTI_task_print(ABTI_task *p_task)
 }
 
 
-/* Internal static functions */
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
 static uint64_t ABTI_task_get_new_id()
 {
     static uint64_t task_id = 0;

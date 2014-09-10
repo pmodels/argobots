@@ -13,7 +13,6 @@ static void *ABTI_xstream_loop(void *p_arg);
  * This group is for Execution Stream.
  */
 
-
 /**
  * @ingroup ES
  * @brief   Create a new ES and return its handle through newxstream.
@@ -377,24 +376,6 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
 
 /**
  * @ingroup ES
- * @brief   Compare two ES handles for equality.
- *
- * @param[in]  xstream1  handle to the ES 1
- * @param[in]  xstream2  handle to the ES 2
- * @param[out] result   0: not same, 1: same
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2, int *result)
-{
-    ABTI_xstream *p_xstream1 = ABTI_xstream_get_ptr(xstream1);
-    ABTI_xstream *p_xstream2 = ABTI_xstream_get_ptr(xstream2);
-    *result = p_xstream1 == p_xstream2;
-    return ABT_SUCCESS;
-}
-
-/**
- * @ingroup ES
  * @brief   Set sched as the scheduler for xstream.
  *
  * @param[in] xstream  handle to the target ES
@@ -468,6 +449,33 @@ int ABT_xstream_get_sched(ABT_xstream xstream, ABT_sched *sched)
 
 /**
  * @ingroup ES
+ * @brief   Return the state of xstream.
+ *
+ * @param[in]  xstream  handle to the target ES
+ * @param[out] state    the xstream's state
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    /* Return value */
+    *state = p_xstream->state;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_state", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
  * @brief   Return the number of ULTs associated with the ES.
  *
  * \c ABT_xstream_get_num_threads() returns the number of ULTs currently
@@ -528,29 +536,20 @@ int ABT_xstream_get_num_tasks(ABT_xstream xstream, int *num_tasks)
 
 /**
  * @ingroup ES
- * @brief   Return the state of xstream.
+ * @brief   Compare two ES handles for equality.
  *
- * @param[in]  xstream  handle to the target ES
- * @param[out] state    the xstream's state
+ * @param[in]  xstream1  handle to the ES 1
+ * @param[in]  xstream2  handle to the ES 2
+ * @param[out] result   0: not same, 1: same
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state)
+int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2, int *result)
 {
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
-    /* Return value */
-    *state = p_xstream->state;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_state", abt_errno);
-    goto fn_exit;
+    ABTI_xstream *p_xstream1 = ABTI_xstream_get_ptr(xstream1);
+    ABTI_xstream *p_xstream2 = ABTI_xstream_get_ptr(xstream2);
+    *result = p_xstream1 == p_xstream2;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -619,7 +618,11 @@ int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len)
     goto fn_exit;
 }
 
-/* Private APIs */
+
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
+
 ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream)
 {
     ABTI_xstream *p_xstream;
@@ -1106,7 +1109,11 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
     goto fn_exit;
 }
 
-/* Internal static functions */
+
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
 static uint64_t ABTI_xstream_get_new_rank()
 {
     static uint64_t xstream_rank = 0;

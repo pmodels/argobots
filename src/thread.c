@@ -12,7 +12,6 @@ static ABT_thread_id ABTI_thread_get_new_id();
  * This group is for User-level Thread (ULT).
  */
 
-
 /**
  * @ingroup ULT
  * @brief   Create a new thread and return its handle through newthread.
@@ -277,56 +276,54 @@ int ABT_thread_cancel(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Yield the processor from the current running thread to a next
- *          thread.
+ * @brief   Return the thread handle of the calling thread.
  *
- * The next thread is selected by the scheduler of ES. If there is no more
- * thread to, the calling thread resumes its execution immediately.
- *
+ * @param[out] thread  thread handle
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_yield()
+int ABT_thread_self(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    assert(p_thread->p_xstream == p_xstream);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_sched *p_sched = p_xstream->p_sched;
-    if (p_sched->p_get_size(p_sched->pool) < 1) {
-        int has_global_task;
-        ABTI_global_has_task(&has_global_task);
-        if (!has_global_task) goto fn_exit;
-    }
-
-    /* Change the state of current running thread */
-    p_thread->state = ABT_THREAD_STATE_READY;
-
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
-        /* Currently, the main program thread waits until all threads
-         * finish their execution. */
-
-        /* Start the scheduling */
-        abt_errno = ABTI_xstream_schedule(p_xstream);
-        ABTI_CHECK_ERROR(abt_errno);
-
-        p_thread->state = ABT_THREAD_STATE_RUNNING;
-    } else {
-        /* Switch to the scheduler */
-        abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
-        ABTI_CHECK_ERROR(abt_errno);
-    }
-
-    /* Back to the original thread */
-    ABTI_local_set_thread(p_thread);
+    /* Return value */
+    *thread = ABTI_thread_get_handle(p_thread);
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_yield", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_thread_self", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Return the state of thread.
+ *
+ * @param[in]  thread  handle to the target thread
+ * @param[out] state   the thread's state
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    /* Return value */
+    *state = p_thread->state;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_get_state", abt_errno);
     goto fn_exit;
 }
 
@@ -407,6 +404,61 @@ int ABT_thread_yield_to(ABT_thread thread)
 
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_thread_yield_to", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Yield the processor from the current running thread to a next
+ *          thread.
+ *
+ * The next thread is selected by the scheduler of ES. If there is no more
+ * thread to, the calling thread resumes its execution immediately.
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_yield()
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_local_get_thread();
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    assert(p_thread->p_xstream == p_xstream);
+
+    ABTI_sched *p_sched = p_xstream->p_sched;
+    if (p_sched->p_get_size(p_sched->pool) < 1) {
+        int has_global_task;
+        ABTI_global_has_task(&has_global_task);
+        if (!has_global_task) goto fn_exit;
+    }
+
+    /* Change the state of current running thread */
+    p_thread->state = ABT_THREAD_STATE_READY;
+
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
+        /* Currently, the main program thread waits until all threads
+         * finish their execution. */
+
+        /* Start the scheduling */
+        abt_errno = ABTI_xstream_schedule(p_xstream);
+        ABTI_CHECK_ERROR(abt_errno);
+
+        p_thread->state = ABT_THREAD_STATE_RUNNING;
+    } else {
+        /* Switch to the scheduler */
+        abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+
+    /* Back to the original thread */
+    ABTI_local_set_thread(p_thread);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_yield", abt_errno);
     goto fn_exit;
 }
 
@@ -550,112 +602,20 @@ int ABT_thread_migrate(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Return the thread handle of the calling thread.
+ * @brief   Compare two thread handles for equality.
  *
- * @param[out] thread  thread handle
+ * @param[in]  thread1  handle to the thread 1
+ * @param[in]  thread2  handle to the thread 2
+ * @param[out] result   0: not same, 1: same
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_self(ABT_thread *thread)
+int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, int *result)
 {
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_thread *p_thread = ABTI_local_get_thread();
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    /* Return value */
-    *thread = ABTI_thread_get_handle(p_thread);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_self", abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ULT
- * @brief   Get the scheduling priority of ULT.
- *
- * The \c ABT_thread_get_prio() returns the scheduling priority of the ULT
- * \c thread through \c prio.
- *
- * @param[in]  thread  handle to the target ULT
- * @param[out] prio    scheduling priority
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    /* Return value */
-    *prio = p_thread->attr.prio;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_get_prio", abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ULT
- * @brief   Set the scheduling priority of thread.
- *
- * The \c ABT_thread_set_prio() set the scheduling priority of the thread
- * \c thread to the value \c prio.
- *
- * @param[in] thread  handle to the target thread
- * @param[in] prio    scheduling priority
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-
-    /* Sanity check */
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-    ABTI_CHECK_SCHED_PRIO(prio);
-
-    if (prio == p_thread->attr.prio) goto fn_exit;
-
-    ABTI_mutex_waitlock(p_thread->mutex);
-    ABTI_xstream *p_xstream = p_thread->p_xstream;
-    ABTI_sched *p_sched = p_xstream->p_sched;
-
-    if (p_sched->kind != ABT_SCHED_PRIO) {
-        /* Set the priority */
-        p_thread->attr.prio = prio;
-        ABT_mutex_unlock(p_thread->mutex);
-        goto fn_exit;
-    }
-
-    /* The thread in READY needs to be moved to the appropriate queue */
-    if (p_thread->state == ABT_THREAD_STATE_READY) {
-        ABTI_sched_remove(p_sched, p_thread->unit);
-    }
-
-    /* Set the priority */
-    p_thread->attr.prio = prio;
-
-    if (p_thread->state == ABT_THREAD_STATE_READY) {
-        ABTI_sched_push(p_sched, p_thread->unit);
-    }
-    ABT_mutex_unlock(p_thread->mutex);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_set_prio", abt_errno);
-    goto fn_exit;
+    ABTI_thread *p_thread1 = ABTI_thread_get_ptr(thread1);
+    ABTI_thread *p_thread2 = ABTI_thread_get_ptr(thread2);
+    *result = p_thread1 == p_thread2;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -720,32 +680,16 @@ int ABT_thread_release(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Compare two thread handles for equality.
+ * @brief   Get the ULT's stack size.
  *
- * @param[in]  thread1  handle to the thread 1
- * @param[in]  thread2  handle to the thread 2
- * @param[out] result   0: not same, 1: same
+ * \c ABT_thread_get_stacksize() returns the stack size of \c thread in bytes.
+ *
+ * @param[in]  thread     handle to the target thread
+ * @param[out] stacksize  stack size in bytes
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, int *result)
-{
-    ABTI_thread *p_thread1 = ABTI_thread_get_ptr(thread1);
-    ABTI_thread *p_thread2 = ABTI_thread_get_ptr(thread2);
-    *result = p_thread1 == p_thread2;
-    return ABT_SUCCESS;
-}
-
-/**
- * @ingroup ULT
- * @brief   Return the state of thread.
- *
- * @param[in]  thread  handle to the target thread
- * @param[out] state   the thread's state
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
+int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -753,13 +697,97 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
-    *state = p_thread->state;
+    *stacksize = p_thread->attr.stacksize;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_get_state", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_thread_get_stacksize", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Set the scheduling priority of thread.
+ *
+ * The \c ABT_thread_set_prio() set the scheduling priority of the thread
+ * \c thread to the value \c prio.
+ *
+ * @param[in] thread  handle to the target thread
+ * @param[in] prio    scheduling priority
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+
+    /* Sanity check */
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    ABTI_CHECK_SCHED_PRIO(prio);
+
+    if (prio == p_thread->attr.prio) goto fn_exit;
+
+    ABTI_mutex_waitlock(p_thread->mutex);
+    ABTI_xstream *p_xstream = p_thread->p_xstream;
+    ABTI_sched *p_sched = p_xstream->p_sched;
+
+    if (p_sched->kind != ABT_SCHED_PRIO) {
+        /* Set the priority */
+        p_thread->attr.prio = prio;
+        ABT_mutex_unlock(p_thread->mutex);
+        goto fn_exit;
+    }
+
+    /* The thread in READY needs to be moved to the appropriate queue */
+    if (p_thread->state == ABT_THREAD_STATE_READY) {
+        ABTI_sched_remove(p_sched, p_thread->unit);
+    }
+
+    /* Set the priority */
+    p_thread->attr.prio = prio;
+
+    if (p_thread->state == ABT_THREAD_STATE_READY) {
+        ABTI_sched_push(p_sched, p_thread->unit);
+    }
+    ABT_mutex_unlock(p_thread->mutex);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_set_prio", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Get the scheduling priority of ULT.
+ *
+ * The \c ABT_thread_get_prio() returns the scheduling priority of the ULT
+ * \c thread through \c prio.
+ *
+ * @param[in]  thread  handle to the target ULT
+ * @param[out] prio    scheduling priority
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    /* Return value */
+    *prio = p_thread->attr.prio;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_get_prio", abt_errno);
     goto fn_exit;
 }
 
@@ -831,36 +859,6 @@ int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len)
 
 /**
  * @ingroup ULT
- * @brief   Get the ULT's stack size.
- *
- * \c ABT_thread_get_stacksize() returns the stack size of \c thread in bytes.
- *
- * @param[in]  thread     handle to the target thread
- * @param[out] stacksize  stack size in bytes
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    /* Return value */
-    *stacksize = p_thread->attr.stacksize;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_get_stacksize", abt_errno);
-    goto fn_exit;
-}
-
-
-/**
- * @ingroup ULT
  * @brief   Get the ULT's id
  *
  * \c ABT_thread_get_id() returns the id of \c a thread.
@@ -887,7 +885,11 @@ int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id)
     goto fn_exit;
 }
 
-/* Private APIs */
+
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
+
 ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread)
 {
     ABTI_thread *p_thread;
@@ -1019,8 +1021,8 @@ int ABTI_thread_suspend()
 
 	/* the main thread is not supposed to call thread suspend*/
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
-		abt_errno = ABT_ERR_THREAD; 
-		goto fn_fail; 
+		abt_errno = ABT_ERR_THREAD;
+		goto fn_fail;
 	}
 
     /* Change the state of current running thread */
@@ -1056,13 +1058,13 @@ int ABTI_thread_relinquish()
     ABTI_thread *p_thread = ABTI_local_get_thread();
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     assert(p_thread->p_xstream == p_xstream);
-    
+
 	ABTI_sched *p_sched = p_thread->p_xstream->p_sched;
 
 	/* the main thread should not call thread relinquish */
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
-		abt_errno = ABT_ERR_THREAD; 
-		goto fn_fail; 
+		abt_errno = ABT_ERR_THREAD;
+		goto fn_fail;
     } else {
         /* Switch to the scheduler */
         abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
@@ -1092,7 +1094,7 @@ int ABTI_thread_set_ready(ABT_thread thread)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Decrease the number of blocked threads */
-	if(flag){
+	if (flag) {
         ABTI_sched_dec_num_blocked(p_thread->p_xstream->p_sched);
     }
 
@@ -1108,6 +1110,7 @@ int ABTI_thread_set_blocked(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Change the state of current running thread */
     p_thread->state = ABT_THREAD_STATE_BLOCKED;
@@ -1120,10 +1123,9 @@ int ABTI_thread_set_blocked(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_set_ready", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_thread_set_blocked", abt_errno);
     goto fn_exit;
 }
-
 
 int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr)
 {
@@ -1273,7 +1275,10 @@ void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req)
 }
 
 
-/* Internal static functions */
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
 static ABT_thread_id ABTI_thread_get_new_id() {
     static uint64_t thread_id = 0;
     return (ABT_thread_id)ABTD_atomic_fetch_add_uint64(&thread_id, 1);

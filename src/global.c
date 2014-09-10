@@ -6,7 +6,8 @@
 #include "abti.h"
 
 /** @defgroup ENV Init & Finalize
- * This group is for initialization and finalization of the Argobots environment.
+ * This group is for initialization and finalization of the Argobots
+ * environment.
  */
 
 /* Global Data */
@@ -182,7 +183,10 @@ int ABT_finalize()
 }
 
 
-/* Private APIs */
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
+
 int ABTI_xstream_pool_init(ABTI_xstream_pool *p_xstreams)
 {
     int abt_errno = ABT_SUCCESS;

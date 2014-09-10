@@ -5,10 +5,10 @@
 
 #include "abti.h"
 
+
 /** @defgroup COND Condition Variable
  * This group is for Condition Variable.
  */
-
 
 /**
  * @ingroup COND
@@ -282,7 +282,10 @@ int ABT_cond_broadcast(ABT_cond cond)
 }
 
 
-/* Private APIs */
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
+
 ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond)
 {
     ABTI_cond *p_cond;

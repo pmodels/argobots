@@ -5,10 +5,10 @@
 
 #include "abti.h"
 
+
 /** @defgroup SCHED Scheduler
  * This group is for Scheduler.
  */
-
 
 /**
  * @ingroup SCHED
@@ -133,6 +133,57 @@ int ABT_sched_create_basic(ABT_sched_kind kind, ABT_sched *newsched)
 
 /**
  * @ingroup SCHED
+ * @brief   Release the scheduler object associated with sched handle.
+ *
+ * If this routine successfully returns, sched is set as ABT_SCHED_NULL.
+ *
+ * @param[in,out] sched  handle to the target scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_free(ABT_sched *sched)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_sched h_sched = *sched;
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(h_sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
+    /* Disconnect this scheduler from ES */
+    p_sched->p_xstream->p_sched = NULL;
+
+    /* If sched is a default provided one, it should free its pool here.
+     * Otherwise, freeing the pool is the user's reponsibility. */
+    if (p_sched->type == ABTI_SCHED_TYPE_DEFAULT) {
+        abt_errno = ABTI_pool_free(&p_sched->pool);
+        ABTI_CHECK_ERROR(abt_errno);
+    } else if (p_sched->type == ABTI_SCHED_TYPE_BASIC) {
+        abt_errno = ABTI_sched_free_basic(p_sched);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+
+    /* Free the context */
+    abt_errno = ABTD_thread_context_free(&p_sched->ctx);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Free the mutex */
+    abt_errno = ABT_mutex_free(&p_sched->mutex);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    ABTU_free(p_sched);
+
+    /* Return value */
+    *sched = ABT_SCHED_NULL;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_free", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
  * @brief   Get the minimum priority of a scheduler kind.
  *
  * For ABT_SCHED_PRIO, the range is defined in enum ABT_sched_prio. For
@@ -211,59 +262,11 @@ int ABT_sched_get_prio_max(ABT_sched_kind kind, ABT_sched_prio *prio)
     goto fn_exit;
 }
 
-/**
- * @ingroup SCHED
- * @brief   Release the scheduler object associated with sched handle.
- *
- * If this routine successfully returns, sched is set as ABT_SCHED_NULL.
- *
- * @param[in,out] sched  handle to the target scheduler
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_sched_free(ABT_sched *sched)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABT_sched h_sched = *sched;
-    ABTI_sched *p_sched = ABTI_sched_get_ptr(h_sched);
-    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    /* Disconnect this scheduler from ES */
-    p_sched->p_xstream->p_sched = NULL;
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
 
-    /* If sched is a default provided one, it should free its pool here.
-     * Otherwise, freeing the pool is the user's reponsibility. */
-    if (p_sched->type == ABTI_SCHED_TYPE_DEFAULT) {
-        abt_errno = ABTI_pool_free(&p_sched->pool);
-        ABTI_CHECK_ERROR(abt_errno);
-    } else if (p_sched->type == ABTI_SCHED_TYPE_BASIC) {
-        abt_errno = ABTI_sched_free_basic(p_sched);
-        ABTI_CHECK_ERROR(abt_errno);
-    }
-
-    /* Free the context */
-    abt_errno = ABTD_thread_context_free(&p_sched->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    /* Free the mutex */
-    abt_errno = ABT_mutex_free(&p_sched->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    ABTU_free(p_sched);
-
-    /* Return value */
-    *sched = ABT_SCHED_NULL;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_free", abt_errno);
-    goto fn_exit;
-}
-
-
-/* Private APIs */
 ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched)
 {
     ABTI_sched *p_sched;
