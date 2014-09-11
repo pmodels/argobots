@@ -923,8 +923,9 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
     ABTI_sched *p_sched;
 
     /* callback function */
-    if (p_thread->attr.f_callback) {
-        p_thread->attr.f_callback(p_thread->attr.p_cb_arg);
+    if (p_thread->attr.f_cb) {
+        ABT_thread thread = ABTI_thread_get_handle(p_thread);
+        p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
     }
 
     ABTI_mutex_waitlock(p_thread->mutex);

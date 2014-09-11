@@ -218,13 +218,16 @@ int ABT_thread_join(ABT_thread thread);
 int ABT_thread_exit();
 int ABT_thread_cancel(ABT_thread thread);
 int ABT_thread_self(ABT_thread *thread);
+int ABT_thread_get_xstream(ABT_thread thread, ABT_xstream *xstream);
 int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
 int ABT_thread_yield_to(ABT_thread thread);
 int ABT_thread_yield();
-int ABT_thread_set_callback(ABT_thread thread,
-                            void (*callback_func)(void *arg), void *arg);
 int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream);
 int ABT_thread_migrate(ABT_thread thread);
+int ABT_thread_set_callback(ABT_thread thread,
+        void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg);
+int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag);
+int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag);
 int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result);
 int ABT_thread_retain(ABT_thread thread);
 int ABT_thread_release(ABT_thread thread);
@@ -239,9 +242,12 @@ int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id);
 int ABT_thread_attr_create(ABT_thread_attr *newattr);
 int ABT_thread_attr_free(ABT_thread_attr *attr);
 int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize);
+int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize);
 int ABT_thread_attr_set_prio(ABT_thread_attr attr, ABT_sched_prio prio);
+int ABT_thread_attr_get_prio(ABT_thread_attr attr, ABT_sched_prio *prio);
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,
-                                 void (*callback_func)(void *arg), void *arg);
+        void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg);
+int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag);
 
 /* Tasklet */
 int ABT_task_create(ABT_xstream xstream,

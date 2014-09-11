@@ -95,10 +95,11 @@ enum ABTI_thread_type {
 };
 
 struct ABTI_thread_attr {
-    size_t stacksize;           /* Stack size */
-    ABT_sched_prio prio;        /* Priority */
-    void (*f_callback)(void *); /* Callback function */
-    void *p_cb_arg;             /* Callback function argument */
+    size_t         stacksize;           /* Stack size */
+    ABT_sched_prio prio;                /* Priority */
+    ABT_bool       migratable;          /* Migratability */
+    void (*f_cb)(ABT_thread, void *);   /* Callback function */
+    void *p_cb_arg;                     /* Callback function argument */
 };
 
 struct ABTI_thread_req_arg {

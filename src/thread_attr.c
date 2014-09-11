@@ -20,7 +20,7 @@
  * attribute values. The handle to the attribute object is returned through
  * \c newattr. The attribute object can be used in more than one ULT.
  *
- * @param[out] newattr  handle to a newly created ULT attribute object
+ * @param[out] newattr  handle to a new attribute object
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -40,7 +40,8 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     /* Default values */
     p_newattr->stacksize  = ABTI_THREAD_DEFAULT_STACKSIZE;
     p_newattr->prio       = ABT_SCHED_PRIO_NORMAL;
-    p_newattr->f_callback = NULL;
+    p_newattr->migratable = ABT_TRUE;
+    p_newattr->f_cb       = NULL;
     p_newattr->p_cb_arg   = NULL;
 
     /* Return value */
@@ -56,13 +57,13 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Release the ULT attribute object.
+ * @brief   Free the ULT attribute object.
  *
  * \c ABT_thread_attr_free() deallocates memory used for the ULT attribute
- * object. If this function successfully returns, \c attr will be set as
+ * object. If this function successfully returns, \c attr will be set to
  * \c ABT_THREAD_ATTR_NULL.
  *
- * @param[in,out] attr  handle to the target ULT attribute object
+ * @param[in,out] attr  handle to the target attribute object
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -91,7 +92,10 @@ int ABT_thread_attr_free(ABT_thread_attr *attr)
  * @ingroup ULT_ATTR
  * @brief   Set the stack size in the attribute object.
  *
- * @param[in] attr       handle to the target ULT attribute object
+ * \c ABT_thread_attr_set_stacksize() sets the stack size (in bytes) in the
+ * attribute object associated with handle \c attr.
+ *
+ * @param[in] attr       handle to the target attribute object
  * @param[in] stacksize  stack size in bytes
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -115,12 +119,40 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 
 /**
  * @ingroup ULT_ATTR
+ * @brief   Get the stack size from the attribute object.
+ *
+ * \c ABT_thread_attr_get_stacksize() returns the stack size (in bytes) through
+ * \c stacksize from the attribute object associated with handle \c attr.
+ *
+ * @param[in]  attr       handle to the target attribute object
+ * @param[out] stacksize  stack size in bytes
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
+
+    *stacksize = p_attr->stacksize;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_get_stacksize", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT_ATTR
  * @brief   Set the scheduling priority in the attribute object.
  *
  * \c ABT_thread_attr_set_prio() sets the scheduling priority with one value of
  * \c ABT_sched_prio in the target attribute object.
  *
- * @param[in] attr  handle to the target ULT attribute object
+ * @param[in] attr  handle to the target attribute object
  * @param[in] prio  scheduling priority
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -141,7 +173,35 @@ int ABT_thread_attr_set_prio(ABT_thread_attr attr, ABT_sched_prio prio)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_set_stacksize", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_set_prio", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT_ATTR
+ * @brief   Get the scheduling priority from the attribute object.
+ *
+ * \c ABT_thread_attr_get_prio() returns the scheduling priority through
+ * \c prio from the target attribute object.
+ *
+ * @param[in]  attr  handle to the target attribute object
+ * @param[out] prio  scheduling priority
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_attr_get_prio(ABT_thread_attr attr, ABT_sched_prio *prio)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
+
+    *prio = p_attr->prio;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_get_prio", abt_errno);
     goto fn_exit;
 }
 
@@ -149,31 +209,64 @@ int ABT_thread_attr_set_prio(ABT_thread_attr attr, ABT_sched_prio prio)
  * @ingroup ULT_ATTR
  * @brief   Set callback function and its argument in the attribute object.
  *
- * \c ABT_thread_attr_set_callback() sets callback function and its argument,
- * which is invoked when the ULT is migrated.
+ * \c ABT_thread_attr_set_callback() sets the callback function and its
+ * argument, which will be invoked on ULT migration.
  *
- * @param[in] attr           handle to the target ULT attribute object
- * @param[in] callback_func  pointer to the callback function
- * @param[in] arg            argument for the callback function
+ * @param[in] attr     handle to the target attribute object
+ * @param[in] cb_func  callback function pointer
+ * @param[in] cb_arg   argument for the callback function
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,
-                                 void (*callback_func)(void *arg), void *arg)
+        void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     /* Set the value */
-    p_attr->f_callback = callback_func;
-    p_attr->p_cb_arg = arg;
+    p_attr->f_cb     = cb_func;
+    p_attr->p_cb_arg = cb_arg;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_thread_attr_set_callback", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT_ATTR
+ * @brief   Set the ULT's migratability in the attribute object.
+ *
+ * \c ABT_thread_attr_set_migratable() sets the ULT's migratability in the
+ * target attribute object.
+ * If \c flag is \c ABT_TRUE, the ULT created with this attribute becomes
+ * migratable. On the other hand, if \ flag is \c ABT_FALSE, the ULT created
+ * with this attribute becomes unmigratable.
+ *
+ * @param[in] attr  handle to the target attribute object
+ * @param[in] flag  migratability flag (<tt>ABT_TRUE</tt>: migratable,
+ *                  <tt>ABT_FALSE</tt>: not)
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
+
+    /* Set the value */
+    p_attr->migratable = flag;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_set_migratable", abt_errno);
     goto fn_exit;
 }
 
@@ -258,7 +351,7 @@ int ABTI_thread_attr_print(ABTI_thread_attr *p_attr)
         case ABT_SCHED_PRIO_HIGH:   printf("HIGH ");   break;
         default: printf("UNKNOWN "); break;
     }
-    printf("callback:%p ", p_attr->f_callback);
+    printf("cb_func:%p ", p_attr->f_cb);
     printf("cb_arg:%p", p_attr->p_cb_arg);
     printf("]");
 

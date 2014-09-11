@@ -302,6 +302,37 @@ int ABT_thread_self(ABT_thread *thread)
 
 /**
  * @ingroup ULT
+ * @brief   Get the ES associated with the target ULT.
+ *
+ * \c ABT_thread_get_xstream() returns the ES handle associated with the
+ * target ULT to \c xstream. If the target ULT is not associated with any ES,
+ * \c ABT_XSTREAM_NULL is returned to \c xstream.
+ *
+ * @param[in]  thread   handle to the target ULT
+ * @param[out] xstream  ES handle
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_xstream(ABT_thread thread, ABT_xstream *xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    /* Return value */
+    *xstream = ABTI_xstream_get_handle(p_thread->p_xstream);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_get_xstream", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Return the state of thread.
  *
  * @param[in]  thread  handle to the target thread
@@ -464,34 +495,6 @@ int ABT_thread_yield()
 
 /**
  * @ingroup ULT
- * @brief   Set the callback function.
- *
- * @param[in] thread         handle to the target thread
- * @param[in] callback_func  callback function
- * @param[in] arg            argument for callback function
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_set_callback(ABT_thread thread,
-                            void (*callback_func)(void *arg), void *arg)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    p_thread->attr.f_callback = callback_func;
-    p_thread->attr.p_cb_arg   = arg;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_set_callback", abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ULT
  * @brief   Migrate a thread to a specific ES.
  *
  * The actual migration occurs asynchronously with this function call.
@@ -529,8 +532,8 @@ int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream)
     /* checking for migration to the same xstream */
     if (p_thread->p_xstream == p_xstream) {
         /* Invoke the callback function */
-        if (p_thread->attr.f_callback) {
-            p_thread->attr.f_callback(p_thread->attr.p_cb_arg);
+        if (p_thread->attr.f_cb) {
+            p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
         }
         goto fn_exit;
     }
@@ -597,6 +600,101 @@ int ABT_thread_migrate(ABT_thread thread)
 
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_thread_migrate", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Set the callback function.
+ *
+ * \c ABT_thread_set_callback() sets the callback function to be used when
+ * the ULT is migrated.
+ *
+ * @param[in] thread   handle to the target ULT
+ * @param[in] cb_func  callback function pointer
+ * @param[in] cb_arg   argument for the callback function
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_set_callback(ABT_thread thread,
+                            void(*cb_func)(ABT_thread thread, void *cb_arg),
+                            void *cb_arg)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    p_thread->attr.f_cb     = cb_func;
+    p_thread->attr.p_cb_arg = cb_arg;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_set_callback", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Set the ULT's migratability.
+ *
+ * \c ABT_thread_set_migratable() sets the secondary ULT's migratability.
+ * This routine cannot be used for the primary ULT.
+ * If \c flag is \c ABT_TRUE, the target ULT becomes migratable. On the
+ * other hand, if \c flag is \c ABT_FALSE, the target ULT becomes unmigratable.
+ *
+ * @param[in] thread  handle to the target ULT
+ * @param[in] flag    migratability flag (<tt>ABT_TRUE</tt>: migratable,
+ *                    <tt>ABT_FALSE</tt>: not)
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    if (p_thread->type == ABTI_THREAD_TYPE_USER) {
+        p_thread->attr.migratable = flag;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_set_migratable", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Get the ULT's migratability.
+ *
+ * \c ABT_thread_is_migratable() returns the ULT's migratability through
+ * \c flag. If the target ULT is migratable, \c ABT_TRUE is returned to
+ * \c flag. Otherwise, \c flag is set to \c ABT_FALSE.
+ *
+ * @param[in]  thread  handle to the target ULT
+ * @param[out] flag    migratability flag (<tt>ABT_TRUE</tt>: migratable,
+ *                     <tt>ABT_FALSE</tt>: not)
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    *flag = p_thread->attr.migratable;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_is_migratable", abt_errno);
     goto fn_exit;
 }
 
@@ -944,6 +1042,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 
     /* Set attributes */
     ABTI_thread_set_attr(p_newthread, NULL);
+    p_newthread->attr.migratable = ABT_FALSE;
 
     /* Create a mutex */
     abt_errno = ABT_mutex_create(&p_newthread->mutex);
@@ -1138,12 +1237,14 @@ int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr)
     if (p_attr) {
         my_attr->stacksize  = p_attr->stacksize;
         my_attr->prio       = p_attr->prio;
-        my_attr->f_callback = p_attr->f_callback;
+        my_attr->migratable = p_attr->migratable;
+        my_attr->f_cb       = p_attr->f_cb;
         my_attr->p_cb_arg   = p_attr->p_cb_arg;
     } else {
         my_attr->stacksize  = ABTI_THREAD_DEFAULT_STACKSIZE;
         my_attr->prio       = ABT_SCHED_PRIO_NORMAL;
-        my_attr->f_callback = NULL;
+        my_attr->migratable = ABT_TRUE;
+        my_attr->f_cb       = NULL;
         my_attr->p_cb_arg   = NULL;
     }
     return ABT_SUCCESS;
