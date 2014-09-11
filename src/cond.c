@@ -131,9 +131,9 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
     if (p_cond->waiter_mutex == ABT_MUTEX_NULL) {
         p_cond->waiter_mutex = mutex;
     } else {
-        int result;
-        ABTI_mutex_equal(p_cond->waiter_mutex, mutex, &result);
-        if (!result) {
+        ABT_bool result;
+        ABT_mutex_equal(p_cond->waiter_mutex, mutex, &result);
+        if (result == ABT_FALSE) {
             abt_errno = ABT_ERR_INV_MUTEX;
             goto fn_fail;
         }

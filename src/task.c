@@ -238,19 +238,24 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
 
 /**
  * @ingroup TASK
- * @brief   Compare two task handles for equality.
+ * @brief   Compare two tasklet handles for equality.
  *
- * @param[in]  task1   handle to the task 1
- * @param[in]  task2   handle to the task 2
- * @param[out] result  0: not same, 1: same
+ * \c ABT_task_equal() compares two tasklet handles for equality. If two handles
+ * are associated with the same tasklet object, \c result will be set to
+ * \c ABT_TRUE. Otherwise, \c result will be set to \c ABT_FALSE.
+ *
+ * @param[in]  task1   handle to the tasklet 1
+ * @param[in]  task2   handle to the tasklet 2
+ * @param[out] result  comparison result (<tt>ABT_TRUE</tt>: same,
+ *                     <tt>ABT_FALSE</tt>: not same)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_equal(ABT_task task1, ABT_task task2, int *result)
+int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result)
 {
     ABTI_task *p_task1 = ABTI_task_get_ptr(task1);
     ABTI_task *p_task2 = ABTI_task_get_ptr(task2);
-    *result = p_task1 == p_task2;
+    *result = (p_task1 == p_task2) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
 

@@ -369,7 +369,6 @@ int      ABTI_pool_print(ABT_pool pool);
 ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex);
 ABT_mutex   ABTI_mutex_get_handle(ABTI_mutex *p_mutex);
 int ABTI_mutex_waitlock(ABT_mutex mutex);
-int ABTI_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, int *result);
 
 /* Condition Variable */
 ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond);

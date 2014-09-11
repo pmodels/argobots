@@ -194,6 +194,29 @@ int ABT_mutex_unlock_ptr(ABT_mutex *mutex)
     return ABT_mutex_unlock(*mutex);
 }
 
+/**
+ * @ingroup MUTEX
+ * @brief   Compare two mutex handles for equality.
+ *
+ * \c ABT_mutex_equal() compares two mutex handles for equality. If two handles
+ * are associated with the same mutex object, \c result will be set to
+ * \c ABT_TRUE. Otherwise, \c result will be set to \c ABT_FALSE.
+ *
+ * @param[in]  mutex1  handle to the mutex 1
+ * @param[in]  mutex2  handle to the mutex 2
+ * @param[out] result  comparison result (<tt>ABT_TRUE</tt>: same,
+ *                     <tt>ABT_FALSE</tt>: not same)
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
+{
+    ABTI_mutex *p_mutex1 = ABTI_mutex_get_ptr(mutex1);
+    ABTI_mutex *p_mutex2 = ABTI_mutex_get_ptr(mutex2);
+    *result = (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
+    return ABT_SUCCESS;
+}
+
 
 /*****************************************************************************/
 /* Private APIs                                                              */
@@ -228,13 +251,5 @@ int ABTI_mutex_waitlock(ABT_mutex mutex)
     while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
     }
     return abt_errno;
-}
-
-int ABTI_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, int *result)
-{
-    ABTI_mutex *p_mutex1 = ABTI_mutex_get_ptr(mutex1);
-    ABTI_mutex *p_mutex2 = ABTI_mutex_get_ptr(mutex2);
-    *result = p_mutex1 == p_mutex2;
-    return ABT_SUCCESS;
 }
 

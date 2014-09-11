@@ -100,6 +100,7 @@ typedef void *                 ABT_mutex;         /* Mutex */
 typedef void *                 ABT_cond;          /* Condition variable */
 typedef void *                 ABT_eventual;      /* Eventual */
 typedef void *                 ABT_future;        /* Future */
+typedef int                    ABT_bool;          /* Boolean type */
 
 /* Null Objects */
 #define ABT_XSTREAM_NULL        (NULL)
@@ -153,6 +154,9 @@ enum ABT_unit_type {
     ABT_UNIT_TYPE_OTHER
 };
 
+#define ABT_TRUE    1
+#define ABT_FALSE   0
+
 
 /* Scheduler Functions */
 typedef ABT_unit_type (*ABT_unit_get_type_fn)(ABT_unit);
@@ -200,7 +204,8 @@ int ABT_xstream_get_sched(ABT_xstream xstream, ABT_sched *sched);
 int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state);
 int ABT_xstream_get_num_threads(ABT_xstream xstream, int *num_threads);
 int ABT_xstream_get_num_tasks(ABT_xstream xstream, int *num_tasks);
-int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2, int *result);
+int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
+                      ABT_bool *result);
 int ABT_xstream_set_name(ABT_xstream xstream, const char *name);
 int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len);
 
@@ -220,7 +225,7 @@ int ABT_thread_set_callback(ABT_thread thread,
                             void (*callback_func)(void *arg), void *arg);
 int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream);
 int ABT_thread_migrate(ABT_thread thread);
-int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, int *result);
+int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result);
 int ABT_thread_retain(ABT_thread thread);
 int ABT_thread_release(ABT_thread thread);
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize);
@@ -246,7 +251,7 @@ int ABT_task_free(ABT_task *task);
 int ABT_task_cancel(ABT_task task);
 int ABT_task_self(ABT_task *task);
 int ABT_task_get_state(ABT_task task, ABT_task_state *state);
-int ABT_task_equal(ABT_task task1, ABT_task task2, int *result);
+int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
 int ABT_task_retain(ABT_task task);
 int ABT_task_release(ABT_task task);
 int ABT_task_set_name(ABT_task task, const char *name);
@@ -268,6 +273,7 @@ int ABT_mutex_lock_ptr(ABT_mutex *mutex);
 int ABT_mutex_trylock(ABT_mutex mutex);
 int ABT_mutex_unlock(ABT_mutex mutex);
 int ABT_mutex_unlock_ptr(ABT_mutex *mutex);
+int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result);
 
 /* Condition variable */
 int ABT_cond_create(ABT_cond *newcond);

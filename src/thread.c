@@ -602,19 +602,24 @@ int ABT_thread_migrate(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Compare two thread handles for equality.
+ * @brief   Compare two ULT handles for equality.
  *
- * @param[in]  thread1  handle to the thread 1
- * @param[in]  thread2  handle to the thread 2
- * @param[out] result   0: not same, 1: same
+ * \c ABT_thread_equal() compares two ULT handles for equality. If two handles
+ * are associated with the same ULT object, \c result will be set to
+ * \c ABT_TRUE. Otherwise, \c result will be set to \c ABT_FALSE.
+ *
+ * @param[in]  thread1  handle to the ULT 1
+ * @param[in]  thread2  handle to the ULT 2
+ * @param[out] result   comparison result (<tt>ABT_TRUE</tt>: same,
+ *                      <tt>ABT_FALSE</tt>: not same)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, int *result)
+int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
 {
     ABTI_thread *p_thread1 = ABTI_thread_get_ptr(thread1);
     ABTI_thread *p_thread2 = ABTI_thread_get_ptr(thread2);
-    *result = p_thread1 == p_thread2;
+    *result = (p_thread1 == p_thread2) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
 

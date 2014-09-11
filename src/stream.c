@@ -538,17 +538,23 @@ int ABT_xstream_get_num_tasks(ABT_xstream xstream, int *num_tasks)
  * @ingroup ES
  * @brief   Compare two ES handles for equality.
  *
+ * \c ABT_xstream_equal() compares two ES handles for equality. If two handles
+ * are associated with the same ES, \c result will be set to \c ABT_TRUE.
+ * Otherwise, \c result will be set to \c ABT_FALSE.
+ *
  * @param[in]  xstream1  handle to the ES 1
  * @param[in]  xstream2  handle to the ES 2
- * @param[out] result   0: not same, 1: same
+ * @param[out] result    comparison result (<tt>ABT_TRUE</tt>: same,
+ *                       <tt>ABT_FALSE</tt>: not same)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2, int *result)
+int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
+                      ABT_bool *result)
 {
     ABTI_xstream *p_xstream1 = ABTI_xstream_get_ptr(xstream1);
     ABTI_xstream *p_xstream2 = ABTI_xstream_get_ptr(xstream2);
-    *result = p_xstream1 == p_xstream2;
+    *result = (p_xstream1 == p_xstream2) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
 
