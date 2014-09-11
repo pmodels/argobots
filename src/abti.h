@@ -142,6 +142,7 @@ struct ABTI_task {
     uint64_t id;               /* ID */
     char *p_name;              /* Name */
     ABT_task_state state;      /* State */
+    ABT_bool migratable;       /* Migratability */
     uint32_t refcount;         /* Reference count */
 
     uint32_t request;          /* Request */

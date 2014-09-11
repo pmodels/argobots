@@ -46,13 +46,14 @@ int ABT_task_create(ABT_xstream xstream,
         goto fn_fail;
     }
 
-    p_newtask->id       = ABTI_task_get_new_id();
-    p_newtask->p_name   = NULL;
-    p_newtask->state    = ABT_TASK_STATE_READY;
-    p_newtask->refcount = (newtask != NULL) ? 1 : 0;
-    p_newtask->request  = 0;
-    p_newtask->f_task   = task_func;
-    p_newtask->p_arg    = arg;
+    p_newtask->id         = ABTI_task_get_new_id();
+    p_newtask->p_name     = NULL;
+    p_newtask->state      = ABT_TASK_STATE_READY;
+    p_newtask->migratable = ABT_TRUE;
+    p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
+    p_newtask->request    = 0;
+    p_newtask->f_task     = task_func;
+    p_newtask->p_arg      = arg;
 
     /* Create a mutex */
     abt_errno = ABT_mutex_create(&p_newtask->mutex);
@@ -226,6 +227,36 @@ int ABT_task_self(ABT_task *task)
 
 /**
  * @ingroup TASK
+ * @brief   Get the ES associated with the target tasklet.
+ *
+ * \c ABT_task_get_xstream() returns the ES handle associated with the target
+ * tasklet to \c xstream. If the target tasklet is not associated with any ES,
+ * \c ABT_XSTREAM_NULL is returned to \c xstream.
+ *
+ * @param[in]  task     handle to the target tasklet
+ * @param[out] xstream  ES handle
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    /* Return value */
+    *xstream = ABTI_xstream_get_handle(p_task->p_xstream);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_task_get_xstream", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Return the state of task.
  *
  * @param[in]  task   handle to the target task
@@ -248,6 +279,68 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
 
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_task_get_state", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
+ * @brief   Set the tasklet's migratability.
+ *
+ * \c ABT_task_set_migratable() sets the tasklet's migratability. By default,
+ * all tasklets are migratable.
+ * If \c flag is \c ABT_TRUE, the target tasklet becomes migratable. On the
+ * other hand, if \c flag is \c ABT_FALSE, the target tasklet becomes
+ * unmigratable.
+ *
+ * @param[in] task  handle to the target tasklet
+ * @param[in] flag  migratability flag (<tt>ABT_TRUE</tt>: migratable,
+ *                  <tt>ABT_FALSE</tt>: not)
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_set_migratable(ABT_task task, ABT_bool flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    p_task->migratable = flag;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_task_set_migratable", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
+ * @brief   Get the tasklet's migratability.
+ *
+ * \c ABT_task_is_migratable() returns the tasklet's migratability through
+ * \c flag. If the target tasklet is migratable, \c ABT_TRUE is returned to
+ * \c flag. Otherwise, \c flag is set to \c ABT_FALSE.
+ *
+ * @param[in]  task  handle to the target tasklet
+ * @param[out] flag  migratability flag (<tt>ABT_TRUE</tt>: migratable,
+ *                   <tt>ABT_FALSE</tt>: not)
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_is_migratable(ABT_task task, ABT_bool *flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    *flag = p_task->migratable;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_task_is_migratable", abt_errno);
     goto fn_exit;
 }
 
