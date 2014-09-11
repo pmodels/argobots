@@ -27,6 +27,7 @@ int ABTI_local_init(ABTI_xstream *p_xstream)
 
     lp_ABTI_local->p_xstream = p_xstream;
     lp_ABTI_local->p_thread = NULL;
+    lp_ABTI_local->p_task = NULL;
 
   fn_exit:
     return abt_errno;

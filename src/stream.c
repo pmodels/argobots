@@ -897,6 +897,9 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
         goto fn_exit;
     }
 
+    /* Set the current running tasklet */
+    ABTI_local_set_task(p_task);
+
     /* Change the task state */
     p_task->state = ABT_TASK_STATE_RUNNING;
 
@@ -907,6 +910,9 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
 
     abt_errno = ABTI_xstream_terminate_task(p_task);
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Unset the current running tasklet */
+    ABTI_local_set_task(NULL);
 
   fn_exit:
     return abt_errno;

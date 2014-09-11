@@ -78,7 +78,8 @@ extern "C" {
 #define ABT_ERR_COND             23  /* Condition-related error */
 #define ABT_ERR_EVENTUAL         24  /* Eventual-related error */
 #define ABT_ERR_FUTURE           25  /* Future-related error */
-#define ABT_ERR_OTHER            26  /* Other error */
+#define ABT_ERR_UNINITIALIZED    26  /* Uninitialized */
+#define ABT_ERR_OTHER            27  /* Other error */
 
 
 /* Data Types */

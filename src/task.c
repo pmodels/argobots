@@ -196,17 +196,32 @@ int ABT_task_cancel(ABT_task task)
 
 /**
  * @ingroup TASK
- * @brief   Return the task handle of the calling task.
+ * @brief   Return the handle of the calling tasklet.
  *
- * @param[out] task  task handle
+ * \c ABT_task_self() returns the handle of the calling tasklet.
+ * If ULTs call this routine, \c ABT_TASK_NULL will be returned to \c task.
+ *
+ * @param[out] task  tasklet handle
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_task_self(ABT_task *task)
 {
-    /* TODO */
-    HANDLE_ERROR("Not implemented");
-    return ABT_ERR_OTHER;
+    int abt_errno = ABT_SUCCESS;
+    ABTI_CHECK_INITIALIZED();
+
+    ABTI_task *p_task = ABTI_local_get_task();
+    if (p_task != NULL) {
+        ABTI_task_retain(p_task);
+    }
+    *task = ABTI_task_get_handle(p_task);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_task_self", abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -261,12 +276,13 @@ int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result)
 
 /**
  * @ingroup TASK
- * @brief   Increment the task reference count.
+ * @brief   Increment the tasklet's reference count.
  *
- * ABT_task_create() with non-null newtask argument performs an implicit
- * retain.
+ * \c ABT_task_retain() increments the tasklet's reference count by one.
+ * If the user obtains a tasklet handle through \c ABT_task_create() or
+ * \c ABT_task_self(), those routines perform an implicit retain.
  *
- * @param[in] task  handle to the task to retain
+ * @param[in] task  handle to the tasklet
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -276,7 +292,7 @@ int ABT_task_retain(ABT_task task)
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
-    ABTD_atomic_fetch_add_uint32(&p_task->refcount, 1);
+    ABTI_task_retain(p_task);
 
   fn_exit:
     return abt_errno;
@@ -288,28 +304,23 @@ int ABT_task_retain(ABT_task task)
 
 /**
  * @ingroup TASK
- * @brief   Decrement the task reference count.
+ * @brief   Decrement the tasklet's reference count.
  *
- * After the task reference count becomes zero, the task object corresponding
- * task handle is deleted.
+ * \c ABT_task_release() decrements the tasklet's reference count by one.
+ * After the tasklet's reference count becomes zero, the tasklet object will
+ * be freed.
  *
- * @param[in] task  handle to the task to release
+ * @param[in] task  handle to the tasklet
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_task_release(ABT_task task)
 {
     int abt_errno = ABT_SUCCESS;
-    uint32_t refcount;
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
-    while ((refcount = p_task->refcount) > 0) {
-        if (ABTD_atomic_cas_uint32(&p_task->refcount, refcount,
-            refcount - 1) == refcount) {
-            break;
-        }
-    }
+    ABTI_task_release(p_task);
 
   fn_exit:
     return abt_errno;
@@ -463,6 +474,22 @@ int ABTI_task_print(ABTI_task *p_task)
 
   fn_exit:
     return abt_errno;
+}
+
+void ABTI_task_retain(ABTI_task *p_task)
+{
+    ABTD_atomic_fetch_add_uint32(&p_task->refcount, 1);
+}
+
+void ABTI_task_release(ABTI_task *p_task)
+{
+    uint32_t refcount;
+    while ((refcount = p_task->refcount) > 0) {
+        if (ABTD_atomic_cas_uint32(&p_task->refcount, refcount,
+            refcount - 1) == refcount) {
+            break;
+        }
+    }
 }
 
 

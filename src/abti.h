@@ -235,6 +235,7 @@ struct ABTI_global {
 struct ABTI_local {
     ABTI_xstream *p_xstream;  /* Current ES */
     ABTI_thread *p_thread;    /* Current running ULT */
+    ABTI_task *p_task;        /* Current running tasklet */
 };
 
 
@@ -276,6 +277,12 @@ static inline ABTI_thread *ABTI_local_get_thread() {
 static inline void ABTI_local_set_thread(ABTI_thread *p_thread) {
     lp_ABTI_local->p_thread = p_thread;
 }
+static inline ABTI_task *ABTI_local_get_task() {
+    return lp_ABTI_local->p_task;
+}
+static inline void ABTI_local_set_task(ABTI_task *p_task) {
+    lp_ABTI_local->p_task = p_task;
+}
 
 /* Execution Stream (ES) */
 ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream);
@@ -311,6 +318,8 @@ void ABTI_thread_func_wrapper(int func_upper, int func_lower,
 ABT_thread *ABTI_thread_current();
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
+void ABTI_thread_retain(ABTI_thread *p_thread);
+void ABTI_thread_release(ABTI_thread *p_thread);
 
 /* ULT Attributes */
 ABTI_thread_attr *ABTI_thread_attr_get_ptr(ABT_thread_attr attr);
@@ -322,6 +331,8 @@ ABTI_task *ABTI_task_get_ptr(ABT_task task);
 ABT_task   ABTI_task_get_handle(ABTI_task *p_task);
 int ABTI_task_free(ABTI_task *p_task);
 int ABTI_task_print(ABTI_task *p_task);
+void ABTI_task_retain(ABTI_task *p_task);
+void ABTI_task_release(ABTI_task *p_task);
 
 /* Scheduler */
 ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched);

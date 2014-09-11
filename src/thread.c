@@ -276,20 +276,26 @@ int ABT_thread_cancel(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Return the thread handle of the calling thread.
+ * @brief   Return the handle of the calling ULT.
  *
- * @param[out] thread  thread handle
+ * \c ABT_thread_self() returns the handle of the calling ULT. Both the primary
+ * ULT and secondary ULTs can get their handle through this routine.
+ * If tasklets call this routine, \c ABT_THREAD_NULL will be returned to
+ * \c thread.
+ *
+ * @param[out] thread  ULT handle
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_thread_self(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_CHECK_INITIALIZED();
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    /* Return value */
+    if (p_thread != NULL) {
+        ABTI_thread_retain(p_thread);
+    }
     *thread = ABTI_thread_get_handle(p_thread);
 
   fn_exit:
@@ -723,12 +729,13 @@ int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
 
 /**
  * @ingroup ULT
- * @brief   Increment the thread reference count.
+ * @brief   Increment the ULT's reference count.
  *
- * ABT_thread_create() with non-null newthread argument and ABT_thread_self()
- * perform an implicit retain.
+ * \c ABT_thread_retain() increments the ULT's reference count by one.
+ * If the user obtains a ULT handle through \c ABT_thread_create() or
+ * \c ABT_thread_self(), those routines perform an implicit retain.
  *
- * @param[in] thread  handle to the thread to retain
+ * @param[in] thread  handle to the ULT
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -738,7 +745,7 @@ int ABT_thread_retain(ABT_thread thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTD_atomic_fetch_add_uint32(&p_thread->refcount, 1);
+    ABTI_thread_retain(p_thread);
 
   fn_exit:
     return abt_errno;
@@ -750,28 +757,22 @@ int ABT_thread_retain(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Decrement the thread reference count.
+ * @brief   Decrement the ULT's reference count.
  *
- * After the thread reference count becomes zero, the thread object
- * corresponding thread handle is deleted.
+ * \c ABT_thread_release() decrements the ULT's reference count by one.
+ * After the ULT's reference count becomes zero, the ULT object will be freed.
  *
- * @param[in] thread  handle to the thread to release
+ * @param[in] thread  handle to the ULT
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_thread_release(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    uint32_t refcount;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    while ((refcount = p_thread->refcount) > 0) {
-        if (ABTD_atomic_cas_uint32(&p_thread->refcount, refcount,
-            refcount - 1) == refcount) {
-            break;
-        }
-    }
+    ABTI_thread_release(p_thread);
 
   fn_exit:
     return abt_errno;
@@ -1378,6 +1379,22 @@ void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req)
     }
 
     return result;
+}
+
+void ABTI_thread_retain(ABTI_thread *p_thread)
+{
+    ABTD_atomic_fetch_add_uint32(&p_thread->refcount, 1);
+}
+
+void ABTI_thread_release(ABTI_thread *p_thread)
+{
+    uint32_t refcount;
+    while ((refcount = p_thread->refcount) > 0) {
+        if (ABTD_atomic_cas_uint32(&p_thread->refcount, refcount,
+            refcount - 1) == refcount) {
+            break;
+        }
+    }
 }
 
 

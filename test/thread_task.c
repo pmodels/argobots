@@ -46,6 +46,15 @@ ABT_thread pick_one(ABT_thread *threads, int num_threads)
 
 void thread_func(void *arg)
 {
+    ABT_thread my_handle;
+    ABT_thread_state my_state;
+    ABT_thread_self(&my_handle);
+    ABT_thread_get_state(my_handle, &my_state);
+    if (my_state != ABT_THREAD_STATE_RUNNING) {
+        fprintf(stderr, "ERROR: not in the RUNNUNG state\n");
+    }
+    ABT_thread_release(my_handle);
+
     thread_arg_t *t_arg = (thread_arg_t *)arg;
     ABT_thread next;
 
@@ -58,10 +67,25 @@ void thread_func(void *arg)
     ABT_thread_yield_to(next);
 
     printf("[TH%d]: after yield\n", t_arg->id); fflush(stdout);
+
+    ABT_task task;
+    ABT_task_self(&task);
+    if (task != ABT_TASK_NULL) {
+        fprintf(stderr, "ERROR: should not be tasklet\n");
+    }
 }
 
 void task_func1(void *arg)
 {
+    ABT_task my_handle;
+    ABT_task_state my_state;
+    ABT_task_self(&my_handle);
+    ABT_task_get_state(my_handle, &my_state);
+    if (my_state != ABT_TASK_STATE_RUNNING) {
+        fprintf(stderr, "ERROR: not in the RUNNUNG state\n");
+    }
+    ABT_task_release(my_handle);
+
     int i;
     size_t num = (size_t)arg;
     unsigned long long result = 1;
@@ -73,6 +97,12 @@ void task_func1(void *arg)
 
 void task_func2(void *arg)
 {
+    ABT_thread thread;
+    ABT_thread_self(&thread);
+    if (thread != ABT_THREAD_NULL) {
+        fprintf(stderr, "ERROR: should not be ULT\n");
+    }
+
     size_t i;
     task_arg_t *my_arg = (task_arg_t *)arg;
     unsigned long long result = 1;

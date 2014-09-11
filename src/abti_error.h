@@ -6,7 +6,13 @@
 #ifndef ABTI_ERROR_H_INCLUDED
 #define ABTI_ERROR_H_INCLUDED
 
-#define ABTI_CHECK_ERROR(abt_errno)  \
+#define ABTI_CHECK_INITIALIZED()                \
+    if (gp_ABTI_global == NULL) {               \
+        abt_errno = ABT_ERR_UNINITIALIZED;      \
+        goto fn_fail;                           \
+    }
+
+#define ABTI_CHECK_ERROR(abt_errno)             \
     if (abt_errno != ABT_SUCCESS) goto fn_fail
 
 #define ABTI_CHECK_NULL_XSTREAM_PTR(p)          \
