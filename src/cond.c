@@ -19,7 +19,7 @@
  * If an error occurs in this routine, a non-zero error code will be returned
  * and newcond will be set to \c ABT_COND_NULL.
  *
- * @param[out] cond  handle to a new condition variable
+ * @param[out] newcond  handle to a new condition variable
  * @return Error code
  * @retval ABT_SUCCESS on success
  */

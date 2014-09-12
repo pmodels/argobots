@@ -205,10 +205,10 @@ ABT_future ABTI_future_get_handle(ABTI_future *p_future)
 
 /**
  * @ingroup FUTURE_PRIVATE
- * @brief   Signals all threads blocking on a future once the result has been
+ * @brief   Signal all ULTs blocking on a future once the result has been
  *          calculated.
  *
- * @param[in]  data       Pointer to future's data
+ * @param[in] p_future  pointer to the internal future struct
  * @return No value returned
  */
 void ABTI_future_signal(ABTI_future *p_future)

@@ -173,10 +173,10 @@ ABT_eventual ABTI_eventual_get_handle(ABTI_eventual *p_eventual)
 
 /**
  * @ingroup EVENTUAL_PRIVATE
- * @brief   Signals all ULTs blocking on an eventual once the result has been
+ * @brief   Signal all ULTs blocking on an eventual once the result has been
  *          calculated.
  *
- * @param[in]  data       Pointer to eventual's data
+ * @param[in] p_eventual  pointer to internal eventual struct
  * @return No value returned
  */
 void ABTI_eventual_signal(ABTI_eventual *p_eventual)
