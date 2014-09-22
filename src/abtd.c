@@ -35,7 +35,7 @@ int ABTD_xstream_context_join(ABTD_xstream_context ctx)
     return abt_errno;
 }
 
-int ABTD_xstream_context_exit()
+int ABTD_xstream_context_exit(void)
 {
     pthread_exit(NULL);
     return ABT_SUCCESS;

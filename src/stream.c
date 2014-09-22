@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static uint64_t ABTI_xstream_get_new_rank();
+static uint64_t ABTI_xstream_get_new_rank(void);
 static void *ABTI_xstream_loop(void *p_arg);
 
 
@@ -227,7 +227,7 @@ int ABT_xstream_join(ABT_xstream xstream)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_exit()
+int ABT_xstream_exit(void)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -724,7 +724,7 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
     goto fn_exit;
 }
 
-int ABTI_xstream_start_any()
+int ABTI_xstream_start_any(void)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1127,7 +1127,7 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static uint64_t ABTI_xstream_get_new_rank()
+static uint64_t ABTI_xstream_get_new_rank(void)
 {
     static uint64_t xstream_rank = 0;
     return ABTD_atomic_fetch_add_uint64(&xstream_rank, 1);

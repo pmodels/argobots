@@ -188,13 +188,13 @@ typedef struct {
 
 /* Init & Finalize */
 int ABT_init(int argc, char **argv);
-int ABT_finalize();
+int ABT_finalize(void);
 
 /* Execution Stream (ES) */
 int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream);
 int ABT_xstream_free(ABT_xstream *xstream);
 int ABT_xstream_join(ABT_xstream xstream);
-int ABT_xstream_exit();
+int ABT_xstream_exit(void);
 int ABT_xstream_cancel(ABT_xstream xstream);
 int ABT_xstream_self(ABT_xstream *xstream);
 int ABT_xstream_self_rank(int *rank);
@@ -216,13 +216,13 @@ int ABT_thread_create(ABT_xstream xstream,
                       ABT_thread_attr attr, ABT_thread *newthread);
 int ABT_thread_free(ABT_thread *thread);
 int ABT_thread_join(ABT_thread thread);
-int ABT_thread_exit();
+int ABT_thread_exit(void);
 int ABT_thread_cancel(ABT_thread thread);
 int ABT_thread_self(ABT_thread *thread);
 int ABT_thread_get_xstream(ABT_thread thread, ABT_xstream *xstream);
 int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
 int ABT_thread_yield_to(ABT_thread thread);
-int ABT_thread_yield();
+int ABT_thread_yield(void);
 int ABT_thread_migrate_to(ABT_thread thread, ABT_xstream xstream);
 int ABT_thread_migrate(ABT_thread thread);
 int ABT_thread_set_callback(ABT_thread thread,

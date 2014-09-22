@@ -13,7 +13,7 @@ ABT_thread th1, th2, th3;
 ABT_eventual myeventual;
 
 #define LOOP_CNT  10
-void fn1()
+void fn1(void *args)
 {
     int i = 0;
     void *data =  malloc(EVENTUAL_SIZE);
@@ -22,7 +22,7 @@ void fn1()
     printf("Thread 1 continue iteration %d returning from eventual \n", i);
 }
 
-void fn2()
+void fn2(void *args)
 {
     int i = 0;
     void *data = malloc(EVENTUAL_SIZE);
@@ -31,7 +31,7 @@ void fn2()
     printf("Thread 2 continue iteration %d returning from eventual \n", i);
 }
 
-void fn3()
+void fn3(void *args)
 {
     int i = 0;
     printf("Thread 3 iteration %d signal eventual \n", i);

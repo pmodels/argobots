@@ -265,20 +265,20 @@ int ABTI_global_has_task(int *result);
 
 /* ES Local Data */
 int ABTI_local_init(ABTI_xstream *p_xstream);
-int ABTI_local_finalize();
-static inline ABTI_xstream *ABTI_local_get_xstream() {
+int ABTI_local_finalize(void);
+static inline ABTI_xstream *ABTI_local_get_xstream(void) {
     return lp_ABTI_local->p_xstream;
 }
 static inline void ABTI_local_set_xstream(ABTI_xstream *p_xstream) {
     lp_ABTI_local->p_xstream = p_xstream;
 }
-static inline ABTI_thread *ABTI_local_get_thread() {
+static inline ABTI_thread *ABTI_local_get_thread(void) {
     return lp_ABTI_local->p_thread;
 }
 static inline void ABTI_local_set_thread(ABTI_thread *p_thread) {
     lp_ABTI_local->p_thread = p_thread;
 }
-static inline ABTI_task *ABTI_local_get_task() {
+static inline ABTI_task *ABTI_local_get_task(void) {
     return lp_ABTI_local->p_task;
 }
 static inline void ABTI_local_set_task(ABTI_task *p_task) {
@@ -290,7 +290,7 @@ ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream);
 ABT_xstream   ABTI_xstream_get_handle(ABTI_xstream *p_xstream);
 int ABTI_xstream_free(ABTI_xstream *p_xstream);
 int ABTI_xstream_start(ABTI_xstream *p_xstream);
-int ABTI_xstream_start_any();
+int ABTI_xstream_start_any(void);
 int ABTI_xstream_schedule(ABTI_xstream *p_xstream);
 int ABTI_xstream_schedule_thread(ABTI_thread *p_thread);
 int ABTI_xstream_schedule_task(ABTI_task *p_task);
@@ -308,15 +308,15 @@ ABT_thread   ABTI_thread_get_handle(ABTI_thread *p_thread);
 int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread);
 int ABTI_thread_free_main(ABTI_thread *p_thread);
 int ABTI_thread_free(ABTI_thread *p_thread);
-int ABTI_thread_suspend();
-int ABTI_thread_relinquish();
+int ABTI_thread_suspend(void);
+int ABTI_thread_relinquish(void);
 int ABTI_thread_set_ready(ABT_thread thread);
 int ABTI_thread_set_blocked(ABT_thread thread);
 int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr);
 int ABTI_thread_print(ABTI_thread *p_thread);
 void ABTI_thread_func_wrapper(int func_upper, int func_lower,
                               int arg_upper, int arg_lower);
-ABT_thread *ABTI_thread_current();
+ABT_thread *ABTI_thread_current(void);
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
 void ABTI_thread_retain(ABTI_thread *p_thread);

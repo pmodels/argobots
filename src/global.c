@@ -119,7 +119,7 @@ int ABT_init(int argc, char **argv)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_finalize()
+int ABT_finalize(void)
 {
     assert(gp_ABTI_global != NULL);
     int abt_errno = ABT_SUCCESS;

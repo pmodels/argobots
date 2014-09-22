@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static ABT_thread_id ABTI_thread_get_new_id();
+static ABT_thread_id ABTI_thread_get_new_id(void);
 
 
 /** @defgroup ULT User-level Thread (ULT)
@@ -228,7 +228,7 @@ int ABT_thread_join(ABT_thread thread)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_exit()
+int ABT_thread_exit(void)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -455,7 +455,7 @@ int ABT_thread_yield_to(ABT_thread thread)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_yield()
+int ABT_thread_yield(void)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1116,7 +1116,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     goto fn_exit;
 }
 
-int ABTI_thread_suspend()
+int ABTI_thread_suspend(void)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1156,7 +1156,7 @@ int ABTI_thread_suspend()
  * This function relinquishes the processor without changing the state of the thread. Its main purpose
  * is to avoid a race condition with synchronization primitives (future, eventual, barrier).
  */
-int ABTI_thread_relinquish()
+int ABTI_thread_relinquish(void)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1324,7 +1324,7 @@ void ABTI_thread_func_wrapper(int func_upper, int func_lower,
 }
 
 
-ABT_thread *ABTI_thread_current()
+ABT_thread *ABTI_thread_current(void)
 {
     return (ABT_thread *)ABTI_local_get_thread();
 }
@@ -1402,7 +1402,8 @@ void ABTI_thread_release(ABTI_thread *p_thread)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static ABT_thread_id ABTI_thread_get_new_id() {
+static ABT_thread_id ABTI_thread_get_new_id(void)
+{
     static uint64_t thread_id = 0;
     return (ABT_thread_id)ABTD_atomic_fetch_add_uint64(&thread_id, 1);
 }

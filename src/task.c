@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static uint64_t ABTI_task_get_new_id();
+static uint64_t ABTI_task_get_new_id(void);
 
 
 /** @defgroup TASK Tasklet
@@ -590,7 +590,7 @@ void ABTI_task_release(ABTI_task *p_task)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static uint64_t ABTI_task_get_new_id()
+static uint64_t ABTI_task_get_new_id(void)
 {
     static uint64_t task_id = 0;
     return ABTD_atomic_fetch_add_uint64(&task_id, 1);

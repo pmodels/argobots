@@ -37,7 +37,7 @@ int ABTI_local_init(ABTI_xstream *p_xstream)
     goto fn_exit;
 }
 
-int ABTI_local_finalize()
+int ABTI_local_finalize(void)
 {
     assert(lp_ABTI_local != NULL);
     int abt_errno = ABT_SUCCESS;
