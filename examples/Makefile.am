@@ -1,8 +1,19 @@
+# -*- Mode: Makefile; -*-
+#
+# See COPYRIGHT in top-level directory.
+#
+
 AM_CPPFLAGS = $(DEPS_CPPFLAGS)
-AM_CPPFLAGS += -I../src
+AM_CPPFLAGS += -I$(top_srcdir)/src/include
 AM_LDFLAGS = $(DEPS_LDFLAGS)
 
-LDADD = ../libabt.la
+libabt = $(top_srcdir)/src/libabt.la
+
+$(libabt):
+	$(MAKE) -C $(top_srcdir)/src
+
+LDADD = $(libabt)
+
 noinst_PROGRAMS =           \
 	fibonacci_future        \
 	fibonacci_task          \

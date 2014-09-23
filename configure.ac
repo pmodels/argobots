@@ -68,14 +68,17 @@ AC_HEADER_STDC
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])
 AM_SILENT_RULES([yes])
 AM_PROG_AR
-AC_CONFIG_HEADER(config.h)
 
 LT_INIT
 
 AC_PROG_INSTALL
 
-AC_OUTPUT(Makefile
-	Doxyfile
-	src/abt.h
-    test/Makefile
-    examples/Makefile)
+AC_CONFIG_HEADERS([src/include/config.h])
+AC_CONFIG_FILES([Makefile
+                 Doxyfile
+                 src/include/abt.h
+                 src/Makefile
+                 test/Makefile
+                 test/basic/Makefile
+                 examples/Makefile])
+AC_OUTPUT

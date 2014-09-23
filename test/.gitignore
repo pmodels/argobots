@@ -1,0 +1,21 @@
+# basic
+basic/xstream_create
+basic/thread_create
+basic/thread_create2
+basic/thread_attr
+basic/thread_yield
+basic/thread_yield_to
+basic/thread_migrate_to
+basic/thread_migrate
+basic/thread_id
+basic/task_create
+basic/thread_task
+basic/thread_task_num
+basic/name
+basic/scheduler_basic
+basic/scheduler_prio
+basic/scheduler_user
+basic/mutex
+basic/condition
+basic/future_create
+basic/eventual_create
