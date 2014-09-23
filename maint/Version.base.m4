@@ -19,9 +19,9 @@ dnl now dump out a shell script header for those looking to change the version s
 # all times w.r.t. the version.m4 file.
 
 dnl now provide shell versions so that simple scripts can still use
-dnl $ARGOBOTS_VERSION as before
-ARGOBOTS_VERSION=ARGOBOTS_VERSION_m4
-export ARGOBOTS_VERSION
+dnl $ABT_VERSION as before
+ABT_VERSION=ABT_VERSION_m4
+export ABT_VERSION
 
 dnl balance our pushed diversion
 m4_divert_pop([])dnl

@@ -1,4 +1,7 @@
 #! /bin/sh
+#
+# See COPYRIGHT in top-level directory.
+#
 
 ########################################################################
 ## Utility functions
@@ -158,7 +161,7 @@ fi
 echo_n "Updating the README... "
 . ./maint/Version
 if [ -f README.vin ] ; then
-    sed -e "s/%VERSION%/${ARGOBOTS_VERSION}/g" README.vin > README
+    sed -e "s/%VERSION%/${ABT_VERSION}/g" README.vin > README
     echo "done"
 else
     echo "error"
