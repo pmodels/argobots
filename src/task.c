@@ -460,12 +460,15 @@ int ABT_task_set_name(ABT_task task, const char *name)
 
 /**
  * @ingroup TASK
- * @brief   Return the task's name and its length.
+ * @brief   Return the name of tasklet and its length.
  *
- * If name is NULL, only len is returned.
+ * \c ABT_task_get_name() gets the string name of target tasklet and the length
+ * of name in bytes. If \c name is NULL, only \c len is returned.
+ * If \c name is not NULL, it should have enough space to save \c len bytes of
+ * characters. If \c len is NULL, \c len is ignored.
  *
- * @param[in]  task  handle to the target task
- * @param[out] name  task name
+ * @param[in]  task  handle to the target tasklet
+ * @param[out] name  tasklet name
  * @param[out] len   the length of name in bytes
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -476,9 +479,11 @@ int ABT_task_get_name(ABT_task task, char *name, size_t *len)
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
-    *len = strlen(p_task->p_name);
     if (name != NULL) {
         ABTU_strcpy(name, p_task->p_name);
+    }
+    if (len != NULL) {
+        *len = strlen(p_task->p_name);
     }
 
   fn_exit:

@@ -597,7 +597,10 @@ int ABT_xstream_set_name(ABT_xstream xstream, const char *name)
  * @ingroup ES
  * @brief   Return the name of ES and its length.
  *
- * If name is NULL, only len is returned.
+ * \c ABT_xstream_get_name() gets the string name of target ES and the length
+ * of name in bytes. If \c name is NULL, only \c len is returned.
+ * If \c name is not NULL, it should have enough space to save \c len bytes of
+ * characters. If \c len is NULL, \c len is ignored.
  *
  * @param[in]  xstream  handle to the target ES
  * @param[out] name     ES name
@@ -611,9 +614,11 @@ int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    *len = strlen(p_xstream->p_name);
     if (name != NULL) {
         ABTU_strcpy(name, p_xstream->p_name);
+    }
+    if (len != NULL) {
+        *len = strlen(p_xstream->p_name);
     }
 
   fn_exit:

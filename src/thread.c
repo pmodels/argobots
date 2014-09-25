@@ -932,12 +932,15 @@ int ABT_thread_set_name(ABT_thread thread, const char *name)
 
 /**
  * @ingroup ULT
- * @brief   Return the thread's name and its length.
+ * @brief   Return the name of ULT and its length.
  *
- * If name is NULL, only len is returned.
+ * \c ABT_thread_get_name() gets the string name of target ULT and the length
+ * of name in bytes. If \c name is NULL, only \c len is returned.
+ * If \c name is not NULL, it should have enough space to save \c len bytes of
+ * characters. If \c len is NULL, \c len is ignored.
  *
- * @param[in]  thread  handle to the target thread
- * @param[out] name    thread name
+ * @param[in]  thread  handle to the target ULT
+ * @param[out] name    ULT name
  * @param[out] len     the length of name in bytes
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -948,9 +951,11 @@ int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *len = strlen(p_thread->p_name);
     if (name != NULL) {
         ABTU_strcpy(name, p_thread->p_name);
+    }
+    if (len != NULL) {
+        *len = strlen(p_thread->p_name);
     }
 
   fn_exit:
