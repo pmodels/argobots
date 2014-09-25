@@ -305,6 +305,9 @@ int ABT_future_wait(ABT_future future);
 int ABT_future_test(ABT_future future, int *flag);
 int ABT_future_set(ABT_future future, void *value);
 
+/* Error */
+int ABT_error_get_str(int errno, char *str, size_t *len);
+
 #if defined(__cplusplus)
 }
 #endif

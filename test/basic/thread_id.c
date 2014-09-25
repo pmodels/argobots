@@ -6,16 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <abt.h>
+#include "abt.h"
+#include "abttest.h"
 
 #define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_THREADS     4
-
-#define HANDLE_ERROR(ret,msg)                           \
-    if (ret != ABT_SUCCESS) {                           \
-        fprintf(stderr, "ERROR[%d]: %s\n", ret, msg);   \
-        exit(EXIT_FAILURE);                             \
-    }
 
 void thread_func(void *arg)
 {
@@ -23,7 +18,7 @@ void thread_func(void *arg)
     ABT_thread_id thread_id;
     ABT_thread_self(&thread);
     ABT_thread_get_id(thread, &thread_id);
-    printf("My thread id is %lu\n", thread_id);
+    ABT_test_printf(1, "My thread id is %lu\n", thread_id);
 }
 
 int main(int argc, char *argv[])
@@ -41,15 +36,14 @@ int main(int argc, char *argv[])
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
 
     /* Initialize */
-    ret = ABT_init(argc, argv);
-    HANDLE_ERROR(ret, "ABT_init");
+    ABT_test_init(argc, argv);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    HANDLE_ERROR(ret, "ABT_xstream_self");
+    ABT_TEST_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_create");
+        ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create threads */
@@ -59,7 +53,7 @@ int main(int argc, char *argv[])
             ret = ABT_thread_create(xstreams[i],
                     thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
                     NULL);
-            HANDLE_ERROR(ret, "ABT_thread_create");
+            ABT_TEST_ERROR(ret, "ABT_thread_create");
         }
     }
 
@@ -69,20 +63,19 @@ int main(int argc, char *argv[])
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_join");
+        ABT_TEST_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_free(&xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_free");
+        ABT_TEST_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
-    ret = ABT_finalize();
-    HANDLE_ERROR(ret, "ABT_finalize");
+    ret = ABT_test_finalize(0);
 
     free(xstreams);
 
-    return EXIT_SUCCESS;
+    return ret;
 }

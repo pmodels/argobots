@@ -6,16 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <abt.h>
+#include "abt.h"
+#include "abttest.h"
 
 #define DEFAULT_NUM_THREADS     4
 #define DEFAULT_NUM_TASKS       4
-
-#define HANDLE_ERROR(ret,msg)                           \
-    if (ret != ABT_SUCCESS) {                           \
-        fprintf(stderr, "ERROR[%d]: %s\n", ret, msg);   \
-        exit(EXIT_FAILURE);                             \
-    }
 
 void thread_func(void *arg)
 {
@@ -42,34 +37,35 @@ int main(int argc, char *argv[])
     int err = 0;
 
     /* Initialize */
-    ret = ABT_init(argc, argv);
-    HANDLE_ERROR(ret, "ABT_init");
+    ABT_test_init(argc, argv);
 
     /* Get the SELF Execution Stream */
     ret = ABT_xstream_self(&xstream);
-    HANDLE_ERROR(ret, "ABT_xstream_self");
+    ABT_TEST_ERROR(ret, "ABT_xstream_self");
 
     /* Create ULTs */
     for (i = 0; i < num_threads; i++) {
         ret = ABT_thread_create(xstream, thread_func, NULL,
                 ABT_THREAD_ATTR_NULL, NULL);
-        HANDLE_ERROR(ret, "ABT_thread_create");
+        ABT_TEST_ERROR(ret, "ABT_thread_create");
     }
 
     /* Create tasklets */
     for (i = 0; i < num_tasks; i++) {
         ret = ABT_task_create(xstream, task_func, NULL, NULL);
-        HANDLE_ERROR(ret, "ABT_task_create");
+        ABT_TEST_ERROR(ret, "ABT_task_create");
     }
 
     /* Get the numbers of ULTs and tasklets */
     ABT_xstream_get_num_threads(xstream, &n_threads);
     ABT_xstream_get_num_tasks(xstream, &n_tasks);
     if (n_threads != num_threads) {
+        err++;
         printf("# of ULTs: expected(%d) vs. result(%d)\n",
                num_threads, n_threads);
     }
     if (n_tasks != num_tasks) {
+        err++;
         printf("# of Tasklets: expected(%d) vs. result(%d)\n",
                num_tasks, n_tasks);
     }
@@ -81,19 +77,18 @@ int main(int argc, char *argv[])
     ABT_xstream_get_num_threads(xstream, &n_threads);
     ABT_xstream_get_num_tasks(xstream, &n_tasks);
     if (n_threads != 0) {
+        err++;
         printf("# of ULTs: expected(%d) vs. result(%d)\n", 0, n_threads);
     }
     if (n_tasks != 0) {
+        err++;
         printf("# of Tasklets: expected(%d) vs. result(%d)\n", 0, n_tasks);
     }
 
     /* Finalize */
-    ret = ABT_finalize();
-    HANDLE_ERROR(ret, "ABT_finalize");
+    ret = ABT_test_finalize(err);
 
-    if (err == 0) printf("No Error\n");
-
-    return EXIT_SUCCESS;
+    return ret;
 }
 
 

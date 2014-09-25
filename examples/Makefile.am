@@ -3,21 +3,15 @@
 # See COPYRIGHT in top-level directory.
 #
 
-AM_CPPFLAGS = $(DEPS_CPPFLAGS)
-AM_CPPFLAGS += -I$(top_srcdir)/src/include
-AM_LDFLAGS = $(DEPS_LDFLAGS)
-
-libabt = $(top_srcdir)/src/libabt.la
-
-$(libabt):
-	$(MAKE) -C $(top_srcdir)/src
-
-LDADD = $(libabt)
-
-noinst_PROGRAMS =           \
-	fibonacci_future        \
-	fibonacci_task          \
+TESTS = \
+	fibonacci_future \
+	fibonacci_task \
 	fibonacci_thread_task
+
+check_PROGRAMS = $(TESTS)
+noinst_PROGRAMS = $(TESTS)
+
+include $(top_srcdir)/test/Makefile.mk
 
 fibonacci_future_SOURCES = fibonacci_future.c
 fibonacci_task_SOURCES = fibonacci_task.c

@@ -3,38 +3,32 @@
 # See COPYRIGHT in top-level directory.
 #
 
-AM_CPPFLAGS = $(DEPS_CPPFLAGS)
-AM_CPPFLAGS += -I$(top_srcdir)/src/include
-AM_LDFLAGS = $(DEPS_LDFLAGS)
-
-libabt = $(top_srcdir)/src/libabt.la
-
-$(libabt):
-	$(MAKE) -C $(top_srcdir)/src
-
-LDADD = $(libabt)
-
-noinst_PROGRAMS =    		\
-	xstream_create    		\
-	thread_create    		\
-	thread_create2   		\
-	thread_attr      		\
-	thread_yield     		\
-	thread_yield_to  		\
-	thread_migrate_to  		\
-	thread_migrate  		\
-	thread_id             	\
-	task_create      		\
-	thread_task      		\
-	thread_task_num    		\
-	name             		\
-	scheduler_basic  		\
-	scheduler_prio   		\
-	scheduler_user   		\
-	mutex            		\
-	condition          		\
-	future_create    		\
+TESTS = \
+	xstream_create \
+	thread_create \
+	thread_create2 \
+	thread_attr \
+	thread_yield \
+	thread_yield_to \
+	thread_migrate_to \
+	thread_migrate \
+	thread_id \
+	task_create \
+	thread_task \
+	thread_task_num \
+	name \
+	scheduler_basic \
+	scheduler_prio \
+	scheduler_user \
+	mutex \
+	condition \
+	future_create \
 	eventual_create
+
+check_PROGRAMS = $(TESTS)
+noinst_PROGRAMS = $(TESTS)
+
+include $(top_srcdir)/test/Makefile.mk
 
 xstream_create_SOURCES = xstream_create.c
 thread_create_SOURCES = thread_create.c

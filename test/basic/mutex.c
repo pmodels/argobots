@@ -6,16 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <abt.h>
+#include "abt.h"
+#include "abttest.h"
 
 #define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_THREADS     4
-
-#define HANDLE_ERROR(ret,msg)                           \
-    if (ret != ABT_SUCCESS) {                           \
-        fprintf(stderr, "ERROR[%d]: %s\n", ret, msg);   \
-        exit(EXIT_FAILURE);                             \
-    }
 
 int g_counter = 0;
 
@@ -33,6 +28,7 @@ void thread_func(void *arg)
     ABT_mutex_lock(t_arg->mutex);
     g_counter++;
     ABT_mutex_unlock(t_arg->mutex);
+    ABT_test_printf(1, "[TH%d] increased\n", t_arg->id);
 
     ABT_thread_yield();
 }
@@ -40,7 +36,7 @@ void thread_func(void *arg)
 int main(int argc, char *argv[])
 {
     int i, j;
-    int ret;
+    int ret, expected;
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
     if (argc > 1) num_xstreams = atoi(argv[1]);
@@ -52,26 +48,27 @@ int main(int argc, char *argv[])
     ABT_xstream *xstreams;
     thread_arg_t **args;
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
+    assert(xstreams != NULL);
     args = (thread_arg_t **)malloc(sizeof(thread_arg_t *) * num_xstreams);
+    assert(args != NULL);
     for (i = 0; i < num_xstreams; i++) {
         args[i] = (thread_arg_t *)malloc(sizeof(thread_arg_t) * num_threads);
     }
 
     /* Initialize */
-    ret = ABT_init(argc, argv);
-    HANDLE_ERROR(ret, "ABT_init");
+    ABT_test_init(argc, argv);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    HANDLE_ERROR(ret, "ABT_xstream_self");
+    ABT_TEST_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_create");
+        ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create a mutex */
     ret = ABT_mutex_create(&mutex);
-    HANDLE_ERROR(ret, "ABT_mutex_create");
+    ABT_TEST_ERROR(ret, "ABT_mutex_create");
 
     /* Create threads */
     for (i = 0; i < num_xstreams; i++) {
@@ -82,7 +79,7 @@ int main(int argc, char *argv[])
             ret = ABT_thread_create(xstreams[i],
                     thread_func, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
                     NULL);
-            HANDLE_ERROR(ret, "ABT_thread_create");
+            ABT_TEST_ERROR(ret, "ABT_thread_create");
         }
     }
 
@@ -92,24 +89,27 @@ int main(int argc, char *argv[])
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_join");
+        ABT_TEST_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free the mutex */
     ret = ABT_mutex_free(&mutex);
-    HANDLE_ERROR(ret, "ABT_mutex_free");
+    ABT_TEST_ERROR(ret, "ABT_mutex_free");
 
     /* Free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_free(&xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_free");
+        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+    }
+
+    /* Validation */
+    expected = num_xstreams * num_threads;
+    if (g_counter != expected) {
+        printf("g_counter = %d\n", g_counter);
     }
 
     /* Finalize */
-    ret = ABT_finalize();
-    HANDLE_ERROR(ret, "ABT_finalize");
-
-    printf("g_counter = %d\n", g_counter);
+    ret = ABT_test_finalize(g_counter != expected);
 
     for (i = 0; i < num_xstreams; i++) {
         free(args[i]);
@@ -117,6 +117,6 @@ int main(int argc, char *argv[])
     free(args);
     free(xstreams);
 
-    return EXIT_SUCCESS;
+    return ret;
 }
 

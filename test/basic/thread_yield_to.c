@@ -6,16 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <abt.h>
+#include "abt.h"
+#include "abttest.h"
 
 #define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_THREADS     4
-
-#define HANDLE_ERROR(ret,msg)                           \
-    if (ret != ABT_SUCCESS) {                           \
-        fprintf(stderr, "ERROR[%d]: %s\n", ret, msg);   \
-        exit(EXIT_FAILURE);                             \
-    }
 
 typedef struct thread_arg {
     int id;
@@ -43,15 +38,15 @@ void thread_func(void *arg)
     thread_arg_t *t_arg = (thread_arg_t *)arg;
     ABT_thread next;
 
-    printf("[TH%d]: brefore yield\n", t_arg->id); fflush(stdout);
+    ABT_test_printf(1, "[TH%d]: brefore yield\n", t_arg->id);
     next = pick_one(t_arg->threads, t_arg->num_threads);
     ABT_thread_yield_to(next);
 
-    printf("[TH%d]: doing something ...\n", t_arg->id); fflush(stdout);
+    ABT_test_printf(1, "[TH%d]: doing something ...\n", t_arg->id);
     next = pick_one(t_arg->threads, t_arg->num_threads);
     ABT_thread_yield_to(next);
 
-    printf("[TH%d]: after yield\n", t_arg->id); fflush(stdout);
+    ABT_test_printf(1, "[TH%d]: after yield\n", t_arg->id);
 }
 
 int main(int argc, char *argv[])
@@ -80,15 +75,14 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize */
-    ret = ABT_init(argc, argv);
-    HANDLE_ERROR(ret, "ABT_init");
+    ABT_test_init(argc, argv);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    HANDLE_ERROR(ret, "ABT_xstream_self");
+    ABT_TEST_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_create");
+        ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create threads */
@@ -101,7 +95,7 @@ int main(int argc, char *argv[])
             ret = ABT_thread_create(xstreams[i],
                     thread_func, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
                     &threads[i][j]);
-            HANDLE_ERROR(ret, "ABT_thread_create");
+            ABT_TEST_ERROR(ret, "ABT_thread_create");
         }
     }
 
@@ -111,25 +105,24 @@ int main(int argc, char *argv[])
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_join");
+        ABT_TEST_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free threads and Execution Streams */
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             ret = ABT_thread_free(&threads[i][j]);
-            HANDLE_ERROR(ret, "ABT_thread_free");
+            ABT_TEST_ERROR(ret, "ABT_thread_free");
         }
 
         if (i == 0) continue;
 
         ret = ABT_xstream_free(&xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_free");
+        ABT_TEST_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
-    ret = ABT_finalize();
-    HANDLE_ERROR(ret, "ABT_finalize");
+    ret = ABT_test_finalize(0);
 
     for (i = 0; i < num_xstreams; i++) {
         free(args[i]);
@@ -139,5 +132,5 @@ int main(int argc, char *argv[])
     free(threads);
     free(xstreams);
 
-    return EXIT_SUCCESS;
+    return ret;
 }

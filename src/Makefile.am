@@ -21,7 +21,8 @@ abt_sources = \
 	sched/sched.c \
 	sched/fifo.c \
 	sched/lifo.c \
-	sched/prio.c
+	sched/prio.c \
+	error.c
 
 include $(top_srcdir)/src/include/Makefile.mk
 

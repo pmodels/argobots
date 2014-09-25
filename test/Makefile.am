@@ -3,6 +3,6 @@
 # See COPYRIGHT in top-level directory.
 #
 
-SUBDIRS = basic
+SUBDIRS = util basic
 DIST_SUBDIRS = $(SUBDIRS)
 

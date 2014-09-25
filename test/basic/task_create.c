@@ -6,16 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <abt.h>
+#include "abt.h"
+#include "abttest.h"
 
 #define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_TASKS       4
-
-#define HANDLE_ERROR(ret,msg)                           \
-    if (ret != ABT_SUCCESS) {                           \
-        fprintf(stderr, "ERROR[%d]: %s\n", ret, msg);   \
-        exit(EXIT_FAILURE);                             \
-    }
 
 typedef struct {
     size_t num;
@@ -30,7 +25,7 @@ void task_func1(void *arg)
     for (i = 2; i <= num; i++) {
         result += i;
     }
-    printf("task_func1: num=%lu result=%llu\n", num, result);
+    ABT_test_printf(1, "task_func1: num=%lu result=%llu\n", num, result);
 }
 
 void task_func2(void *arg)
@@ -62,15 +57,14 @@ int main(int argc, char *argv[])
     args = (task_arg_t *)malloc(sizeof(task_arg_t) * num_tasks);
 
     /* Initialize */
-    ret = ABT_init(argc, argv);
-    HANDLE_ERROR(ret, "ABT_init");
+    ABT_test_init(argc, argv);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    HANDLE_ERROR(ret, "ABT_xstream_self");
+    ABT_TEST_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_create");
+        ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create tasks with task_func1 */
@@ -79,7 +73,7 @@ int main(int argc, char *argv[])
         ret = ABT_task_create(ABT_XSTREAM_NULL,
                               task_func1, (void *)num,
                               NULL);
-        HANDLE_ERROR(ret, "ABT_task_create");
+        ABT_TEST_ERROR(ret, "ABT_task_create");
     }
 
     /* Create tasks with task_func2 */
@@ -88,7 +82,7 @@ int main(int argc, char *argv[])
         ret = ABT_task_create(xstreams[i % num_xstreams],
                               task_func2, (void *)&args[i],
                               &tasks[i]);
-        HANDLE_ERROR(ret, "ABT_task_create");
+        ABT_TEST_ERROR(ret, "ABT_task_create");
     }
 
     /* Switch to other work units */
@@ -102,34 +96,33 @@ int main(int argc, char *argv[])
             ABT_thread_yield();
         } while (state != ABT_TASK_STATE_TERMINATED);
 
-        printf("task_func2: num=%lu result=%llu\n",
+        ABT_test_printf(1, "task_func2: num=%lu result=%llu\n",
                args[i].num, args[i].result);
 
         /* Free named tasks */
         ret = ABT_task_free(&tasks[i]);
-        HANDLE_ERROR(ret, "ABT_task_free");
+        ABT_TEST_ERROR(ret, "ABT_task_free");
     }
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_join");
+        ABT_TEST_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_free(&xstreams[i]);
-        HANDLE_ERROR(ret, "ABT_xstream_free");
+        ABT_TEST_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
-    ret = ABT_finalize();
-    HANDLE_ERROR(ret, "ABT_finalize");
+    ret = ABT_test_finalize(0);
 
     free(args);
     free(tasks);
     free(xstreams);
 
-    return EXIT_SUCCESS;
+    return ret;
 }
 
