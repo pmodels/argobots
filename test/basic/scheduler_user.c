@@ -190,7 +190,9 @@ void pool_push(ABT_pool pool, ABT_unit unit)
     my_unit->pool = my_pool;
     my_unit->pos = my_pool->empty_pos;
     my_pool->units[my_pool->empty_pos] = my_unit;
-    my_pool->num_units++;
+    if (my_pool->num_units++ == 0) {
+        my_pool->unit_pos = my_unit->pos;
+    }
 
     pool_set_next_empty_pos(my_pool);
 }
@@ -221,6 +223,7 @@ void pool_remove(ABT_pool pool, ABT_unit unit)
     }
 
     my_pool->units[my_unit->pos] = NULL;
+    my_pool->num_units--;
     if (my_unit->pos == my_pool->unit_pos)
         pool_set_next_unit_pos(my_pool);
     my_unit->pool = NULL;
