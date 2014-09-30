@@ -88,16 +88,17 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 	ABT_mutex_lock(p_eventual->mutex);
     if (!p_eventual->ready) {
         ABTI_thread_entry *cur = (ABTI_thread_entry*) ABTU_malloc(sizeof(ABTI_thread_entry));
-        cur->current = ABTI_thread_current();
+        ABTI_thread *p_current = ABTI_thread_current();
+        cur->current = p_current;
         cur->next = NULL;
         if(p_eventual->waiters.tail != NULL)
             p_eventual->waiters.tail->next = cur;
         p_eventual->waiters.tail = cur;
         if(p_eventual->waiters.head == NULL)
             p_eventual->waiters.head = cur;
-		ABTI_thread_set_blocked(ABTI_thread_current());
+		ABTI_thread_set_blocked(p_current);
 		ABT_mutex_unlock(p_eventual->mutex);
-        ABTI_thread_relinquish();
+        ABTI_thread_suspend(p_current);
     } else {
 		ABT_mutex_unlock(p_eventual->mutex);
 	}
@@ -184,8 +185,8 @@ void ABTI_eventual_signal(ABTI_eventual *p_eventual)
     ABTI_thread_entry *cur = p_eventual->waiters.head;
     while (cur != NULL)
     {
-        ABT_thread mythread = cur->current;
-        ABTI_thread_set_ready(mythread);
+        ABTI_thread *p_thread = cur->current;
+        ABTI_thread_set_ready(p_thread);
         ABTI_thread_entry *tmp = cur;
         cur=cur->next;
         free(tmp);

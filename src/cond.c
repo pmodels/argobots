@@ -46,7 +46,7 @@ int ABT_cond_create(ABT_cond *newcond)
     /* Allocate one entry for waiters and keep it */
     entry = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
     assert(entry != NULL);
-    entry->current = ABT_THREAD_NULL;
+    entry->current = NULL;
     entry->next = NULL;
     p_newcond->waiters.head = entry;
     p_newcond->waiters.tail = entry;
@@ -105,13 +105,13 @@ int ABT_cond_free(ABT_cond *cond)
  * @ingroup COND
  * @brief   Wait on the condition.
  *
- * The thread calling \c ABT_cond_wait() waits on the condition variable until
+ * The ULT calling \c ABT_cond_wait() waits on the condition variable until
  * it is signaled.
  * The user should call this routine while the mutex specified as \c mutex is
  * locked. The mutex will be automatically released while waiting. After signal
- * is received and the waiting thread is awakened, the mutex will be
- * automatically locked for use by the thread. The user is then responsible for
- * unlocking mutex when the thread is finished with it.
+ * is received and the waiting ULT is awakened, the mutex will be
+ * automatically locked for use by the ULT. The user is then responsible for
+ * unlocking mutex when the ULT is finished with it.
  *
  * @param[in] cond   handle to the condition variable
  * @param[in] mutex  handle to the mutex
@@ -124,7 +124,7 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
-    /* FIXME: should check if mutex was locked by the calling thread */
+    /* FIXME: should check if mutex was locked by the calling ULT */
 
     ABT_mutex_lock(p_cond->mutex);
 
@@ -139,15 +139,17 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
         }
     }
 
+    ABTI_thread *p_thread = ABTI_local_get_thread();
+
     if (p_cond->num_waiters == 0) {
         ABTI_thread_entry *entry = p_cond->waiters.head;
-        entry->current = ABTI_thread_get_handle(ABTI_local_get_thread());
+        entry->current = p_thread;
     } else {
         ABTI_thread_entry *entry;
         entry = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
         assert(entry != NULL);
 
-        entry->current = ABTI_thread_get_handle(ABTI_local_get_thread());
+        entry->current = p_thread;
         entry->next = NULL;
 
         p_cond->waiters.tail->next = entry;
@@ -156,13 +158,16 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 
     p_cond->num_waiters++;
 
+    /* Change the ULT's state to BLOCKED */
+    ABTI_thread_set_blocked(p_thread);
+
     ABT_mutex_unlock(p_cond->mutex);
 
-    /* Unlock the mutex that the calling thread is holding */
+    /* Unlock the mutex that the calling ULT is holding */
     ABT_mutex_unlock(mutex);
 
-    /* Suspend the current thread */
-    ABTI_thread_suspend();
+    /* Suspend the current ULT */
+    ABTI_thread_suspend(p_thread);
 
     /* Lock the mutex again */
     ABT_mutex_lock(mutex);
@@ -179,10 +184,10 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
  * @ingroup COND
  * @brief   Signal a condition.
  *
- * \c ABT_cond_signal() signals another thread that is waiting on the condition
- * variable. Only one thread is waken up by the signal and the scheduler
- * determines the thread.
- * This routine shall have no effect if no threads are currently blocked on the
+ * \c ABT_cond_signal() signals another ULT that is waiting on the condition
+ * variable. Only one ULT is waken up by the signal and the scheduler
+ * determines the ULT.
+ * This routine shall have no effect if no ULTs are currently blocked on the
  * condition variable.
  *
  * @param[in] cond   handle to the condition variable
@@ -202,12 +207,12 @@ int ABT_cond_signal(ABT_cond cond)
         goto fn_exit;
     }
 
-    /* Wake up the first waiting thread */
+    /* Wake up the first waiting ULT */
     ABTI_thread_entry *head = p_cond->waiters.head;
     ABTI_thread_set_ready(head->current);
 
     if (p_cond->num_waiters == 1) {
-        head->current = ABT_THREAD_NULL;
+        head->current = NULL;
         p_cond->waiter_mutex = ABT_MUTEX_NULL;
     } else {
         p_cond->waiters.head = head->next;
@@ -230,9 +235,9 @@ int ABT_cond_signal(ABT_cond cond)
  * @ingroup COND
  * @brief   Broadcast a condition.
  *
- * \c ABT_cond_broadcast() signals all threads that are waiting on the
+ * \c ABT_cond_broadcast() signals all ULTs that are waiting on the
  * condition variable.
- * This routine shall have no effect if no threads are currently blocked on the
+ * This routine shall have no effect if no ULTs are currently blocked on the
  * condition variable.
  *
  * @param[in] cond   handle to the condition variable
@@ -252,11 +257,11 @@ int ABT_cond_broadcast(ABT_cond cond)
         goto fn_exit;
     }
 
-    /* Wake up all waiting threads */
+    /* Wake up all waiting ULTs */
     /* We do not free the first entry */
     ABTI_thread_entry *head = p_cond->waiters.head;
     ABTI_thread_set_ready(head->current);
-    head->current = ABT_THREAD_NULL;
+    head->current = NULL;
 
     head = head->next;
     while (head != NULL) {

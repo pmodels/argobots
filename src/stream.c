@@ -877,9 +877,10 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
     ABTI_xstream *p_xstream = p_thread->p_xstream;
     ABTI_sched *p_sched = p_xstream->p_sched;
 
+    /* Set the current running ULT */
     ABTI_local_set_thread(p_thread);
 
-    /* Change the thread state */
+    /* Change the ULT state */
     p_thread->state = ABT_THREAD_STATE_RUNNING;
 
     /* Switch the context */
@@ -892,7 +893,7 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
         goto fn_fail;
     }
 
-    /* The previous thread may not be the same as one to which the
+    /* The previous ULT may not be the same as one to which the
      * context has been switched. */
     p_thread = ABTI_local_get_thread();
     p_xstream = p_thread->p_xstream;
@@ -901,16 +902,20 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
     if ((p_thread->request & ABTI_THREAD_REQ_TERMINATE) ||
         (p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
         (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
+        /* The ULT needs to be terminated. */
         abt_errno = ABTI_xstream_terminate_thread(p_thread);
-    } else if (p_thread->state != ABT_THREAD_STATE_BLOCKED) {
-        /* The thread did not finish its execution.
-         * Change the state of current running thread and
+    } else if (p_thread->request & ABTI_THREAD_REQ_BLOCK) {
+        ABTD_atomic_fetch_and_uint32(&p_thread->request,
+                                     ~ABTI_THREAD_REQ_BLOCK);
+    } else {
+        /* The ULT did not finish its execution.
+         * Change the state of current running ULT and
          * add it to the pool again. */
         abt_errno = ABTI_xstream_add_thread(p_thread);
     }
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Now, no thread is running */
+    /* Now, no ULT is running */
     ABTI_local_set_thread(NULL);
 
   fn_exit:
@@ -1044,11 +1049,11 @@ int ABTI_xstream_add_thread(ABTI_thread *p_thread)
     ABTI_xstream *p_xstream = p_thread->p_xstream;
     ABTI_sched *p_sched = p_xstream->p_sched;
 
-    /* Add the unit to the scheduler's pool */
-    ABTI_sched_push(p_sched, p_thread->unit);
-
     /* Set the thread's state as READY */
     p_thread->state = ABT_THREAD_STATE_READY;
+
+    /* Add the unit to the scheduler's pool */
+    ABTI_sched_push(p_sched, p_thread->unit);
 
     ABT_mutex_unlock(p_thread->mutex);
 

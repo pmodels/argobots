@@ -57,6 +57,7 @@ typedef struct ABTI_local          ABTI_local;
 #define ABTI_THREAD_REQ_CANCEL      (1 << 2)
 #define ABTI_THREAD_REQ_MIGRATE     (1 << 3)
 #define ABTI_THREAD_REQ_TERMINATE   (1 << 4)
+#define ABTI_THREAD_REQ_BLOCK       (1 << 5)
 
 #define ABTI_TASK_REQ_CANCEL        (1 << 0)
 
@@ -127,7 +128,7 @@ struct ABTI_thread {
 };
 
 struct ABTI_thread_entry {
-    ABT_thread current;
+    ABTI_thread *current;
     struct ABTI_thread_entry *next;
 };
 
@@ -308,15 +309,14 @@ ABT_thread   ABTI_thread_get_handle(ABTI_thread *p_thread);
 int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread);
 int ABTI_thread_free_main(ABTI_thread *p_thread);
 int ABTI_thread_free(ABTI_thread *p_thread);
-int ABTI_thread_suspend(void);
-int ABTI_thread_relinquish(void);
-int ABTI_thread_set_ready(ABT_thread thread);
-int ABTI_thread_set_blocked(ABT_thread thread);
+int ABTI_thread_set_blocked(ABTI_thread *p_thread);
+void ABTI_thread_suspend(ABTI_thread *p_thread);
+int ABTI_thread_set_ready(ABTI_thread *p_thread);
 int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr);
 int ABTI_thread_print(ABTI_thread *p_thread);
 void ABTI_thread_func_wrapper(int func_upper, int func_lower,
                               int arg_upper, int arg_lower);
-ABT_thread *ABTI_thread_current(void);
+ABTI_thread *ABTI_thread_current(void);
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
 void ABTI_thread_retain(ABTI_thread *p_thread);

@@ -1092,6 +1092,11 @@ int ABTI_thread_free(ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
 
+    /* Mutex of p_thread may have been locked somewhere. We free p_thread when
+       mutex can be locked here. Since p_thread and its mutex will be freed,
+       we don't need to unlock the mutex. */
+    ABTI_mutex_waitlock(p_thread->mutex);
+
     /* Free the unit */
     if (p_thread->refcount > 0) {
         ABTI_unit_free(&p_thread->unit);
@@ -1121,111 +1126,23 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     goto fn_exit;
 }
 
-int ABTI_thread_suspend(void)
+int ABTI_thread_set_blocked(ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_thread *p_thread = ABTI_local_get_thread();
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    assert(p_thread->p_xstream == p_xstream);
-
-	/* the main thread is not supposed to call thread suspend*/
+	/* The main ULT cannot be blocked */
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
 		abt_errno = ABT_ERR_THREAD;
 		goto fn_fail;
 	}
 
-    /* Change the state of current running thread */
+    /* To prevent the scheduler from adding the ULT to the pool */
+    ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_BLOCK);
+
+    /* Change the ULT's state to BLOCKED */
     p_thread->state = ABT_THREAD_STATE_BLOCKED;
 
-    /* Increase the number of blocked threads */
-    ABTI_sched *p_sched = p_xstream->p_sched;
-    ABTI_sched_inc_num_blocked(p_sched);
-
-    /* Switch to the scheduler */
-    abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    /* Back to the original thread */
-    ABTI_local_set_thread(p_thread);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_suspend", abt_errno);
-    goto fn_exit;
-}
-
-/**
- * This function relinquishes the processor without changing the state of the thread. Its main purpose
- * is to avoid a race condition with synchronization primitives (future, eventual, barrier).
- */
-int ABTI_thread_relinquish(void)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_thread *p_thread = ABTI_local_get_thread();
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    assert(p_thread->p_xstream == p_xstream);
-
-	ABTI_sched *p_sched = p_thread->p_xstream->p_sched;
-
-	/* the main thread should not call thread relinquish */
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
-		abt_errno = ABT_ERR_THREAD;
-		goto fn_fail;
-    } else {
-        /* Switch to the scheduler */
-        abt_errno = ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
-        ABTI_CHECK_ERROR(abt_errno);
-    }
-
-    /* Back to the original thread */
-    ABTI_local_set_thread(p_thread);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_relinquish", abt_errno);
-    goto fn_exit;
-}
-
-int ABTI_thread_set_ready(ABT_thread thread)
-{
-    int abt_errno = ABT_SUCCESS, flag = 0;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-
-    if (p_thread->state == ABT_THREAD_STATE_BLOCKED) flag = 1;
-
-    /* Add the thread to its associated ES */
-    abt_errno = ABTI_xstream_add_thread(p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    /* Decrease the number of blocked threads */
-	if (flag) {
-        ABTI_sched_dec_num_blocked(p_thread->p_xstream->p_sched);
-    }
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_set_ready", abt_errno);
-    goto fn_exit;
-}
-
-int ABTI_thread_set_blocked(ABT_thread thread)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    /* Change the state of current running thread */
-    p_thread->state = ABT_THREAD_STATE_BLOCKED;
-
-    /* Increase the number of blocked threads */
+    /* Increase the number of blocked ULTs */
     ABTI_sched *p_sched = p_thread->p_xstream->p_sched;
     ABTI_sched_inc_num_blocked(p_sched);
 
@@ -1233,7 +1150,46 @@ int ABTI_thread_set_blocked(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_set_blocked", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_thread_set_blocked", abt_errno);
+    goto fn_exit;
+}
+
+/* NOTE: This routine should be called after ABTI_thread_set_blocked. */
+void ABTI_thread_suspend(ABTI_thread *p_thread)
+{
+    assert(p_thread == ABTI_local_get_thread());
+    assert(p_thread->p_xstream == ABTI_local_get_xstream());
+    assert(p_thread->request & ABTI_THREAD_REQ_BLOCK);
+
+    /* Switch to the scheduler, i.e., suspend p_thread  */
+    ABTI_sched *p_sched = p_thread->p_xstream->p_sched;
+    ABTD_thread_context_switch(&p_thread->ctx, &p_sched->ctx);
+
+    /* The suspended ULT resumes its execution from here. */
+    ABTI_local_set_thread(p_thread);
+}
+
+int ABTI_thread_set_ready(ABTI_thread *p_thread)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    /* The ULT should be in BLOCKED state. */
+    assert(p_thread->state == ABT_THREAD_STATE_BLOCKED);
+
+    ABTI_sched *p_sched = p_thread->p_xstream->p_sched;
+
+    /* Add the ULT to its associated ES */
+    abt_errno = ABTI_xstream_add_thread(p_thread);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Decrease the number of blocked threads */
+    ABTI_sched_dec_num_blocked(p_sched);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_set_ready", abt_errno);
     goto fn_exit;
 }
 
@@ -1329,9 +1285,9 @@ void ABTI_thread_func_wrapper(int func_upper, int func_lower,
 }
 
 
-ABT_thread *ABTI_thread_current(void)
+ABTI_thread *ABTI_thread_current(void)
 {
-    return (ABT_thread *)ABTI_local_get_thread();
+    return ABTI_local_get_thread();
 }
 
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg)

@@ -89,16 +89,17 @@ int ABT_future_wait(ABT_future future)
 	ABT_mutex_lock(p_future->mutex);
     if (!p_future->ready) {
         ABTI_thread_entry *cur = (ABTI_thread_entry*) ABTU_malloc(sizeof(ABTI_thread_entry));
-        cur->current = ABTI_thread_current();
+        ABTI_thread *p_current = ABTI_thread_current();
+        cur->current = p_current;
         cur->next = NULL;
         if(p_future->waiters.tail != NULL)
             p_future->waiters.tail->next = cur;
         p_future->waiters.tail = cur;
         if(p_future->waiters.head == NULL)
             p_future->waiters.head = cur;
-		ABTI_thread_set_blocked(ABTI_thread_current());
+		ABTI_thread_set_blocked(p_current);
 		ABT_mutex_unlock(p_future->mutex);
-        ABTI_thread_relinquish();
+        ABTI_thread_suspend(p_current);
     } else {
 		ABT_mutex_unlock(p_future->mutex);
 	}
@@ -216,8 +217,8 @@ void ABTI_future_signal(ABTI_future *p_future)
     ABTI_thread_entry *cur = p_future->waiters.head;
     while (cur != NULL)
     {
-        ABT_thread mythread = cur->current;
-        ABTI_thread_set_ready(mythread);
+        ABTI_thread *p_thread = cur->current;
+        ABTI_thread_set_ready(p_thread);
         ABTI_thread_entry *tmp = cur;
         cur=cur->next;
         free(tmp);
