@@ -107,7 +107,10 @@ int main(int argc, char *argv[])
     /* Initialize */
     ABT_test_init(argc, argv);
 
-    /* Create schedulers */
+    /* Create schedulers.
+     * There is one scheduler for each execution stream
+     * and the default is FIFO.
+     */
     for (i = 0; i < num_xstreams; i++) {
         ABT_sched_kind kind = ABT_SCHED_FIFO;
         switch (i % 3) {

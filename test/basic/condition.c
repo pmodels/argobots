@@ -19,6 +19,7 @@ int num_threads = DEFAULT_NUM_THREADS;
 
 #define TCOUNT          10
 #define COUNT_LIMIT     15
+
 int g_counter = 0;
 int g_num_incthreads = 0;
 int g_waiting = 0;

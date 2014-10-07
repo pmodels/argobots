@@ -23,7 +23,7 @@ typedef struct {
 void thread_func(void *arg)
 {
     size_t my_id = (size_t)arg;
-    ABT_test_printf(1, "[TH%lu]: brefore yield\n", my_id);
+    ABT_test_printf(1, "[TH%lu]: before yield\n", my_id);
     ABT_thread_yield();
     ABT_test_printf(1, "[TH%lu]: doing something ...\n", my_id);
     ABT_thread_yield();

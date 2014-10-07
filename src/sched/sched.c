@@ -439,7 +439,7 @@ int ABTI_sched_print(ABTI_sched *p_sched)
     ABTI_CHECK_ERROR(abt_errno);
     printf("num_threads: %u\n", p_sched->num_threads);
     printf("num_tasks: %u\n", p_sched->num_tasks);
-    printf("num_blockeed: %u\n", p_sched->num_blocked);
+    printf("num_blocked: %u\n", p_sched->num_blocked);
 
   fn_exit:
     return abt_errno;
