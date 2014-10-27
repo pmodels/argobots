@@ -630,6 +630,35 @@ int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len)
 }
 
 
+/**
+ * @ingroup ES
+ * @brief   Return the number of current existing ESs.
+ *
+ * \c ABT_xstream_get_num() returns the number of ESs that exist in the current
+ * Argobots environment through \c num_xstreams.
+ *
+ * @param[out] num_xstreams  the number of ESs
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_get_num(int *num_xstreams)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_CHECK_INITIALIZED();
+
+    ABTI_xstream_pool *p_xstreams = gp_ABTI_global->p_xstreams;
+    *num_xstreams = (int)(ABTI_pool_get_size(p_xstreams->created)
+            + ABTI_pool_get_size(p_xstreams->active));
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_num", abt_errno);
+    goto fn_exit;
+}
+
+
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/

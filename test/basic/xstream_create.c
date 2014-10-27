@@ -14,7 +14,7 @@
 int main(int argc, char *argv[])
 {
     int i;
-    int ret;
+    int ret, tmp;
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     if (argc > 1) num_xstreams = atoi(argv[1]);
     assert(num_xstreams >= 0);
@@ -33,6 +33,11 @@ int main(int argc, char *argv[])
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
         ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
+
+    /* Get the number of Execution Streams */
+    ret = ABT_xstream_get_num(&tmp);
+    ABT_TEST_ERROR(ret, "ABT_xstream_get_num");
+    assert(tmp == num_xstreams);
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
