@@ -149,7 +149,9 @@ int ABT_sched_free(ABT_sched *sched)
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* Disconnect this scheduler from ES */
-    p_sched->p_xstream->p_sched = NULL;
+    if (p_sched->p_xstream) {
+        p_sched->p_xstream->p_sched = NULL;
+    }
 
     /* If sched is a default provided one, it should free its pool here.
      * Otherwise, freeing the pool is the user's reponsibility. */
