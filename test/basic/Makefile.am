@@ -17,6 +17,7 @@ TESTS = \
 	thread_task \
 	thread_task_num \
 	name \
+	scheduler_test \
 	scheduler_basic \
 	scheduler_prio \
 	scheduler_user \
@@ -43,6 +44,7 @@ task_create_SOURCES = task_create.c
 thread_task_SOURCES = thread_task.c
 thread_task_num_SOURCES = thread_task_num.c
 name_SOURCES = name.c
+scheduler_test_SOURCES = scheduler_test.c
 scheduler_basic_SOURCES = scheduler_basic.c
 scheduler_prio_SOURCES = scheduler_prio.c
 scheduler_user_SOURCES = scheduler_user.c
@@ -65,6 +67,7 @@ testing:
 	./thread_task
 	./thread_task_num
 	./name
+	./scheduler_test
 	./scheduler_basic
 	./scheduler_prio
 	./scheduler_user

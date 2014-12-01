@@ -12,6 +12,7 @@ basic/task_create
 basic/thread_task
 basic/thread_task_num
 basic/name
+basic/scheduler_test
 basic/scheduler_basic
 basic/scheduler_prio
 basic/scheduler_user
