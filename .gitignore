@@ -54,3 +54,5 @@ README
 doc/doxygen/
 *.log
 *.trs
+*.out
+*.files
