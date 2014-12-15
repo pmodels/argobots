@@ -65,11 +65,38 @@ AC_CONFIG_MACRO_DIR(m4)
 AC_PROG_CC
 AC_HEADER_STDC
 
+# compute canonical system types
+AC_CANONICAL_HOST
+
+# check architecture and OS for fcontext
+fctx_arch_bin=""
+AS_CASE([$host_cpu],
+    [i?86],   [AS_CASE([$host_os],
+              [linux*],  [fctx_arch_bin="i386_sysv_elf_gas"],
+              [darwin*], [fctx_arch_bin="i386_sysv_macho_gas"])],
+    [x86_64], [AS_CASE([$host_os],
+              [linux*],  [fctx_arch_bin="x86_64_sysv_elf_gas"],
+              [darwin*], [fctx_arch_bin="x86_64_sysv_macho_gas"])],
+    [ppc32],  [AS_CASE([$host_os],
+              [linux*],  [fctx_arch_bin="ppc32_sysv_elf_gas"],
+              [darwin*], [fctx_arch_bin="ppc32_sysv_macho_gas"])],
+    [ppc64],  [AS_CASE([$host_os],
+              [linux*],  [fctx_arch_bin="ppc64_sysv_elf_gas"],
+              [darwin*], [fctx_arch_bin="ppc64_sysv_macho_gas"])])
+AC_SUBST([fctx_arch_bin])
+AM_SUBST_NOTMAKE([fctx_arch_bin])
+
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])
 AM_SILENT_RULES([yes])
+AM_PROG_AS
 AM_PROG_AR
 
 LT_INIT
+
+# if fcontext supports this platform, we use it instead of ucontext.
+AM_CONDITIONAL([ABT_USE_FCONTEXT], [test "x$fctx_arch_bin" != "x"])
+AS_IF([test "x$fctx_arch_bin" != "x"],
+      [AC_DEFINE(ABT_CONFIG_USE_FCONTEXT, 1, [Define to use fcontext])])
 
 AC_PROG_INSTALL
 

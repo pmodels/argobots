@@ -9,6 +9,7 @@ noinst_HEADERS = \
 	include/config.h \
 	include/abtd.h \
 	include/abtd_atomic.h \
+	include/abtd_ucontext.h \
 	include/abti.h \
 	include/abti_error.h \
 	include/abtu.h

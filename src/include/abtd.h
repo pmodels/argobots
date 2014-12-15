@@ -6,22 +6,14 @@
 #ifndef ABTD_H_INCLUDED
 #define ABTD_H_INCLUDED
 
-/* TODO: Generalize for diverse architectures
- * Currently, ARGOBOTS is implemented using pthread and ucontext.
- * This file defines types, macros and functions that hide architecture-
- * dependent code, e.g., pthread and ucontext.
- */
-
 #define __USE_GNU
 #include <pthread.h>
-
-#define _XOPEN_SOURCE
-#include <ucontext.h>
+#include "abtd_ucontext.h"
 
 /* Data Types */
 typedef pthread_t           ABTD_xstream_context;
 typedef pthread_mutex_t     ABTD_xstream_mutex;
-typedef ucontext_t          ABTD_thread_context;
+typedef abt_ucontext_t      ABTD_thread_context;
 
 /* ES Storage Qualifier */
 #define ABTD_XSTREAM_LOCAL  __thread

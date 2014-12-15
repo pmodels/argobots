@@ -13,6 +13,7 @@
 #include <limits.h>
 #include <assert.h>
 
+#include "config.h"
 #include "abt.h"
 #include "abtu.h"
 #include "abti_error.h"
@@ -314,8 +315,6 @@ void ABTI_thread_suspend(ABTI_thread *p_thread);
 int ABTI_thread_set_ready(ABTI_thread *p_thread);
 int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr);
 int ABTI_thread_print(ABTI_thread *p_thread);
-void ABTI_thread_func_wrapper(int func_upper, int func_lower,
-                              int arg_upper, int arg_lower);
 ABTI_thread *ABTI_thread_current(void);
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
