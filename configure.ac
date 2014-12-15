@@ -89,6 +89,12 @@ AM_SUBST_NOTMAKE([fctx_arch_bin])
 dnl ----------------------------------------------------------------------------
 dnl setup top-level argument handling
 dnl ----------------------------------------------------------------------------
+AC_ARG_ENABLE([fcontext],
+    AS_HELP_STRING([--disable-fcontext],
+        [do not use fcontext even though it is supported. If you disable
+         fcontext, ucontext in libc is used.]),,
+        [enable_fcontext=yes])
+
 AC_ARG_ENABLE([preserve-fpu],
     AS_HELP_STRING([--disable-preserve-fpu],
         [do not preserve fpu registers when fcontext is used]),,
@@ -102,9 +108,11 @@ AM_PROG_AR
 
 LT_INIT
 
-# if fcontext supports this platform, we use it instead of ucontext.
-AM_CONDITIONAL([ABT_USE_FCONTEXT], [test "x$fctx_arch_bin" != "x"])
-AS_IF([test "x$fctx_arch_bin" != "x"],
+# if fcontext supports this platform and the user does not specify
+# --disable-fcontext, we use fcontext instead of ucontext.
+AM_CONDITIONAL([ABT_USE_FCONTEXT],
+               [test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"])
+AS_IF([test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"],
       [AC_DEFINE(ABT_CONFIG_USE_FCONTEXT, 1, [Define to use fcontext])])
 
 dnl ----------------------------------------------------------------------------
