@@ -86,6 +86,15 @@ AS_CASE([$host_cpu],
 AC_SUBST([fctx_arch_bin])
 AM_SUBST_NOTMAKE([fctx_arch_bin])
 
+dnl ----------------------------------------------------------------------------
+dnl setup top-level argument handling
+dnl ----------------------------------------------------------------------------
+AC_ARG_ENABLE([preserve-fpu],
+    AS_HELP_STRING([--disable-preserve-fpu],
+        [do not preserve fpu registers when fcontext is used]),,
+        [enable_preserve_fpu=yes])
+dnl ----------------------------------------------------------------------------
+
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])
 AM_SILENT_RULES([yes])
 AM_PROG_AS
@@ -97,6 +106,16 @@ LT_INIT
 AM_CONDITIONAL([ABT_USE_FCONTEXT], [test "x$fctx_arch_bin" != "x"])
 AS_IF([test "x$fctx_arch_bin" != "x"],
       [AC_DEFINE(ABT_CONFIG_USE_FCONTEXT, 1, [Define to use fcontext])])
+
+dnl ----------------------------------------------------------------------------
+dnl define constants according to top-level arguments
+dnl ----------------------------------------------------------------------------
+# preserve-fpu
+AS_IF([test "x$enable_preserve_fpu" != "xno"],
+      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 1,
+                 [Define to 1 if we preserve fpu registers])],
+      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 0)])
+dnl ----------------------------------------------------------------------------
 
 AC_PROG_INSTALL
 

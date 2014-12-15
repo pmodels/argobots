@@ -141,7 +141,8 @@ int ABTD_thread_context_switch(ABTD_thread_context *p_old,
     int abt_errno = ABT_SUCCESS;
 
 #if defined(ABT_CONFIG_USE_FCONTEXT)
-    jump_fcontext(&p_old->fctx, p_new->fctx, p_new, 1);
+    jump_fcontext(&p_old->fctx, p_new->fctx, p_new,
+                  ABTD_FCONTEXT_PRESERVE_FPU);
 
 #else
     int ret = swapcontext(p_old, p_new);
@@ -201,7 +202,8 @@ static void ABTD_thread_func_wrapper(void *p_arg)
 
     /* Since fcontext does not switch to the other fcontext when it finishes,
        we need to explicitly switch to the scheduler. */
-    jump_fcontext(&p_fctx->fctx, p_fctx->p_link->fctx, NULL, 1);
+    jump_fcontext(&p_fctx->fctx, p_fctx->p_link->fctx, NULL,
+                  ABTD_FCONTEXT_PRESERVE_FPU);
 }
 #else
 static void ABTD_thread_func_wrapper(int func_upper, int func_lower,
