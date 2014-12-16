@@ -4,25 +4,23 @@
 #
 
 abt_sources = \
-	stream.c \
-	thread.c \
-	thread_attr.c \
-	task.c \
-	mutex.c \
 	cond.c \
-	futures.c \
+	error.c \
 	eventual.c \
-	unit.c \
-	pool.c \
+	futures.c \
 	global.c \
 	local.c \
-	sched/sched.c \
-	sched/fifo.c \
-	sched/lifo.c \
-	sched/prio.c \
-	error.c
+	mutex.c \
+	pool.c \
+	stream.c \
+	task.c \
+	thread.c \
+	thread_attr.c \
+	unit.c
 
 include $(top_srcdir)/src/arch/Makefile.mk
+include $(top_srcdir)/src/sched/Makefile.mk
+
 include $(top_srcdir)/src/include/Makefile.mk
 
 lib_LTLIBRARIES = libabt.la
