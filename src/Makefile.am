@@ -16,7 +16,6 @@ abt_sources = \
 	pool.c \
 	global.c \
 	local.c \
-	abtu.c \
 	sched/sched.c \
 	sched/fifo.c \
 	sched/lifo.c \
