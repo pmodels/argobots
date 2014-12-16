@@ -3,12 +3,12 @@ Makefile.in
 Makefile
 aclocal.m4
 autom4te.cache/
-config.h.in
 configure
-config.h
 config.log
 config.status
 libtool
+src/include/abt_config.h
+src/include/abt_config.h.in
 stamp-h1
 Doxyfile
 

@@ -13,7 +13,7 @@
 #include <limits.h>
 #include <assert.h>
 
-#include "config.h"
+#include "abt_config.h"
 #include "abt.h"
 #include "abtu.h"
 #include "abti_error.h"

@@ -127,7 +127,24 @@ dnl ----------------------------------------------------------------------------
 
 AC_PROG_INSTALL
 
-AC_CONFIG_HEADERS([src/include/config.h])
+dnl ----------------------------------------------------------------------------
+dnl config headers
+dnl ----------------------------------------------------------------------------
+AC_CONFIG_HEADERS([src/include/abt_config.h])
+AH_TOP([
+/* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
+/*
+ * See COPYRIGHT in top-level directory.
+ */
+
+#ifndef ABT_CONFIG_H_INCLUDED
+#define ABT_CONFIG_H_INCLUDED
+])
+AH_BOTTOM([
+#endif /* ABT_CONFIG_H_INCLUDED */
+])
+dnl ----------------------------------------------------------------------------
+
 AC_CONFIG_FILES([Makefile
                  Doxyfile
                  src/include/abt.h

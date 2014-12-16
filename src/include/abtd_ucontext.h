@@ -6,6 +6,8 @@
 #ifndef ABTD_UCONTEXT_H_INCLUDED
 #define ABTD_UCONTEXT_H_INCLUDED
 
+#include "abt_config.h"
+
 #if defined(ABT_CONFIG_USE_FCONTEXT)
 typedef void *  fcontext_t;
 
