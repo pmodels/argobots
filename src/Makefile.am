@@ -30,5 +30,5 @@ lib_LTLIBRARIES = libabt.la
 libabt_la_SOURCES = $(abt_sources)
 libabt_la_CPPFLAGS = -I$(top_srcdir)/src/include -pthread
 libabt_la_CCASFLAGS = -I$(top_srcdir)/src/include
-libabt_la_LDFLAGS = -version-info @libabt_so_version@ -pthread
+libabt_la_LDFLAGS = -version-info @libabt_so_version@ -lpthread
 
