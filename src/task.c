@@ -556,8 +556,8 @@ int ABTI_task_print(ABTI_task *p_task)
     }
 
     printf("[");
-    printf("id:%lu ", p_task->id);
-    printf("xstream:%lu ", p_task->p_xstream->rank);
+    printf("id:%" PRIu64 " ", p_task->id);
+    printf("xstream:%" PRIu64 " ", p_task->p_xstream->rank);
     printf("name:%s ", p_task->p_name);
     printf("state:");
     switch (p_task->state) {

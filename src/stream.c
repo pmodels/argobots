@@ -884,7 +884,8 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
     p_thread->state = ABT_THREAD_STATE_RUNNING;
 
     /* Switch the context */
-    DEBUG_PRINT("[S%lu:TH%lu] START\n", p_xstream->rank, p_thread->id);
+    DEBUG_PRINT("[S%" PRIu64 ":TH%" PRIu64 "] START\n",
+                p_xstream->rank, p_thread->id);
     abt_errno = ABTD_thread_context_switch(&p_sched->ctx, &p_thread->ctx);
 
     /* The scheduler continues from here. */
@@ -897,7 +898,8 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
      * context has been switched. */
     p_thread = ABTI_local_get_thread();
     p_xstream = p_thread->p_xstream;
-    DEBUG_PRINT("[S%lu:TH%lu] END\n", p_xstream->rank, p_thread->id);
+    DEBUG_PRINT("[S%" PRIu64 ":TH%" PRIu64 "] END\n",
+                p_xstream->rank, p_thread->id);
 
     if ((p_thread->request & ABTI_THREAD_REQ_TERMINATE) ||
         (p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
@@ -943,9 +945,11 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
     p_task->state = ABT_TASK_STATE_RUNNING;
 
     /* Execute the task function */
-    DEBUG_PRINT("[S%lu:TK%lu] START\n", p_task->p_xstream->rank, p_task->id);
+    DEBUG_PRINT("[S%" PRIu64 ":TK%" PRIu64 "] START\n",
+                p_task->p_xstream->rank, p_task->id);
     p_task->f_task(p_task->p_arg);
-    DEBUG_PRINT("[S%lu:TK%lu] END\n", p_task->p_xstream->rank, p_task->id);
+    DEBUG_PRINT("[S%" PRIu64 ":TK%" PRIu64 "] END\n",
+                p_task->p_xstream->rank, p_task->id);
 
     abt_errno = ABTI_xstream_terminate_task(p_task);
     ABTI_CHECK_ERROR(abt_errno);
@@ -981,7 +985,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         ABTD_atomic_fetch_and_uint32(&p_thread->request,
                 ~ABTI_THREAD_REQ_MIGRATE);
 
-        DEBUG_PRINT("[TH%lu] Migration: S%lu -> S%lu\n",
+        DEBUG_PRINT("[TH%" PRIu64 "] Migration: S%" PRIu64 " -> S%" PRIu64 "\n",
                 p_thread->id, p_thread->p_xstream->rank, p_xstream->rank);
 
         /* Change the associated ES */
@@ -1127,7 +1131,7 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
     printf("== XSTREAM (%p) ==\n", p_xstream);
     printf("unit   : ");
     ABTI_unit_print(p_xstream->unit);
-    printf("rank   : %lu\n", p_xstream->rank);
+    printf("rank   : %" PRIu64 "\n", p_xstream->rank);
     printf("name   : %s\n", p_xstream->p_name);
     printf("type   : ");
     switch (p_xstream->type) {
@@ -1176,7 +1180,7 @@ static void *ABTI_xstream_loop(void *p_arg)
 {
     ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
 
-    DEBUG_PRINT("[S%lu] START\n", p_xstream->rank);
+    DEBUG_PRINT("[S%" PRIu64 "] START\n", p_xstream->rank);
 
     /* Set this ES as the current ES */
     ABTI_local_init(p_xstream);
@@ -1216,7 +1220,7 @@ static void *ABTI_xstream_loop(void *p_arg)
     /* Reset the current ES and thread info. */
     ABTI_local_finalize();
 
-    DEBUG_PRINT("[S%lu] END\n", p_xstream->rank);
+    DEBUG_PRINT("[S%" PRIu64 "] END\n", p_xstream->rank);
 
     ABTD_xstream_context_exit();
 

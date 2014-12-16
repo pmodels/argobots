@@ -383,7 +383,7 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_thread *p_cur_thread = ABTI_local_get_thread();
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
-    DEBUG_PRINT("YIELD_TO: TH%lu -> TH%lu\n",
+    DEBUG_PRINT("YIELD_TO: TH%" PRIu64 " -> TH%" PRIu64 "\n",
                 p_cur_thread->id, p_tar_thread->id);
 
     /* If the target thread is the same as the running thread, just keep
@@ -1221,8 +1221,8 @@ int ABTI_thread_print(ABTI_thread *p_thread)
     }
 
     printf("[");
-    printf("id:%lu ", p_thread->id);
-    printf("xstream:%lu ", p_thread->p_xstream->rank);
+    printf("id:%" PRIu64 " ", p_thread->id);
+    printf("xstream:%" PRIu64 " ", p_thread->p_xstream->rank);
     printf("name:%s ", p_thread->p_name);
     printf("type:");
     switch (p_thread->type) {
