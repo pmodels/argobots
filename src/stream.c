@@ -724,6 +724,7 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
 
 int ABTI_xstream_start(ABTI_xstream *p_xstream)
 {
+    int abt_errno = ABT_SUCCESS;
     assert(p_xstream->state == ABT_XSTREAM_STATE_CREATED);
 
     /* Set the xstream's state as READY */
@@ -732,7 +733,6 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
             ABT_XSTREAM_STATE_CREATED, ABT_XSTREAM_STATE_READY);
     if (old_state != ABT_XSTREAM_STATE_CREATED) goto fn_exit;
 
-    int abt_errno = ABT_SUCCESS;
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
         if (abt_errno != ABT_SUCCESS) {
