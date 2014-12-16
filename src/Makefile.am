@@ -16,7 +16,6 @@ abt_sources = \
 	pool.c \
 	global.c \
 	local.c \
-	abtd.c \
 	abtu.c \
 	sched/sched.c \
 	sched/fifo.c \
@@ -24,7 +23,7 @@ abt_sources = \
 	sched/prio.c \
 	error.c
 
-include $(top_srcdir)/src/arch/fcontext/Makefile.mk
+include $(top_srcdir)/src/arch/Makefile.mk
 include $(top_srcdir)/src/include/Makefile.mk
 
 lib_LTLIBRARIES = libabt.la
