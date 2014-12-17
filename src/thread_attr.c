@@ -343,7 +343,7 @@ int ABTI_thread_attr_print(ABTI_thread_attr *p_attr)
     }
 
     printf("[");
-    printf("stacksize:%lu ", p_attr->stacksize);
+    printf("stacksize:%zu ", p_attr->stacksize);
     printf("prio:");
     switch (p_attr->prio) {
         case ABT_SCHED_PRIO_LOW:    printf("LOW ");    break;

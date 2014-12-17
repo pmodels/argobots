@@ -150,7 +150,7 @@ void fibonacci_control(void *arguments){
     /* block until the eventual is signaled */
     ABT_eventual_wait(eventual, (void **)&data);
 
-    printf("The %lu-th value in the Fibonacci sequence is: %d\n",n,args.result);
+    printf("The %zu-th value in the Fibonacci sequence is: %d\n",n,args.result);
 }
 
 /* Main function */

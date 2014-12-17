@@ -217,7 +217,7 @@ int ABTI_pool_print(ABT_pool pool)
     }
 
     p_pool = ABTI_pool_get_ptr(pool);
-    printf("num_units: %lu ", p_pool->num_units);
+    printf("num_units: %zu ", p_pool->num_units);
     printf("{ ");
     ABTI_unit *p_current = p_pool->p_head;
     for (i = 0; i < p_pool->num_units; i++) {
