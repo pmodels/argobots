@@ -463,8 +463,11 @@ int ABT_thread_yield(void)
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     assert(p_thread->p_xstream == p_xstream);
 
+    /* If the scheduler has nothing to schedule or the calling ULT does not
+     * have any requests, this function simply returns without switching to
+     * the scheduler. */
     ABTI_sched *p_sched = p_xstream->p_sched;
-    if (p_sched->p_get_size(p_sched->pool) < 1) {
+    if (p_sched->p_get_size(p_sched->pool) < 1 && p_thread->request == 0) {
         int has_global_task;
         ABTI_global_has_task(&has_global_task);
         if (!has_global_task) goto fn_exit;
