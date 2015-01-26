@@ -89,6 +89,7 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
 
 int ABTD_thread_context_free(ABTD_thread_context *p_ctx)
 {
+    ABTI_UNUSED(p_ctx);
     int abt_errno = ABT_SUCCESS;
     /* Currently, nothing to do */
     return abt_errno;

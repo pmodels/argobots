@@ -14,11 +14,13 @@
 
 void thread_func(void *arg)
 {
+    ABT_TEST_UNUSED(arg);
     /* Do nothing */
 }
 
 void task_func(void *arg)
 {
+    ABT_TEST_UNUSED(arg);
     /* Do nothing */
 }
 
@@ -32,8 +34,10 @@ int main(int argc, char *argv[])
     if (argc > 2) num_tasks = atoi(argv[2]);
     assert(num_tasks >= 0);
 
+    unsigned long num_units = (unsigned long)(num_threads+num_tasks);
+
     ABT_xstream xstream;
-    int n_threads, n_tasks;
+    size_t n_units;
     int err = 0;
 
     /* Initialize */
@@ -43,46 +47,47 @@ int main(int argc, char *argv[])
     ret = ABT_xstream_self(&xstream);
     ABT_TEST_ERROR(ret, "ABT_xstream_self");
 
+    /* Get the pools attached to an execution stream */
+    ABT_pool pool;
+    ret = ABT_xstream_get_main_pools(xstream, 1, &pool);
+    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+
     /* Create ULTs */
     for (i = 0; i < num_threads; i++) {
-        ret = ABT_thread_create(xstream, thread_func, NULL,
+        ret = ABT_thread_create(pool, thread_func, NULL,
                 ABT_THREAD_ATTR_NULL, NULL);
         ABT_TEST_ERROR(ret, "ABT_thread_create");
     }
 
     /* Create tasklets */
     for (i = 0; i < num_tasks; i++) {
-        ret = ABT_task_create(xstream, task_func, NULL, NULL);
+        ret = ABT_task_create(pool, task_func, NULL, NULL);
         ABT_TEST_ERROR(ret, "ABT_task_create");
     }
 
     /* Get the numbers of ULTs and tasklets */
-    ABT_xstream_get_num_threads(xstream, &n_threads);
-    ABT_xstream_get_num_tasks(xstream, &n_tasks);
-    if (n_threads != num_threads) {
+		ABT_sched sched;
+		ret = ABT_xstream_get_main_sched(xstream, &sched);
+		ABT_TEST_ERROR(ret, "ABT_xstream_get_main_sched");
+		ABT_sched_get_size(sched, &n_units);
+		ABT_TEST_ERROR(ret, "ABT_sched_get_size");
+
+    if (n_units != num_units) {
         err++;
-        printf("# of ULTs: expected(%d) vs. result(%d)\n",
-               num_threads, n_threads);
-    }
-    if (n_tasks != num_tasks) {
-        err++;
-        printf("# of Tasklets: expected(%d) vs. result(%d)\n",
-               num_tasks, n_tasks);
+        printf("# of units: expected(%lu) vs. result(%lu)\n",
+               num_units, (unsigned long)n_units);
     }
 
     /* Switch to other work units */
     ABT_thread_yield();
 
     /* Get the numbers of ULTs and tasklets */
-    ABT_xstream_get_num_threads(xstream, &n_threads);
-    ABT_xstream_get_num_tasks(xstream, &n_tasks);
-    if (n_threads != 0) {
+		ABT_sched_get_size(sched, &n_units);
+		ABT_TEST_ERROR(ret, "ABT_sched_get_size");
+    if (n_units != 0) {
         err++;
-        printf("# of ULTs: expected(%d) vs. result(%d)\n", 0, n_threads);
-    }
-    if (n_tasks != 0) {
-        err++;
-        printf("# of Tasklets: expected(%d) vs. result(%d)\n", 0, n_tasks);
+        printf("# of units: expected(%d) vs. result(%lu)\n",
+						0, (unsigned long)n_units);
     }
 
     /* Finalize */
@@ -90,5 +95,4 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-
 

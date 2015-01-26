@@ -127,6 +127,14 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
 
+    /* Get the pools attached to an execution stream */
+    ABT_pool *pools;
+    pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
+    for (i = 0; i < num_xstreams; i++) {
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    }
+
     /* Create a mutex */
     ret = ABT_mutex_create(&mutex);
     ABT_TEST_ERROR(ret, "ABT_mutex_create");
@@ -140,7 +148,7 @@ int main(int argc, char *argv[])
     /* Create threads */
     args[0][0].sid = 0;
     args[0][0].tid = 1;
-    ret = ABT_thread_create(xstreams[0], watch_counter, (void *)&args[0][0],
+    ret = ABT_thread_create(pools[0], watch_counter, (void *)&args[0][0],
             ABT_THREAD_ATTR_NULL, NULL);
     ABT_TEST_ERROR(ret, "ABT_thread_create");
     i = 0;
@@ -148,7 +156,7 @@ int main(int argc, char *argv[])
         int tid = i * num_threads + j + 1;
         args[i][j].sid = i;
         args[i][j].tid = tid;
-        ret = ABT_thread_create(xstreams[i],
+        ret = ABT_thread_create(pools[i],
                 inc_counter, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
                 NULL);
         ABT_TEST_ERROR(ret, "ABT_thread_create");
@@ -158,7 +166,7 @@ int main(int argc, char *argv[])
             int tid = i * num_threads + j + 1;
             args[i][j].sid = i;
             args[i][j].tid = tid;
-            ret = ABT_thread_create(xstreams[i],
+            ret = ABT_thread_create(pools[i],
                     inc_counter, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
                     NULL);
             ABT_TEST_ERROR(ret, "ABT_thread_create");

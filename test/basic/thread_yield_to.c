@@ -9,8 +9,8 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    4
-#define DEFAULT_NUM_THREADS     4
+#define DEFAULT_NUM_XSTREAMS    1
+#define DEFAULT_NUM_THREADS     2
 
 typedef struct thread_arg {
     int id;
@@ -85,6 +85,14 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
 
+    /* Get the pools attached to an execution stream */
+    ABT_pool *pools;
+    pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
+    for (i = 0; i < num_xstreams; i++) {
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    }
+
     /* Create threads */
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
@@ -92,7 +100,7 @@ int main(int argc, char *argv[])
             args[i][j].id = tid;
             args[i][j].num_threads = num_threads;
             args[i][j].threads = &threads[i][0];
-            ret = ABT_thread_create(xstreams[i],
+            ret = ABT_thread_create(pools[i],
                     thread_func, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
                     &threads[i][j]);
             ABT_TEST_ERROR(ret, "ABT_thread_create");

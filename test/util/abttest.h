@@ -72,5 +72,6 @@ void ABT_test_printf(int level, const char *format, ...);
 void ABT_test_error(int err, const char *msg, const char *file, int line);
 
 #define ABT_TEST_ERROR(e,m)     ABT_test_error(e,m,__FILE__,__LINE__)
+#define ABT_TEST_UNUSED(a)      (void)(a)
 
 #endif /* ABTTEST_H_INCLUDED */

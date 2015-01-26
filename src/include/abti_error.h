@@ -21,6 +21,12 @@
         goto fn_fail;                           \
     }
 
+#define ABTI_CHECK_NULL_POOL_PTR(p)             \
+    if (p == NULL) {                            \
+        abt_errno = ABT_ERR_INV_POOL;           \
+        goto fn_fail;                           \
+    }
+
 #define ABTI_CHECK_NULL_SCHED_PTR(p)            \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_SCHED;          \
@@ -76,10 +82,12 @@
     }
 
 #define HANDLE_ERROR(msg) \
-    fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); exit(-1)
+    fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
+    //fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); exit(-1)
 
 #define HANDLE_ERROR_WITH_CODE(msg,n) \
-    fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n); exit(-1)
+    fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n)
+    //fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n); exit(-1)
 
 
 #endif /* ABTI_ERROR_H_INCLUDED */

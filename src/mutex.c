@@ -217,6 +217,15 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
     return ABT_SUCCESS;
 }
 
+int ABT_mutex_waitlock(ABT_mutex mutex)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+    }
+    return abt_errno;
+}
+
 
 /*****************************************************************************/
 /* Private APIs                                                              */
@@ -242,14 +251,5 @@ ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
         h_mutex = (ABT_mutex)p_mutex;
     }
     return h_mutex;
-}
-
-int ABTI_mutex_waitlock(ABT_mutex mutex)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
-    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
-    }
-    return abt_errno;
 }
 

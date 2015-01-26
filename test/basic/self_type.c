@@ -43,6 +43,7 @@ void task_hello(void *arg)
 void thread_hello(void *arg)
 {
     ABT_xstream xstream;
+    ABT_pool pool;
     ABT_thread thread;
     ABT_thread_id my_id;
     ABT_task task;
@@ -70,8 +71,12 @@ void thread_hello(void *arg)
     ret = ABT_thread_is_primary(thread, &flag);
     assert(ret == ABT_SUCCESS && flag == ABT_FALSE);
 
+    /* Get the first pool */
+    ret = ABT_xstream_get_main_pools(xstream, 1, &pool);
+    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+
     /* Create a task */
-    ret = ABT_task_create(xstream, task_hello, (void *)my_id, NULL);
+    ret = ABT_task_create(pool, task_hello, (void *)my_id, NULL);
     ABT_TEST_ERROR(ret, "ABT_task_create");
 
     ret = ABT_self_on_primary_xstream(&flag);
@@ -118,6 +123,7 @@ void *pthread_hello(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream xstreams[2];
+    ABT_pool pools[2];
     ABT_thread threads[2];
     ABT_thread my_thread;
     ABT_thread_id my_thread_id;
@@ -179,7 +185,10 @@ int main(int argc, char *argv[])
 
     /* Create ULTs */
     for (i = 0; i < 2; i++) {
-        ret = ABT_thread_create(xstreams[i], thread_hello, NULL,
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
+        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+
+        ret = ABT_thread_create(pools[i], thread_hello, NULL,
                                 ABT_THREAD_ATTR_NULL, &threads[i]);
         ABT_TEST_ERROR(ret, "ABT_thread_create");
     }

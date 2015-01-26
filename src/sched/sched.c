@@ -12,20 +12,24 @@
 
 /**
  * @ingroup SCHED
- * @brief   Create a new scheduler and return its handle through newsched.
+ * @brief   Create a new user-defined scheduler and return its handle through
+ * newsched.
  *
- * newsched must be used for a single ES because pool cannot be shared
- * between different Execution Streams.
+ * The pools used by the new scheduler are provided by pools. This is an array
+ * of pools whose the address will be copied. So it must not be freed. The
+ * config has been created by a specific function of the user-defined
+ * scheduler, and will be used has argument in the initialization.
  *
- * @param[in]  pool      a user-defined data structure containing work units
- *                       scheduled by a new scheduler
- * @param[in]  funcs     functions required for scheduler creation
- * @param[out] newsched  handle to a new scheduler
+ * @param[in]  def       definition required for scheduler creation
+ * @param[in]  num_pools number of pools associated with this scheduler
+ * @param[in]  pools     pools associated with this scheduler
+ * @param[in]  config    specific config used during the scheduler creation
+ * @param[out] newsched handle to a new scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
-                     ABT_sched *newsched)
+int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
+                     ABT_sched_config config, ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_sched;
@@ -44,90 +48,159 @@ int ABT_sched_create(ABT_pool pool, const ABT_sched_funcs *funcs,
         goto fn_fail;
     }
 
-    p_sched->p_xstream = NULL;
-    p_sched->type = ABTI_SCHED_TYPE_USER;
-    p_sched->pool = pool;
-    p_sched->num_threads = 0;
-    p_sched->num_tasks   = 0;
-    p_sched->num_blocked = 0;
+    /* Check if the pools are available */
+    int p;
+    for (p = 0; p < num_pools; p++) {
+      ABTI_pool_retain(pools[p]);
+    }
 
     /* Create a mutex */
     abt_errno = ABT_mutex_create(&p_sched->mutex);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Create a context */
-    abt_errno = ABTD_thread_context_create(NULL, NULL, NULL,
-            0, NULL, &p_sched->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
+    p_sched->used          = ABTI_SCHED_NOT_USED;
+    p_sched->automatic     = ABT_FALSE;
+    p_sched->kind          = ABTI_sched_get_kind(def);
+    p_sched->state         = ABT_SCHED_STATE_READY;
+    p_sched->request       = 0;
+    p_sched->pools         = pools;
+    p_sched->free_pools    = ABT_FALSE;
+    p_sched->num_pools     = num_pools;
+    p_sched->type          = def->type;
+    p_sched->thread        = ABT_THREAD_NULL;
+    p_sched->task          = ABT_TASK_NULL;
 
-    /* Scheduling functions */
-    p_sched->u_get_type = funcs->u_get_type;
-    p_sched->u_get_thread = funcs->u_get_thread;
-    p_sched->u_get_task = funcs->u_get_task;
-    p_sched->u_create_from_thread = funcs->u_create_from_thread;
-    p_sched->u_create_from_task = funcs->u_create_from_task;
-    p_sched->u_free = funcs->u_free;
-
-    p_sched->p_get_size = funcs->p_get_size;
-    p_sched->p_push   = funcs->p_push;
-    p_sched->p_pop    = funcs->p_pop;
-    p_sched->p_remove = funcs->p_remove;
+    p_sched->init          = def->init;
+    p_sched->run           = def->run;
+    p_sched->free          = def->free;
+    p_sched->get_migr_pool = def->get_migr_pool;
 
     /* Return value */
     *newsched = ABTI_sched_get_handle(p_sched);
+
+    /* Specific initialization */
+    p_sched->init(*newsched, config);
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
+    *newsched = ABT_SCHED_NULL;
     HANDLE_ERROR_WITH_CODE("ABT_sched_create", abt_errno);
     goto fn_exit;
 }
 
 /**
  * @ingroup SCHED
- * @brief   Create a new scheduler with a provided scheduling policy.
+ * @brief   Create a predefined scheduler and return its handle through
+ * newsched.
  *
- * newsched must be used for a single stream because pool cannot be shared
- * between different streams.
+ * The pools used by the new scheduler are provided by pools. This is an array
+ * of pools whose the address will be copied. So it must not be freed.  The
+ * pool array can be NULL, but predef of sceduler should be compatible.
  *
- * @param[in]  kind      scheduling policy provided by the Argobots library
+ * @param[in]  predef    predefined scheduler
+ * @param[in]  num_pools number of pools associated with this scheduler
+ * @param[in]  pools     pools associated with this scheduler
+ * @param[in]  automatic teel if the sched should be automatically freed
  * @param[out] newsched  handle to a new scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_sched_create_basic(ABT_sched_kind kind, ABT_sched *newsched)
+int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
+                           ABT_pool *p_pools, int automatic,
+                           ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_sched *p_newsched;
+    int free_pools = ABT_FALSE;
 
-    switch (kind) {
-        case ABT_SCHED_FIFO:
-            abt_errno = ABTI_sched_create_fifo(&p_newsched);
-            break;
-        case ABT_SCHED_LIFO:
-            abt_errno = ABTI_sched_create_lifo(&p_newsched);
-            break;
-        case ABT_SCHED_PRIO:
-            abt_errno = ABTI_sched_create_prio(&p_newsched);
-            break;
-        default:
-            abt_errno = ABT_ERR_INV_SCHED_KIND;
-            break;
-    }
-    if (abt_errno != ABT_SUCCESS) {
-        *newsched = ABT_SCHED_NULL;
-        goto fn_fail;
+    // A pool array is provided, predef has to be compatible
+    if (p_pools != NULL) {
+        /* Creation of the scheduler */
+        switch (predef) {
+            case ABT_SCHED_DEFAULT_NO_POOL:
+                abt_errno = ABT_sched_create(&ABT_sched_default, num_pools, p_pools,
+                        ABT_SCHED_CONFIG_NULL, newsched);
+                break;
+            default:
+                abt_errno = ABT_ERR_INV_SCHED_PREDEF;
+                break;
+        }
+        ABTI_CHECK_ERROR(abt_errno);
     }
 
-    /* Return value */
-    *newsched = ABTI_sched_get_handle(p_newsched);
+    // No pool array is provided, predef has to be compatible
+    else {
+        free_pools = ABT_TRUE;
+        ABT_pool_access access;
+        /* First, set the number of pools and the access type */
+        switch (predef) {
+            case ABT_SCHED_DEFAULT_POOL_FIFO_PRW:
+                access = ABT_POOL_ACCESS_PRW;
+                num_pools = 1;
+                break;
+            case ABT_SCHED_DEFAULT_POOL_FIFO_PR_PW:
+                access = ABT_POOL_ACCESS_PR_PW;
+                num_pools = 1;
+                break;
+            case ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW:
+                access = ABT_POOL_ACCESS_PR_SW;
+                num_pools = 1;
+                break;
+            case ABT_SCHED_DEFAULT_POOL_FIFO_SR_PW:
+                access = ABT_POOL_ACCESS_SR_PW;
+                num_pools = 1;
+                break;
+            case ABT_SCHED_DEFAULT_POOL_FIFO_SR_SW:
+                access = ABT_POOL_ACCESS_SR_SW;
+                num_pools = 1;
+                break;
+            default:
+                abt_errno = ABT_ERR_INV_SCHED_PREDEF;
+                ABTI_CHECK_ERROR(abt_errno);
+                break;
+        }
+
+        /* Creation of the pools */
+        p_pools = (ABT_pool *)malloc(num_pools*sizeof(ABT_pool));
+        int p;
+        for (p = 0; p < num_pools; p++) {
+            abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO,
+                                              access,
+                                              p_pools+p);
+            ABTI_CHECK_ERROR(abt_errno);
+        }
+
+        /* Creation of the scheduler */
+        switch (predef) {
+            case ABT_SCHED_DEFAULT_POOL_FIFO_PRW:
+            case ABT_SCHED_DEFAULT_POOL_FIFO_PR_PW:
+            case ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW:
+            case ABT_SCHED_DEFAULT_POOL_FIFO_SR_PW:
+            case ABT_SCHED_DEFAULT_POOL_FIFO_SR_SW:
+                abt_errno = ABT_sched_create(&ABT_sched_default, num_pools, p_pools,
+                        ABT_SCHED_CONFIG_NULL, newsched);
+                break;
+            default:
+                abt_errno = ABT_ERR_INV_SCHED_PREDEF;
+                ABTI_CHECK_ERROR(abt_errno);
+                break;
+        }
+    }
+    ABTI_CHECK_ERROR(abt_errno);
+
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(*newsched);
+    if (automatic)
+        p_sched->automatic = ABT_TRUE;
+    if (free_pools == ABT_TRUE)
+        p_sched->free_pools = ABT_TRUE;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_sched_create_basic", abt_errno);
+    *newsched = ABT_SCHED_NULL;
     goto fn_exit;
 }
 
@@ -135,7 +208,8 @@ int ABT_sched_create_basic(ABT_sched_kind kind, ABT_sched *newsched)
  * @ingroup SCHED
  * @brief   Release the scheduler object associated with sched handle.
  *
- * If this routine successfully returns, sched is set as ABT_SCHED_NULL.
+ * If this routine successfully returns, sched is set as ABT_SCHED_NULL. The
+ * scheduler will be automatically freed.
  *
  * @param[in,out] sched  handle to the target scheduler
  * @return Error code
@@ -148,28 +222,33 @@ int ABT_sched_free(ABT_sched *sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(h_sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    /* Disconnect this scheduler from ES */
-    if (p_sched->p_xstream) {
-        p_sched->p_xstream->p_sched = NULL;
-    }
-
     /* If sched is a default provided one, it should free its pool here.
      * Otherwise, freeing the pool is the user's reponsibility. */
-    if (p_sched->type == ABTI_SCHED_TYPE_DEFAULT) {
-        abt_errno = ABTI_pool_free(&p_sched->pool);
-        ABTI_CHECK_ERROR(abt_errno);
-    } else if (p_sched->type == ABTI_SCHED_TYPE_BASIC) {
-        abt_errno = ABTI_sched_free_basic(p_sched);
-        ABTI_CHECK_ERROR(abt_errno);
+    int p;
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        ABTI_pool_release(p_pool);
+        if (p_pool->automatic == ABT_TRUE && p_pool->num_scheds == 0) {
+            abt_errno = ABT_pool_free(p_sched->pools+p);
+            ABTI_CHECK_ERROR(abt_errno);
+        }
     }
+    if (p_sched->free_pools == ABT_TRUE)
+        ABTU_free(p_sched->pools);
 
-    /* Free the context */
-    abt_errno = ABTD_thread_context_free(&p_sched->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
+    /* Free the associated thread */
+    if (p_sched->thread != ABT_THREAD_NULL) {
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
+        if (p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED)
+            ABT_thread_free(&p_sched->thread);
+    }
 
     /* Free the mutex */
     abt_errno = ABT_mutex_free(&p_sched->mutex);
     ABTI_CHECK_ERROR(abt_errno);
+
+    p_sched->free(h_sched);
+    p_sched->data = NULL;
 
     ABTU_free(p_sched);
 
@@ -184,86 +263,261 @@ int ABT_sched_free(ABT_sched *sched)
     goto fn_exit;
 }
 
-/**
- * @ingroup SCHED
- * @brief   Get the minimum priority of a scheduler kind.
- *
- * For ABT_SCHED_PRIO, the range is defined in enum ABT_sched_prio. For
- * ABT_SCHED_FIFO and ABT_SCHED_LIFO, both ABT_sched_get_prio_min and
- * ABT_sched_get_prio_max will set prio to ABT_SCHED_PRIO_NORMAL.
- *
- * @param[in]  kind  scheduling policy provided by the Argobots library
- * @param[out] prio  the minimum priority value that can be used with
- *                   the scheduling algorithm
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_sched_get_prio_min(ABT_sched_kind kind, ABT_sched_prio *prio)
+int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
+                        ABT_pool *pools)
 {
     int abt_errno = ABT_SUCCESS;
 
-    switch (kind) {
-        case ABT_SCHED_FIFO:
-        case ABT_SCHED_LIFO:
-            *prio = ABT_SCHED_PRIO_NORMAL;
-            break;
-        case ABT_SCHED_PRIO:
-            *prio = ABT_SCHED_PRIO_LOW;
-            break;
-        default:
-            abt_errno = ABT_ERR_INV_SCHED_KIND;
-            break;
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
+    if (idx+max_pools > p_sched->num_pools) {
+        abt_errno = ABT_ERR_SCHED;
+        goto fn_fail;
     }
-    ABTI_CHECK_ERROR(abt_errno);
+
+    int p;
+    for (p = idx; p < idx+max_pools; p++) {
+        pools[p-idx] = p_sched->pools[p];
+    }
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_get_prio_min", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_sched_get_pools", abt_errno);
     goto fn_exit;
 }
 
 /**
  * @ingroup SCHED
- * @brief   Get the maximum priority of a scheduler kind.
+ * @brief   Ask a scheduler to finish
+ * newsched.
  *
- * For ABT_SCHED_PRIO, the range is defined in enum ABT_sched_prio. For
- * ABT_SCHED_FIFO and ABT_SCHED_LIFO, both ABT_sched_get_prio_min and
- * ABT_sched_get_prio_max will set prio to ABT_SCHED_PRIO_NORMAL.
+ * The scheduler will stop when its pools will be empty.
  *
- * @param[in]  kind  scheduling policy provided by the Argobots library
- * @param[out] prio  the maximum priority value that can be used with
- *                   the scheduling algorithm
+ * @param[in]  sched     handle to the target scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_sched_get_prio_max(ABT_sched_kind kind, ABT_sched_prio *prio)
+int ABT_sched_finish(ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
 
-    switch (kind) {
-        case ABT_SCHED_FIFO:
-        case ABT_SCHED_LIFO:
-            *prio = ABT_SCHED_PRIO_NORMAL;
-            break;
-        case ABT_SCHED_PRIO:
-            *prio = ABT_SCHED_PRIO_HIGH;
-            break;
-        default:
-            abt_errno = ABT_ERR_INV_SCHED_KIND;
-            break;
-    }
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
+    ABTD_atomic_fetch_or_uint32(&p_sched->request, ABTI_SCHED_REQ_FINISH);
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_get_prio_max", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_sched_finish", abt_errno);
     goto fn_exit;
 }
 
+/**
+ * @ingroup SCHED
+ * @brief   Ask a scheduler to stop as soon as possible
+ * newsched.
+ *
+ * The scheduler will stop even if its pools are not empty. It is the user
+ * responsability to ensure that the left work will be run by other scheduler.
+ * 
+ * @param[in]  sched     handle to the target scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_exit(ABT_sched sched)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
+    ABTD_atomic_fetch_or_uint32(&p_sched->request, ABTI_SCHED_REQ_EXIT);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("XXX", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
+ * @brief   Check if the scheduler needs to stop
+ *
+ * Check if there are an exit or a finish request and if the conditions are
+ * respected (empty pool for a finish request).
+ *
+ * @param[in]  sched handle to the target scheduler
+ * @param[out] stop  indicate if the scheduler has to stop
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_has_to_stop(ABT_sched sched, int *stop)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    *stop = ABT_FALSE;
+
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
+    /* Check exit request */
+    if (p_sched->request & ABTI_SCHED_REQ_EXIT) {
+        p_sched->state = ABT_SCHED_STATE_TERMINATED;
+        *stop = ABT_TRUE;
+        goto fn_exit;
+    }
+
+    /* Check join request */
+    size_t size;
+    ABT_sched_get_size(p_sched, &size);
+    if (size == 0) {
+        ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+        ABTI_thread *p_main_thread = ABTI_local_get_main();
+        if (p_sched->request & ABTI_SCHED_REQ_FINISH) {
+            /* We need to lock in case someone wants to migrate to this
+             * scheduler */
+            ABT_mutex_waitlock(p_xstream->top_sched_mutex);
+            size_t size;
+            ABT_sched_get_size(p_sched, &size);
+            if (size == 0) {
+                p_sched->state = ABT_SCHED_STATE_TERMINATED;
+                *stop = ABT_TRUE;
+            }
+
+            ABT_mutex_unlock(p_xstream->top_sched_mutex);
+        }
+        /* We jump back to the main ULT if there is */
+        else if (p_main_thread != NULL) {
+            ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
+            if (ABTI_task_current() == NULL)
+              assert(p_thread == ABTI_thread_current());
+            abt_errno = ABTD_thread_context_switch(&p_thread->ctx,
+                                                   &p_main_thread->ctx);
+            ABTI_CHECK_ERROR(abt_errno);
+            ABTI_local_set_thread(p_thread);
+        }
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("XXX", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
+ * @brief   Set the specific data of the target user-defined scheduler
+ *
+ * This function will be called by the user during the initialization of his
+ * user-defined scheduler.
+ *
+ * @param[in] sched handle to the scheduler
+ * @param[in] data specific data of the scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_set_data(ABT_sched sched, void *data)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    p_sched->data = data;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_set_data", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
+ * @brief   Retrieve the specific data of the target user-defnied scheduler
+ *
+ * This function will be called by the user in a user-defined function of his
+ * user-defnied scheduler.
+ *
+ * @param[in]  sched  handle to the scheduler
+ * @param[out] p_data pointer to the specific data of the scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_get_data(ABT_sched sched, void **p_data)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
+    *p_data = p_sched->data;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_get_data", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
+ * @brief   Get the sum of the sizes of the pool of sched
+ *
+ * The size includes the blocked and migrating ULT
+ *
+ * @param[in]  sched handle to the scheduler
+ * @param[out] size total number of work units
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_get_size(ABT_sched sched, size_t *p_size)
+{
+    int abt_errno = ABT_SUCCESS;
+    size_t size = 0;
+    int p;
+
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    for (p = 0; p < p_sched->num_pools; p++) {
+        size_t s;
+        ABT_pool pool = p_sched->pools[p];
+        ABT_pool_get_total_size(pool, &s);
+        size += s;
+    }
+
+  fn_exit:
+    *p_size = size;
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_get_size", abt_errno);
+    goto fn_exit;
+}
+
+int ABT_sched_get_kind(ABT_sched sched, ABT_sched_kind *kind)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
+  fn_exit:
+    *kind = p_sched->kind;
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_get_kind", abt_errno);
+    goto fn_exit;
+}
 
 /*****************************************************************************/
 /* Private APIs                                                              */
@@ -291,157 +545,100 @@ ABT_sched ABTI_sched_get_handle(ABTI_sched *p_sched)
     return h_sched;
 }
 
-int ABTI_sched_create_default(ABTI_sched **newsched)
+/* Mark the scheduler as used and how it is used */
+int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_sched sched;
-    ABT_pool pool;
-    ABT_sched_funcs funcs;
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    if (p_sched->used != ABTI_SCHED_NOT_USED)
+        abt_errno = ABT_ERR_SCHED;
 
-    /* Create a work unit pool */
-    abt_errno = ABTI_pool_create(&pool);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    /* Set up the scheduler functions */
-    funcs.u_get_type = ABTI_unit_get_type;
-    funcs.u_get_thread = ABTI_unit_get_thread;
-    funcs.u_get_task = ABTI_unit_get_task;
-    funcs.u_create_from_thread = ABTI_unit_create_from_thread;
-    funcs.u_create_from_task = ABTI_unit_create_from_task;
-    funcs.u_free = ABTI_unit_free;
-    funcs.p_get_size = ABTI_pool_get_size;
-    funcs.p_push   = ABTI_pool_push;
-    funcs.p_pop    = ABTI_pool_pop;
-    funcs.p_remove = ABTI_pool_remove;
-
-    /* Create a scheduler */
-    abt_errno = ABT_sched_create(pool, &funcs, &sched);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    /* Mark this as a runtime-provided scheduler */
-    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
-    p_sched->type = ABTI_SCHED_TYPE_DEFAULT;
-
-    /* Return value */
-    *newsched = p_sched;
+    p_sched->used = use;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_sched_create_default", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_sched_associate", abt_errno);
     goto fn_exit;
 }
 
-int ABTI_sched_free_basic(ABTI_sched *p_sched)
+/* Get the pool suitable for receiving a migrating ULT */
+int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
+                                  ABTI_pool **pp_pool)
 {
     int abt_errno = ABT_SUCCESS;
-    switch (p_sched->kind) {
-        case ABT_SCHED_FIFO:
-            abt_errno = ABTI_sched_free_fifo(p_sched);
-            break;
-        case ABT_SCHED_LIFO:
-            abt_errno = ABTI_sched_free_lifo(p_sched);
-            break;
-        case ABT_SCHED_PRIO:
-            abt_errno = ABTI_sched_free_prio(p_sched);
-            break;
-        default:
-            abt_errno = ABT_ERR_INV_SCHED;
-            break;
+    ABT_sched sched = ABTI_sched_get_handle(p_sched);
+    ABTI_pool *p_pool;
+
+    if (p_sched->state != ABT_SCHED_STATE_RUNNING) {
+        abt_errno = ABT_ERR_INV_SCHED;
+        *pp_pool = NULL;
+        goto fn_fail;
     }
-    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Find a pool */
+    /* If get_migr_pool is not defined, we pick the first pool */
+    if (p_sched->get_migr_pool == NULL) {
+        if (p_sched->num_pools == 0)
+            p_pool = NULL;
+        else
+            p_pool = p_sched->pools[0];
+    }
+    else
+        p_pool = p_sched->get_migr_pool(sched);
+
+    /* Check the pool */
+    if (ABTI_pool_accept_migration(p_pool, source_pool) == ABT_TRUE) {
+        *pp_pool = p_pool;
+    }
+    else {
+        *pp_pool = NULL;
+        abt_errno = ABT_ERR_INV_POOL_ACCESS;
+    }
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_sched_free_basic", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_sched_get_migration_pool", abt_errno);
     goto fn_exit;
 }
 
-void ABTI_sched_push(ABTI_sched *p_sched, ABT_unit unit)
+uint64_t ABTI_sched_get_kind(ABT_sched_def *def)
 {
-    ABT_unit_type type = ABTI_unit_get_type(unit);
-
-    ABTI_mutex_waitlock(p_sched->mutex);
-    switch (type) {
-        case ABT_UNIT_TYPE_THREAD: p_sched->num_threads++; break;
-        case ABT_UNIT_TYPE_TASK:   p_sched->num_tasks++;   break;
-        default: break;
-    }
-    p_sched->p_push(p_sched->pool, unit);
-    ABT_mutex_unlock(p_sched->mutex);
-}
-
-ABT_unit ABTI_sched_pop(ABTI_sched *p_sched)
-{
-    ABT_unit unit;
-    ABT_unit_type type;
-
-    ABTI_mutex_waitlock(p_sched->mutex);
-    unit = p_sched->p_pop(p_sched->pool);
-    type = ABTI_unit_get_type(unit);
-    switch (type) {
-        case ABT_UNIT_TYPE_THREAD: p_sched->num_threads--; break;
-        case ABT_UNIT_TYPE_TASK:   p_sched->num_tasks--;   break;
-        default: break;
-    }
-    ABT_mutex_unlock(p_sched->mutex);
-    return unit;
-}
-
-void ABTI_sched_remove(ABTI_sched *p_sched, ABT_unit unit)
-{
-    ABTI_mutex_waitlock(p_sched->mutex);
-    p_sched->p_remove(p_sched->pool, unit);
-    ABT_mutex_unlock(p_sched->mutex);
-}
-
-int ABTI_sched_inc_num_blocked(ABTI_sched *p_sched)
-{
-    ABTD_atomic_fetch_add_uint32(&p_sched->num_blocked, 1);
-    return ABT_SUCCESS;
-}
-
-int ABTI_sched_dec_num_blocked(ABTI_sched *p_sched)
-{
-    ABTD_atomic_fetch_sub_uint32(&p_sched->num_blocked, 1);
-    return ABT_SUCCESS;
+  return (uint64_t)def;
 }
 
 int ABTI_sched_print(ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
+    int p;
+
     if (p_sched == NULL) {
         printf("NULL SCHEDULER\n");
         goto fn_exit;
     }
 
     printf("== SCHEDULER (%p) ==\n", p_sched);
-    printf("xstream: %p\n", p_sched->p_xstream);
-    printf("type: ");
-    switch (p_sched->type) {
-        case ABTI_SCHED_TYPE_DEFAULT: printf("DEFAULT\n"); break;
-        case ABTI_SCHED_TYPE_BASIC:   printf("BASIC\n"); break;
-        case ABTI_SCHED_TYPE_USER:    printf("USER\n"); break;
-        default: printf("UNKNOWN\n"); break;
+    printf("id: ");
+    if (p_sched->kind == ABT_sched_default_kind()) {
+        printf("DEFAULT\n");
+    } else {
+        printf("%lu (USER)\n", p_sched->kind);
     }
-    if (p_sched->type == ABTI_SCHED_TYPE_BASIC) {
-        printf("kind: ");
-        switch (p_sched->kind) {
-            case ABT_SCHED_FIFO: printf("FIFO\n"); break;
-            case ABT_SCHED_LIFO: printf("LIFO\n"); break;
-            case ABT_SCHED_PRIO: printf("PRIO\n"); break;
-            default: printf("UNKNOWN\n"); break;
-        }
+
+    printf("automatic: %d", p_sched->automatic);
+    printf("number of pools: %d", p_sched->num_pools);
+    for (p = 0; p < p_sched->num_pools; p++) {
+        printf("pool %d: ", p);
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        abt_errno = ABTI_pool_print(p_pool);
+        ABTI_CHECK_ERROR(abt_errno);
     }
-    printf("pool: ");
-    abt_errno = ABTI_pool_print(p_sched->pool);
-    ABTI_CHECK_ERROR(abt_errno);
-    printf("num_threads: %u\n", p_sched->num_threads);
-    printf("num_tasks: %u\n", p_sched->num_tasks);
-    printf("num_blocked: %u\n", p_sched->num_blocked);
+    size_t size;
+    ABT_sched_get_size(p_sched, &size);
+    printf("size: %lu\n", (unsigned long)size);
 
   fn_exit:
     return abt_errno;

@@ -52,11 +52,16 @@ int main(int argc, char *argv[])
     ret = ABT_xstream_set_name(xstream, xstream_name);
     ABT_TEST_ERROR(ret, "ABT_xstream_set_name");
 
+    /* Get the pools attached to an execution stream */
+    ABT_pool pool;
+    ret = ABT_xstream_get_main_pools(xstream, 1, &pool);
+    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+
     /* Create threads */
     for (i = 0; i < num_threads; i++) {
         args[i].id = i + 1;
         sprintf(args[i].name, "arogobot-%d", i);
-        ret = ABT_thread_create(xstream,
+        ret = ABT_thread_create(pool,
                 thread_func, (void *)&args[i], ABT_THREAD_ATTR_NULL,
                 &threads[i]);
         ABT_TEST_ERROR(ret, "ABT_thread_create");

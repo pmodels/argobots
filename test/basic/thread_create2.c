@@ -24,15 +24,18 @@ void thread_create(void *arg)
 {
     int i, ret;
     size_t my_id = (size_t)arg;
-    ABT_xstream my_xstream;
+    ABT_thread my_thread;
+    ABT_pool my_pool;
 
-    ret = ABT_xstream_self(&my_xstream);
+    ret = ABT_thread_self(&my_thread);
+    ret = ABT_thread_get_last_pool(my_thread, &my_pool);
+
     ABT_TEST_ERROR(ret, "ABT_xstream_self");
 
     /* Create threads */
     for (i = 0; i < num_threads; i++) {
         size_t tid = 100 * my_id + i;
-        ret = ABT_thread_create(my_xstream,
+        ret = ABT_thread_create(my_pool,
                 thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
                 NULL);
         ABT_TEST_ERROR(ret, "ABT_thread_create");
@@ -54,6 +57,9 @@ int main(int argc, char *argv[])
     ABT_xstream *xstreams;
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
 
+    ABT_pool *pools;
+    pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
+
     /* Initialize */
     ABT_test_init(argc, argv);
 
@@ -65,10 +71,16 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
 
+    /* Get the pools attached to an execution stream */
+    for (i = 0; i < num_xstreams; i++) {
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    }
+
     /* Create one thread for each ES */
     for (i = 0; i < num_xstreams; i++) {
         size_t tid = i + 1;
-        ret = ABT_thread_create(xstreams[i],
+        ret = ABT_thread_create(pools[i],
                 thread_create, (void *)tid, ABT_THREAD_ATTR_NULL,
                 NULL);
         ABT_TEST_ERROR(ret, "ABT_thread_create");

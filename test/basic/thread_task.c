@@ -81,7 +81,7 @@ void task_func1(void *arg)
     }
     ABT_task_release(my_handle);
 
-    int i;
+    size_t i;
     size_t num = (size_t)arg;
     unsigned long long result = 1;
     for (i = 2; i <= num; i++) {
@@ -151,6 +151,14 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
 
+    /* Get the pools attached to an execution stream */
+    ABT_pool *pools;
+    pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
+    for (i = 0; i < num_xstreams; i++) {
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    }
+
     /* Create threads */
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
@@ -158,7 +166,7 @@ int main(int argc, char *argv[])
             thread_args[i][j].id = tid;
             thread_args[i][j].num_threads = num_threads;
             thread_args[i][j].threads = &threads[i][0];
-            ret = ABT_thread_create(xstreams[i],
+            ret = ABT_thread_create(pools[i],
                     thread_func, (void *)&thread_args[i][j],
                     ABT_THREAD_ATTR_NULL,
                     &threads[i][j]);
@@ -169,7 +177,7 @@ int main(int argc, char *argv[])
     /* Create tasks with task_func1 */
     for (i = 0; i < num_tasks; i++) {
         size_t num = 100 + i;
-        ret = ABT_task_create(ABT_XSTREAM_NULL,
+        ret = ABT_task_create(pools[i % num_xstreams],
                               task_func1, (void *)num,
                               NULL);
         ABT_TEST_ERROR(ret, "ABT_task_create");
@@ -178,7 +186,7 @@ int main(int argc, char *argv[])
     /* Create tasks with task_func2 */
     for (i = 0; i < num_tasks; i++) {
         task_args[i].num = 100 + i;
-        ret = ABT_task_create(xstreams[i % num_xstreams],
+        ret = ABT_task_create(pools[i % num_xstreams],
                               task_func2, (void *)&task_args[i],
                               &tasks[i]);
         ABT_TEST_ERROR(ret, "ABT_task_create");

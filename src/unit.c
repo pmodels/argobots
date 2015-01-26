@@ -80,6 +80,12 @@ ABT_unit ABTI_unit_get_next(ABT_unit unit)
     return ABTI_unit_get_handle(p_next);
 }
 
+ABTI_pool *ABTI_unit_get_pool(ABT_unit unit)
+{
+    ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
+    return p_unit->p_pool;
+}
+
 ABT_unit ABTI_unit_create_from_xstream(ABT_xstream xstream)
 {
     ABTI_unit *p_unit;

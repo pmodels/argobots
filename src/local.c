@@ -13,7 +13,7 @@
 /* ES Local Data */
 ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local = NULL;
 
-int ABTI_local_init(ABTI_xstream *p_xstream)
+int ABTI_local_init(void)
 {
     assert(lp_ABTI_local == NULL);
     int abt_errno = ABT_SUCCESS;
@@ -25,7 +25,8 @@ int ABTI_local_init(ABTI_xstream *p_xstream)
         goto fn_fail;
     }
 
-    lp_ABTI_local->p_xstream = p_xstream;
+    lp_ABTI_local->p_xstream = NULL;
+    lp_ABTI_local->p_thread_main = NULL;
     lp_ABTI_local->p_thread = NULL;
     lp_ABTI_local->p_task = NULL;
 

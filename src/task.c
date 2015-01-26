@@ -23,20 +23,34 @@ static uint64_t ABTI_task_get_new_id(void);
  * this \a unnamed task completes the execution of task_func. Otherwise,
  * ABT_task_free() can be used to explicitly release the task object.
  *
- * @param[in]  xstream    handle to the associated ES
+ * @param[in]  pool       handle to the associated pool
  * @param[in]  task_func  function to be executed by a new task
  * @param[in]  arg        argument for task_func
  * @param[out] newtask    handle to a newly created task
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_create(ABT_xstream xstream,
+int ABT_task_create(ABT_pool pool,
                     void (*task_func)(void *), void *arg,
                     ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_newtask;
     ABT_task h_newtask;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    /* If the pool is directly associated to a ES and this ES is not running,
+     * then start it */
+    ABTI_xstream *p_xstream = p_pool->reader;
+    if (p_xstream && p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
+        ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
+        abt_errno = ABT_xstream_start(xstream);
+        if (abt_errno != ABT_SUCCESS) {
+            HANDLE_ERROR("ABT_xstream_start");
+            goto fn_fail;
+        }
+    }
 
     p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
     if (!p_newtask) {
@@ -46,57 +60,37 @@ int ABT_task_create(ABT_xstream xstream,
         goto fn_fail;
     }
 
+    /* Create a wrapper work unit */
+    h_newtask = ABTI_task_get_handle(p_newtask);
+    p_newtask->unit = p_pool->u_create_from_task(h_newtask);
+
+    p_newtask->p_xstream  = NULL;
+    p_newtask->is_sched   = NULL;
+    p_newtask->p_pool     = p_pool;
     p_newtask->id         = ABTI_task_get_new_id();
     p_newtask->p_name     = NULL;
-    p_newtask->state      = ABT_TASK_STATE_READY;
+    p_newtask->state      = ABT_TASK_STATE_CREATED;
     p_newtask->migratable = ABT_TRUE;
     p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
     p_newtask->request    = 0;
-    p_newtask->f_task     = task_func;
-    p_newtask->p_arg      = arg;
 
     /* Create a mutex */
     abt_errno = ABT_mutex_create(&p_newtask->mutex);
     ABTI_CHECK_ERROR(abt_errno);
 
-    h_newtask = ABTI_task_get_handle(p_newtask);
+    p_newtask->f_task     = task_func;
+    p_newtask->p_arg      = arg;
 
-    if (xstream == ABT_XSTREAM_NULL) {
-        p_newtask->p_xstream = NULL;
-
-        /* Create a wrapper work unit */
-        p_newtask->unit = ABTI_unit_create_from_task(h_newtask);
-
-        /* Add this task to the global task pool */
-        abt_errno = ABTI_global_add_task(p_newtask);
-        ABTI_CHECK_ERROR(abt_errno);
-
-        /* Start any ES if there is no running ES */
-        ABTI_xstream_pool *p_xstreams = gp_ABTI_global->p_xstreams;
-        if (ABTI_pool_get_size(p_xstreams->active) <= 1 &&
-            ABTI_pool_get_size(p_xstreams->created) > 0) {
-            abt_errno = ABTI_xstream_start_any();
-            ABTI_CHECK_ERROR(abt_errno);
-        }
-    } else {
-        ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-        ABTI_sched *p_sched = p_xstream->p_sched;
-
-        /* Set the ES for this task */
-        p_newtask->p_xstream = p_xstream;
-
-        /* Create a wrapper work unit */
-        p_newtask->unit = p_sched->u_create_from_task(h_newtask);
-
-        /* Add this task to the scheduler's pool */
-        ABTI_sched_push(p_sched, p_newtask->unit);
-
-        /* Start the ES if it is not running */
-        if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
-            abt_errno = ABTI_xstream_start(p_xstream);
-            ABTI_CHECK_ERROR(abt_errno);
-        }
+    /* Add this task to the scheduler's pool */
+    abt_errno = ABT_pool_push(pool, p_newtask->unit);
+    if (abt_errno != ABT_SUCCESS) {
+        int ret = ABT_task_free(&h_newtask);
+        if (ret != ABT_SUCCESS)
+            abt_errno = ret;
+      goto fn_fail;
     }
+
+    p_newtask->state = ABT_TASK_STATE_READY;
 
     /* Return value */
     if (newtask) *newtask = h_newtask;
@@ -105,6 +99,7 @@ int ABT_task_create(ABT_xstream xstream,
     return abt_errno;
 
   fn_fail:
+    if (newtask) *newtask = ABT_TASK_NULL;
     HANDLE_ERROR_WITH_CODE("ABT_task_create", abt_errno);
     goto fn_exit;
 }
@@ -136,16 +131,18 @@ int ABT_task_free(ABT_task *task)
     }
 
     /* Wait until the task terminates */
-    while (p_task->state != ABT_TASK_STATE_TERMINATED) {
+    while (p_task->state != ABT_TASK_STATE_TERMINATED &&
+           p_task->state != ABT_TASK_STATE_CREATED) {
         ABT_thread_yield();
     }
 
-    if (p_task->refcount > 0) {
+    if (p_task->refcount > 0 &&
+        p_task->state != ABT_TASK_STATE_CREATED) {
         /* The task has finished but it is still referenced.
          * Thus it exists in the deads pool of ES. */
         ABTI_xstream *p_xstream = p_task->p_xstream;
-        ABTI_mutex_waitlock(p_xstream->mutex);
-        ABTI_pool_remove(p_xstream->deads, p_task->unit);
+        ABT_mutex_waitlock(p_xstream->mutex);
+        ABTI_contn_remove(p_xstream->deads, p_task->unit);
         ABT_mutex_unlock(p_xstream->mutex);
     }
 
@@ -294,6 +291,36 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
 
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_task_get_state", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
+ * @brief   Return the last pool of task.
+ *
+ * If the task is not running it is the pool where the task is, else it is the
+ * pool from the task have been poped.
+ *
+ * @param[in]  task  handle to the target task
+ * @param[out] pool  the last pool of the task
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    /* Return value */
+    *pool = ABTI_pool_get_handle(p_task->p_pool);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_task_get_last_pool", abt_errno);
     goto fn_exit;
 }
 
@@ -454,7 +481,7 @@ int ABT_task_set_name(ABT_task task, const char *name)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     size_t len = strlen(name);
-    ABTI_mutex_waitlock(p_task->mutex);
+    ABT_mutex_waitlock(p_task->mutex);
     if (p_task->p_name) ABTU_free(p_task->p_name);
     p_task->p_name = (char *)ABTU_malloc(len + 1);
     if (!p_task->p_name) {
@@ -544,7 +571,7 @@ int ABTI_task_free(ABTI_task *p_task)
     if (p_task->refcount > 0) {
         ABTI_unit_free(&p_task->unit);
     } else {
-        p_task->p_xstream->p_sched->u_free(&p_task->unit);
+        p_task->p_pool->u_free(&p_task->unit);
     }
 
     if (p_task->p_name) ABTU_free(p_task->p_name);
@@ -576,6 +603,7 @@ int ABTI_task_print(ABTI_task *p_task)
     printf("name:%s ", p_task->p_name);
     printf("state:");
     switch (p_task->state) {
+        case ABT_TASK_STATE_CREATED:    printf("CREATED "); break;
         case ABT_TASK_STATE_READY:      printf("READY "); break;
         case ABT_TASK_STATE_RUNNING:    printf("RUNNING "); break;
         case ABT_TASK_STATE_TERMINATED: printf("TERMINATED "); break;
@@ -587,6 +615,11 @@ int ABTI_task_print(ABTI_task *p_task)
 
   fn_exit:
     return abt_errno;
+}
+
+ABTI_task *ABTI_task_current(void)
+{
+    return ABTI_local_get_task();
 }
 
 void ABTI_task_retain(ABTI_task *p_task)

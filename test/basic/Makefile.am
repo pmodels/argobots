@@ -10,17 +10,14 @@ TESTS = \
 	thread_attr \
 	thread_yield \
 	thread_yield_to \
-	thread_migrate_to \
 	thread_migrate \
 	thread_id \
 	task_create \
 	thread_task \
 	thread_task_num \
+	sched_stack \
+	pool_access \
 	name \
-	scheduler_test \
-	scheduler_basic \
-	scheduler_prio \
-	scheduler_user \
 	mutex \
 	condition \
 	future_create \
@@ -38,17 +35,14 @@ thread_create2_SOURCES = thread_create2.c
 thread_attr_SOURCES = thread_attr.c
 thread_yield_SOURCES = thread_yield.c
 thread_yield_to_SOURCES = thread_yield_to.c
-thread_migrate_to_SOURCES = thread_migrate_to.c
 thread_migrate_SOURCES = thread_migrate.c
 thread_id_SOURCES = thread_id.c
 task_create_SOURCES = task_create.c
 thread_task_SOURCES = thread_task.c
 thread_task_num_SOURCES = thread_task_num.c
+sched_stack_SOURCES = sched_stack.c
+pool_access_SOURCES = pool_access.c
 name_SOURCES = name.c
-scheduler_test_SOURCES = scheduler_test.c
-scheduler_basic_SOURCES = scheduler_basic.c
-scheduler_prio_SOURCES = scheduler_prio.c
-scheduler_user_SOURCES = scheduler_user.c
 mutex_SOURCES = mutex.c
 condition_SOURCES = condition.c
 future_create_SOURCES = future_create.c
@@ -62,17 +56,14 @@ testing:
 	./thread_attr
 	./thread_yield
 	./thread_yield_to
-	./thread_migrate_to
 	./thread_migrate
 	./thread_id
 	./task_create
 	./thread_task
 	./thread_task_num
+	./sched_stack
+	./pool_access
 	./name
-	./scheduler_test
-	./scheduler_basic
-	./scheduler_prio
-	./scheduler_user
 	./mutex
 	./condition
 	./future_create

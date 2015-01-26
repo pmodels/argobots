@@ -70,12 +70,19 @@ dnl check function availability
 dnl ----------------------------------------------------------------------------
 AC_ARG_ENABLE([affinity],
     AS_HELP_STRING([--disable-affinity],
-        [do not use affinity even though it is supported.]),,
+        [do not use affinity even though it is supported]),,
         [enable_affinity=yes])
 AS_IF([test "x$enable_affinity" != "xno"], [
        AC_CHECK_LIB(pthread, pthread_setaffinity_np,
                     [AC_DEFINE(HAVE_PTHREAD_SETAFFINITY_NP, 1,
                      [Define if pthread_setaffinity_np is available])])
+       ])
+
+# enable valgrind support if requested
+AC_ARG_ENABLE([valgrind],
+    AS_HELP_STRING([--enable-valgrind], [enable valgrind support]))
+AS_IF([test "x$enable_valgrind" = "xyes"], [
+       AC_DEFINE(HAVE_VALGRIND_SUPPORT, 1, [Define valgrind support])
        ])
 
 # compute canonical system types

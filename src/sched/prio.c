@@ -3,6 +3,7 @@
  * See COPYRIGHT in top-level directory.
  */
 
+// TODO: sched prio
 #include "abti.h"
 
 static ABT_unit_type unit_get_type(ABT_unit unit);
@@ -361,4 +362,89 @@ static ABT_sched_prio unit_get_prio(ABT_unit unit)
 
     return prio;
 }
+
+// TODO: sched prio
+///**
+// * @ingroup ULT
+// * @brief   Set the scheduling priority of thread.
+// *
+// * The \c ABT_thread_set_prio() set the scheduling priority of the thread
+// * \c thread to the value \c prio.
+// *
+// * @param[in] thread  handle to the target thread
+// * @param[in] prio    scheduling priority
+// * @return Error code
+// * @retval ABT_SUCCESS on success
+// */
+//int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio)
+//{
+//    int abt_errno = ABT_SUCCESS;
+//    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+//
+//    /* Sanity check */
+//    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+//    ABTI_CHECK_SCHED_PRIO(prio);
+//
+//    if (prio == p_thread->attr.prio) goto fn_exit;
+//
+//    ABT_mutex_waitlock(p_thread->mutex);
+//    ABTI_xstream *p_xstream = p_thread->p_xstream;
+//    ABTI_sched *p_sched = p_xstream->p_sched;
+//
+//    if (p_sched->kind != ABT_SCHED_PRIO) {
+//        /* Set the priority */
+//        p_thread->attr.prio = prio;
+//        ABT_mutex_unlock(p_thread->mutex);
+//        goto fn_exit;
+//    }
+//
+//    /* The thread in READY needs to be moved to the appropriate queue */
+//    if (p_thread->state == ABT_THREAD_STATE_READY) {
+//        ABTI_sched_remove(p_sched, p_thread->unit);
+//    }
+//
+//    /* Set the priority */
+//    p_thread->attr.prio = prio;
+//
+//    if (p_thread->state == ABT_THREAD_STATE_READY) {
+//        ABTI_sched_push(p_sched, p_thread->unit);
+//    }
+//    ABT_mutex_unlock(p_thread->mutex);
+//
+//  fn_exit:
+//    return abt_errno;
+//
+//  fn_fail:
+//    HANDLE_ERROR_WITH_CODE("ABT_thread_set_prio", abt_errno);
+//    goto fn_exit;
+//}
+//
+///**
+// * @ingroup ULT
+// * @brief   Get the scheduling priority of ULT.
+// *
+// * The \c ABT_thread_get_prio() returns the scheduling priority of the ULT
+// * \c thread through \c prio.
+// *
+// * @param[in]  thread  handle to the target ULT
+// * @param[out] prio    scheduling priority
+// * @return Error code
+// * @retval ABT_SUCCESS on success
+// */
+//int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio)
+//{
+//    int abt_errno = ABT_SUCCESS;
+//    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+//    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+//
+//    /* Return value */
+//    *prio = p_thread->attr.prio;
+//
+//  fn_exit:
+//    return abt_errno;
+//
+//  fn_fail:
+//    HANDLE_ERROR_WITH_CODE("ABT_thread_get_prio", abt_errno);
+//    goto fn_exit;
+//}
 

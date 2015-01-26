@@ -47,11 +47,19 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "ABT_xstream_create");
     }
 
+    /* Get the pools attached to an execution stream */
+    ABT_pool *pools;
+    pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
+    for (i = 0; i < num_xstreams; i++) {
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    }
+
     /* Create threads */
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             size_t tid = i * num_threads + j + 1;
-            ret = ABT_thread_create(xstreams[i],
+            ret = ABT_thread_create(pools[i],
                     thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
                     NULL);
             ABT_TEST_ERROR(ret, "ABT_thread_create");

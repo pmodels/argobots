@@ -12,5 +12,6 @@ noinst_HEADERS = \
 	include/abtd_ucontext.h \
 	include/abti.h \
 	include/abti_error.h \
+	include/abti_valgrind.h \
 	include/abtu.h
 

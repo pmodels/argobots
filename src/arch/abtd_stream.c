@@ -19,6 +19,7 @@ int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
 
 int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx)
 {
+    ABTI_UNUSED(p_ctx);
     int abt_errno = ABT_SUCCESS;
     /* Currently, nothing to do */
     return abt_errno;

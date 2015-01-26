@@ -47,7 +47,8 @@ int main(int argc, char *argv[])
     ABT_test_printf(1, "[MAIN] Migrating thread\n");
 
     /* migrating threads from main xstream */
-    ABT_thread_migrate_to(thread, xstream);
+#warning TODO
+    //ABT_thread_migrate_to(thread, xstream);
 
     /* Switch to other user level threads */
     ABT_thread_yield();

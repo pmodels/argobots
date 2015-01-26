@@ -16,6 +16,7 @@ ABT_future myfuture;
 #define LOOP_CNT  10
 void fn1(void *args)
 {
+    ABT_TEST_UNUSED(args);
     int i = 0;
     ABT_test_printf(1, "Thread 1 iteration %d waiting for future\n", i);
     ABT_future_wait(myfuture);
@@ -25,6 +26,7 @@ void fn1(void *args)
 
 void fn2(void *args)
 {
+    ABT_TEST_UNUSED(args);
     int i = 0;
     ABT_test_printf(1, "Thread 2 iteration %d waiting from future\n", i);
     ABT_future_wait(myfuture);
@@ -34,6 +36,7 @@ void fn2(void *args)
 
 void fn3(void *args)
 {
+    ABT_TEST_UNUSED(args);
     int i = 0;
     ABT_test_printf(1, "Thread 3 iteration %d signaling future\n", i);
     char *data = (char *) malloc(BUFFER_SIZE);
@@ -52,11 +55,16 @@ int main(int argc, char *argv[])
     ret = ABT_xstream_self(&xstream);
     ABT_TEST_ERROR(ret, "ABT_xstream_self");
 
-    ret = ABT_thread_create(xstream, fn1, NULL, ABT_THREAD_ATTR_NULL, &th1);
+    /* Get the pools attached to an execution stream */
+    ABT_pool pool;
+    ret = ABT_xstream_get_main_pools(xstream, 1, &pool);
+    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+
+    ret = ABT_thread_create(pool, fn1, NULL, ABT_THREAD_ATTR_NULL, &th1);
     ABT_TEST_ERROR(ret, "ABT_thread_create");
-    ret = ABT_thread_create(xstream, fn2, NULL, ABT_THREAD_ATTR_NULL, &th2);
+    ret = ABT_thread_create(pool, fn2, NULL, ABT_THREAD_ATTR_NULL, &th2);
     ABT_TEST_ERROR(ret, "ABT_thread_create");
-    ret = ABT_thread_create(xstream, fn3, NULL, ABT_THREAD_ATTR_NULL, &th3);
+    ret = ABT_thread_create(pool, fn3, NULL, ABT_THREAD_ATTR_NULL, &th3);
     ABT_TEST_ERROR(ret, "ABT_thread_create");
 
     ret = ABT_future_create(1, NULL, &myfuture);

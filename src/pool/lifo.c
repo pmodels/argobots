@@ -3,6 +3,7 @@
  * See COPYRIGHT in top-level directory.
  */
 
+// TODO: pool lifo
 #include "abti.h"
 
 static ABT_unit_type unit_get_type(ABT_unit unit);
@@ -19,7 +20,7 @@ static int pool_create(ABT_pool *newpool);
 static int pool_free(ABT_pool *pool);
 
 
-int ABTI_sched_create_fifo(ABTI_sched **p_newsched)
+int ABTI_sched_create_lifo(ABTI_sched **p_newsched)
 {
     int abt_errno = ABT_SUCCESS;
     ABT_sched sched;
@@ -49,7 +50,7 @@ int ABTI_sched_create_fifo(ABTI_sched **p_newsched)
     /* Set this scheduler as BASIC */
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     p_sched->type = ABTI_SCHED_TYPE_BASIC;
-    p_sched->kind = ABT_SCHED_FIFO;
+    p_sched->kind = ABT_SCHED_LIFO;
 
     /* Return value */
     *p_newsched = p_sched;
@@ -61,7 +62,7 @@ int ABTI_sched_create_fifo(ABTI_sched **p_newsched)
     goto fn_exit;
 }
 
-int ABTI_sched_free_fifo(ABTI_sched *p_sched)
+int ABTI_sched_free_lifo(ABTI_sched *p_sched)
 {
     return pool_free(&p_sched->pool);
 }
@@ -183,7 +184,7 @@ static void pool_push(ABT_pool pool, ABT_unit unit)
         p_head->p_prev = p_unit;
         p_unit->p_prev = p_tail;
         p_unit->p_next = p_head;
-        p_pool->p_tail = p_unit;
+        p_pool->p_head = p_unit;
     }
     p_pool->num_units++;
 }
@@ -319,4 +320,6 @@ static int pool_free(ABT_pool *pool)
   fn_fail:
     goto fn_exit;
 }
+
+
 
