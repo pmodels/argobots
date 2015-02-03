@@ -186,6 +186,28 @@ int ABT_finalize(void)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ENV
+ * @brief   Check whether \c ABT_init has been called.
+ *
+ * \c ABT_initialized() returns \c ABT_SUCCESS if \c ABT_init has been called.
+ * Otherwise, it returns \c ABT_ERR_UNINITIALIZED.
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS if \c ABT_init has been called.
+ * @retval ABT_ERR_UNINITIALIZED if \c ABT_init has not been called.
+ */
+int ABT_initialized(void)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+    }
+
+    return abt_errno;
+}
+
 
 /*****************************************************************************/
 /* Private APIs                                                              */

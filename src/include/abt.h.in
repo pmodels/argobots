@@ -189,6 +189,7 @@ typedef struct {
 /* Init & Finalize */
 int ABT_init(int argc, char **argv);
 int ABT_finalize(void);
+int ABT_initialized(void);
 
 /* Execution Stream (ES) */
 int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream);
