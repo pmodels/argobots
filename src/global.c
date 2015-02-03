@@ -27,10 +27,12 @@ ABTI_global *gp_ABTI_global = NULL;
  */
 int ABT_init(int argc, char **argv)
 {
-    assert(gp_ABTI_global == NULL);
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream_pool *p_xstreams;
     ABTI_task_pool *p_tasks;
+
+    /* If Argobots has already been initialized, just return. */
+    if (gp_ABTI_global != NULL) goto fn_exit;
 
     gp_ABTI_global = (ABTI_global *)ABTU_malloc(sizeof(ABTI_global));
     if (!gp_ABTI_global) {
@@ -121,8 +123,10 @@ int ABT_init(int argc, char **argv)
  */
 int ABT_finalize(void)
 {
-    assert(gp_ABTI_global != NULL);
     int abt_errno = ABT_SUCCESS;
+
+    /* If Argobots is not initialized, just return. */
+    if (gp_ABTI_global == NULL) goto fn_exit;
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     if (p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
