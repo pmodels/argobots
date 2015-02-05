@@ -38,7 +38,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     }
 
     /* Default values */
-    p_newattr->stacksize  = ABTI_THREAD_DEFAULT_STACKSIZE;
+    p_newattr->stacksize  = gp_ABTI_global->default_stacksize;
     p_newattr->prio       = ABT_SCHED_PRIO_NORMAL;
     p_newattr->migratable = ABT_TRUE;
     p_newattr->f_cb       = NULL;

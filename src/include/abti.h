@@ -47,7 +47,6 @@ typedef struct ABTI_local          ABTI_local;
 
 
 /* Constants */
-#define ABTI_THREAD_DEFAULT_STACKSIZE   16384
 #define ABTI_SCHED_PRIO_NUM             3
 
 #define ABTI_XSTREAM_REQ_JOIN       (1 << 0)
@@ -237,6 +236,7 @@ struct ABTI_global {
 
     int num_cores;                  /* Number of CPU cores */
     int set_affinity;               /* Whether CPU affinity is used */
+    size_t default_stacksize;       /* Default stack size (in bytes) */
 };
 
 struct ABTI_local {
