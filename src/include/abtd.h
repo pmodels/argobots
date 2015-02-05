@@ -28,6 +28,7 @@ int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_join(ABTD_xstream_context ctx);
 int ABTD_xstream_context_exit(void);
 int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx);
+int ABTD_xstream_context_set_affinity(ABTD_xstream_context ctx, int rank);
 
 /* ULT Context */
 int ABTD_thread_context_create(ABTD_thread_context *p_link,

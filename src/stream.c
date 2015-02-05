@@ -739,6 +739,10 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
             HANDLE_ERROR("ABTD_xstream_context_self");
             goto fn_fail;
         }
+        /* Set the CPU affinity for the ES */
+        if (gp_ABTI_global->set_affinity == ABT_TRUE) {
+            ABTD_xstream_context_set_affinity(p_xstream->ctx, p_xstream->rank);
+        }
     } else {
         abt_errno = ABTD_xstream_context_create(
                 ABTI_xstream_loop, (void *)p_xstream, &p_xstream->ctx);
@@ -1179,6 +1183,11 @@ static uint64_t ABTI_xstream_get_new_rank(void)
 static void *ABTI_xstream_loop(void *p_arg)
 {
     ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
+
+    /* Set the CPU affinity for the ES */
+    if (gp_ABTI_global->set_affinity == ABT_TRUE) {
+        ABTD_xstream_context_set_affinity(p_xstream->ctx, p_xstream->rank);
+    }
 
     DEBUG_PRINT("[S%" PRIu64 "] START\n", p_xstream->rank);
 

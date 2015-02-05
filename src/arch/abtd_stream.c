@@ -48,3 +48,48 @@ int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx)
     return abt_errno;
 }
 
+int ABTD_xstream_context_set_affinity(ABTD_xstream_context ctx, int rank)
+{
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+    int abt_errno = ABT_SUCCESS;
+
+    int ret;
+    cpu_set_t cpuset;
+    int num_cores = gp_ABTI_global->num_cores;
+
+    /* FIXME: improve the affinity mapping. Now, round-robin mapping is used. */
+    rank = rank % num_cores;
+
+    CPU_ZERO(&cpuset);
+    CPU_SET(rank, &cpuset);
+    ret = pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
+    if (ret) {
+        abt_errno = ABT_ERR_OTHER;
+        goto fn_fail;
+    }
+
+#if 0
+    /* For debugging and verification */
+    ret = pthread_getaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
+    if (ret) {
+        abt_errno = ABT_ERR_OTHER;
+        goto fn_fail;
+    }
+    int i;
+    for (i = 0; i < CPU_SETSIZE; i++) {
+        if (CPU_ISSET(i, &cpuset)) {
+            printf("ES%d mapped to core %d\n", rank, i);
+        }
+    }
+#endif
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTD_xstream_context_set_affinitiy", abt_errno);
+    goto fn_exit;
+#else
+    return ABT_SUCCESS;
+#endif
+}
