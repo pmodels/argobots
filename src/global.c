@@ -41,6 +41,9 @@ int ABT_init(int argc, char **argv)
         goto fn_fail;
     }
 
+    /* Initialize the system environment */
+    ABTD_env_init(gp_ABTI_global);
+
     /* Initialize the ES pool */
     p_xstreams = (ABTI_xstream_pool *)ABTU_malloc(sizeof(ABTI_xstream_pool));
     if (!p_xstreams) {

@@ -4,6 +4,7 @@
 #
 
 abt_sources += \
+	arch/abtd_env.c \
 	arch/abtd_thread.c \
 	arch/abtd_stream.c
 

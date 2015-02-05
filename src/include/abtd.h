@@ -18,6 +18,9 @@ typedef abt_ucontext_t      ABTD_thread_context;
 /* ES Storage Qualifier */
 #define ABTD_XSTREAM_LOCAL  __thread
 
+/* Environment */
+void ABTD_env_init(ABTI_global *p_global);
+
 /* ES Context */
 int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
                                 ABTD_xstream_context *p_ctx);

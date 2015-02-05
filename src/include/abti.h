@@ -234,6 +234,9 @@ struct ABTI_future {
 struct ABTI_global {
     ABTI_xstream_pool *p_xstreams;  /* ES pool */
     ABTI_task_pool   *p_tasks;      /* Task pool */
+
+    int num_cores;                  /* Number of CPU cores */
+    int set_affinity;               /* Whether CPU affinity is used */
 };
 
 struct ABTI_local {
