@@ -65,6 +65,13 @@ AC_CONFIG_MACRO_DIR(m4)
 AC_PROG_CC
 AC_HEADER_STDC
 
+dnl ----------------------------------------------------------------------------
+dnl check function availability
+dnl ----------------------------------------------------------------------------
+AC_CHECK_LIB(pthread, pthread_setaffinity_np,
+             [AC_DEFINE(HAVE_PTHREAD_SETAFFINITY_NP, 1,
+                        [Define if pthread_setaffinity_np is available])])
+
 # compute canonical system types
 AC_CANONICAL_HOST
 
