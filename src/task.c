@@ -590,6 +590,11 @@ void ABTI_task_release(ABTI_task *p_task)
     }
 }
 
+static uint64_t g_task_id = 0;
+void ABTI_task_reset_id(void)
+{
+    g_task_id = 0;
+}
 
 /*****************************************************************************/
 /* Internal static functions                                                 */
@@ -597,7 +602,6 @@ void ABTI_task_release(ABTI_task *p_task)
 
 static uint64_t ABTI_task_get_new_id(void)
 {
-    static uint64_t task_id = 0;
-    return ABTD_atomic_fetch_add_uint64(&task_id, 1);
+    return ABTD_atomic_fetch_add_uint64(&g_task_id, 1);
 }
 

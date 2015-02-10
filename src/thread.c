@@ -1326,6 +1326,12 @@ void ABTI_thread_release(ABTI_thread *p_thread)
     }
 }
 
+static uint64_t g_thread_id = 0;
+void ABTI_thread_reset_id(void)
+{
+    g_thread_id = 0;
+}
+
 
 /*****************************************************************************/
 /* Internal static functions                                                 */
@@ -1333,7 +1339,6 @@ void ABTI_thread_release(ABTI_thread *p_thread)
 
 static ABT_thread_id ABTI_thread_get_new_id(void)
 {
-    static uint64_t thread_id = 0;
-    return (ABT_thread_id)ABTD_atomic_fetch_add_uint64(&thread_id, 1);
+    return (ABT_thread_id)ABTD_atomic_fetch_add_uint64(&g_thread_id, 1);
 }
 

@@ -44,6 +44,11 @@ int ABT_init(int argc, char **argv)
     /* Initialize the system environment */
     ABTD_env_init(gp_ABTI_global);
 
+    /* Initialize rank and IDs. */
+    ABTI_xstream_reset_rank();
+    ABTI_thread_reset_id();
+    ABTI_task_reset_id();
+
     /* Initialize the ES pool */
     p_xstreams = (ABTI_xstream_pool *)ABTU_malloc(sizeof(ABTI_xstream_pool));
     if (!p_xstreams) {

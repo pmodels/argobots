@@ -1169,6 +1169,12 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
     goto fn_exit;
 }
 
+static uint64_t g_xstream_rank = 0;
+void ABTI_xstream_reset_rank(void)
+{
+    g_xstream_rank = 0;
+}
+
 
 /*****************************************************************************/
 /* Internal static functions                                                 */
@@ -1176,8 +1182,7 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
 
 static uint64_t ABTI_xstream_get_new_rank(void)
 {
-    static uint64_t xstream_rank = 0;
-    return ABTD_atomic_fetch_add_uint64(&xstream_rank, 1);
+    return ABTD_atomic_fetch_add_uint64(&g_xstream_rank, 1);
 }
 
 static void *ABTI_xstream_loop(void *p_arg)
