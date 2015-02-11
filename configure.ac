@@ -68,9 +68,15 @@ AC_HEADER_STDC
 dnl ----------------------------------------------------------------------------
 dnl check function availability
 dnl ----------------------------------------------------------------------------
-AC_CHECK_LIB(pthread, pthread_setaffinity_np,
-             [AC_DEFINE(HAVE_PTHREAD_SETAFFINITY_NP, 1,
-                        [Define if pthread_setaffinity_np is available])])
+AC_ARG_ENABLE([affinity],
+    AS_HELP_STRING([--disable-affinity],
+        [do not use affinity even though it is supported.]),,
+        [enable_affinity=yes])
+AS_IF([test "x$enable_affinity" != "xno"], [
+       AC_CHECK_LIB(pthread, pthread_setaffinity_np,
+                    [AC_DEFINE(HAVE_PTHREAD_SETAFFINITY_NP, 1,
+                     [Define if pthread_setaffinity_np is available])])
+       ])
 
 # compute canonical system types
 AC_CANONICAL_HOST
