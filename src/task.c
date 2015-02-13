@@ -204,25 +204,40 @@ int ABT_task_cancel(ABT_task task)
  *
  * @param[out] task  tasklet handle
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_TASK      called by a ULT
  */
 int ABT_task_self(ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_INITIALIZED();
+
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        *task = ABT_TASK_NULL;
+        goto fn_exit;
+    }
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        *task = ABT_TASK_NULL;
+        goto fn_exit;
+    }
 
     ABTI_task *p_task = ABTI_local_get_task();
     if (p_task != NULL) {
         ABTI_task_retain(p_task);
+        *task = ABTI_task_get_handle(p_task);
+    } else {
+        abt_errno = ABT_ERR_INV_TASK;
+        *task = ABT_TASK_NULL;
     }
-    *task = ABTI_task_get_handle(p_task);
 
   fn_exit:
     return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_self", abt_errno);
-    goto fn_exit;
 }
 
 /**
