@@ -220,18 +220,34 @@ int ABT_xstream_join(ABT_xstream xstream)
 
 /**
  * @ingroup ES
- * @brief   The calling thread terminates its associated ES.
+ * @brief   Terminate the ES associated with the calling ULT.
  *
- * Since the calling thread's ES terminates, this routine never returns.
+ * Since the calling ULT's ES terminates, this routine never returns.
+ * Tasklets are not allowed to call this routine.
  *
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
  */
 int ABT_xstream_exit(void)
 {
     int abt_errno = ABT_SUCCESS;
 
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        goto fn_exit;
+    }
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_exit;
+    }
+
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     /* Set the exit request */
     ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_EXIT);
@@ -241,7 +257,12 @@ int ABT_xstream_exit(void)
         ABT_thread_yield();
     } while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED);
 
+  fn_exit:
     return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_exit", abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -275,15 +296,35 @@ int ABT_xstream_cancel(ABT_xstream xstream)
 
 /**
  * @ingroup ES
- * @brief   Return the ES handle of the calling thread.
+ * @brief   Return the ES handle associated with the caller work unit.
+ *
+ * \c ABT_xstream_self() returns the handle to ES object associated with
+ * the caller work unit through \c xstream.
+ * When an error occurs, \c xstream is set to \c ABT_XSTREAM_NULL.
  *
  * @param[out] xstream  ES handle
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
  */
 int ABT_xstream_self(ABT_xstream *xstream)
 {
     int abt_errno = ABT_SUCCESS;
+
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        *xstream = ABT_XSTREAM_NULL;
+        goto fn_exit;
+    }
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        *xstream = ABT_XSTREAM_NULL;
+        goto fn_exit;
+    }
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
@@ -301,15 +342,29 @@ int ABT_xstream_self(ABT_xstream *xstream)
 
 /**
  * @ingroup ES
- * @brief   Return the rank of ES associated with the calling thread.
+ * @brief   Return the rank of ES associated with the caller work unit.
  *
  * @param[out] rank  ES rank
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
  */
 int ABT_xstream_self_rank(int *rank)
 {
     int abt_errno = ABT_SUCCESS;
+
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        goto fn_exit;
+    }
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_exit;
+    }
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
@@ -639,12 +694,20 @@ int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len)
  *
  * @param[out] num_xstreams  the number of ESs
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
  */
 int ABT_xstream_get_num(int *num_xstreams)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_INITIALIZED();
+
+    /* In case that Argobots has not been initialized, return an error code
+     * instead of making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        *num_xstreams = 0;
+        goto fn_exit;
+    }
 
     ABTI_xstream_pool *p_xstreams = gp_ABTI_global->p_xstreams;
     *num_xstreams = (int)(ABTI_pool_get_size(p_xstreams->created)
@@ -652,10 +715,6 @@ int ABT_xstream_get_num(int *num_xstreams)
 
   fn_exit:
     return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_num", abt_errno);
-    goto fn_exit;
 }
 
 
