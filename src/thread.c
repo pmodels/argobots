@@ -221,18 +221,33 @@ int ABT_thread_join(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   The calling thread terminates its execution.
+ * @brief   The calling ULT terminates its execution.
  *
- * Since the calling thread terminates, this routine never returns.
+ * Since the calling ULT terminates, this routine never returns.
  *
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
  */
 int ABT_thread_exit(void)
 {
     int abt_errno = ABT_SUCCESS;
 
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        goto fn_exit;
+    }
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_exit;
+    }
+
     ABTI_thread *p_thread = ABTI_local_get_thread();
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Set the exit request */
     ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_EXIT);
@@ -240,7 +255,12 @@ int ABT_thread_exit(void)
     /* Switch the context to the scheduler */
     ABT_thread_yield();
 
+  fn_exit:
     return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_exit", abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -285,25 +305,40 @@ int ABT_thread_cancel(ABT_thread thread)
  *
  * @param[out] thread  ULT handle
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_THREAD    called by a tasklet
  */
 int ABT_thread_self(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_INITIALIZED();
+
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        *thread = ABT_THREAD_NULL;
+        goto fn_exit;
+    }
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        *thread = ABT_THREAD_NULL;
+        goto fn_exit;
+    }
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
     if (p_thread != NULL) {
         ABTI_thread_retain(p_thread);
+        *thread = ABTI_thread_get_handle(p_thread);
+    } else {
+        abt_errno = ABT_ERR_INV_THREAD;
+        *thread = ABT_THREAD_NULL;
     }
-    *thread = ABTI_thread_get_handle(p_thread);
 
   fn_exit:
     return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_self", abt_errno);
-    goto fn_exit;
 }
 
 /**
