@@ -38,7 +38,7 @@ ABT_xstream ABTI_unit_get_xstream(ABT_unit unit)
 {
     ABT_xstream h_xstream;
     ABTI_unit *p_unit = ABTI_unit_get_ptr(unit);
-    if (p_unit->type == ABT_UNIT_TYPE_OTHER) {
+    if (p_unit->type == ABT_UNIT_TYPE_XSTREAM) {
         ABTI_xstream *p_xstream = (ABTI_xstream *)p_unit->p_unit;
         h_xstream = ABTI_xstream_get_handle(p_xstream);
     } else {
@@ -91,7 +91,7 @@ ABT_unit ABTI_unit_create_from_xstream(ABT_xstream xstream)
     }
 
     p_unit->p_pool = NULL;
-    p_unit->type   = ABT_UNIT_TYPE_OTHER;
+    p_unit->type   = ABT_UNIT_TYPE_XSTREAM;
     p_unit->p_unit = (void *)ABTI_xstream_get_ptr(xstream);
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
@@ -165,8 +165,8 @@ int ABTI_unit_print(ABT_unit unit)
             ABTI_task_print(p_task);
             break;
 
-        case ABT_UNIT_TYPE_OTHER:
-            printf("other");
+        case ABT_UNIT_TYPE_XSTREAM:
+            printf("xstream");
             break;
 
         default:

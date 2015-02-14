@@ -87,7 +87,7 @@ int ABTI_pool_free(ABT_pool *pool)
                 }
                 break;
             }
-            case ABT_UNIT_TYPE_OTHER: {
+            case ABT_UNIT_TYPE_XSTREAM: {
                 ABT_xstream h_xstream = ABTI_unit_get_xstream(unit);
                 ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(h_xstream);
                 abt_errno = ABTI_xstream_free(p_xstream);

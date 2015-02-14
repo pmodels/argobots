@@ -12,6 +12,7 @@ abt_sources = \
 	local.c \
 	mutex.c \
 	pool.c \
+	self.c \
 	stream.c \
 	task.c \
 	thread.c \
