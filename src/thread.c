@@ -744,6 +744,40 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
 
 /**
  * @ingroup ULT
+ * @brief   Check if the target ULT is the primary ULT.
+ *
+ * \c ABT_thread_is_primary() confirms whether the target ULT, \c thread,
+ * is the primary ULT and returns the result through \c flag.
+ * If \c thread is a handle to the primary ULT, \c flag is set to \c ABT_TRUE.
+ * Otherwise, \c flag is set to \c ABT_FALSE.
+ *
+ * @param[in]  thread  handle to the target ULT
+ * @param[out] flag    result (<tt>ABT_TRUE</tt>: primary ULT,
+ *                     <tt>ABT_FALSE</tt>: not)
+ * @return Error code
+ * @retval ABT_SUCCESS        on success
+ * @retval ABT_ERR_INV_THREAD invalid ULT handle
+ */
+int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread;
+
+    p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    *flag = (p_thread->type == ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_thread_is_primary", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Compare two ULT handles for equality.
  *
  * \c ABT_thread_equal() compares two ULT handles for equality. If two handles

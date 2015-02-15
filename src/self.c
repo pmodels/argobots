@@ -65,3 +65,52 @@ int ABT_self_get_type(ABT_unit_type *type)
     goto fn_exit;
 }
 
+/**
+ * @ingroup SELF
+ * @brief   Check if the caller is the primary ULT.
+ *
+ * \c ABT_self_is_primary() confirms whether the caller is the primary ULT and
+ * returns the result through \c flag.
+ * If the caller is the primary ULT, \c flag is set to \c ABT_TRUE.
+ * Otherwise, \c flag is set to \c ABT_FALSE.
+ *
+ * @param[out] flag    result (<tt>ABT_TRUE</tt>: primary ULT,
+ *                     <tt>ABT_FALSE</tt>: not)
+ * @return Error code
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_THREAD    called by a tasklet
+ */
+int ABT_self_is_primary(ABT_bool *flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread;
+
+    /* If Argobots has not been initialized, set flag to ABT_FALSE. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        *flag = ABT_FALSE;
+        goto fn_exit;
+    }
+
+    /* This is when an external thread called this routine. */
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        *flag = ABT_FALSE;
+        goto fn_exit;
+    }
+
+    p_thread = ABTI_local_get_thread();
+    if (p_thread) {
+        *flag = (p_thread->type == ABTI_THREAD_TYPE_MAIN)
+              ? ABT_TRUE : ABT_FALSE;
+    } else {
+        abt_errno = ABT_ERR_INV_THREAD;
+        *flag = ABT_FALSE;
+    }
+
+  fn_exit:
+    return abt_errno;
+}
+
