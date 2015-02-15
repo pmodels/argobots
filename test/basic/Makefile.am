@@ -24,7 +24,8 @@ TESTS = \
 	mutex \
 	condition \
 	future_create \
-	eventual_create
+	eventual_create \
+	self_type
 
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)
@@ -52,6 +53,7 @@ mutex_SOURCES = mutex.c
 condition_SOURCES = condition.c
 future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
+self_type_SOURCES = self_type.c
 
 testing:
 	./xstream_create
@@ -75,3 +77,4 @@ testing:
 	./condition
 	./future_create
 	./eventual_create
+	./self_type

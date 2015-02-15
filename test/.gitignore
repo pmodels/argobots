@@ -20,6 +20,7 @@ basic/mutex
 basic/condition
 basic/future_create
 basic/eventual_create
+basic/self_type
 
 # code builds
 util/libutil.la

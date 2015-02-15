@@ -1,0 +1,211 @@
+/* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
+/*
+ * See COPYRIGHT in top-level directory.
+ */
+
+#include <stdio.h>
+#include <assert.h>
+#include <pthread.h>
+#include "abt.h"
+#include "abttest.h"
+
+void task_hello(void *arg)
+{
+    ABT_xstream xstream;
+    ABT_thread thread;
+    ABT_task task;
+    ABT_unit_type type;
+    ABT_bool flag;
+    int ret;
+
+    ret = ABT_xstream_self(&xstream);
+    ABT_TEST_ERROR(ret, "ABT_stream_self");
+
+    ret = ABT_thread_self(&thread);
+    assert(ret == ABT_ERR_INV_THREAD && thread == ABT_THREAD_NULL);
+
+    ret = ABT_task_self(&task);
+    ABT_TEST_ERROR(ret, "ABT_task_self");
+
+    ret = ABT_self_get_type(&type);
+    assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_TASK);
+
+    ret = ABT_self_is_primary(&flag);
+    assert(ret == ABT_ERR_INV_THREAD && flag == ABT_FALSE);
+
+    ret = ABT_self_on_primary_xstream(&flag);
+    assert(ret == ABT_SUCCESS);
+
+    ABT_test_printf(1, "TASK %d: running on the %s\n", (int)(size_t)arg,
+                    (flag == ABT_TRUE ? "primary ES" : "secondary ES"));
+}
+
+void thread_hello(void *arg)
+{
+    ABT_xstream xstream;
+    ABT_thread thread;
+    ABT_thread_id my_id;
+    ABT_task task;
+    ABT_unit_type type;
+    ABT_bool flag;
+    int ret;
+
+    ret = ABT_xstream_self(&xstream);
+    ABT_TEST_ERROR(ret, "ABT_stream_self");
+
+    ret = ABT_thread_self(&thread);
+    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ret = ABT_thread_get_id(thread, &my_id);
+    ABT_TEST_ERROR(ret, "ABT_thread_get_id");
+
+    ret = ABT_task_self(&task);
+    assert(ret == ABT_ERR_INV_TASK && task == ABT_TASK_NULL);
+
+    ret = ABT_self_get_type(&type);
+    assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_THREAD);
+
+    ret = ABT_self_is_primary(&flag);
+    assert(ret == ABT_SUCCESS && flag == ABT_FALSE);
+
+    ret = ABT_thread_is_primary(thread, &flag);
+    assert(ret == ABT_SUCCESS && flag == ABT_FALSE);
+
+    /* Create a task */
+    ret = ABT_task_create(xstream, task_hello, (void *)my_id, NULL);
+    ABT_TEST_ERROR(ret, "ABT_task_create");
+
+    ret = ABT_self_on_primary_xstream(&flag);
+    assert(ret == ABT_SUCCESS);
+
+    ABT_test_printf(1, "ULT %lu running on the %s\n", my_id,
+                    (flag == ABT_TRUE ? "primary ES" : "secondary ES"));
+}
+
+void *pthread_hello(void *arg)
+{
+    ABT_xstream xstream;
+    ABT_thread thread;
+    ABT_task task;
+    ABT_unit_type type;
+    ABT_bool flag;
+    int ret;
+
+    /* Since Argobots has been initialized, we should get ABT_ERR_INV_XXX. */
+    ret = ABT_xstream_self(&xstream);
+    assert(ret == ABT_ERR_INV_XSTREAM && xstream == ABT_XSTREAM_NULL);
+
+    ret = ABT_thread_self(&thread);
+    assert(ret == ABT_ERR_INV_XSTREAM && thread == ABT_THREAD_NULL);
+
+    ret = ABT_task_self(&task);
+    assert(ret == ABT_ERR_INV_XSTREAM && task == ABT_TASK_NULL);
+
+    ret = ABT_self_get_type(&type);
+    assert(ret == ABT_ERR_INV_XSTREAM && type == ABT_UNIT_TYPE_EXT);
+
+    ret = ABT_self_is_primary(&flag);
+    assert(ret == ABT_ERR_INV_XSTREAM && flag == ABT_FALSE);
+
+    ret = ABT_self_on_primary_xstream(&flag);
+    assert(ret == ABT_ERR_INV_XSTREAM && flag == ABT_FALSE);
+
+    ABT_test_printf(1, "pthread: external thread\n");
+
+    pthread_exit(NULL);
+    return NULL;
+}
+
+int main(int argc, char *argv[])
+{
+    ABT_xstream xstreams[2];
+    ABT_thread threads[2];
+    ABT_thread my_thread;
+    ABT_thread_id my_thread_id;
+    ABT_task my_task;
+    ABT_unit_type type;
+    ABT_bool flag;
+    pthread_t pthread;
+    int i, ret;
+
+    /* Self test: we should get ABT_ERR_UNITIALIZED */
+    ret = ABT_xstream_self(&xstreams[0]);
+    assert(ret == ABT_ERR_UNINITIALIZED && xstreams[0] == ABT_XSTREAM_NULL);
+
+    ret = ABT_thread_self(&my_thread);
+    assert(ret == ABT_ERR_UNINITIALIZED && my_thread == ABT_THREAD_NULL);
+
+    ret = ABT_task_self(&my_task);
+    assert(ret == ABT_ERR_UNINITIALIZED && my_task == ABT_TASK_NULL);
+
+    ret = ABT_self_get_type(&type);
+    assert(ret == ABT_ERR_UNINITIALIZED && type == ABT_UNIT_TYPE_EXT);
+
+    ret = ABT_self_is_primary(&flag);
+    assert(ret == ABT_ERR_UNINITIALIZED && flag == ABT_FALSE);
+
+    ret = ABT_self_on_primary_xstream(&flag);
+    assert(ret == ABT_ERR_UNINITIALIZED && flag == ABT_FALSE);
+
+    /* Initialize */
+    ABT_test_init(argc, argv);
+
+    /* Execution Streams */
+    ret = ABT_xstream_self(&xstreams[0]);
+    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+
+    ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[1]);
+    ABT_TEST_ERROR(ret, "ABT_xstream_create");
+
+    /* Test self routines */
+    ret = ABT_thread_self(&my_thread);
+    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ABT_thread_get_id(my_thread, &my_thread_id);
+    ABT_test_printf(1, "ID: %lu\n", my_thread_id);
+
+    ret = ABT_task_self(&my_task);
+    assert(ret == ABT_ERR_INV_TASK && my_task == ABT_TASK_NULL);
+
+    ret = ABT_self_get_type(&type);
+    assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_THREAD);
+
+    ret = ABT_self_is_primary(&flag);
+    assert(ret == ABT_SUCCESS && flag == ABT_TRUE);
+
+    ret = ABT_thread_is_primary(my_thread, &flag);
+    assert(ret == ABT_SUCCESS && flag == ABT_TRUE);
+
+    ret = ABT_self_on_primary_xstream(&flag);
+    assert(ret == ABT_SUCCESS && flag == ABT_TRUE);
+
+    /* Create ULTs */
+    for (i = 0; i < 2; i++) {
+        ret = ABT_thread_create(xstreams[i], thread_hello, NULL,
+                                ABT_THREAD_ATTR_NULL, &threads[i]);
+        ABT_TEST_ERROR(ret, "ABT_thread_create");
+    }
+
+    /* Create a pthread */
+    ret = pthread_create(&pthread, NULL, pthread_hello, NULL);
+    assert(ret == 0);
+
+    /* Switch to other work units */
+    ABT_thread_yield();
+
+    /* Join & Free */
+    ret = pthread_join(pthread, NULL);
+    assert(ret == 0);
+    for (i = 0; i < 2; i++) {
+        ret = ABT_thread_join(threads[i]);
+        ABT_TEST_ERROR(ret, "ABT_thread_join");
+        ret = ABT_thread_free(&threads[i]);
+        ABT_TEST_ERROR(ret, "ABT_thread_free");
+    }
+    ret = ABT_xstream_join(xstreams[1]);
+    ABT_TEST_ERROR(ret, "ABT_xstream_join");
+    ret = ABT_xstream_free(&xstreams[1]);
+    ABT_TEST_ERROR(ret, "ABT_xstream_free");
+
+    /* Finalize */
+    return ABT_test_finalize(0);
+}
+
