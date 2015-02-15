@@ -213,6 +213,7 @@ int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
 int ABT_xstream_set_name(ABT_xstream xstream, const char *name);
 int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len);
 int ABT_xstream_get_num(int *num_xstreams);
+int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag);
 
 /* User-level Thread (ULT) */
 int ABT_thread_create(ABT_xstream xstream,
@@ -283,6 +284,7 @@ int ABT_sched_get_prio_max(ABT_sched_kind kind, ABT_sched_prio *prio);
 /* Self */
 int ABT_self_get_type(ABT_unit_type *type);
 int ABT_self_is_primary(ABT_bool *flag);
+int ABT_self_on_primary_xstream(ABT_bool *flag);
 
 /* Mutex */
 int ABT_mutex_create(ABT_mutex *newmutex);

@@ -717,6 +717,39 @@ int ABT_xstream_get_num(int *num_xstreams)
     return abt_errno;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Check if the target ES is the primary ES.
+ *
+ * \c ABT_xstream_is_primary() checks whether the target ES is the primary ES.
+ * If the ES \c xstream is the primary ES, \c flag is set to \c ABT_TRUE.
+ * Otherwise, \c flag is set to \c ABT_FALSE.
+ *
+ * @param[out] flag    result (<tt>ABT_TRUE</tt>: primary ES,
+ *                     <tt>ABT_FALSE</tt>: not)
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream;
+
+    p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    /* Return value */
+    *flag = (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY)
+          ? ABT_TRUE : ABT_FALSE;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_is_primary", abt_errno);
+    goto fn_exit;
+}
+
 
 /*****************************************************************************/
 /* Private APIs                                                              */
