@@ -221,7 +221,7 @@ void ABTI_future_signal(ABTI_future *p_future)
         ABTI_thread_set_ready(p_thread);
         ABTI_thread_entry *tmp = cur;
         cur=cur->next;
-        free(tmp);
+        ABTU_free(tmp);
     }
 }
 

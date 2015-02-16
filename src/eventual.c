@@ -189,7 +189,7 @@ void ABTI_eventual_signal(ABTI_eventual *p_eventual)
         ABTI_thread_set_ready(p_thread);
         ABTI_thread_entry *tmp = cur;
         cur=cur->next;
-        free(tmp);
+        ABTU_free(tmp);
     }
 }
 
