@@ -725,8 +725,9 @@ int ABT_xstream_get_num(int *num_xstreams)
  * If the ES \c xstream is the primary ES, \c flag is set to \c ABT_TRUE.
  * Otherwise, \c flag is set to \c ABT_FALSE.
  *
- * @param[out] flag    result (<tt>ABT_TRUE</tt>: primary ES,
- *                     <tt>ABT_FALSE</tt>: not)
+ * @param[in]  xstream  handle to the target ES
+ * @param[out] flag     result (<tt>ABT_TRUE</tt>: primary ES,
+ *                      <tt>ABT_FALSE</tt>: not)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
