@@ -4,17 +4,17 @@
 #
 
 AM_CPPFLAGS = $(DEPS_CPPFLAGS)
-AM_CPPFLAGS += -I$(top_srcdir)/src/include -I$(top_srcdir)/test/util
+AM_CPPFLAGS += -I$(top_builddir)/src/include -I$(top_srcdir)/test/util
 AM_LDFLAGS = $(DEPS_LDFLAGS)
 
-libabt = $(top_srcdir)/src/libabt.la
-libutil = $(top_srcdir)/test/util/libutil.la
+libabt = $(top_builddir)/src/libabt.la
+libutil = $(top_builddir)/test/util/libutil.la
 
 $(libabt):
-	$(MAKE) -C $(top_srcdir)/src
+	$(MAKE) -C $(top_builddir)/src
 
 $(libutil):
-	$(MAKE) -C $(top_srcdir)/test/util
+	$(MAKE) -C $(top_builddir)/test/util
 
 LDADD = $(libabt) $(libutil)
 
