@@ -281,6 +281,36 @@ int ABT_sched_free(ABT_sched *sched)
 
 /**
  * @ingroup SCHED
+ * @brief   Get the number of pools associated with scheduler.
+ *
+ * \c ABT_sched_get_num_pools returns the number of pools associated with
+ * the target scheduler \c sched through \c num_pools.
+ *
+ * @param[in]  sched     handle to the target scheduler
+ * @param[out] num_pools the number of all pools associated with \c sched
+ * @return Error code
+ * @retval ABT_SUCCESS       on success
+ * @retval ABT_ERR_INV_SCHED invalid scheduler
+ */
+int ABT_sched_get_num_pools(ABT_sched sched, int *num_pools)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
+    *num_pools = p_sched->num_pools;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_get_num_pools", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
  * @brief   Get the pools of the scheduler \c sched.
  *
  * @param[in]  sched     handle to the target scheduler

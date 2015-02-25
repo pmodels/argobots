@@ -307,6 +307,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
 int ABT_sched_free(ABT_sched *sched);
 int ABT_sched_set_data(ABT_sched sched, void *data);
 int ABT_sched_get_data(ABT_sched sched, void **data);
+int ABT_sched_get_num_pools(ABT_sched sched, int *num_pools);
 int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
                         ABT_pool *pools);
 int ABT_sched_get_size(ABT_sched sched, size_t *size);
