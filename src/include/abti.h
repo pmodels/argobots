@@ -22,7 +22,7 @@
 
 
 /* Constants */
-#define ABTI_SCHED_PRIO_NUM         3
+#define ABTI_SCHED_NUM_PRIO         3
 
 #define ABTI_XSTREAM_REQ_JOIN       (1 << 0)
 #define ABTI_XSTREAM_REQ_EXIT       (1 << 1)
@@ -383,6 +383,8 @@ void ABTI_xstream_reset_rank(void);
 int ABTI_xstream_print(ABTI_xstream *p_xstream);
 
 /* Scheduler */
+int ABTI_sched_create_prio(int num_pools, ABT_pool *p_pools,
+                           ABT_sched *newsched);
 int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
 ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);

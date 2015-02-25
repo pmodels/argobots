@@ -128,6 +128,10 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
                 break;
+            case ABT_SCHED_PRIO_NO_POOL:
+                abt_errno = ABTI_sched_create_prio(num_pools, pools,
+                                                   newsched);
+                break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
                 break;
@@ -166,6 +170,26 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 access = ABT_POOL_ACCESS_SR_SW;
                 num_pools = 1;
                 break;
+            case ABT_SCHED_PRIO_POOL_FIFO_PRW:
+                access = ABT_POOL_ACCESS_PRW;
+                num_pools = ABTI_SCHED_NUM_PRIO;
+                break;
+            case ABT_SCHED_PRIO_POOL_FIFO_PR_PW:
+                access = ABT_POOL_ACCESS_PR_PW;
+                num_pools = ABTI_SCHED_NUM_PRIO;
+                break;
+            case ABT_SCHED_PRIO_POOL_FIFO_PR_SW:
+                access = ABT_POOL_ACCESS_PR_SW;
+                num_pools = ABTI_SCHED_NUM_PRIO;
+                break;
+            case ABT_SCHED_PRIO_POOL_FIFO_SR_PW:
+                access = ABT_POOL_ACCESS_SR_PW;
+                num_pools = ABTI_SCHED_NUM_PRIO;
+                break;
+            case ABT_SCHED_PRIO_POOL_FIFO_SR_SW:
+                access = ABT_POOL_ACCESS_SR_SW;
+                num_pools = ABTI_SCHED_NUM_PRIO;
+                break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
                 ABTI_CHECK_ERROR(abt_errno);
@@ -198,6 +222,14 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                                              num_pools, pools,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
+                break;
+            case ABT_SCHED_PRIO_POOL_FIFO_PRW:
+            case ABT_SCHED_PRIO_POOL_FIFO_PR_PW:
+            case ABT_SCHED_PRIO_POOL_FIFO_PR_SW:
+            case ABT_SCHED_PRIO_POOL_FIFO_SR_PW:
+            case ABT_SCHED_PRIO_POOL_FIFO_SR_SW:
+                abt_errno = ABTI_sched_create_prio(num_pools, pools,
+                                                   newsched);
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;

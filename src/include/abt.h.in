@@ -134,6 +134,12 @@ enum ABT_sched_predef {
     ABT_SCHED_BASIC_POOL_FIFO_PR_SW,   /* Basic scheduler, fifo pools */
     ABT_SCHED_BASIC_POOL_FIFO_SR_PW,   /* Basic scheduler, fifo pools */
     ABT_SCHED_BASIC_POOL_FIFO_SR_SW,   /* Basic scheduler, fifo pools */
+    ABT_SCHED_PRIO_NO_POOL,            /* Priority scheduler, no pools */
+    ABT_SCHED_PRIO_POOL_FIFO_PRW,      /* Priority scheduler, fifo pools */
+    ABT_SCHED_PRIO_POOL_FIFO_PR_PW,    /* Priority scheduler, fifo pools */
+    ABT_SCHED_PRIO_POOL_FIFO_PR_SW,    /* Priority scheduler, fifo pools */
+    ABT_SCHED_PRIO_POOL_FIFO_SR_PW,    /* Priority scheduler, fifo pools */
+    ABT_SCHED_PRIO_POOL_FIFO_SR_SW     /* Priority scheduler, fifo pools */
 };
 
 enum ABT_sched_type {

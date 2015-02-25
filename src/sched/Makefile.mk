@@ -5,5 +5,6 @@
 
 abt_sources += \
 	sched/sched.c \
-	sched/basic.c
+	sched/basic.c \
+	sched/prio.c
 
