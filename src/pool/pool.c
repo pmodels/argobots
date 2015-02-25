@@ -314,6 +314,10 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    abt_errno = ABTI_pool_set_reader(p_pool, p_xstream);
+    ABTI_CHECK_ERROR(abt_errno);
+
     abt_errno = p_pool->p_remove(pool, unit);
     ABTI_CHECK_ERROR(abt_errno);
 
