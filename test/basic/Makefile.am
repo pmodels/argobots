@@ -17,6 +17,7 @@ TESTS = \
 	task_create_on_xstream \
 	thread_task \
 	thread_task_num \
+	sched_prio \
 	sched_stack \
 	pool_access \
 	name \
@@ -45,6 +46,7 @@ task_create_SOURCES = task_create.c
 task_create_on_xstream_SOURCES = task_create_on_xstream.c
 thread_task_SOURCES = thread_task.c
 thread_task_num_SOURCES = thread_task_num.c
+sched_prio_SOURCES = sched_prio.c
 sched_stack_SOURCES = sched_stack.c
 pool_access_SOURCES = pool_access.c
 name_SOURCES = name.c
@@ -69,6 +71,7 @@ testing:
 	./task_create_on_xstream
 	./thread_task
 	./thread_task_num
+	./sched_prio
 	./sched_stack
 	./pool_access
 	./name
