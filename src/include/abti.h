@@ -383,19 +383,10 @@ void ABTI_xstream_reset_rank(void);
 int ABTI_xstream_print(ABTI_xstream *p_xstream);
 
 /* Scheduler */
-int  ABTI_sched_create_default(ABTI_sched **p_newsched);
-int  ABTI_sched_create_fifo(ABTI_sched **p_newsched);
-int  ABTI_sched_create_lifo(ABTI_sched **p_newsched);
-int  ABTI_sched_create_prio(ABTI_sched **p_newsched);
-int  ABTI_sched_free_basic(ABTI_sched *p_sched);
-int  ABTI_sched_free_fifo(ABTI_sched *p_sched);
-int  ABTI_sched_free_lifo(ABTI_sched *p_sched);
-int  ABTI_sched_free_prio(ABTI_sched *p_sched);
-void ABTI_sched_remove(ABTI_sched *p_sched, ABT_unit unit);
-int  ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use);
-int  ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
+int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use);
+int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
 ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
-int  ABTI_sched_print(ABTI_sched *p_sched);
+int ABTI_sched_print(ABTI_sched *p_sched);
 
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
