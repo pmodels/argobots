@@ -23,4 +23,5 @@ clean-all:
 	$(MAKE) -C examples clean
 
 doxygen:
+	mkdir -p doc
 	doxygen Doxyfile
