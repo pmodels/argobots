@@ -1376,7 +1376,7 @@ int ABTI_xstream_keep_thread(ABTI_thread *p_thread)
     /* Free the unit and create an internal unit to add to the deads pool. */
     ABTI_pool *p_pool = p_thread->p_pool;
     p_pool->u_free(&p_thread->unit);
-    p_thread->unit = ABTI_elem_create_from_thread(p_thread);
+    p_thread->unit = (ABT_unit)ABTI_elem_create_from_thread(p_thread);
 
     /* Add the unit to the deads pool */
     ABT_mutex_waitlock(p_xstream->mutex);
@@ -1399,7 +1399,7 @@ int ABTI_xstream_keep_task(ABTI_task *p_task)
     ABTI_pool *p_pool = p_task->p_pool;
     p_pool->u_free(&p_task->unit);
 
-    p_task->unit = ABTI_elem_create_from_task(p_task);
+    p_task->unit = (ABT_unit)ABTI_elem_create_from_task(p_task);
 
     /* Add the unit to the deads pool */
     ABT_mutex_waitlock(p_xstream->mutex);
