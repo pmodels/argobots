@@ -895,14 +895,15 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag)
  * will use it on his user-defined scheduler.
  *
  * @param[in] unit handle to the unit to run
+ * @param[in] pool pool where unit is from
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_run_unit(ABT_unit unit)
+int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_pool *p_pool = ABTI_unit_get_pool(unit);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
 
     ABT_unit_type type = p_pool->u_get_type(unit);
 

@@ -79,7 +79,7 @@ static void sched_run(ABT_sched sched)
             abt_errno = ABT_pool_pop(pool, &unit);
             ABTI_CHECK_ERROR(abt_errno);
             if (unit != ABT_UNIT_NULL) {
-                ABT_xstream_run_unit(unit);
+                ABT_xstream_run_unit(unit, pool);
             }
         }
 

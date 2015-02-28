@@ -569,7 +569,7 @@ int ABTI_task_free(ABTI_task *p_task)
 
     /* Free the unit */
     if (p_task->refcount > 0) {
-        ABTI_unit_free(&p_task->unit);
+        ABTI_elem_free((ABTI_elem **)&p_task->unit);
     } else {
         p_task->p_pool->u_free(&p_task->unit);
     }

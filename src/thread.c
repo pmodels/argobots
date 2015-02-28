@@ -1351,7 +1351,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
 
     /* Free the unit */
     if (p_thread->refcount > 0) {
-        ABTI_unit_free(&p_thread->unit);
+        ABTI_elem_free((ABTI_elem **)&p_thread->unit);
     } else {
         p_thread->p_pool->u_free(&p_thread->unit);
     }
