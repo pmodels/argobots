@@ -74,7 +74,6 @@ typedef struct ABTI_sched           ABTI_sched;
 typedef enum ABTI_sched_used        ABTI_sched_used;
 typedef void *                      ABTI_sched_id;      /* Scheduler id */
 typedef struct ABTI_pool            ABTI_pool;
-typedef struct ABTI_unit            ABTI_unit;
 typedef struct ABTI_thread_attr     ABTI_thread_attr;
 typedef struct ABTI_thread          ABTI_thread;
 typedef enum ABTI_thread_type       ABTI_thread_type;
@@ -197,14 +196,6 @@ struct ABTI_pool {
     ABT_pool_pop_fn                p_pop;
     ABT_pool_remove_fn             p_remove;
     ABT_pool_free_fn               p_free;
-};
-
-struct ABTI_unit {
-    ABTI_pool     *p_pool;  /* Pool to which this unit belongs */
-    ABT_unit_type  type;    /* Work unit type */
-    void          *p_unit;  /* Work unit object, e.g., ABTI_thread/ABTI_task */
-    ABTI_unit     *p_prev;  /* Previous unit in list */
-    ABTI_unit     *p_next;  /* Next unit in list */
 };
 
 struct ABTI_thread_attr {
@@ -418,19 +409,6 @@ int ABTI_pool_inc_num_migrations(ABTI_pool *p_pool);
 int ABTI_pool_dec_num_migrations(ABTI_pool *p_pool);
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 int ABTI_pool_print(ABTI_pool *p_pool);
-
-/* Unit */
-ABTI_unit    *ABTI_unit_get_ptr(ABT_unit unit);
-ABT_unit      ABTI_unit_get_handle(ABTI_unit *p_unit);
-ABT_unit_type ABTI_unit_get_type(ABT_unit unit);
-ABTI_pool    *ABTI_unit_get_pool(ABT_unit unit);
-ABT_thread    ABTI_unit_get_thread(ABT_unit unit);
-ABT_task      ABTI_unit_get_task(ABT_unit unit);
-ABT_unit      ABTI_unit_get_next(ABT_unit unit);
-ABT_unit      ABTI_unit_create_from_thread(ABT_thread thread);
-ABT_unit      ABTI_unit_create_from_task(ABT_task task);
-void          ABTI_unit_free(ABT_unit *unit);
-int           ABTI_unit_print(ABT_unit unit);
 
 /* User-level Thread (ULT)  */
 ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread);

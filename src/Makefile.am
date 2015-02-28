@@ -15,8 +15,7 @@ abt_sources = \
 	stream.c \
 	task.c \
 	thread.c \
-	thread_attr.c \
-	unit.c
+	thread_attr.c
 
 include $(top_srcdir)/src/arch/Makefile.mk
 include $(top_srcdir)/src/sched/Makefile.mk
