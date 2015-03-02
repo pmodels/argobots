@@ -411,6 +411,7 @@ int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 int ABTI_pool_print(ABTI_pool *p_pool);
 
 /* User-level Thread (ULT)  */
+int   ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool);
 int   ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread);
 int   ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread);
 int   ABTI_thread_free_main(ABTI_thread *p_thread);

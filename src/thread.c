@@ -721,9 +721,11 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
         ABT_mutex_unlock(p_xstream->top_sched_mutex);
     } while (p_pool == NULL);
 
-    ABT_pool pool = ABTI_pool_get_handle(p_pool);
-    abt_errno = ABT_thread_migrate_to_pool(thread, pool);
-    ABTI_CHECK_ERROR(abt_errno);
+    abt_errno = ABTI_thread_migrate_to_pool(p_thread, p_pool);
+    if (abt_errno != ABT_SUCCESS) {
+        ABTI_pool_dec_num_migrations(p_pool);
+        goto fn_fail;
+    }
 
   fn_exit:
     return abt_errno;
@@ -779,13 +781,10 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
     ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    /* We set the migration counter to prevent the scheduler from
-     * stopping */
-    ABTI_pool_inc_num_migrations(p_pool);
-
-    ABT_pool pool = ABTI_pool_get_handle(p_pool);
-    abt_errno = ABT_thread_migrate_to_pool(thread, pool);
+    abt_errno = ABTI_thread_migrate_to_pool(p_thread, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
+
+    ABTI_pool_inc_num_migrations(p_pool);
 
   fn_exit:
     return abt_errno;
@@ -803,8 +802,6 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
  * In other words, this function may return immediately without the thread
  * being migrated. The migration request will be posted on the thread, such that
  * next time a scheduler picks it up, migration will happen.
- * The migration will fail if the target scheduler has no pool available for
- * migration.
  *
  * @param[in] thread handle to the thread to migrate
  * @param[in] pool   handle to the pool to migrate the thread to
@@ -813,47 +810,16 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
  */
 int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    /* checking for cases when migration is not allowed */
-    if (ABTI_pool_accept_migration(p_pool, p_thread->p_pool) != ABT_TRUE) {
-        abt_errno = ABT_ERR_INV_POOL;
-        goto fn_fail;
-    }
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
-            p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
-    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_exit;
-    }
+    abt_errno = ABTI_thread_migrate_to_pool(p_thread, p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
 
-    /* checking for migration to the same pool */
-    if (p_thread->p_pool == p_pool) {
-        /* Invoke the callback function */
-        if (p_thread->attr.f_cb) {
-            p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
-        }
-        goto fn_exit;
-    }
-
-    /* adding request to the thread */
-    ABT_mutex_waitlock(p_thread->mutex);
-    ABTI_thread_add_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE, p_pool);
-    ABT_mutex_unlock(p_thread->mutex);
-    ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_MIGRATE);
-
-    /* yielding if it is the same thread */
-    if (p_thread == ABTI_local_get_thread()) {
-        ABT_thread_yield();
-    }
-    goto fn_exit;
+    ABTI_pool_inc_num_migrations(p_pool);
 
   fn_exit:
     return abt_errno;
@@ -1262,6 +1228,55 @@ int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id)
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
+
+int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    /* checking for cases when migration is not allowed */
+    if (ABTI_pool_accept_migration(p_pool, p_thread->p_pool) != ABT_TRUE) {
+        abt_errno = ABT_ERR_INV_POOL;
+        goto fn_fail;
+    }
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
+        p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
+        abt_errno = ABT_ERR_INV_THREAD;
+        goto fn_fail;
+    }
+    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) {
+        abt_errno = ABT_ERR_INV_THREAD;
+        goto fn_exit;
+    }
+
+    /* checking for migration to the same pool */
+    if (p_thread->p_pool == p_pool) {
+        /* Invoke the callback function */
+        if (p_thread->attr.f_cb) {
+            ABT_thread thread = ABTI_thread_get_handle(p_thread);
+            p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
+        }
+        goto fn_exit;
+    }
+
+    /* adding request to the thread */
+    ABT_mutex_waitlock(p_thread->mutex);
+    ABTI_thread_add_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE, p_pool);
+    ABT_mutex_unlock(p_thread->mutex);
+    ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_MIGRATE);
+
+    /* yielding if it is the same thread */
+    if (p_thread == ABTI_local_get_thread()) {
+        ABT_thread_yield();
+    }
+    goto fn_exit;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_thread_migrate_to_pool", abt_errno);
+    goto fn_exit;
+}
 
 int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 {
