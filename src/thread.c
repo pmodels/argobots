@@ -892,6 +892,7 @@ int ABT_thread_migrate(ABT_thread thread)
             ABTI_xstream *p_xstream;
             abt_errno = ABTI_global_get_created_xstream(&p_xstream);
             ABTI_CHECK_ERROR(abt_errno);
+            if (p_xstream == NULL) continue;
             xstream = ABTI_xstream_get_handle(p_xstream);
         } else {
             ABTI_xstream *p_xstream;

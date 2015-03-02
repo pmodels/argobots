@@ -338,8 +338,11 @@ int ABTI_global_get_created_xstream(ABTI_xstream **p_xstream)
     ABTI_elem *elem = ABTI_contn_pop(p_gxstreams->created);
     ABT_mutex_unlock(p_gxstreams->mutex);
 
-    /* Return value */
-    *p_xstream = ABTI_elem_get_xstream(elem);
+    /* If the list is empty */
+    if (!elem)
+        *p_xstream = NULL;
+    else
+        *p_xstream = ABTI_elem_get_xstream(elem);
 
     return abt_errno;
 }
