@@ -1058,6 +1058,7 @@ int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
     p_sched->state = ABT_SCHED_STATE_RUNNING;
 
     p_sched->run(sched);
+    p_sched->state = ABT_SCHED_STATE_TERMINATED;
 
     p_xstream->state = ABT_XSTREAM_STATE_READY;
 
@@ -1128,9 +1129,8 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
         ABTI_xstream_pop_sched(p_xstream);
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
-        ABT_mutex_waitlock(p_xstream->top_sched_mutex);
-        ABT_mutex_unlock(p_xstream->top_sched_mutex);
         p_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
+        ABT_mutex_unlock(p_xstream->top_sched_mutex);
     }
 
     if ((p_thread->request & ABTI_THREAD_REQ_TERMINATE) ||
@@ -1204,9 +1204,8 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
         ABTI_xstream_pop_sched(p_xstream);
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
-        ABT_mutex_waitlock(p_xstream->top_sched_mutex);
-        ABT_mutex_unlock(p_xstream->top_sched_mutex);
         p_task->is_sched->state = ABT_SCHED_STATE_STOPPED;
+        ABT_mutex_unlock(p_xstream->top_sched_mutex);
     }
 
     abt_errno = ABTI_xstream_terminate_task(p_task);
@@ -1536,6 +1535,7 @@ void ABTI_xstream_loop(void *p_arg)
     while (1) {
         int abt_errno = ABTI_xstream_schedule(p_xstream);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_schedule");
+        ABT_mutex_unlock(p_xstream->top_sched_mutex);
 
         /* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */

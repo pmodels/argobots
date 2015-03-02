@@ -385,6 +385,7 @@ int ABT_sched_exit(ABT_sched sched)
 int ABT_sched_has_to_stop(ABT_sched sched, int *stop)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
 
     *stop = ABT_FALSE;
 
@@ -393,6 +394,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, int *stop)
 
     /* Check exit request */
     if (p_sched->request & ABTI_SCHED_REQ_EXIT) {
+        ABT_mutex_waitlock(p_xstream->top_sched_mutex);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
         *stop = ABT_TRUE;
         goto fn_exit;
@@ -402,7 +404,6 @@ int ABT_sched_has_to_stop(ABT_sched sched, int *stop)
     size_t size;
     ABT_sched_get_size(p_sched, &size);
     if (size == 0) {
-        ABTI_xstream *p_xstream = ABTI_local_get_xstream();
         ABTI_thread *p_main_thread = ABTI_local_get_main();
         if (p_sched->request & ABTI_SCHED_REQ_FINISH) {
             /* We need to lock in case someone wants to migrate to this
@@ -414,8 +415,8 @@ int ABT_sched_has_to_stop(ABT_sched sched, int *stop)
                 p_sched->state = ABT_SCHED_STATE_TERMINATED;
                 *stop = ABT_TRUE;
             }
-
-            ABT_mutex_unlock(p_xstream->top_sched_mutex);
+            else
+                ABT_mutex_unlock(p_xstream->top_sched_mutex);
         }
         /* We jump back to the main ULT if there is */
         else if (p_main_thread != NULL) {
@@ -585,7 +586,7 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
     ABT_sched sched = ABTI_sched_get_handle(p_sched);
     ABTI_pool *p_pool;
 
-    if (p_sched->state != ABT_SCHED_STATE_RUNNING) {
+    if (p_sched->state == ABT_SCHED_STATE_TERMINATED) {
         abt_errno = ABT_ERR_INV_SCHED;
         *pp_pool = NULL;
         goto fn_fail;

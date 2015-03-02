@@ -687,9 +687,26 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
     ABTI_sched *p_sched = NULL;
     do {
         ABT_mutex_waitlock(p_xstream->top_sched_mutex);
-        p_sched = ABTI_xstream_get_top_sched(p_xstream);
 
-        if (p_sched->state == ABT_SCHED_STATE_RUNNING) {
+        /* We check the state of the ES */
+        if (p_xstream->state == ABT_XSTREAM_STATE_TERMINATED) {
+            abt_errno = ABT_ERR_INV_XSTREAM;
+            ABT_mutex_unlock(p_xstream->top_sched_mutex);
+            goto fn_fail;
+
+        } else if (p_xstream->state == ABT_XSTREAM_STATE_RUNNING) {
+            p_sched = ABTI_xstream_get_top_sched(p_xstream);
+
+        } else {
+            p_sched = p_xstream->p_main_sched;
+        }
+
+        /* We check the state of the sched */
+        if (p_sched->state == ABT_SCHED_STATE_TERMINATED) {
+            abt_errno = ABT_ERR_INV_XSTREAM;
+            ABT_mutex_unlock(p_xstream->top_sched_mutex);
+            goto fn_fail;
+        } else {
             /* Find a pool */
             ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
             if (p_pool == NULL) {
@@ -863,33 +880,39 @@ int ABT_thread_migrate(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABT_xstream xstream;
+    int migrated = ABT_FALSE;
 
     ABTI_xstream_contn *p_xstreams = gp_ABTI_global->p_xstreams;
 
     /* Choose the destination xstream */
     /* FIXME: Currenlty, the target xstream is randomly chosen. We need a
      * better selection strategy. */
-    if (ABTI_contn_get_size(p_xstreams->created) > 0) {
-        ABTI_xstream *p_xstream;
-        abt_errno = ABTI_global_get_created_xstream(&p_xstream);
-        ABTI_CHECK_ERROR(abt_errno);
-        xstream = ABTI_xstream_get_handle(p_xstream);
-    } else {
-        ABTI_xstream *p_xstream;
-        ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-        /* If the pool is not associated with an ES */
-        if (p_thread->p_pool == NULL) {
-            abt_errno = ABT_ERR_INV_POOL_ACCESS;
+    do {
+        if (ABTI_contn_get_size(p_xstreams->created) > 0) {
+            ABTI_xstream *p_xstream;
+            abt_errno = ABTI_global_get_created_xstream(&p_xstream);
             ABTI_CHECK_ERROR(abt_errno);
+            xstream = ABTI_xstream_get_handle(p_xstream);
+        } else {
+            ABTI_xstream *p_xstream;
+            ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+            /* If the pool is not associated with an ES */
+            if (p_thread->p_pool == NULL) {
+                abt_errno = ABT_ERR_INV_POOL_ACCESS;
+                ABTI_CHECK_ERROR(abt_errno);
+            }
+            ABTI_elem *p_next =
+                ABTI_elem_get_next(p_thread->p_pool->reader->elem);
+            p_xstream = ABTI_elem_get_xstream(p_next);
+            xstream = ABTI_xstream_get_handle(p_xstream);
         }
-        ABTI_elem *p_next =
-            ABTI_elem_get_next(p_thread->p_pool->reader->elem);
-        p_xstream = ABTI_elem_get_xstream(p_next);
-        xstream = ABTI_xstream_get_handle(p_xstream);
-    }
 
-    abt_errno = ABT_thread_migrate_to_xstream(thread, xstream);
-    ABTI_CHECK_ERROR(abt_errno);
+        abt_errno = ABT_thread_migrate_to_xstream(thread, xstream);
+        if (abt_errno != ABT_ERR_INV_XSTREAM) {
+            ABTI_CHECK_ERROR(abt_errno);
+            migrated = ABT_TRUE;
+        }
+    } while (migrated == ABT_FALSE);
 
   fn_exit:
     return abt_errno;
