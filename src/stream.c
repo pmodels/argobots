@@ -139,16 +139,15 @@ int ABT_xstream_start(ABT_xstream xstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    assert(p_xstream->state == ABT_XSTREAM_STATE_CREATED);
-
-    /* Add the main scheduler to the stack of schedulers */
-    ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
 
     /* Set the xstream's state as READY */
     ABT_xstream_state old_state;
     old_state = ABTD_atomic_cas_int32((int32_t *)&p_xstream->state,
             ABT_XSTREAM_STATE_CREATED, ABT_XSTREAM_STATE_READY);
     if (old_state != ABT_XSTREAM_STATE_CREATED) goto fn_exit;
+
+    /* Add the main scheduler to the stack of schedulers */
+    ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
