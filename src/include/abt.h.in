@@ -341,6 +341,9 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched);
 /* User-level Thread (ULT) */
 int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
                       ABT_thread_attr attr, ABT_thread *newthread);
+int ABT_thread_create_on_xstream(ABT_xstream xstream,
+                      void (*thread_func)(void *), void *arg,
+                      ABT_thread_attr attr, ABT_thread *newthread);
 int ABT_thread_free(ABT_thread *thread);
 int ABT_thread_join(ABT_thread thread);
 int ABT_thread_exit(void);

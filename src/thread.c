@@ -125,6 +125,70 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
 
 /**
  * @ingroup ULT
+ * @brief   Create a new ULT associated with the target ES.
+ *
+ * \c ABT_thread_create_on_xstream() creates a new ULT associated with
+ * the target ES and returns its handle through \c newthread. The new ULT will
+ * be inserted into a proper pool associated with the main scheduler of
+ * the target ES. The \a primary ULT cannot be created by this routine and
+ * only \a secondary ULTs can be created.
+ *
+ * This routine is only for convenience. If the user wants to focus on the
+ * performance, we recommend to use \c ABT_thread_create() with directly
+ * dealing with pools. Pools are a right way to manage work units in Argobots.
+ * ES is just an abstract, and it is not a mechanism for execution and
+ * performance tuning.
+ *
+ * If \c attr is \c ABT_THREAD_ATTR_NULL, a new ULT is created with default
+ * attributes. For example, the stack size of default attribute is 16KB.
+ * If the attribute is specified, attribute values are saved in the ULT object.
+ * After creating the ULT object, changes in the attribute object will not
+ * affect attributes of the ULT object. A new attribute object can be created
+ * with \c ABT_thread_attr_create().
+ *
+ * If \c newthread is \c NULL, this routine creates an unnamed ULT. The object
+ * for unnamed ULT will be automatically freed when the unnamed ULT completes
+ * its execution. Otherwise, this routine creates a named ULT and
+ * \c ABT_thread_free() can be used to explicitly free the object for
+ * the named ULT.
+ *
+ * If \c newthread is not \c NULL and an error occurs in this routine,
+ * a non-zero error code will be returned and \c newthread will be set to
+ * \c ABT_THREAD_NULL.
+ *
+ * @param[in]  xstream      handle to the target ES
+ * @param[in]  thread_func  function to be executed by a new ULT
+ * @param[in]  arg          argument for <tt>thread_func</tt>
+ * @param[in]  attr         ULT attribute
+ * @param[out] newthread    handle to a newly created ULT
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_create_on_xstream(ABT_xstream xstream,
+                      void (*thread_func)(void *), void *arg,
+                      ABT_thread_attr attr, ABT_thread *newthread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_pool pool;
+
+    /* TODO: need to consider the access type of target pool */
+    abt_errno = ABT_xstream_get_main_pools(xstream, 1, &pool);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    abt_errno = ABT_thread_create(pool, thread_func, arg, attr, newthread);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    if (newthread) *newthread = ABT_THREAD_NULL;
+    HANDLE_ERROR_WITH_CODE("ABT_thread_create_on_xstream", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Release the thread object associated with thread handle.
  *
  * This routine deallocates memory used for the thread object. If the thread
