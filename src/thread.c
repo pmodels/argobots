@@ -839,6 +839,8 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
  * runtime. Other semantics of this routine are the same as those of
  * \c ABT_thread_migrate_to_xstream()
  *
+ * NOTE: This function may have some bugs.
+ *
  * @param[in] thread  handle to the thread
  * @return Error code
  * @retval ABT_SUCCESS          on success
@@ -846,6 +848,7 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
  */
 int ABT_thread_migrate(ABT_thread thread)
 {
+    /* TODO: fix the bug(s) */
     int abt_errno = ABT_SUCCESS;
     ABT_xstream xstream;
 

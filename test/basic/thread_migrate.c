@@ -12,9 +12,12 @@
 #define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_THREADS     4
 
+int value = 0;
+
 void thread_func(void *arg)
 {
     int i;
+    int ret;
     ABT_thread thread;
     size_t my_id = (size_t)arg;
     ABT_test_printf(1, "[TH%lu]: Hello, world!\n", my_id);
@@ -22,9 +25,12 @@ void thread_func(void *arg)
     ABT_thread_self(&thread);
     for (i = 0; i < 3; i++) {
         ABT_test_printf(1, "[TH%lu]: request migration ...\n", my_id);
-        ABT_thread_migrate(thread);
+        ret = ABT_thread_migrate(thread);
+        if (ret != ABT_ERR_MIGRATION_NA)
+            ABT_TEST_ERROR(ret, "ABT_thread_migrate");
     }
 
+    __sync_fetch_and_add(&value, 1);
     ABT_thread_release(thread);
 }
 
@@ -91,6 +97,10 @@ int main(int argc, char *argv[])
         ret = ABT_xstream_free(&xstreams[i]);
         ABT_TEST_ERROR(ret, "ABT_xstream_free");
     }
+
+    ABT_thread_yield(); /* to be sure no job on this ES */
+    if (value != num_xstreams*num_threads)
+        ABT_TEST_ERROR(ABT_ERR_OTHER, "wrong value");
 
     /* Finalize */
     ret = ABT_test_finalize(0);
