@@ -841,20 +841,27 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
  *
  * @param[in] thread  handle to the thread
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS          on success
+ * @retval ABT_ERR_MIGRATION_NA no other available ES for migration
  */
 int ABT_thread_migrate(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABT_xstream xstream;
-    int migrated = ABT_FALSE;
 
     ABTI_xstream_contn *p_xstreams = gp_ABTI_global->p_xstreams;
 
     /* Choose the destination xstream */
     /* FIXME: Currenlty, the target xstream is randomly chosen. We need a
      * better selection strategy. */
-    do {
+    /* TODO: handle better when no pool accepts migration */
+    while (1) {
+        /* Only one ES */
+        if (ABTI_contn_get_size(p_xstreams->created) +
+            ABTI_contn_get_size(p_xstreams->active) == 1) {
+            abt_errno = ABT_ERR_MIGRATION_NA;
+            break;
+        }
         if (ABTI_contn_get_size(p_xstreams->created) > 0) {
             ABTI_xstream *p_xstream;
             abt_errno = ABTI_global_get_created_xstream(&p_xstream);
@@ -876,11 +883,12 @@ int ABT_thread_migrate(ABT_thread thread)
         }
 
         abt_errno = ABT_thread_migrate_to_xstream(thread, xstream);
-        if (abt_errno != ABT_ERR_INV_XSTREAM) {
+        if (abt_errno != ABT_ERR_INV_XSTREAM &&
+            abt_errno != ABT_ERR_MIGRATION_TARGET) {
             ABTI_CHECK_ERROR(abt_errno);
-            migrated = ABT_TRUE;
+            break;
         }
-    } while (migrated == ABT_FALSE);
+    }
 
   fn_exit:
     return abt_errno;
