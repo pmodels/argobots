@@ -625,7 +625,7 @@ int ABTI_sched_print(ABTI_sched *p_sched)
     if (p_sched->kind == ABT_sched_default_kind()) {
         printf("DEFAULT\n");
     } else {
-        printf("%lu (USER)\n", p_sched->kind);
+        printf("%" PRIu64 " (USER)\n", p_sched->kind);
     }
 
     printf("automatic: %d", p_sched->automatic);
