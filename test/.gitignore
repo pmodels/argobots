@@ -10,6 +10,7 @@ basic/thread_migrate_to
 basic/thread_migrate
 basic/thread_id
 basic/task_create
+basic/task_create_on_xstream
 basic/thread_task
 basic/thread_task_num
 basic/sched_stack
