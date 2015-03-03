@@ -130,6 +130,7 @@ int main(int argc, char *argv[])
 
     free(args);
     free(tasks);
+    free(pools);
     free(xstreams);
 
     return ret;

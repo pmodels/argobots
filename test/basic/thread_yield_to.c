@@ -138,6 +138,7 @@ int main(int argc, char *argv[])
     }
     free(args);
     free(threads);
+    free(pools);
     free(xstreams);
 
     return ret;

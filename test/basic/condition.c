@@ -212,6 +212,7 @@ int main(int argc, char *argv[])
     }
     free(args);
     free(xstreams);
+    free(pools);
 
     return ret;
 }

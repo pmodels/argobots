@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
     /* Finalize */
     ret = ABT_test_finalize(0);
 
+    free(pools);
     free(xstreams);
 
     return ret;

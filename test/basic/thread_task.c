@@ -241,6 +241,7 @@ int main(int argc, char *argv[])
     free(threads);
     free(task_args);
     free(tasks);
+    free(pools);
     free(xstreams);
 
     return ret;

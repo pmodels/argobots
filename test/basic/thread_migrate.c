@@ -99,6 +99,7 @@ int main(int argc, char *argv[])
         free(threads[i]);
     }
     free(threads);
+    free(pools);
     free(xstreams);
 
     return ret;
