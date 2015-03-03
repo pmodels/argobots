@@ -386,6 +386,8 @@ int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag);
 /* Tasklet */
 int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *newtask);
+int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
+                    void *arg, ABT_task *newtask);
 int ABT_task_free(ABT_task *task);
 int ABT_task_cancel(ABT_task task);
 int ABT_task_self(ABT_task *task);

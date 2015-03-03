@@ -106,6 +106,59 @@ int ABT_task_create(ABT_pool pool,
 
 /**
  * @ingroup TASK
+ * @brief   Create a new tasklet associated with the target ES.
+ *
+ * \c ABT_task_create_on_xstream() creates a new tasklet associated with
+ * the target ES and returns its handle through \c newtask. The new tasklet
+ * is inserted into a proper pool associated with the main scheduler of
+ * the target ES.
+ *
+ * This routine is only for convenience. If the user wants to focus on the
+ * performance, we recommend to use \c ABT_task_create() with directly
+ * dealing with pools. Pools are a right way to manage work units in Argobots.
+ * ES is just an abstract, and it is not a mechanism for execution and
+ * performance tuning.
+ *
+ * If \c newtask is \c NULL, this routine creates an unnamed tasklet.
+ * The object for unnamed tasklet will be automatically freed when the unnamed
+ * tasklet completes its execution. Otherwise, this routine creates a named
+ * tasklet and \c ABT_task_free() can be used to explicitly free the tasklet
+ * object.
+ *
+ * If \c newtask is not \c NULL and an error occurs in this routine, a non-zero
+ * error code will be returned and \c newtask will be set to \c ABT_TASK_NULL.
+ *
+ * @param[in]  xstream    handle to the target ES
+ * @param[in]  task_func  function to be executed by a new tasklet
+ * @param[in]  arg        argument for <tt>task_func</tt>
+ * @param[out] newtask    handle to a newly created tasklet
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
+                               void *arg, ABT_task *newtask)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_pool pool;
+
+    /* TODO: need to consider the access type of target pool */
+    abt_errno = ABT_xstream_get_main_pools(xstream, 1, &pool);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    abt_errno = ABT_task_create(pool, task_func, arg, newtask);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    if (newtask) *newtask = ABT_TASK_NULL;
+    HANDLE_ERROR_WITH_CODE("ABT_task_create_on_xstream", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Release the task object associated with task handle.
  *
  * This routine deallocates memory used for the task object. If the task is
