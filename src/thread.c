@@ -806,7 +806,8 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
  * @param[in] thread handle to the thread to migrate
  * @param[in] pool   handle to the pool to migrate the thread to
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS              on success
+ * @retval ABT_ERR_MIGRATION_TARGET the same pool is used
  */
 int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
 {
@@ -1245,17 +1246,13 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
     }
     if (p_thread->state == ABT_THREAD_STATE_TERMINATED) {
         abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_exit;
+        goto fn_fail;
     }
 
     /* checking for migration to the same pool */
     if (p_thread->p_pool == p_pool) {
-        /* Invoke the callback function */
-        if (p_thread->attr.f_cb) {
-            ABT_thread thread = ABTI_thread_get_handle(p_thread);
-            p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
-        }
-        goto fn_exit;
+        abt_errno = ABT_ERR_MIGRATION_TARGET;
+        goto fn_fail;
     }
 
     /* adding request to the thread */

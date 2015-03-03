@@ -87,6 +87,7 @@ extern "C" {
 #define ABT_ERR_EVENTUAL           32  /* Eventual-related error */
 #define ABT_ERR_FUTURE             33  /* Future-related error */
 #define ABT_ERR_TIMER              34  /* Timer-related error */
+#define ABT_ERR_MIGRATION_TARGET   35  /* Migration target error */
 
 
 /* Constants */
