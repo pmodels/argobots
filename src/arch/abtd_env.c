@@ -33,5 +33,8 @@ void ABTD_env_init(ABTI_global *p_global)
     } else {
         p_global->default_stacksize = ABTD_THREAD_DEFAULT_STACKSIZE;
     }
+
+    /* Init timer */
+    ABTD_time_init();
 }
 

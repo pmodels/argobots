@@ -44,4 +44,22 @@ int ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
 /* Atomic Functions */
 #include "abtd_atomic.h"
 
+#if defined(HAVE_CLOCK_GETTIME)
+#include <time.h>
+typedef struct timespec ABTD_time;
+
+#elif defined(HAVE_MACH_ABSOLUTE_TIME)
+#include <mach/mach_time.h>
+typedef uint64_t ABTD_time;
+
+#elif defined(HAVE_GETTIMEOFDAY)
+#include <sys/time.h>
+typedef struct timeval ABTD_time;
+
+#endif
+
+void   ABTD_time_init(void);
+int    ABTD_time_get(ABTD_time *p_time);
+double ABTD_time_read_sec(ABTD_time *p_time);
+
 #endif /* ABTD_H_INCLUDED */
