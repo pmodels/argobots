@@ -85,6 +85,7 @@ typedef struct ABTI_mutex           ABTI_mutex;
 typedef struct ABTI_cond            ABTI_cond;
 typedef struct ABTI_eventual        ABTI_eventual;
 typedef struct ABTI_future          ABTI_future;
+typedef struct ABTI_timer           ABTI_timer;
 
 
 /* Architecture-Dependent Definitions */
@@ -287,6 +288,11 @@ struct ABTI_future {
     ABTI_thread_list waiters;
 };
 
+struct ABTI_timer {
+    ABTD_time start;
+    ABTD_time end;
+};
+
 
 /* Global Data */
 extern ABTI_global *gp_ABTI_global;
@@ -461,6 +467,10 @@ void ABTI_eventual_signal(ABTI_eventual *p_eventual);
 ABTI_future *ABTI_future_get_ptr(ABT_future future);
 ABT_future   ABTI_future_get_handle(ABTI_future *p_future);
 void ABTI_future_signal(ABTI_future *p_future);
+
+/* Timer */
+ABTI_timer *ABTI_timer_get_ptr(ABT_timer timer);
+ABT_timer ABTI_timer_get_handle(ABTI_timer *p_timer);
 
 
 #define DEBUG 0

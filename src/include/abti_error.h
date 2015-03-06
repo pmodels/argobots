@@ -81,6 +81,12 @@
         goto fn_fail;                           \
     }
 
+#define ABTI_CHECK_NULL_TIMER_PTR(p)            \
+    if (p == NULL) {                            \
+        abt_errno = ABT_ERR_INV_TIMER;          \
+        goto fn_fail;                           \
+    }
+
 #define HANDLE_ERROR(msg) \
     fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
     //fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); exit(-1)

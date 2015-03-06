@@ -73,18 +73,20 @@ extern "C" {
 #define ABT_ERR_INV_COND           18  /* Invalid condition variable */
 #define ABT_ERR_INV_EVENTUAL       19  /* Invalid eventual */
 #define ABT_ERR_INV_FUTURE         20  /* Invalid future */
-#define ABT_ERR_XSTREAM            21  /* ES-related error */
-#define ABT_ERR_XSTREAM_STATE      22  /* ES state error */
-#define ABT_ERR_SCHED              23  /* Scheduler-related error */
-#define ABT_ERR_POOL               24  /* Pool-related error */
-#define ABT_ERR_UNIT               25  /* Scheduling unit-related error */
-#define ABT_ERR_THREAD             26  /* ULT-related error */
-#define ABT_ERR_TASK               27  /* Task-related error */
-#define ABT_ERR_MUTEX              28  /* Mutex-related error */
-#define ABT_ERR_MUTEX_LOCKED       29  /* Return value when mutex is locked */
-#define ABT_ERR_COND               30  /* Condition-related error */
-#define ABT_ERR_EVENTUAL           31  /* Eventual-related error */
-#define ABT_ERR_FUTURE             32  /* Future-related error */
+#define ABT_ERR_INV_TIMER          21  /* Invalid timer */
+#define ABT_ERR_XSTREAM            22  /* ES-related error */
+#define ABT_ERR_XSTREAM_STATE      23  /* ES state error */
+#define ABT_ERR_SCHED              24  /* Scheduler-related error */
+#define ABT_ERR_POOL               25  /* Pool-related error */
+#define ABT_ERR_UNIT               26  /* Scheduling unit-related error */
+#define ABT_ERR_THREAD             27  /* ULT-related error */
+#define ABT_ERR_TASK               28  /* Task-related error */
+#define ABT_ERR_MUTEX              29  /* Mutex-related error */
+#define ABT_ERR_MUTEX_LOCKED       30  /* Return value when mutex is locked */
+#define ABT_ERR_COND               31  /* Condition-related error */
+#define ABT_ERR_EVENTUAL           32  /* Eventual-related error */
+#define ABT_ERR_FUTURE             33  /* Future-related error */
+#define ABT_ERR_TIMER              34  /* Timer-related error */
 
 
 /* Constants */
@@ -188,6 +190,7 @@ typedef void *                 ABT_mutex;         /* Mutex */
 typedef void *                 ABT_cond;          /* Condition variable */
 typedef void *                 ABT_eventual;      /* Eventual */
 typedef void *                 ABT_future;        /* Future */
+typedef void *                 ABT_timer;         /* Timer */
 typedef int                    ABT_bool;          /* Boolean type */
 
 
@@ -205,6 +208,7 @@ typedef int                    ABT_bool;          /* Boolean type */
 #define ABT_COND_NULL           ((ABT_cond)        (0x0b))
 #define ABT_EVENTUAL_NULL       ((ABT_eventual)    (0x0c))
 #define ABT_FUTURE_NULL         ((ABT_future)      (0x0d))
+#define ABT_TIMER_NULL          ((ABT_timer)       (0x0e))
 
 
 /* Scheduler Functions */
@@ -432,6 +436,16 @@ int ABT_future_set(ABT_future future, void *value);
 
 /* Error */
 int ABT_error_get_str(int errno, char *str, size_t *len);
+
+/* Timer */
+double ABT_get_wtime(void);
+int ABT_timer_create(ABT_timer *newtimer);
+int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer);
+int ABT_timer_free(ABT_timer *timer);
+int ABT_timer_start(ABT_timer timer);
+int ABT_timer_stop(ABT_timer timer);
+int ABT_timer_read(ABT_timer timer, double *secs);
+int ABT_timer_get_overhead(double *overhead);
 
 #if defined(__cplusplus)
 }
