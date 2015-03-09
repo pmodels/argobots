@@ -445,6 +445,8 @@ int ABT_timer_free(ABT_timer *timer);
 int ABT_timer_start(ABT_timer timer);
 int ABT_timer_stop(ABT_timer timer);
 int ABT_timer_read(ABT_timer timer, double *secs);
+int ABT_timer_stop_and_read(ABT_timer timer, double *secs);
+int ABT_timer_stop_and_add(ABT_timer timer, double *secs);
 int ABT_timer_get_overhead(double *overhead);
 
 #if defined(__cplusplus)

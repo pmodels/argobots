@@ -226,6 +226,80 @@ int ABT_timer_read(ABT_timer timer, double *secs)
 
 /**
  * @ingroup TIMER
+ * @brief   Stop the timer and read the elapsed time of the timer.
+ *
+ * \c ABT_timer_stop_and_read() stops the timer and returns the time difference
+ * in seconds between the start time of \c timer (when \c ABT_timer_start() was
+ * called) and the end time of \c timer (when this routine was called) through
+  *\c secs.
+ * The resolution of elapsed time is at least a unit of microsecond.
+ *
+ * @param[in]  timer  handle to the timer
+ * @param[out] secs   elapsed time in seconds
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_timer_stop_and_read(ABT_timer timer, double *secs)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
+    ABTI_CHECK_NULL_TIMER_PTR(p_timer);
+
+    double start, end;
+
+    ABTD_time_get(&p_timer->end);
+    start = ABTD_time_read_sec(&p_timer->start);
+    end   = ABTD_time_read_sec(&p_timer->end);
+
+    *secs = end - start;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_timer_stop_and_read", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TIMER
+ * @brief   Stop the timer and add the elapsed time of the timer.
+ *
+ * \c ABT_timer_stop_and_add() stops the timer and adds the time difference
+ * between the start time of \c timer (when \c ABT_timer_start() was called)
+ * and the end time of \c timer (when this routine was called) to \c secs.
+ * That is, the elapsed time of the timer is accumulated in \c secs.
+ * The resolution of elapsed time is at least a unit of microsecond.
+ *
+ * @param[in]     timer  handle to the timer
+ * @param[in,out] secs   accumulated elapsed time in seconds
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_timer_stop_and_add(ABT_timer timer, double *secs)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
+    ABTI_CHECK_NULL_TIMER_PTR(p_timer);
+
+    double start, end;
+
+    ABTD_time_get(&p_timer->end);
+    start = ABTD_time_read_sec(&p_timer->start);
+    end   = ABTD_time_read_sec(&p_timer->end);
+
+    *secs += (end - start);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_timer_stop_and_add", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TIMER
  * @brief   Obtain the overhead time of using ABT_timer.
  *
  * \c ABT_timer_get_overhead() returns the overhead time when measuring the
