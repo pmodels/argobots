@@ -22,7 +22,8 @@ TESTS = \
 	condition \
 	future_create \
 	eventual_create \
-	self_type
+	self_type \
+	timer
 
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)
@@ -48,6 +49,7 @@ condition_SOURCES = condition.c
 future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 self_type_SOURCES = self_type.c
+timer_SOURCES = timer.c
 
 testing:
 	./xstream_create
@@ -69,3 +71,4 @@ testing:
 	./future_create
 	./eventual_create
 	./self_type
+	./timer

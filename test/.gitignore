@@ -23,6 +23,7 @@ basic/condition
 basic/future_create
 basic/eventual_create
 basic/self_type
+basic/timer
 
 # code builds
 util/libutil.la
