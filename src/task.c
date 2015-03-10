@@ -599,28 +599,6 @@ int ABT_task_get_name(ABT_task task, char *name, size_t *len)
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-ABTI_task *ABTI_task_get_ptr(ABT_task task)
-{
-    ABTI_task *p_task;
-    if (task == ABT_TASK_NULL) {
-        p_task = NULL;
-    } else {
-        p_task = (ABTI_task *)task;
-    }
-    return p_task;
-}
-
-ABT_task ABTI_task_get_handle(ABTI_task *p_task)
-{
-    ABT_task h_task;
-    if (p_task == NULL) {
-        h_task = ABT_TASK_NULL;
-    } else {
-        h_task = (ABT_task)p_task;
-    }
-    return h_task;
-}
-
 int ABTI_task_free(ABTI_task *p_task)
 {
     int abt_errno = ABT_SUCCESS;

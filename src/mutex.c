@@ -226,30 +226,3 @@ int ABT_mutex_waitlock(ABT_mutex mutex)
     return abt_errno;
 }
 
-
-/*****************************************************************************/
-/* Private APIs                                                              */
-/*****************************************************************************/
-
-ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
-{
-    ABTI_mutex *p_mutex;
-    if (mutex == ABT_MUTEX_NULL) {
-        p_mutex = NULL;
-    } else {
-        p_mutex = (ABTI_mutex *)mutex;
-    }
-    return p_mutex;
-}
-
-ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
-{
-    ABT_mutex h_mutex;
-    if (p_mutex == NULL) {
-        h_mutex = ABT_MUTEX_NULL;
-    } else {
-        h_mutex = (ABT_mutex)p_mutex;
-    }
-    return h_mutex;
-}
-

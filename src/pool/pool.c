@@ -515,29 +515,6 @@ int ABTI_pool_print(ABTI_pool *p_pool)
     return abt_errno;
 }
 
-ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool)
-{
-    ABTI_pool *p_pool;
-    if (pool == ABT_POOL_NULL) {
-        p_pool = NULL;
-    } else {
-        p_pool = (ABTI_pool *)pool;
-    }
-    return p_pool;
-}
-
-ABT_pool ABTI_pool_get_handle(ABTI_pool *p_pool)
-{
-    ABT_pool h_pool;
-    if (p_pool == NULL) {
-        h_pool = ABT_POOL_NULL;
-    } else {
-        h_pool = (ABT_pool)p_pool;
-    }
-    return h_pool;
-}
-
-
 /* Increase num_scheds to mark the pool as having another scheduler. If the
  * pool is not available, it returns ABT_ERR_INV_POOL_ACCESS.  */
 int ABTI_pool_retain(ABTI_pool *p_pool)

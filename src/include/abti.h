@@ -362,8 +362,6 @@ void          ABTI_elem_free(ABTI_elem **pp_elem);
 int           ABTI_elem_print(ABTI_elem *p_elem);
 
 /* Execution Stream (ES) */
-ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream);
-ABT_xstream   ABTI_xstream_get_handle(ABTI_xstream *p_xstream);
 int ABTI_xstream_free(ABTI_xstream *p_xstream);
 int ABTI_xstream_start_any(void);
 int ABTI_xstream_schedule(ABTI_xstream *p_xstream);
@@ -385,8 +383,6 @@ void ABTI_xstream_reset_rank(void);
 int ABTI_xstream_print(ABTI_xstream *p_xstream);
 
 /* Scheduler */
-ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched);
-ABT_sched   ABTI_sched_get_handle(ABTI_sched *p_sched);
 int  ABTI_sched_create_default(ABTI_sched **p_newsched);
 int  ABTI_sched_create_fifo(ABTI_sched **p_newsched);
 int  ABTI_sched_create_lifo(ABTI_sched **p_newsched);
@@ -402,8 +398,6 @@ uint64_t ABTI_sched_get_kind(ABT_sched_def *def);
 int  ABTI_sched_print(ABTI_sched *p_sched);
 
 /* Pool */
-ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool);
-ABT_pool   ABTI_pool_get_handle(ABTI_pool *p_pool);
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
 int ABTI_pool_retain(ABTI_pool *p_pool);
 int ABTI_pool_release(ABTI_pool *p_pool);
@@ -417,8 +411,6 @@ int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 int ABTI_pool_print(ABTI_pool *p_pool);
 
 /* User-level Thread (ULT)  */
-ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread);
-ABT_thread   ABTI_thread_get_handle(ABTI_thread *p_thread);
 int   ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread);
 int   ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread);
 int   ABTI_thread_free_main(ABTI_thread *p_thread);
@@ -436,13 +428,9 @@ void  ABTI_thread_release(ABTI_thread *p_thread);
 void  ABTI_thread_reset_id(void);
 
 /* ULT Attributes */
-ABTI_thread_attr *ABTI_thread_attr_get_ptr(ABT_thread_attr attr);
-ABT_thread_attr   ABTI_thread_attr_get_handle(ABTI_thread_attr *p_attr);
 int ABTI_thread_attr_print(ABTI_thread_attr *p_attr);
 
 /* Tasklet */
-ABTI_task *ABTI_task_get_ptr(ABT_task task);
-ABT_task   ABTI_task_get_handle(ABTI_task *p_task);
 int  ABTI_task_free(ABTI_task *p_task);
 int  ABTI_task_print(ABTI_task *p_task);
 ABTI_task *ABTI_task_current(void);
@@ -450,28 +438,13 @@ void ABTI_task_retain(ABTI_task *p_task);
 void ABTI_task_release(ABTI_task *p_task);
 void ABTI_task_reset_id(void);
 
-/* Mutex */
-ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex);
-ABT_mutex   ABTI_mutex_get_handle(ABTI_mutex *p_mutex);
-
-/* Condition Variable */
-ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond);
-ABT_cond   ABTI_cond_get_handle(ABTI_cond *p_cond);
-
 /* Eventual */
-ABTI_eventual *ABTI_eventual_get_ptr(ABT_eventual eventual);
-ABT_eventual   ABTI_eventual_get_handle(ABTI_eventual *p_eventual);
 void ABTI_eventual_signal(ABTI_eventual *p_eventual);
 
 /* Future */
-ABTI_future *ABTI_future_get_ptr(ABT_future future);
-ABT_future   ABTI_future_get_handle(ABTI_future *p_future);
 void ABTI_future_signal(ABTI_future *p_future);
 
-/* Timer */
-ABTI_timer *ABTI_timer_get_ptr(ABT_timer timer);
-ABT_timer ABTI_timer_get_handle(ABTI_timer *p_timer);
-
+#include "abti_handle.h"
 
 #define DEBUG 0
 #if (DEBUG == 1)

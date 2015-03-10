@@ -342,30 +342,3 @@ int ABT_timer_get_overhead(double *overhead)
     goto fn_exit;
 }
 
-
-/*****************************************************************************/
-/* Private APIs                                                              */
-/*****************************************************************************/
-
-ABTI_timer *ABTI_timer_get_ptr(ABT_timer timer)
-{
-    ABTI_timer *p_timer;
-    if (timer == ABT_TIMER_NULL) {
-        p_timer = NULL;
-    } else {
-        p_timer = (ABTI_timer *)timer;
-    }
-    return p_timer;
-}
-
-ABT_timer ABTI_timer_get_handle(ABTI_timer *p_timer)
-{
-    ABT_timer h_timer;
-    if (p_timer == NULL) {
-        h_timer = ABT_TIMER_NULL;
-    } else {
-        h_timer = (ABT_timer)p_timer;
-    }
-    return h_timer;
-}
-

@@ -548,28 +548,6 @@ int ABT_sched_get_kind(ABT_sched sched, ABT_sched_kind *kind)
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched)
-{
-    ABTI_sched *p_sched;
-    if (sched == ABT_SCHED_NULL) {
-        p_sched = NULL;
-    } else {
-        p_sched = (ABTI_sched *)sched;
-    }
-    return p_sched;
-}
-
-ABT_sched ABTI_sched_get_handle(ABTI_sched *p_sched)
-{
-    ABT_sched h_sched;
-    if (p_sched == NULL) {
-        h_sched = ABT_SCHED_NULL;
-    } else {
-        h_sched = (ABT_sched)p_sched;
-    }
-    return h_sched;
-}
-
 /* Mark the scheduler as used and how it is used */
 int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use)
 {

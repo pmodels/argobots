@@ -182,28 +182,6 @@ int ABT_future_set(ABT_future future, void *value)
  * This group combines private APIs for future.
  */
 
-ABTI_future *ABTI_future_get_ptr(ABT_future future)
-{
-    ABTI_future *p_future;
-    if (future == ABT_FUTURE_NULL) {
-        p_future = NULL;
-    } else {
-        p_future = (ABTI_future *)future;
-    }
-    return p_future;
-}
-
-ABT_future ABTI_future_get_handle(ABTI_future *p_future)
-{
-    ABT_future h_future;
-    if (p_future == NULL) {
-        h_future = ABT_FUTURE_NULL;
-    } else {
-        h_future = (ABT_future)p_future;
-    }
-    return h_future;
-}
-
 /**
  * @ingroup FUTURE_PRIVATE
  * @brief   Signal all ULTs blocking on a future once the result has been

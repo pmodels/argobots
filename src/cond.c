@@ -287,30 +287,3 @@ int ABT_cond_broadcast(ABT_cond cond)
     goto fn_exit;
 }
 
-
-/*****************************************************************************/
-/* Private APIs                                                              */
-/*****************************************************************************/
-
-ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond)
-{
-    ABTI_cond *p_cond;
-    if (cond == ABT_COND_NULL) {
-        p_cond = NULL;
-    } else {
-        p_cond = (ABTI_cond *)cond;
-    }
-    return p_cond;
-}
-
-ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
-{
-    ABT_cond h_cond;
-    if (p_cond == NULL) {
-        h_cond = ABT_COND_NULL;
-    } else {
-        h_cond = (ABT_cond)p_cond;
-    }
-    return h_cond;
-}
-

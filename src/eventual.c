@@ -150,28 +150,6 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
  * This group combines private APIs for eventual.
  */
 
-ABTI_eventual *ABTI_eventual_get_ptr(ABT_eventual eventual)
-{
-    ABTI_eventual *p_eventual;
-    if (eventual == ABT_EVENTUAL_NULL) {
-        p_eventual = NULL;
-    } else {
-        p_eventual = (ABTI_eventual *)eventual;
-    }
-    return p_eventual;
-}
-
-ABT_eventual ABTI_eventual_get_handle(ABTI_eventual *p_eventual)
-{
-    ABT_eventual h_eventual;
-    if (p_eventual == NULL) {
-        h_eventual = ABT_EVENTUAL_NULL;
-    } else {
-        h_eventual = (ABT_eventual)p_eventual;
-    }
-    return h_eventual;
-}
-
 /**
  * @ingroup EVENTUAL_PRIVATE
  * @brief   Signal all ULTs blocking on an eventual once the result has been

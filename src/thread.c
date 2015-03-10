@@ -1242,28 +1242,6 @@ int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id)
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread)
-{
-    ABTI_thread *p_thread;
-    if (thread == ABT_THREAD_NULL) {
-        p_thread = NULL;
-    } else {
-        p_thread = (ABTI_thread *)thread;
-    }
-    return p_thread;
-}
-
-ABT_thread ABTI_thread_get_handle(ABTI_thread *p_thread)
-{
-    ABT_thread h_thread;
-    if (p_thread == NULL) {
-        h_thread = ABT_THREAD_NULL;
-    } else {
-        h_thread = (ABT_thread)p_thread;
-    }
-    return h_thread;
-}
-
 int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 {
     int abt_errno = ABT_SUCCESS;

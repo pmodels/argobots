@@ -988,29 +988,6 @@ int ABT_xstream_check_events(ABT_sched sched)
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
-
-ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream)
-{
-    ABTI_xstream *p_xstream;
-    if (xstream == ABT_XSTREAM_NULL) {
-        p_xstream = NULL;
-    } else {
-        p_xstream = (ABTI_xstream *)xstream;
-    }
-    return p_xstream;
-}
-
-ABT_xstream ABTI_xstream_get_handle(ABTI_xstream *p_xstream)
-{
-    ABT_xstream h_xstream;
-    if (p_xstream == NULL) {
-        h_xstream = ABT_XSTREAM_NULL;
-    } else {
-        h_xstream = (ABT_xstream)p_xstream;
-    }
-    return h_xstream;
-}
-
 int ABTI_xstream_free(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
