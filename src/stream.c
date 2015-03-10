@@ -90,7 +90,10 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 /**
  * @ingroup ES
  * @brief   Create a new ES with a predefined scheduler and return its handle
- * through newxstream.
+ *          through \c newxstream.
+ *
+ * If \c predef is a scheduler that includes automatic creation of pools,
+ * \c pools will be equal to NULL.
  *
  * @param[in]  predef       predefined scheduler
  * @param[in]  num_pools    number of pools associated with this scheduler
@@ -121,14 +124,14 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
 
 /**
  * @ingroup ES
- * @brief   Start an execution stream.
+ * @brief   Start the target ES.
  *
- * The main execution stream does not need to be started. The other execution
- * streams will be started automatically if a ULT or a tasklet is pushed to a
- * pool that belongs exclusively to this ES. For every other cases, the user
- * need to start it manually.
+ * The primary ES does not need to be started explicitly. Other ESs will be
+ * started automatically if a ULT or a tasklet is pushed to a pool that belongs
+ * exclusively to them. Except these cases, the user needs to start ES manually
+ * by calling this routine.
  *
- * @param[in] xstream   handle to the target ES
+ * @param[in] xstream  handle to the target ES
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -523,12 +526,14 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
 
 /**
  * @ingroup ES
- * @brief   Set sched as the main scheduler for xstream.
+ * @brief   Set \c sched as the main scheduler for \c xstream.
  *
- * The type of the main scheduler has to be ABT_SCHED_TYPE_ULT.
+ * The scheduler \c sched will be the main scheduler that will first run
+ * when the ES is started. Once the ES is started, it is currently not allowed
+ * to change the main scheduler for the ES.
  *
  * @param[in] xstream  handle to the target ES
- * @param[in] sched    handle to the main scheduler used for xstream
+ * @param[in] sched    handle to the scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -611,7 +616,9 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 
 /**
  * @ingroup ES
- * @brief   Set a basic sched as the main scheduler for xstream.
+ * @brief   Set the main scheduler for \c xstream with a predefined scheduler.
+ *
+ * See \c ABT_xstream_set_main_sched() for more details.
  *
  * @param[in] xstream     handle to the target ES
  * @param[in] kind        kind of scheduler among predefined schedulers
@@ -642,10 +649,10 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
 
 /**
  * @ingroup ES
- * @brief   Get the scheduler for the ES.
+ * @brief   Get the main scheduler of the target ES.
  *
- * \c ABT_xstream_get_main_sched() gets the handle to the ES's scheduler through
- * \c sched.
+ * \c ABT_xstream_get_main_sched() gets the handle of the main scheduler
+ * for the target ES \c xstream through \c sched.
  *
  * @param[in] xstream  handle to the target ES
  * @param[out] sched   handle to the scheduler
@@ -671,7 +678,11 @@ int ABT_xstream_get_main_sched(ABT_xstream xstream, ABT_sched *sched)
 
 /**
  * @ingroup ES
- * @brief   Get the pools of the main scheduler of the ES.
+ * @brief   Get the pools of the main scheduler of the target ES.
+ *
+ * This function is a convenient function that calls
+ * \c ABT_xstream_get_main_sched() to get the main scheduler, and then
+ * \c ABT_sched_get_pools() to get retrieve the associated pools.
  *
  * @param[in]  xstream   handle to the target ES
  * @param[in]  max_pools maximum number of pools
@@ -889,10 +900,10 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag)
 
 /**
  * @ingroup ES
- * @brief   Execute a unit on the local stream
+ * @brief   Execute a unit on the local ES.
  *
- * This function is called by a scheduler after picking one unit. So a user
- * will use it on his user-defined scheduler.
+ * This function can be called by a scheduler after picking one unit. So a user
+ * will use it for his own defined scheduler.
  *
  * @param[in] unit handle to the unit to run
  * @param[in] pool pool where unit is from
@@ -949,8 +960,8 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
  * @ingroup ES
  * @brief   Check the events and process them
  *
- * This function must be called by a scheduler periodically. So, a user will
- * use it on his user-defined scheduler.
+ * This function must be called by a scheduler periodically. Therefore, a user
+ * will use it on his own defined scheduler.
  *
  * @param[in] sched handle to the scheduler where this call is from
  * @return Error code

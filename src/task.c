@@ -16,6 +16,11 @@ static uint64_t ABTI_task_get_new_id(void);
  * @ingroup TASK
  * @brief   Create a new task and return its handle through newtask.
  *
+ * \c ABT_task_create() creates a new tasklet that is pushed into \c pool. The
+ * insertion is done from the ES where this call is made. Therefore, the access
+ * type of \c pool should comply with that. The handle of the newly created
+ * tasklet is obtained through \c newtask.
+ *
  * If this is ABT_XSTREAM_NULL, the new task is managed globally and it can be
  * executed by any ES. Otherwise, the task is scheduled and runs in the
  * specified ES.
@@ -106,7 +111,7 @@ int ABT_task_create(ABT_pool pool,
 
 /**
  * @ingroup TASK
- * @brief   Create a new tasklet associated with the target ES.
+ * @brief   Create a new tasklet associated with the target ES (\c xstream).
  *
  * \c ABT_task_create_on_xstream() creates a new tasklet associated with
  * the target ES and returns its handle through \c newtask. The new tasklet
@@ -351,8 +356,8 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
  * @ingroup TASK
  * @brief   Return the last pool of task.
  *
- * If the task is not running it is the pool where the task is, else it is the
- * pool from the task have been poped.
+ * If the task is not running, we get the pool where it is, else we get the
+ * last pool where it was (the pool from the task was popped).
  *
  * @param[in]  task  handle to the target task
  * @param[out] pool  the last pool of the task

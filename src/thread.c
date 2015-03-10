@@ -16,11 +16,16 @@ static ABT_thread_id ABTI_thread_get_new_id(void);
  * @ingroup ULT
  * @brief   Create a new thread and return its handle through newthread.
  *
+ * \c ABT_thread_create() creates a new ULT that is pushed into \c pool. The
+ * insertion is done from the ES where this call is made. Therefore, the access
+ * type of \c pool should comply with that. Only a \a secondary ULT can be
+ * created explicitly, and the \a primary ULT is created automatically.
+ *
  * If newthread is NULL, the thread object will be automatically released when
  * this \a unnamed thread completes the execution of thread_func. Otherwise,
  * ABT_thread_free() can be used to explicitly release the thread object.
  *
- * @param[in]  xstream      handle to the associated ES
+ * @param[in]  pool         handle to the associated pool
  * @param[in]  thread_func  function to be executed by a new thread
  * @param[in]  arg          argument for thread_func
  * @param[in]  attr         thread attribute. If it is ABT_THREAD_ATTR_NULL,
@@ -125,13 +130,12 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
 
 /**
  * @ingroup ULT
- * @brief   Create a new ULT associated with the target ES.
+ * @brief   Create a new ULT associated with the target ES (\c xstream).
  *
- * \c ABT_thread_create_on_xstream() creates a new ULT associated with
- * the target ES and returns its handle through \c newthread. The new ULT will
- * be inserted into a proper pool associated with the main scheduler of
- * the target ES. The \a primary ULT cannot be created by this routine and
- * only \a secondary ULTs can be created.
+ * \c ABT_thread_create_on_xstream() creates a new ULT associated with the
+ * target ES and returns its handle through \c newthread. The new ULT will be
+ * inserted into a proper pool associated with the main scheduler of the target
+ * ES.
  *
  * This routine is only for convenience. If the user wants to focus on the
  * performance, we recommend to use \c ABT_thread_create() with directly
@@ -452,13 +456,13 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
 
 /**
  * @ingroup ULT
- * @brief   Return the last pool of thread.
+ * @brief   Return the last pool of ULT.
  *
- * If the thread is not running it is the pool where the thread is, else it is
- * the pool from the thread have been poped.
+ * If the ULT is not running, we get the pool where it is, else we get the
+ * last pool where it was (the pool from the thread was poped).
  *
- * @param[in]  thread  handle to the target thread
- * @param[out] pool   the last pool of the thread
+ * @param[in]  thread handle to the target ULT
+ * @param[out] pool   the last pool of the ULT
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -591,11 +595,11 @@ int ABT_thread_yield_to(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Yield the processor from the current running thread to a next
- *          thread.
+ * @brief   Yield the processor from the current running ULT back to the
+ *          scheduler.
  *
- * The next thread is selected by the scheduler of ES. If there is no more
- * thread to, the calling thread resumes its execution immediately.
+ * The ULT that yields, goes back to its pool, and eventually will be
+ * resumed automatically later.
  *
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -790,7 +794,6 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
  * The migration will fail if the target scheduler has no pool available for
  * migration.
  *
- *
  * @param[in] thread handle to the thread to migrate
  * @param[in] pool   handle to the pool to migrate the thread to
  * @return Error code
@@ -852,7 +855,7 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
  * @ingroup ULT
  * @brief   Request migration of the thread to an any available ES.
  *
- * ABT_thread_migrate() requests migration of the thread but does not specify
+ * ABT_thread_migrate requests migration of the thread but does not specify
  * the target ES. The target ES will be determined among available ESs by the
  * runtime. Other semantics of this routine are the same as those of
  * \c ABT_thread_migrate_to_xstream()
@@ -905,8 +908,8 @@ int ABT_thread_migrate(ABT_thread thread)
  * @ingroup ULT
  * @brief   Set the callback function.
  *
- * \c ABT_thread_set_callback() sets the callback function to be used when
- * the ULT is migrated.
+ * \c ABT_thread_set_callback sets the callback function to be used when the
+ * ULT is migrated.
  *
  * @param[in] thread   handle to the target ULT
  * @param[in] cb_func  callback function pointer
@@ -937,10 +940,10 @@ int ABT_thread_set_callback(ABT_thread thread,
  * @ingroup ULT
  * @brief   Set the ULT's migratability.
  *
- * \c ABT_thread_set_migratable() sets the secondary ULT's migratability.
- * This routine cannot be used for the primary ULT.
- * If \c flag is \c ABT_TRUE, the target ULT becomes migratable. On the
- * other hand, if \c flag is \c ABT_FALSE, the target ULT becomes unmigratable.
+ * \c ABT_thread_set_migratable sets the secondary ULT's migratability. This
+ * routine cannot be used for the primary ULT. If \c flag is \c ABT_TRUE, the
+ * target ULT becomes migratable. On the other hand, if \c flag is \c
+ * ABT_FALSE, the target ULT becomes unmigratable.
  *
  * @param[in] thread  handle to the target ULT
  * @param[in] flag    migratability flag (<tt>ABT_TRUE</tt>: migratable,
@@ -970,7 +973,7 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
  * @ingroup ULT
  * @brief   Get the ULT's migratability.
  *
- * \c ABT_thread_is_migratable() returns the ULT's migratability through
+ * \c ABT_thread_is_migratable returns the ULT's migratability through
  * \c flag. If the target ULT is migratable, \c ABT_TRUE is returned to
  * \c flag. Otherwise, \c flag is set to \c ABT_FALSE.
  *
@@ -1000,7 +1003,7 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
  * @ingroup ULT
  * @brief   Check if the target ULT is the primary ULT.
  *
- * \c ABT_thread_is_primary() confirms whether the target ULT, \c thread,
+ * \c ABT_thread_is_primary confirms whether the target ULT, \c thread,
  * is the primary ULT and returns the result through \c flag.
  * If \c thread is a handle to the primary ULT, \c flag is set to \c ABT_TRUE.
  * Otherwise, \c flag is set to \c ABT_FALSE.
@@ -1057,8 +1060,8 @@ int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
  * @ingroup ULT
  * @brief   Increment the ULT's reference count.
  *
- * \c ABT_thread_retain() increments the ULT's reference count by one.
- * If the user obtains a ULT handle through \c ABT_thread_create() or
+ * \c ABT_thread_retain() increments the ULT's reference count by one. If the
+ * user obtains a ULT handle through \c ABT_thread_create() or
  * \c ABT_thread_self(), those routines perform an implicit retain.
  *
  * @param[in] thread  handle to the ULT

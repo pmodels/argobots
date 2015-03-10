@@ -263,6 +263,17 @@ int ABT_sched_free(ABT_sched *sched)
     goto fn_exit;
 }
 
+/**
+ * @ingroup SCHED
+ * @brief   Get the pools of the scheduler \c sched.
+ *
+ * @param[in]  sched     handle to the target scheduler
+ * @param[in]  max_pools maximum number of pools to get
+ * @param[in]  idx       index of the first pool to get
+ * @param[out] pools     array of handles to the pools
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
                         ABT_pool *pools)
 {
@@ -292,11 +303,10 @@ int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
 /**
  * @ingroup SCHED
  * @brief   Ask a scheduler to finish
- * newsched.
  *
  * The scheduler will stop when its pools will be empty.
  *
- * @param[in]  sched     handle to the target scheduler
+ * @param[in] sched  handle to the target scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -320,12 +330,11 @@ int ABT_sched_finish(ABT_sched sched)
 /**
  * @ingroup SCHED
  * @brief   Ask a scheduler to stop as soon as possible
- * newsched.
  *
- * The scheduler will stop even if its pools are not empty. It is the user
- * responsability to ensure that the left work will be run by other scheduler.
- * 
- * @param[in]  sched     handle to the target scheduler
+ * The scheduler will stop even if its pools are not empty. It is the user's
+ * responsibility to ensure that the left work will be done by another scheduler.
+ *
+ * @param[in] sched  handle to the target scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -349,8 +358,13 @@ int ABT_sched_exit(ABT_sched sched)
  * @ingroup SCHED
  * @brief   Check if the scheduler needs to stop
  *
- * Check if there are an exit or a finish request and if the conditions are
- * respected (empty pool for a finish request).
+ * Check if there has been an exit or a finish request and if the conditions
+ * are respected (empty pool for a finish request).
+ * If we are on the primary ES, we will jump back to the main ULT,
+ * if the scheduler has nothing to do.
+ *
+ * It is the user's responsibility to take proper measures to stop the
+ * scheduling loop, depending on the value given by stop.
  *
  * @param[in]  sched handle to the target scheduler
  * @param[out] stop  indicate if the scheduler has to stop
@@ -470,12 +484,12 @@ int ABT_sched_get_data(ABT_sched sched, void **p_data)
 
 /**
  * @ingroup SCHED
- * @brief   Get the sum of the sizes of the pool of sched
+ * @brief   Get the sum of the sizes of the pool of \c sched.
  *
- * The size includes the blocked and migrating ULT
+ * The size includes the blocked and migrating ULT.
  *
  * @param[in]  sched handle to the scheduler
- * @param[out] size total number of work units
+ * @param[out] size  total number of work units
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -503,6 +517,17 @@ int ABT_sched_get_size(ABT_sched sched, size_t *p_size)
     goto fn_exit;
 }
 
+/**
+ * @ingroup SCHED
+ * @brief   Get the kind of the scheduler \c sched.
+ *
+ * \c kind permits to know what kind of scheduler \c sched is.
+ *
+ * @param[in]  sched handle to the scheduler
+ * @param[out] kind  kind of scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_sched_get_kind(ABT_sched sched, ABT_sched_kind *kind)
 {
     int abt_errno = ABT_SUCCESS;

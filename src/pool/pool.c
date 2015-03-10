@@ -12,9 +12,13 @@
 
 /**
  * @ingroup POOL
- * @brief   Create a new pool and return its handle through newpool.
+ * @brief   Create a new pool and return its handle through \c newpool.
  *
- * This function let the user create his own pool.
+ * This function creates a new pool, given by a definition (\c def) and a
+ * configuration (\c config). The configuration can be \c ABT_SCHED_CONFIG_NULL
+ * or obtained from a specific function of the pool defined by \c def. The
+ * configuration will be passed as the parameter of the initialization function
+ * of the pool.
  *
  * @param[in]  def     definition required for pool creation
  * @param[out] newpool handle to a new pool
@@ -75,9 +79,12 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
 /**
  * @ingroup POOL
  * @brief   Create a new pool from a predefined type and return its handle
- * through newpool.
+ *          through \c newpool.
+ *
+ * For more details see \c ABT_pool_create().
  *
  * @param[in]  kind    name of the predefined pool
+ * @param[in]  access  access type of the predefined pool
  * @param[out] newpool handle to a new pool
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -390,6 +397,12 @@ int ABT_pool_get_data(ABT_pool pool, void **p_data)
 /**
  * @ingroup POOL
  * @brief   Push a scheduler to a pool
+ *
+ * By pushing a scheduler, the user can change the running scheduler: when the
+ * top scheduler (the running scheduler) will pick it from the pool and run it,
+ * it will become the new scheduler. This new scheduler will be in charge until
+ * it explicitly yields, except if ABT_sched_finish() or ABT_sched_exit() are
+ * called.
  *
  * The scheduler should have been created by ABT_sched_create or
  * ABT_sched_create_basic.
