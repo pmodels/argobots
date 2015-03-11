@@ -41,7 +41,6 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
     ABT_thread h_newthread;
-    ABTI_thread_attr *p_attr;
     size_t stacksize;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -80,8 +79,7 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     p_newthread->state          = ABT_THREAD_STATE_CREATED;
 
     /* Set attributes */
-    p_attr = ABTI_thread_attr_get_ptr(attr);
-    ABTI_thread_set_attr(p_newthread, p_attr);
+    ABTI_thread_set_attr(p_newthread, attr);
 
     p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
     p_newthread->request        = 0;
@@ -1296,7 +1294,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Set attributes */
-    ABTI_thread_set_attr(p_newthread, NULL);
+    ABTI_thread_set_attr(p_newthread, ABT_THREAD_ATTR_NULL);
     p_newthread->attr.migratable = ABT_FALSE;
 
     /* Create a mutex */
@@ -1343,7 +1341,7 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     p_newthread->state          = ABT_THREAD_STATE_READY;
 
     /* Set attributes */
-    ABTI_thread_set_attr(p_newthread, NULL);
+    ABTI_thread_set_attr(p_newthread, ABT_THREAD_ATTR_NULL);
 
     p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
     p_newthread->request        = 0;
@@ -1512,10 +1510,11 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
     goto fn_exit;
 }
 
-int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr)
+void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
 {
     ABTI_thread_attr *my_attr = &p_thread->attr;
-    if (p_attr) {
+    if (attr != ABT_THREAD_ATTR_NULL) {
+        ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
         my_attr->stacksize  = p_attr->stacksize;
         my_attr->prio       = p_attr->prio;
         my_attr->migratable = p_attr->migratable;
@@ -1528,7 +1527,6 @@ int ABTI_thread_set_attr(ABTI_thread *p_thread, ABTI_thread_attr *p_attr)
         my_attr->f_cb       = NULL;
         my_attr->p_cb_arg   = NULL;
     }
-    return ABT_SUCCESS;
 }
 
 int ABTI_thread_print(ABTI_thread *p_thread)
