@@ -6,86 +6,142 @@
 #ifndef ABTI_ERROR_H_INCLUDED
 #define ABTI_ERROR_H_INCLUDED
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_INITIALIZED()                \
     if (gp_ABTI_global == NULL) {               \
         abt_errno = ABT_ERR_UNINITIALIZED;      \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_INITIALIZED()
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_ERROR(abt_errno)             \
     if (abt_errno != ABT_SUCCESS) goto fn_fail
+#else
+#define ABTI_CHECK_ERROR(abt_errno)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_XSTREAM_PTR(p)          \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_XSTREAM;        \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_XSTREAM_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_POOL_PTR(p)             \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_POOL;           \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_POOL_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_SCHED_PTR(p)            \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_SCHED;          \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_SCHED_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_THREAD_PTR(p)           \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_THREAD;         \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_THREAD_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_THREAD_ATTR_PTR(p)      \
     if (p == NULL) {                       \
         abt_errno = ABT_ERR_INV_THREAD_ATTR;    \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_THREAD_ATTR_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_TASK_PTR(p)             \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_TASK;           \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_TASK_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_MUTEX_PTR(p)            \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_MUTEX;          \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_MUTEX_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_COND_PTR(p)             \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_COND;           \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_COND_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_FUTURE_PTR(p)           \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_FUTURE;         \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_FUTURE_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_EVENTUAL_PTR(p)         \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_EVENTUAL;       \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_EVENTUAL_PTR(p)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_SCHED_PRIO(prio)             \
     if (prio > ABT_SCHED_PRIO_HIGH) {           \
         abt_errno = ABT_ERR_INV_SCHED_PRIO;     \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_SCHED_PRIO(prio)
+#endif
 
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_TIMER_PTR(p)            \
     if (p == NULL) {                            \
         abt_errno = ABT_ERR_INV_TIMER;          \
         goto fn_fail;                           \
     }
+#else
+#define ABTI_CHECK_NULL_TIMER_PTR(p)
+#endif
 
 #define HANDLE_ERROR(msg) \
     fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
