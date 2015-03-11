@@ -605,7 +605,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
  * See \c ABT_xstream_set_main_sched() for more details.
  *
  * @param[in] xstream     handle to the target ES
- * @param[in] kind        kind of scheduler among predefined schedulers
+ * @param[in] predef      predefined scheduler
  * @param[in] num_pools   number of pools associated with this scheduler
  * @param[in] pools       pools associated with this scheduler
  * @return Error code

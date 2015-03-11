@@ -21,6 +21,7 @@
  * of the pool.
  *
  * @param[in]  def     definition required for pool creation
+ * @param[in]  config  specific config used during the pool creation
  * @param[out] newpool handle to a new pool
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -367,10 +368,10 @@ fn_fail:
 
 /**
  * @ingroup POOL
- * @brief   Retrieve the specific data of the target user-defnied pool
+ * @brief   Retrieve the specific data of the target user-defined pool
  *
  * This function will be called by the user in a user-defined function of his
- * user-defnied pool.
+ * user-defined pool.
  *
  * @param[in] pool handle to the pool
  * @param[in] data specific data of the pool
