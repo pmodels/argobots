@@ -85,6 +85,13 @@ AS_IF([test "x$enable_valgrind" = "xyes"], [
        AC_DEFINE(HAVE_VALGRIND_SUPPORT, 1, [Define valgrind support])
        ])
 
+# Disable checks if requested
+AC_ARG_ENABLE([checks],
+    AS_HELP_STRING([--disable-checks], [disable checks (unsafe mode)]))
+AS_IF([test "x$enable_checks" = "xno"], [
+       AC_DEFINE(UNSAFE_MODE, 1, [Define unsafe mode])
+       ])
+
 # compute canonical system types
 AC_CANONICAL_HOST
 
