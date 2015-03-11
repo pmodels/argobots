@@ -152,10 +152,7 @@ int ABT_xstream_start(ABT_xstream xstream)
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTD_xstream_context_self");
-            goto fn_fail;
-        }
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
         /* Create the context of the main scheduler */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
         abt_errno = ABTI_thread_create_main_sched(p_sched, &p_sched->thread);
@@ -166,10 +163,7 @@ int ABT_xstream_start(ABT_xstream xstream)
         abt_errno = ABTD_xstream_context_create(
                 ABTI_xstream_launch_main_sched, (void *)p_xstream,
                 &p_xstream->ctx);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTD_xstream_context_create");
-            goto fn_fail;
-        }
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_create");
     }
 
     /* Move the xstream to the global active ES pool */
@@ -283,10 +277,7 @@ int ABT_xstream_join(ABT_xstream xstream)
         }
         abt_errno = ABTI_global_move_xstream(p_xstream);
         ABT_mutex_unlock(p_xstream->mutex);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTI_global_move_xstream");
-            goto fn_fail;
-        }
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_global_move_xstream");
         goto fn_exit;
     }
 
@@ -301,10 +292,7 @@ int ABT_xstream_join(ABT_xstream xstream)
 
     /* Normal join request */
     abt_errno = ABTD_xstream_context_join(p_xstream->ctx);
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTD_xstream_context_join");
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_join");
 
   fn_exit:
     return abt_errno;
@@ -600,10 +588,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         p_xstream->state = ABT_XSTREAM_STATE_CREATED;
         ABT_xstream_start(xstream);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABT_xstream_start");
-            goto fn_fail;
-        }
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
     }
 
   fn_exit:
@@ -1049,10 +1034,7 @@ int ABTI_xstream_start_any(void)
     if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
         ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
         abt_errno = ABT_xstream_start(xstream);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABT_xstream_start");
-            goto fn_fail;
-        }
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
     }
 
   fn_exit:
@@ -1132,10 +1114,7 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
     abt_errno = ABTD_thread_context_switch(p_ctx, &p_thread->ctx);
 
     /* The scheduler continues from here. */
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTD_thread_context_switch");
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_thread_context_switch");
 
     /* The previous ULT may not be the same as one to which the
      * context has been switched. */
@@ -1288,10 +1267,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
     if (newstream && newstream->state == ABT_XSTREAM_STATE_CREATED) {
         ABT_xstream h_newstream = ABTI_xstream_get_handle(newstream);
         abt_errno = ABT_xstream_start(h_newstream);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABT_xstream_start");
-            goto fn_fail;
-        }
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
     }
 
   fn_exit:
@@ -1558,10 +1534,8 @@ void ABTI_xstream_loop(void *p_arg)
     ABTI_local_set_thread(ABTI_thread_get_ptr(sched_thread));
 
     while (1) {
-        if (ABTI_xstream_schedule(p_xstream) != ABT_SUCCESS) {
-            HANDLE_ERROR("ABTI_xstream_schedule");
-            goto fn_fail;
-        }
+        int abt_errno = ABTI_xstream_schedule(p_xstream);
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_schedule");
 
         /* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */

@@ -52,10 +52,7 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     if (p_xstream && p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
         ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
         abt_errno = ABT_xstream_start(xstream);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABT_xstream_start");
-            goto fn_fail;
-        }
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
     }
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
@@ -1277,10 +1274,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 
     /* Create a mutex */
     abt_errno = ABT_mutex_create(&p_newthread->mutex);
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABT_mutex_create");
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_mutex_create");
 
     *p_thread = p_newthread;
 

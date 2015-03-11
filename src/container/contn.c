@@ -47,28 +47,19 @@ int ABTI_contn_free(ABTI_contn **pp_contn)
             case ABT_UNIT_TYPE_THREAD: {
                 ABTI_thread *p_thread = ABTI_elem_get_thread(p_elem);
                 abt_errno = ABTI_thread_free(p_thread);
-                if (abt_errno != ABT_SUCCESS) {
-                    HANDLE_ERROR("ABTI_thread_free");
-                    goto fn_fail;
-                }
+                ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_free");
                 break;
             }
             case ABT_UNIT_TYPE_TASK: {
                 ABTI_task *p_task = ABTI_elem_get_task(p_elem);
                 abt_errno = ABTI_task_free(p_task);
-                if (abt_errno != ABT_SUCCESS) {
-                    HANDLE_ERROR("ABTI_task_free");
-                    goto fn_fail;
-                }
+                ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_task_free");
                 break;
             }
             case ABT_UNIT_TYPE_XSTREAM: {
                 ABTI_xstream *p_xstream = ABTI_elem_get_xstream(p_elem);
                 abt_errno = ABTI_xstream_free(p_xstream);
-                if (abt_errno != ABT_SUCCESS) {
-                    HANDLE_ERROR("ABTI_xstream_free");
-                    goto fn_fail;
-                }
+                ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_free");
                 break;
             }
             default:

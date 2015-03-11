@@ -51,10 +51,7 @@ int ABT_task_create(ABT_pool pool,
     if (p_xstream && p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
         ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
         abt_errno = ABT_xstream_start(xstream);
-        if (abt_errno != ABT_SUCCESS) {
-            HANDLE_ERROR("ABT_xstream_start");
-            goto fn_fail;
-        }
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
     }
 
     p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
@@ -92,7 +89,7 @@ int ABT_task_create(ABT_pool pool,
         int ret = ABT_task_free(&h_newtask);
         if (ret != ABT_SUCCESS)
             abt_errno = ret;
-      goto fn_fail;
+        goto fn_fail;
     }
 
     p_newtask->state = ABT_TASK_STATE_READY;

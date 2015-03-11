@@ -26,6 +26,18 @@
 #endif
 
 #ifndef UNSAFE_MODE
+#define ABTI_CHECK_ERROR_MSG(abt_errno,msg)     \
+    do {                                        \
+        if (abt_errno != ABT_SUCCESS) {         \
+            HANDLE_ERROR(msg);                  \
+            goto fn_fail;                       \
+        }                                       \
+    } while(0)
+#else
+#define ABTI_CHECK_ERROR_MSG(abt_errno,msg)
+#endif
+
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_XSTREAM_PTR(p)          \
     do {                                        \
         if (p == NULL) {                        \

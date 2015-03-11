@@ -287,20 +287,14 @@ static int pool_free(ABT_pool *pool)
                 ABT_thread h_thread = p_unit->thread;
                 ABTI_thread *p_thread = ABTI_thread_get_ptr(h_thread);
                 abt_errno = ABTI_thread_free(p_thread);
-                if (abt_errno != ABT_SUCCESS) {
-                    HANDLE_ERROR("ABTI_thread_free");
-                    goto fn_fail;
-                }
+                ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_free");
                 break;
             }
             case ABT_UNIT_TYPE_TASK: {
                 ABT_task h_task = p_unit->task;
                 ABTI_task *p_task = ABTI_task_get_ptr(h_task);
                 abt_errno = ABTI_task_free(p_task);
-                if (abt_errno != ABT_SUCCESS) {
-                    HANDLE_ERROR("ABTI_task_free");
-                    goto fn_fail;
-                }
+                ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_task_free");
                 break;
             }
             default:

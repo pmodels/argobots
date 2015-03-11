@@ -61,26 +61,17 @@ int ABT_init(int argc, char **argv)
         goto fn_fail;
     }
     abt_errno = ABTI_xstream_contn_init(p_xstreams);
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_xstream_contn_init");
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_contn_init");
     gp_ABTI_global->p_xstreams = p_xstreams;
 
     /* Init the ES local data */
     abt_errno = ABTI_local_init();
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_local_init");
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_local_init");
 
     /* Create the primary ES */
     ABT_xstream newxstream;
     abt_errno = ABT_xstream_create(ABT_SCHED_NULL, &newxstream);
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_xstream_create");
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_create");
     ABTI_xstream *p_newxstream = ABTI_xstream_get_ptr(newxstream);
     p_newxstream->type = ABTI_XSTREAM_TYPE_PRIMARY;
     ABTI_local_set_xstream(p_newxstream);
@@ -88,19 +79,13 @@ int ABT_init(int argc, char **argv)
     /* Create the primary ULT, i.e., the main thread */
     ABTI_thread *p_main_thread;
     abt_errno = ABTI_thread_create_main(p_newxstream, &p_main_thread);
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_thread_create_main");
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
     ABTI_local_set_main(p_main_thread);
     ABTI_local_set_thread(p_main_thread);
 
     /* Start the primary ES */
     abt_errno = ABT_xstream_start(newxstream);
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABT_xstream_start");
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
 
   fn_exit:
     return abt_errno;
@@ -172,10 +157,7 @@ int ABT_finalize(void)
 
     /* Finalize the ES container */
     abt_errno = ABTI_xstream_contn_finalize(gp_ABTI_global->p_xstreams);
-    if (abt_errno != ABT_SUCCESS) {
-        HANDLE_ERROR("ABTI_xstream_finalize");
-        goto fn_fail;
-    }
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_finalize");
     ABTU_free(gp_ABTI_global->p_xstreams);
 
     /* Free the ABTI_global structure */
