@@ -156,18 +156,18 @@ int ABT_pool_free(ABT_pool *pool)
  * @ingroup POOL
  * @brief   Get the access type of target pool
  *
- * @param[in]  pool      handle to the pool
- * @param[out] p_access  access type
+ * @param[in]  pool    handle to the pool
+ * @param[out] access  access type
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *p_access)
+int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    *p_access = p_pool->access;
+    *access = p_pool->access;
 
   fn_exit:
     return abt_errno;
@@ -190,18 +190,18 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *p_access)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_pool_get_total_size(ABT_pool pool, size_t *p_size)
+int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
 {
     int abt_errno = ABT_SUCCESS;
-    size_t size;
+    size_t total_size;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    size = p_pool->p_get_size(pool);
-    size += p_pool->num_blocked;
-    size += p_pool->num_migrations;
-    *p_size = size;
+    total_size = p_pool->p_get_size(pool);
+    total_size += p_pool->num_blocked;
+    total_size += p_pool->num_migrations;
+    *size = total_size;
 
   fn_exit:
     return abt_errno;
@@ -224,14 +224,14 @@ int ABT_pool_get_total_size(ABT_pool pool, size_t *p_size)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_pool_get_size(ABT_pool pool, size_t *p_size)
+int ABT_pool_get_size(ABT_pool pool, size_t *size)
 {
     int abt_errno = ABT_SUCCESS;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    *p_size = p_pool->p_get_size(pool);
+    *size = p_pool->p_get_size(pool);
 
   fn_exit:
     return abt_errno;
@@ -377,14 +377,14 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_pool_get_data(ABT_pool pool, void **p_data)
+int ABT_pool_get_data(ABT_pool pool, void **data)
 {
     int abt_errno = ABT_SUCCESS;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    *p_data = p_pool->data;
+    *data = p_pool->data;
 
   fn_exit:
     return abt_errno;

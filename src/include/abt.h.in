@@ -278,7 +278,7 @@ int ABT_initialized(void);
 /* Execution Stream (ES) */
 int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream);
 int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
-                             ABT_pool *p_pools, ABT_xstream *newxstream);
+                             ABT_pool *pools, ABT_xstream *newxstream);
 int ABT_xstream_start(ABT_xstream xstream);
 int ABT_xstream_free(ABT_xstream *xstream);
 int ABT_xstream_join(ABT_xstream xstream);
@@ -291,7 +291,7 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank);
 int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched);
 int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
                                      ABT_sched_predef predef,
-                                     int num_pools, ABT_pool *p_pools);
+                                     int num_pools, ABT_pool *pools);
 int ABT_xstream_get_main_sched(ABT_xstream xstream, ABT_sched *sched);
 int ABT_xstream_get_main_pools(ABT_xstream xstream, int max_pools,
                                ABT_pool *pools);
@@ -309,10 +309,10 @@ int ABT_xstream_check_events(ABT_sched sched);
 int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
                      ABT_sched_config config, ABT_sched *newsched);
 int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
-                           ABT_pool *p_pools,  int autom, ABT_sched *newsched);
+                           ABT_pool *pools,  int autom, ABT_sched *newsched);
 int ABT_sched_free(ABT_sched *sched);
 int ABT_sched_set_data(ABT_sched sched, void *data);
-int ABT_sched_get_data(ABT_sched sched, void **p_data);
+int ABT_sched_get_data(ABT_sched sched, void **data);
 int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
                         ABT_pool *pools);
 int ABT_sched_get_size(ABT_sched sched, size_t *size);
@@ -326,9 +326,9 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
 int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                           ABT_pool *newpool);
 int ABT_pool_free(ABT_pool *pool);
-int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *p_access);
+int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access);
 int ABT_pool_get_size(ABT_pool pool, size_t *size);
-int ABT_pool_get_total_size(ABT_pool pool, size_t *p_size);
+int ABT_pool_get_total_size(ABT_pool pool, size_t *size);
 int ABT_pool_pop(ABT_pool pool, ABT_unit *unit);
 int ABT_pool_remove(ABT_pool pool, ABT_unit unit);
 int ABT_pool_push(ABT_pool pool, ABT_unit unit);

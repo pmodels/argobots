@@ -111,20 +111,20 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
  * @retval ABT_SUCCESS on success
  */
 int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
-                           ABT_pool *p_pools, int automatic,
+                           ABT_pool *pools, int automatic,
                            ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
     int free_pools = ABT_FALSE;
 
     // A pool array is provided, predef has to be compatible
-    if (p_pools != NULL) {
+    if (pools != NULL) {
         /* Creation of the scheduler */
         switch (predef) {
             case ABT_SCHED_DEFAULT_NO_POOL:
             case ABT_SCHED_BASIC_NO_POOL:
                 abt_errno = ABT_sched_create(&ABTI_sched_basic,
-                                             num_pools, p_pools,
+                                             num_pools, pools,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
                 break;
@@ -173,12 +173,12 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         }
 
         /* Creation of the pools */
-        p_pools = (ABT_pool *)malloc(num_pools*sizeof(ABT_pool));
+        pools = (ABT_pool *)malloc(num_pools*sizeof(ABT_pool));
         int p;
         for (p = 0; p < num_pools; p++) {
             abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO,
                                               access,
-                                              p_pools+p);
+                                              pools+p);
             ABTI_CHECK_ERROR(abt_errno);
         }
 
@@ -195,7 +195,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
             case ABT_SCHED_BASIC_POOL_FIFO_SR_PW:
             case ABT_SCHED_BASIC_POOL_FIFO_SR_SW:
                 abt_errno = ABT_sched_create(&ABTI_sched_basic,
-                                             num_pools, p_pools,
+                                             num_pools, pools,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
                 break;
@@ -480,18 +480,18 @@ int ABT_sched_set_data(ABT_sched sched, void *data)
  * user-defnied scheduler.
  *
  * @param[in]  sched  handle to the scheduler
- * @param[out] p_data pointer to the specific data of the scheduler
+ * @param[out] data   specific data of the scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_sched_get_data(ABT_sched sched, void **p_data)
+int ABT_sched_get_data(ABT_sched sched, void **data)
 {
     int abt_errno = ABT_SUCCESS;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    *p_data = p_sched->data;
+    *data = p_sched->data;
 
   fn_exit:
     return abt_errno;
@@ -512,10 +512,10 @@ int ABT_sched_get_data(ABT_sched sched, void **p_data)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_sched_get_size(ABT_sched sched, size_t *p_size)
+int ABT_sched_get_size(ABT_sched sched, size_t *size)
 {
     int abt_errno = ABT_SUCCESS;
-    size_t size = 0;
+    size_t pool_size = 0;
     int p;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
@@ -524,11 +524,11 @@ int ABT_sched_get_size(ABT_sched sched, size_t *p_size)
         size_t s;
         ABT_pool pool = p_sched->pools[p];
         ABT_pool_get_total_size(pool, &s);
-        size += s;
+        pool_size += s;
     }
 
   fn_exit:
-    *p_size = size;
+    *size = pool_size;
     return abt_errno;
 
   fn_fail:

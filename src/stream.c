@@ -103,12 +103,12 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
  * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
-        ABT_pool *p_pools, ABT_xstream *newxstream)
+        ABT_pool *pools, ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
 
     ABT_sched sched;
-    abt_errno = ABT_sched_create_basic(predef, num_pools, p_pools, 1, &sched);
+    abt_errno = ABT_sched_create_basic(predef, num_pools, pools, 1, &sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno = ABT_xstream_create(sched, newxstream);
@@ -612,12 +612,12 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
  * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
-        ABT_sched_predef predef, int num_pools, ABT_pool *p_pools)
+        ABT_sched_predef predef, int num_pools, ABT_pool *pools)
 {
     int abt_errno = ABT_SUCCESS;
 
     ABT_sched sched;
-    abt_errno = ABT_sched_create_basic(predef, num_pools, p_pools, 1, &sched);
+    abt_errno = ABT_sched_create_basic(predef, num_pools, pools, 1, &sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno = ABT_xstream_set_main_sched(xstream, sched);
