@@ -23,19 +23,7 @@ struct sched_config {
 } ;
 typedef struct sched_config sched_config;
 static sched_config *sched_config_get_ptr(ABT_sched_config config);
-static ABT_sched_config sched_config_get_handle(sched_config *config);
 
-
-int ABT_sched_basic_create_config(int freq, ABT_sched_config *newconf)
-{
-    int abt_errno = ABT_SUCCESS;
-    sched_config *p_newconf = (sched_config *)malloc(sizeof(sched_config));
-    p_newconf->event_freq = freq;
-
-    *newconf = sched_config_get_handle(p_newconf);
-
-    return abt_errno;
-}
 
 static int sched_init(ABT_sched sched, ABT_sched_config config)
 {
@@ -113,7 +101,3 @@ static sched_config *sched_config_get_ptr(ABT_sched_config config)
     return (sched_config *)config;
 }
 
-static ABT_sched_config sched_config_get_handle(sched_config *config)
-{
-    return (ABT_sched_config)config;
-}

@@ -320,9 +320,6 @@ int ABT_sched_finish(ABT_sched sched);
 int ABT_sched_exit(ABT_sched sched);
 int ABT_sched_has_to_stop(ABT_sched sched, int *stop);
 
-/* Predefined schedulers */
-int ABT_sched_basic_create_config(int freq, ABT_sched_config *newconf);
-
 /* Pool */
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
                     ABT_pool *newpool);
