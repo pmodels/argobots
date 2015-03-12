@@ -7,12 +7,22 @@
 
 
 /** @defgroup MUTEX Mutex
- * This group is for Mutex.
+ * Mutex is a synchronization method to support mutual exclusion between ULTs.
+ * When more than one ULT competes for locking the same mutex, only one ULT is
+ * guaranteed to lock the mutex. Other ULTs are blocked and wait until the ULT
+ * which locked the mutex unlocks it. When the mutex is unlocked, another ULT
+ * is able to lock the mutex again.
  */
 
 /**
  * @ingroup MUTEX
  * @brief   Create a new mutex.
+ *
+ * \c ABT_mutex_create creates a new mutex object and returns its handle
+ * through \c newmutex. If an error occurs in this routine, a non-zero error
+ * code will be returned and \c newmutex will be set to \c ABT_MUTEX_NULL.
+ *
+ * Only ULTs can use the mutex, and tasklets must not use it.
  *
  * @param[out] newmutex  handle to a new mutex
  * @return Error code
@@ -46,9 +56,14 @@ int ABT_mutex_create(ABT_mutex *newmutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Release the mutex object associated with mutex handle.
+ * @brief   Free the mutex object.
  *
- * If this routine successfully returns, mutex is set as ABT_MUTEX_NULL.
+ * \c ABT_mutex_free deallocates the memory used for the mutex object
+ * associated with the handle \c mutex. If it is successfully processed,
+ * \c mutex is set to \c ABT_MUTEX_NULL.
+ *
+ * Using the mutex handle after calling \c ABT_mutex_free may cause
+ * undefined behavior.
  *
  * @param[in,out] mutex  handle to the mutex
  * @return Error code
@@ -78,8 +93,14 @@ int ABT_mutex_free(ABT_mutex *mutex)
  * @ingroup MUTEX
  * @brief   Lock the mutex.
  *
- * If the mutex is already locked, the calling thread will block until it
- * becomes available.
+ * \c ABT_mutex_lock locks the mutex \c mutex. If this routine successfully
+ * returns, the caller ULT acquires the mutex. If the mutex has already been
+ * locked, the caller ULT will be blocked until the mutex becomes available.
+ * When the caller ULT is blocked, the context is switched to the scheduler
+ * of the associated ES to make progress of other work units.
+ *
+ * The mutex can be used only by ULTs. Tasklets must not call any blocking
+ * routines like \c ABT_mutex_lock.
  *
  * @param[in] mutex  handle to the mutex
  * @return Error code
@@ -105,30 +126,18 @@ int ABT_mutex_lock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Lock the mutex.
- *
- * If the mutex is already locked, the calling thread will block until it
- * becomes available.
- *
- * @param[in] mutex  handle pointer to the mutex
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_mutex_lock_ptr(ABT_mutex *mutex)
-{
-    return ABT_mutex_lock(*mutex);
-}
-
-/**
- * @ingroup MUTEX
  * @brief   Attempt to lock a mutex without blocking.
  *
- * If the mutex is already locked, ABT_ERR_MUTEX_LOCKED will be returned
- * immediately without blocking the calling thread.
+ * \c ABT_mutex_trylock attempts to lock the mutex \c mutex without blocking
+ * the caller ULT. If this routine successfully returns, the caller ULT
+ * acquires the mutex.
+ * If the mutex has already been locked and there happens no error,
+ * \c ABT_ERR_MUTEX_LOCKED will be returned immediately without blocking
+ * the caller ULT.
  *
  * @param[in] mutex  handle to the mutex
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS          on success
  * @retval ABT_ERR_MUTEX_LOCKED when mutex has already been locked
  */
 int ABT_mutex_trylock(ABT_mutex mutex)
@@ -151,13 +160,13 @@ int ABT_mutex_trylock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Lock the mutex without context-switching.
+ * @brief   Lock the mutex without context switch.
  *
- * \c ABT_mutex_spinlock locks the mutex without context-switching. If this
- * routine successfully returns, the calling ULT acquires the mutex.
- * If the mutex has already been locked, the calling ULT will be blocked until
+ * \c ABT_mutex_spinlock locks the mutex without context switch. If this
+ * routine successfully returns, the caller ULT acquires the mutex.
+ * If the mutex has already been locked, the caller ULT will be blocked until
  * the mutex becomes available. Unlike \c ABT_mutex_lock(), the ULT calling
- * this routine continuously tries to lock the mutex without context-switching.
+ * this routine continuously tries to lock the mutex without context switch.
  *
  * @param[in] mutex  handle to the mutex
  * @return Error code
@@ -176,9 +185,10 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
  * @ingroup MUTEX
  * @brief   Unlock the mutex.
  *
- * If the calling thread locked the mutex, this function unlocks the mutex.
- * However, if the calling thread did not lock the mutex, this function may
- * result in undefined behavior.
+ * \c ABT_mutex_unlock unlocks the mutex \c mutex.
+ * If the caller ULT locked the mutex, this routine unlocks the mutex. However,
+ * if the caller ULT did not lock the mutex, this routine may result in
+ * undefined behavior.
  *
  * @param[in] mutex  handle to the mutex
  * @return Error code
@@ -202,13 +212,29 @@ int ABT_mutex_unlock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Unlock the mutex.
+ * @brief   Lock the mutex with a mutex handle pointer.
  *
- * If the calling thread locked the mutex, this function unlocks the mutex.
- * However, if the calling thread did not lock the mutex, this function may
- * result in undefined behavior.
+ * \c ABT_mutex_lock_ptr locks the mutex with a mutex handle pointer \c mutex.
+ * The sematic of this routine is the same as that of \c ABT_mutex_lock().
  *
- * @param[in] mutex  handle pointer to the mutex
+ * @param[in] mutex  pointer to the mutex handle
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_mutex_lock_ptr(ABT_mutex *mutex)
+{
+    return ABT_mutex_lock(*mutex);
+}
+
+/**
+ * @ingroup MUTEX
+ * @brief   Unlock the mutex with a mutex handle pointer.
+ *
+ * \c ABT_mutex_unlock_ptr unlocks the mutex with a mutex handle pointer
+ * \c mutex.
+ * The sematic of this routine is the same as that of \c ABT_mutex_unlock().
+ *
+ * @param[in] mutex  pointer to the mutex handle
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
@@ -221,7 +247,7 @@ int ABT_mutex_unlock_ptr(ABT_mutex *mutex)
  * @ingroup MUTEX
  * @brief   Compare two mutex handles for equality.
  *
- * \c ABT_mutex_equal() compares two mutex handles for equality. If two handles
+ * \c ABT_mutex_equal compares two mutex handles for equality. If two handles
  * are associated with the same mutex object, \c result will be set to
  * \c ABT_TRUE. Otherwise, \c result will be set to \c ABT_FALSE.
  *
