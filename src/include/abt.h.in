@@ -177,7 +177,6 @@ typedef void *                 ABT_xstream;       /* Execution Stream */
 typedef enum ABT_xstream_state ABT_xstream_state; /* ES state */
 typedef void *                 ABT_sched;         /* Scheduler */
 typedef void *                 ABT_sched_config;  /* Sched-specific config */
-typedef uint64_t               ABT_sched_kind;    /* Scheduler kind */
 typedef enum ABT_sched_predef  ABT_sched_predef;  /* Predefined scheduler */
 typedef enum ABT_sched_state   ABT_sched_state;   /* Scheduler state */
 typedef enum ABT_sched_type    ABT_sched_type;    /* Scheduler type */

@@ -73,6 +73,7 @@ typedef struct ABTI_xstream_contn   ABTI_xstream_contn;
 typedef struct ABTI_sched           ABTI_sched;
 typedef enum ABTI_sched_used        ABTI_sched_used;
 typedef void *                      ABTI_sched_id;      /* Scheduler id */
+typedef uint64_t                    ABTI_sched_kind;    /* Scheduler kind */
 typedef struct ABTI_pool            ABTI_pool;
 typedef struct ABTI_thread_attr     ABTI_thread_attr;
 typedef struct ABTI_thread          ABTI_thread;
@@ -152,7 +153,7 @@ struct ABTI_sched {
     ABT_mutex mutex;            /* Mutex */
     ABTI_sched_used used;       /* To know if it is used and how */
     int automatic;              /* To know if automatic data free */
-    ABT_sched_kind kind;        /* Kind of the scheduler  */
+    ABTI_sched_kind kind;       /* Kind of the scheduler  */
     ABT_sched_type type;        /* Can yield or not (ULT or task) */
     ABT_sched_state state;      /* State */
     uint32_t request;           /* Request */
@@ -394,7 +395,7 @@ int  ABTI_sched_free_prio(ABTI_sched *p_sched);
 void ABTI_sched_remove(ABTI_sched *p_sched, ABT_unit unit);
 int  ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use);
 int  ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
-uint64_t ABTI_sched_get_kind(ABT_sched_def *def);
+ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
 int  ABTI_sched_print(ABTI_sched *p_sched);
 
 /* Pool */

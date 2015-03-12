@@ -601,9 +601,9 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
     goto fn_exit;
 }
 
-uint64_t ABTI_sched_get_kind(ABT_sched_def *def)
+ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
 {
-  return (uint64_t)def;
+  return (ABTI_sched_kind)def;
 }
 
 int ABTI_sched_print(ABTI_sched *p_sched)
