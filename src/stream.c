@@ -265,7 +265,7 @@ int ABT_xstream_join(ABT_xstream xstream)
     }
 
     if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
-        ABT_mutex_waitlock(p_xstream->mutex);
+        ABT_mutex_spinlock(p_xstream->mutex);
         /* If xstream's state was changed, we cannot terminate it here */
         if (ABTD_atomic_cas_int32((int32_t *)&p_xstream->state,
                                   ABT_XSTREAM_STATE_CREATED,
@@ -761,7 +761,7 @@ int ABT_xstream_set_name(ABT_xstream xstream, const char *name)
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     size_t len = strlen(name);
-    ABT_mutex_waitlock(p_xstream->mutex);
+    ABT_mutex_spinlock(p_xstream->mutex);
     if (p_xstream->p_name) ABTU_free(p_xstream->p_name);
     p_xstream->p_name = (char *)ABTU_malloc(len + 1);
     if (!p_xstream->p_name) {
@@ -988,7 +988,7 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     }
 
     /* Clean up the deads pool */
-    ABT_mutex_waitlock(p_xstream->mutex);
+    ABT_mutex_spinlock(p_xstream->mutex);
     ABTI_contn_free(&p_xstream->deads);
     ABT_mutex_unlock(p_xstream->mutex);
 
@@ -1234,7 +1234,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
     }
 
-    ABT_mutex_waitlock(p_thread->mutex); // TODO: mutex useful?
+    ABT_mutex_spinlock(p_thread->mutex); // TODO: mutex useful?
     {
         /* extracting argument in migration request */
         p_pool = (ABTI_pool *)ABTI_thread_extract_req_arg(p_thread,
@@ -1305,7 +1305,7 @@ int ABTI_xstream_add_thread(ABTI_thread *p_thread)
     int abt_errno;
     /* The thread's ES must not be changed during this function.
      * So, its mutex is used to guarantee it. */
-    ABT_mutex_waitlock(p_thread->mutex);
+    ABT_mutex_spinlock(p_thread->mutex);
 
     ABT_pool pool = ABTI_pool_get_handle(p_thread->p_pool);
 
@@ -1331,7 +1331,7 @@ int ABTI_xstream_keep_thread(ABTI_thread *p_thread)
 {
     /* The thread's ES must not be changed during this function.
      * So, its mutex is used to guarantee it. */
-    ABT_mutex_waitlock(p_thread->mutex);
+    ABT_mutex_spinlock(p_thread->mutex);
 
     ABTI_xstream *p_xstream = p_thread->p_last_xstream;
 
@@ -1341,7 +1341,7 @@ int ABTI_xstream_keep_thread(ABTI_thread *p_thread)
     p_thread->unit = (ABT_unit)ABTI_elem_create_from_thread(p_thread);
 
     /* Add the unit to the deads pool */
-    ABT_mutex_waitlock(p_xstream->mutex);
+    ABT_mutex_spinlock(p_xstream->mutex);
     ABTI_contn_push(p_xstream->deads, p_thread->unit);
     ABT_mutex_unlock(p_xstream->mutex);
 
@@ -1364,7 +1364,7 @@ int ABTI_xstream_keep_task(ABTI_task *p_task)
     p_task->unit = (ABT_unit)ABTI_elem_create_from_task(p_task);
 
     /* Add the unit to the deads pool */
-    ABT_mutex_waitlock(p_xstream->mutex);
+    ABT_mutex_spinlock(p_xstream->mutex);
     ABTI_contn_push(p_xstream->deads, p_task->unit);
     ABT_mutex_unlock(p_xstream->mutex);
 

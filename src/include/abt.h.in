@@ -410,7 +410,7 @@ int ABT_mutex_create(ABT_mutex *newmutex);
 int ABT_mutex_free(ABT_mutex *mutex);
 int ABT_mutex_lock(ABT_mutex mutex);
 int ABT_mutex_trylock(ABT_mutex mutex);
-int ABT_mutex_waitlock(ABT_mutex mutex);
+int ABT_mutex_spinlock(ABT_mutex mutex);
 int ABT_mutex_unlock(ABT_mutex mutex);
 int ABT_mutex_lock_ptr(ABT_mutex *mutex);
 int ABT_mutex_unlock_ptr(ABT_mutex *mutex);

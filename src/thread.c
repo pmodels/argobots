@@ -232,7 +232,7 @@ int ABT_thread_free(ABT_thread *thread)
         /* The thread has finished but it is still referenced.
          * Thus it exists in the xstream's deads pool. */
         ABTI_xstream *p_xstream = p_thread->p_last_xstream;
-        ABT_mutex_waitlock(p_xstream->mutex);
+        ABT_mutex_spinlock(p_xstream->mutex);
         ABTI_contn_remove(p_xstream->deads, p_thread->unit);
         ABT_mutex_unlock(p_xstream->mutex);
     }
@@ -686,7 +686,7 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
     ABTI_pool *p_pool = NULL;
     ABTI_sched *p_sched = NULL;
     do {
-        ABT_mutex_waitlock(p_xstream->top_sched_mutex);
+        ABT_mutex_spinlock(p_xstream->top_sched_mutex);
 
         /* We check the state of the ES */
         if (p_xstream->state == ABT_XSTREAM_STATE_TERMINATED) {
@@ -1153,7 +1153,7 @@ int ABT_thread_set_name(ABT_thread thread, const char *name)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     size_t len = strlen(name);
-    ABT_mutex_waitlock(p_thread->mutex);
+    ABT_mutex_spinlock(p_thread->mutex);
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
     p_thread->p_name = (char *)ABTU_malloc(len + 1);
     if (!p_thread->p_name) {
@@ -1267,7 +1267,7 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
     }
 
     /* adding request to the thread */
-    ABT_mutex_waitlock(p_thread->mutex);
+    ABT_mutex_spinlock(p_thread->mutex);
     ABTI_thread_add_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE, p_pool);
     ABT_mutex_unlock(p_thread->mutex);
     ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_MIGRATE);
@@ -1431,7 +1431,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     /* Mutex of p_thread may have been locked somewhere. We free p_thread when
        mutex can be locked here. Since p_thread and its mutex will be freed,
        we don't need to unlock the mutex. */
-    ABT_mutex_waitlock(p_thread->mutex);
+    ABT_mutex_spinlock(p_thread->mutex);
 
     /* Free the unit */
     if (p_thread->refcount > 0) {

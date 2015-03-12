@@ -195,7 +195,7 @@ static void pool_push_shared(ABT_pool pool, ABT_unit unit)
 
     p_unit->pool = pool;
 
-    ABT_mutex_waitlock(p_data->mutex);
+    ABT_mutex_spinlock(p_data->mutex);
     if (p_data->num_units == 0) {
         p_unit->p_prev = p_unit;
         p_unit->p_next = p_unit;
@@ -248,7 +248,7 @@ static ABT_unit pool_pop_shared(ABT_pool pool)
     unit_t *p_unit = NULL;
     ABT_unit h_unit = ABT_UNIT_NULL;
 
-    ABT_mutex_waitlock(p_data->mutex);
+    ABT_mutex_spinlock(p_data->mutex);
     if (p_data->num_units > 0) {
         p_unit = p_data->p_head;
         if (p_data->num_units == 1) {
@@ -314,7 +314,7 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
         HANDLE_ERROR("Not my pool");
     }
 
-    ABT_mutex_waitlock(p_data->mutex);
+    ABT_mutex_spinlock(p_data->mutex);
     if (p_data->num_units == 1) {
         p_data->p_head = NULL;
         p_data->p_tail = NULL;

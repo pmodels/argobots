@@ -151,6 +151,29 @@ int ABT_mutex_trylock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
+ * @brief   Lock the mutex without context-switching.
+ *
+ * \c ABT_mutex_spinlock locks the mutex without context-switching. If this
+ * routine successfully returns, the calling ULT acquires the mutex.
+ * If the mutex has already been locked, the calling ULT will be blocked until
+ * the mutex becomes available. Unlike \c ABT_mutex_lock(), the ULT calling
+ * this routine continuously tries to lock the mutex without context-switching.
+ *
+ * @param[in] mutex  handle to the mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_mutex_spinlock(ABT_mutex mutex)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+    }
+    return abt_errno;
+}
+
+/**
+ * @ingroup MUTEX
  * @brief   Unlock the mutex.
  *
  * If the calling thread locked the mutex, this function unlocks the mutex.
@@ -215,14 +238,5 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
     ABTI_mutex *p_mutex2 = ABTI_mutex_get_ptr(mutex2);
     *result = (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
-}
-
-int ABT_mutex_waitlock(ABT_mutex mutex)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
-    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
-    }
-    return abt_errno;
 }
 

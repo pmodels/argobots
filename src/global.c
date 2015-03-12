@@ -235,7 +235,7 @@ int ABTI_xstream_contn_finalize(ABTI_xstream_contn *p_xstreams)
     }
 
     /* Free all containers */
-    ABT_mutex_waitlock(p_xstreams->mutex);
+    ABT_mutex_spinlock(p_xstreams->mutex);
     ABTI_contn_free(&p_xstreams->created);
     ABTI_contn_free(&p_xstreams->active);
     ABTI_contn_free(&p_xstreams->deads);
@@ -258,7 +258,7 @@ int ABTI_global_add_xstream(ABTI_xstream *p_xstream)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
 
-    ABT_mutex_waitlock(p_gxstreams->mutex);
+    ABT_mutex_spinlock(p_gxstreams->mutex);
     switch (p_xstream->state) {
         case ABT_XSTREAM_STATE_CREATED:
             ABTI_contn_push(p_gxstreams->created, p_xstream->elem);
@@ -289,7 +289,7 @@ int ABTI_global_move_xstream(ABTI_xstream *p_xstream)
     ABTI_contn *prev_contn = p_elem->p_contn;
 
     /* Remove from the previous container and add to the new container */
-    ABT_mutex_waitlock(p_gxstreams->mutex);
+    ABT_mutex_spinlock(p_gxstreams->mutex);
     ABTI_contn_remove(prev_contn, p_xstream->elem);
     switch (p_xstream->state) {
         case ABT_XSTREAM_STATE_CREATED:
@@ -321,7 +321,7 @@ int ABTI_global_del_xstream(ABTI_xstream *p_xstream)
     ABTI_elem *p_elem = p_xstream->elem;
     ABTI_contn *prev_contn = p_elem->p_contn;
 
-    ABT_mutex_waitlock(p_gxstreams->mutex);
+    ABT_mutex_spinlock(p_gxstreams->mutex);
     ABTI_contn_remove(prev_contn, p_xstream->elem);
     ABT_mutex_unlock(p_gxstreams->mutex);
 
@@ -334,7 +334,7 @@ int ABTI_global_get_created_xstream(ABTI_xstream **p_xstream)
     ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
 
     /* Pop one ES */
-    ABT_mutex_waitlock(p_gxstreams->mutex);
+    ABT_mutex_spinlock(p_gxstreams->mutex);
     ABTI_elem *elem = ABTI_contn_pop(p_gxstreams->created);
     ABT_mutex_unlock(p_gxstreams->mutex);
 

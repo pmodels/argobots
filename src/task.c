@@ -196,7 +196,7 @@ int ABT_task_free(ABT_task *task)
         /* The task has finished but it is still referenced.
          * Thus it exists in the deads pool of ES. */
         ABTI_xstream *p_xstream = p_task->p_xstream;
-        ABT_mutex_waitlock(p_xstream->mutex);
+        ABT_mutex_spinlock(p_xstream->mutex);
         ABTI_contn_remove(p_xstream->deads, p_task->unit);
         ABT_mutex_unlock(p_xstream->mutex);
     }
@@ -536,7 +536,7 @@ int ABT_task_set_name(ABT_task task, const char *name)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     size_t len = strlen(name);
-    ABT_mutex_waitlock(p_task->mutex);
+    ABT_mutex_spinlock(p_task->mutex);
     if (p_task->p_name) ABTU_free(p_task->p_name);
     p_task->p_name = (char *)ABTU_malloc(len + 1);
     if (!p_task->p_name) {
