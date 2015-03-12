@@ -141,12 +141,6 @@ enum ABT_sched_type {
     ABT_SCHED_TYPE_TASK  /* cannot yield */
 };
 
-enum ABT_sched_prio {
-    ABT_SCHED_PRIO_LOW    = 0,
-    ABT_SCHED_PRIO_NORMAL = 1,
-    ABT_SCHED_PRIO_HIGH   = 2
-};
-
 enum ABT_pool_kind {
     ABT_POOL_FIFO
 };
@@ -180,7 +174,6 @@ typedef void *                 ABT_sched_config;  /* Sched-specific config */
 typedef enum ABT_sched_predef  ABT_sched_predef;  /* Predefined scheduler */
 typedef enum ABT_sched_state   ABT_sched_state;   /* Scheduler state */
 typedef enum ABT_sched_type    ABT_sched_type;    /* Scheduler type */
-typedef enum ABT_sched_prio    ABT_sched_prio;    /* Scheduling priority */
 typedef void *                 ABT_pool;          /* Pool */
 typedef void *                 ABT_pool_config;   /* Specific pool config */
 typedef enum ABT_pool_kind     ABT_pool_kind;     /* Pool kind */
@@ -364,8 +357,6 @@ int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result);
 int ABT_thread_retain(ABT_thread thread);
 int ABT_thread_release(ABT_thread thread);
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize);
-int ABT_thread_set_prio(ABT_thread thread, ABT_sched_prio prio);
-int ABT_thread_get_prio(ABT_thread thread, ABT_sched_prio *prio);
 int ABT_thread_set_name(ABT_thread thread, const char *name);
 int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len);
 int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id);
@@ -375,8 +366,6 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr);
 int ABT_thread_attr_free(ABT_thread_attr *attr);
 int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize);
 int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize);
-int ABT_thread_attr_set_prio(ABT_thread_attr attr, ABT_sched_prio prio);
-int ABT_thread_attr_get_prio(ABT_thread_attr attr, ABT_sched_prio *prio);
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,
         void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg);
 int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag);

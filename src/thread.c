@@ -1535,13 +1535,11 @@ void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
     if (attr != ABT_THREAD_ATTR_NULL) {
         ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
         my_attr->stacksize  = p_attr->stacksize;
-        my_attr->prio       = p_attr->prio;
         my_attr->migratable = p_attr->migratable;
         my_attr->f_cb       = p_attr->f_cb;
         my_attr->p_cb_arg   = p_attr->p_cb_arg;
     } else {
         my_attr->stacksize  = gp_ABTI_global->default_stacksize;
-        my_attr->prio       = ABT_SCHED_PRIO_NORMAL;
         my_attr->migratable = ABT_TRUE;
         my_attr->f_cb       = NULL;
         my_attr->p_cb_arg   = NULL;

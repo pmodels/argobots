@@ -39,7 +39,6 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
 
     /* Default values */
     p_newattr->stacksize  = gp_ABTI_global->default_stacksize;
-    p_newattr->prio       = ABT_SCHED_PRIO_NORMAL;
     p_newattr->migratable = ABT_TRUE;
     p_newattr->f_cb       = NULL;
     p_newattr->p_cb_arg   = NULL;
@@ -147,66 +146,6 @@ int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Set the scheduling priority in the attribute object.
- *
- * \c ABT_thread_attr_set_prio() sets the scheduling priority with one value of
- * \c ABT_sched_prio in the target attribute object.
- *
- * @param[in] attr  handle to the target attribute object
- * @param[in] prio  scheduling priority
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_attr_set_prio(ABT_thread_attr attr, ABT_sched_prio prio)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-
-    /* Sanity check */
-    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
-    ABTI_CHECK_SCHED_PRIO(prio);
-
-    /* Set the value */
-    p_attr->prio = prio;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_set_prio", abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ULT_ATTR
- * @brief   Get the scheduling priority from the attribute object.
- *
- * \c ABT_thread_attr_get_prio() returns the scheduling priority through
- * \c prio from the target attribute object.
- *
- * @param[in]  attr  handle to the target attribute object
- * @param[out] prio  scheduling priority
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_attr_get_prio(ABT_thread_attr attr, ABT_sched_prio *prio)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
-
-    *prio = p_attr->prio;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_get_prio", abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ULT_ATTR
  * @brief   Set callback function and its argument in the attribute object.
  *
  * \c ABT_thread_attr_set_callback() sets the callback function and its
@@ -300,13 +239,6 @@ int ABTI_thread_attr_print(ABTI_thread_attr *p_attr)
 
     printf("[");
     printf("stacksize:%zu ", p_attr->stacksize);
-    printf("prio:");
-    switch (p_attr->prio) {
-        case ABT_SCHED_PRIO_LOW:    printf("LOW ");    break;
-        case ABT_SCHED_PRIO_NORMAL: printf("NORMAL "); break;
-        case ABT_SCHED_PRIO_HIGH:   printf("HIGH ");   break;
-        default: printf("UNKNOWN "); break;
-    }
     printf("cb_func:%p ", p_attr->f_cb);
     printf("cb_arg:%p", p_attr->p_cb_arg);
     printf("]");
