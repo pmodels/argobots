@@ -38,7 +38,7 @@ static void unit_free(ABT_unit *unit);
 
 
 /* FIXME: do we need this? */
-ABT_pool_def ABT_pool_fifo = {
+ABT_pool_def ABTI_pool_fifo = {
     .access               = ABT_POOL_ACCESS_PR_SW,
     .p_init               = pool_init,
     .p_free               = pool_free,

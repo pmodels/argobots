@@ -269,8 +269,6 @@ typedef struct {
     ABT_pool_remove_fn   p_remove;
     ABT_pool_free_fn     p_free;
 } ABT_pool_def;
-/* Predefined pools */
-extern ABT_pool_def ABT_pool_fifo;
 
 
 /* Init & Finalize */
