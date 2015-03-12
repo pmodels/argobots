@@ -10,6 +10,9 @@
  * This group is for Scheduler.
  */
 
+/* Predefined schedulers */
+extern ABT_sched_def ABTI_sched_basic;
+
 /**
  * @ingroup SCHED
  * @brief   Create a new user-defined scheduler and return its handle through
@@ -120,8 +123,10 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         switch (predef) {
             case ABT_SCHED_DEFAULT_NO_POOL:
             case ABT_SCHED_BASIC_NO_POOL:
-                abt_errno = ABT_sched_create(&ABT_sched_basic, num_pools, p_pools,
-                        ABT_SCHED_CONFIG_NULL, newsched);
+                abt_errno = ABT_sched_create(&ABTI_sched_basic,
+                                             num_pools, p_pools,
+                                             ABT_SCHED_CONFIG_NULL,
+                                             newsched);
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
@@ -189,8 +194,10 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
             case ABT_SCHED_BASIC_POOL_FIFO_PR_SW:
             case ABT_SCHED_BASIC_POOL_FIFO_SR_PW:
             case ABT_SCHED_BASIC_POOL_FIFO_SR_SW:
-                abt_errno = ABT_sched_create(&ABT_sched_basic, num_pools, p_pools,
-                        ABT_SCHED_CONFIG_NULL, newsched);
+                abt_errno = ABT_sched_create(&ABTI_sched_basic,
+                                             num_pools, p_pools,
+                                             ABT_SCHED_CONFIG_NULL,
+                                             newsched);
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;

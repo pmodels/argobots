@@ -235,8 +235,6 @@ typedef struct {
     ABT_sched_free_fn          free;
     ABT_sched_get_migr_pool_fn get_migr_pool;
 } ABT_sched_def;
-/* Predefined schedulers */
-extern ABT_sched_def ABT_sched_basic;
 
 /* Pool Functions */
 typedef ABT_unit_type (*ABT_unit_get_type_fn)(ABT_unit);

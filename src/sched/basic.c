@@ -10,7 +10,7 @@
 static int      sched_init(ABT_sched sched, ABT_sched_config config);
 static void     sched_run(ABT_sched sched);
 static int      sched_free(ABT_sched);
-ABT_sched_def ABT_sched_basic = {
+ABT_sched_def ABTI_sched_basic = {
     .type = ABT_SCHED_TYPE_TASK,
     .init = sched_init,
     .run = sched_run,
@@ -39,7 +39,7 @@ int ABT_sched_basic_create_config(int freq, ABT_sched_config *newconf)
 
 ABT_sched_kind ABT_sched_basic_kind()
 {
-  return ABTI_sched_get_kind(&ABT_sched_basic);
+  return ABTI_sched_get_kind(&ABTI_sched_basic);
 }
 
 static int sched_init(ABT_sched sched, ABT_sched_config config)
