@@ -536,32 +536,6 @@ int ABT_sched_get_size(ABT_sched sched, size_t *p_size)
     goto fn_exit;
 }
 
-/**
- * @ingroup SCHED
- * @brief   Get the kind of the scheduler \c sched.
- *
- * \c kind permits to know what kind of scheduler \c sched is.
- *
- * @param[in]  sched handle to the scheduler
- * @param[out] kind  kind of scheduler
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_sched_get_kind(ABT_sched sched, ABT_sched_kind *kind)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
-    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-
-  fn_exit:
-    *kind = p_sched->kind;
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_get_kind", abt_errno);
-    goto fn_exit;
-}
 
 /*****************************************************************************/
 /* Private APIs                                                              */
@@ -644,7 +618,7 @@ int ABTI_sched_print(ABTI_sched *p_sched)
 
     printf("== SCHEDULER (%p) ==\n", p_sched);
     printf("id: ");
-    if (p_sched->kind == ABT_sched_basic_kind()) {
+    if (p_sched->kind == ABTI_sched_get_kind(&ABTI_sched_basic)) {
         printf("BASIC\n");
     } else {
         printf("%" PRIu64 " (USER)\n", p_sched->kind);

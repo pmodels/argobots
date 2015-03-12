@@ -317,14 +317,12 @@ int ABT_sched_get_data(ABT_sched sched, void **p_data);
 int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
                         ABT_pool *pools);
 int ABT_sched_get_size(ABT_sched sched, size_t *size);
-int ABT_sched_get_kind(ABT_sched sched, ABT_sched_kind *kind);
 int ABT_sched_finish(ABT_sched sched);
 int ABT_sched_exit(ABT_sched sched);
 int ABT_sched_has_to_stop(ABT_sched sched, int *stop);
 
 /* Predefined schedulers */
 int ABT_sched_basic_create_config(int freq, ABT_sched_config *newconf);
-ABT_sched_kind ABT_sched_basic_kind();
 
 /* Pool */
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,

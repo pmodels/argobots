@@ -37,11 +37,6 @@ int ABT_sched_basic_create_config(int freq, ABT_sched_config *newconf)
     return abt_errno;
 }
 
-ABT_sched_kind ABT_sched_basic_kind()
-{
-  return ABTI_sched_get_kind(&ABTI_sched_basic);
-}
-
 static int sched_init(ABT_sched sched, ABT_sched_config config)
 {
     int abt_errno = ABT_SUCCESS;
