@@ -119,7 +119,8 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         /* Creation of the scheduler */
         switch (predef) {
             case ABT_SCHED_DEFAULT_NO_POOL:
-                abt_errno = ABT_sched_create(&ABT_sched_default, num_pools, p_pools,
+            case ABT_SCHED_BASIC_NO_POOL:
+                abt_errno = ABT_sched_create(&ABT_sched_basic, num_pools, p_pools,
                         ABT_SCHED_CONFIG_NULL, newsched);
                 break;
             default:
@@ -136,22 +137,27 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         /* First, set the number of pools and the access type */
         switch (predef) {
             case ABT_SCHED_DEFAULT_POOL_FIFO_PRW:
+            case ABT_SCHED_BASIC_POOL_FIFO_PRW:
                 access = ABT_POOL_ACCESS_PRW;
                 num_pools = 1;
                 break;
             case ABT_SCHED_DEFAULT_POOL_FIFO_PR_PW:
+            case ABT_SCHED_BASIC_POOL_FIFO_PR_PW:
                 access = ABT_POOL_ACCESS_PR_PW;
                 num_pools = 1;
                 break;
             case ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW:
+            case ABT_SCHED_BASIC_POOL_FIFO_PR_SW:
                 access = ABT_POOL_ACCESS_PR_SW;
                 num_pools = 1;
                 break;
             case ABT_SCHED_DEFAULT_POOL_FIFO_SR_PW:
+            case ABT_SCHED_BASIC_POOL_FIFO_SR_PW:
                 access = ABT_POOL_ACCESS_SR_PW;
                 num_pools = 1;
                 break;
             case ABT_SCHED_DEFAULT_POOL_FIFO_SR_SW:
+            case ABT_SCHED_BASIC_POOL_FIFO_SR_SW:
                 access = ABT_POOL_ACCESS_SR_SW;
                 num_pools = 1;
                 break;
@@ -178,7 +184,12 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
             case ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW:
             case ABT_SCHED_DEFAULT_POOL_FIFO_SR_PW:
             case ABT_SCHED_DEFAULT_POOL_FIFO_SR_SW:
-                abt_errno = ABT_sched_create(&ABT_sched_default, num_pools, p_pools,
+            case ABT_SCHED_BASIC_POOL_FIFO_PRW:
+            case ABT_SCHED_BASIC_POOL_FIFO_PR_PW:
+            case ABT_SCHED_BASIC_POOL_FIFO_PR_SW:
+            case ABT_SCHED_BASIC_POOL_FIFO_SR_PW:
+            case ABT_SCHED_BASIC_POOL_FIFO_SR_SW:
+                abt_errno = ABT_sched_create(&ABT_sched_basic, num_pools, p_pools,
                         ABT_SCHED_CONFIG_NULL, newsched);
                 break;
             default:
@@ -625,8 +636,8 @@ int ABTI_sched_print(ABTI_sched *p_sched)
 
     printf("== SCHEDULER (%p) ==\n", p_sched);
     printf("id: ");
-    if (p_sched->kind == ABT_sched_default_kind()) {
-        printf("DEFAULT\n");
+    if (p_sched->kind == ABT_sched_basic_kind()) {
+        printf("BASIC\n");
     } else {
         printf("%" PRIu64 " (USER)\n", p_sched->kind);
     }

@@ -126,6 +126,12 @@ enum ABT_sched_predef {
     ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW, /* Default scheduler, fifo pools */
     ABT_SCHED_DEFAULT_POOL_FIFO_SR_PW, /* Default scheduler, fifo pools */
     ABT_SCHED_DEFAULT_POOL_FIFO_SR_SW, /* Default scheduler, fifo pools */
+    ABT_SCHED_BASIC_NO_POOL,           /* Basic scheduler, no pools */
+    ABT_SCHED_BASIC_POOL_FIFO_PRW,     /* Basic scheduler, fifo pools */
+    ABT_SCHED_BASIC_POOL_FIFO_PR_PW,   /* Basic scheduler, fifo pools */
+    ABT_SCHED_BASIC_POOL_FIFO_PR_SW,   /* Basic scheduler, fifo pools */
+    ABT_SCHED_BASIC_POOL_FIFO_SR_PW,   /* Basic scheduler, fifo pools */
+    ABT_SCHED_BASIC_POOL_FIFO_SR_SW,   /* Basic scheduler, fifo pools */
 };
 
 enum ABT_sched_type {
@@ -228,7 +234,7 @@ typedef struct {
     ABT_sched_get_migr_pool_fn get_migr_pool;
 } ABT_sched_def;
 /* Predefined schedulers */
-extern ABT_sched_def ABT_sched_default;
+extern ABT_sched_def ABT_sched_basic;
 
 /* Pool Functions */
 typedef ABT_unit_type (*ABT_unit_get_type_fn)(ABT_unit);
@@ -319,8 +325,8 @@ int ABT_sched_exit(ABT_sched sched);
 int ABT_sched_has_to_stop(ABT_sched sched, int *stop);
 
 /* Predefined schedulers */
-int ABT_sched_default_create_config(int freq, ABT_sched_config *newconf);
-ABT_sched_kind ABT_sched_default_kind();
+int ABT_sched_basic_create_config(int freq, ABT_sched_config *newconf);
+ABT_sched_kind ABT_sched_basic_kind();
 
 /* Pool */
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,

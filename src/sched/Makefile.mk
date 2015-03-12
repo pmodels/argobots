@@ -4,6 +4,6 @@
 #
 
 abt_sources += \
-	sched/default.c \
-	sched/sched.c
+	sched/sched.c \
+	sched/basic.c
 

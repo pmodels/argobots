@@ -5,12 +5,12 @@
 
 #include "abti.h"
 
-#define SCHED_DEFAULT_EVENT_FREQ 8
+#define SCHED_BASIC_EVENT_FREQ 8
 
 static int      sched_init(ABT_sched sched, ABT_sched_config config);
 static void     sched_run(ABT_sched sched);
 static int      sched_free(ABT_sched);
-ABT_sched_def ABT_sched_default = {
+ABT_sched_def ABT_sched_basic = {
     .type = ABT_SCHED_TYPE_TASK,
     .init = sched_init,
     .run = sched_run,
@@ -26,7 +26,7 @@ static sched_config *sched_config_get_ptr(ABT_sched_config config);
 static ABT_sched_config sched_config_get_handle(sched_config *config);
 
 
-int ABT_sched_default_create_config(int freq, ABT_sched_config *newconf)
+int ABT_sched_basic_create_config(int freq, ABT_sched_config *newconf)
 {
     int abt_errno = ABT_SUCCESS;
     sched_config *p_newconf = (sched_config *)malloc(sizeof(sched_config));
@@ -37,9 +37,9 @@ int ABT_sched_default_create_config(int freq, ABT_sched_config *newconf)
     return abt_errno;
 }
 
-ABT_sched_kind ABT_sched_default_kind()
+ABT_sched_kind ABT_sched_basic_kind()
 {
-  return ABTI_sched_get_kind(&ABT_sched_default);
+  return ABTI_sched_get_kind(&ABT_sched_basic);
 }
 
 static int sched_init(ABT_sched sched, ABT_sched_config config)
@@ -48,7 +48,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     if (config == ABT_SCHED_CONFIG_NULL) {
         sched_config *p_data = (sched_config *)malloc(sizeof(sched_config));
-        p_data->event_freq = SCHED_DEFAULT_EVENT_FREQ;
+        p_data->event_freq = SCHED_BASIC_EVENT_FREQ;
         config = (ABT_sched_config)p_data;
     }
 
@@ -63,7 +63,7 @@ static void sched_run(ABT_sched sched)
     ABT_pool pool;
     int work_count = 0;
     void *data;
-    
+
     ABT_sched_get_data(sched, &data);
     int event_freq = sched_config_get_ptr(data)->event_freq;
 
@@ -97,7 +97,7 @@ static void sched_run(ABT_sched sched)
     return ;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("default: sched_run", abt_errno);
+    HANDLE_ERROR_WITH_CODE("basic: sched_run", abt_errno);
     goto fn_exit;
 }
 
@@ -106,7 +106,7 @@ static int sched_free(ABT_sched sched)
     int abt_errno = ABT_SUCCESS;
 
     void *data;
-    
+
     ABT_sched_get_data(sched, &data);
     sched_config *config = sched_config_get_ptr(data);
     free(config);
