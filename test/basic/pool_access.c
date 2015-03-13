@@ -35,8 +35,8 @@ int add_to_another_ES(ABT_pool_access access, int result)
     
     ABT_sched scheds[3];
     for (s = 0; s < 3; s++) {
-        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool, 1,
-                                     &scheds[s]);
+        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool,
+                                     ABT_TRUE, &scheds[s]);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
     }
 
@@ -118,16 +118,16 @@ int add_to_another_access(int access, int *results)
         ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[p], &pool_dest);
         ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
         ABT_sched sched_dest;
-        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool_dest, 1,
-                                     &sched_dest);
+        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool_dest,
+                                     ABT_TRUE, &sched_dest);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
 
         ABT_pool pool;
         ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[access], &pool);
         ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
         ABT_sched sched;
-        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool, 1,
-                                     &sched);
+        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool,
+                                     ABT_TRUE, &sched);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
         /* We need to use a task for the test to be in the same ES */
         void *args[5] = { &results[p], &pool_main, &pool_dest, &sched_dest,

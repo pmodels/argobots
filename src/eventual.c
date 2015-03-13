@@ -30,7 +30,7 @@ int ABT_eventual_create(int n, ABT_eventual *neweventual)
     }
 
     ABT_mutex_create(&p_eventual->mutex);
-    p_eventual->ready = 0;
+    p_eventual->ready = ABT_FALSE;
     p_eventual->nbytes = n;
     p_eventual->value = ABTU_malloc(n);
     p_eventual->waiters.head = p_eventual->waiters.tail = NULL;
@@ -86,7 +86,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
 	ABT_mutex_lock(p_eventual->mutex);
-    if (!p_eventual->ready) {
+    if (p_eventual->ready == ABT_FALSE) {
         ABTI_thread_entry *cur = (ABTI_thread_entry*) ABTU_malloc(sizeof(ABTI_thread_entry));
         ABTI_thread *p_current = ABTI_thread_current();
         cur->current = p_current;
@@ -128,7 +128,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
 	ABT_mutex_lock(p_eventual->mutex);
-    p_eventual->ready = 1;
+    p_eventual->ready = ABT_TRUE;
     memcpy(p_eventual->value, value, nbytes);
 	ABT_mutex_unlock(p_eventual->mutex);
     ABTI_eventual_signal(p_eventual);

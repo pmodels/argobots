@@ -105,17 +105,17 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
  * @param[in]  predef    predefined scheduler
  * @param[in]  num_pools number of pools associated with this scheduler
  * @param[in]  pools     pools associated with this scheduler
- * @param[in]  automatic teel if the sched should be automatically freed
+ * @param[in]  automatic ABT_TRUE if the sched should be automatically freed
  * @param[out] newsched  handle to a new scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
-                           ABT_pool *pools, int automatic,
+                           ABT_pool *pools, ABT_bool automatic,
                            ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
-    int free_pools = ABT_FALSE;
+    ABT_bool free_pools = ABT_FALSE;
 
     // A pool array is provided, predef has to be compatible
     if (pools != NULL) {
@@ -208,10 +208,8 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(*newsched);
-    if (automatic)
-        p_sched->automatic = ABT_TRUE;
-    if (free_pools == ABT_TRUE)
-        p_sched->free_pools = ABT_TRUE;
+    p_sched->automatic = automatic;
+    p_sched->free_pools = free_pools;
 
   fn_exit:
     return abt_errno;
@@ -389,7 +387,7 @@ int ABT_sched_exit(ABT_sched sched)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_sched_has_to_stop(ABT_sched sched, int *stop)
+int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();

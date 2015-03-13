@@ -302,7 +302,8 @@ int ABT_xstream_check_events(ABT_sched sched);
 int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
                      ABT_sched_config config, ABT_sched *newsched);
 int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
-                           ABT_pool *pools,  int autom, ABT_sched *newsched);
+                           ABT_pool *pools, ABT_bool automatic,
+                           ABT_sched *newsched);
 int ABT_sched_free(ABT_sched *sched);
 int ABT_sched_set_data(ABT_sched sched, void *data);
 int ABT_sched_get_data(ABT_sched sched, void **data);
@@ -311,7 +312,7 @@ int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
 int ABT_sched_get_size(ABT_sched sched, size_t *size);
 int ABT_sched_finish(ABT_sched sched);
 int ABT_sched_exit(ABT_sched sched);
-int ABT_sched_has_to_stop(ABT_sched sched, int *stop);
+int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop);
 
 /* Pool */
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
@@ -423,7 +424,7 @@ int ABT_future_create(int compartments, void (*callback_func)(void **arg),
                       ABT_future *newfuture);
 int ABT_future_free(ABT_future *future);
 int ABT_future_wait(ABT_future future);
-int ABT_future_test(ABT_future future, int *flag);
+int ABT_future_test(ABT_future future, ABT_bool *flag);
 int ABT_future_set(ABT_future future, void *value);
 
 /* Error */

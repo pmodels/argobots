@@ -31,7 +31,7 @@ int ABT_future_create(int n, void (*callback)(void **arg), ABT_future *newfuture
     }
 
     ABT_mutex_create(&p_future->mutex);
-    p_future->ready = 0;
+    p_future->ready = ABT_FALSE;
     p_future->counter = n;
     p_future->array = ABTU_malloc(n * sizeof(void *));
     p_future->p_callback = callback;
@@ -87,7 +87,7 @@ int ABT_future_wait(ABT_future future)
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
 	ABT_mutex_lock(p_future->mutex);
-    if (!p_future->ready) {
+    if (p_future->ready == ABT_FALSE) {
         ABTI_thread_entry *cur = (ABTI_thread_entry*) ABTU_malloc(sizeof(ABTI_thread_entry));
         ABTI_thread *p_current = ABTI_thread_current();
         cur->current = p_current;
@@ -114,22 +114,19 @@ int ABT_future_wait(ABT_future future)
 
 /**
  * @ingroup FUTURE
- * @brief   Tests whether the future is ready
+ * @brief   Test whether the future is ready
  *
- * @param[in]  		future       Reference to future
- * @param[out]		flag		 Holds 1 if future is ready; 0 otherwise
+ * @param[in]  future  handle to the future
+ * @param[out] flag    ABT_TRUE if future is ready; otherwise, ABT_FALSE
  * @return No value returned
  */
-int ABT_future_test(ABT_future future, int *flag)
+int ABT_future_test(ABT_future future, ABT_bool *flag)
 {
 	int abt_errno = ABT_SUCCESS;
 	ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-	if(p_future->ready)
-		*flag = 1;
-	else
-		*flag = 0;
+    *flag = p_future->ready;
 
   fn_exit:
     return abt_errno;
@@ -158,7 +155,7 @@ int ABT_future_set(ABT_future future, void *value)
 	p_future->counter--;
 	p_future->array[p_future->counter] = value;
 	if(p_future->counter == 0) {
-	    p_future->ready = 1;
+	    p_future->ready = ABT_TRUE;
 		if(p_future->p_callback != NULL)
 			(*p_future->p_callback)(p_future->array);
     	ABTI_future_signal(p_future);

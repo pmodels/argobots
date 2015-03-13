@@ -152,13 +152,13 @@ struct ABTI_xstream_contn {
 struct ABTI_sched {
     ABT_mutex mutex;            /* Mutex */
     ABTI_sched_used used;       /* To know if it is used and how */
-    int automatic;              /* To know if automatic data free */
+    ABT_bool automatic;         /* To know if automatic data free */
     ABTI_sched_kind kind;       /* Kind of the scheduler  */
     ABT_sched_type type;        /* Can yield or not (ULT or task) */
     ABT_sched_state state;      /* State */
     uint32_t request;           /* Request */
     ABT_pool *pools;            /* Work unit pools */
-    int free_pools;             /* To know if automatic pools free */
+    ABT_bool free_pools;        /* To know if automatic pools free */
     int num_pools;              /* Number of work unit pools */
     ABT_thread thread;          /* Associated thread */
     ABT_task task;              /* Associated task */
@@ -174,7 +174,7 @@ struct ABTI_sched {
 
 struct ABTI_pool {
     ABT_pool_access access;  /* Access mode */
-    int automatic;           /* To know if automatic data free */
+    ABT_bool automatic;      /* To know if automatic data free */
     int32_t num_scheds;      /* Number of associated schedulers */
                              /* NOTE: int32_t to check if still positive */
     ABTI_xstream *reader;    /* Associated reader ES */
@@ -273,7 +273,7 @@ struct ABTI_cond {
 
 struct ABTI_eventual {
     ABT_mutex mutex;
-    int ready;
+    ABT_bool ready;
     void *value;
     int nbytes;
     ABTI_thread_list waiters;
@@ -281,7 +281,7 @@ struct ABTI_eventual {
 
 struct ABTI_future {
     ABT_mutex mutex;
-    int ready;
+    ABT_bool ready;
     int counter;
     void **array;
     void (*p_callback)(void **arg);
