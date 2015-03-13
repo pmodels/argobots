@@ -1496,7 +1496,7 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 
     ABTI_sched *p_sched = p_xstream->p_main_sched;
     p_sched->p_ctx = (ABTD_thread_context *)
-        malloc(sizeof(ABTD_thread_context));
+        ABTU_malloc(sizeof(ABTD_thread_context));
 
     /* Create a context */
     // TODO size of the stack? XXX

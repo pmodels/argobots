@@ -173,7 +173,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         }
 
         /* Creation of the pools */
-        pools = (ABT_pool *)malloc(num_pools*sizeof(ABT_pool));
+        pools = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
         int p;
         for (p = 0; p < num_pools; p++) {
             abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO,

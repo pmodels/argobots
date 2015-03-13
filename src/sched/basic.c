@@ -30,7 +30,8 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     int abt_errno = ABT_SUCCESS;
 
     if (config == ABT_SCHED_CONFIG_NULL) {
-        sched_config *p_data = (sched_config *)malloc(sizeof(sched_config));
+        sched_config *p_data;
+        p_data = (sched_config *)ABTU_malloc(sizeof(sched_config));
         p_data->event_freq = SCHED_BASIC_EVENT_FREQ;
         config = (ABT_sched_config)p_data;
     }
@@ -92,7 +93,7 @@ static int sched_free(ABT_sched sched)
 
     ABT_sched_get_data(sched, &data);
     sched_config *config = sched_config_get_ptr(data);
-    free(config);
+    ABTU_free(config);
     return abt_errno;
 }
 
