@@ -212,39 +212,6 @@ int ABT_mutex_unlock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Lock the mutex with a mutex handle pointer.
- *
- * \c ABT_mutex_lock_ptr locks the mutex with a mutex handle pointer \c mutex.
- * The sematic of this routine is the same as that of \c ABT_mutex_lock().
- *
- * @param[in] mutex  pointer to the mutex handle
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_mutex_lock_ptr(ABT_mutex *mutex)
-{
-    return ABT_mutex_lock(*mutex);
-}
-
-/**
- * @ingroup MUTEX
- * @brief   Unlock the mutex with a mutex handle pointer.
- *
- * \c ABT_mutex_unlock_ptr unlocks the mutex with a mutex handle pointer
- * \c mutex.
- * The sematic of this routine is the same as that of \c ABT_mutex_unlock().
- *
- * @param[in] mutex  pointer to the mutex handle
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_mutex_unlock_ptr(ABT_mutex *mutex)
-{
-    return ABT_mutex_unlock(*mutex);
-}
-
-/**
- * @ingroup MUTEX
  * @brief   Compare two mutex handles for equality.
  *
  * \c ABT_mutex_equal compares two mutex handles for equality. If two handles
