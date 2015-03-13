@@ -229,9 +229,10 @@ int ABTI_xstream_contn_finalize(ABTI_xstream_contn *p_xstreams)
 {
     int abt_errno = ABT_SUCCESS;
 
-    /* Wait until all running xstreams are terminated */
-    while (ABTI_contn_get_size(p_xstreams->active) > 0) {
-        ABT_thread_yield();
+    /* Check there is no running ES anymore */
+    if (ABTI_contn_get_size(p_xstreams->active) != 0) {
+        abt_errno = ABT_ERR_MISSING_JOIN;
+        goto fn_fail;
     }
 
     /* Free all containers */
