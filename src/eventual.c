@@ -7,21 +7,32 @@
 
 
 /** @defgroup EVENTUAL Eventual
- * Eventuals are used to wait for values asynchronously.
+ * In Argobots, an \a eventual corresponds to the traditional behavior of
+ * the future concept (refer to \ref FUTURE "Future"). A ULT creates an
+ * eventual, which is a memory buffer that will eventually contain a value
+ * of interest. Many ULTs can wait on the eventual (a blocking call),
+ * until one ULT signals on that future.
  */
 
 /**
  * @ingroup EVENTUAL
- * @brief   Creates a eventual.
+ * @brief   Create an eventual.
  *
- * @param[in]  n            Number of bytes in the buffer containing the result of the eventual
- * @param[out] neweventual       Reference to the newly created eventual
+ * \c ABT_eventual_create creates an eventual and returns a handle to the newly
+ * created eventual into \c neweventual. This routine allocates a memory buffer
+ * of \c nbytes size and creates a list of entries for all the ULTs that will
+ * be blocked waiting for the eventual to be ready. The list is initially empty.
+ *
+ * @param[in]  nbytes       size in bytes of the memory buffer
+ * @param[out] neweventual  handle to a new eventual
  * @return Error code
+ * @retval ABT_SUCCESS on success
  */
-int ABT_eventual_create(int n, ABT_eventual *neweventual)
+int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
 {
-	int abt_errno = ABT_SUCCESS;
-    ABTI_eventual *p_eventual = (ABTI_eventual*)ABTU_malloc(sizeof(ABTI_eventual));
+    int abt_errno = ABT_SUCCESS;
+    ABTI_eventual *p_eventual;
+    p_eventual = (ABTI_eventual*)ABTU_malloc(sizeof(ABTI_eventual));
     if (!p_eventual) {
         HANDLE_ERROR("ABTU_malloc");
         *neweventual = ABT_EVENTUAL_NULL;
@@ -31,8 +42,8 @@ int ABT_eventual_create(int n, ABT_eventual *neweventual)
 
     ABT_mutex_create(&p_eventual->mutex);
     p_eventual->ready = ABT_FALSE;
-    p_eventual->nbytes = n;
-    p_eventual->value = ABTU_malloc(n);
+    p_eventual->nbytes = nbytes;
+    p_eventual->value = ABTU_malloc(nbytes);
     p_eventual->waiters.head = p_eventual->waiters.tail = NULL;
     *neweventual = ABTI_eventual_get_handle(p_eventual);
 
@@ -46,20 +57,25 @@ int ABT_eventual_create(int n, ABT_eventual *neweventual)
 
 /**
  * @ingroup EVENTUAL
- * @brief   Releases the memory of a eventual.
+ * @brief   Free the eventual object.
  *
- * @param[out] eventual       Reference to the eventual
+ * \c ABT_eventual_free releases memory associated with the eventual
+ * \c eventual. It also deallocates the memory buffer of the eventual.
+ * If it is successfully processed, \c eventual is set to \c ABT_EVENTUAL_NULL.
+ *
+ * @param[in,out] eventual  handle to the eventual
  * @return Error code
+ * @retval ABT_SUCCESS on success
  */
 int ABT_eventual_free(ABT_eventual *eventual)
 {
-	int abt_errno = ABT_SUCCESS;
-	ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(*eventual);
+    int abt_errno = ABT_SUCCESS;
+    ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(*eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-	ABT_mutex_free(&p_eventual->mutex);
-	ABTU_free(p_eventual->value);
-	ABTU_free(p_eventual);
+    ABT_mutex_free(&p_eventual->mutex);
+    ABTU_free(p_eventual->value);
+    ABTU_free(p_eventual);
 
     *eventual = ABT_EVENTUAL_NULL;
 
@@ -73,35 +89,45 @@ int ABT_eventual_free(ABT_eventual *eventual)
 
 /**
  * @ingroup EVENTUAL
- * @brief   Blocks current thread until the feature has finished its computation.
+ * @brief   Wait on the eventual.
  *
- * @param[in]  eventual       Reference to the eventual
- * @param[out] value        Reference to value of eventual
+ * \c ABT_eventual_wait blocks the caller ULT until the eventual \c eventual
+ * is resolved. If the eventual is not ready, the ULT calling this routine
+ * suspends and goes to the state BLOCKED. Internally, an entry is created
+ * per each blocked ULT to be awaken when the eventual is signaled.
+ * If the eventual is ready, the pointer pointed to by \c value will point to
+ * the memory buffer associated with the eventual. The system keeps a list of
+ * all the ULTs waiting on the eventual.
+ *
+ * @param[in]  eventual handle to the eventual
+ * @param[out] value    pointer to the memory buffer of the eventual
  * @return Error code
+ * @retval ABT_SUCCESS on success
  */
 int ABT_eventual_wait(ABT_eventual eventual, void **value)
 {
-	int abt_errno = ABT_SUCCESS;
-	ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
+    int abt_errno = ABT_SUCCESS;
+    ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-	ABT_mutex_lock(p_eventual->mutex);
+    ABT_mutex_lock(p_eventual->mutex);
     if (p_eventual->ready == ABT_FALSE) {
-        ABTI_thread_entry *cur = (ABTI_thread_entry*) ABTU_malloc(sizeof(ABTI_thread_entry));
+        ABTI_thread_entry *cur;
+        cur = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
         ABTI_thread *p_current = ABTI_thread_current();
         cur->current = p_current;
         cur->next = NULL;
-        if(p_eventual->waiters.tail != NULL)
+        if (p_eventual->waiters.tail != NULL)
             p_eventual->waiters.tail->next = cur;
         p_eventual->waiters.tail = cur;
-        if(p_eventual->waiters.head == NULL)
+        if (p_eventual->waiters.head == NULL)
             p_eventual->waiters.head = cur;
-		ABTI_thread_set_blocked(p_current);
-		ABT_mutex_unlock(p_eventual->mutex);
+        ABTI_thread_set_blocked(p_current);
+        ABT_mutex_unlock(p_eventual->mutex);
         ABTI_thread_suspend(p_current);
     } else {
-		ABT_mutex_unlock(p_eventual->mutex);
-	}
+        ABT_mutex_unlock(p_eventual->mutex);
+    }
     *value = p_eventual->value;
 
   fn_exit:
@@ -114,23 +140,31 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
 /**
  * @ingroup EVENTUAL
- * @brief   Sets a nbytes-value into a eventual for all threads blocking on the eventual to resume.
+ * @brief   Signal the eventual.
  *
- * @param[in]  eventual       Reference to the eventual
- * @param[in]  value        Pointer to the buffer containing the result
- * @param[in]  nbytes       Number of bytes in the buffer
+ * \c ABT_eventual_set sets a value in the eventual's buffer and releases all
+ * waiting ULTs. It copies \c nbytes bytes from the buffer pointed to by
+ * \c value into the internal buffer of eventual and awakes all ULTs waiting
+ * on the eventual. Therefore, all ULTs waiting on this eventual will be ready
+ * to be scheduled.
+ *
+ * @param[in] eventual  handle to the eventual
+ * @param[in] value     pointer to the memory buffer containing the data that
+ *                      will be copied to the memory buffer of the eventual
+ * @param[in] nbytes    number of bytes to be copied
  * @return Error code
+ * @retval ABT_SUCCESS on success
  */
 int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 {
-	int abt_errno = ABT_SUCCESS;
-	ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
+    int abt_errno = ABT_SUCCESS;
+    ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-	ABT_mutex_lock(p_eventual->mutex);
+    ABT_mutex_lock(p_eventual->mutex);
     p_eventual->ready = ABT_TRUE;
     memcpy(p_eventual->value, value, nbytes);
-	ABT_mutex_unlock(p_eventual->mutex);
+    ABT_mutex_unlock(p_eventual->mutex);
     ABTI_eventual_signal(p_eventual);
 
   fn_exit:
