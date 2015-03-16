@@ -15,12 +15,9 @@ basic/thread_task
 basic/thread_task_num
 basic/sched_prio
 basic/sched_stack
+basic/sched_config
 basic/pool_access
 basic/name
-basic/scheduler_test
-basic/scheduler_basic
-basic/scheduler_prio
-basic/scheduler_user
 basic/mutex
 basic/condition
 basic/future_create

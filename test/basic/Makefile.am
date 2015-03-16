@@ -19,6 +19,7 @@ TESTS = \
 	thread_task_num \
 	sched_prio \
 	sched_stack \
+	sched_config \
 	pool_access \
 	name \
 	mutex \
@@ -48,6 +49,7 @@ thread_task_SOURCES = thread_task.c
 thread_task_num_SOURCES = thread_task_num.c
 sched_prio_SOURCES = sched_prio.c
 sched_stack_SOURCES = sched_stack.c
+sched_config_SOURCES = sched_config.c
 pool_access_SOURCES = pool_access.c
 name_SOURCES = name.c
 mutex_SOURCES = mutex.c
@@ -73,6 +75,7 @@ testing:
 	./thread_task_num
 	./sched_prio
 	./sched_stack
+	./sched_config
 	./pool_access
 	./name
 	./mutex

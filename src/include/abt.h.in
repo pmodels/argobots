@@ -217,6 +217,20 @@ typedef int                    ABT_bool;          /* Boolean type */
 #define ABT_FUTURE_NULL         ((ABT_future)      (0x0d))
 #define ABT_TIMER_NULL          ((ABT_timer)       (0x0e))
 
+/* Scheduler config */
+typedef enum {
+    ABT_SCHED_CONFIG_INT    = 0, /* Parameter of type int */
+    ABT_SCHED_CONFIG_DOUBLE = 1, /* Parameter of type double */
+    ABT_SCHED_CONFIG_PTR    = 2 /* Parameter of type pointer */
+} ABT_sched_config_type;
+
+typedef struct {
+  int idx;
+  ABT_sched_config_type type;
+} ABT_sched_config_var;
+
+extern ABT_sched_config_var ABT_sched_config_var_end;
+  /* To mark the last parameter in ABT_sched_config_create */
 
 /* Scheduler Functions */
 typedef int      (*ABT_sched_init_fn)(ABT_sched, ABT_sched_config);
@@ -321,6 +335,11 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size);
 int ABT_sched_finish(ABT_sched sched);
 int ABT_sched_exit(ABT_sched sched);
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop);
+
+/* Scheduler config */
+int ABT_sched_config_create(ABT_sched_config *config, ...);
+int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...);
+int ABT_sched_config_free(ABT_sched_config *config);
 
 /* Pool */
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,

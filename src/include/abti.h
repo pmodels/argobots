@@ -71,6 +71,7 @@ typedef struct ABTI_xstream         ABTI_xstream;
 typedef enum ABTI_xstream_type      ABTI_xstream_type;
 typedef struct ABTI_xstream_contn   ABTI_xstream_contn;
 typedef struct ABTI_sched           ABTI_sched;
+typedef char *                      ABTI_sched_config;
 typedef enum ABTI_sched_used        ABTI_sched_used;
 typedef void *                      ABTI_sched_id;      /* Scheduler id */
 typedef uint64_t                    ABTI_sched_kind;    /* Scheduler kind */
