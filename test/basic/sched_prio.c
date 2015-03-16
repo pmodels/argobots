@@ -122,12 +122,14 @@ static void create_scheds_and_xstreams(void)
             }
 
             ret = ABT_sched_create_basic(predefs[i], num_pools[i], pools[i],
+                                         ABT_SCHED_CONFIG_NULL,
                                          (i == 0) ? ABT_TRUE : ABT_FALSE,
                                          &scheds[i]);
             ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
         } else {
             /* Create a scheduler and then get the list of pools */
-            ret = ABT_sched_create_basic(predefs[i], 0, NULL, ABT_FALSE,
+            ret = ABT_sched_create_basic(predefs[i], 0, NULL,
+                                         ABT_SCHED_CONFIG_NULL, ABT_FALSE,
                                          &scheds[i]);
             ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
 
