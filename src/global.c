@@ -138,27 +138,27 @@ int ABT_finalize(void)
     while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
       ABT_thread_yield();
     }
-    
-    /* Remove the primary ULT */
-    abt_errno = ABTI_thread_free_main(p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
 
     /* Remove the primary ES from the global ES container */
     abt_errno = ABTI_global_del_xstream(p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Finalize the ES local data */
-    abt_errno = ABTI_local_finalize();
+    /* Finalize the ES container */
+    abt_errno = ABTI_xstream_contn_finalize(gp_ABTI_global->p_xstreams);
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_contn_finalize");
+    ABTU_free(gp_ABTI_global->p_xstreams);
+
+    /* Remove the primary ULT */
+    abt_errno = ABTI_thread_free_main(p_thread);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Free the ES */
+    /* Free the primary ES */
     abt_errno = ABTI_xstream_free(p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Finalize the ES container */
-    abt_errno = ABTI_xstream_contn_finalize(gp_ABTI_global->p_xstreams);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_finalize");
-    ABTU_free(gp_ABTI_global->p_xstreams);
+    /* Finalize the ES local data */
+    abt_errno = ABTI_local_finalize();
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Free the ABTI_global structure */
     ABTU_free(gp_ABTI_global);
