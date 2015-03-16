@@ -13,6 +13,7 @@ basic/task_create
 basic/task_create_on_xstream
 basic/thread_task
 basic/thread_task_num
+basic/sched_basic
 basic/sched_prio
 basic/sched_stack
 basic/sched_config

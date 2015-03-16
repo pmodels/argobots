@@ -17,6 +17,7 @@ TESTS = \
 	task_create_on_xstream \
 	thread_task \
 	thread_task_num \
+	sched_basic \
 	sched_prio \
 	sched_stack \
 	sched_config \
@@ -47,6 +48,7 @@ task_create_SOURCES = task_create.c
 task_create_on_xstream_SOURCES = task_create_on_xstream.c
 thread_task_SOURCES = thread_task.c
 thread_task_num_SOURCES = thread_task_num.c
+sched_basic_SOURCES = sched_basic.c
 sched_prio_SOURCES = sched_prio.c
 sched_stack_SOURCES = sched_stack.c
 sched_config_SOURCES = sched_config.c
@@ -73,6 +75,7 @@ testing:
 	./task_create_on_xstream
 	./thread_task
 	./thread_task_num
+	./sched_basic
 	./sched_prio
 	./sched_stack
 	./sched_config
