@@ -12,16 +12,16 @@
 // TODO free memory
 
 ABT_sched_predef sched_list[5] = {
-    ABT_SCHED_DEFAULT_POOL_FIFO_PRW,
-    ABT_SCHED_DEFAULT_POOL_FIFO_PR_PW,
-    ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW,
-    ABT_SCHED_DEFAULT_POOL_FIFO_SR_PW,
-    ABT_SCHED_DEFAULT_POOL_FIFO_SR_SW,
+    ABT_SCHED_DEFAULT_POOL_FIFO_PRIV,
+    ABT_SCHED_DEFAULT_POOL_FIFO_SPSC,
+    ABT_SCHED_DEFAULT_POOL_FIFO_MPSC,
+    ABT_SCHED_DEFAULT_POOL_FIFO_SPMC,
+    ABT_SCHED_DEFAULT_POOL_FIFO_MPMC,
 };
 
 ABT_pool_access accesses[5] = {
-  ABT_POOL_ACCESS_PRW, ABT_POOL_ACCESS_PR_PW, ABT_POOL_ACCESS_PR_SW,
-  ABT_POOL_ACCESS_SR_PW, ABT_POOL_ACCESS_SR_SW,
+  ABT_POOL_ACCESS_PRIV, ABT_POOL_ACCESS_SPSC, ABT_POOL_ACCESS_MPSC,
+  ABT_POOL_ACCESS_SPMC, ABT_POOL_ACCESS_MPMC,
 };
 
 int add_to_another_ES(ABT_pool_access access, int result)
@@ -105,7 +105,7 @@ int add_to_another_access(int access, int *results)
     for (p = 0; p < 5; p++) {
         /* Creation of the ES */
         ABT_xstream xstream;
-        ret = ABT_xstream_create_basic(ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW,
+        ret = ABT_xstream_create_basic(ABT_SCHED_DEFAULT_POOL_FIFO_MPSC,
                                        0, NULL, &xstream);
         ABT_TEST_ERROR(ret, "ABT_xstream_create_basic");
         /* Get the pool */
@@ -204,35 +204,35 @@ int main(int argc, char *argv[])
     /* Initialize */
     ABT_test_init(argc, argv);
 
-    /* ABT_POOL_ACCESS_PRW */
+    /* ABT_POOL_ACCESS_PRIV */
     ret_add_to_another_ES[0] = error;
     int temp00[5] = {success, success, success, error, error};
     ret_add_to_another_access[0] = temp00;
     int temp01[2] = {error, error};
     ret_push_from_another_pool[0] = temp01;
 
-    /* ABT_POOL_ACCESS_PR_PW */
+    /* ABT_POOL_ACCESS_SPSC */
     ret_add_to_another_ES[1] = error;
     int temp10[5] = {success, success, success, error, error};
     ret_add_to_another_access[1] = temp10;
     int temp11[2] = {success, error};
     ret_push_from_another_pool[1] = temp11;
 
-    /* ABT_POOL_ACCESS_PR_SW */
+    /* ABT_POOL_ACCESS_MPSC */
     ret_add_to_another_ES[2] = error;
     int temp20[5] = {success, success, success, error, error};
     ret_add_to_another_access[2] = temp20;
     int temp21[2] = {success, success};
     ret_push_from_another_pool[2] = temp21;
 
-    /* ABT_POOL_ACCESS_SR_PW */
+    /* ABT_POOL_ACCESS_SPMC */
     ret_add_to_another_ES[3] = success;
     int temp30[5] = {success, success, success, success, success};
     ret_add_to_another_access[3] = temp30;
     int temp31[2] = {success, error};
     ret_push_from_another_pool[3] = temp31;
 
-    /* ABT_POOL_ACCESS_SR_SW */
+    /* ABT_POOL_ACCESS_MPMC */
     ret_add_to_another_ES[4] = success;
     int temp40[5] = {success, success, success, success, success};
     ret_add_to_another_access[4] = temp40;

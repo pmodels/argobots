@@ -145,49 +145,49 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         ABT_pool_access access;
         /* First, set the number of pools and the access type */
         switch (predef) {
-            case ABT_SCHED_DEFAULT_POOL_FIFO_PRW:
-            case ABT_SCHED_BASIC_POOL_FIFO_PRW:
-                access = ABT_POOL_ACCESS_PRW;
+            case ABT_SCHED_DEFAULT_POOL_FIFO_PRIV:
+            case ABT_SCHED_BASIC_POOL_FIFO_PRIV:
+                access = ABT_POOL_ACCESS_PRIV;
                 num_pools = 1;
                 break;
-            case ABT_SCHED_DEFAULT_POOL_FIFO_PR_PW:
-            case ABT_SCHED_BASIC_POOL_FIFO_PR_PW:
-                access = ABT_POOL_ACCESS_PR_PW;
+            case ABT_SCHED_DEFAULT_POOL_FIFO_SPSC:
+            case ABT_SCHED_BASIC_POOL_FIFO_SPSC:
+                access = ABT_POOL_ACCESS_SPSC;
                 num_pools = 1;
                 break;
-            case ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW:
-            case ABT_SCHED_BASIC_POOL_FIFO_PR_SW:
-                access = ABT_POOL_ACCESS_PR_SW;
+            case ABT_SCHED_DEFAULT_POOL_FIFO_MPSC:
+            case ABT_SCHED_BASIC_POOL_FIFO_MPSC:
+                access = ABT_POOL_ACCESS_MPSC;
                 num_pools = 1;
                 break;
-            case ABT_SCHED_DEFAULT_POOL_FIFO_SR_PW:
-            case ABT_SCHED_BASIC_POOL_FIFO_SR_PW:
-                access = ABT_POOL_ACCESS_SR_PW;
+            case ABT_SCHED_DEFAULT_POOL_FIFO_SPMC:
+            case ABT_SCHED_BASIC_POOL_FIFO_SPMC:
+                access = ABT_POOL_ACCESS_SPMC;
                 num_pools = 1;
                 break;
-            case ABT_SCHED_DEFAULT_POOL_FIFO_SR_SW:
-            case ABT_SCHED_BASIC_POOL_FIFO_SR_SW:
-                access = ABT_POOL_ACCESS_SR_SW;
+            case ABT_SCHED_DEFAULT_POOL_FIFO_MPMC:
+            case ABT_SCHED_BASIC_POOL_FIFO_MPMC:
+                access = ABT_POOL_ACCESS_MPMC;
                 num_pools = 1;
                 break;
-            case ABT_SCHED_PRIO_POOL_FIFO_PRW:
-                access = ABT_POOL_ACCESS_PRW;
+            case ABT_SCHED_PRIO_POOL_FIFO_PRIV:
+                access = ABT_POOL_ACCESS_PRIV;
                 num_pools = ABTI_SCHED_NUM_PRIO;
                 break;
-            case ABT_SCHED_PRIO_POOL_FIFO_PR_PW:
-                access = ABT_POOL_ACCESS_PR_PW;
+            case ABT_SCHED_PRIO_POOL_FIFO_SPSC:
+                access = ABT_POOL_ACCESS_SPSC;
                 num_pools = ABTI_SCHED_NUM_PRIO;
                 break;
-            case ABT_SCHED_PRIO_POOL_FIFO_PR_SW:
-                access = ABT_POOL_ACCESS_PR_SW;
+            case ABT_SCHED_PRIO_POOL_FIFO_MPSC:
+                access = ABT_POOL_ACCESS_MPSC;
                 num_pools = ABTI_SCHED_NUM_PRIO;
                 break;
-            case ABT_SCHED_PRIO_POOL_FIFO_SR_PW:
-                access = ABT_POOL_ACCESS_SR_PW;
+            case ABT_SCHED_PRIO_POOL_FIFO_SPMC:
+                access = ABT_POOL_ACCESS_SPMC;
                 num_pools = ABTI_SCHED_NUM_PRIO;
                 break;
-            case ABT_SCHED_PRIO_POOL_FIFO_SR_SW:
-                access = ABT_POOL_ACCESS_SR_SW;
+            case ABT_SCHED_PRIO_POOL_FIFO_MPMC:
+                access = ABT_POOL_ACCESS_MPMC;
                 num_pools = ABTI_SCHED_NUM_PRIO;
                 break;
             default:
@@ -208,26 +208,26 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
 
         /* Creation of the scheduler */
         switch (predef) {
-            case ABT_SCHED_DEFAULT_POOL_FIFO_PRW:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_PR_PW:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_SR_PW:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_SR_SW:
-            case ABT_SCHED_BASIC_POOL_FIFO_PRW:
-            case ABT_SCHED_BASIC_POOL_FIFO_PR_PW:
-            case ABT_SCHED_BASIC_POOL_FIFO_PR_SW:
-            case ABT_SCHED_BASIC_POOL_FIFO_SR_PW:
-            case ABT_SCHED_BASIC_POOL_FIFO_SR_SW:
+            case ABT_SCHED_DEFAULT_POOL_FIFO_PRIV:
+            case ABT_SCHED_DEFAULT_POOL_FIFO_SPSC:
+            case ABT_SCHED_DEFAULT_POOL_FIFO_MPSC:
+            case ABT_SCHED_DEFAULT_POOL_FIFO_SPMC:
+            case ABT_SCHED_DEFAULT_POOL_FIFO_MPMC:
+            case ABT_SCHED_BASIC_POOL_FIFO_PRIV:
+            case ABT_SCHED_BASIC_POOL_FIFO_SPSC:
+            case ABT_SCHED_BASIC_POOL_FIFO_MPSC:
+            case ABT_SCHED_BASIC_POOL_FIFO_SPMC:
+            case ABT_SCHED_BASIC_POOL_FIFO_MPMC:
                 abt_errno = ABT_sched_create(&ABTI_sched_basic,
                                              num_pools, pools,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
                 break;
-            case ABT_SCHED_PRIO_POOL_FIFO_PRW:
-            case ABT_SCHED_PRIO_POOL_FIFO_PR_PW:
-            case ABT_SCHED_PRIO_POOL_FIFO_PR_SW:
-            case ABT_SCHED_PRIO_POOL_FIFO_SR_PW:
-            case ABT_SCHED_PRIO_POOL_FIFO_SR_SW:
+            case ABT_SCHED_PRIO_POOL_FIFO_PRIV:
+            case ABT_SCHED_PRIO_POOL_FIFO_SPSC:
+            case ABT_SCHED_PRIO_POOL_FIFO_MPSC:
+            case ABT_SCHED_PRIO_POOL_FIFO_SPMC:
+            case ABT_SCHED_PRIO_POOL_FIFO_MPMC:
                 abt_errno = ABTI_sched_create_prio(num_pools, pools,
                                                    newsched);
                 break;

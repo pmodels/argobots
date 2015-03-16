@@ -39,7 +39,7 @@ static void unit_free(ABT_unit *unit);
 
 /* FIXME: do we need this? */
 ABT_pool_def ABTI_pool_fifo = {
-    .access               = ABT_POOL_ACCESS_PR_SW,
+    .access               = ABT_POOL_ACCESS_MPSC,
     .p_init               = pool_init,
     .p_free               = pool_free,
     .p_get_size           = pool_get_size,
@@ -76,16 +76,16 @@ int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
     /* Definitions according to the access type */
     /* FIXME: need better implementation, e.g., lock-free one */
     switch (access) {
-        case ABT_POOL_ACCESS_PRW:
+        case ABT_POOL_ACCESS_PRIV:
             p_def->p_push   = pool_push_private;
             p_def->p_pop    = pool_pop_private;
             p_def->p_remove = pool_remove_private;
             break;
 
-        case ABT_POOL_ACCESS_PR_PW:
-        case ABT_POOL_ACCESS_PR_SW:
-        case ABT_POOL_ACCESS_SR_PW:
-        case ABT_POOL_ACCESS_SR_SW:
+        case ABT_POOL_ACCESS_SPSC:
+        case ABT_POOL_ACCESS_MPSC:
+        case ABT_POOL_ACCESS_SPMC:
+        case ABT_POOL_ACCESS_MPMC:
             p_def->p_push   = pool_push_shared;
             p_def->p_pop    = pool_pop_shared;
             p_def->p_remove = pool_remove_shared;
@@ -134,7 +134,7 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
 
     ABT_pool_get_access(pool, &access);
 
-    if (access == ABT_POOL_ACCESS_PRW) {
+    if (access == ABT_POOL_ACCESS_PRIV) {
         /* If pool's access type is private, mutex is not necessary. */
         p_data->mutex = ABT_MUTEX_NULL;
     } else {

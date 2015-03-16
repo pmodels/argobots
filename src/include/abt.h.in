@@ -124,23 +124,23 @@ enum ABT_sched_state {
 
 enum ABT_sched_predef {
     ABT_SCHED_DEFAULT_NO_POOL,         /* Default scheduler, no pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_PRW,   /* Default scheduler, fifo pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_PR_PW, /* Default scheduler, fifo pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_PR_SW, /* Default scheduler, fifo pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_SR_PW, /* Default scheduler, fifo pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_SR_SW, /* Default scheduler, fifo pools */
+    ABT_SCHED_DEFAULT_POOL_FIFO_PRIV,  /* Default scheduler, fifo pools */
+    ABT_SCHED_DEFAULT_POOL_FIFO_SPSC,  /* Default scheduler, fifo pools */
+    ABT_SCHED_DEFAULT_POOL_FIFO_MPSC,  /* Default scheduler, fifo pools */
+    ABT_SCHED_DEFAULT_POOL_FIFO_SPMC,  /* Default scheduler, fifo pools */
+    ABT_SCHED_DEFAULT_POOL_FIFO_MPMC,  /* Default scheduler, fifo pools */
     ABT_SCHED_BASIC_NO_POOL,           /* Basic scheduler, no pools */
-    ABT_SCHED_BASIC_POOL_FIFO_PRW,     /* Basic scheduler, fifo pools */
-    ABT_SCHED_BASIC_POOL_FIFO_PR_PW,   /* Basic scheduler, fifo pools */
-    ABT_SCHED_BASIC_POOL_FIFO_PR_SW,   /* Basic scheduler, fifo pools */
-    ABT_SCHED_BASIC_POOL_FIFO_SR_PW,   /* Basic scheduler, fifo pools */
-    ABT_SCHED_BASIC_POOL_FIFO_SR_SW,   /* Basic scheduler, fifo pools */
+    ABT_SCHED_BASIC_POOL_FIFO_PRIV,    /* Basic scheduler, fifo pools */
+    ABT_SCHED_BASIC_POOL_FIFO_SPSC,    /* Basic scheduler, fifo pools */
+    ABT_SCHED_BASIC_POOL_FIFO_MPSC,    /* Basic scheduler, fifo pools */
+    ABT_SCHED_BASIC_POOL_FIFO_SPMC,    /* Basic scheduler, fifo pools */
+    ABT_SCHED_BASIC_POOL_FIFO_MPMC,    /* Basic scheduler, fifo pools */
     ABT_SCHED_PRIO_NO_POOL,            /* Priority scheduler, no pools */
-    ABT_SCHED_PRIO_POOL_FIFO_PRW,      /* Priority scheduler, fifo pools */
-    ABT_SCHED_PRIO_POOL_FIFO_PR_PW,    /* Priority scheduler, fifo pools */
-    ABT_SCHED_PRIO_POOL_FIFO_PR_SW,    /* Priority scheduler, fifo pools */
-    ABT_SCHED_PRIO_POOL_FIFO_SR_PW,    /* Priority scheduler, fifo pools */
-    ABT_SCHED_PRIO_POOL_FIFO_SR_SW     /* Priority scheduler, fifo pools */
+    ABT_SCHED_PRIO_POOL_FIFO_PRIV,     /* Priority scheduler, fifo pools */
+    ABT_SCHED_PRIO_POOL_FIFO_SPSC,     /* Priority scheduler, fifo pools */
+    ABT_SCHED_PRIO_POOL_FIFO_MPSC,     /* Priority scheduler, fifo pools */
+    ABT_SCHED_PRIO_POOL_FIFO_SPMC,     /* Priority scheduler, fifo pools */
+    ABT_SCHED_PRIO_POOL_FIFO_MPMC      /* Priority scheduler, fifo pools */
 };
 
 enum ABT_sched_type {
@@ -153,11 +153,11 @@ enum ABT_pool_kind {
 };
 
 enum ABT_pool_access {
-    ABT_POOL_ACCESS_PRW,   /* Readers and writers on the same ES */
-    ABT_POOL_ACCESS_PR_PW, /* Readers on ES1, writers on ES2 */
-    ABT_POOL_ACCESS_PR_SW, /* Readers on the same ES, writers on any ES */
-    ABT_POOL_ACCESS_SR_PW, /* Readers on any ES, writers on the same ES */
-    ABT_POOL_ACCESS_SR_SW  /* Readers on any ES, writers on any ES */
+    ABT_POOL_ACCESS_PRIV, /* Used by only one ES */
+    ABT_POOL_ACCESS_SPSC, /* Producers on ES1, consumers on ES2 */
+    ABT_POOL_ACCESS_MPSC, /* Producers on any ES, consumers on the same ES */
+    ABT_POOL_ACCESS_SPMC, /* Producers on the same ES, consumers on any ES */
+    ABT_POOL_ACCESS_MPMC  /* Producers on any ES, consumers on any ES */
 };
 
 enum ABT_unit_type {

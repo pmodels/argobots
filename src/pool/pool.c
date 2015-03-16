@@ -426,9 +426,9 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     int p;
 
     switch (p_pool->access) {
-        case ABT_POOL_ACCESS_PRW:
-        case ABT_POOL_ACCESS_PR_PW:
-        case ABT_POOL_ACCESS_PR_SW:
+        case ABT_POOL_ACCESS_PRIV:
+        case ABT_POOL_ACCESS_SPSC:
+        case ABT_POOL_ACCESS_MPSC:
             /* we need to ensure that the target pool has already an
              * associated ES */
             if (p_pool->reader == NULL) {
@@ -445,15 +445,15 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
             }
             break;
 
-        case ABT_POOL_ACCESS_SR_PW:
-        case ABT_POOL_ACCESS_SR_SW:
+        case ABT_POOL_ACCESS_SPMC:
+        case ABT_POOL_ACCESS_MPMC:
             /* we need to ensure that the pool set of the scheduler does
              * not contain an ES private pool  */
             for (p = 0; p < p_sched->num_pools; p++) {
                 ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-                if (p_pool->access == ABT_POOL_ACCESS_PRW ||
-                    p_pool->access == ABT_POOL_ACCESS_PR_PW ||
-                    p_pool->access == ABT_POOL_ACCESS_PR_SW) {
+                if (p_pool->access == ABT_POOL_ACCESS_PRIV ||
+                    p_pool->access == ABT_POOL_ACCESS_SPSC ||
+                    p_pool->access == ABT_POOL_ACCESS_MPSC) {
                     abt_errno = ABT_ERR_POOL;
                     goto fn_fail;
                 }
@@ -557,13 +557,13 @@ int ABTI_pool_set_reader(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     switch (p_pool->access) {
-        case ABT_POOL_ACCESS_PRW:
+        case ABT_POOL_ACCESS_PRIV:
             if (p_pool->writer && p_xstream != p_pool->writer) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 ABTI_CHECK_ERROR(abt_errno);
             }
-        case ABT_POOL_ACCESS_PR_PW:
-        case ABT_POOL_ACCESS_PR_SW:
+        case ABT_POOL_ACCESS_SPSC:
+        case ABT_POOL_ACCESS_MPSC:
             if (p_pool->reader && p_pool->reader != p_xstream) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 ABTI_CHECK_ERROR(abt_errno);
@@ -573,8 +573,8 @@ int ABTI_pool_set_reader(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
             p_pool->reader = p_xstream;
             break;
 
-        case ABT_POOL_ACCESS_SR_PW:
-        case ABT_POOL_ACCESS_SR_SW:
+        case ABT_POOL_ACCESS_SPMC:
+        case ABT_POOL_ACCESS_MPMC:
             p_pool->reader = p_xstream;
             break;
 
@@ -603,13 +603,13 @@ int ABTI_pool_set_writer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     switch (p_pool->access) {
-        case ABT_POOL_ACCESS_PRW:
+        case ABT_POOL_ACCESS_PRIV:
             if (p_pool->reader && p_xstream != p_pool->reader) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 goto fn_fail;
             }
-        case ABT_POOL_ACCESS_PR_PW:
-        case ABT_POOL_ACCESS_SR_PW:
+        case ABT_POOL_ACCESS_SPSC:
+        case ABT_POOL_ACCESS_SPMC:
             if (p_pool->writer && p_pool->writer != p_xstream) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 goto fn_fail;
@@ -619,8 +619,8 @@ int ABTI_pool_set_writer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
             p_pool->writer = p_xstream;
             break;
 
-        case ABT_POOL_ACCESS_PR_SW:
-        case ABT_POOL_ACCESS_SR_SW:
+        case ABT_POOL_ACCESS_MPSC:
+        case ABT_POOL_ACCESS_MPMC:
             p_pool->writer = p_xstream;
             break;
 
@@ -677,15 +677,15 @@ int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
     switch (p_pool->access)
     {
         /* Need writer in the same ES */
-        case ABT_POOL_ACCESS_PRW:
-        case ABT_POOL_ACCESS_PR_PW:
-        case ABT_POOL_ACCESS_SR_PW:
+        case ABT_POOL_ACCESS_PRIV:
+        case ABT_POOL_ACCESS_SPSC:
+        case ABT_POOL_ACCESS_SPMC:
             if (p_pool->reader == source->writer)
                 return ABT_TRUE;
             return ABT_FALSE;
 
-        case ABT_POOL_ACCESS_PR_SW:
-        case ABT_POOL_ACCESS_SR_SW:
+        case ABT_POOL_ACCESS_MPSC:
+        case ABT_POOL_ACCESS_MPMC:
             return ABT_TRUE;
 
         default:

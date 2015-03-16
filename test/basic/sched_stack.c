@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     ABT_test_init(argc, argv);
 
     /* Creation of the main pool/sched */
-    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRW,
+    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV,
                                 &pool_mainsched);
     ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
     ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1,
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
 
     /* Creation of subsched1 */
-    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRW,
+    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV,
                                 &pool_subsched1);
     ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
     ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1,
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
 
     /* Creation of subsched2 */
-    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRW,
+    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV,
                                 &pool_subsched2);
     ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
     ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1,

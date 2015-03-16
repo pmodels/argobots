@@ -15,11 +15,11 @@
 int num_units = DEFAULT_NUM_UNITS;
 
 ABT_sched_predef predefs[] = {
-    ABT_SCHED_PRIO_POOL_FIFO_PRW,
-    ABT_SCHED_PRIO_POOL_FIFO_PR_PW,
-    ABT_SCHED_PRIO_POOL_FIFO_PR_SW,
-    ABT_SCHED_PRIO_POOL_FIFO_SR_PW,
-    ABT_SCHED_PRIO_POOL_FIFO_SR_SW,
+    ABT_SCHED_PRIO_POOL_FIFO_PRIV,
+    ABT_SCHED_PRIO_POOL_FIFO_SPSC,
+    ABT_SCHED_PRIO_POOL_FIFO_MPSC,
+    ABT_SCHED_PRIO_POOL_FIFO_SPMC,
+    ABT_SCHED_PRIO_POOL_FIFO_MPMC,
     ABT_SCHED_PRIO_NO_POOL
 };
 
@@ -116,7 +116,7 @@ static void create_scheds_and_xstreams(void)
             num_pools[i] = 2;
             pools[i] = (ABT_pool *)malloc(num_pools[i] * sizeof(ABT_pool));
             for (k = 0; k < num_pools[i]; k++) {
-                ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PR_SW,
+                ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC,
                                             &pools[i][k]);
                 ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
             }
@@ -148,9 +148,9 @@ static void create_scheds_and_xstreams(void)
             /* If the predefined scheduler is associated with PW pools,
                we will stack it so that the primary ULT can add the initial
                work unit. */
-            if (predefs[i] == ABT_SCHED_PRIO_POOL_FIFO_PRW ||
-                predefs[i] == ABT_SCHED_PRIO_POOL_FIFO_PR_PW ||
-                predefs[i] == ABT_SCHED_PRIO_POOL_FIFO_SR_PW) {
+            if (predefs[i] == ABT_SCHED_PRIO_POOL_FIFO_PRIV ||
+                predefs[i] == ABT_SCHED_PRIO_POOL_FIFO_SPSC ||
+                predefs[i] == ABT_SCHED_PRIO_POOL_FIFO_SPMC) {
                 ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
                 ABT_TEST_ERROR(ret, "ABT_xstream_create");
             } else {
@@ -271,9 +271,9 @@ static void gen_work(void *arg)
     ret = ABT_self_on_primary_xstream(&flag);
     ABT_TEST_ERROR(ret, "ABT_self_on_primary_stream");
     if (flag == ABT_FALSE) {
-        if (predefs[idx] == ABT_SCHED_PRIO_POOL_FIFO_PRW ||
-            predefs[idx] == ABT_SCHED_PRIO_POOL_FIFO_PR_PW ||
-            predefs[idx] == ABT_SCHED_PRIO_POOL_FIFO_SR_PW) {
+        if (predefs[idx] == ABT_SCHED_PRIO_POOL_FIFO_PRIV ||
+            predefs[idx] == ABT_SCHED_PRIO_POOL_FIFO_SPSC ||
+            predefs[idx] == ABT_SCHED_PRIO_POOL_FIFO_SPMC) {
                 ABT_pool main_pool;
                 ret = ABT_xstream_get_main_pools(g_data.xstreams[idx],
                                                  1, &main_pool);
