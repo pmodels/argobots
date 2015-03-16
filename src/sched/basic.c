@@ -5,6 +5,10 @@
 
 #include "abti.h"
 
+/** @defgroup SCHED_BASIC Basic scheduler
+ * This group is for the basic scheudler.
+ */
+
 #define SCHED_BASIC_EVENT_FREQ 8
 
 static int      sched_init(ABT_sched sched, ABT_sched_config config);
@@ -16,30 +20,34 @@ ABT_sched_def ABTI_sched_basic = {
     .run = sched_run,
     .free = sched_free,
     .get_migr_pool = NULL,
-} ;
+};
 
-struct sched_config {
+struct sched_data {
     int event_freq;
-} ;
-typedef struct sched_config sched_config;
-static sched_config *sched_config_get_ptr(ABT_sched_config config);
+};
+typedef struct sched_data sched_data;
+static sched_data *sched_data_get_ptr(ABT_sched_config config);
 
+ABT_sched_config_var ABT_sched_basic_freq = {
+  .idx = 0,
+  .type = ABT_SCHED_CONFIG_INT
+};
 
 static int sched_init(ABT_sched sched, ABT_sched_config config)
 {
     int abt_errno = ABT_SUCCESS;
 
-    if (config == ABT_SCHED_CONFIG_NULL) {
-        sched_config *p_data;
-        p_data = (sched_config *)ABTU_malloc(sizeof(sched_config));
-        p_data->event_freq = SCHED_BASIC_EVENT_FREQ;
-        config = (ABT_sched_config)p_data;
-    }
+    /* Default settings */
+    sched_data *p_data;
+    p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
+    p_data->event_freq = SCHED_BASIC_EVENT_FREQ;
 
-    abt_errno = ABT_sched_set_data(sched, (void *)config);
+    /* Set the variables from the config */
+    ABT_sched_config_read(config, 1, &p_data->event_freq);
+
+    abt_errno = ABT_sched_set_data(sched, (void *)p_data);
     return abt_errno;
 }
-
 
 static void sched_run(ABT_sched sched)
 {
@@ -49,7 +57,7 @@ static void sched_run(ABT_sched sched)
     void *data;
 
     ABT_sched_get_data(sched, &data);
-    int event_freq = sched_config_get_ptr(data)->event_freq;
+    int event_freq = sched_data_get_ptr(data)->event_freq;
 
     ABT_sched_get_pools(sched, 1, 0, &pool);
 
@@ -92,13 +100,13 @@ static int sched_free(ABT_sched sched)
     void *data;
 
     ABT_sched_get_data(sched, &data);
-    sched_config *config = sched_config_get_ptr(data);
-    ABTU_free(config);
+    sched_data *p_data = sched_data_get_ptr(data);
+    ABTU_free(p_data);
     return abt_errno;
 }
 
-static sched_config *sched_config_get_ptr(ABT_sched_config config)
+static sched_data *sched_data_get_ptr(ABT_sched_config config)
 {
-    return (sched_config *)config;
+    return (sched_data *)config;
 }
 

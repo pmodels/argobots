@@ -231,6 +231,8 @@ typedef struct {
 
 extern ABT_sched_config_var ABT_sched_config_var_end;
   /* To mark the last parameter in ABT_sched_config_create */
+extern ABT_sched_config_var ABT_sched_basic_freq;
+  /* To configure the frequency for checking events of the basic scheduler */
 
 /* Scheduler Functions */
 typedef int      (*ABT_sched_init_fn)(ABT_sched, ABT_sched_config);

@@ -34,6 +34,10 @@ size_t ABTI_sched_config_type_size(ABT_sched_config_type type);
  * If you want to write your own scheduler and use this function, you can find
  * a good example in the test called \c sched_config.
  *
+ * For example, if you want to configure the basic scheduler to have a
+ * frequency for checking events equal to 5, you will have this call:
+ * ABT_sched_config_create(&config, ABT_sched_basic_freq, 5, ABT_sched_config_var_end);
+ *
  * @param[out] config   configuration to create
  * @param[in]  ...      list of arguments
  * @return Error code
