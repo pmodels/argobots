@@ -24,7 +24,7 @@ TESTS = \
 	pool_access \
 	name \
 	mutex \
-	condition \
+	cond_test \
 	future_create \
 	eventual_create \
 	self_type \
@@ -55,7 +55,7 @@ sched_config_SOURCES = sched_config.c
 pool_access_SOURCES = pool_access.c
 name_SOURCES = name.c
 mutex_SOURCES = mutex.c
-condition_SOURCES = condition.c
+cond_test_SOURCES = cond_test.c
 future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 self_type_SOURCES = self_type.c
@@ -82,7 +82,7 @@ testing:
 	./pool_access
 	./name
 	./mutex
-	./condition
+	./cond_test
 	./future_create
 	./eventual_create
 	./self_type

@@ -20,7 +20,7 @@ basic/sched_config
 basic/pool_access
 basic/name
 basic/mutex
-basic/condition
+basic/cond_test
 basic/future_create
 basic/eventual_create
 basic/self_type
