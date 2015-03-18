@@ -285,8 +285,10 @@ int ABT_thread_join(ABT_thread thread)
 
     while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
         /* FIXME: instead of same pool, runnable by the same ES */
-        if (p_thread->p_pool == p_caller->p_pool)
+        if (p_thread->p_pool == p_caller->p_pool &&
+            ABTI_thread_is_ready(p_thread) == ABT_TRUE) {
             ABT_thread_yield_to(thread);
+        }
         else
             ABT_thread_yield();
     }
@@ -521,6 +523,10 @@ int ABT_thread_yield_to(ABT_thread thread)
         goto fn_fail;
     }
 
+    /* If the target thread is not in READY, we don't yield. */
+    if (ABTI_thread_is_ready(p_tar_thread) == ABT_FALSE) {
+        goto fn_exit;
+    }
 
     if (p_cur_thread->type == ABTI_THREAD_TYPE_MAIN ||
             p_cur_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
@@ -1527,6 +1533,21 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_thread_set_ready", abt_errno);
     goto fn_exit;
+}
+
+ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread)
+{
+    /* ULT can be regarded as 'ready' only if its state is READY and it has been
+     * pushed into a pool. Since we set ULT's state to READY and then push it
+     * into a pool, we check them in the reverse order, i.e., check if the ULT
+     * is inside a pool and the its state. */
+    ABTI_pool *p_pool = p_thread->p_pool;
+    if (p_pool->u_is_in_pool(p_thread->unit) == ABT_TRUE &&
+        p_thread->state == ABT_THREAD_STATE_READY) {
+        return ABT_TRUE;
+    }
+
+    return ABT_FALSE;
 }
 
 void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
