@@ -21,6 +21,7 @@ basic/pool_access
 basic/name
 basic/mutex
 basic/cond_test
+basic/cond_join
 basic/future_create
 basic/eventual_create
 basic/self_type

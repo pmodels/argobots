@@ -25,6 +25,7 @@ TESTS = \
 	name \
 	mutex \
 	cond_test \
+	cond_join \
 	future_create \
 	eventual_create \
 	self_type \
@@ -56,6 +57,7 @@ pool_access_SOURCES = pool_access.c
 name_SOURCES = name.c
 mutex_SOURCES = mutex.c
 cond_test_SOURCES = cond_test.c
+cond_join_SOURCES = cond_join.c
 future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 self_type_SOURCES = self_type.c
@@ -83,6 +85,7 @@ testing:
 	./name
 	./mutex
 	./cond_test
+	./cond_join
 	./future_create
 	./eventual_create
 	./self_type
