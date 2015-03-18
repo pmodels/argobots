@@ -53,6 +53,7 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->u_get_type           = def->u_get_type;
     p_pool->u_get_thread         = def->u_get_thread;
     p_pool->u_get_task           = def->u_get_task;
+    p_pool->u_is_in_pool         = def->u_is_in_pool;
     p_pool->u_create_from_thread = def->u_create_from_thread;
     p_pool->u_create_from_task   = def->u_create_from_task;
     p_pool->u_free               = def->u_free;

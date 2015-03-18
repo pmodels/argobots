@@ -32,6 +32,7 @@ typedef struct unit unit_t;
 static ABT_unit_type unit_get_type(ABT_unit unit);
 static ABT_thread unit_get_thread(ABT_unit unit);
 static ABT_task unit_get_task(ABT_unit unit);
+static ABT_bool unit_is_in_pool(ABT_unit unit);
 static ABT_unit unit_create_from_thread(ABT_thread thread);
 static ABT_unit unit_create_from_task(ABT_task task);
 static void unit_free(ABT_unit *unit);
@@ -49,6 +50,7 @@ ABT_pool_def ABTI_pool_fifo = {
     .u_get_type           = unit_get_type,
     .u_get_thread         = unit_get_thread,
     .u_get_task           = unit_get_task,
+    .u_is_in_pool         = unit_is_in_pool,
     .u_create_from_thread = unit_create_from_thread,
     .u_create_from_task   = unit_create_from_task,
     .u_free               = unit_free,
@@ -104,6 +106,7 @@ int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
     p_def->u_get_type           = unit_get_type;
     p_def->u_get_thread         = unit_get_thread;
     p_def->u_get_task           = unit_get_task;
+    p_def->u_is_in_pool         = unit_is_in_pool;
     p_def->u_create_from_thread = unit_create_from_thread;
     p_def->u_create_from_task   = unit_create_from_task;
     p_def->u_free               = unit_free;
@@ -193,8 +196,6 @@ static void pool_push_shared(ABT_pool pool, ABT_unit unit)
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = (unit_t *)unit;
 
-    p_unit->pool = pool;
-
     ABT_mutex_spinlock(p_data->mutex);
     if (p_data->num_units == 0) {
         p_unit->p_prev = p_unit;
@@ -211,6 +212,8 @@ static void pool_push_shared(ABT_pool pool, ABT_unit unit)
         p_data->p_tail = p_unit;
     }
     p_data->num_units++;
+
+    p_unit->pool = pool;
     ABT_mutex_unlock(p_data->mutex);
 }
 
@@ -220,8 +223,6 @@ static void pool_push_private(ABT_pool pool, ABT_unit unit)
     ABT_pool_get_data(pool, &data);
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = (unit_t *)unit;
-
-    p_unit->pool = pool;
 
     if (p_data->num_units == 0) {
         p_unit->p_prev = p_unit;
@@ -238,6 +239,8 @@ static void pool_push_private(ABT_pool pool, ABT_unit unit)
         p_data->p_tail = p_unit;
     }
     p_data->num_units++;
+
+    p_unit->pool = pool;
 }
 
 static ABT_unit pool_pop_shared(ABT_pool pool)
@@ -263,6 +266,7 @@ static ABT_unit pool_pop_shared(ABT_pool pool)
 
         p_unit->p_prev = NULL;
         p_unit->p_next = NULL;
+        p_unit->pool = ABT_POOL_NULL;
 
         h_unit = (ABT_unit)p_unit;
     }
@@ -293,6 +297,7 @@ static ABT_unit pool_pop_private(ABT_pool pool)
 
         p_unit->p_prev = NULL;
         p_unit->p_next = NULL;
+        p_unit->pool = ABT_POOL_NULL;
 
         h_unit = (ABT_unit)p_unit;
     }
@@ -328,9 +333,10 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
         }
     }
     p_data->num_units--;
-    ABT_mutex_unlock(p_data->mutex);
 
     p_unit->pool = ABT_POOL_NULL;
+    ABT_mutex_unlock(p_data->mutex);
+
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
 
@@ -419,6 +425,12 @@ static ABT_task unit_get_task(ABT_unit unit)
         h_task = ABT_TASK_NULL;
     }
     return h_task;
+}
+
+static ABT_bool unit_is_in_pool(ABT_unit unit)
+{
+    unit_t *p_unit = (unit_t *)unit;
+    return (p_unit->pool != ABT_POOL_NULL) ? ABT_TRUE : ABT_FALSE;
 }
 
 static ABT_unit unit_create_from_thread(ABT_thread thread)

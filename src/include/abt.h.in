@@ -255,6 +255,7 @@ typedef struct {
 typedef ABT_unit_type (*ABT_unit_get_type_fn)(ABT_unit);
 typedef ABT_thread    (*ABT_unit_get_thread_fn)(ABT_unit);
 typedef ABT_task      (*ABT_unit_get_task_fn)(ABT_unit);
+typedef ABT_bool      (*ABT_unit_is_in_pool_fn)(ABT_unit);
 typedef ABT_unit      (*ABT_unit_create_from_thread_fn)(ABT_thread);
 typedef ABT_unit      (*ABT_unit_create_from_task_fn)(ABT_task);
 typedef void          (*ABT_unit_free_fn)(ABT_unit *);
@@ -272,6 +273,7 @@ typedef struct {
     ABT_unit_get_type_fn           u_get_type;
     ABT_unit_get_thread_fn         u_get_thread;
     ABT_unit_get_task_fn           u_get_task;
+    ABT_unit_is_in_pool_fn         u_is_in_pool;
     ABT_unit_create_from_thread_fn u_create_from_thread;
     ABT_unit_create_from_task_fn   u_create_from_task;
     ABT_unit_free_fn               u_free;
