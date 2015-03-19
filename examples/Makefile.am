@@ -4,14 +4,14 @@
 #
 
 TESTS = \
-	test
+	hello_world
 
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)
 
 include $(top_srcdir)/test/Makefile.mk
 
-test_SOURCES = test.c
+hello_world_SOURCES = hello_world.c
 
 testing:
-	./test
+	./hello_world

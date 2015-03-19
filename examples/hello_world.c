@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include "abt.h"
 
+#define NUM_XSTREAMS    4
+
 void task_hello(void *arg)
 {
     printf("Task%d: Hello, world!\n", (int)(size_t)arg);
@@ -14,28 +16,38 @@ void task_hello(void *arg)
 void thread_hello(void *arg)
 {
     ABT_xstream xstream;
+    ABT_pool pool;
     printf("ULT%d: Hello, world!\n", (int)(size_t)arg);
 
     /* Create a task */
     ABT_xstream_self(&xstream);
-    ABT_task_create(xstream, task_hello, arg, NULL);
+    ABT_xstream_get_main_pools(xstream, 1, &pool);
+    ABT_task_create(pool, task_hello, arg, NULL);
 }
 
 int main(int argc, char *argv[])
 {
-    ABT_xstream xstreams[2];
-    ABT_thread threads[2];
+    ABT_xstream xstreams[NUM_XSTREAMS];
+    ABT_pool    pools[NUM_XSTREAMS];
+    ABT_thread  threads[NUM_XSTREAMS];
     size_t i;
 
     ABT_init(argc, argv);
 
     /* Execution Streams */
     ABT_xstream_self(&xstreams[0]);
-    ABT_xstream_create(ABT_SCHED_NULL, &xstreams[1]);
+    for (i = 1; i < NUM_XSTREAMS; i++) {
+        ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
+    }
+
+    /* Get the first pool associated with each ES */
+    for (i = 0; i < NUM_XSTREAMS; i++) {
+        ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
+    }
 
     /* Create ULTs */
-    for (i = 0; i < 2; i++) {
-        ABT_thread_create(xstreams[i], thread_hello, (void *)i,
+    for (i = 0; i < NUM_XSTREAMS; i++) {
+        ABT_thread_create(pools[i], thread_hello, (void *)i,
                           ABT_THREAD_ATTR_NULL, &threads[i]);
     }
 
@@ -43,12 +55,14 @@ int main(int argc, char *argv[])
     ABT_thread_yield();
 
     /* Join & Free */
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < NUM_XSTREAMS; i++) {
         ABT_thread_join(threads[i]);
         ABT_thread_free(&threads[i]);
     }
-    ABT_xstream_join(xstreams[1]);
-    ABT_xstream_free(&xstreams[1]);
+    for (i = 1; i < NUM_XSTREAMS; i++) {
+        ABT_xstream_join(xstreams[i]);
+        ABT_xstream_free(&xstreams[i]);
+    }
 
     ABT_finalize();
 
