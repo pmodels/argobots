@@ -104,10 +104,10 @@ AS_CASE([$host_cpu],
     [x86_64], [AS_CASE([$host_os],
               [linux*],  [fctx_arch_bin="x86_64_sysv_elf_gas"],
               [darwin*], [fctx_arch_bin="x86_64_sysv_macho_gas"])],
-    [ppc32],  [AS_CASE([$host_os],
+    [p*pc32], [AS_CASE([$host_os],
               [linux*],  [fctx_arch_bin="ppc32_sysv_elf_gas"],
               [darwin*], [fctx_arch_bin="ppc32_sysv_macho_gas"])],
-    [ppc64],  [AS_CASE([$host_os],
+    [p*pc64], [AS_CASE([$host_os],
               [linux*],  [fctx_arch_bin="ppc64_sysv_elf_gas"],
               [darwin*], [fctx_arch_bin="ppc64_sysv_macho_gas"])])
 AC_SUBST([fctx_arch_bin])
