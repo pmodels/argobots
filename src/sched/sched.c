@@ -18,10 +18,12 @@ extern ABT_sched_def ABTI_sched_basic;
  * @brief   Create a new user-defined scheduler and return its handle through
  * newsched.
  *
- * The pools used by the new scheduler are provided by pools. This is an array
- * of pools whose the address will be copied. So it must not be freed. The
- * config has been created by a specific function of the user-defined
- * scheduler, and will be used has argument in the initialization.
+ * The pools used by the new scheduler are provided by \c pools. The contents
+ * of this array is copied, so it can be freed. If a pool in the array is
+ * ABT_POOL_NULL, the corresponding pool is automatically created.
+ * The config must have been created by ABT_sched_config_create, and will be
+ * used as argument in the initialization. If no specific configuration is
+ * required, the parameter will be ABT_CONFIG_NULL.
  *
  * @param[in]  def       definition required for scheduler creation
  * @param[in]  num_pools number of pools associated with this scheduler
@@ -36,6 +38,7 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_sched;
+    int p;
 
     if (newsched == NULL) {
         HANDLE_ERROR("newsched is NULL");
@@ -46,15 +49,32 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched = (ABTI_sched *)ABTU_malloc(sizeof(ABTI_sched));
     if (!p_sched) {
         HANDLE_ERROR("ABTU_malloc");
-        *newsched = ABT_SCHED_NULL;
         abt_errno = ABT_ERR_MEM;
         goto fn_fail;
     }
 
-    /* Check if the pools are available */
-    int p;
+    /* Copy of the contents of pools */
+    ABT_pool *pool_list;
+    pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
+    if (!pool_list) {
+        HANDLE_ERROR("ABTU_malloc");
+        abt_errno = ABT_ERR_MEM;
+        goto fn_fail;
+    }
     for (p = 0; p < num_pools; p++) {
-      ABTI_pool_retain(pools[p]);
+        if (pools[p] == ABT_POOL_NULL) {
+            abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO,
+                                              ABT_POOL_ACCESS_MPSC,
+                                              &pool_list[p]);
+            ABTI_CHECK_ERROR(abt_errno);
+        } else {
+            pool_list[p] = pools[p];
+        }
+    }
+
+    /* Check if the pools are available */
+    for (p = 0; p < num_pools; p++) {
+      ABTI_pool_retain(pool_list[p]);
     }
 
     /* Create a mutex */
@@ -66,8 +86,7 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->kind          = ABTI_sched_get_kind(def);
     p_sched->state         = ABT_SCHED_STATE_READY;
     p_sched->request       = 0;
-    p_sched->pools         = pools;
-    p_sched->free_pools    = ABT_FALSE;
+    p_sched->pools         = pool_list;
     p_sched->num_pools     = num_pools;
     p_sched->type          = def->type;
     p_sched->thread        = ABT_THREAD_NULL;
@@ -98,9 +117,13 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
  * @brief   Create a predefined scheduler and return its handle through
  * newsched.
  *
- * The pools used by the new scheduler are provided by pools. This is an array
- * of pools whose the address will be copied. So it must not be freed.  The
- * pool array can be NULL, but predef of sceduler should be compatible.
+ * The pools used by the new scheduler are provided by \c pools. The contents
+ * of this array is copied, so it can be freed. If a pool in the array is
+ * ABT_POOL_NULL, the corresponding pool is automatically created.
+ * The pool array can be NULL and all the pools will be created automatically.
+ * The config must have been created by ABT_sched_config_create, and will be
+ * used as argument in the initialization. If no specific configuration is
+ * required, the parameter will be ABT_CONFIG_NULL.
  *
  * @param[in]  predef    predefined scheduler
  * @param[in]  num_pools number of pools associated with this scheduler
@@ -116,21 +139,77 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                            ABT_bool automatic, ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_bool free_pools = ABT_FALSE;
+    ABT_pool_access access;
+    int p;
 
-    // A pool array is provided, predef has to be compatible
+    /* We find out the default access for the predef scheduler in case we need
+     * to automatically create one */
+    switch (predef) {
+        case ABT_SCHED_DEFAULT_POOL_FIFO_PRIV:
+        case ABT_SCHED_BASIC_POOL_FIFO_PRIV:
+        case ABT_SCHED_PRIO_POOL_FIFO_PRIV:
+            access = ABT_POOL_ACCESS_PRIV;
+            break;
+        case ABT_SCHED_DEFAULT_POOL_FIFO_SPSC:
+        case ABT_SCHED_BASIC_POOL_FIFO_SPSC:
+        case ABT_SCHED_PRIO_POOL_FIFO_SPSC:
+            access = ABT_POOL_ACCESS_SPSC;
+            break;
+        case ABT_SCHED_DEFAULT_NO_POOL:
+        case ABT_SCHED_BASIC_NO_POOL:
+        case ABT_SCHED_PRIO_NO_POOL:
+        case ABT_SCHED_DEFAULT_POOL_FIFO_MPSC:
+        case ABT_SCHED_BASIC_POOL_FIFO_MPSC:
+        case ABT_SCHED_PRIO_POOL_FIFO_MPSC:
+            access = ABT_POOL_ACCESS_MPSC;
+            break;
+        case ABT_SCHED_DEFAULT_POOL_FIFO_SPMC:
+        case ABT_SCHED_BASIC_POOL_FIFO_SPMC:
+        case ABT_SCHED_PRIO_POOL_FIFO_SPMC:
+            access = ABT_POOL_ACCESS_SPMC;
+            break;
+        case ABT_SCHED_DEFAULT_POOL_FIFO_MPMC:
+        case ABT_SCHED_BASIC_POOL_FIFO_MPMC:
+        case ABT_SCHED_PRIO_POOL_FIFO_MPMC:
+            access = ABT_POOL_ACCESS_MPMC;
+            break;
+        default:
+            abt_errno = ABT_ERR_INV_SCHED_PREDEF;
+            ABTI_CHECK_ERROR(abt_errno);
+            break;
+    }
+
+    /* A pool array is provided, predef has to be compatible */
     if (pools != NULL) {
+        /* Copy of the contents of pools */
+        ABT_pool *pool_list;
+        pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
+        if (!pool_list) {
+            HANDLE_ERROR("ABTU_malloc");
+            abt_errno = ABT_ERR_MEM;
+            goto fn_fail;
+        }
+        for (p = 0; p < num_pools; p++) {
+            if (pools[p] == ABT_POOL_NULL) {
+                abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access,
+                                                  &pool_list[p]);
+                ABTI_CHECK_ERROR(abt_errno);
+            } else {
+                pool_list[p] = pools[p];
+            }
+        }
+
         /* Creation of the scheduler */
         switch (predef) {
             case ABT_SCHED_DEFAULT_NO_POOL:
             case ABT_SCHED_BASIC_NO_POOL:
                 abt_errno = ABT_sched_create(&ABTI_sched_basic,
-                                             num_pools, pools,
+                                             num_pools, pool_list,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
                 break;
             case ABT_SCHED_PRIO_NO_POOL:
-                abt_errno = ABTI_sched_create_prio(num_pools, pools,
+                abt_errno = ABTI_sched_create_prio(num_pools, pool_list,
                                                    newsched);
                 break;
             default:
@@ -138,57 +217,30 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 break;
         }
         ABTI_CHECK_ERROR(abt_errno);
+        ABTU_free(pool_list);
     }
 
-    // No pool array is provided, predef has to be compatible
+    /* No pool array is provided, predef has to be compatible */
     else {
-        free_pools = ABT_TRUE;
-        ABT_pool_access access;
-        /* First, set the number of pools and the access type */
+        /* Set the number of pools */
         switch (predef) {
             case ABT_SCHED_DEFAULT_POOL_FIFO_PRIV:
-            case ABT_SCHED_BASIC_POOL_FIFO_PRIV:
-                access = ABT_POOL_ACCESS_PRIV;
-                num_pools = 1;
-                break;
             case ABT_SCHED_DEFAULT_POOL_FIFO_SPSC:
-            case ABT_SCHED_BASIC_POOL_FIFO_SPSC:
-                access = ABT_POOL_ACCESS_SPSC;
-                num_pools = 1;
-                break;
             case ABT_SCHED_DEFAULT_POOL_FIFO_MPSC:
-            case ABT_SCHED_BASIC_POOL_FIFO_MPSC:
-                access = ABT_POOL_ACCESS_MPSC;
-                num_pools = 1;
-                break;
             case ABT_SCHED_DEFAULT_POOL_FIFO_SPMC:
-            case ABT_SCHED_BASIC_POOL_FIFO_SPMC:
-                access = ABT_POOL_ACCESS_SPMC;
-                num_pools = 1;
-                break;
             case ABT_SCHED_DEFAULT_POOL_FIFO_MPMC:
+            case ABT_SCHED_BASIC_POOL_FIFO_PRIV:
+            case ABT_SCHED_BASIC_POOL_FIFO_SPSC:
+            case ABT_SCHED_BASIC_POOL_FIFO_MPSC:
+            case ABT_SCHED_BASIC_POOL_FIFO_SPMC:
             case ABT_SCHED_BASIC_POOL_FIFO_MPMC:
-                access = ABT_POOL_ACCESS_MPMC;
                 num_pools = 1;
                 break;
             case ABT_SCHED_PRIO_POOL_FIFO_PRIV:
-                access = ABT_POOL_ACCESS_PRIV;
-                num_pools = ABTI_SCHED_NUM_PRIO;
-                break;
             case ABT_SCHED_PRIO_POOL_FIFO_SPSC:
-                access = ABT_POOL_ACCESS_SPSC;
-                num_pools = ABTI_SCHED_NUM_PRIO;
-                break;
             case ABT_SCHED_PRIO_POOL_FIFO_MPSC:
-                access = ABT_POOL_ACCESS_MPSC;
-                num_pools = ABTI_SCHED_NUM_PRIO;
-                break;
             case ABT_SCHED_PRIO_POOL_FIFO_SPMC:
-                access = ABT_POOL_ACCESS_SPMC;
-                num_pools = ABTI_SCHED_NUM_PRIO;
-                break;
             case ABT_SCHED_PRIO_POOL_FIFO_MPMC:
-                access = ABT_POOL_ACCESS_MPMC;
                 num_pools = ABTI_SCHED_NUM_PRIO;
                 break;
             default:
@@ -201,9 +253,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         pools = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
         int p;
         for (p = 0; p < num_pools; p++) {
-            abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO,
-                                              access,
-                                              pools+p);
+            abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access, pools+p);
             ABTI_CHECK_ERROR(abt_errno);
         }
 
@@ -241,7 +291,6 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(*newsched);
     p_sched->automatic = automatic;
-    p_sched->free_pools = free_pools;
 
   fn_exit:
     return abt_errno;
@@ -281,8 +330,7 @@ int ABT_sched_free(ABT_sched *sched)
             ABTI_CHECK_ERROR(abt_errno);
         }
     }
-    if (p_sched->free_pools == ABT_TRUE)
-        ABTU_free(p_sched->pools);
+    ABTU_free(p_sched->pools);
 
     /* Free the associated thread */
     if (p_sched->thread != ABT_THREAD_NULL) {

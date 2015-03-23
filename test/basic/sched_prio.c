@@ -115,7 +115,8 @@ static void create_scheds_and_xstreams(void)
             /* Create pools and then create a scheduler */
             num_pools[i] = 2;
             pools[i] = (ABT_pool *)malloc(num_pools[i] * sizeof(ABT_pool));
-            for (k = 0; k < num_pools[i]; k++) {
+            pools[i][0] = ABT_POOL_NULL;
+            for (k = 1; k < num_pools[i]; k++) {
                 ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC,
                                             &pools[i][k]);
                 ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
@@ -136,9 +137,9 @@ static void create_scheds_and_xstreams(void)
             ret = ABT_sched_get_num_pools(scheds[i], &num_pools[i]);
             ABT_TEST_ERROR(ret, "ABT_sched_get_num_pools");
             pools[i] = (ABT_pool *)malloc(num_pools[i] * sizeof(ABT_pool));
-            ret = ABT_sched_get_pools(scheds[i], num_pools[i], 0, pools[i]);
-            ABT_TEST_ERROR(ret, "ABT_sched_get_pools");
         }
+        ret = ABT_sched_get_pools(scheds[i], num_pools[i], 0, pools[i]);
+        ABT_TEST_ERROR(ret, "ABT_sched_get_pools");
 
         /* Create ES */
         if (i == 0) {

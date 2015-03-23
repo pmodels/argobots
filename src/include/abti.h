@@ -159,7 +159,6 @@ struct ABTI_sched {
     ABT_sched_state state;      /* State */
     uint32_t request;           /* Request */
     ABT_pool *pools;            /* Work unit pools */
-    ABT_bool free_pools;        /* To know if automatic pools free */
     int num_pools;              /* Number of work unit pools */
     ABT_thread thread;          /* Associated thread */
     ABT_task task;              /* Associated task */
