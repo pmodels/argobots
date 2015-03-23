@@ -16,5 +16,5 @@ $(libabt):
 $(libutil):
 	$(MAKE) -C $(top_builddir)/test/util
 
-LDADD = $(libabt) $(libutil)
+LDADD = $(libutil) $(libabt)
 
