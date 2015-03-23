@@ -85,14 +85,15 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
  *
  * For more details see \c ABT_pool_create().
  *
- * @param[in]  kind    name of the predefined pool
- * @param[in]  access  access type of the predefined pool
- * @param[out] newpool handle to a new pool
+ * @param[in]  kind      name of the predefined pool
+ * @param[in]  access    access type of the predefined pool
+ * @param[in]  automatic ABT_TRUE if the pool should be automatically freed
+ * @param[out] newpool   handle to a new pool
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
-                          ABT_pool *newpool)
+                          ABT_bool automatic, ABT_pool *newpool)
 {
     int abt_errno = ABT_SUCCESS;
     ABT_pool_def def;
@@ -110,7 +111,7 @@ int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
     abt_errno = ABT_pool_create(&def, ABT_POOL_CONFIG_NULL, newpool);
     ABTI_CHECK_ERROR(abt_errno);
     ABTI_pool *p_pool = ABTI_pool_get_ptr(*newpool);
-    p_pool->automatic = ABT_TRUE;
+    p_pool->automatic = automatic;
 
   fn_exit:
     return abt_errno;

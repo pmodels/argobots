@@ -118,7 +118,7 @@ static void create_scheds_and_xstreams(void)
             pools[i][0] = ABT_POOL_NULL;
             for (k = 1; k < num_pools[i]; k++) {
                 ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC,
-                                            &pools[i][k]);
+                                            ABT_TRUE, &pools[i][k]);
                 ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
             }
 

@@ -65,7 +65,7 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
         if (pools[p] == ABT_POOL_NULL) {
             abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO,
                                               ABT_POOL_ACCESS_MPSC,
-                                              &pool_list[p]);
+                                              ABT_TRUE, &pool_list[p]);
             ABTI_CHECK_ERROR(abt_errno);
         } else {
             pool_list[p] = pools[p];
@@ -192,7 +192,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         for (p = 0; p < num_pools; p++) {
             if (pools[p] == ABT_POOL_NULL) {
                 abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access,
-                                                  &pool_list[p]);
+                                                  ABT_TRUE, &pool_list[p]);
                 ABTI_CHECK_ERROR(abt_errno);
             } else {
                 pool_list[p] = pools[p];
@@ -253,7 +253,8 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         pools = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
         int p;
         for (p = 0; p < num_pools; p++) {
-            abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access, pools+p);
+            abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access, ABT_TRUE,
+                                              pools+p);
             ABTI_CHECK_ERROR(abt_errno);
         }
 

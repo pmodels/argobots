@@ -349,7 +349,7 @@ int ABT_sched_config_free(ABT_sched_config *config);
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
                     ABT_pool *newpool);
 int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
-                          ABT_pool *newpool);
+                          ABT_bool automatic, ABT_pool *newpool);
 int ABT_pool_free(ABT_pool *pool);
 int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access);
 int ABT_pool_get_size(ABT_pool pool, size_t *size);

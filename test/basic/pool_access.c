@@ -30,7 +30,7 @@ int add_to_another_ES(ABT_pool_access access, int result)
     int s;
 
     ABT_pool pool;
-    ret = ABT_pool_create_basic(ABT_POOL_FIFO, access, &pool);
+    ret = ABT_pool_create_basic(ABT_POOL_FIFO, access, ABT_TRUE, &pool);
     ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
     
     ABT_sched scheds[3];
@@ -116,7 +116,7 @@ int add_to_another_access(int access, int *results)
 
         /* Test */
         ABT_pool pool_dest;
-        ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[p], &pool_dest);
+        ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[p], ABT_TRUE, &pool_dest);
         ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
         ABT_sched sched_dest;
         ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool_dest,
@@ -125,7 +125,7 @@ int add_to_another_access(int access, int *results)
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
 
         ABT_pool pool;
-        ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[access], &pool);
+        ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[access], ABT_TRUE, &pool);
         ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
         ABT_sched sched;
         ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool,
