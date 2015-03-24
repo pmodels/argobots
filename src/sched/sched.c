@@ -129,23 +129,24 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
  * @param[in]  num_pools number of pools associated with this scheduler
  * @param[in]  pools     pools associated with this scheduler
  * @param[in]  config    specific config used during the scheduler creation
- * @param[in]  automatic ABT_TRUE if the sched should be automatically freed
  * @param[out] newsched  handle to a new scheduler
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                            ABT_pool *pools, ABT_sched_config config,
-                           ABT_bool automatic, ABT_sched *newsched)
+                           ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
     ABT_pool_access access;
+    ABT_bool automatic;
     int p;
 
     /* We set the access to the default one */
     access = ABT_POOL_ACCESS_MPSC;
+    automatic = ABT_TRUE;;
     /* We read the config and set the configured parameters */
-    abt_errno = ABTI_sched_config_read_global(config, &access);
+    abt_errno = ABTI_sched_config_read_global(config, &access, &automatic);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* A pool array is provided, predef has to be compatible */

@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     ABT_TEST_ERROR(ret, "ABT_sched_config_create");
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
-                                     config, ABT_TRUE, &scheds[i]);
+                                     config, &scheds[i]);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
     }
     ret = ABT_sched_config_free(&config);

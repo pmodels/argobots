@@ -28,8 +28,7 @@ int add_to_another_ES(ABT_pool_access access, int result)
     ABT_sched scheds[3];
     for (s = 0; s < 3; s++) {
         ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool,
-                                     ABT_SCHED_CONFIG_NULL, ABT_TRUE,
-                                     &scheds[s]);
+                                     ABT_SCHED_CONFIG_NULL, &scheds[s]);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
     }
 
@@ -111,8 +110,7 @@ int add_to_another_access(int access, int *results)
         ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
         ABT_sched sched_dest;
         ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool_dest,
-                                     ABT_SCHED_CONFIG_NULL, ABT_TRUE,
-                                     &sched_dest);
+                                     ABT_SCHED_CONFIG_NULL, &sched_dest);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
 
         ABT_sched_config config;
@@ -121,8 +119,7 @@ int add_to_another_access(int access, int *results)
                                       ABT_sched_config_var_end);
         ABT_TEST_ERROR(ret, "ABT_sched_config_create");
         ABT_sched sched;
-        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config,
-                                     ABT_TRUE, &sched);
+        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config, &sched);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
         ret = ABT_sched_config_free(&config);
         ABT_TEST_ERROR(ret, "ABT_sched_config_free");
@@ -172,8 +169,7 @@ int push_from_another_es(int access, int *results)
                                   ABT_sched_config_var_end);
     ABT_TEST_ERROR(ret, "ABT_sched_config_create");
     ABT_sched sched;
-    ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config,
-                                 ABT_TRUE, &sched);
+    ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config, &sched);
     ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
     ret = ABT_sched_config_free(&config);
     ABT_TEST_ERROR(ret, "ABT_sched_config_free");

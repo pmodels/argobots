@@ -123,7 +123,6 @@ static void create_scheds_and_xstreams(void)
 
             ret = ABT_sched_create_basic(ABT_SCHED_PRIO, num_pools[i], pools[i],
                                          ABT_SCHED_CONFIG_NULL,
-                                         (i == 0) ? ABT_TRUE : ABT_FALSE,
                                          &scheds[i]);
             ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
         } else {
@@ -133,7 +132,7 @@ static void create_scheds_and_xstreams(void)
                                           ABT_sched_config_access, accesses[i],
                                           ABT_sched_config_var_end);
             ABT_TEST_ERROR(ret, "ABT_sched_config_create");
-            ret = ABT_sched_create_basic(ABT_SCHED_PRIO, 0, NULL, config, ABT_FALSE,
+            ret = ABT_sched_create_basic(ABT_SCHED_PRIO, 0, NULL, config,
                                          &scheds[i]);
             ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
             ret = ABT_sched_config_free(&config);
@@ -173,15 +172,10 @@ static void free_scheds_and_xstreams(void)
 {
     int i, ret;
     int num_scheds = g_data.num_scheds;
-    ABT_sched *scheds = g_data.scheds;
     ABT_xstream *xstreams = g_data.xstreams;
 
-    /* Free all schedulers and ESs except the primary ES */
+    /* Free all ESs except the primary ES */
     for (i = 1; i < num_scheds; i++) {
-        /* Free the scheduler */
-        ret = ABT_sched_free(&scheds[i]);
-        ABT_TEST_ERROR(ret, "ABT_sched_free");
-
         /* Free the ES */
         ret = ABT_xstream_free(&xstreams[i]);
         ABT_TEST_ERROR(ret, "ABT_xstream_free");

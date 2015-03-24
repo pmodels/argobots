@@ -109,7 +109,7 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
 
     ABT_sched sched;
     abt_errno = ABT_sched_create_basic(predef, num_pools, pools,
-                                       ABT_SCHED_CONFIG_NULL, ABT_TRUE, &sched);
+                                       ABT_SCHED_CONFIG_NULL, &sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno = ABT_xstream_create(sched, newxstream);
@@ -619,7 +619,7 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
 
     ABT_sched sched;
     abt_errno = ABT_sched_create_basic(predef, num_pools, pools,
-                                       ABT_SCHED_CONFIG_NULL, ABT_TRUE, &sched);
+                                       ABT_SCHED_CONFIG_NULL, &sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno = ABT_xstream_set_main_sched(xstream, sched);

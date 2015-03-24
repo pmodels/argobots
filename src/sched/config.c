@@ -44,6 +44,8 @@ int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
  *   - for all the schedulers
  *     - ABT_sched_config_access: to choose the access type of the
  *     automatically created pools (ABT_POOL_ACCESS_MPSC by default)
+ *     - ABT_sched_config_automatic: to automatically free the scheduler when
+ *     unused (ABT_TRUE by default)
  *   - for the basic scheduler:
  *     - ABT_sched_basic_freq; to set the frequency on checking events
  *
@@ -213,21 +215,24 @@ size_t ABTI_sched_config_type_size(ABT_sched_config_type type)
 }
 
 int ABTI_sched_config_read_global(ABT_sched_config config,
-                                  ABT_pool_access *access)
+                                  ABT_pool_access *access, ABT_bool *automatic)
 {
     int abt_errno = ABT_SUCCESS;
-    int num_vars = 1;
+    int num_vars = 2;
     /* We use XXX_i variables because va_list converts these types into int */
     int access_i = -1;
+    int automatic_i = -1;
 
     void **variables = (void **)ABTU_malloc(num_vars*sizeof(void *));
     variables[0] = &access_i;
+    variables[1] = &automatic_i;
 
     abt_errno = ABTI_sched_config_read(config, 0, num_vars, variables);
     ABTU_free(variables);
     ABTI_CHECK_ERROR(abt_errno);
 
     if (access_i != -1) *access = (ABT_pool_access)access_i;
+    if (automatic_i != -1) *automatic = (ABT_bool)automatic_i;
 
   fn_exit:
     return abt_errno;

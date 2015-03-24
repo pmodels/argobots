@@ -393,7 +393,7 @@ int ABTI_sched_print(ABTI_sched *p_sched);
 
 /* Scheduler config */
 int ABTI_sched_config_read_global(ABT_sched_config config,
-                                  ABT_pool_access *access);
+                                  ABT_pool_access *access, ABT_bool *automatic);
 
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
