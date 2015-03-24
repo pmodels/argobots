@@ -30,8 +30,8 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     ABT_xstream h_newxstream;
 
     if (sched == ABT_SCHED_NULL) {
-        abt_errno = ABT_xstream_create_basic(ABT_SCHED_DEFAULT_POOL_FIFO_MPSC,
-                                             0, NULL, newxstream);
+        abt_errno = ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
+                                             newxstream);
         ABTI_CHECK_ERROR(abt_errno);
         return abt_errno;
     }
@@ -537,8 +537,8 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     if (sched == ABT_SCHED_NULL) {
-        abt_errno = ABT_xstream_set_main_sched_basic(xstream,
-                ABT_SCHED_DEFAULT_POOL_FIFO_MPSC, 0, NULL);
+        abt_errno = ABT_xstream_set_main_sched_basic(xstream, ABT_SCHED_DEFAULT,
+                                                     0, NULL);
         ABTI_CHECK_ERROR(abt_errno);
         return abt_errno;
     }

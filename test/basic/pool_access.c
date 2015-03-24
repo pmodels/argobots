@@ -11,14 +11,6 @@
 
 // TODO free memory
 
-ABT_sched_predef sched_list[5] = {
-    ABT_SCHED_DEFAULT_POOL_FIFO_PRIV,
-    ABT_SCHED_DEFAULT_POOL_FIFO_SPSC,
-    ABT_SCHED_DEFAULT_POOL_FIFO_MPSC,
-    ABT_SCHED_DEFAULT_POOL_FIFO_SPMC,
-    ABT_SCHED_DEFAULT_POOL_FIFO_MPMC,
-};
-
 ABT_pool_access accesses[5] = {
   ABT_POOL_ACCESS_PRIV, ABT_POOL_ACCESS_SPSC, ABT_POOL_ACCESS_MPSC,
   ABT_POOL_ACCESS_SPMC, ABT_POOL_ACCESS_MPMC,
@@ -32,10 +24,10 @@ int add_to_another_ES(ABT_pool_access access, int result)
     ABT_pool pool;
     ret = ABT_pool_create_basic(ABT_POOL_FIFO, access, ABT_TRUE, &pool);
     ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
-    
+
     ABT_sched scheds[3];
     for (s = 0; s < 3; s++) {
-        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool,
+        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool,
                                      ABT_SCHED_CONFIG_NULL, ABT_TRUE,
                                      &scheds[s]);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
@@ -106,8 +98,7 @@ int add_to_another_access(int access, int *results)
     for (p = 0; p < 5; p++) {
         /* Creation of the ES */
         ABT_xstream xstream;
-        ret = ABT_xstream_create_basic(ABT_SCHED_DEFAULT_POOL_FIFO_MPSC,
-                                       0, NULL, &xstream);
+        ret = ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 0, NULL, &xstream);
         ABT_TEST_ERROR(ret, "ABT_xstream_create_basic");
         /* Get the pool */
         ABT_pool pool_main;
@@ -119,19 +110,22 @@ int add_to_another_access(int access, int *results)
         ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[p], ABT_TRUE, &pool_dest);
         ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
         ABT_sched sched_dest;
-        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool_dest,
+        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool_dest,
                                      ABT_SCHED_CONFIG_NULL, ABT_TRUE,
                                      &sched_dest);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
 
-        ABT_pool pool;
-        ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[access], ABT_TRUE, &pool);
-        ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
+        ABT_sched_config config;
+        ret = ABT_sched_config_create(&config,
+                                      ABT_sched_config_access, accesses[access],
+                                      ABT_sched_config_var_end);
+        ABT_TEST_ERROR(ret, "ABT_sched_config_create");
         ABT_sched sched;
-        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT_NO_POOL, 1, &pool,
-                                     ABT_SCHED_CONFIG_NULL, ABT_TRUE,
-                                     &sched);
+        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config,
+                                     ABT_TRUE, &sched);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
+        ret = ABT_sched_config_free(&config);
+        ABT_TEST_ERROR(ret, "ABT_sched_config_free");
         /* We need to use a task for the test to be in the same ES */
         void *args[5] = { &results[p], &pool_main, &pool_dest, &sched_dest,
                           &sched };
@@ -172,9 +166,20 @@ int push_from_another_es(int access, int *results)
     int ret;
 
     /* Creation of the ES */
+    ABT_sched_config config;
+    ret = ABT_sched_config_create(&config,
+                                  ABT_sched_config_access, accesses[access],
+                                  ABT_sched_config_var_end);
+    ABT_TEST_ERROR(ret, "ABT_sched_config_create");
+    ABT_sched sched;
+    ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config,
+                                 ABT_TRUE, &sched);
+    ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
+    ret = ABT_sched_config_free(&config);
+    ABT_TEST_ERROR(ret, "ABT_sched_config_free");
     ABT_xstream xstream;
-    ret = ABT_xstream_create_basic(sched_list[access], 0, NULL, &xstream);
-    ABT_TEST_ERROR(ret, "ABT_xstream_create_basic");
+    ret = ABT_xstream_create(sched, &xstream);
+    ABT_TEST_ERROR(ret, "ABT_xstream_create");
     /* Get the pool */
     ABT_pool pool;
     ret = ABT_xstream_get_main_pools(xstream, 1, &pool);

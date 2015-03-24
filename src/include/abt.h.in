@@ -62,34 +62,35 @@ extern "C" {
 #define ABT_ERR_INV_SCHED_PREDEF    7  /* Invalid predefined scheduler */
 #define ABT_ERR_INV_SCHED_TYPE      8  /* Invalid scheduler type */
 #define ABT_ERR_INV_SCHED_PRIO      9  /* Invalid priority */
-#define ABT_ERR_INV_POOL           10  /* Invalid pool */
-#define ABT_ERR_INV_POOL_KIND      11  /* Invalid pool kind */
-#define ABT_ERR_INV_POOL_ACCESS    12  /* Invalid pool access mode */
-#define ABT_ERR_INV_UNIT           13  /* Invalid scheduling unit */
-#define ABT_ERR_INV_THREAD         14  /* Invalid ULT */
-#define ABT_ERR_INV_THREAD_ATTR    15  /* Invalid ULT attribute */
-#define ABT_ERR_INV_TASK           16  /* Invalid task */
-#define ABT_ERR_INV_MUTEX          17  /* Invalid mutex */
-#define ABT_ERR_INV_COND           18  /* Invalid condition variable */
-#define ABT_ERR_INV_EVENTUAL       19  /* Invalid eventual */
-#define ABT_ERR_INV_FUTURE         20  /* Invalid future */
-#define ABT_ERR_INV_TIMER          21  /* Invalid timer */
-#define ABT_ERR_XSTREAM            22  /* ES-related error */
-#define ABT_ERR_XSTREAM_STATE      23  /* ES state error */
-#define ABT_ERR_SCHED              24  /* Scheduler-related error */
-#define ABT_ERR_POOL               25  /* Pool-related error */
-#define ABT_ERR_UNIT               26  /* Scheduling unit-related error */
-#define ABT_ERR_THREAD             27  /* ULT-related error */
-#define ABT_ERR_TASK               28  /* Task-related error */
-#define ABT_ERR_MUTEX              29  /* Mutex-related error */
-#define ABT_ERR_MUTEX_LOCKED       30  /* Return value when mutex is locked */
-#define ABT_ERR_COND               31  /* Condition-related error */
-#define ABT_ERR_EVENTUAL           32  /* Eventual-related error */
-#define ABT_ERR_FUTURE             33  /* Future-related error */
-#define ABT_ERR_TIMER              34  /* Timer-related error */
-#define ABT_ERR_MIGRATION_TARGET   35  /* Migration target error */
-#define ABT_ERR_MIGRATION_NA       36  /* Migration not available */
-#define ABT_ERR_MISSING_JOIN       37  /* An ES or more did not join */
+#define ABT_ERR_INV_SCHED_CONFIG   10  /* Invalid scheduler config */
+#define ABT_ERR_INV_POOL           11  /* Invalid pool */
+#define ABT_ERR_INV_POOL_KIND      12  /* Invalid pool kind */
+#define ABT_ERR_INV_POOL_ACCESS    13  /* Invalid pool access mode */
+#define ABT_ERR_INV_UNIT           14  /* Invalid scheduling unit */
+#define ABT_ERR_INV_THREAD         15  /* Invalid ULT */
+#define ABT_ERR_INV_THREAD_ATTR    16  /* Invalid ULT attribute */
+#define ABT_ERR_INV_TASK           17  /* Invalid task */
+#define ABT_ERR_INV_MUTEX          18  /* Invalid mutex */
+#define ABT_ERR_INV_COND           19  /* Invalid condition variable */
+#define ABT_ERR_INV_EVENTUAL       20  /* Invalid eventual */
+#define ABT_ERR_INV_FUTURE         21  /* Invalid future */
+#define ABT_ERR_INV_TIMER          22  /* Invalid timer */
+#define ABT_ERR_XSTREAM            23  /* ES-related error */
+#define ABT_ERR_XSTREAM_STATE      24  /* ES state error */
+#define ABT_ERR_SCHED              25  /* Scheduler-related error */
+#define ABT_ERR_POOL               26  /* Pool-related error */
+#define ABT_ERR_UNIT               27  /* Scheduling unit-related error */
+#define ABT_ERR_THREAD             28  /* ULT-related error */
+#define ABT_ERR_TASK               29  /* Task-related error */
+#define ABT_ERR_MUTEX              30  /* Mutex-related error */
+#define ABT_ERR_MUTEX_LOCKED       31  /* Return value when mutex is locked */
+#define ABT_ERR_COND               32  /* Condition-related error */
+#define ABT_ERR_EVENTUAL           33  /* Eventual-related error */
+#define ABT_ERR_FUTURE             34  /* Future-related error */
+#define ABT_ERR_TIMER              35  /* Timer-related error */
+#define ABT_ERR_MIGRATION_TARGET   36  /* Migration target error */
+#define ABT_ERR_MIGRATION_NA       37  /* Migration not available */
+#define ABT_ERR_MISSING_JOIN       38  /* An ES or more did not join */
 
 
 /* Constants */
@@ -123,24 +124,9 @@ enum ABT_sched_state {
 };
 
 enum ABT_sched_predef {
-    ABT_SCHED_DEFAULT_NO_POOL,         /* Default scheduler, no pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_PRIV,  /* Default scheduler, fifo pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_SPSC,  /* Default scheduler, fifo pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_MPSC,  /* Default scheduler, fifo pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_SPMC,  /* Default scheduler, fifo pools */
-    ABT_SCHED_DEFAULT_POOL_FIFO_MPMC,  /* Default scheduler, fifo pools */
-    ABT_SCHED_BASIC_NO_POOL,           /* Basic scheduler, no pools */
-    ABT_SCHED_BASIC_POOL_FIFO_PRIV,    /* Basic scheduler, fifo pools */
-    ABT_SCHED_BASIC_POOL_FIFO_SPSC,    /* Basic scheduler, fifo pools */
-    ABT_SCHED_BASIC_POOL_FIFO_MPSC,    /* Basic scheduler, fifo pools */
-    ABT_SCHED_BASIC_POOL_FIFO_SPMC,    /* Basic scheduler, fifo pools */
-    ABT_SCHED_BASIC_POOL_FIFO_MPMC,    /* Basic scheduler, fifo pools */
-    ABT_SCHED_PRIO_NO_POOL,            /* Priority scheduler, no pools */
-    ABT_SCHED_PRIO_POOL_FIFO_PRIV,     /* Priority scheduler, fifo pools */
-    ABT_SCHED_PRIO_POOL_FIFO_SPSC,     /* Priority scheduler, fifo pools */
-    ABT_SCHED_PRIO_POOL_FIFO_MPSC,     /* Priority scheduler, fifo pools */
-    ABT_SCHED_PRIO_POOL_FIFO_SPMC,     /* Priority scheduler, fifo pools */
-    ABT_SCHED_PRIO_POOL_FIFO_MPMC      /* Priority scheduler, fifo pools */
+    ABT_SCHED_DEFAULT,   /* Default scheduler */
+    ABT_SCHED_BASIC,     /* Basic scheduler */
+    ABT_SCHED_PRIO       /* Priority scheduler */
 };
 
 enum ABT_sched_type {
@@ -221,7 +207,7 @@ typedef int                    ABT_bool;          /* Boolean type */
 typedef enum {
     ABT_SCHED_CONFIG_INT    = 0, /* Parameter of type int */
     ABT_SCHED_CONFIG_DOUBLE = 1, /* Parameter of type double */
-    ABT_SCHED_CONFIG_PTR    = 2 /* Parameter of type pointer */
+    ABT_SCHED_CONFIG_PTR    = 2, /* Parameter of type pointer */
 } ABT_sched_config_type;
 
 typedef struct {
@@ -233,6 +219,8 @@ extern ABT_sched_config_var ABT_sched_config_var_end;
   /* To mark the last parameter in ABT_sched_config_create */
 extern ABT_sched_config_var ABT_sched_basic_freq;
   /* To configure the frequency for checking events of the basic scheduler */
+extern ABT_sched_config_var ABT_sched_config_access;
+  /* To configure the access type of the pools created automatically */
 
 /* Scheduler Functions */
 typedef int      (*ABT_sched_init_fn)(ABT_sched, ABT_sched_config);

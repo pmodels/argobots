@@ -15,12 +15,21 @@
  * This group is for Scheduler config.
  */
 
+/* Global configurable parameters */
 ABT_sched_config_var ABT_sched_config_var_end = {
     .idx = -1,
     .type = ABT_SCHED_CONFIG_INT
 };
 
+ABT_sched_config_var ABT_sched_config_access = {
+    .idx = -2,
+    .type = ABT_SCHED_CONFIG_INT
+};
+
+
 size_t ABTI_sched_config_type_size(ABT_sched_config_type type);
+int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
+                           void **variables);
 
 /**
  * @ingroup SCHED_CONFIG
@@ -30,6 +39,13 @@ size_t ABTI_sched_config_type_size(ABT_sched_config_type type);
  * dynamic parameters are a list of tuples composed of the variable of type \c
  * ABT_sched_config_var and a value for this variable. The list must end with a
  * single value \c ABT_sched_config_var_end.
+ *
+ * For now the parameters can be
+ *   - for all the schedulers
+ *     - ABT_sched_config_access: to choose the access type of the
+ *     automatically created pools (ABT_POOL_ACCESS_MPSC by default)
+ *   - for the basic scheduler:
+ *     - ABT_sched_basic_freq; to set the frequency on checking events
  *
  * If you want to write your own scheduler and use this function, you can find
  * a good example in the test called \c sched_config.
@@ -139,15 +155,8 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
  */
 int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
 {
-    size_t offset = 0;
-    int num_params;
+    int abt_errno = ABT_SUCCESS;
     int v;
-
-    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
-
-    if (p_config == NULL) return ABT_SUCCESS;
-
-    char *buffer = (char *)p_config;
 
     /* We read all the variables and save the addresses */
     void **variables = (void *)ABTU_malloc(num_vars*sizeof(void *));
@@ -158,29 +167,17 @@ int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
     }
     va_end(varg_list);
 
-    /* Number of parameters in buffer */
-    memcpy(&num_params, buffer, sizeof(num_params));
-    offset += sizeof(num_params);
+    abt_errno = ABTI_sched_config_read(config, 1, num_vars, variables);
+    ABTI_CHECK_ERROR(abt_errno);
 
-    /* Copy the data from buffer to the right variables */
-    int p;
-    for (p = 0; p < num_params; p++)
-    {
-        int var_idx;
-        size_t size;
+    ABTU_free(variables);
 
-        /* Get the variable index of the next parameter */
-        memcpy(&var_idx, buffer+offset, sizeof(var_idx));
-        offset += sizeof(var_idx);
-        /* Get the size of the next parameter */
-        memcpy(&size, buffer+offset, sizeof(size));
-        offset += sizeof(size);
-        /* Get the next argument */
-        memcpy(variables[var_idx], buffer+offset, size);
-        offset += size;
-    }
+  fn_exit:
+    return abt_errno;
 
-    return ABT_SUCCESS;
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_config_read", abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -214,3 +211,81 @@ size_t ABTI_sched_config_type_size(ABT_sched_config_type type)
             assert(0);
     }
 }
+
+int ABTI_sched_config_read_global(ABT_sched_config config,
+                                  ABT_pool_access *access)
+{
+    int abt_errno = ABT_SUCCESS;
+    int num_vars = 1;
+    /* We use XXX_i variables because va_list converts these types into int */
+    int access_i = -1;
+
+    void **variables = (void **)ABTU_malloc(num_vars*sizeof(void *));
+    variables[0] = &access_i;
+
+    abt_errno = ABTI_sched_config_read(config, 0, num_vars, variables);
+    ABTU_free(variables);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    if (access_i != -1) *access = (ABT_pool_access)access_i;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_sched_config_read_global", abt_errno);
+    goto fn_exit;
+}
+
+/* type is 0 if we read the private parameters, else 1 */
+int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
+                           void **variables)
+{
+    size_t offset = 0;
+    int num_params;
+
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
+
+    if (p_config == NULL) return ABT_SUCCESS;
+
+    char *buffer = (char *)p_config;
+
+    /* Number of parameters in buffer */
+    memcpy(&num_params, buffer, sizeof(num_params));
+    offset += sizeof(num_params);
+
+    /* Copy the data from buffer to the right variables */
+    int p;
+    for (p = 0; p < num_params; p++)
+    {
+        int var_idx;
+        size_t size;
+
+        /* Get the variable index of the next parameter */
+        memcpy(&var_idx, buffer+offset, sizeof(var_idx));
+        offset += sizeof(var_idx);
+        /* Get the size of the next parameter */
+        memcpy(&size, buffer+offset, sizeof(size));
+        offset += sizeof(size);
+        /* Get the next argument */
+        /* We save it only if
+         *   - the index is < 0  when type == 0
+         *   - the index is >= 0 when type == 1
+         */
+        if (type == 0) {
+            if (var_idx < 0) {
+                var_idx = (var_idx+2)*-1;
+                if (var_idx >= num_vars) return ABT_ERR_INV_SCHED_CONFIG;
+                memcpy(variables[var_idx], buffer+offset, size);
+            }
+        } else {
+            if (var_idx >= 0) {
+                if (var_idx >= num_vars) return ABT_ERR_INV_SCHED_CONFIG;
+                memcpy(variables[var_idx], buffer+offset, size);
+            }
+        }
+        offset += size;
+    }
+    return ABT_SUCCESS;
+}
+

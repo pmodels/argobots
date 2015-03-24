@@ -142,42 +142,11 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
     ABT_pool_access access;
     int p;
 
-    /* We find out the default access for the predef scheduler in case we need
-     * to automatically create one */
-    switch (predef) {
-        case ABT_SCHED_DEFAULT_POOL_FIFO_PRIV:
-        case ABT_SCHED_BASIC_POOL_FIFO_PRIV:
-        case ABT_SCHED_PRIO_POOL_FIFO_PRIV:
-            access = ABT_POOL_ACCESS_PRIV;
-            break;
-        case ABT_SCHED_DEFAULT_POOL_FIFO_SPSC:
-        case ABT_SCHED_BASIC_POOL_FIFO_SPSC:
-        case ABT_SCHED_PRIO_POOL_FIFO_SPSC:
-            access = ABT_POOL_ACCESS_SPSC;
-            break;
-        case ABT_SCHED_DEFAULT_NO_POOL:
-        case ABT_SCHED_BASIC_NO_POOL:
-        case ABT_SCHED_PRIO_NO_POOL:
-        case ABT_SCHED_DEFAULT_POOL_FIFO_MPSC:
-        case ABT_SCHED_BASIC_POOL_FIFO_MPSC:
-        case ABT_SCHED_PRIO_POOL_FIFO_MPSC:
-            access = ABT_POOL_ACCESS_MPSC;
-            break;
-        case ABT_SCHED_DEFAULT_POOL_FIFO_SPMC:
-        case ABT_SCHED_BASIC_POOL_FIFO_SPMC:
-        case ABT_SCHED_PRIO_POOL_FIFO_SPMC:
-            access = ABT_POOL_ACCESS_SPMC;
-            break;
-        case ABT_SCHED_DEFAULT_POOL_FIFO_MPMC:
-        case ABT_SCHED_BASIC_POOL_FIFO_MPMC:
-        case ABT_SCHED_PRIO_POOL_FIFO_MPMC:
-            access = ABT_POOL_ACCESS_MPMC;
-            break;
-        default:
-            abt_errno = ABT_ERR_INV_SCHED_PREDEF;
-            ABTI_CHECK_ERROR(abt_errno);
-            break;
-    }
+    /* We set the access to the default one */
+    access = ABT_POOL_ACCESS_MPSC;
+    /* We read the config and set the configured parameters */
+    abt_errno = ABTI_sched_config_read_global(config, &access);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* A pool array is provided, predef has to be compatible */
     if (pools != NULL) {
@@ -201,14 +170,14 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
 
         /* Creation of the scheduler */
         switch (predef) {
-            case ABT_SCHED_DEFAULT_NO_POOL:
-            case ABT_SCHED_BASIC_NO_POOL:
+            case ABT_SCHED_DEFAULT:
+            case ABT_SCHED_BASIC:
                 abt_errno = ABT_sched_create(&ABTI_sched_basic,
                                              num_pools, pool_list,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
                 break;
-            case ABT_SCHED_PRIO_NO_POOL:
+            case ABT_SCHED_PRIO:
                 abt_errno = ABTI_sched_create_prio(num_pools, pool_list,
                                                    newsched);
                 break;
@@ -224,23 +193,11 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
     else {
         /* Set the number of pools */
         switch (predef) {
-            case ABT_SCHED_DEFAULT_POOL_FIFO_PRIV:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_SPSC:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_MPSC:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_SPMC:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_MPMC:
-            case ABT_SCHED_BASIC_POOL_FIFO_PRIV:
-            case ABT_SCHED_BASIC_POOL_FIFO_SPSC:
-            case ABT_SCHED_BASIC_POOL_FIFO_MPSC:
-            case ABT_SCHED_BASIC_POOL_FIFO_SPMC:
-            case ABT_SCHED_BASIC_POOL_FIFO_MPMC:
+            case ABT_SCHED_DEFAULT:
+            case ABT_SCHED_BASIC:
                 num_pools = 1;
                 break;
-            case ABT_SCHED_PRIO_POOL_FIFO_PRIV:
-            case ABT_SCHED_PRIO_POOL_FIFO_SPSC:
-            case ABT_SCHED_PRIO_POOL_FIFO_MPSC:
-            case ABT_SCHED_PRIO_POOL_FIFO_SPMC:
-            case ABT_SCHED_PRIO_POOL_FIFO_MPMC:
+            case ABT_SCHED_PRIO:
                 num_pools = ABTI_SCHED_NUM_PRIO;
                 break;
             default:
@@ -260,25 +217,13 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
 
         /* Creation of the scheduler */
         switch (predef) {
-            case ABT_SCHED_DEFAULT_POOL_FIFO_PRIV:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_SPSC:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_MPSC:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_SPMC:
-            case ABT_SCHED_DEFAULT_POOL_FIFO_MPMC:
-            case ABT_SCHED_BASIC_POOL_FIFO_PRIV:
-            case ABT_SCHED_BASIC_POOL_FIFO_SPSC:
-            case ABT_SCHED_BASIC_POOL_FIFO_MPSC:
-            case ABT_SCHED_BASIC_POOL_FIFO_SPMC:
-            case ABT_SCHED_BASIC_POOL_FIFO_MPMC:
+            case ABT_SCHED_DEFAULT:
+            case ABT_SCHED_BASIC:
                 abt_errno = ABT_sched_create(&ABTI_sched_basic,
                                              num_pools, pools,
                                              config, newsched);
                 break;
-            case ABT_SCHED_PRIO_POOL_FIFO_PRIV:
-            case ABT_SCHED_PRIO_POOL_FIFO_SPSC:
-            case ABT_SCHED_PRIO_POOL_FIFO_MPSC:
-            case ABT_SCHED_PRIO_POOL_FIFO_SPMC:
-            case ABT_SCHED_PRIO_POOL_FIFO_MPMC:
+            case ABT_SCHED_PRIO:
                 abt_errno = ABTI_sched_create_prio(num_pools, pools,
                                                    newsched);
                 break;
