@@ -31,7 +31,7 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 
     if (sched == ABT_SCHED_NULL) {
         abt_errno = ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
-                                             newxstream);
+                                             ABT_SCHED_CONFIG_NULL, newxstream);
         ABTI_CHECK_ERROR(abt_errno);
         return abt_errno;
     }
@@ -98,18 +98,20 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
  * @param[in]  predef       predefined scheduler
  * @param[in]  num_pools    number of pools associated with this scheduler
  * @param[in]  pools        pools associated with this scheduler
+ * @param[in]  config       specific config used during the scheduler creation
  * @param[out] newxstream   handle to the target ES
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
-        ABT_pool *pools, ABT_xstream *newxstream)
+                             ABT_pool *pools, ABT_sched_config config,
+                             ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
 
     ABT_sched sched;
     abt_errno = ABT_sched_create_basic(predef, num_pools, pools,
-                                       ABT_SCHED_CONFIG_NULL, &sched);
+                                       config, &sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno = ABT_xstream_create(sched, newxstream);

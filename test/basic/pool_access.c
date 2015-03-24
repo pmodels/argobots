@@ -97,7 +97,8 @@ int add_to_another_access(int access, int *results)
     for (p = 0; p < 5; p++) {
         /* Creation of the ES */
         ABT_xstream xstream;
-        ret = ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 0, NULL, &xstream);
+        ret = ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
+                                       ABT_SCHED_CONFIG_NULL, &xstream);
         ABT_TEST_ERROR(ret, "ABT_xstream_create_basic");
         /* Get the pool */
         ABT_pool pool_main;
