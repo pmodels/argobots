@@ -71,6 +71,38 @@ void ABT_test_printf(int level, const char *format, ...);
  */
 void ABT_test_error(int err, const char *msg, const char *file, int line);
 
+
+typedef enum {
+    ABT_TEST_ARG_N_ES   = 0,    /* # of ESs */
+    ABT_TEST_ARG_N_ULT  = 1,    /* # of ULTs */
+    ABT_TEST_ARG_N_TASK = 2,    /* # of tasklets */
+    ABT_TEST_ARG_N_ITER = 3     /* # of iterations */
+} ABT_test_arg;
+
+/**
+ * @ingroup TESTUTIL
+ * @brief   Read the argument vector.
+ *
+ * \c ABT_test_read_args reads the argument vector \c argv and save valid
+ * arguments internally.  \c ABT_test_get_arg_val() is used to get the saved
+ * argument value.
+ *
+ * @param[in] argc  the number of arguments
+ * @param[in] argv  argument vector
+ */
+void ABT_test_read_args(int argc, char **argv);
+
+/**
+ * @ingroup TESTUTIL
+ * @brief   Get the argument value.
+ *
+ * \c ABT_test_get_arg_val returns the argument value corresponding to \c arg.
+ *
+ * @param[in] arg  argument kind
+ * @return Argument value
+ */
+int ABT_test_get_arg_val(ABT_test_arg arg);
+
 #define ABT_TEST_ERROR(e,m)     ABT_test_error(e,m,__FILE__,__LINE__)
 #define ABT_TEST_UNUSED(a)      (void)(a)
 

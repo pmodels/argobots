@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <assert.h>
 #include "abt.h"
 #include "abttest.h"
@@ -13,10 +14,18 @@
 static int g_verbose = 0;
 static int g_num_errs = 0;
 
+/* NOTE: The below NUM_ARG_KINDS should match the number of values in enum
+ * ABT_test_arg in abttest.h. */
+#define NUM_ARG_KINDS   4
+static int g_arg_val[NUM_ARG_KINDS];
+
 void ABT_test_init(int argc, char **argv)
 {
     int ret;
     char *envval;
+
+    /* Read the command arguments */
+    ABT_test_read_args(argc, argv);
 
     /* Initialize Argobots */
     ret = ABT_init(argc, argv);
@@ -102,3 +111,57 @@ void ABT_test_error(int err, const char *msg, const char *file, int line)
     exit(EXIT_FAILURE);
 }
 
+static void ABT_test_print_help(char *prog)
+{
+    fprintf(stderr, "Usage: %s [-e num_es] [-u num_ult] [-t num_task] "
+                    "[-i iter] [-v verbose_level]\n", prog);
+    fflush(stderr);
+}
+
+void ABT_test_read_args(int argc, char **argv)
+{
+    static int read = 0;
+    int i, opt;
+
+    if (read == 0) read = 1;
+    else return;
+
+    for (i = 0; i < NUM_ARG_KINDS; i++) {
+        g_arg_val[i] = 1;
+    }
+
+    opterr = 0;
+    while ((opt = getopt(argc, argv, "he:u:t:i:v:")) != -1) {
+        switch (opt) {
+            case 'e':
+                g_arg_val[ABT_TEST_ARG_N_ES] = atoi(optarg);
+                break;
+            case 'u':
+                g_arg_val[ABT_TEST_ARG_N_ULT] = atoi(optarg);
+                break;
+            case 't':
+                g_arg_val[ABT_TEST_ARG_N_TASK] = atoi(optarg);
+                break;
+            case 'i':
+                g_arg_val[ABT_TEST_ARG_N_ITER] = atoi(optarg);
+                break;
+            case 'v':
+                g_verbose = atoi(optarg);
+                break;
+            case 'h':
+                ABT_test_print_help(argv[0]);
+                exit(EXIT_SUCCESS);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+int ABT_test_get_arg_val(ABT_test_arg arg)
+{
+    if (arg < ABT_TEST_ARG_N_ES || (int)arg >= NUM_ARG_KINDS) {
+        return 0;
+    }
+    return g_arg_val[arg];
+}
