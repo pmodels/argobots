@@ -179,12 +179,6 @@ int ABT_task_free(ABT_task *task)
     ABTI_task *p_task = ABTI_task_get_ptr(h_task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
-    if (ABTI_local_get_thread() == NULL) {
-        HANDLE_ERROR("ABT_task_free cannot be called by task.");
-        abt_errno = ABT_ERR_TASK;
-        goto fn_fail;
-    }
-
     /* Wait until the task terminates */
     while (p_task->state != ABT_TASK_STATE_TERMINATED &&
            p_task->state != ABT_TASK_STATE_CREATED) {
@@ -229,12 +223,6 @@ int ABT_task_cancel(ABT_task task)
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    if (ABTI_local_get_thread() == NULL) {
-        HANDLE_ERROR("ABT_task_cancel cannot be called by task.");
-        abt_errno = ABT_ERR_TASK;
-        goto fn_fail;
-    }
 
     /* Set the cancel request */
     ABTD_atomic_fetch_or_uint32(&p_task->request, ABTI_TASK_REQ_CANCEL);
