@@ -208,7 +208,9 @@ int ABT_thread_free(ABT_thread *thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(h_thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (p_thread == ABTI_local_get_thread()) {
+    /* We first need to check whether lp_ABTI_local is NULL because external
+     * threads might call this routine. */
+    if (lp_ABTI_local != NULL && p_thread == ABTI_local_get_thread()) {
         HANDLE_ERROR("The current thread cannot be freed.");
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_fail;
@@ -265,32 +267,42 @@ int ABT_thread_free(ABT_thread *thread)
 int ABT_thread_join(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
+    ABT_unit_type type;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_thread *p_caller = ABTI_local_get_thread();
-
-    if (p_thread == p_caller) {
-        HANDLE_ERROR("The target thread should be different.");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
-
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
-            p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        HANDLE_ERROR("The main thread cannot be joined.");
+        p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
+        HANDLE_ERROR("The main ULT cannot be joined.");
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_fail;
     }
 
-    while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
-        /* FIXME: instead of same pool, runnable by the same ES */
-        if (p_thread->p_pool == p_caller->p_pool &&
-            ABTI_thread_is_ready(p_thread) == ABT_TRUE) {
-            ABT_thread_yield_to(thread);
+    ABT_self_get_type(&type);
+
+    /* If the caller is ULT, we can use yield_to-based implementation. */
+    if (type == ABT_UNIT_TYPE_THREAD) {
+        ABTI_thread *p_caller = ABTI_local_get_thread();
+
+        if (p_thread == p_caller) {
+            HANDLE_ERROR("The target ULT should be different.");
+            abt_errno = ABT_ERR_INV_THREAD;
+            goto fn_fail;
         }
-        else
+
+        while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
+            /* FIXME: instead of same pool, runnable by the same ES */
+            if (p_thread->p_pool == p_caller->p_pool &&
+                ABTI_thread_is_ready(p_thread) == ABT_TRUE) {
+                ABT_thread_yield_to(thread);
+            }
+            else
+                ABT_thread_yield();
+        }
+    } else {
+        while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
             ABT_thread_yield();
+        }
     }
 
   fn_exit:
@@ -497,6 +509,11 @@ int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool)
 int ABT_thread_yield_to(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
+    ABT_unit_type type;
+
+    /* If this routine is called by non-ULT, just return. */
+    ABT_self_get_type(&type);
+    if (type != ABT_UNIT_TYPE_THREAD) goto fn_exit;
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_cur_thread = ABTI_local_get_thread();
@@ -608,6 +625,11 @@ int ABT_thread_yield_to(ABT_thread thread)
 int ABT_thread_yield(void)
 {
     int abt_errno = ABT_SUCCESS;
+    ABT_unit_type type;
+
+    /* If this routine is called by non-ULT, just return. */
+    ABT_self_get_type(&type);
+    if (type != ABT_UNIT_TYPE_THREAD) goto fn_exit;
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
@@ -1279,7 +1301,7 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
     ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
-    if (p_thread == ABTI_local_get_thread()) {
+    if (lp_ABTI_local != NULL && p_thread == ABTI_local_get_thread()) {
         ABT_thread_yield();
     }
     goto fn_exit;
