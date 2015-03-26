@@ -109,11 +109,21 @@ int ABT_mutex_free(ABT_mutex *mutex)
 int ABT_mutex_lock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
-    ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+    ABT_unit_type type;
 
-    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
-        ABT_thread_yield();
+    ABT_self_get_type(&type);
+
+    /* Only ULTs can yield when the mutex has been locked. For others,
+     * just call mutex_spinlock. */
+    if (type == ABT_UNIT_TYPE_THREAD) {
+        ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+        ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+
+        while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+            ABT_thread_yield();
+        }
+    } else {
+        ABT_mutex_spinlock(mutex);
     }
 
   fn_exit:

@@ -61,6 +61,7 @@ int ABT_self_get_type(ABT_unit_type *type)
     return abt_errno;
 
   fn_fail:
+    *type = ABT_UNIT_TYPE_EXT;
     HANDLE_ERROR_WITH_CODE("ABT_self_get_type", abt_errno);
     goto fn_exit;
 }
