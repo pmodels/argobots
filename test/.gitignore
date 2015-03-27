@@ -25,6 +25,7 @@ basic/cond_join
 basic/future_create
 basic/eventual_create
 basic/self_type
+basic/ext_thread
 basic/timer
 
 # code builds

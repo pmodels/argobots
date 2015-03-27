@@ -29,6 +29,7 @@ TESTS = \
 	future_create \
 	eventual_create \
 	self_type \
+	ext_thread \
 	timer
 
 check_PROGRAMS = $(TESTS)
@@ -61,6 +62,7 @@ cond_join_SOURCES = cond_join.c
 future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 self_type_SOURCES = self_type.c
+ext_thread_SOURCES = ext_thread.c
 timer_SOURCES = timer.c
 
 testing:
@@ -89,4 +91,5 @@ testing:
 	./future_create
 	./eventual_create
 	./self_type
+	./ext_thread
 	./timer
