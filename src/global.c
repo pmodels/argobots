@@ -115,7 +115,16 @@ int ABT_finalize(void)
     int abt_errno = ABT_SUCCESS;
 
     /* If Argobots is not initialized, just return. */
-    if (gp_ABTI_global == NULL) goto fn_exit;
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        goto fn_exit;
+    }
+
+    /* If called by an external thread, return an error. */
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_fail;
+    }
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     if (p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
@@ -136,7 +145,7 @@ int ABT_finalize(void)
 
     /* We wait for the remaining jobs */
     while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
-      ABT_thread_yield();
+        ABT_thread_yield();
     }
 
     /* Remove the primary ES from the global ES container */
