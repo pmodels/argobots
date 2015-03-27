@@ -447,9 +447,16 @@ int ABT_sched_exit(ABT_sched sched)
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
 
     *stop = ABT_FALSE;
+
+    /* When this routine is called by an external thread, e.g., pthread */
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_exit;
+    }
+
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
