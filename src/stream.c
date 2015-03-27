@@ -200,7 +200,9 @@ int ABT_xstream_free(ABT_xstream *xstream)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(h_xstream);
     if (p_xstream == NULL) goto fn_exit;
 
-    if (p_xstream == ABTI_local_get_xstream()) {
+    /* We first need to check whether lp_ABTI_local is NULL because this
+     * routine might be called by external threads. */
+    if (lp_ABTI_local != NULL && p_xstream == ABTI_local_get_xstream()) {
         HANDLE_ERROR("The current xstream cannot be freed.");
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_fail;
@@ -255,7 +257,7 @@ int ABT_xstream_join(ABT_xstream xstream)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
 
     /* The target ES must not be the same as the calling thread's ES */
-    if (p_xstream == ABTI_local_get_xstream()) {
+    if (lp_ABTI_local != NULL && p_xstream == ABTI_local_get_xstream()) {
         HANDLE_ERROR("The target ES should be different.");
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_fail;
@@ -957,19 +959,41 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
  */
 int ABT_xstream_check_events(ABT_sched sched)
 {
+    int abt_errno = ABT_SUCCESS;
+
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        goto fn_exit;
+    }
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_exit;
+    }
+
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
 
     if (p_xstream->request & ABTI_XSTREAM_REQ_JOIN) {
-        ABT_sched_finish(sched);
+        abt_errno = ABT_sched_finish(sched);
+        ABTI_CHECK_ERROR(abt_errno);
     }
 
     if ((p_xstream->request & ABTI_XSTREAM_REQ_EXIT) ||
         (p_xstream->request & ABTI_XSTREAM_REQ_CANCEL)) {
-        ABT_sched_exit(sched);
+        abt_errno = ABT_sched_exit(sched);
+        ABTI_CHECK_ERROR(abt_errno);
     }
 
     // TODO: check event queue
-    return 0;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_check_events", abt_errno);
+    goto fn_exit;
 }
 
 
