@@ -258,6 +258,12 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     int abt_errno = ABT_SUCCESS;
     ABT_unit unit;
 
+    /* If called by an external thread, return an error. */
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_fail;
+    }
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
@@ -285,19 +291,31 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
 int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
 
     if (unit == ABT_UNIT_NULL) {
         abt_errno = ABT_ERR_UNIT;
         goto fn_fail;
     }
 
+    /* Save the writer ES information in the pool */
+    if (lp_ABTI_local != NULL) {
+        p_xstream = ABTI_local_get_xstream();
+    } else {
+        /* We allow external threads to push a unit into a pool. However, since
+         * it is not trivial to identify them, we use ABTD_xstream_context to
+         * distinguish them for now. */
+        ABTD_xstream_context tmp_ctx;
+        ABTD_xstream_context_self(&tmp_ctx);
+        p_xstream = (ABTI_xstream *)tmp_ctx;
+    }
     abt_errno = ABTI_pool_set_writer(p_pool, p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Push unit into pool */
     p_pool->p_push(pool, unit);
 
   fn_exit:
@@ -320,6 +338,12 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
 {
     int abt_errno = ABT_SUCCESS;
+
+    /* If called by an external thread, return an error. */
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_fail;
+    }
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
