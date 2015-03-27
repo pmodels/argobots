@@ -69,9 +69,9 @@ dnl ----------------------------------------------------------------------------
 dnl check function availability
 dnl ----------------------------------------------------------------------------
 AC_ARG_ENABLE([affinity],
-    AS_HELP_STRING([--disable-affinity],
-        [do not use affinity even though it is supported]),,
-        [enable_affinity=yes])
+    AS_HELP_STRING([--enable-affinity],
+        [enable ES affinity]),,
+        [enable_affinity=no])
 AS_IF([test "x$enable_affinity" != "xno"], [
        AC_CHECK_LIB(pthread, pthread_setaffinity_np,
                     [AC_DEFINE(HAVE_PTHREAD_SETAFFINITY_NP, 1,
