@@ -27,7 +27,7 @@ int ABT_cond_create(ABT_cond *newcond)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_cond *p_newcond;
-    ABTI_thread_entry *entry;
+    ABTI_thread_entry *p_entry;
 
     p_newcond = (ABTI_cond *)ABTU_malloc(sizeof(ABTI_cond));
     if (!p_newcond) {
@@ -44,12 +44,12 @@ int ABT_cond_create(ABT_cond *newcond)
     p_newcond->num_waiters  = 0;
 
     /* Allocate one entry for waiters and keep it */
-    entry = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
-    assert(entry != NULL);
-    entry->current = NULL;
-    entry->next = NULL;
-    p_newcond->waiters.head = entry;
-    p_newcond->waiters.tail = entry;
+    p_entry = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
+    assert(p_entry != NULL);
+    p_entry->current = NULL;
+    p_entry->next = NULL;
+    p_newcond->waiters.head = p_entry;
+    p_newcond->waiters.tail = p_entry;
 
     /* Return value */
     *newcond = ABTI_cond_get_handle(p_newcond);
@@ -124,9 +124,24 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
-    /* FIXME: should check if mutex was locked by the calling ULT */
+    ABTI_thread *p_thread;
+    ABT_unit_type type;
+    volatile int ext_signal = 0;
 
-    ABT_mutex_lock(p_cond->mutex);
+    if (lp_ABTI_local != NULL) {
+        p_thread = ABTI_local_get_thread();
+        if (p_thread == NULL) {
+            abt_errno = ABT_ERR_COND;
+            goto fn_fail;
+        }
+        type = ABT_UNIT_TYPE_THREAD;
+    } else {
+        /* external thread */
+        p_thread = (ABTI_thread *)&ext_signal;
+        type = ABT_UNIT_TYPE_EXT;
+    }
+
+    ABT_mutex_spinlock(p_cond->mutex);
 
     if (p_cond->waiter_mutex == ABT_MUTEX_NULL) {
         p_cond->waiter_mutex = mutex;
@@ -140,35 +155,43 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
         }
     }
 
-    ABTI_thread *p_thread = ABTI_local_get_thread();
-
+    ABTI_thread_entry *p_entry;
     if (p_cond->num_waiters == 0) {
-        ABTI_thread_entry *entry = p_cond->waiters.head;
-        entry->current = p_thread;
+        p_entry = p_cond->waiters.head;
+        p_entry->current = p_thread;
     } else {
-        ABTI_thread_entry *entry;
-        entry = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
-        assert(entry != NULL);
+        p_entry = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
+        assert(p_entry != NULL);
 
-        entry->current = p_thread;
-        entry->next = NULL;
+        p_entry->current = p_thread;
+        p_entry->next = NULL;
 
-        p_cond->waiters.tail->next = entry;
-        p_cond->waiters.tail = entry;
+        p_cond->waiters.tail->next = p_entry;
+        p_cond->waiters.tail = p_entry;
     }
+    p_entry->type = type;
 
     p_cond->num_waiters++;
 
-    /* Change the ULT's state to BLOCKED */
-    ABTI_thread_set_blocked(p_thread);
+    if (type == ABT_UNIT_TYPE_THREAD) {
+        /* Change the ULT's state to BLOCKED */
+        ABTI_thread_set_blocked(p_thread);
+    }
 
     ABT_mutex_unlock(p_cond->mutex);
 
     /* Unlock the mutex that the calling ULT is holding */
+    /* FIXME: should check if mutex was locked by the calling ULT */
     ABT_mutex_unlock(mutex);
 
-    /* Suspend the current ULT */
-    ABTI_thread_suspend(p_thread);
+    if (type == ABT_UNIT_TYPE_THREAD) {
+        /* Suspend the current ULT */
+        ABTI_thread_suspend(p_thread);
+    } else {
+        /* External thread is waiting here polling ext_signal. */
+        /* FIXME: need a better implementation */
+        while (!ext_signal);
+    }
 
     /* Lock the mutex again */
     ABT_mutex_lock(mutex);
@@ -210,7 +233,13 @@ int ABT_cond_signal(ABT_cond cond)
 
     /* Wake up the first waiting ULT */
     ABTI_thread_entry *head = p_cond->waiters.head;
-    ABTI_thread_set_ready(head->current);
+    if (head->type == ABT_UNIT_TYPE_THREAD) {
+        ABTI_thread_set_ready(head->current);
+    } else {
+        /* When the head is an external thread */
+        volatile int *p_ext_signal = (volatile int *)head->current;
+        *p_ext_signal = 1;
+    }
 
     if (p_cond->num_waiters == 1) {
         head->current = NULL;
@@ -261,12 +290,24 @@ int ABT_cond_broadcast(ABT_cond cond)
     /* Wake up all waiting ULTs */
     /* We do not free the first entry */
     ABTI_thread_entry *head = p_cond->waiters.head;
-    ABTI_thread_set_ready(head->current);
+    if (head->type == ABT_UNIT_TYPE_THREAD) {
+        ABTI_thread_set_ready(head->current);
+    } else {
+        /* When the head is an external thread */
+        volatile int *p_ext_signal = (volatile int *)head->current;
+        *p_ext_signal = 1;
+    }
     head->current = NULL;
 
     head = head->next;
     while (head != NULL) {
-        ABTI_thread_set_ready(head->current);
+        if (head->type == ABT_UNIT_TYPE_THREAD) {
+            ABTI_thread_set_ready(head->current);
+        } else {
+            /* When the head is an external thread */
+            volatile int *p_ext_signal = (volatile int *)head->current;
+            *p_ext_signal = 1;
+        }
         ABTI_thread_entry *prev = head;
         head = head->next;
         ABTU_free(prev);

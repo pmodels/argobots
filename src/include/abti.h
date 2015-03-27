@@ -242,6 +242,7 @@ struct ABTI_thread_list {
 struct ABTI_thread_entry {
     ABTI_thread *current;
     struct ABTI_thread_entry *next;
+    ABT_unit_type type;
 };
 
 struct ABTI_task {
