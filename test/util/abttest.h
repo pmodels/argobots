@@ -6,6 +6,8 @@
 #ifndef ABTTEST_H_INCLUDED
 #define ABTTEST_H_INCLUDED
 
+#include <stdio.h>
+
 /** @defgroup TESTUTIL Test utility
  * This group is for test utility routines.
  */
@@ -102,6 +104,19 @@ void ABT_test_read_args(int argc, char **argv);
  * @return Argument value
  */
 int ABT_test_get_arg_val(ABT_test_arg arg);
+
+/**
+ * @ingroup TESTUTIL
+ * @brief   Print a line.
+ *
+ * \c ABT_test_print_line prints out a line, which consists of \c len characters
+ * of \c c, to a file pointer \c fp.
+ *
+ * @param[in] fp   file pointer
+ * @param[in] c    character as a line element
+ * @param[in] len  length of line
+ */
+void ABT_test_print_line(FILE *fp, char c, int len);
 
 #define ABT_TEST_ERROR(e,m)     ABT_test_error(e,m,__FILE__,__LINE__)
 #define ABT_TEST_UNUSED(a)      (void)(a)

@@ -165,3 +165,14 @@ int ABT_test_get_arg_val(ABT_test_arg arg)
     }
     return g_arg_val[arg];
 }
+
+void ABT_test_print_line(FILE *fp, char c, int len)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        fprintf(fp, "%c", c);
+    }
+    fprintf(fp, "\n");
+    fflush(fp);
+}
+
