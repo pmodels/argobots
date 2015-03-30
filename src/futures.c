@@ -44,7 +44,8 @@
  * pointer. The future has a counter to determine whether all contributions
  * have been made. This routine also creates a list of entries for all the
  * ULTs that will be blocked waiting for the future to be ready. The list
- * is initially empty.
+ * is initially empty. The entries in the list are set with the same order as
+ * the \c ABT_future_set are terminated.
  *
  * @param[in]  compartments number of compartments in the future
  * @param[in]  cb_func      callback function to be called once the future
@@ -67,7 +68,8 @@ int ABT_future_create(int compartments, void (*cb_func)(void **arg),
 
     ABT_mutex_create(&p_future->mutex);
     p_future->ready = ABT_FALSE;
-    p_future->counter = compartments;
+    p_future->counter = 0;
+    p_future->compartments = compartments;
     p_future->array = ABTU_malloc(compartments * sizeof(void *));
     p_future->p_callback = cb_func;
     p_future->waiters.head = p_future->waiters.tail = NULL;
@@ -240,9 +242,9 @@ int ABT_future_set(ABT_future future, void *value)
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
     ABT_mutex_lock(p_future->mutex);
-    p_future->counter--;
     p_future->array[p_future->counter] = value;
-    if (p_future->counter == 0) {
+    p_future->counter++;
+    if (p_future->counter == p_future->compartments) {
         p_future->ready = ABT_TRUE;
         if (p_future->p_callback != NULL)
             (*p_future->p_callback)(p_future->array);

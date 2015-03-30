@@ -285,6 +285,7 @@ struct ABTI_future {
     ABT_mutex mutex;
     ABT_bool ready;
     int counter;
+    int compartments;
     void **array;
     void (*p_callback)(void **arg);
     ABTI_thread_list waiters;
