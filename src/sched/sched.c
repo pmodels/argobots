@@ -567,7 +567,42 @@ int ABT_sched_get_data(ABT_sched sched, void **data)
  * @ingroup SCHED
  * @brief   Get the sum of the sizes of the pool of \c sched.
  *
- * The size includes the blocked and migrating ULT.
+ * The size does not include the blocked and migrating ULTs.
+ *
+ * @param[in]  sched handle to the scheduler
+ * @param[out] size  total number of work units
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_sched_get_size(ABT_sched sched, size_t *size)
+{
+    int abt_errno = ABT_SUCCESS;
+    size_t pool_size = 0;
+    int p;
+
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    for (p = 0; p < p_sched->num_pools; p++) {
+        size_t s;
+        ABT_pool pool = p_sched->pools[p];
+        ABT_pool_get_size(pool, &s);
+        pool_size += s;
+    }
+
+  fn_exit:
+    *size = pool_size;
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_get_size", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SCHED
+ * @brief   Get the sum of the sizes of the pool of \c sched.
+ *
+ * The size includes the blocked and migrating ULTs.
  *
  * @param[in]  sched handle to the scheduler
  * @param[out] size  total number of work units
@@ -695,8 +730,10 @@ int ABTI_sched_print(ABTI_sched *p_sched)
         ABTI_CHECK_ERROR(abt_errno);
     }
     size_t size;
-    ABT_sched_get_total_size(p_sched, &size);
+    ABT_sched_get_size(p_sched, &size);
     printf("size: %lu\n", (unsigned long)size);
+    ABT_sched_get_total_size(p_sched, &size);
+    printf("total size: %lu\n", (unsigned long)size);
 
   fn_exit:
     return abt_errno;
