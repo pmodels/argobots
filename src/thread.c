@@ -1464,22 +1464,27 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
 
-    /* The main ULT cannot be blocked */
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
-            p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
+    /* The main sched cannot be blocked */
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
         abt_errno = ABT_ERR_THREAD;
         goto fn_fail;
+
+    /* The main ULT */
+    }  else if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
+        /* Change the ULT's state to BLOCKED */
+        p_thread->state = ABT_THREAD_STATE_BLOCKED;
+
+    } else {
+        /* To prevent the scheduler from adding the ULT to the pool */
+        ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_BLOCK);
+
+        /* Change the ULT's state to BLOCKED */
+        p_thread->state = ABT_THREAD_STATE_BLOCKED;
+
+        /* Increase the number of blocked ULTs */
+        ABTI_pool *p_pool = p_thread->p_pool;
+        ABTI_pool_inc_num_blocked(p_pool);
     }
-
-    /* To prevent the scheduler from adding the ULT to the pool */
-    ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_BLOCK);
-
-    /* Change the ULT's state to BLOCKED */
-    p_thread->state = ABT_THREAD_STATE_BLOCKED;
-
-    /* Increase the number of blocked ULTs */
-    ABTI_pool *p_pool = p_thread->p_pool;
-    ABTI_pool_inc_num_blocked(p_pool);
 
   fn_exit:
     return abt_errno;
@@ -1494,13 +1499,22 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
 {
     assert(p_thread == ABTI_local_get_thread());
     assert(p_thread->p_last_xstream == ABTI_local_get_xstream());
-    assert(p_thread->request & ABTI_THREAD_REQ_BLOCK);
+    if (p_thread->type != ABTI_THREAD_TYPE_MAIN) {
+        assert(p_thread->request & ABTI_THREAD_REQ_BLOCK);
+    }
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
     ABTD_thread_context_switch(&p_thread->ctx, ABTI_xstream_get_sched_ctx());
 
     /* The suspended ULT resumes its execution from here. */
     ABTI_local_set_thread(p_thread);
+
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
+        while (p_thread->state == ABT_THREAD_STATE_BLOCKED) {
+            ABT_thread_yield();
+        }
+        p_thread->state = ABT_THREAD_STATE_RUNNING;
+    }
 }
 
 int ABTI_thread_set_ready(ABTI_thread *p_thread)
@@ -1510,14 +1524,19 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
     /* The ULT should be in BLOCKED state. */
     assert(p_thread->state == ABT_THREAD_STATE_BLOCKED);
 
-    ABTI_pool *p_pool = p_thread->p_pool;
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
+        p_thread->state = ABT_THREAD_STATE_READY;
 
-    /* Add the ULT to its associated ES */
-    abt_errno = ABTI_xstream_add_thread(p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
+    } else {
+        ABTI_pool *p_pool = p_thread->p_pool;
 
-    /* Decrease the number of blocked threads */
-    ABTI_pool_dec_num_blocked(p_pool);
+        /* Add the ULT to its associated ES */
+        abt_errno = ABTI_xstream_add_thread(p_thread);
+        ABTI_CHECK_ERROR(abt_errno);
+
+        /* Decrease the number of blocked threads */
+        ABTI_pool_dec_num_blocked(p_pool);
+    }
 
   fn_exit:
     return abt_errno;
