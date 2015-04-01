@@ -150,18 +150,10 @@ int main(int argc, char *argv[])
     ret = ABT_thread_create(pools[0], watch_counter, (void *)&args[0][0],
             ABT_THREAD_ATTR_NULL, NULL);
     ABT_TEST_ERROR(ret, "ABT_thread_create");
-    i = 0;
-    for (j = 1; j < num_threads; j++) {
-        int tid = i * num_threads + j + 1;
-        args[i][j].sid = i;
-        args[i][j].tid = tid;
-        ret = ABT_thread_create(pools[i],
-                inc_counter, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
-                NULL);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
-    }
-    for (i = 1; i < num_xstreams; i++) {
+
+    for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
+            if (!i && !j) continue;
             int tid = i * num_threads + j + 1;
             args[i][j].sid = i;
             args[i][j].tid = tid;
