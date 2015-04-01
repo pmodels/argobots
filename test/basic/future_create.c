@@ -72,6 +72,12 @@ int main(int argc, char *argv[])
 
     ABT_test_printf(1, "START\n");
 
+    int i = 0;
+    ABT_test_printf(1, "Thread main iteration %d waiting from future\n", i);
+    ABT_future_wait(myfuture);
+    ABT_test_printf(1, "Thread main continue iteration %d returning from "
+            "future\n", i);
+
     /* switch to other user-level threads */
     ABT_thread_yield();
 
