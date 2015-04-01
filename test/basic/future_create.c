@@ -75,10 +75,6 @@ int main(int argc, char *argv[])
     /* switch to other user-level threads */
     ABT_thread_yield();
 
-    /* release future */
-    ret = ABT_future_free(&myfuture);
-    ABT_TEST_ERROR(ret, "ABT_future_free");
-
     /* join other threads */
     ret = ABT_thread_join(th1);
     ABT_TEST_ERROR(ret, "ABT_thread_join");
@@ -86,6 +82,10 @@ int main(int argc, char *argv[])
     ABT_TEST_ERROR(ret, "ABT_thread_join");
     ret = ABT_thread_join(th3);
     ABT_TEST_ERROR(ret, "ABT_thread_join");
+
+    /* release future */
+    ret = ABT_future_free(&myfuture);
+    ABT_TEST_ERROR(ret, "ABT_future_free");
 
     ABT_test_printf(1, "END\n");
 
