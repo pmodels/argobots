@@ -22,6 +22,7 @@ basic/name
 basic/mutex
 basic/cond_test
 basic/cond_join
+basic/cond_signal_in_main
 basic/future_create
 basic/eventual_create
 basic/self_type

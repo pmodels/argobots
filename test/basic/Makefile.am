@@ -26,6 +26,7 @@ TESTS = \
 	mutex \
 	cond_test \
 	cond_join \
+	cond_signal_in_main \
 	future_create \
 	eventual_create \
 	self_type \
@@ -59,6 +60,7 @@ name_SOURCES = name.c
 mutex_SOURCES = mutex.c
 cond_test_SOURCES = cond_test.c
 cond_join_SOURCES = cond_join.c
+cond_signal_in_main_SOURCES = cond_signal_in_main.c
 future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 self_type_SOURCES = self_type.c
@@ -88,6 +90,7 @@ testing:
 	./mutex
 	./cond_test
 	./cond_join
+	./cond_signal_in_main
 	./future_create
 	./eventual_create
 	./self_type
