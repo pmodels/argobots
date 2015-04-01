@@ -640,7 +640,7 @@ int ABT_thread_yield(void)
      * the scheduler. */
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
     size_t size;
-    ABT_sched_get_size(p_sched, &size);
+    ABT_sched_get_total_size(p_sched, &size);
     if (size == 0 && p_thread->request == 0) {
         ABT_sched sched = ABTI_sched_get_handle(p_sched);
         ABT_xstream_check_events(sched);

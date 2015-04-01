@@ -471,7 +471,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 
     /* Check join request */
     size_t size;
-    ABT_sched_get_size(p_sched, &size);
+    ABT_sched_get_total_size(p_sched, &size);
     if (size == 0) {
         ABTI_thread *p_main_thread = ABTI_local_get_main();
         if (p_sched->request & ABTI_SCHED_REQ_FINISH) {
@@ -479,7 +479,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
              * scheduler */
             ABT_mutex_spinlock(p_xstream->top_sched_mutex);
             size_t size;
-            ABT_sched_get_size(p_sched, &size);
+            ABT_sched_get_total_size(p_sched, &size);
             if (size == 0) {
                 p_sched->state = ABT_SCHED_STATE_TERMINATED;
                 *stop = ABT_TRUE;
@@ -574,7 +574,7 @@ int ABT_sched_get_data(ABT_sched sched, void **data)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_sched_get_size(ABT_sched sched, size_t *size)
+int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
 {
     int abt_errno = ABT_SUCCESS;
     size_t pool_size = 0;
@@ -594,7 +594,7 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_get_size", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABT_sched_get_total_size", abt_errno);
     goto fn_exit;
 }
 
@@ -695,7 +695,7 @@ int ABTI_sched_print(ABTI_sched *p_sched)
         ABTI_CHECK_ERROR(abt_errno);
     }
     size_t size;
-    ABT_sched_get_size(p_sched, &size);
+    ABT_sched_get_total_size(p_sched, &size);
     printf("size: %lu\n", (unsigned long)size);
 
   fn_exit:

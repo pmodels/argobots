@@ -69,8 +69,8 @@ int main(int argc, char *argv[])
 		ABT_sched sched;
 		ret = ABT_xstream_get_main_sched(xstream, &sched);
 		ABT_TEST_ERROR(ret, "ABT_xstream_get_main_sched");
-		ABT_sched_get_size(sched, &n_units);
-		ABT_TEST_ERROR(ret, "ABT_sched_get_size");
+		ABT_sched_get_total_size(sched, &n_units);
+		ABT_TEST_ERROR(ret, "ABT_sched_get_total_size");
 
     if (n_units != num_units) {
         err++;
@@ -82,8 +82,8 @@ int main(int argc, char *argv[])
     ABT_thread_yield();
 
     /* Get the numbers of ULTs and tasklets */
-		ABT_sched_get_size(sched, &n_units);
-		ABT_TEST_ERROR(ret, "ABT_sched_get_size");
+		ABT_sched_get_total_size(sched, &n_units);
+		ABT_TEST_ERROR(ret, "ABT_sched_get_total_size");
     if (n_units != 0) {
         err++;
         printf("# of units: expected(%d) vs. result(%lu)\n",
