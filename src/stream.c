@@ -1411,7 +1411,8 @@ int ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 
     if (p_xstream->num_scheds == p_xstream->max_scheds) {
         int max_size = p_xstream->max_scheds+10;
-        void *temp = realloc(p_xstream->scheds, max_size*sizeof(ABTI_sched *));
+        void *temp;
+        temp = ABTU_realloc(p_xstream->scheds, max_size*sizeof(ABTI_sched *));
         if (temp == NULL) {
             abt_errno = ABT_ERR_MEM;
             goto fn_fail;
