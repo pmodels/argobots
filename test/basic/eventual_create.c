@@ -74,6 +74,12 @@ int main(int argc, char *argv[])
 
     ABT_test_printf(1, "START\n");
 
+    void *data;
+    ABT_test_printf(1, "Thread main iteration %d waiting for eventual\n", 0);
+    ABT_eventual_wait(myeventual,&data);
+    ABT_test_printf(1, "Thread main continue iteration %d returning from "
+            "eventual\n", 0);
+
     /* switch to other user-level threads */
     ABT_thread_yield();
 
