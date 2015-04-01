@@ -12,13 +12,6 @@ int ABTI_contn_create(ABTI_contn **pp_contn)
     ABTI_contn *p_contn;
 
     p_contn = (ABTI_contn *)ABTU_malloc(sizeof(ABTI_contn));
-    if (!p_contn) {
-        HANDLE_ERROR("ABTU_malloc");
-        *pp_contn = NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
-
     p_contn->num_elems = 0;
     p_contn->p_head = NULL;
     p_contn->p_tail = NULL;
@@ -29,6 +22,7 @@ int ABTI_contn_create(ABTI_contn **pp_contn)
     return abt_errno;
 
   fn_fail:
+    *pp_contn = NULL;
     HANDLE_ERROR_WITH_CODE("ABTI_contn_create", abt_errno);
     goto fn_exit;
 }

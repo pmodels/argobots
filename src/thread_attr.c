@@ -30,12 +30,6 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     ABTI_thread_attr *p_newattr;
 
     p_newattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
-    if (!p_newattr) {
-        HANDLE_ERROR("ABTU_malloc");
-        *newattr = ABT_THREAD_ATTR_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     /* Default values */
     p_newattr->stacksize  = gp_ABTI_global->default_stacksize;
@@ -50,6 +44,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     return abt_errno;
 
   fn_fail:
+    *newattr = ABT_THREAD_ATTR_NULL;
     HANDLE_ERROR_WITH_CODE("ABT_thread_attr_create", abt_errno);
     goto fn_exit;
 }

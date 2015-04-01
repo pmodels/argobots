@@ -59,13 +59,6 @@ int ABT_future_create(int compartments, void (*cb_func)(void **arg),
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future = (ABTI_future*)ABTU_malloc(sizeof(ABTI_future));
-    if (!p_future) {
-        HANDLE_ERROR("ABTU_malloc");
-        *newfuture = ABT_FUTURE_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
-
     ABT_mutex_create(&p_future->mutex);
     p_future->ready = ABT_FALSE;
     p_future->counter = 0;
@@ -79,6 +72,7 @@ int ABT_future_create(int compartments, void (*cb_func)(void **arg),
     return abt_errno;
 
   fn_fail:
+    *newfuture = ABT_FUTURE_NULL;
     HANDLE_ERROR_WITH_CODE("ABT_future_create", abt_errno);
     goto fn_exit;
 }

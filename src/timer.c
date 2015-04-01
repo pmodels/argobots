@@ -46,11 +46,6 @@ int ABT_timer_create(ABT_timer *newtimer)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_timer *p_newtimer = (ABTI_timer *)ABTU_malloc(sizeof(ABTI_timer));
-    if (!p_newtimer) {
-        *newtimer = ABT_TIMER_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     *newtimer = ABTI_timer_get_handle(p_newtimer);
 
@@ -58,6 +53,7 @@ int ABT_timer_create(ABT_timer *newtimer)
     return abt_errno;
 
   fn_fail:
+    *newtimer = ABT_TIMER_NULL;
     HANDLE_ERROR_WITH_CODE("ABT_timer_create", abt_errno);
     goto fn_exit;
 }

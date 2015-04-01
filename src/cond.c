@@ -30,13 +30,6 @@ int ABT_cond_create(ABT_cond *newcond)
     ABTI_thread_entry *p_entry;
 
     p_newcond = (ABTI_cond *)ABTU_malloc(sizeof(ABTI_cond));
-    if (!p_newcond) {
-        HANDLE_ERROR("ABTU_malloc");
-        *newcond = ABT_COND_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
-
     abt_errno = ABT_mutex_create(&p_newcond->mutex);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -45,7 +38,6 @@ int ABT_cond_create(ABT_cond *newcond)
 
     /* Allocate one entry for waiters and keep it */
     p_entry = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
-    assert(p_entry != NULL);
     p_entry->current = NULL;
     p_entry->next = NULL;
     p_newcond->waiters.head = p_entry;
@@ -58,6 +50,7 @@ int ABT_cond_create(ABT_cond *newcond)
     return abt_errno;
 
   fn_fail:
+    *newcond = ABT_COND_NULL;
     HANDLE_ERROR_WITH_CODE("ABT_cond_create", abt_errno);
     goto fn_exit;
 }
@@ -161,8 +154,6 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
         p_entry->current = p_thread;
     } else {
         p_entry = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
-        assert(p_entry != NULL);
-
         p_entry->current = p_thread;
         p_entry->next = NULL;
 

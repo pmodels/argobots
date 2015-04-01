@@ -37,12 +37,6 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     }
 
     p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
-    if (!p_newxstream) {
-        HANDLE_ERROR("ABTU_malloc");
-        *newxstream = ABT_XSTREAM_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     /* Create a wrapper unit */
     p_newxstream->elem = ABTI_elem_create_from_xstream(p_newxstream);
@@ -83,6 +77,7 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     return abt_errno;
 
   fn_fail:
+    *newxstream = ABT_XSTREAM_NULL;
     HANDLE_ERROR_WITH_CODE("ABT_xstream_create", abt_errno);
     goto fn_exit;
 }
@@ -770,11 +765,6 @@ int ABT_xstream_set_name(ABT_xstream xstream, const char *name)
     ABT_mutex_spinlock(p_xstream->mutex);
     if (p_xstream->p_name) ABTU_free(p_xstream->p_name);
     p_xstream->p_name = (char *)ABTU_malloc(len + 1);
-    if (!p_xstream->p_name) {
-        ABT_mutex_unlock(p_xstream->mutex);
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
     ABTU_strcpy(p_xstream->p_name, name);
     ABT_mutex_unlock(p_xstream->mutex);
 
@@ -1413,10 +1403,6 @@ int ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
         int max_size = p_xstream->max_scheds+10;
         void *temp;
         temp = ABTU_realloc(p_xstream->scheds, max_size*sizeof(ABTI_sched *));
-        if (temp == NULL) {
-            abt_errno = ABT_ERR_MEM;
-            goto fn_fail;
-        }
         p_xstream->scheds = (ABTI_sched **)temp;
         p_xstream->max_scheds = max_size;
     }

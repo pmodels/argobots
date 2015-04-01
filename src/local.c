@@ -19,12 +19,6 @@ int ABTI_local_init(void)
     int abt_errno = ABT_SUCCESS;
 
     lp_ABTI_local = (ABTI_local *)ABTU_malloc(sizeof(ABTI_local));
-    if (!lp_ABTI_local) {
-        HANDLE_ERROR("ABTU_malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
-
     lp_ABTI_local->p_xstream = NULL;
     lp_ABTI_local->p_thread_main = NULL;
     lp_ABTI_local->p_thread = NULL;

@@ -55,12 +55,6 @@ int ABT_task_create(ABT_pool pool,
     }
 
     p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
-    if (!p_newtask) {
-        HANDLE_ERROR("ABTU_malloc");
-        if (newtask) *newtask = ABT_TASK_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     /* Create a wrapper work unit */
     h_newtask = ABTI_task_get_handle(p_newtask);
@@ -527,11 +521,6 @@ int ABT_task_set_name(ABT_task task, const char *name)
     ABT_mutex_spinlock(p_task->mutex);
     if (p_task->p_name) ABTU_free(p_task->p_name);
     p_task->p_name = (char *)ABTU_malloc(len + 1);
-    if (!p_task->p_name) {
-        ABT_mutex_unlock(p_task->mutex);
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
     ABTU_strcpy(p_task->p_name, name);
     ABT_mutex_unlock(p_task->mutex);
 

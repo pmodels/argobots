@@ -48,11 +48,6 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     if (config == ABT_SCHED_CONFIG_NULL) {
         p_config = (sched_config *)ABTU_malloc(sizeof(sched_config));
-        if (!p_config) {
-            HANDLE_ERROR("ABTU_malloc");
-            abt_errno = ABT_ERR_MEM;
-            goto fn_fail;
-        }
         p_config->event_freq = SCHED_PRIO_EVENT_FREQ;
     } else {
         p_config = sched_config_get_ptr(config);
@@ -90,11 +85,6 @@ static void sched_run(ABT_sched sched)
     /* Get the list of pools */
     ABT_sched_get_num_pools(sched, &num_pools);
     p_pools = (ABT_pool *)ABTU_malloc(num_pools * sizeof(ABT_pool));
-    if (!p_pools) {
-        HANDLE_ERROR("ABTU_malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
     ABT_sched_get_pools(sched, num_pools, 0, p_pools);
 
     while (1) {

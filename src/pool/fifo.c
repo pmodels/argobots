@@ -129,11 +129,6 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
     ABT_pool_access access;
 
     data_t *p_data = (data_t *)ABTU_malloc(sizeof(data_t));
-    if (!p_data) {
-        HANDLE_ERROR("ABTU_malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     ABT_pool_get_access(pool, &access);
 
@@ -436,11 +431,6 @@ static ABT_bool unit_is_in_pool(ABT_unit unit)
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
     unit_t *p_unit = (unit_t *)ABTU_malloc(sizeof(unit_t));
-    if (!p_unit) {
-        HANDLE_ERROR("ABTU_malloc");
-        return ABT_UNIT_NULL;
-    }
-
     p_unit->pool   = ABT_POOL_NULL;
     p_unit->type   = ABT_UNIT_TYPE_THREAD;
     p_unit->thread = thread;
@@ -453,11 +443,6 @@ static ABT_unit unit_create_from_thread(ABT_thread thread)
 static ABT_unit unit_create_from_task(ABT_task task)
 {
     unit_t *p_unit = (unit_t *)ABTU_malloc(sizeof(unit_t));
-    if (!p_unit) {
-        HANDLE_ERROR("ABTU_malloc");
-        return ABT_UNIT_NULL;
-    }
-
     p_unit->pool   = ABT_POOL_NULL;
     p_unit->type   = ABT_UNIT_TYPE_TASK;
     p_unit->task   = task;

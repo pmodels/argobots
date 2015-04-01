@@ -47,20 +47,10 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     }
 
     p_sched = (ABTI_sched *)ABTU_malloc(sizeof(ABTI_sched));
-    if (!p_sched) {
-        HANDLE_ERROR("ABTU_malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     /* Copy of the contents of pools */
     ABT_pool *pool_list;
     pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
-    if (!pool_list) {
-        HANDLE_ERROR("ABTU_malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
     for (p = 0; p < num_pools; p++) {
         if (pools[p] == ABT_POOL_NULL) {
             abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO,
@@ -154,11 +144,6 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         /* Copy of the contents of pools */
         ABT_pool *pool_list;
         pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
-        if (!pool_list) {
-            HANDLE_ERROR("ABTU_malloc");
-            abt_errno = ABT_ERR_MEM;
-            goto fn_fail;
-        }
         for (p = 0; p < num_pools; p++) {
             if (pools[p] == ABT_POOL_NULL) {
                 abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access,

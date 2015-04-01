@@ -33,13 +33,6 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     ABTI_pool *p_pool;
 
     p_pool = (ABTI_pool *)ABTU_malloc(sizeof(ABTI_pool));
-    if (!p_pool) {
-        HANDLE_ERROR("ABTU_malloc");
-        *newpool = ABT_POOL_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
-
     p_pool->access               = def->access;
     p_pool->automatic            = ABT_FALSE;
     p_pool->num_scheds           = 0;

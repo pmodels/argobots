@@ -34,13 +34,6 @@ int ABT_mutex_create(ABT_mutex *newmutex)
     ABTI_mutex *p_newmutex;
 
     p_newmutex = (ABTI_mutex *)ABTU_malloc(sizeof(ABTI_mutex));
-    if (!p_newmutex) {
-        HANDLE_ERROR("ABTU_malloc");
-        *newmutex = ABT_MUTEX_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
-
     p_newmutex->val = 0;
 
     /* Return value */
@@ -50,6 +43,7 @@ int ABT_mutex_create(ABT_mutex *newmutex)
     return abt_errno;
 
   fn_fail:
+    *newmutex = ABT_MUTEX_NULL;
     HANDLE_ERROR_WITH_CODE("ABT_mutex_create", abt_errno);
     goto fn_exit;
 }

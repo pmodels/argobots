@@ -56,12 +56,6 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     }
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
-    if (!p_newthread) {
-        HANDLE_ERROR("ABTU_malloc");
-        if (newthread) *newthread = ABT_THREAD_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);
@@ -89,11 +83,6 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     /* Create a stack for this thread */
     stacksize = p_newthread->attr.stacksize;
     p_newthread->p_stack = ABTU_malloc(stacksize);
-    if (!p_newthread->p_stack) {
-        HANDLE_ERROR("ABTU_malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     /* Create a thread context */
     abt_errno = ABTD_thread_context_create(NULL,
@@ -119,6 +108,7 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     return abt_errno;
 
   fn_fail:
+    if (newthread) *newthread = ABT_THREAD_NULL;
     HANDLE_ERROR_WITH_CODE("ABT_thread_create", abt_errno);
     goto fn_exit;
 }
@@ -1184,11 +1174,6 @@ int ABT_thread_set_name(ABT_thread thread, const char *name)
     ABT_mutex_spinlock(p_thread->mutex);
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
     p_thread->p_name = (char *)ABTU_malloc(len + 1);
-    if (!p_thread->p_name) {
-        ABT_mutex_unlock(p_thread->mutex);
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
     ABTU_strcpy(p_thread->p_name, name);
     ABT_mutex_unlock(p_thread->mutex);
 
@@ -1320,13 +1305,6 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     ABTI_thread *p_newthread;
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
-    if (!p_newthread) {
-        HANDLE_ERROR("ABTU_malloc");
-        *p_thread = NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
-
     p_newthread->unit            = ABT_UNIT_NULL;
     p_newthread->p_last_xstream  = NULL;
     p_newthread->id              = ABTI_thread_get_new_id();
@@ -1357,6 +1335,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     return abt_errno;
 
   fn_fail:
+    *p_thread = NULL;
     HANDLE_ERROR_WITH_CODE("ABTI_thread_create_main", abt_errno);
     goto fn_exit;
 }
@@ -1369,12 +1348,6 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     size_t stacksize;
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
-    if (!p_newthread) {
-        HANDLE_ERROR("ABTU_malloc");
-        if (newthread) *newthread = ABT_THREAD_NULL;
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);
@@ -1401,11 +1374,6 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     /* Create a stack for this thread */
     stacksize = p_newthread->attr.stacksize;
     p_newthread->p_stack = ABTU_malloc(stacksize);
-    if (!p_newthread->p_stack) {
-        HANDLE_ERROR("ABTU_malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
     ABTI_VALGRIND_STACK_REGISTER(p_newthread->p_stack, stacksize);
 
     /* Create a thread context */
@@ -1427,6 +1395,7 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     return abt_errno;
 
   fn_fail:
+    if (newthread) *newthread = ABT_THREAD_NULL;
     HANDLE_ERROR_WITH_CODE("ABTI_thread_create_main_sched", abt_errno);
     goto fn_exit;
 }
@@ -1650,7 +1619,6 @@ void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg)
     }
 
     new = (ABTI_thread_req_arg *)ABTU_malloc(sizeof(ABTI_thread_req_arg));
-    assert(new != NULL);
 
     /* filling the new argument data structure */
     new->request = req;

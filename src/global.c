@@ -39,11 +39,6 @@ int ABT_init(int argc, char **argv)
     if (gp_ABTI_global != NULL) goto fn_exit;
 
     gp_ABTI_global = (ABTI_global *)ABTU_malloc(sizeof(ABTI_global));
-    if (!gp_ABTI_global) {
-        HANDLE_ERROR("ABTU_malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
 
     /* Initialize the system environment */
     ABTD_env_init(gp_ABTI_global);
@@ -55,11 +50,6 @@ int ABT_init(int argc, char **argv)
 
     /* Initialize the ES container */
     p_xstreams = (ABTI_xstream_contn *)ABTU_malloc(sizeof(ABTI_xstream_contn));
-    if (!p_xstreams) {
-        HANDLE_ERROR("ABTU_malloc");
-        abt_errno = ABT_ERR_MEM;
-        goto fn_fail;
-    }
     abt_errno = ABTI_xstream_contn_init(p_xstreams);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_contn_init");
     gp_ABTI_global->p_xstreams = p_xstreams;
