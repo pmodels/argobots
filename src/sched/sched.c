@@ -447,6 +447,7 @@ int ABT_sched_exit(ABT_sched sched)
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
     int abt_errno = ABT_SUCCESS;
+    size_t size;
 
     *stop = ABT_FALSE;
 
@@ -469,11 +470,24 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
         goto fn_exit;
     }
 
+    ABTI_thread *p_main_thread = ABTI_local_get_main();
+    /* We jump back to the main ULT if there is one */
+    if (p_main_thread != NULL) {
+        ABT_sched_get_size(p_sched, &size);
+        if (size == 0) {
+            ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
+            if (ABTI_task_current() == NULL)
+                assert(p_thread == ABTI_thread_current());
+            abt_errno = ABTD_thread_context_switch(&p_thread->ctx,
+                                                   &p_main_thread->ctx);
+            ABTI_CHECK_ERROR(abt_errno);
+            ABTI_local_set_thread(p_thread);
+        }
+    }
+
     /* Check join request */
-    size_t size;
     ABT_sched_get_total_size(p_sched, &size);
     if (size == 0) {
-        ABTI_thread *p_main_thread = ABTI_local_get_main();
         if (p_sched->request & ABTI_SCHED_REQ_FINISH) {
             /* We need to lock in case someone wants to migrate to this
              * scheduler */
@@ -486,16 +500,6 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
             }
             else
                 ABT_mutex_unlock(p_xstream->top_sched_mutex);
-        }
-        /* We jump back to the main ULT if there is */
-        else if (p_main_thread != NULL) {
-            ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
-            if (ABTI_task_current() == NULL)
-              assert(p_thread == ABTI_thread_current());
-            abt_errno = ABTD_thread_context_switch(&p_thread->ctx,
-                                                   &p_main_thread->ctx);
-            ABTI_CHECK_ERROR(abt_errno);
-            ABTI_local_set_thread(p_thread);
         }
     }
 
