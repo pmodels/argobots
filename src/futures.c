@@ -244,6 +244,12 @@ int ABT_future_set(ABT_future future, void *value)
     ABT_mutex_lock(p_future->mutex);
     p_future->array[p_future->counter] = value;
     p_future->counter++;
+
+    if (p_future->counter > p_future->compartments) {
+        abt_errno = ABT_ERR_FUTURE;
+        goto fn_fail;
+    }
+
     if (p_future->counter == p_future->compartments) {
         p_future->ready = ABT_TRUE;
         if (p_future->p_callback != NULL)
