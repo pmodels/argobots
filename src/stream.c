@@ -1211,10 +1211,10 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
 
     /* Execute the task function */
     DEBUG_PRINT("[S%" PRIu64 ":TK%" PRIu64 "] START\n",
-                p_xstream->rank, p_task->id);
+                p_xstream->rank, ABTI_task_get_id(p_task));
     p_task->f_task(p_task->p_arg);
     DEBUG_PRINT("[S%" PRIu64 ":TK%" PRIu64 "] END\n",
-                p_xstream->rank, p_task->id);
+                p_xstream->rank, ABTI_task_get_id(p_task));
 
     /* Delete the last scheduler if the ULT was a scheduler */
     if (p_task->is_sched != NULL) {

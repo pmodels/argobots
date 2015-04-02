@@ -40,6 +40,8 @@
 
 #define ABTI_TASK_REQ_CANCEL        (1 << 0)
 
+#define ABTI_TASK_INIT_ID           0xFFFFFFFFFFFFFFFF
+
 enum ABTI_xstream_type {
     ABTI_XSTREAM_TYPE_PRIMARY,
     ABTI_XSTREAM_TYPE_SECONDARY
@@ -439,6 +441,7 @@ ABTI_task *ABTI_task_current(void);
 void ABTI_task_retain(ABTI_task *p_task);
 void ABTI_task_release(ABTI_task *p_task);
 void ABTI_task_reset_id(void);
+uint64_t ABTI_task_get_id(ABTI_task *p_task);
 
 /* Eventual */
 void ABTI_eventual_signal(ABTI_eventual *p_eventual);

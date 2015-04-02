@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static uint64_t ABTI_task_get_new_id(void);
+static inline uint64_t ABTI_task_get_new_id(void);
 
 
 /** @defgroup TASK Tasklet
@@ -63,7 +63,7 @@ int ABT_task_create(ABT_pool pool,
     p_newtask->p_xstream  = NULL;
     p_newtask->is_sched   = NULL;
     p_newtask->p_pool     = p_pool;
-    p_newtask->id         = ABTI_task_get_new_id();
+    p_newtask->id         = ABTI_TASK_INIT_ID;
     p_newtask->p_name     = NULL;
     p_newtask->state      = ABT_TASK_STATE_CREATED;
     p_newtask->migratable = ABT_TRUE;
@@ -608,7 +608,7 @@ int ABTI_task_print(ABTI_task *p_task)
     }
 
     printf("[");
-    printf("id:%" PRIu64 " ", p_task->id);
+    printf("id:%" PRIu64 " ", ABTI_task_get_id(p_task));
     printf("xstream:%" PRIu64 " ", p_task->p_xstream->rank);
     printf("name:%s ", p_task->p_name);
     printf("state:");
@@ -654,11 +654,19 @@ void ABTI_task_reset_id(void)
     g_task_id = 0;
 }
 
+uint64_t ABTI_task_get_id(ABTI_task *p_task)
+{
+    if (p_task->id == ABTI_TASK_INIT_ID) {
+        p_task->id = ABTI_task_get_new_id();
+    }
+    return p_task->id;
+}
+
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static uint64_t ABTI_task_get_new_id(void)
+static inline uint64_t ABTI_task_get_new_id(void)
 {
     return ABTD_atomic_fetch_add_uint64(&g_task_id, 1);
 }
