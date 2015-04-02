@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static ABT_thread_id ABTI_thread_get_new_id(void);
+static inline ABT_thread_id ABTI_thread_get_new_id(void);
 
 
 /** @defgroup ULT User-level Thread (ULT)
@@ -64,7 +64,7 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     p_newthread->p_last_xstream = NULL;
     p_newthread->is_sched       = NULL;
     p_newthread->p_pool         = p_pool;
-    p_newthread->id             = ABTI_thread_get_new_id();
+    p_newthread->id             = ABTI_THREAD_INIT_ID;
     p_newthread->p_name         = NULL;
     p_newthread->type           = ABTI_THREAD_TYPE_USER;
     p_newthread->state          = ABT_THREAD_STATE_CREATED;
@@ -510,7 +510,8 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
     DEBUG_PRINT("YIELD_TO: TH%" PRIu64 " -> TH%" PRIu64 "\n",
-                p_cur_thread->id, p_tar_thread->id);
+                ABTI_thread_get_id(p_cur_thread),
+                ABTI_thread_get_id(p_tar_thread));
 
     /* If the target thread is the same as the running thread, just keep
      * its execution. */
@@ -1239,7 +1240,7 @@ int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *thread_id = p_thread->id;
+    *thread_id = ABTI_thread_get_id(p_thread);
 
   fn_exit:
     return abt_errno;
@@ -1307,7 +1308,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
     p_newthread->unit            = ABT_UNIT_NULL;
     p_newthread->p_last_xstream  = NULL;
-    p_newthread->id              = ABTI_thread_get_new_id();
+    p_newthread->id              = ABTI_THREAD_INIT_ID;
     p_newthread->p_name          = NULL;
     p_newthread->type            = ABTI_THREAD_TYPE_MAIN;
     p_newthread->state           = ABT_THREAD_STATE_RUNNING;
@@ -1355,7 +1356,7 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     p_newthread->p_last_xstream = NULL;
     p_newthread->is_sched       = p_sched;
     p_newthread->p_pool         = NULL;
-    p_newthread->id             = ABTI_thread_get_new_id();
+    p_newthread->id             = ABTI_THREAD_INIT_ID;
     p_newthread->p_name         = NULL;
     p_newthread->type            = ABTI_THREAD_TYPE_MAIN_SCHED;
     p_newthread->state          = ABT_THREAD_STATE_READY;
@@ -1567,7 +1568,7 @@ int ABTI_thread_print(ABTI_thread *p_thread)
     }
 
     printf("[");
-    printf("id:%" PRIu64 " ", p_thread->id);
+    printf("id:%" PRIu64 " ", ABTI_thread_get_id(p_thread));
     if (p_thread->p_last_xstream == NULL)
         printf("last xstream: NULL");
     else
@@ -1678,12 +1679,19 @@ void ABTI_thread_reset_id(void)
     g_thread_id = 0;
 }
 
+ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread)
+{
+    if (p_thread->id == ABTI_THREAD_INIT_ID) {
+        p_thread->id = ABTI_thread_get_new_id();
+    }
+    return p_thread->id;
+}
 
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static ABT_thread_id ABTI_thread_get_new_id(void)
+static inline ABT_thread_id ABTI_thread_get_new_id(void)
 {
     return (ABT_thread_id)ABTD_atomic_fetch_add_uint64(&g_thread_id, 1);
 }

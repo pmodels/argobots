@@ -1128,7 +1128,7 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
 
     /* Switch the context */
     DEBUG_PRINT("[S%" PRIu64 ":TH%" PRIu64 "] START\n",
-                p_xstream->rank, p_thread->id);
+                p_xstream->rank, ABTI_thread_get_id(p_thread));
     abt_errno = ABTD_thread_context_switch(p_ctx, &p_thread->ctx);
 
     /* The scheduler continues from here. */
@@ -1139,7 +1139,7 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
     p_thread = ABTI_local_get_thread();
     p_xstream = p_thread->p_last_xstream;
     DEBUG_PRINT("[S%" PRIu64 ":TH%" PRIu64 "] END\n",
-                p_xstream->rank, p_thread->id);
+                p_xstream->rank, ABTI_thread_get_id(p_thread));
 
     /* Delete the last scheduler if the ULT was a scheduler */
     if (p_thread->is_sched != NULL) {
@@ -1263,7 +1263,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
 
         newstream = p_pool->reader;
         DEBUG_PRINT("[TH%" PRIu64 "] Migration: S%" PRIu64 " -> S%" PRIu64 "\n",
-                p_thread->id, p_thread->p_last_xstream->rank,
+                ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
                 newstream? newstream->rank: -1);
 
         /* Change the associated pool */

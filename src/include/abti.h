@@ -40,6 +40,7 @@
 
 #define ABTI_TASK_REQ_CANCEL        (1 << 0)
 
+#define ABTI_THREAD_INIT_ID         0xFFFFFFFFFFFFFFFF
 #define ABTI_TASK_INIT_ID           0xFFFFFFFFFFFFFFFF
 
 enum ABTI_xstream_type {
@@ -430,6 +431,7 @@ void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
 void  ABTI_thread_retain(ABTI_thread *p_thread);
 void  ABTI_thread_release(ABTI_thread *p_thread);
 void  ABTI_thread_reset_id(void);
+ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread);
 
 /* ULT Attributes */
 int ABTI_thread_attr_print(ABTI_thread_attr *p_attr);
