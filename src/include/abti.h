@@ -260,7 +260,6 @@ struct ABTI_task {
     uint32_t refcount;         /* Reference count */
 
     uint32_t request;          /* Request */
-    ABT_mutex mutex;           /* Mutex */
     void (*f_task)(void *);    /* Task function */
     void *p_arg;               /* Task arguments */
 };

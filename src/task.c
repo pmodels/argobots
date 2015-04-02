@@ -69,11 +69,6 @@ int ABT_task_create(ABT_pool pool,
     p_newtask->migratable = ABT_TRUE;
     p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
     p_newtask->request    = 0;
-
-    /* Create a mutex */
-    abt_errno = ABT_mutex_create(&p_newtask->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
-
     p_newtask->f_task     = task_func;
     p_newtask->p_arg      = arg;
 
@@ -518,11 +513,12 @@ int ABT_task_set_name(ABT_task task, const char *name)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     size_t len = strlen(name);
-    ABT_mutex_spinlock(p_task->mutex);
+    ABT_mutex mutex = p_task->p_xstream->mutex;
+    ABT_mutex_spinlock(mutex);
     if (p_task->p_name) ABTU_free(p_task->p_name);
     p_task->p_name = (char *)ABTU_malloc(len + 1);
     ABTU_strcpy(p_task->p_name, name);
-    ABT_mutex_unlock(p_task->mutex);
+    ABT_mutex_unlock(mutex);
 
   fn_exit:
     return abt_errno;
@@ -585,10 +581,6 @@ int ABTI_task_free(ABTI_task *p_task)
     }
 
     if (p_task->p_name) ABTU_free(p_task->p_name);
-
-    /* Free the mutex */
-    abt_errno = ABT_mutex_free(&p_task->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
 
     ABTU_free(p_task);
 
