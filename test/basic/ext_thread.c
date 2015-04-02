@@ -51,12 +51,14 @@ void thread_func(void *arg)
     ABT_mutex_lock(g_mutex);
     g_counter++;
     ABT_mutex_unlock(g_mutex);
+    ABT_test_printf(1, "ULT %d: mutex passed\n", my_id);
 
     /* ULT are waiting, and pthread will broadcast the signal. */
     ABT_mutex_lock(g_mutex);
     g_threads++;
     ABT_cond_wait(g_cond, g_mutex);
     ABT_mutex_unlock(g_mutex);
+    ABT_test_printf(1, "ULT %d: cond #1 passed\n", my_id);
 
     /* ULT 1 and pthread are waiting, and ULT 0 broadcasts. */
     if (my_id == 0) {
@@ -70,16 +72,19 @@ void thread_func(void *arg)
         ABT_cond_wait(g_cond, g_mutex);
         ABT_mutex_unlock(g_mutex);
     }
+    ABT_test_printf(1, "ULT %d: cond #2 passed\n", my_id);
 
     /* Test eventual */
     void *evt_result;
     char *buf_evt = (char *)malloc(BUF_SIZE);
     ABT_eventual_wait(g_eventual[0], &evt_result);
+    ABT_test_printf(1, "ULT %d: eventual #1 passed\n", my_id);
     if (my_id == 0) {
         ABT_eventual_wait(g_eventual[1], &evt_result);
     } else {
         ABT_eventual_set(g_eventual[1], buf_evt, BUF_SIZE);
     }
+    ABT_test_printf(1, "ULT %d: eventual #2 passed\n", my_id);
     free(buf_evt);
 
     /* Test future */
@@ -89,7 +94,9 @@ void thread_func(void *arg)
     } else {
         ABT_future_wait(g_future[0]);
     }
+    ABT_test_printf(1, "ULT %d: future #1 passed\n", my_id);
     ABT_future_wait(g_future[1]);
+    ABT_test_printf(1, "ULT %d: future #2 passed\n", my_id);
     free(buf_fut);
 
     ABT_test_printf(1, "ULT %d running on ES %d\n", my_id, rank);
@@ -139,6 +146,7 @@ void *pthread_test(void *arg)
     ABT_mutex_lock(g_mutex);
     g_counter++;
     ABT_mutex_unlock(g_mutex);
+    ABT_test_printf(1, "pthread: mutex passed\n");
 
     /* Test condition variable */
     /* Wake up other ULTs that are waiting on the condition variable */
@@ -147,24 +155,30 @@ void *pthread_test(void *arg)
     g_threads = 0;
     ABT_cond_broadcast(g_cond);
     ABT_mutex_unlock(g_mutex);
+    ABT_test_printf(1, "pthread: cond #1 passed\n");
 
     /* Wait on the condition variable */
     ABT_mutex_lock(g_mutex);
     g_threads++;
     ABT_cond_wait(g_cond, g_mutex);
     ABT_mutex_unlock(g_mutex);
+    ABT_test_printf(1, "pthread: cond #2 passed\n");
 
     /* Test eventual */
     void *evt_result;
     char *buf_evt = (char *)malloc(BUF_SIZE);
     ABT_eventual_set(g_eventual[0], buf_evt, BUF_SIZE);
+    ABT_test_printf(1, "pthread: eventual #1 passed\n");
     ABT_eventual_wait(g_eventual[1], &evt_result);
+    ABT_test_printf(1, "pthread: eventual #2 passed\n");
     free(buf_evt);
 
     /* Test future */
     char *buf_fut = (char *)malloc(BUF_SIZE);
     ABT_future_wait(g_future[0]);
+    ABT_test_printf(1, "pthread: future #1 passed\n");
     ABT_future_set(g_future[1], (void *)buf_fut);
+    ABT_test_printf(1, "pthread: future #2 passed\n");
     free(buf_fut);
 
     /* Join */
