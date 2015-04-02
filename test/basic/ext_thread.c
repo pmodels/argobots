@@ -21,7 +21,7 @@ ABT_cond  g_cond  = ABT_COND_NULL;
 ABT_eventual g_eventual[2] = {ABT_EVENTUAL_NULL, ABT_EVENTUAL_NULL};
 ABT_future   g_future[2]   = {ABT_FUTURE_NULL, ABT_FUTURE_NULL};
 int g_counter = 0;
-int g_threads = 0;
+volatile int g_threads = 0;
 
 void task_func(void *arg)
 {
