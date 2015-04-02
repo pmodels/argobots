@@ -250,9 +250,11 @@ int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
     size_t offset = 0;
     int num_params;
 
-    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
+    if (config == ABT_SCHED_CONFIG_NULL) {
+        return ABT_SUCCESS;
+    }
 
-    if (p_config == NULL) return ABT_SUCCESS;
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
 
     char *buffer = (char *)p_config;
 
