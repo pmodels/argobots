@@ -8,7 +8,6 @@
  */
 
 #include <stdarg.h>
-#include <assert.h>
 #include "abt.h"
 #include "abttest.h"
 

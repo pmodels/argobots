@@ -4,7 +4,6 @@
  */
 
 #include <stdio.h>
-#include <assert.h>
 #include <pthread.h>
 #include "abt.h"
 #include "abttest.h"

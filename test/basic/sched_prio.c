@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include "abt.h"
 #include "abttest.h"
 

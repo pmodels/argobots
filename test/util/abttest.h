@@ -8,6 +8,13 @@
 
 #include <stdio.h>
 
+/* We always have to use assert in our test suite. */
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#include <assert.h>
+
+
 /** @defgroup TESTUTIL Test utility
  * This group is for test utility routines.
  */
