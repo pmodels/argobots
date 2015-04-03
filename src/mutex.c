@@ -34,7 +34,7 @@ int ABT_mutex_create(ABT_mutex *newmutex)
     ABTI_mutex *p_newmutex;
 
     p_newmutex = (ABTI_mutex *)ABTU_malloc(sizeof(ABTI_mutex));
-    p_newmutex->val = 0;
+    ABTI_mutex_init(p_newmutex);
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
@@ -103,22 +103,10 @@ int ABT_mutex_free(ABT_mutex *mutex)
 int ABT_mutex_lock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_unit_type type;
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    ABT_self_get_type(&type);
-
-    /* Only ULTs can yield when the mutex has been locked. For others,
-     * just call mutex_spinlock. */
-    if (type == ABT_UNIT_TYPE_THREAD) {
-        ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
-        ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
-
-        while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
-            ABT_thread_yield();
-        }
-    } else {
-        ABT_mutex_spinlock(mutex);
-    }
+    ABTI_mutex_lock(p_mutex);
 
   fn_exit:
     return abt_errno;
@@ -146,13 +134,11 @@ int ABT_mutex_lock(ABT_mutex mutex)
  */
 int ABT_mutex_trylock(ABT_mutex mutex)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    if (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
-        abt_errno = ABT_ERR_MUTEX_LOCKED;
-    }
+    abt_errno = ABTI_mutex_trylock(p_mutex);
 
   fn_exit:
     return abt_errno;
@@ -180,9 +166,16 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
-    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
-    }
+    ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+
+    ABTI_mutex_spinlock(p_mutex);
+
+  fn_exit:
     return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_mutex_spinlock", abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -204,7 +197,7 @@ int ABT_mutex_unlock(ABT_mutex mutex)
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    p_mutex->val = 0;
+    ABTI_mutex_unlock(p_mutex);
 
   fn_exit:
     return abt_errno;
@@ -233,7 +226,57 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
 {
     ABTI_mutex *p_mutex1 = ABTI_mutex_get_ptr(mutex1);
     ABTI_mutex *p_mutex2 = ABTI_mutex_get_ptr(mutex2);
-    *result = (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
+    *result = ABTI_mutex_equal(p_mutex1, p_mutex2);
     return ABT_SUCCESS;
+}
+
+
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
+
+void ABTI_mutex_init(ABTI_mutex *p_mutex)
+{
+    p_mutex->val = 0;
+}
+
+void ABTI_mutex_lock(ABTI_mutex *p_mutex)
+{
+    ABT_unit_type type;
+
+    /* Only ULTs can yield when the mutex has been locked. For others,
+     * just call mutex_spinlock. */
+    ABT_self_get_type(&type);
+    if (type == ABT_UNIT_TYPE_THREAD) {
+        while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+            ABT_thread_yield();
+        }
+    } else {
+        ABTI_mutex_spinlock(p_mutex);
+    }
+}
+
+int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
+{
+    if (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+        return ABT_ERR_MUTEX_LOCKED;
+    }
+    return ABT_SUCCESS;
+}
+
+void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
+{
+    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+    }
+}
+
+void ABTI_mutex_unlock(ABTI_mutex *p_mutex)
+{
+    p_mutex->val = 0;
+}
+
+ABT_bool ABTI_mutex_equal(ABTI_mutex *p_mutex1, ABTI_mutex *p_mutex2)
+{
+    return (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
 }
 
