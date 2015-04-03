@@ -15,10 +15,11 @@ ABT_pool_access accesses[5] = {
   ABT_POOL_ACCESS_SPMC, ABT_POOL_ACCESS_MPMC,
 };
 
-int add_to_another_ES(ABT_pool_access access, int result)
+int add_to_another_ES(int accessIdx, int result)
 {
     int ret;
     int s;
+    ABT_pool_access access = accesses[accessIdx];
 
     ABT_pool pool;
     ret = ABT_pool_create_basic(ABT_POOL_FIFO, access, ABT_TRUE, &pool);
@@ -88,10 +89,11 @@ void task_func1(void *arg)
     ABT_TEST_ERROR(ret, "ABT_task_create");
 }
 
-int add_to_another_access(int access, int *results)
+int add_to_another_access(int accessIdx, int *results)
 {
     int ret;
     int p;
+    ABT_pool_access access = accesses[accessIdx];
 
     for (p = 0; p < 5; p++) {
         /* Creation of the ES */
@@ -115,7 +117,7 @@ int add_to_another_access(int access, int *results)
 
         ABT_sched_config config;
         ret = ABT_sched_config_create(&config,
-                                      ABT_sched_config_access, accesses[access],
+                                      ABT_sched_config_access, access,
                                       ABT_sched_config_var_end);
         ABT_TEST_ERROR(ret, "ABT_sched_config_create");
         ABT_sched sched;
@@ -158,14 +160,15 @@ void task_func2(void *arg)
     }
 }
 
-int push_from_another_es(int access, int *results)
+int push_from_another_es(int accessIdx, int *results)
 {
     int ret;
+    ABT_pool_access access = accesses[accessIdx];
 
     /* Creation of the ES */
     ABT_sched_config config;
     ret = ABT_sched_config_create(&config,
-                                  ABT_sched_config_access, accesses[access],
+                                  ABT_sched_config_access, access,
                                   ABT_sched_config_var_end);
     ABT_TEST_ERROR(ret, "ABT_sched_config_create");
     ABT_sched sched;
