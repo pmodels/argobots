@@ -52,10 +52,8 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     p_newxstream->p_main_sched = NULL;
 
     /* Create mutex */
-    abt_errno = ABT_mutex_create(&p_newxstream->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
-    abt_errno = ABT_mutex_create(&p_newxstream->top_sched_mutex);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_mutex_init(&p_newxstream->mutex);
+    ABTI_mutex_init(&p_newxstream->top_sched_mutex);
 
     /* Set the main scheduler */
     ABT_xstream xstream = ABTI_xstream_get_handle(p_newxstream);
@@ -265,17 +263,17 @@ int ABT_xstream_join(ABT_xstream xstream)
     }
 
     if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
-        ABT_mutex_spinlock(p_xstream->mutex);
+        ABTI_mutex_spinlock(&p_xstream->mutex);
         /* If xstream's state was changed, we cannot terminate it here */
         if (ABTD_atomic_cas_int32((int32_t *)&p_xstream->state,
                                   ABT_XSTREAM_STATE_CREATED,
                                   ABT_XSTREAM_STATE_TERMINATED)
             != ABT_XSTREAM_STATE_CREATED) {
-            ABT_mutex_unlock(p_xstream->mutex);
+            ABTI_mutex_unlock(&p_xstream->mutex);
             goto fn_body;
         }
         abt_errno = ABTI_global_move_xstream(p_xstream);
-        ABT_mutex_unlock(p_xstream->mutex);
+        ABTI_mutex_unlock(&p_xstream->mutex);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_global_move_xstream");
         goto fn_exit;
     }
@@ -762,11 +760,11 @@ int ABT_xstream_set_name(ABT_xstream xstream, const char *name)
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     size_t len = strlen(name);
-    ABT_mutex_spinlock(p_xstream->mutex);
+    ABTI_mutex_spinlock(&p_xstream->mutex);
     if (p_xstream->p_name) ABTU_free(p_xstream->p_name);
     p_xstream->p_name = (char *)ABTU_malloc(len + 1);
     ABTU_strcpy(p_xstream->p_name, name);
-    ABT_mutex_unlock(p_xstream->mutex);
+    ABTI_mutex_unlock(&p_xstream->mutex);
 
   fn_exit:
     return abt_errno;
@@ -1006,13 +1004,9 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     }
 
     /* Clean up the deads pool */
-    ABT_mutex_spinlock(p_xstream->mutex);
+    ABTI_mutex_spinlock(&p_xstream->mutex);
     ABTI_contn_free(&p_xstream->deads);
-    ABT_mutex_unlock(p_xstream->mutex);
-
-    /* Free the mutex */
-    abt_errno = ABT_mutex_free(&p_xstream->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_mutex_unlock(&p_xstream->mutex);
 
     /* Free the array of sched contexts */
     ABTU_free(p_xstream->scheds);
@@ -1147,7 +1141,7 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
         p_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
-        ABT_mutex_unlock(p_xstream->top_sched_mutex);
+        ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
     }
 
     if ((p_thread->request & ABTI_THREAD_REQ_TERMINATE) ||
@@ -1222,7 +1216,7 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
         p_task->is_sched->state = ABT_SCHED_STATE_STOPPED;
-        ABT_mutex_unlock(p_xstream->top_sched_mutex);
+        ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
     }
 
     abt_errno = ABTI_xstream_terminate_task(p_task);
@@ -1359,9 +1353,9 @@ int ABTI_xstream_keep_thread(ABTI_thread *p_thread)
     p_thread->unit = (ABT_unit)ABTI_elem_create_from_thread(p_thread);
 
     /* Add the unit to the deads pool */
-    ABT_mutex_spinlock(p_xstream->mutex);
+    ABTI_mutex_spinlock(&p_xstream->mutex);
     ABTI_contn_push(p_xstream->deads, p_thread->unit);
-    ABT_mutex_unlock(p_xstream->mutex);
+    ABTI_mutex_unlock(&p_xstream->mutex);
 
     /* Set the thread's state as TERMINATED */
     p_thread->state = ABT_THREAD_STATE_TERMINATED;
@@ -1382,9 +1376,9 @@ int ABTI_xstream_keep_task(ABTI_task *p_task)
     p_task->unit = (ABT_unit)ABTI_elem_create_from_task(p_task);
 
     /* Add the unit to the deads pool */
-    ABT_mutex_spinlock(p_xstream->mutex);
+    ABTI_mutex_spinlock(&p_xstream->mutex);
     ABTI_contn_push(p_xstream->deads, p_task->unit);
-    ABT_mutex_unlock(p_xstream->mutex);
+    ABTI_mutex_unlock(&p_xstream->mutex);
 
     /* Set the task's state as TERMINATED */
     p_task->state = ABT_TASK_STATE_TERMINATED;
@@ -1549,7 +1543,7 @@ void ABTI_xstream_loop(void *p_arg)
     while (1) {
         int abt_errno = ABTI_xstream_schedule(p_xstream);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_schedule");
-        ABT_mutex_unlock(p_xstream->top_sched_mutex);
+        ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
 
         /* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */

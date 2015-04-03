@@ -140,10 +140,10 @@ struct ABTI_xstream {
     ABTI_sched **scheds;        /* Stack of running schedulers */
     int max_scheds;             /* Allocation size of the array scheds */
     int num_scheds;             /* Number of scheds */
-    ABT_mutex top_sched_mutex;  /* Mutex for the top scheduler */
+    ABTI_mutex top_sched_mutex; /* Mutex for the top scheduler */
 
     uint32_t request;           /* Request */
-    ABT_mutex mutex;            /* Mutex */
+    ABTI_mutex mutex;           /* Mutex */
     ABTI_sched *p_main_sched;   /* Main scheduler */
     ABTI_contn *deads;          /* Units terminated but still referenced */
 

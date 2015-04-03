@@ -450,7 +450,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 
     /* Check exit request */
     if (p_sched->request & ABTI_SCHED_REQ_EXIT) {
-        ABT_mutex_spinlock(p_xstream->top_sched_mutex);
+        ABTI_mutex_spinlock(&p_xstream->top_sched_mutex);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
         *stop = ABT_TRUE;
         goto fn_exit;
@@ -477,7 +477,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
         if (p_sched->request & ABTI_SCHED_REQ_FINISH) {
             /* We need to lock in case someone wants to migrate to this
              * scheduler */
-            ABT_mutex_spinlock(p_xstream->top_sched_mutex);
+            ABTI_mutex_spinlock(&p_xstream->top_sched_mutex);
             size_t size;
             ABT_sched_get_total_size(p_sched, &size);
             if (size == 0) {
@@ -485,7 +485,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
                 *stop = ABT_TRUE;
             }
             else
-                ABT_mutex_unlock(p_xstream->top_sched_mutex);
+                ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
         }
     }
 

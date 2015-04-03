@@ -223,9 +223,9 @@ int ABT_thread_free(ABT_thread *thread)
         /* The thread has finished but it is still referenced.
          * Thus it exists in the xstream's deads pool. */
         ABTI_xstream *p_xstream = p_thread->p_last_xstream;
-        ABT_mutex_spinlock(p_xstream->mutex);
+        ABTI_mutex_spinlock(&p_xstream->mutex);
         ABTI_contn_remove(p_xstream->deads, p_thread->unit);
-        ABT_mutex_unlock(p_xstream->mutex);
+        ABTI_mutex_unlock(&p_xstream->mutex);
     }
 
     /* Free the ABTI_thread structure */
@@ -704,12 +704,12 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
     ABTI_pool *p_pool = NULL;
     ABTI_sched *p_sched = NULL;
     do {
-        ABT_mutex_spinlock(p_xstream->top_sched_mutex);
+        ABTI_mutex_spinlock(&p_xstream->top_sched_mutex);
 
         /* We check the state of the ES */
         if (p_xstream->state == ABT_XSTREAM_STATE_TERMINATED) {
             abt_errno = ABT_ERR_INV_XSTREAM;
-            ABT_mutex_unlock(p_xstream->top_sched_mutex);
+            ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
             goto fn_fail;
 
         } else if (p_xstream->state == ABT_XSTREAM_STATE_RUNNING) {
@@ -722,21 +722,21 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
         /* We check the state of the sched */
         if (p_sched->state == ABT_SCHED_STATE_TERMINATED) {
             abt_errno = ABT_ERR_INV_XSTREAM;
-            ABT_mutex_unlock(p_xstream->top_sched_mutex);
+            ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
             goto fn_fail;
         } else {
             /* Find a pool */
             ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
             if (p_pool == NULL) {
                 abt_errno = ABT_ERR_INV_POOL;
-                ABT_mutex_unlock(p_xstream->top_sched_mutex);
+                ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
                 goto fn_fail;
             }
             /* We set the migration counter to prevent the scheduler from
              * stopping */
             ABTI_pool_inc_num_migrations(p_pool);
         }
-        ABT_mutex_unlock(p_xstream->top_sched_mutex);
+        ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
     } while (p_pool == NULL);
 
     abt_errno = ABTI_thread_migrate_to_pool(p_thread, p_pool);
