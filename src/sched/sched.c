@@ -67,10 +67,6 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
       ABTI_pool_retain(pool_list[p]);
     }
 
-    /* Create a mutex */
-    abt_errno = ABT_mutex_create(&p_sched->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
-
     p_sched->used          = ABTI_SCHED_NOT_USED;
     p_sched->automatic     = ABT_FALSE;
     p_sched->kind          = ABTI_sched_get_kind(def);
@@ -271,10 +267,6 @@ int ABT_sched_free(ABT_sched *sched)
         if (p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED)
             ABT_thread_free(&p_sched->thread);
     }
-
-    /* Free the mutex */
-    abt_errno = ABT_mutex_free(&p_sched->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
 
     p_sched->free(h_sched);
     p_sched->data = NULL;

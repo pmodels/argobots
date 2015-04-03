@@ -158,7 +158,6 @@ struct ABTI_xstream_contn {
 };
 
 struct ABTI_sched {
-    ABT_mutex mutex;            /* Mutex */
     ABTI_sched_used used;       /* To know if it is used and how */
     ABT_bool automatic;         /* To know if automatic data free */
     ABTI_sched_kind kind;       /* Kind of the scheduler  */
