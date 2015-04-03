@@ -1252,7 +1252,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
     }
 
-    ABT_mutex_spinlock(p_thread->mutex); // TODO: mutex useful?
+    ABTI_mutex_spinlock(&p_thread->mutex); // TODO: mutex useful?
     {
         /* extracting argument in migration request */
         p_pool = (ABTI_pool *)ABTI_thread_extract_req_arg(p_thread,
@@ -1272,7 +1272,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         /* Add the unit to the scheduler's pool */
         abt_errno = ABT_pool_push(pool, p_thread->unit);
     }
-    ABT_mutex_unlock(p_thread->mutex);
+    ABTI_mutex_unlock(&p_thread->mutex);
 
     ABTI_pool_dec_num_migrations(p_pool);
 
@@ -1323,7 +1323,7 @@ int ABTI_xstream_add_thread(ABTI_thread *p_thread)
     int abt_errno;
     /* The thread's ES must not be changed during this function.
      * So, its mutex is used to guarantee it. */
-    ABT_mutex_spinlock(p_thread->mutex);
+    ABTI_mutex_spinlock(&p_thread->mutex);
 
     ABT_pool pool = ABTI_pool_get_handle(p_thread->p_pool);
 
@@ -1333,7 +1333,7 @@ int ABTI_xstream_add_thread(ABTI_thread *p_thread)
     /* Add the unit to the scheduler's pool */
     abt_errno = ABT_pool_push(pool, p_thread->unit);
 
-    ABT_mutex_unlock(p_thread->mutex);
+    ABTI_mutex_unlock(&p_thread->mutex);
 
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -1349,7 +1349,7 @@ int ABTI_xstream_keep_thread(ABTI_thread *p_thread)
 {
     /* The thread's ES must not be changed during this function.
      * So, its mutex is used to guarantee it. */
-    ABT_mutex_spinlock(p_thread->mutex);
+    ABTI_mutex_spinlock(&p_thread->mutex);
 
     ABTI_xstream *p_xstream = p_thread->p_last_xstream;
 
@@ -1366,7 +1366,7 @@ int ABTI_xstream_keep_thread(ABTI_thread *p_thread)
     /* Set the thread's state as TERMINATED */
     p_thread->state = ABT_THREAD_STATE_TERMINATED;
 
-    ABT_mutex_unlock(p_thread->mutex);
+    ABTI_mutex_unlock(&p_thread->mutex);
 
     return ABT_SUCCESS;
 }

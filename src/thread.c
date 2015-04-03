@@ -76,9 +76,8 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     p_newthread->request        = 0;
     p_newthread->p_req_arg      = NULL;
 
-    /* Create a mutex */
-    abt_errno = ABT_mutex_create(&p_newthread->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
 
     /* Create a stack for this thread */
     stacksize = p_newthread->attr.stacksize;
@@ -1172,11 +1171,11 @@ int ABT_thread_set_name(ABT_thread thread, const char *name)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     size_t len = strlen(name);
-    ABT_mutex_spinlock(p_thread->mutex);
+    ABTI_mutex_spinlock(&p_thread->mutex);
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
     p_thread->p_name = (char *)ABTU_malloc(len + 1);
     ABTU_strcpy(p_thread->p_name, name);
-    ABT_mutex_unlock(p_thread->mutex);
+    ABTI_mutex_unlock(&p_thread->mutex);
 
   fn_exit:
     return abt_errno;
@@ -1281,9 +1280,9 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
     }
 
     /* adding request to the thread */
-    ABT_mutex_spinlock(p_thread->mutex);
+    ABTI_mutex_spinlock(&p_thread->mutex);
     ABTI_thread_add_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE, p_pool);
-    ABT_mutex_unlock(p_thread->mutex);
+    ABTI_mutex_unlock(&p_thread->mutex);
     ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
@@ -1326,9 +1325,8 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     ABTI_thread_set_attr(p_newthread, ABT_THREAD_ATTR_NULL);
     p_newthread->attr.migratable = ABT_FALSE;
 
-    /* Create a mutex */
-    abt_errno = ABT_mutex_create(&p_newthread->mutex);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_mutex_create");
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
 
     *p_thread = p_newthread;
 
@@ -1368,9 +1366,8 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     p_newthread->request        = 0;
     p_newthread->p_req_arg      = NULL;
 
-    /* Create a mutex */
-    abt_errno = ABT_mutex_create(&p_newthread->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
 
     /* Create a stack for this thread */
     stacksize = p_newthread->attr.stacksize;
@@ -1408,10 +1405,6 @@ int ABTI_thread_free_main(ABTI_thread *p_thread)
     /* Free the name */
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
 
-    /* Free the mutex */
-    abt_errno = ABT_mutex_free(&p_thread->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
-
     ABTU_free(p_thread);
 
   fn_exit:
@@ -1429,7 +1422,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     /* Mutex of p_thread may have been locked somewhere. We free p_thread when
        mutex can be locked here. Since p_thread and its mutex will be freed,
        we don't need to unlock the mutex. */
-    ABT_mutex_spinlock(p_thread->mutex);
+    ABTI_mutex_spinlock(&p_thread->mutex);
 
     /* Free the unit */
     if (p_thread->refcount > 0) {
@@ -1440,10 +1433,6 @@ int ABTI_thread_free(ABTI_thread *p_thread)
 
     /* Free the name */
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
-
-    /* Free the mutex */
-    abt_errno = ABT_mutex_free(&p_thread->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
 
     /* Free the stack and the context */
     ABTU_free(p_thread->p_stack);

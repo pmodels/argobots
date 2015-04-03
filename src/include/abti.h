@@ -98,6 +98,10 @@ typedef struct ABTI_timer           ABTI_timer;
 
 
 /* Definitions */
+struct ABTI_mutex {
+    uint32_t val;
+};
+
 struct ABTI_global {
     ABTI_xstream_contn *p_xstreams; /* ES container */
 
@@ -225,7 +229,7 @@ struct ABTI_thread {
 
     uint32_t request;               /* Request */
     ABTI_thread_req_arg *p_req_arg; /* Request argument */
-    ABT_mutex mutex;                /* Mutex */
+    ABTI_mutex mutex;               /* Mutex */
     void *p_stack;                  /* Stack */
 
     ABTD_thread_context ctx;        /* Context */
@@ -262,10 +266,6 @@ struct ABTI_task {
     uint32_t request;          /* Request */
     void (*f_task)(void *);    /* Task function */
     void *p_arg;               /* Task arguments */
-};
-
-struct ABTI_mutex {
-    uint32_t val;
 };
 
 struct ABTI_cond {
