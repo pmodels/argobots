@@ -30,10 +30,9 @@ int ABT_cond_create(ABT_cond *newcond)
     ABTI_thread_entry *p_entry;
 
     p_newcond = (ABTI_cond *)ABTU_malloc(sizeof(ABTI_cond));
-    abt_errno = ABT_mutex_create(&p_newcond->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
 
-    p_newcond->waiter_mutex = ABT_MUTEX_NULL;
+    ABTI_mutex_init(&p_newcond->mutex);
+    p_newcond->p_waiter_mutex = NULL;
     p_newcond->num_waiters  = 0;
 
     /* Allocate one entry for waiters and keep it */
@@ -77,9 +76,6 @@ int ABT_cond_free(ABT_cond *cond)
     assert(p_cond->num_waiters == 0);
     assert(p_cond->waiters.head != NULL);
 
-    abt_errno = ABT_mutex_free(&p_cond->mutex);
-    ABTI_CHECK_ERROR(abt_errno);
-
     ABTU_free(p_cond->waiters.head);
     ABTU_free(p_cond);
 
@@ -116,6 +112,8 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
     int abt_errno = ABT_SUCCESS;
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
     ABTI_thread *p_thread;
     ABT_unit_type type;
@@ -134,15 +132,14 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
         type = ABT_UNIT_TYPE_EXT;
     }
 
-    ABT_mutex_spinlock(p_cond->mutex);
+    ABTI_mutex_spinlock(&p_cond->mutex);
 
-    if (p_cond->waiter_mutex == ABT_MUTEX_NULL) {
-        p_cond->waiter_mutex = mutex;
+    if (p_cond->p_waiter_mutex == NULL) {
+        p_cond->p_waiter_mutex = p_mutex;
     } else {
-        ABT_bool result;
-        ABT_mutex_equal(p_cond->waiter_mutex, mutex, &result);
+        ABT_bool result = ABTI_mutex_equal(p_cond->p_waiter_mutex, p_mutex);
         if (result == ABT_FALSE) {
-            ABT_mutex_unlock(p_cond->mutex);
+            ABTI_mutex_unlock(&p_cond->mutex);
             abt_errno = ABT_ERR_INV_MUTEX;
             goto fn_fail;
         }
@@ -169,11 +166,11 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
         ABTI_thread_set_blocked(p_thread);
     }
 
-    ABT_mutex_unlock(p_cond->mutex);
+    ABTI_mutex_unlock(&p_cond->mutex);
 
     /* Unlock the mutex that the calling ULT is holding */
     /* FIXME: should check if mutex was locked by the calling ULT */
-    ABT_mutex_unlock(mutex);
+    ABTI_mutex_unlock(p_mutex);
 
     if (type == ABT_UNIT_TYPE_THREAD) {
         /* Suspend the current ULT */
@@ -185,7 +182,7 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
     }
 
     /* Lock the mutex again */
-    ABT_mutex_lock(mutex);
+    ABTI_mutex_lock(p_mutex);
 
   fn_exit:
     return abt_errno;
@@ -215,10 +212,10 @@ int ABT_cond_signal(ABT_cond cond)
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
-    ABT_mutex_lock(p_cond->mutex);
+    ABTI_mutex_lock(&p_cond->mutex);
 
     if (p_cond->num_waiters == 0) {
-        ABT_mutex_unlock(p_cond->mutex);
+        ABTI_mutex_unlock(&p_cond->mutex);
         goto fn_exit;
     }
 
@@ -234,7 +231,7 @@ int ABT_cond_signal(ABT_cond cond)
 
     if (p_cond->num_waiters == 1) {
         head->current = NULL;
-        p_cond->waiter_mutex = ABT_MUTEX_NULL;
+        p_cond->p_waiter_mutex = NULL;
     } else {
         p_cond->waiters.head = head->next;
         ABTU_free(head);
@@ -242,7 +239,7 @@ int ABT_cond_signal(ABT_cond cond)
 
     p_cond->num_waiters--;
 
-    ABT_mutex_unlock(p_cond->mutex);
+    ABTI_mutex_unlock(&p_cond->mutex);
 
   fn_exit:
     return abt_errno;
@@ -271,10 +268,10 @@ int ABT_cond_broadcast(ABT_cond cond)
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
-    ABT_mutex_lock(p_cond->mutex);
+    ABTI_mutex_lock(&p_cond->mutex);
 
     if (p_cond->num_waiters == 0) {
-        ABT_mutex_unlock(p_cond->mutex);
+        ABTI_mutex_unlock(&p_cond->mutex);
         goto fn_exit;
     }
 
@@ -307,9 +304,9 @@ int ABT_cond_broadcast(ABT_cond cond)
     p_cond->waiters.head->next = NULL;
     p_cond->waiters.tail = p_cond->waiters.head;
     p_cond->num_waiters = 0;
-    p_cond->waiter_mutex = ABT_MUTEX_NULL;
+    p_cond->p_waiter_mutex = NULL;
 
-    ABT_mutex_unlock(p_cond->mutex);
+    ABTI_mutex_unlock(&p_cond->mutex);
 
   fn_exit:
     return abt_errno;

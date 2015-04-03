@@ -59,7 +59,7 @@ int ABT_future_create(int compartments, void (*cb_func)(void **arg),
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future = (ABTI_future*)ABTU_malloc(sizeof(ABTI_future));
-    ABT_mutex_create(&p_future->mutex);
+    ABTI_mutex_init(&p_future->mutex);
     p_future->ready = ABT_FALSE;
     p_future->counter = 0;
     p_future->compartments = compartments;
@@ -95,7 +95,6 @@ int ABT_future_free(ABT_future *future)
     ABTI_future *p_future = ABTI_future_get_ptr(*future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-    ABT_mutex_free(&p_future->mutex);
     ABTU_free(p_future->array);
     ABTU_free(p_future);
 
@@ -130,7 +129,7 @@ int ABT_future_wait(ABT_future future)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-    ABT_mutex_lock(p_future->mutex);
+    ABTI_mutex_lock(&p_future->mutex);
     if (p_future->ready == ABT_FALSE) {
         ABTI_thread_entry *cur;
         ABTI_thread *p_current;
@@ -163,7 +162,7 @@ int ABT_future_wait(ABT_future future)
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread_set_blocked(p_current);
         }
-        ABT_mutex_unlock(p_future->mutex);
+        ABTI_mutex_unlock(&p_future->mutex);
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread_suspend(p_current);
@@ -173,7 +172,7 @@ int ABT_future_wait(ABT_future future)
             while (!ext_signal);
         }
     } else {
-        ABT_mutex_unlock(p_future->mutex);
+        ABTI_mutex_unlock(&p_future->mutex);
     }
 
   fn_exit:
@@ -235,7 +234,7 @@ int ABT_future_set(ABT_future future, void *value)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-    ABT_mutex_lock(p_future->mutex);
+    ABTI_mutex_lock(&p_future->mutex);
     p_future->array[p_future->counter] = value;
     p_future->counter++;
 
@@ -250,7 +249,7 @@ int ABT_future_set(ABT_future future, void *value)
             (*p_future->p_callback)(p_future->array);
         ABTI_future_signal(p_future);
     }
-    ABT_mutex_unlock(p_future->mutex);
+    ABTI_mutex_unlock(&p_future->mutex);
 
   fn_exit:
     return abt_errno;

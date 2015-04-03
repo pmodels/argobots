@@ -34,7 +34,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     ABTI_eventual *p_eventual;
 
     p_eventual = (ABTI_eventual *)ABTU_malloc(sizeof(ABTI_eventual));
-    ABT_mutex_create(&p_eventual->mutex);
+    ABTI_mutex_init(&p_eventual->mutex);
     p_eventual->ready = ABT_FALSE;
     p_eventual->nbytes = nbytes;
     p_eventual->value = ABTU_malloc(nbytes);
@@ -68,7 +68,6 @@ int ABT_eventual_free(ABT_eventual *eventual)
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(*eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-    ABT_mutex_free(&p_eventual->mutex);
     ABTU_free(p_eventual->value);
     ABTU_free(p_eventual);
 
@@ -105,7 +104,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-    ABT_mutex_lock(p_eventual->mutex);
+    ABTI_mutex_lock(&p_eventual->mutex);
     if (p_eventual->ready == ABT_FALSE) {
         ABTI_thread_entry *cur;
         ABTI_thread *p_current;
@@ -138,7 +137,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread_set_blocked(p_current);
         }
-        ABT_mutex_unlock(p_eventual->mutex);
+        ABTI_mutex_unlock(&p_eventual->mutex);
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread_suspend(p_current);
@@ -148,7 +147,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
             while (!ext_signal);
         }
     } else {
-        ABT_mutex_unlock(p_eventual->mutex);
+        ABTI_mutex_unlock(&p_eventual->mutex);
     }
     *value = p_eventual->value;
 
@@ -183,11 +182,11 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-    ABT_mutex_lock(p_eventual->mutex);
+    ABTI_mutex_lock(&p_eventual->mutex);
     p_eventual->ready = ABT_TRUE;
     memcpy(p_eventual->value, value, nbytes);
     ABTI_eventual_signal(p_eventual);
-    ABT_mutex_unlock(p_eventual->mutex);
+    ABTI_mutex_unlock(&p_eventual->mutex);
 
   fn_exit:
     return abt_errno;

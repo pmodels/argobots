@@ -154,7 +154,7 @@ struct ABTI_xstream_contn {
     ABTI_contn *created; /* ESes in CREATED state */
     ABTI_contn *active;  /* ESes in READY or RUNNING state */
     ABTI_contn *deads;   /* ESes in TERMINATED state but not freed */
-    ABT_mutex mutex;     /* Mutex */
+    ABTI_mutex mutex;    /* Mutex */
 };
 
 struct ABTI_sched {
@@ -268,14 +268,14 @@ struct ABTI_task {
 };
 
 struct ABTI_cond {
-    ABT_mutex mutex;
-    ABT_mutex waiter_mutex;
+    ABTI_mutex mutex;
+    ABTI_mutex *p_waiter_mutex;
     size_t num_waiters;
     ABTI_thread_list waiters;
 };
 
 struct ABTI_eventual {
-    ABT_mutex mutex;
+    ABTI_mutex mutex;
     ABT_bool ready;
     void *value;
     int nbytes;
@@ -283,7 +283,7 @@ struct ABTI_eventual {
 };
 
 struct ABTI_future {
-    ABT_mutex mutex;
+    ABTI_mutex mutex;
     ABT_bool ready;
     int counter;
     int compartments;
