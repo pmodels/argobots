@@ -193,11 +193,12 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         }
 
         /* Creation of the pools */
-        pools = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
+        /* To avoid the malloc overhead, we use a stack array. */
+        ABT_pool pool_list[ABTI_SCHED_NUM_PRIO];
         int p;
         for (p = 0; p < num_pools; p++) {
             abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access, ABT_TRUE,
-                                              pools+p);
+                                              pool_list+p);
             ABTI_CHECK_ERROR(abt_errno);
         }
 
@@ -206,11 +207,11 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
             case ABT_SCHED_DEFAULT:
             case ABT_SCHED_BASIC:
                 abt_errno = ABT_sched_create(&ABTI_sched_basic,
-                                             num_pools, pools,
+                                             num_pools, pool_list,
                                              config, newsched);
                 break;
             case ABT_SCHED_PRIO:
-                abt_errno = ABTI_sched_create_prio(num_pools, pools,
+                abt_errno = ABTI_sched_create_prio(num_pools, pool_list,
                                                    newsched);
                 break;
             default:
