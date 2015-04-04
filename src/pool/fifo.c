@@ -57,7 +57,7 @@ ABT_pool_def ABTI_pool_fifo = {
 };
 
 struct data {
-    ABT_mutex mutex;
+    ABTI_mutex mutex;
     size_t num_units;
     unit_t *p_head;
     unit_t *p_tail;
@@ -132,13 +132,9 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
 
     ABT_pool_get_access(pool, &access);
 
-    if (access == ABT_POOL_ACCESS_PRIV) {
-        /* If pool's access type is private, mutex is not necessary. */
-        p_data->mutex = ABT_MUTEX_NULL;
-    } else {
-        /* Create a mutex */
-        abt_errno = ABT_mutex_create(&p_data->mutex);
-        ABTI_CHECK_ERROR(abt_errno);
+    if (access != ABT_POOL_ACCESS_PRIV) {
+        /* Initialize the mutex */
+        ABTI_mutex_init(&p_data->mutex);
     }
 
     p_data->num_units = 0;
@@ -160,12 +156,6 @@ static int pool_free(ABT_pool pool)
     void *data;
     ABT_pool_get_data(pool, &data);
     data_t *p_data = pool_get_data_ptr(data);
-
-    if (p_data->mutex != ABT_MUTEX_NULL) {
-        /* Free the mutex */
-        abt_errno = ABT_mutex_free(&p_data->mutex);
-        ABTI_CHECK_ERROR(abt_errno);
-    }
 
     ABTU_free(p_data);
 
@@ -191,7 +181,7 @@ static void pool_push_shared(ABT_pool pool, ABT_unit unit)
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = (unit_t *)unit;
 
-    ABT_mutex_spinlock(p_data->mutex);
+    ABTI_mutex_spinlock(&p_data->mutex);
     if (p_data->num_units == 0) {
         p_unit->p_prev = p_unit;
         p_unit->p_next = p_unit;
@@ -209,7 +199,7 @@ static void pool_push_shared(ABT_pool pool, ABT_unit unit)
     p_data->num_units++;
 
     p_unit->pool = pool;
-    ABT_mutex_unlock(p_data->mutex);
+    ABTI_mutex_unlock(&p_data->mutex);
 }
 
 static void pool_push_private(ABT_pool pool, ABT_unit unit)
@@ -246,7 +236,7 @@ static ABT_unit pool_pop_shared(ABT_pool pool)
     unit_t *p_unit = NULL;
     ABT_unit h_unit = ABT_UNIT_NULL;
 
-    ABT_mutex_spinlock(p_data->mutex);
+    ABTI_mutex_spinlock(&p_data->mutex);
     if (p_data->num_units > 0) {
         p_unit = p_data->p_head;
         if (p_data->num_units == 1) {
@@ -265,7 +255,7 @@ static ABT_unit pool_pop_shared(ABT_pool pool)
 
         h_unit = (ABT_unit)p_unit;
     }
-    ABT_mutex_unlock(p_data->mutex);
+    ABTI_mutex_unlock(&p_data->mutex);
 
     return h_unit;
 }
@@ -314,7 +304,7 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
         HANDLE_ERROR("Not my pool");
     }
 
-    ABT_mutex_spinlock(p_data->mutex);
+    ABTI_mutex_spinlock(&p_data->mutex);
     if (p_data->num_units == 1) {
         p_data->p_head = NULL;
         p_data->p_tail = NULL;
@@ -330,7 +320,7 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
     p_data->num_units--;
 
     p_unit->pool = ABT_POOL_NULL;
-    ABT_mutex_unlock(p_data->mutex);
+    ABTI_mutex_unlock(&p_data->mutex);
 
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
