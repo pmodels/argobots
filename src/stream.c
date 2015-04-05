@@ -963,6 +963,21 @@ int ABT_xstream_check_events(ABT_sched sched)
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
 
+    abt_errno = ABTI_xstream_check_events(p_xstream, sched);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_check_events", abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
+{
+    int abt_errno = ABT_SUCCESS;
+
     if (p_xstream->request & ABTI_XSTREAM_REQ_JOIN) {
         abt_errno = ABT_sched_finish(sched);
         ABTI_CHECK_ERROR(abt_errno);
@@ -980,7 +995,7 @@ int ABT_xstream_check_events(ABT_sched sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_check_events", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_xstream_check_events", abt_errno);
     goto fn_exit;
 }
 

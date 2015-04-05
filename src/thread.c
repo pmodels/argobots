@@ -629,7 +629,7 @@ int ABT_thread_yield(void)
     size_t size = ABTI_sched_get_total_size(p_sched);
     if (size == 0 && p_thread->request == 0) {
         ABT_sched sched = ABTI_sched_get_handle(p_sched);
-        ABT_xstream_check_events(sched);
+        ABTI_xstream_check_events(p_xstream, sched);
         if (p_sched->request == 0) {
           goto fn_exit;
         }
