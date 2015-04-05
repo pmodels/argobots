@@ -621,25 +621,15 @@ int ABT_thread_yield(void)
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     assert(p_thread->p_last_xstream == p_xstream);
 
-    /* If the scheduler has nothing to schedule or the calling ULT does not
-     * have any requests, this function simply returns without switching to
-     * the scheduler. */
-    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
-    size_t size = ABTI_sched_get_total_size(p_sched);
-    if (size == 0 && p_thread->request == 0) {
-        ABT_sched sched = ABTI_sched_get_handle(p_sched);
-        ABTI_xstream_check_events(p_xstream, sched);
-        if (p_sched->request == 0) {
-          goto fn_exit;
-        }
-    }
-
     /* Change the state of current running thread */
     p_thread->state = ABT_THREAD_STATE_READY;
 
-    /* Switch to the scheduler */
-    abt_errno = ABTD_thread_context_switch(&p_thread->ctx,
-                                           ABTI_xstream_get_sched_ctx());
+    /* Switch to the top scheduler */
+    /* NOTE: To remove the function call overhead, we directly access
+     * ABTI_xstream and ABTI_sched instead of calling ABTI_xstream_get_top_sched
+     * or ABTI_xstream_get_sched_ctx. */
+    ABTI_sched *p_sched = p_xstream->scheds[p_xstream->num_scheds-1];
+    abt_errno = ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Back to the original thread */
