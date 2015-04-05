@@ -17,18 +17,7 @@ static ABT_unit pool_pop_private(ABT_pool pool);
 static int      pool_remove_shared(ABT_pool pool, ABT_unit unit);
 static int      pool_remove_private(ABT_pool pool, ABT_unit unit);
 
-struct unit {
-    ABT_pool pool;
-    ABT_unit_type type;
-    union {
-        ABT_thread thread;
-        ABT_task   task;
-    };
-    struct unit *p_prev;
-    struct unit *p_next;
-};
-typedef struct unit unit_t;
-
+typedef ABTI_unit unit_t;
 static ABT_unit_type unit_get_type(ABT_unit unit);
 static ABT_thread unit_get_thread(ABT_unit unit);
 static ABT_task unit_get_task(ABT_unit unit);
@@ -159,11 +148,7 @@ static int pool_free(ABT_pool pool)
 
     ABTU_free(p_data);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    goto fn_exit;
 }
 
 static size_t pool_get_size(ABT_pool pool)
@@ -420,32 +405,32 @@ static ABT_bool unit_is_in_pool(ABT_unit unit)
 
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
-    unit_t *p_unit = (unit_t *)ABTU_malloc(sizeof(unit_t));
-    p_unit->pool   = ABT_POOL_NULL;
-    p_unit->type   = ABT_UNIT_TYPE_THREAD;
-    p_unit->thread = thread;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    unit_t *p_unit = &p_thread->unit_def;
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
+    p_unit->pool   = ABT_POOL_NULL;
+    p_unit->thread = thread;
+    p_unit->type   = ABT_UNIT_TYPE_THREAD;
 
     return (ABT_unit)p_unit;
 }
 
 static ABT_unit unit_create_from_task(ABT_task task)
 {
-    unit_t *p_unit = (unit_t *)ABTU_malloc(sizeof(unit_t));
-    p_unit->pool   = ABT_POOL_NULL;
-    p_unit->type   = ABT_UNIT_TYPE_TASK;
-    p_unit->task   = task;
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    unit_t *p_unit = &p_task->unit_def;
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
+    p_unit->pool   = ABT_POOL_NULL;
+    p_unit->task   = task;
+    p_unit->type   = ABT_UNIT_TYPE_TASK;
 
     return (ABT_unit)p_unit;
 }
 
 static void unit_free(ABT_unit *unit)
 {
-    unit_t *p_unit = (unit_t *)(*unit);
-    ABTU_free(p_unit);
     *unit = ABT_UNIT_NULL;
 }
 

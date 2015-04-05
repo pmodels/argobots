@@ -79,6 +79,7 @@ typedef enum ABTI_sched_used        ABTI_sched_used;
 typedef void *                      ABTI_sched_id;      /* Scheduler id */
 typedef uint64_t                    ABTI_sched_kind;    /* Scheduler kind */
 typedef struct ABTI_pool            ABTI_pool;
+typedef struct ABTI_unit            ABTI_unit;
 typedef struct ABTI_thread_attr     ABTI_thread_attr;
 typedef struct ABTI_thread          ABTI_thread;
 typedef enum ABTI_thread_type       ABTI_thread_type;
@@ -207,6 +208,17 @@ struct ABTI_pool {
     ABT_pool_free_fn               p_free;
 };
 
+struct ABTI_unit {
+    ABTI_unit *p_prev;
+    ABTI_unit *p_next;
+    ABT_pool pool;
+    union {
+        ABT_thread thread;
+        ABT_task   task;
+    };
+    ABT_unit_type type;
+};
+
 struct ABTI_thread_attr {
     size_t         stacksize;           /* Stack size */
     ABT_bool       migratable;          /* Migratability */
@@ -216,6 +228,7 @@ struct ABTI_thread_attr {
 
 struct ABTI_thread {
     ABT_unit unit;                  /* Unit enclosing this thread */
+    ABTI_unit unit_def;             /* Internal unit definition */
     ABTI_xstream *p_last_xstream;   /* Last ES where it ran */
     ABTI_sched *is_sched;           /* If it is a scheduler, its ptr */
     ABTI_pool *p_pool;              /* Associated pool */
@@ -253,6 +266,7 @@ struct ABTI_thread_entry {
 
 struct ABTI_task {
     ABT_unit unit;             /* Unit enclosing this task */
+    ABTI_unit unit_def;        /* Internal unit definition */
     ABTI_xstream *p_xstream;   /* Associated ES */
     ABTI_sched *is_sched;      /* If it is a scheduler, its ptr */
     ABTI_pool *p_pool;         /* Associated pool */
