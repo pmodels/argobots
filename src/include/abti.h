@@ -406,6 +406,9 @@ int ABTI_sched_create_prio(int num_pools, ABT_pool *p_pools,
 int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
 ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
+ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream);
+size_t ABTI_sched_get_size(ABTI_sched *p_sched);
+size_t ABTI_sched_get_total_size(ABTI_sched *p_sched);
 int ABTI_sched_print(ABTI_sched *p_sched);
 
 /* Scheduler config */

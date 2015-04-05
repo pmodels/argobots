@@ -425,7 +425,6 @@ int ABT_sched_exit(ABT_sched sched)
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
     int abt_errno = ABT_SUCCESS;
-    size_t size;
 
     *stop = ABT_FALSE;
 
@@ -440,41 +439,54 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
+    *stop = ABTI_sched_has_to_stop(p_sched, p_xstream);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_sched_has_to_stop", abt_errno);
+    goto fn_exit;
+}
+
+ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
+{
+    ABT_bool stop = ABT_FALSE;
+    size_t size;
+
     /* Check exit request */
     if (p_sched->request & ABTI_SCHED_REQ_EXIT) {
         ABTI_mutex_spinlock(&p_xstream->top_sched_mutex);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
-        *stop = ABT_TRUE;
+        stop = ABT_TRUE;
         goto fn_exit;
     }
 
     ABTI_thread *p_main_thread = ABTI_local_get_main();
     /* We jump back to the main ULT if there is one */
     if (p_main_thread != NULL) {
-        ABT_sched_get_size(p_sched, &size);
+        size = ABTI_sched_get_size(p_sched);
         if (size == 0) {
             ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
-            if (ABTI_task_current() == NULL)
+            if (ABTI_task_current() == NULL) {
                 assert(p_thread == ABTI_thread_current());
-            abt_errno = ABTD_thread_context_switch(&p_thread->ctx,
-                                                   &p_main_thread->ctx);
-            ABTI_CHECK_ERROR(abt_errno);
+            }
+            ABTD_thread_context_switch(&p_thread->ctx, &p_main_thread->ctx);
             ABTI_local_set_thread(p_thread);
         }
     }
 
     /* Check join request */
-    ABT_sched_get_total_size(p_sched, &size);
+    size = ABTI_sched_get_total_size(p_sched);
     if (size == 0) {
         if (p_sched->request & ABTI_SCHED_REQ_FINISH) {
             /* We need to lock in case someone wants to migrate to this
              * scheduler */
             ABTI_mutex_spinlock(&p_xstream->top_sched_mutex);
-            size_t size;
-            ABT_sched_get_total_size(p_sched, &size);
+            size_t size = ABTI_sched_get_total_size(p_sched);
             if (size == 0) {
                 p_sched->state = ABT_SCHED_STATE_TERMINATED;
-                *stop = ABT_TRUE;
+                stop = ABT_TRUE;
             }
             else
                 ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
@@ -482,11 +494,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
     }
 
   fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("XXX", abt_errno);
-    goto fn_exit;
+    return stop;
 }
 
 /**
@@ -560,16 +568,11 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
 {
     int abt_errno = ABT_SUCCESS;
     size_t pool_size = 0;
-    int p;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-    for (p = 0; p < p_sched->num_pools; p++) {
-        size_t s;
-        ABT_pool pool = p_sched->pools[p];
-        ABT_pool_get_size(pool, &s);
-        pool_size += s;
-    }
+
+    pool_size = ABTI_sched_get_size(p_sched);
 
   fn_exit:
     *size = pool_size;
@@ -578,6 +581,21 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_sched_get_size", abt_errno);
     goto fn_exit;
+}
+
+size_t ABTI_sched_get_size(ABTI_sched *p_sched)
+{
+    size_t pool_size = 0;
+    int p;
+
+    for (p = 0; p < p_sched->num_pools; p++) {
+        size_t s;
+        ABT_pool pool = p_sched->pools[p];
+        ABT_pool_get_size(pool, &s);
+        pool_size += s;
+    }
+
+    return pool_size;
 }
 
 /**
@@ -595,16 +613,11 @@ int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
 {
     int abt_errno = ABT_SUCCESS;
     size_t pool_size = 0;
-    int p;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-    for (p = 0; p < p_sched->num_pools; p++) {
-        size_t s;
-        ABT_pool pool = p_sched->pools[p];
-        ABT_pool_get_total_size(pool, &s);
-        pool_size += s;
-    }
+
+    pool_size = ABTI_sched_get_total_size(p_sched);
 
   fn_exit:
     *size = pool_size;
@@ -613,6 +626,21 @@ int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
   fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_sched_get_total_size", abt_errno);
     goto fn_exit;
+}
+
+size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
+{
+    size_t pool_size = 0;
+    int p;
+
+    for (p = 0; p < p_sched->num_pools; p++) {
+        size_t s;
+        ABT_pool pool = p_sched->pools[p];
+        ABT_pool_get_total_size(pool, &s);
+        pool_size += s;
+    }
+
+    return pool_size;
 }
 
 
@@ -711,10 +739,9 @@ int ABTI_sched_print(ABTI_sched *p_sched)
         abt_errno = ABTI_pool_print(p_pool);
         ABTI_CHECK_ERROR(abt_errno);
     }
-    size_t size;
-    ABT_sched_get_size(p_sched, &size);
+    size_t size = ABTI_sched_get_size(p_sched);
     printf("size: %lu\n", (unsigned long)size);
-    ABT_sched_get_total_size(p_sched, &size);
+    size = ABTI_sched_get_total_size(p_sched);
     printf("total size: %lu\n", (unsigned long)size);
 
   fn_exit:

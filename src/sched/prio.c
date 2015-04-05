@@ -76,6 +76,9 @@ static void sched_run(ABT_sched sched)
     ABT_unit unit;
     size_t size;
 
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+
     abt_errno = ABT_sched_get_data(sched, &p_data);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -105,8 +108,7 @@ static void sched_run(ABT_sched sched)
         }
 
         if (++work_count >= event_freq) {
-            ABT_bool stop;
-            ABT_sched_has_to_stop(sched, &stop);
+            ABT_bool stop = ABTI_sched_has_to_stop(p_sched, p_xstream);
             if (stop == ABT_TRUE) break;
             work_count = 0;
             ABT_xstream_check_events(sched);

@@ -88,6 +88,9 @@ static void sched_run(ABT_sched sched)
     ABT_pool *pools;
     int i;
 
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+
     ABT_sched_get_data(sched, &data);
     p_data = sched_data_get_ptr(data);
     event_freq = p_data->event_freq;
@@ -111,8 +114,7 @@ static void sched_run(ABT_sched sched)
         }
 
         if (++work_count >= event_freq) {
-            ABT_bool stop;
-            ABT_sched_has_to_stop(sched, &stop);
+            ABT_bool stop = ABTI_sched_has_to_stop(p_sched, p_xstream);
             if (stop == ABT_TRUE)
                 break;
             work_count = 0;
