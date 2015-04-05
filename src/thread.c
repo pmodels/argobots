@@ -497,14 +497,15 @@ int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool)
 int ABT_thread_yield_to(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_unit_type type;
+    ABTI_thread *p_cur_thread = NULL;
 
     /* If this routine is called by non-ULT, just return. */
-    ABT_self_get_type(&type);
-    if (type != ABT_UNIT_TYPE_THREAD) goto fn_exit;
+    if (lp_ABTI_local != NULL) {
+        p_cur_thread = ABTI_local_get_thread();
+    }
+    if (p_cur_thread == NULL) goto fn_exit;
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    ABTI_thread *p_cur_thread = ABTI_local_get_thread();
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
     DEBUG_PRINT("YIELD_TO: TH%" PRIu64 " -> TH%" PRIu64 "\n",
@@ -611,13 +612,14 @@ int ABT_thread_yield_to(ABT_thread thread)
 int ABT_thread_yield(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_unit_type type;
+    ABTI_thread *p_thread = NULL;
 
     /* If this routine is called by non-ULT, just return. */
-    ABT_self_get_type(&type);
-    if (type != ABT_UNIT_TYPE_THREAD) goto fn_exit;
+    if (lp_ABTI_local != NULL) {
+        p_thread = ABTI_local_get_thread();
+    }
+    if (p_thread == NULL) goto fn_exit;
 
-    ABTI_thread *p_thread = ABTI_local_get_thread();
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     assert(p_thread->p_last_xstream == p_xstream);
 
