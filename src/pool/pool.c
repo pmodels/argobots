@@ -284,7 +284,6 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
 int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_xstream;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -295,21 +294,8 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     }
 
     /* Save the writer ES information in the pool */
-    if (lp_ABTI_local != NULL) {
-        p_xstream = ABTI_local_get_xstream();
-    } else {
-        /* We allow external threads to push a unit into a pool. However, since
-         * it is not trivial to identify them, we use ABTD_xstream_context to
-         * distinguish them for now. */
-        ABTD_xstream_context tmp_ctx;
-        ABTD_xstream_context_self(&tmp_ctx);
-        p_xstream = (ABTI_xstream *)tmp_ctx;
-    }
-    abt_errno = ABTI_pool_set_writer(p_pool, p_xstream);
+    abt_errno = ABTI_pool_push(p_pool, unit, ABTI_xstream_self());
     ABTI_CHECK_ERROR(abt_errno);
-
-    /* Push unit into pool */
-    p_pool->p_push(pool, unit);
 
   fn_exit:
     return abt_errno;
@@ -342,10 +328,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    abt_errno = ABTI_pool_set_reader(p_pool, p_xstream);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    abt_errno = p_pool->p_remove(pool, unit);
+    abt_errno = ABTI_pool_remove(p_pool, unit, p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -512,6 +495,73 @@ fn_fail:
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
+ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)
+{
+    return p_pool->p_pop(ABTI_pool_get_handle(p_pool));
+}
+
+int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_writer)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    /* Save the writer ES information in the pool */
+    abt_errno = ABTI_pool_set_writer(p_pool, p_writer);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Push unit into pool */
+    p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_pool_push", abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_writer)
+{
+    int abt_errno;
+
+    /* The thread's ES must not be changed during this function.
+     * So, its mutex is used to guarantee it. */
+    ABTI_mutex_spinlock(&p_thread->mutex);
+
+    /* Set the ULT's state as READY */
+    p_thread->state = ABT_THREAD_STATE_READY;
+
+    /* Add the ULT to the associated pool */
+    abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, p_writer);
+
+    ABTI_mutex_unlock(&p_thread->mutex);
+
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_pool_add_thread", abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_reader)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    abt_errno = ABTI_pool_set_reader(p_pool, p_reader);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    abt_errno = p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABTI_pool_remove", abt_errno);
+    goto fn_exit;
+}
 
 int ABTI_pool_print(ABTI_pool *p_pool)
 {

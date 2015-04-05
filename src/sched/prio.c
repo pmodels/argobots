@@ -91,12 +91,13 @@ static void sched_run(ABT_sched sched)
         /* Execute one work unit from the scheduler's pool */
         /* The pool with lower index has higher priority. */
         for (i = 0; i < num_pools; i++) {
-            ABT_pool_get_size(p_pools[i], &size);
+            ABT_pool pool = p_pools[i];
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+            size = p_pool->p_get_size(pool);
             if (size > 0) {
-                abt_errno = ABT_pool_pop(p_pools[i], &unit);
-                ABTI_CHECK_ERROR(abt_errno);
+                unit = p_pool->p_pop(pool);
                 if (unit != ABT_UNIT_NULL) {
-                    abt_errno = ABT_xstream_run_unit(unit, p_pools[i]);
+                    abt_errno = ABT_xstream_run_unit(unit, pool);
                     ABTI_CHECK_ERROR(abt_errno);
                 }
                 break;

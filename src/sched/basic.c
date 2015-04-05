@@ -98,13 +98,11 @@ static void sched_run(ABT_sched sched)
         /* Execute one work unit from the scheduler's pool */
         for (i = 0; i < num_pools; i++) {
             ABT_pool pool = pools[i];
-            size_t size;
-            ABT_pool_get_size(pool, &size);
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+            size_t size = p_pool->p_get_size(pool);
             if (size > 0) {
                 /* Pop one work unit */
-                ABT_unit unit;
-                abt_errno = ABT_pool_pop(pool, &unit);
-                ABTI_CHECK_ERROR(abt_errno);
+                ABT_unit unit = p_pool->p_pop(pool);
                 if (unit != ABT_UNIT_NULL) {
                     ABT_xstream_run_unit(unit, pool);
                 }

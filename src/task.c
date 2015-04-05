@@ -73,7 +73,7 @@ int ABT_task_create(ABT_pool pool,
     p_newtask->p_arg      = arg;
 
     /* Add this task to the scheduler's pool */
-    abt_errno = ABT_pool_push(pool, p_newtask->unit);
+    abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
         int ret = ABT_task_free(&h_newtask);
         if (ret != ABT_SUCCESS)

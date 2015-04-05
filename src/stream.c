@@ -988,6 +988,22 @@ int ABT_xstream_check_events(ABT_sched sched)
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
+ABTI_xstream *ABTI_xstream_self(void)
+{
+    ABTI_xstream *p_xstream;
+    if (lp_ABTI_local != NULL) {
+        p_xstream = ABTI_local_get_xstream();
+    } else {
+        /* We allow external threads to call Argobots APIs. However, since it
+         * is not trivial to identify them, we use ABTD_xstream_context to
+         * distinguish them for now. */
+        ABTD_xstream_context tmp_ctx;
+        ABTD_xstream_context_self(&tmp_ctx);
+        p_xstream = (ABTI_xstream *)tmp_ctx;
+    }
+    return p_xstream;
+}
+
 int ABTI_xstream_free(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -1156,7 +1172,7 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
         /* The ULT did not finish its execution.
          * Change the state of current running ULT and
          * add it to the pool again. */
-        abt_errno = ABTI_xstream_add_thread(p_thread);
+        abt_errno = ABTI_pool_add_thread(p_thread, p_xstream);
     }
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -1310,33 +1326,6 @@ int ABTI_xstream_terminate_task(ABTI_task *p_task)
         abt_errno = ABTI_xstream_keep_task(p_task);
     }
     return abt_errno;
-}
-
-int ABTI_xstream_add_thread(ABTI_thread *p_thread)
-{
-    int abt_errno;
-    /* The thread's ES must not be changed during this function.
-     * So, its mutex is used to guarantee it. */
-    ABTI_mutex_spinlock(&p_thread->mutex);
-
-    ABT_pool pool = ABTI_pool_get_handle(p_thread->p_pool);
-
-    /* Set the thread's state as READY */
-    p_thread->state = ABT_THREAD_STATE_READY;
-
-    /* Add the unit to the scheduler's pool */
-    abt_errno = ABT_pool_push(pool, p_thread->unit);
-
-    ABTI_mutex_unlock(&p_thread->mutex);
-
-    ABTI_CHECK_ERROR(abt_errno);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_add_thread", abt_errno);
-    goto fn_exit;
 }
 
 int ABTI_xstream_keep_thread(ABTI_thread *p_thread)

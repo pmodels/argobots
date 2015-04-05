@@ -380,6 +380,7 @@ void          ABTI_elem_free(ABTI_elem **pp_elem);
 int           ABTI_elem_print(ABTI_elem *p_elem);
 
 /* Execution Stream (ES) */
+ABTI_xstream *ABTI_xstream_self(void);
 int ABTI_xstream_free(ABTI_xstream *p_xstream);
 int ABTI_xstream_start_any(void);
 int ABTI_xstream_schedule(ABTI_xstream *p_xstream);
@@ -388,7 +389,6 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task);
 int ABTI_xstream_migrate_thread(ABTI_thread *p_thread);
 int ABTI_xstream_terminate_thread(ABTI_thread *p_thread);
 int ABTI_xstream_terminate_task(ABTI_task *p_task);
-int ABTI_xstream_add_thread(ABTI_thread *p_thread);
 int ABTI_xstream_keep_thread(ABTI_thread *p_thread);
 int ABTI_xstream_keep_task(ABTI_task *p_task);
 int ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
@@ -414,6 +414,10 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
 
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
+ABT_unit ABTI_pool_pop(ABTI_pool *p_pool);
+int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_writer);
+int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_writer);
+int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_reader);
 int ABTI_pool_retain(ABTI_pool *p_pool);
 int ABTI_pool_release(ABTI_pool *p_pool);
 int ABTI_pool_set_reader(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
