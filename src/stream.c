@@ -890,9 +890,25 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag)
  */
 int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
 {
-    int abt_errno = ABT_SUCCESS;
-
+    int abt_errno;
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+
+    abt_errno = ABTI_xstream_run_unit(p_xstream, unit, p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_xstream_run_unit", abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
+                          ABTI_pool *p_pool)
+{
+    int abt_errno = ABT_SUCCESS;
 
     ABT_unit_type type = p_pool->u_get_type(unit);
 
@@ -906,7 +922,6 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
         ABT_thread thread = p_pool->u_get_thread(unit);
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
         /* Switch the context */
-        ABTI_xstream *p_xstream = ABTI_local_get_xstream();
         abt_errno = ABTI_xstream_schedule_thread(p_xstream, p_thread);
         ABTI_CHECK_ERROR(abt_errno);
 
@@ -931,7 +946,7 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_run_unit", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_xstream_run_unit", abt_errno);
     goto fn_exit;
 }
 

@@ -107,7 +107,7 @@ static void sched_run(ABT_sched sched)
                 /* Pop one work unit */
                 ABT_unit unit = p_pool->p_pop(pool);
                 if (unit != ABT_UNIT_NULL) {
-                    ABT_xstream_run_unit(unit, pool);
+                    ABTI_xstream_run_unit(p_xstream, unit, p_pool);
                 }
                 break;
             }

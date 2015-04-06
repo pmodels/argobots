@@ -100,7 +100,7 @@ static void sched_run(ABT_sched sched)
             if (size > 0) {
                 unit = p_pool->p_pop(pool);
                 if (unit != ABT_UNIT_NULL) {
-                    abt_errno = ABT_xstream_run_unit(unit, pool);
+                    abt_errno = ABTI_xstream_run_unit(p_xstream, unit, p_pool);
                     ABTI_CHECK_ERROR(abt_errno);
                 }
                 break;
