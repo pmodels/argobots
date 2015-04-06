@@ -913,12 +913,11 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
     ABT_unit_type type = p_pool->u_get_type(unit);
 
     /* Unset the current running ULT/tasklet */
-    ABTI_thread *last_thread = ABTI_thread_current();
-    ABTI_local_set_thread(NULL);
-    ABTI_task *last_task = ABTI_task_current();
-    ABTI_local_set_task(NULL);
+    ABTI_thread *last_thread = ABTI_local_get_thread();
+    ABTI_task *last_task = ABTI_local_get_task();
 
     if (type == ABT_UNIT_TYPE_THREAD) {
+        ABTI_local_set_task(NULL);
         ABT_thread thread = p_pool->u_get_thread(unit);
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
         /* Switch the context */
@@ -926,6 +925,7 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
         ABTI_CHECK_ERROR(abt_errno);
 
     } else if (type == ABT_UNIT_TYPE_TASK) {
+        ABTI_local_set_thread(NULL);
         ABT_task task = p_pool->u_get_task(unit);
         ABTI_task *p_task = ABTI_task_get_ptr(task);
         /* Execute the task */
@@ -1262,9 +1262,6 @@ int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
 
     abt_errno = ABTI_xstream_terminate_task(p_task);
     ABTI_CHECK_ERROR(abt_errno);
-
-    /* Unset the current running tasklet */
-    ABTI_local_set_task(NULL);
 
   fn_exit:
     return abt_errno;
