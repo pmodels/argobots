@@ -929,7 +929,7 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
         ABT_task task = p_pool->u_get_task(unit);
         ABTI_task *p_task = ABTI_task_get_ptr(task);
         /* Execute the task */
-        abt_errno = ABTI_xstream_schedule_task(p_task);
+        abt_errno = ABTI_xstream_schedule_task(p_xstream, p_task);
         ABTI_CHECK_ERROR(abt_errno);
 
     } else {
@@ -1214,10 +1214,9 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     goto fn_exit;
 }
 
-int ABTI_xstream_schedule_task(ABTI_task *p_task)
+int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
 
     if (p_task->request & ABTI_TASK_REQ_CANCEL) {
         abt_errno = ABTI_xstream_terminate_task(p_task);
@@ -1236,10 +1235,10 @@ int ABTI_xstream_schedule_task(ABTI_task *p_task)
 
     /* Add a new scheduler if the task is a scheduler */
     if (p_task->is_sched != NULL) {
-        ABTI_sched *current_sched = ABTI_xstream_get_top_sched(p_xstream);
+        ABTI_sched *current_sched = p_xstream->scheds[p_xstream->num_scheds-1];
         ABTI_thread *last_thread = current_sched->thread;
 
-        p_task->is_sched->p_ctx = ABTI_xstream_get_sched_ctx();
+        p_task->is_sched->p_ctx = current_sched->p_ctx;
         ABTI_xstream_push_sched(p_xstream, p_task->is_sched);
         p_task->is_sched->state = ABT_SCHED_STATE_RUNNING;
         p_task->is_sched->thread = last_thread;
