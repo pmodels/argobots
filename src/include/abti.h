@@ -270,15 +270,15 @@ struct ABTI_task {
     ABTI_xstream *p_xstream;   /* Associated ES */
     ABTI_sched *is_sched;      /* If it is a scheduler, its ptr */
     ABTI_pool *p_pool;         /* Associated pool */
-    uint64_t id;               /* ID */
-    char *p_name;              /* Name */
     ABT_task_state state;      /* State */
     ABT_bool migratable;       /* Migratability */
     uint32_t refcount;         /* Reference count */
-
     uint32_t request;          /* Request */
     void (*f_task)(void *);    /* Task function */
     void *p_arg;               /* Task arguments */
+
+    uint64_t id;               /* ID */
+    char *p_name;              /* Name */
 };
 
 struct ABTI_cond {

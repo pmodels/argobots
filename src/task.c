@@ -56,21 +56,21 @@ int ABT_task_create(ABT_pool pool,
 
     p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
 
-    /* Create a wrapper work unit */
-    h_newtask = ABTI_task_get_handle(p_newtask);
-    p_newtask->unit = p_pool->u_create_from_task(h_newtask);
-
     p_newtask->p_xstream  = NULL;
     p_newtask->is_sched   = NULL;
     p_newtask->p_pool     = p_pool;
-    p_newtask->id         = ABTI_TASK_INIT_ID;
-    p_newtask->p_name     = NULL;
     p_newtask->state      = ABT_TASK_STATE_CREATED;
     p_newtask->migratable = ABT_TRUE;
     p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
     p_newtask->request    = 0;
     p_newtask->f_task     = task_func;
     p_newtask->p_arg      = arg;
+    p_newtask->id         = ABTI_TASK_INIT_ID;
+    p_newtask->p_name     = NULL;
+
+    /* Create a wrapper work unit */
+    h_newtask = ABTI_task_get_handle(p_newtask);
+    p_newtask->unit = p_pool->u_create_from_task(h_newtask);
 
     /* Add this task to the scheduler's pool */
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
