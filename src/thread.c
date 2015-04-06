@@ -57,27 +57,8 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
 
-    /* Create a wrapper unit */
-    h_newthread = ABTI_thread_get_handle(p_newthread);
-    p_newthread->unit = p_pool->u_create_from_thread(h_newthread);
-
-    p_newthread->p_last_xstream = NULL;
-    p_newthread->is_sched       = NULL;
-    p_newthread->p_pool         = p_pool;
-    p_newthread->id             = ABTI_THREAD_INIT_ID;
-    p_newthread->p_name         = NULL;
-    p_newthread->type           = ABTI_THREAD_TYPE_USER;
-    p_newthread->state          = ABT_THREAD_STATE_CREATED;
-
     /* Set attributes */
     ABTI_thread_set_attr(p_newthread, attr);
-
-    p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
-    p_newthread->request        = 0;
-    p_newthread->p_req_arg      = NULL;
-
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
 
     /* Create a stack for this thread */
     stacksize = p_newthread->attr.stacksize;
@@ -88,6 +69,24 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
             thread_func, arg, stacksize, p_newthread->p_stack,
             &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
+
+    p_newthread->p_last_xstream = NULL;
+    p_newthread->is_sched       = NULL;
+    p_newthread->p_pool         = p_pool;
+    p_newthread->type           = ABTI_THREAD_TYPE_USER;
+    p_newthread->state          = ABT_THREAD_STATE_CREATED;
+    p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
+    p_newthread->request        = 0;
+    p_newthread->p_req_arg      = NULL;
+    p_newthread->id             = ABTI_THREAD_INIT_ID;
+    p_newthread->p_name         = NULL;
+
+    /* Create a wrapper unit */
+    h_newthread = ABTI_thread_get_handle(p_newthread);
+    p_newthread->unit = p_pool->u_create_from_thread(h_newthread);
 
     /* Add this thread to the pool */
     abt_errno = ABTI_pool_push(p_pool, p_newthread->unit, ABTI_xstream_self());
@@ -1301,28 +1300,31 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     ABTI_thread *p_newthread;
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
-    p_newthread->unit            = ABT_UNIT_NULL;
-    p_newthread->p_last_xstream  = NULL;
-    p_newthread->id              = ABTI_THREAD_INIT_ID;
-    p_newthread->p_name          = NULL;
-    p_newthread->type            = ABTI_THREAD_TYPE_MAIN;
-    p_newthread->state           = ABT_THREAD_STATE_RUNNING;
-    p_newthread->refcount        = 0;
-    p_newthread->request         = 0;
-    p_newthread->p_req_arg       = NULL;
-    p_newthread->p_last_xstream  = p_xstream;
-
-    /* Create a context */
-    abt_errno = ABTD_thread_context_create(NULL, NULL, NULL, 0, NULL,
-        &p_newthread->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
 
     /* Set attributes */
     ABTI_thread_set_attr(p_newthread, ABT_THREAD_ATTR_NULL);
     p_newthread->attr.migratable = ABT_FALSE;
 
+    /* Create a context */
+    p_newthread->p_stack = NULL;
+    abt_errno = ABTD_thread_context_create(NULL, NULL, NULL, 0, NULL,
+                                           &p_newthread->ctx);
+    ABTI_CHECK_ERROR(abt_errno);
+
     /* Initialize the mutex */
     ABTI_mutex_init(&p_newthread->mutex);
+
+    p_newthread->unit            = ABT_UNIT_NULL;
+    p_newthread->p_last_xstream  = p_xstream;
+    p_newthread->is_sched        = NULL;
+    p_newthread->p_pool          = NULL;
+    p_newthread->type            = ABTI_THREAD_TYPE_MAIN;
+    p_newthread->state           = ABT_THREAD_STATE_RUNNING;
+    p_newthread->refcount        = 0;
+    p_newthread->request         = 0;
+    p_newthread->p_req_arg       = NULL;
+    p_newthread->id              = ABTI_THREAD_INIT_ID;
+    p_newthread->p_name          = NULL;
 
     *p_thread = p_newthread;
 
@@ -1339,31 +1341,12 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
-    ABT_thread h_newthread;
     size_t stacksize;
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
 
-    /* Create a wrapper unit */
-    h_newthread = ABTI_thread_get_handle(p_newthread);
-    p_newthread->unit           = ABT_UNIT_NULL;
-    p_newthread->p_last_xstream = NULL;
-    p_newthread->is_sched       = p_sched;
-    p_newthread->p_pool         = NULL;
-    p_newthread->id             = ABTI_THREAD_INIT_ID;
-    p_newthread->p_name         = NULL;
-    p_newthread->type            = ABTI_THREAD_TYPE_MAIN_SCHED;
-    p_newthread->state          = ABT_THREAD_STATE_READY;
-
     /* Set attributes */
     ABTI_thread_set_attr(p_newthread, ABT_THREAD_ATTR_NULL);
-
-    p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
-    p_newthread->request        = 0;
-    p_newthread->p_req_arg      = NULL;
-
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
 
     /* Create a stack for this thread */
     stacksize = p_newthread->attr.stacksize;
@@ -1382,8 +1365,23 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     ABTI_thread *p_main_thread = ABTI_local_get_main();
     ABTD_thread_context_change_link(p_sched->p_ctx, &p_main_thread->ctx);
 
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
+
+    p_newthread->unit           = ABT_UNIT_NULL;
+    p_newthread->p_last_xstream = NULL;
+    p_newthread->is_sched       = p_sched;
+    p_newthread->p_pool         = NULL;
+    p_newthread->type           = ABTI_THREAD_TYPE_MAIN_SCHED;
+    p_newthread->state          = ABT_THREAD_STATE_READY;
+    p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
+    p_newthread->request        = 0;
+    p_newthread->p_req_arg      = NULL;
+    p_newthread->id             = ABTI_THREAD_INIT_ID;
+    p_newthread->p_name         = NULL;
+
     /* Return value */
-    if (newthread) *newthread = h_newthread;
+    if (newthread) *newthread = ABTI_thread_get_handle(p_newthread);
 
   fn_exit:
     return abt_errno;

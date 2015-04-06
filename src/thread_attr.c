@@ -233,7 +233,7 @@ int ABTI_thread_attr_print(ABTI_thread_attr *p_attr)
     }
 
     printf("[");
-    printf("stacksize:%zu ", p_attr->stacksize);
+    printf("stacksize:%zu ", (size_t)p_attr->stacksize);
     printf("cb_func:%p ", p_attr->f_cb);
     printf("cb_arg:%p", p_attr->p_cb_arg);
     printf("]");
