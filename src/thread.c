@@ -540,7 +540,7 @@ int ABT_thread_yield_to(ABT_thread thread)
         /* Remove the target ULT from the pool */
         ABTI_pool_remove(p_tar_thread->p_pool, p_tar_thread->unit, p_xstream);
 
-        abt_errno = ABTI_xstream_schedule_thread(p_tar_thread);
+        abt_errno = ABTI_xstream_schedule_thread(p_xstream, p_tar_thread);
         ABTI_CHECK_ERROR(abt_errno);
 
         ABTI_local_set_thread(p_cur_thread);

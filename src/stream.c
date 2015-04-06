@@ -906,7 +906,8 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
         ABT_thread thread = p_pool->u_get_thread(unit);
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
         /* Switch the context */
-        abt_errno = ABTI_xstream_schedule_thread(p_thread);
+        ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+        abt_errno = ABTI_xstream_schedule_thread(p_xstream, p_thread);
         ABTI_CHECK_ERROR(abt_errno);
 
     } else if (type == ABT_UNIT_TYPE_TASK) {
@@ -1112,7 +1113,7 @@ int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
     goto fn_exit;
 }
 
-int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
+int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1129,13 +1130,12 @@ int ABTI_xstream_schedule_thread(ABTI_thread *p_thread)
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-
     /* Set the current running ULT */
     ABTI_local_set_thread(p_thread);
 
     /* Now we can set the right link in the context */
-    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx();
+    ABTI_sched *p_sched = p_xstream->scheds[p_xstream->num_scheds-1];
+    ABTD_thread_context *p_ctx = p_sched->p_ctx;
     ABTD_thread_context_change_link(&p_thread->ctx, p_ctx);
 
     /* Add the new scheduler if the ULT is a scheduler */
