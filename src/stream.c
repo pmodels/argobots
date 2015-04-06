@@ -1191,10 +1191,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     }
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Now, sched ULT is running */
-    ABT_thread sched_thread = ABTI_xstream_get_top_sched(p_xstream)->thread;
-    ABTI_local_set_thread(ABTI_thread_get_ptr(sched_thread));
-
   fn_exit:
     return abt_errno;
 
