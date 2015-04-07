@@ -468,14 +468,6 @@ void ABTI_task_release(ABTI_task *p_task);
 void ABTI_task_reset_id(void);
 uint64_t ABTI_task_get_id(ABTI_task *p_task);
 
-/* Mutex */
-void ABTI_mutex_init(ABTI_mutex *p_mutex);
-void ABTI_mutex_lock(ABTI_mutex *p_mutex);
-int  ABTI_mutex_trylock(ABTI_mutex *p_mutex);
-void ABTI_mutex_spinlock(ABTI_mutex *p_mutex);
-void ABTI_mutex_unlock(ABTI_mutex *p_mutex);
-ABT_bool ABTI_mutex_equal(ABTI_mutex *p_mutex1, ABTI_mutex *p_mutex2);
-
 /* Eventual */
 void ABTI_eventual_signal(ABTI_eventual *p_eventual);
 
