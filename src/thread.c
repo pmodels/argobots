@@ -568,13 +568,13 @@ int ABT_thread_yield_to(ABT_thread thread)
 
         /* Add a new scheduler if the ULT is a scheduler */
         if (p_tar_thread->is_sched != NULL) {
-            p_tar_thread->is_sched->p_ctx = ABTI_xstream_get_sched_ctx();
+            p_tar_thread->is_sched->p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
             ABTI_xstream_push_sched(p_xstream, p_tar_thread->is_sched);
             p_tar_thread->is_sched->state = ABT_SCHED_STATE_RUNNING;
         }
 
         /* We set the link in the context for the target thread */
-        ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx();
+        ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
         ABTD_thread_context_change_link(&p_tar_thread->ctx, p_ctx);
 
         /* We set the last ES */
@@ -1347,7 +1347,7 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
 
     /* Create a thread context */
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx();
+    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
     abt_errno = ABTD_thread_context_create(p_ctx,
             ABTI_xstream_loop, (void *)p_xstream,
             stacksize, p_newthread->p_stack, &p_newthread->ctx);
@@ -1479,7 +1479,8 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
     }
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
-    ABTD_thread_context_switch(&p_thread->ctx, ABTI_xstream_get_sched_ctx());
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTD_thread_context_switch(&p_thread->ctx, ABTI_xstream_get_sched_ctx(p_xstream));
 
     /* The suspended ULT resumes its execution from here. */
     ABTI_local_set_thread(p_thread);

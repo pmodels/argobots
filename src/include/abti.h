@@ -400,7 +400,7 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched);
 void ABTI_xstream_loop(void *p_arg);
 void *ABTI_xstream_launch_main_sched(void *p_arg);
 ABTI_sched *ABTI_xstream_get_top_sched(ABTI_xstream *p_xstream);
-ABTD_thread_context *ABTI_xstream_get_sched_ctx(void);
+ABTD_thread_context *ABTI_xstream_get_sched_ctx(ABTI_xstream *p_xstream);
 void ABTI_xstream_reset_rank(void);
 int ABTI_xstream_print(ABTI_xstream *p_xstream);
 

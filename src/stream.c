@@ -1449,9 +1449,8 @@ ABTI_sched *ABTI_xstream_get_top_sched(ABTI_xstream *p_xstream)
 }
 
 /* Get the scheduling context */
-ABTD_thread_context *ABTI_xstream_get_sched_ctx(void)
+ABTD_thread_context *ABTI_xstream_get_sched_ctx(ABTI_xstream *p_xstream)
 {
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
     return p_sched->p_ctx;
 }
