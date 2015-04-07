@@ -1149,8 +1149,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     ABTI_local_set_thread(p_thread);
 
     /* Now we can set the right link in the context */
-    ABTI_sched *p_sched = p_xstream->scheds[p_xstream->num_scheds-1];
-    ABTD_thread_context *p_ctx = p_sched->p_ctx;
+    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
     ABTD_thread_context_change_link(&p_thread->ctx, p_ctx);
 
     /* Add the new scheduler if the ULT is a scheduler */
@@ -1235,7 +1234,7 @@ int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
 
     /* Add a new scheduler if the task is a scheduler */
     if (p_task->is_sched != NULL) {
-        ABTI_sched *current_sched = p_xstream->scheds[p_xstream->num_scheds-1];
+        ABTI_sched *current_sched = ABTI_xstream_get_top_sched(p_xstream);
         ABTI_thread *last_thread = current_sched->thread;
 
         p_task->is_sched->p_ctx = current_sched->p_ctx;

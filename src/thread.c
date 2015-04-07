@@ -627,11 +627,8 @@ int ABT_thread_yield(void)
     p_thread->state = ABT_THREAD_STATE_READY;
 
     /* Switch to the top scheduler */
-    /* NOTE: To remove the function call overhead, we directly access
-     * ABTI_xstream and ABTI_sched instead of calling ABTI_xstream_get_top_sched
-     * or ABTI_xstream_get_sched_ctx. */
-    ABTI_sched *p_sched = p_xstream->scheds[p_xstream->num_scheds-1];
-    abt_errno = ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
+    abt_errno = ABTD_thread_context_switch(&p_thread->ctx,
+                                           ABTI_xstream_get_sched_ctx(p_xstream));
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Back to the original thread */
