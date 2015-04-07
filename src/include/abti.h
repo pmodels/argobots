@@ -421,18 +421,9 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
 
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
-ABT_unit ABTI_pool_pop(ABTI_pool *p_pool);
-int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_writer);
 int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_writer);
-int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_reader);
-int ABTI_pool_retain(ABTI_pool *p_pool);
-int ABTI_pool_release(ABTI_pool *p_pool);
 int ABTI_pool_set_reader(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 int ABTI_pool_set_writer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
-int ABTI_pool_inc_num_blocked(ABTI_pool *p_pool);
-int ABTI_pool_dec_num_blocked(ABTI_pool *p_pool);
-int ABTI_pool_inc_num_migrations(ABTI_pool *p_pool);
-int ABTI_pool_dec_num_migrations(ABTI_pool *p_pool);
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 int ABTI_pool_print(ABTI_pool *p_pool);
 
