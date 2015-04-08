@@ -109,11 +109,11 @@ struct ABTI_global {
     int num_cores;                  /* Number of CPU cores */
     int set_affinity;               /* Whether CPU affinity is used */
     size_t default_stacksize;       /* Default stack size (in bytes) */
+    ABTI_thread *p_thread_main;     /* ULT of the main function */
 };
 
 struct ABTI_local {
     ABTI_xstream *p_xstream;    /* Current ES */
-    ABTI_thread *p_thread_main; /* ULT of the main function */
     ABTI_thread *p_thread;      /* Current running ULT */
     ABTI_task *p_task;          /* Current running tasklet */
 };
@@ -329,6 +329,7 @@ int ABTI_global_move_xstream(ABTI_xstream *p_xstream);
 int ABTI_global_del_xstream(ABTI_xstream *p_xstream);
 int ABTI_global_get_created_xstream(ABTI_xstream **p_xstream);
 size_t ABTI_global_get_default_stacksize();
+ABTI_thread *ABTI_global_get_main(void);
 
 /* ES Local Data */
 int ABTI_local_init(void);
@@ -344,12 +345,6 @@ static inline ABTI_thread *ABTI_local_get_thread(void) {
 }
 static inline void ABTI_local_set_thread(ABTI_thread *p_thread) {
     lp_ABTI_local->p_thread = p_thread;
-}
-static inline ABTI_thread *ABTI_local_get_main(void) {
-    return lp_ABTI_local->p_thread_main;
-}
-static inline void ABTI_local_set_main(ABTI_thread *p_thread) {
-    lp_ABTI_local->p_thread_main = p_thread;
 }
 static inline ABTI_task *ABTI_local_get_task(void) {
     return lp_ABTI_local->p_task;

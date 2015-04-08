@@ -20,7 +20,6 @@ int ABTI_local_init(void)
 
     lp_ABTI_local = (ABTI_local *)ABTU_malloc(sizeof(ABTI_local));
     lp_ABTI_local->p_xstream = NULL;
-    lp_ABTI_local->p_thread_main = NULL;
     lp_ABTI_local->p_thread = NULL;
     lp_ABTI_local->p_task = NULL;
 

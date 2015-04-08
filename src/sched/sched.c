@@ -462,11 +462,11 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
         goto fn_exit;
     }
 
-    ABTI_thread *p_main_thread = ABTI_local_get_main();
     /* We jump back to the main ULT if there is one */
-    if (p_main_thread != NULL) {
+    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         size = ABTI_sched_get_size(p_sched);
         if (size == 0) {
+            ABTI_thread *p_main_thread = ABTI_global_get_main();
             ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
             if (ABTI_task_current() == NULL) {
                 assert(p_thread == ABTI_thread_current());

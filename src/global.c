@@ -70,7 +70,7 @@ int ABT_init(int argc, char **argv)
     ABTI_thread *p_main_thread;
     abt_errno = ABTI_thread_create_main(p_newxstream, &p_main_thread);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
-    ABTI_local_set_main(p_main_thread);
+    gp_ABTI_global->p_thread_main = p_main_thread;
     ABTI_local_set_thread(p_main_thread);
 
     /* Start the primary ES */
@@ -345,4 +345,8 @@ int ABTI_global_get_created_xstream(ABTI_xstream **p_xstream)
 size_t ABTI_global_get_default_stacksize()
 {
     return gp_ABTI_global->default_stacksize;
+}
+
+ABTI_thread *ABTI_global_get_main(void) {
+    return gp_ABTI_global->p_thread_main;
 }

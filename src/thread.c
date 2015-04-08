@@ -1351,8 +1351,10 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     ABTI_CHECK_ERROR(abt_errno);
 
     p_sched->p_ctx = &p_newthread->ctx;
-    ABTI_thread *p_main_thread = ABTI_local_get_main();
-    ABTD_thread_context_change_link(p_sched->p_ctx, &p_main_thread->ctx);
+    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
+        ABTI_thread *p_main_thread = ABTI_global_get_main();
+        ABTD_thread_context_change_link(p_sched->p_ctx, &p_main_thread->ctx);
+    }
 
     /* Initialize the mutex */
     ABTI_mutex_init(&p_newthread->mutex);
