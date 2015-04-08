@@ -9,8 +9,6 @@
  * This group is for the basic scheudler.
  */
 
-#define SCHED_BASIC_EVENT_FREQ 8
-
 static int  sched_init(ABT_sched sched, ABT_sched_config config);
 static void sched_run(ABT_sched sched);
 static int  sched_free(ABT_sched);
@@ -25,7 +23,7 @@ ABT_sched_def ABTI_sched_basic = {
 };
 
 struct sched_data {
-    int event_freq;
+    uint32_t event_freq;
     int num_pools;
     ABT_pool *pools;
 };
@@ -49,7 +47,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     /* Default settings */
     sched_data *p_data;
     p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
-    p_data->event_freq = SCHED_BASIC_EVENT_FREQ;
+    p_data->event_freq = ABTI_global_get_default_sched_event_freq();
 
     /* Set the variables from the config */
     ABT_sched_config_read(config, 1, &p_data->event_freq);
@@ -80,10 +78,10 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 static void sched_run(ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    int work_count = 0;
+    uint32_t work_count = 0;
     void *data;
     sched_data *p_data;
-    int event_freq;
+    uint32_t event_freq;
     int num_pools;
     ABT_pool *pools;
     int i;

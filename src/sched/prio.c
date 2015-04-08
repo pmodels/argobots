@@ -8,8 +8,6 @@
 
 /* Priority Scheduler Implementation */
 
-#define SCHED_PRIO_EVENT_FREQ 8
-
 static int  sched_init(ABT_sched sched, ABT_sched_config config);
 static void sched_run(ABT_sched sched);
 static int  sched_free(ABT_sched);
@@ -23,7 +21,7 @@ static ABT_sched_def sched_prio_def = {
 };
 
 typedef struct sched_config {
-    int event_freq;
+    uint32_t event_freq;
 } sched_config;
 
 static inline sched_config *sched_config_get_ptr(ABT_sched_config config)
@@ -48,7 +46,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     if (config == ABT_SCHED_CONFIG_NULL) {
         p_config = (sched_config *)ABTU_malloc(sizeof(sched_config));
-        p_config->event_freq = SCHED_PRIO_EVENT_FREQ;
+        p_config->event_freq = ABTI_global_get_default_sched_event_freq();
     } else {
         p_config = sched_config_get_ptr(config);
     }
@@ -67,9 +65,10 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 static void sched_run(ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    int i, work_count = 0;
+    int i;
+    uint32_t work_count = 0;
     sched_config *p_config;
-    int event_freq;
+    uint32_t event_freq;
     int num_pools;
     ABT_pool *p_pools;
     void *p_data;

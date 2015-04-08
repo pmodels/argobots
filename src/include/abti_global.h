@@ -15,6 +15,13 @@ size_t ABTI_global_get_default_stacksize()
 }
 
 static inline
+size_t ABTI_global_get_default_sched_event_freq()
+{
+    return gp_ABTI_global->default_sched_event_freq ;
+}
+
+
+static inline
 ABTI_thread *ABTI_global_get_main(void) {
     return gp_ABTI_global->p_thread_main;
 }

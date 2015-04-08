@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #define ABTD_THREAD_DEFAULT_STACKSIZE   16384
+#define ABTD_SCHED_EVENT_FREQ           50
 
 void ABTD_env_init(ABTI_global *p_global)
 {
@@ -29,9 +30,18 @@ void ABTD_env_init(ABTI_global *p_global)
     env = getenv("ABT_ENV_THREAD_STACKSIZE");
     if (env != NULL) {
         p_global->default_stacksize = (size_t)atol(env);
-        assert(p_global->default_stacksize >= 512);
+        ABTI_ASSERT(p_global->default_stacksize >= 512);
     } else {
         p_global->default_stacksize = ABTD_THREAD_DEFAULT_STACKSIZE;
+    }
+
+    /* Default frequency for event checking by the scheduler */
+    env = getenv("ABT_ENV_SCHED_EVENT_FREQ");
+    if (env != NULL) {
+        p_global->default_sched_event_freq = (uint32_t)atol(env);
+        ABTI_ASSERT(p_global->default_sched_event_freq >= 1);
+    } else {
+        p_global->default_sched_event_freq = ABTD_SCHED_EVENT_FREQ;
     }
 
     /* Init timer */
