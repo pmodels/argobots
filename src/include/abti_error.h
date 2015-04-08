@@ -38,6 +38,18 @@
 #endif
 
 #ifndef UNSAFE_MODE
+#define ABTI_CHECK_TRUE(cond,val)               \
+    do {                                        \
+        if (!(cond)) {                          \
+            abt_errno = (val);                  \
+            goto fn_fail;                       \
+        }                                       \
+    } while(0)
+#else
+#define ABTI_CHECK_TRUE(cond,val)
+#endif
+
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_XSTREAM_PTR(p)          \
     do {                                        \
         if (p == NULL) {                        \
