@@ -551,7 +551,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
      * with another associated pool, and set the right value if it is okay  */
     int p;
     for (p = 0; p < p_sched->num_pools; p++) {
-      abt_errno =  ABTI_pool_set_reader(p_sched->pools[p], p_xstream);
+      abt_errno = ABTI_pool_set_consumer(p_sched->pools[p], p_xstream);
       ABTI_CHECK_ERROR(abt_errno);
     }
 
@@ -1270,7 +1270,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         ABTD_atomic_fetch_and_uint32(&p_thread->request,
                 ~ABTI_THREAD_REQ_MIGRATE);
 
-        newstream = p_pool->reader;
+        newstream = p_pool->consumer;
         DEBUG_PRINT("[TH%" PRIu64 "] Migration: S%" PRIu64 " -> S%" PRIu64 "\n",
                 ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
                 newstream? newstream->rank: -1);

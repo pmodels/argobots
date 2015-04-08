@@ -36,9 +36,9 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->access               = def->access;
     p_pool->automatic            = ABT_FALSE;
     p_pool->num_scheds           = 0;
-    p_pool->reader               = NULL;
+    p_pool->consumer             = NULL;
 #ifndef UNSAFE_MODE
-    p_pool->writer               = NULL;
+    p_pool->producer             = NULL;
 #endif
     p_pool->num_blocked          = 0;
     p_pool->num_migrations       = 0;
@@ -296,7 +296,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     }
 
 #ifndef UNSAFE_MODE
-    /* Save the writer ES information in the pool */
+    /* Save the producer ES information in the pool */
     ABTI_xstream *p_xstream = ABTI_xstream_self();
 #else
     ABTI_xstream *p_xstream = NULL;
@@ -440,7 +440,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
         case ABT_POOL_ACCESS_MPSC:
             /* we need to ensure that the target pool has already an
              * associated ES */
-            if (p_pool->reader == NULL) {
+            if (p_pool->consumer == NULL) {
                 abt_errno = ABT_ERR_POOL;
                 goto fn_fail;
             }
@@ -448,8 +448,8 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
              * a pool with another associated pool, and set the right value if
              * it is okay  */
             for (p = 0; p < p_sched->num_pools; p++) {
-                abt_errno = ABTI_pool_set_reader(p_sched->pools[p],
-                                                 p_pool->reader);
+                abt_errno = ABTI_pool_set_consumer(p_sched->pools[p],
+                                                   p_pool->consumer);
                 ABTI_CHECK_ERROR(abt_errno);
             }
             break;
@@ -502,7 +502,7 @@ fn_fail:
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
-int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_writer)
+int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
 {
     int abt_errno;
 
@@ -514,7 +514,7 @@ int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_writer)
     p_thread->state = ABT_THREAD_STATE_READY;
 
     /* Add the ULT to the associated pool */
-    abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, p_writer);
+    abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, p_producer);
 
     ABTI_mutex_unlock(&p_thread->mutex);
 
@@ -541,9 +541,9 @@ int ABTI_pool_print(ABTI_pool *p_pool)
     printf("access mode: %d", p_pool->access);
     printf("automatic: %d", p_pool->automatic);
     printf("number of schedulers: %d", p_pool->num_scheds);
-    printf("reader: %p", p_pool->reader);
+    printf("consumer: %p", p_pool->consumer);
 #ifndef UNSAFE_MODE
-    printf("writer: %p", p_pool->writer);
+    printf("producer: %p", p_pool->producer);
 #endif
     printf("number of blocked units: %d", p_pool->num_blocked);
     printf("size: %lu", (unsigned long)p_pool->p_get_size(pool));
@@ -552,12 +552,12 @@ int ABTI_pool_print(ABTI_pool *p_pool)
     return abt_errno;
 }
 
-/* Set the associated reader ES of a pool. This function has no effect on pools
+/* Set the associated consumer ES of a pool. This function has no effect on pools
  * of shared-read access mode.
  * If a pool is private-read to an ES, we check that the previous value of the
  * field "p_xstream" is the same as the argument of the function "p_xstream"
  * */
-int ABTI_pool_set_reader(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
+int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -566,25 +566,25 @@ int ABTI_pool_set_reader(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
 #ifndef UNSAFE_MODE
-            if (p_pool->writer && p_xstream != p_pool->writer) {
+            if (p_pool->producer && p_xstream != p_pool->producer) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 ABTI_CHECK_ERROR(abt_errno);
             }
 #endif
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_MPSC:
-            if (p_pool->reader && p_pool->reader != p_xstream) {
+            if (p_pool->consumer && p_pool->consumer != p_xstream) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 ABTI_CHECK_ERROR(abt_errno);
             }
             /* NB: as we do not want to use a mutex, the function can be wrong
              * here */
-            p_pool->reader = p_xstream;
+            p_pool->consumer = p_xstream;
             break;
 
         case ABT_POOL_ACCESS_SPMC:
         case ABT_POOL_ACCESS_MPMC:
-            p_pool->reader = p_xstream;
+            p_pool->consumer = p_xstream;
             break;
 
         default:
@@ -596,17 +596,17 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_pool_set_reader", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_pool_set_consumer", abt_errno);
     goto fn_exit;
 }
 
 #ifndef UNSAFE_MODE
-/* Set the associated writer ES of a pool. This function has no effect on pools
+/* Set the associated producer ES of a pool. This function has no effect on pools
  * of shared-write access mode.
  * If a pool is private-write to an ES, we check that the previous value of the
  * field "p_xstream" is the same as the argument of the function "p_xstream"
  * */
-int ABTI_pool_set_writer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
+int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -614,24 +614,24 @@ int ABTI_pool_set_writer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
 
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
-            if (p_pool->reader && p_xstream != p_pool->reader) {
+            if (p_pool->consumer && p_xstream != p_pool->consumer) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 goto fn_fail;
             }
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_SPMC:
-            if (p_pool->writer && p_pool->writer != p_xstream) {
+            if (p_pool->producer && p_pool->producer != p_xstream) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 goto fn_fail;
             }
             /* NB: as we do not want to use a mutex, the function can be wrong
              * here */
-            p_pool->writer = p_xstream;
+            p_pool->producer = p_xstream;
             break;
 
         case ABT_POOL_ACCESS_MPSC:
         case ABT_POOL_ACCESS_MPMC:
-            p_pool->writer = p_xstream;
+            p_pool->producer = p_xstream;
             break;
 
         default:
@@ -643,23 +643,24 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_pool_set_writer", abt_errno);
+    HANDLE_ERROR_WITH_CODE("ABTI_pool_set_producer", abt_errno);
     goto fn_exit;
 }
 #endif
 
-/* Check if a pool accept migrations or not. When the writer of the destination
- * pool is ES private, we have to ensure thaht we are on the right ES */
+/* Check if a pool accept migrations or not. When the producer of the
+ * destination pool is ES private, we have to ensure thaht we are on the right
+ * ES */
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
 {
 #ifndef UNSAFE_MODE
     switch (p_pool->access)
     {
-        /* Need writer in the same ES */
+        /* Need producer in the same ES */
         case ABT_POOL_ACCESS_PRIV:
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_SPMC:
-            if (p_pool->reader == source->writer)
+            if (p_pool->consumer == source->producer)
                 return ABT_TRUE;
             return ABT_FALSE;
 

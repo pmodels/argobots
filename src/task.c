@@ -47,7 +47,7 @@ int ABT_task_create(ABT_pool pool,
 
     /* If the pool is directly associated to a ES and this ES is not running,
      * then start it */
-    ABTI_xstream *p_xstream = p_pool->reader;
+    ABTI_xstream *p_xstream = p_pool->consumer;
     if (p_xstream && p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
         ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
         abt_errno = ABT_xstream_start(xstream);

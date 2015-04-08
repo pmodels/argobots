@@ -184,9 +184,9 @@ struct ABTI_pool {
     ABT_bool automatic;      /* To know if automatic data free */
     int32_t num_scheds;      /* Number of associated schedulers */
                              /* NOTE: int32_t to check if still positive */
-    ABTI_xstream *reader;    /* Associated reader ES */
+    ABTI_xstream *consumer;  /* Associated consumer ES */
 #ifndef UNSAFE_MODE
-    ABTI_xstream *writer;    /* Associated writer ES */
+    ABTI_xstream *producer;  /* Associated producer ES */
 #endif
     uint32_t num_blocked;    /* Number of blocked ULTs */
     int32_t num_migrations;  /* Number of migrating ULTs */
@@ -391,10 +391,10 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
 
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
-int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_writer);
-int ABTI_pool_set_reader(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
+int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer);
+int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 #ifndef UNSAFE_MODE
-int ABTI_pool_set_writer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
+int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 #endif
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 int ABTI_pool_print(ABTI_pool *p_pool);

@@ -48,7 +48,7 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
 
     /* If the pool is directly associated to a ES and this ES is not running,
      * then start it */
-    ABTI_xstream *p_xstream = p_pool->reader;
+    ABTI_xstream *p_xstream = p_pool->consumer;
     if (p_xstream && p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
         ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
         abt_errno = ABT_xstream_start(xstream);
@@ -860,7 +860,7 @@ int ABT_thread_migrate(ABT_thread thread)
     /* FIXME: Currenlty, the target xstream is randomly chosen. We need a
      * better selection strategy. */
     /* TODO: handle better when no pool accepts migration */
-    /* TODO: choose a pool also when (p_thread->p_pool->reader == NULL) */
+    /* TODO: choose a pool also when (p_thread->p_pool->consumer == NULL) */
     while (1) {
         /* Only one ES */
         if (ABTI_contn_get_size(p_xstreams->created) +
@@ -878,7 +878,7 @@ int ABT_thread_migrate(ABT_thread thread)
             ABTI_xstream *p_xstream;
             ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
             /* If the pool is not associated with an ES */
-            if (p_thread->p_pool->reader == NULL) {
+            if (p_thread->p_pool->consumer == NULL) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 ABTI_CHECK_ERROR(abt_errno);
 #ifdef UNSAFE_MODE
@@ -886,7 +886,7 @@ int ABT_thread_migrate(ABT_thread thread)
 #endif
             }
             ABTI_elem *p_next =
-                ABTI_elem_get_next(p_thread->p_pool->reader->elem);
+                ABTI_elem_get_next(p_thread->p_pool->consumer->elem);
             p_xstream = ABTI_elem_get_xstream(p_next);
             xstream = ABTI_xstream_get_handle(p_xstream);
         }
