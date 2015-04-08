@@ -1598,11 +1598,6 @@ int ABTI_thread_print(ABTI_thread *p_thread)
     return abt_errno;
 }
 
-ABTI_thread *ABTI_thread_current(void)
-{
-    return ABTI_local_get_thread();
-}
-
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg)
 {
     ABTI_thread_req_arg *new;

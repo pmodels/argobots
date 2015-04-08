@@ -411,7 +411,6 @@ int   ABTI_thread_set_ready(ABTI_thread *p_thread);
 ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
 void  ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr);
 int   ABTI_thread_print(ABTI_thread *p_thread);
-ABTI_thread *ABTI_thread_current(void);
 void  ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
 void  ABTI_thread_retain(ABTI_thread *p_thread);
