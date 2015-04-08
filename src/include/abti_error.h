@@ -6,6 +6,8 @@
 #ifndef ABTI_ERROR_H_INCLUDED
 #define ABTI_ERROR_H_INCLUDED
 
+#include <assert.h>
+
 #ifndef UNSAFE_MODE
 #define ABTI_CHECK_INITIALIZED()                \
     do {                                        \

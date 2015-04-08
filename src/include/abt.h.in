@@ -78,19 +78,20 @@ extern "C" {
 #define ABT_ERR_XSTREAM            23  /* ES-related error */
 #define ABT_ERR_XSTREAM_STATE      24  /* ES state error */
 #define ABT_ERR_SCHED              25  /* Scheduler-related error */
-#define ABT_ERR_POOL               26  /* Pool-related error */
-#define ABT_ERR_UNIT               27  /* Scheduling unit-related error */
-#define ABT_ERR_THREAD             28  /* ULT-related error */
-#define ABT_ERR_TASK               29  /* Task-related error */
-#define ABT_ERR_MUTEX              30  /* Mutex-related error */
-#define ABT_ERR_MUTEX_LOCKED       31  /* Return value when mutex is locked */
-#define ABT_ERR_COND               32  /* Condition-related error */
-#define ABT_ERR_EVENTUAL           33  /* Eventual-related error */
-#define ABT_ERR_FUTURE             34  /* Future-related error */
-#define ABT_ERR_TIMER              35  /* Timer-related error */
-#define ABT_ERR_MIGRATION_TARGET   36  /* Migration target error */
-#define ABT_ERR_MIGRATION_NA       37  /* Migration not available */
-#define ABT_ERR_MISSING_JOIN       38  /* An ES or more did not join */
+#define ABT_ERR_SCHED_CONFIG       26  /* Scheduler config error */
+#define ABT_ERR_POOL               27  /* Pool-related error */
+#define ABT_ERR_UNIT               28  /* Scheduling unit-related error */
+#define ABT_ERR_THREAD             29  /* ULT-related error */
+#define ABT_ERR_TASK               30  /* Task-related error */
+#define ABT_ERR_MUTEX              31  /* Mutex-related error */
+#define ABT_ERR_MUTEX_LOCKED       32  /* Return value when mutex is locked */
+#define ABT_ERR_COND               33  /* Condition-related error */
+#define ABT_ERR_EVENTUAL           34  /* Eventual-related error */
+#define ABT_ERR_FUTURE             35  /* Future-related error */
+#define ABT_ERR_TIMER              36  /* Timer-related error */
+#define ABT_ERR_MIGRATION_TARGET   37  /* Migration target error */
+#define ABT_ERR_MIGRATION_NA       38  /* Migration not available */
+#define ABT_ERR_MISSING_JOIN       39  /* An ES or more did not join */
 
 
 /* Constants */

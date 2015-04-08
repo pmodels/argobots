@@ -621,7 +621,7 @@ int ABT_thread_yield(void)
     if (p_thread == NULL) goto fn_exit;
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    assert(p_thread->p_last_xstream == p_xstream);
+    ABTI_CHECK_TRUE(p_thread->p_last_xstream == p_xstream, ABT_ERR_THREAD);
 
     /* Change the state of current running thread */
     p_thread->state = ABT_THREAD_STATE_READY;
@@ -1501,7 +1501,7 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
     int abt_errno = ABT_SUCCESS;
 
     /* The ULT should be in BLOCKED state. */
-    assert(p_thread->state == ABT_THREAD_STATE_BLOCKED);
+    ABTI_CHECK_TRUE(p_thread->state == ABT_THREAD_STATE_BLOCKED, ABT_ERR_THREAD);
 
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
         p_thread->state = ABT_THREAD_STATE_READY;

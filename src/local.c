@@ -15,8 +15,8 @@ ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local = NULL;
 
 int ABTI_local_init(void)
 {
-    assert(lp_ABTI_local == NULL);
     int abt_errno = ABT_SUCCESS;
+    ABTI_CHECK_TRUE(lp_ABTI_local == NULL, ABT_ERR_OTHER);
 
     lp_ABTI_local = (ABTI_local *)ABTU_malloc(sizeof(ABTI_local));
     lp_ABTI_local->p_xstream = NULL;
@@ -33,10 +33,16 @@ int ABTI_local_init(void)
 
 int ABTI_local_finalize(void)
 {
-    assert(lp_ABTI_local != NULL);
     int abt_errno = ABT_SUCCESS;
+    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_OTHER);
     ABTU_free(lp_ABTI_local);
     lp_ABTI_local = NULL;
+
+  fn_exit:
     return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 

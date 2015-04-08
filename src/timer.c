@@ -50,7 +50,7 @@ int ABT_timer_create(ABT_timer *newtimer)
      * malloc/free.  This is to allow ABT_timer to be used irrespective of
      * Argobots initialization. */
     ABTI_timer *p_newtimer = (ABTI_timer *)malloc(sizeof(ABTI_timer));
-    assert(p_newtimer != NULL);
+    ABTI_CHECK_TRUE(p_newtimer != NULL, ABT_ERR_MEM);
 
     *newtimer = ABTI_timer_get_handle(p_newtimer);
 

@@ -7,7 +7,6 @@
 
 
 #include <stdlib.h>
-#include <assert.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -63,6 +62,7 @@ int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
  */
 int ABT_sched_config_create(ABT_sched_config *config, ...)
 {
+    int abt_errno = ABT_SUCCESS;
     ABTI_sched_config *p_config;
 
     char *buffer = NULL;
@@ -119,7 +119,7 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
                 ptr = (void *)&p;
                 break;
             default:
-                assert(0);
+                ABTI_CHECK_TRUE(0, ABT_ERR_SCHED_CONFIG);
         }
 
         memcpy(buffer+offset, ptr, size);
@@ -137,7 +137,12 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
     p_config = (ABTI_sched_config *)buffer;
     *config = ABTI_sched_config_get_handle(p_config);
 
-    return ABT_SUCCESS;
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**

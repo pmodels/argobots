@@ -12,7 +12,6 @@
 #include <inttypes.h>
 #include <string.h>
 #include <limits.h>
-#include <assert.h>
 
 #include "abt_config.h"
 #include "abt.h"

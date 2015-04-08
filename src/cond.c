@@ -73,8 +73,8 @@ int ABT_cond_free(ABT_cond *cond)
     ABTI_cond *p_cond = ABTI_cond_get_ptr(h_cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
-    assert(p_cond->num_waiters == 0);
-    assert(p_cond->waiters.head != NULL);
+    ABTI_CHECK_TRUE(p_cond->num_waiters == 0, ABT_ERR_COND);
+    ABTI_CHECK_TRUE(p_cond->waiters.head != NULL, ABT_ERR_COND);
 
     ABTU_free(p_cond->waiters.head);
     ABTU_free(p_cond);

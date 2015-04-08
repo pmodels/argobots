@@ -29,9 +29,9 @@ int ABTI_contn_create(ABTI_contn **pp_contn)
 
 int ABTI_contn_free(ABTI_contn **pp_contn)
 {
-    assert(pp_contn && *pp_contn);
-
     int abt_errno = ABT_SUCCESS;
+    ABTI_CHECK_TRUE(pp_contn && *pp_contn, ABT_ERR_OTHER);
+
     ABTI_contn *p_contn = *pp_contn;
 
     while (p_contn->num_elems > 0) {
