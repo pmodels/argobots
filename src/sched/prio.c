@@ -42,14 +42,13 @@ int ABTI_sched_create_prio(int num_pools, ABT_pool *p_pools,
 static int sched_init(ABT_sched sched, ABT_sched_config config)
 {
     int abt_errno = ABT_SUCCESS;
-    sched_config *p_config;
 
-    if (config == ABT_SCHED_CONFIG_NULL) {
-        p_config = (sched_config *)ABTU_malloc(sizeof(sched_config));
-        p_config->event_freq = ABTI_global_get_default_sched_event_freq();
-    } else {
-        p_config = sched_config_get_ptr(config);
-    }
+    /* Default settings */
+    sched_config *p_config = (sched_config *)ABTU_malloc(sizeof(sched_config));
+    p_config->event_freq = ABTI_global_get_default_sched_event_freq();
+
+    /* Set the variables from the config */
+    ABT_sched_config_read(config, 1, &p_config->event_freq);
 
     abt_errno = ABT_sched_set_data(sched, (void *)p_config);
     ABTI_CHECK_ERROR(abt_errno);
