@@ -49,11 +49,8 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
     /* If stack is NULL, we don't need to make a new context */
     if (p_stack == NULL) goto fn_exit;
 
-    if (getcontext(p_newctx) != 0) {
-        HANDLE_ERROR("getcontext");
-        abt_errno = ABT_ERR_THREAD;
-        goto fn_fail;
-    }
+    abt_errno = getcontext(p_newctx);
+    ABTI_CHECK_TRUE(!abt_errno, ABT_ERR_THREAD);
 
     p_newctx->uc_link = p_link;
     p_newctx->uc_stack.ss_sp = p_stack;
@@ -83,6 +80,7 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #endif
 }

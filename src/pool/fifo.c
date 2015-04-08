@@ -83,8 +83,7 @@ int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
             break;
 
         default:
-            abt_errno = ABT_ERR_INV_POOL_ACCESS;
-            goto fn_fail;
+            ABTI_CHECK_TRUE(0, ABT_ERR_INV_POOL_ACCESS);
     }
 
     /* Common definitions regardless of the access type */

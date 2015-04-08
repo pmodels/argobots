@@ -70,10 +70,8 @@ int ABT_error_get_str(int errno, char *str, size_t *len)
     };
 
     int abt_errno = ABT_SUCCESS;
-    if (errno < ABT_SUCCESS || errno > ABT_ERR_MISSING_JOIN) {
-        abt_errno = ABT_ERR_OTHER;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(errno >= ABT_SUCCESS && errno <= ABT_ERR_MISSING_JOIN,
+                    ABT_ERR_OTHER);
     if (str) ABTU_strcpy(str, err_str[errno]);
     if (len) *len = strlen(err_str[errno]);
 

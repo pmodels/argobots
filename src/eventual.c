@@ -114,10 +114,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         cur = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
         if (lp_ABTI_local != NULL) {
             p_current = ABTI_local_get_thread();
-            if (p_current == NULL) {
-                abt_errno = ABT_ERR_FUTURE;
-                goto fn_fail;
-            }
+            ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_FUTURE);
             type = ABT_UNIT_TYPE_THREAD;
         } else {
             /* external thread */

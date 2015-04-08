@@ -139,10 +139,7 @@ int ABT_future_wait(ABT_future future)
         cur = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
         if (lp_ABTI_local != NULL) {
             p_current = ABTI_local_get_thread();
-            if (p_current == NULL) {
-                abt_errno = ABT_ERR_FUTURE;
-                goto fn_fail;
-            }
+            ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_FUTURE);
             type = ABT_UNIT_TYPE_THREAD;
         } else {
             /* external thread */
@@ -238,10 +235,8 @@ int ABT_future_set(ABT_future future, void *value)
     p_future->array[p_future->counter] = value;
     p_future->counter++;
 
-    if (p_future->counter > p_future->compartments) {
-        abt_errno = ABT_ERR_FUTURE;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(p_future->counter <= p_future->compartments,
+                    ABT_ERR_FUTURE);
 
     if (p_future->counter == p_future->compartments) {
         p_future->ready = ABT_TRUE;

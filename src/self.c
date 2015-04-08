@@ -53,8 +53,7 @@ int ABT_self_get_type(ABT_unit_type *type)
     } else if (ABTI_local_get_task() != NULL) {
         *type = ABT_UNIT_TYPE_TASK;
     } else {
-        abt_errno = ABT_ERR_OTHER;
-        goto fn_fail;
+        ABTI_CHECK_TRUE(0, ABT_ERR_OTHER);
     }
 
   fn_exit:

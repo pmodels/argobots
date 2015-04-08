@@ -76,8 +76,7 @@ int ABT_task_create(ABT_pool pool,
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
         int ret = ABT_task_free(&h_newtask);
-        if (ret != ABT_SUCCESS)
-            abt_errno = ret;
+        ABTI_CHECK_TRUE(ret == ABT_SUCCESS, ret);
         goto fn_fail;
     }
 

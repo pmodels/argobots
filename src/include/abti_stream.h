@@ -80,10 +80,7 @@ int ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
 
     p_xstream->num_scheds--;
 
-    if (p_xstream->num_scheds < 0) {
-        abt_errno = ABT_ERR_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(p_xstream->num_scheds >= 0, ABT_ERR_XSTREAM);
 
   fn_exit:
     return abt_errno;

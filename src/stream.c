@@ -541,11 +541,9 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 
     /* TODO: permit to change the scheduler even when running */
     /* We check that the ES is just created */
-    if (p_xstream->state != ABT_XSTREAM_STATE_CREATED &&
-            p_xstream->state != ABT_XSTREAM_STATE_READY) {
-        abt_errno = ABT_ERR_XSTREAM_STATE;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(p_xstream->state == ABT_XSTREAM_STATE_CREATED ||
+                      p_xstream->state == ABT_XSTREAM_STATE_READY,
+                    ABT_ERR_XSTREAM_STATE);
 
     /* We check that from the pool set of the scheduler we do not find a pool
      * with another associated pool, and set the right value if it is okay  */
@@ -922,8 +920,7 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
 
     } else {
         HANDLE_ERROR("Not supported type!");
-        abt_errno = ABT_ERR_INV_UNIT;
-        goto fn_fail;
+        ABTI_CHECK_TRUE(0, ABT_ERR_INV_UNIT);
     }
 
   fn_exit:

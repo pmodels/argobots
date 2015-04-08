@@ -111,10 +111,7 @@ int ABT_finalize(void)
     }
 
     /* If called by an external thread, return an error. */
-    if (lp_ABTI_local == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     if (p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
@@ -228,10 +225,8 @@ int ABTI_xstream_contn_finalize(ABTI_xstream_contn *p_xstreams)
     int abt_errno = ABT_SUCCESS;
 
     /* Check there is no running ES anymore */
-    if (ABTI_contn_get_size(p_xstreams->active) != 0) {
-        abt_errno = ABT_ERR_MISSING_JOIN;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(ABTI_contn_get_size(p_xstreams->active) == 0,
+                    ABT_ERR_MISSING_JOIN);
 
     /* Free all containers */
     ABTI_mutex_spinlock(&p_xstreams->mutex);

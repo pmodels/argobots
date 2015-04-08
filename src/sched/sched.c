@@ -40,11 +40,7 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     ABTI_sched *p_sched;
     int p;
 
-    if (newsched == NULL) {
-        HANDLE_ERROR("newsched is NULL");
-        abt_errno = ABT_ERR_SCHED;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(newsched != NULL, ABT_ERR_SCHED);
 
     p_sched = (ABTI_sched *)ABTU_malloc(sizeof(ABTI_sched));
 
@@ -333,10 +329,7 @@ int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    if (idx+max_pools > p_sched->num_pools) {
-        abt_errno = ABT_ERR_SCHED;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(idx+max_pools <= p_sched->num_pools, ABT_ERR_SCHED);
 
     int p;
     for (p = idx; p < idx+max_pools; p++) {
@@ -673,11 +666,8 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
     ABT_sched sched = ABTI_sched_get_handle(p_sched);
     ABTI_pool *p_pool;
 
-    if (p_sched->state == ABT_SCHED_STATE_TERMINATED) {
-        abt_errno = ABT_ERR_INV_SCHED;
-        *pp_pool = NULL;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(p_sched->state != ABT_SCHED_STATE_TERMINATED,
+                    ABT_ERR_INV_SCHED);
 
     /* Find a pool */
     /* If get_migr_pool is not defined, we pick the first pool */
@@ -695,14 +685,14 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
         *pp_pool = p_pool;
     }
     else {
-        *pp_pool = NULL;
-        abt_errno = ABT_ERR_INV_POOL_ACCESS;
+        ABTI_CHECK_TRUE(0, ABT_ERR_INV_POOL_ACCESS);
     }
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
+    *pp_pool = NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

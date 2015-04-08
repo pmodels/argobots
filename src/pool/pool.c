@@ -132,10 +132,7 @@ int ABT_pool_free(ABT_pool *pool)
     ABT_pool h_pool = *pool;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(h_pool);
 
-    if (p_pool == NULL || h_pool == ABT_POOL_NULL) {
-        abt_errno = ABT_ERR_INV_POOL;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(p_pool != NULL && h_pool != ABT_POOL_NULL, ABT_ERR_INV_POOL);
 
     p_pool->p_free(h_pool);
     ABTU_free(p_pool);
@@ -254,10 +251,7 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     ABT_unit unit;
 
     /* If called by an external thread, return an error. */
-    if (lp_ABTI_local == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -290,10 +284,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    if (unit == ABT_UNIT_NULL) {
-        abt_errno = ABT_ERR_UNIT;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_UNIT);
 
 #ifndef UNSAFE_MODE
     /* Save the producer ES information in the pool */
@@ -326,10 +317,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     int abt_errno = ABT_SUCCESS;
 
     /* If called by an external thread, return an error. */
-    if (lp_ABTI_local == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -440,10 +428,8 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
         case ABT_POOL_ACCESS_MPSC:
             /* we need to ensure that the target pool has already an
              * associated ES */
-            if (p_pool->consumer == NULL) {
-                abt_errno = ABT_ERR_POOL;
-                goto fn_fail;
-            }
+            ABTI_CHECK_TRUE(p_pool->consumer != NULL, ABT_ERR_POOL);
+
             /* We check that from the pool set of the scheduler we do not find
              * a pool with another associated pool, and set the right value if
              * it is okay  */
@@ -460,18 +446,15 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
              * not contain an ES private pool  */
             for (p = 0; p < p_sched->num_pools; p++) {
                 ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-                if (p_pool->access == ABT_POOL_ACCESS_PRIV ||
-                    p_pool->access == ABT_POOL_ACCESS_SPSC ||
-                    p_pool->access == ABT_POOL_ACCESS_MPSC) {
-                    abt_errno = ABT_ERR_POOL;
-                    goto fn_fail;
-                }
+                ABTI_CHECK_TRUE(p_pool->access != ABT_POOL_ACCESS_PRIV &&
+                                  p_pool->access != ABT_POOL_ACCESS_SPSC &&
+                                  p_pool->access != ABT_POOL_ACCESS_MPSC,
+                                ABT_ERR_POOL);
             }
             break;
 
         default:
-            abt_errno = ABT_ERR_INV_POOL_ACCESS;
-            goto fn_fail;
+            ABTI_CHECK_TRUE(0, ABT_ERR_INV_POOL_ACCESS);
     }
 
     abt_errno = ABTI_sched_associate(p_sched, ABTI_SCHED_IN_POOL);
@@ -487,8 +470,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
         ABTI_CHECK_ERROR(abt_errno);
         ABTI_task_get_ptr(p_sched->task)->is_sched = p_sched;
     } else {
-        abt_errno = ABT_ERR_SCHED;
-        goto fn_fail;
+        ABTI_CHECK_TRUE(0, ABT_ERR_SCHED);
     }
 
 fn_exit:
@@ -614,16 +596,12 @@ int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
 
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
-            if (p_pool->consumer && p_xstream != p_pool->consumer) {
-                abt_errno = ABT_ERR_INV_POOL_ACCESS;
-                goto fn_fail;
-            }
+            ABTI_CHECK_TRUE(!p_pool->consumer || p_xstream == p_pool->consumer,
+                            ABT_ERR_INV_POOL_ACCESS);
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_SPMC:
-            if (p_pool->producer && p_pool->producer != p_xstream) {
-                abt_errno = ABT_ERR_INV_POOL_ACCESS;
-                goto fn_fail;
-            }
+            ABTI_CHECK_TRUE(!p_pool->producer || p_pool->producer == p_xstream,
+                            ABT_ERR_INV_POOL_ACCESS);
             /* NB: as we do not want to use a mutex, the function can be wrong
              * here */
             p_pool->producer = p_xstream;

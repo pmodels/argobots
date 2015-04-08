@@ -64,18 +64,12 @@ int ABTD_xstream_context_set_affinity(ABTD_xstream_context ctx, int rank)
     CPU_ZERO(&cpuset);
     CPU_SET(rank, &cpuset);
     ret = pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
-    if (ret) {
-        abt_errno = ABT_ERR_OTHER;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
 
 #if 0
     /* For debugging and verification */
     ret = pthread_getaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
-    if (ret) {
-        abt_errno = ABT_ERR_OTHER;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
     int i;
     for (i = 0; i < CPU_SETSIZE; i++) {
         if (CPU_ISSET(i, &cpuset)) {

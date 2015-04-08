@@ -121,10 +121,7 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 
     if (lp_ABTI_local != NULL) {
         p_thread = ABTI_local_get_thread();
-        if (p_thread == NULL) {
-            abt_errno = ABT_ERR_COND;
-            goto fn_fail;
-        }
+        ABTI_CHECK_TRUE(p_thread != NULL, ABT_ERR_COND);
         type = ABT_UNIT_TYPE_THREAD;
     } else {
         /* external thread */

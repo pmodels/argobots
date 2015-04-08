@@ -92,9 +92,8 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     abt_errno = ABTI_pool_push(p_pool, p_newthread->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
         int ret = ABT_thread_free(&h_newthread);
-        if (ret != ABT_SUCCESS)
-            abt_errno = ret;
-      goto fn_fail;
+        ABTI_CHECK_TRUE(ret == ABT_SUCCESS, ret);
+        goto fn_fail;
     }
 
     p_newthread->state = ABT_THREAD_STATE_READY;
@@ -668,19 +667,13 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     /* checking for cases when migration is not allowed */
-    if (p_xstream->state == ABT_XSTREAM_STATE_TERMINATED) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
-            p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
-    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_exit;
-    }
+    ABTI_CHECK_TRUE(p_xstream->state != ABT_XSTREAM_STATE_TERMINATED,
+                    ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
+                      p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(p_thread->state != ABT_THREAD_STATE_TERMINATED,
+                    ABT_ERR_INV_THREAD);
 
     /* We need to find the target scheduler */
     ABTI_pool *p_pool = NULL;
@@ -762,19 +755,13 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* checking for cases when migration is not allowed */
-    if (p_sched->state != ABT_SCHED_STATE_RUNNING) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
-            p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
-    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_exit;
-    }
+    ABTI_CHECK_TRUE(p_sched->state == ABT_SCHED_STATE_RUNNING,
+                    ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
+                      p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(p_thread->state != ABT_THREAD_STATE_TERMINATED,
+                    ABT_ERR_INV_THREAD);
 
     /* Find a pool */
     ABTI_pool *p_pool;
@@ -1240,25 +1227,17 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
     int abt_errno = ABT_SUCCESS;
 
     /* checking for cases when migration is not allowed */
-    if (ABTI_pool_accept_migration(p_pool, p_thread->p_pool) != ABT_TRUE) {
-        abt_errno = ABT_ERR_INV_POOL;
-        goto fn_fail;
-    }
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
-        p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
-    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(ABTI_pool_accept_migration(p_pool, p_thread->p_pool)
+                      == ABT_TRUE,
+                    ABT_ERR_INV_POOL);
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
+                      p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(p_thread->state != ABT_THREAD_STATE_TERMINATED,
+                    ABT_ERR_INV_THREAD);
 
     /* checking for migration to the same pool */
-    if (p_thread->p_pool == p_pool) {
-        abt_errno = ABT_ERR_MIGRATION_TARGET;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE(p_thread->p_pool != p_pool, ABT_ERR_MIGRATION_TARGET);
 
     /* adding request to the thread */
     ABTI_mutex_spinlock(&p_thread->mutex);
@@ -1436,12 +1415,11 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     int abt_errno = ABT_SUCCESS;
 
     /* The main sched cannot be blocked */
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        abt_errno = ABT_ERR_THREAD;
-        goto fn_fail;
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+                    ABT_ERR_THREAD);
 
     /* The main ULT */
-    }  else if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
+    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
         /* Change the ULT's state to BLOCKED */
         p_thread->state = ABT_THREAD_STATE_BLOCKED;
 
