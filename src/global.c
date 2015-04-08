@@ -247,14 +247,14 @@ int ABTI_global_add_xstream(ABTI_xstream *p_xstream)
     ABTI_mutex_spinlock(&p_gxstreams->mutex);
     switch (p_xstream->state) {
         case ABT_XSTREAM_STATE_CREATED:
-            ABTI_contn_push(p_gxstreams->created, p_xstream->elem);
+            ABTI_contn_push(p_gxstreams->created, &p_xstream->elem);
             break;
         case ABT_XSTREAM_STATE_READY:
         case ABT_XSTREAM_STATE_RUNNING:
-            ABTI_contn_push(p_gxstreams->active, p_xstream->elem);
+            ABTI_contn_push(p_gxstreams->active, &p_xstream->elem);
             break;
         case ABT_XSTREAM_STATE_TERMINATED:
-            ABTI_contn_push(p_gxstreams->deads, p_xstream->elem);
+            ABTI_contn_push(p_gxstreams->deads, &p_xstream->elem);
             break;
         default:
             HANDLE_ERROR("Unknown xstream state");
@@ -271,12 +271,12 @@ int ABTI_global_move_xstream(ABTI_xstream *p_xstream)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
 
-    ABTI_elem *p_elem = p_xstream->elem;
+    ABTI_elem *p_elem = &p_xstream->elem;
     ABTI_contn *prev_contn = p_elem->p_contn;
 
     /* Remove from the previous container and add to the new container */
     ABTI_mutex_spinlock(&p_gxstreams->mutex);
-    ABTI_contn_remove(prev_contn, p_xstream->elem);
+    ABTI_contn_remove(prev_contn, &p_xstream->elem);
     switch (p_xstream->state) {
         case ABT_XSTREAM_STATE_CREATED:
             HANDLE_ERROR("SHOULD NOT REACH HERE");
@@ -284,10 +284,10 @@ int ABTI_global_move_xstream(ABTI_xstream *p_xstream)
             break;
         case ABT_XSTREAM_STATE_READY:
         case ABT_XSTREAM_STATE_RUNNING:
-            ABTI_contn_push(p_gxstreams->active, p_xstream->elem);
+            ABTI_contn_push(p_gxstreams->active, &p_xstream->elem);
             break;
         case ABT_XSTREAM_STATE_TERMINATED:
-            ABTI_contn_push(p_gxstreams->deads, p_xstream->elem);
+            ABTI_contn_push(p_gxstreams->deads, &p_xstream->elem);
             break;
         default:
             HANDLE_ERROR("UNKNOWN XSTREAM STATE");
@@ -304,11 +304,11 @@ int ABTI_global_del_xstream(ABTI_xstream *p_xstream)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
 
-    ABTI_elem *p_elem = p_xstream->elem;
+    ABTI_elem *p_elem = &p_xstream->elem;
     ABTI_contn *prev_contn = p_elem->p_contn;
 
     ABTI_mutex_spinlock(&p_gxstreams->mutex);
-    ABTI_contn_remove(prev_contn, p_xstream->elem);
+    ABTI_contn_remove(prev_contn, &p_xstream->elem);
     ABTI_mutex_unlock(&p_gxstreams->mutex);
 
     return abt_errno;

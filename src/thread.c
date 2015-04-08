@@ -853,7 +853,7 @@ int ABT_thread_migrate(ABT_thread thread)
             ABTI_CHECK_TRUE(p_thread->p_pool->consumer != NULL,
                             ABT_ERR_INV_POOL_ACCESS);
             ABTI_elem *p_next =
-                ABTI_elem_get_next(p_thread->p_pool->consumer->elem);
+                ABTI_elem_get_next(&p_thread->p_pool->consumer->elem);
             p_xstream = ABTI_elem_get_xstream(p_next);
             xstream = ABTI_xstream_get_handle(p_xstream);
         }
@@ -1373,9 +1373,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     ABTI_mutex_spinlock(&p_thread->mutex);
 
     /* Free the unit */
-    if (p_thread->refcount > 0) {
-        ABTI_elem_free((ABTI_elem **)&p_thread->unit);
-    } else {
+    if (p_thread->refcount == 0) {
         p_thread->p_pool->u_free(&p_thread->unit);
     }
 

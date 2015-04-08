@@ -39,7 +39,7 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
 
     /* Create a wrapper unit */
-    p_newxstream->elem = ABTI_elem_create_from_xstream(p_newxstream);
+    ABTI_elem_create_from_xstream(p_newxstream);
 
     p_newxstream->rank         = ABTI_xstream_get_new_rank();
     p_newxstream->p_name       = NULL;
@@ -996,7 +996,6 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_elem_free(&p_xstream->elem);
     if (p_xstream->p_name) ABTU_free(p_xstream->p_name);
 
     /* Free the scheduler */
@@ -1357,7 +1356,7 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
 
     printf("== XSTREAM (%p) ==\n", p_xstream);
     printf("elem      : ");
-    ABTI_elem_print(p_xstream->elem);
+    ABTI_elem_print(&p_xstream->elem);
     printf("rank      : %" PRIu64 "\n", p_xstream->rank);
     printf("name      : %s\n", p_xstream->p_name);
     printf("type      : ");

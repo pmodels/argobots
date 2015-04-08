@@ -133,7 +133,7 @@ struct ABTI_elem {
 };
 
 struct ABTI_xstream {
-    ABTI_elem *elem;            /* Elem enclosing this ES */
+    ABTI_elem elem;             /* Elem enclosing this ES */
     uint64_t rank;              /* Rank */
     char *p_name;               /* Name */
     ABTI_xstream_type type;     /* Type */
@@ -230,7 +230,10 @@ struct ABTI_thread_attr {
 
 struct ABTI_thread {
     ABT_unit unit;                  /* Unit enclosing this thread */
-    ABTI_unit unit_def;             /* Internal unit definition */
+    union {
+        ABTI_unit unit_def;         /* Internal unit definition */
+        ABTI_elem elem_def;         /* Elem definition */
+    };
     ABTI_thread_attr attr;          /* Attributes */
     void *p_stack;                  /* Stack */
     ABTD_thread_context ctx;        /* Context */
@@ -268,7 +271,10 @@ struct ABTI_thread_entry {
 
 struct ABTI_task {
     ABT_unit unit;             /* Unit enclosing this task */
-    ABTI_unit unit_def;        /* Internal unit definition */
+    union {
+        ABTI_unit unit_def;    /* Internal unit definition */
+        ABTI_elem elem_def;    /* Elem definition */
+    };
     ABTI_xstream *p_xstream;   /* Associated ES */
     ABTI_sched *is_sched;      /* If it is a scheduler, its ptr */
     ABTI_pool *p_pool;         /* Associated pool */
@@ -350,7 +356,7 @@ ABTI_xstream *ABTI_elem_get_xstream(ABTI_elem *p_elem);
 ABTI_thread  *ABTI_elem_get_thread(ABTI_elem *p_elem);
 ABTI_task    *ABTI_elem_get_task(ABTI_elem *p_elem);
 ABTI_elem    *ABTI_elem_get_next(ABTI_elem *p_elem);
-ABTI_elem    *ABTI_elem_create_from_xstream(ABTI_xstream *p_xstream);
+void          ABTI_elem_create_from_xstream(ABTI_xstream *p_xstream);
 ABTI_elem    *ABTI_elem_create_from_thread(ABTI_thread *p_thread);
 ABTI_elem    *ABTI_elem_create_from_task(ABTI_task *p_task);
 void          ABTI_elem_free(ABTI_elem **pp_elem);

@@ -573,9 +573,7 @@ int ABTI_task_free(ABTI_task *p_task)
     int abt_errno = ABT_SUCCESS;
 
     /* Free the unit */
-    if (p_task->refcount > 0) {
-        ABTI_elem_free((ABTI_elem **)&p_task->unit);
-    } else {
+    if (p_task->refcount == 0) {
         p_task->p_pool->u_free(&p_task->unit);
     }
 
