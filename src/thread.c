@@ -881,6 +881,9 @@ int ABT_thread_migrate(ABT_thread thread)
             if (p_thread->p_pool->reader == NULL) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 ABTI_CHECK_ERROR(abt_errno);
+#ifdef UNSAFE_MODE
+                assert(0);
+#endif
             }
             ABTI_elem *p_next =
                 ABTI_elem_get_next(p_thread->p_pool->reader->elem);

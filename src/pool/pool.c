@@ -37,7 +37,9 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->automatic            = ABT_FALSE;
     p_pool->num_scheds           = 0;
     p_pool->reader               = NULL;
+#ifndef UNSAFE_MODE
     p_pool->writer               = NULL;
+#endif
     p_pool->num_blocked          = 0;
     p_pool->num_migrations       = 0;
     p_pool->data                 = NULL;
@@ -293,8 +295,13 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
         goto fn_fail;
     }
 
+#ifndef UNSAFE_MODE
     /* Save the writer ES information in the pool */
-    abt_errno = ABTI_pool_push(p_pool, unit, ABTI_xstream_self());
+    ABTI_xstream *p_xstream = ABTI_xstream_self();
+#else
+    ABTI_xstream *p_xstream = NULL;
+#endif
+    abt_errno = ABTI_pool_push(p_pool, unit, p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -535,7 +542,9 @@ int ABTI_pool_print(ABTI_pool *p_pool)
     printf("automatic: %d", p_pool->automatic);
     printf("number of schedulers: %d", p_pool->num_scheds);
     printf("reader: %p", p_pool->reader);
+#ifndef UNSAFE_MODE
     printf("writer: %p", p_pool->writer);
+#endif
     printf("number of blocked units: %d", p_pool->num_blocked);
     printf("size: %lu", (unsigned long)p_pool->p_get_size(pool));
 
@@ -556,10 +565,12 @@ int ABTI_pool_set_reader(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
 
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
+#ifndef UNSAFE_MODE
             if (p_pool->writer && p_xstream != p_pool->writer) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 ABTI_CHECK_ERROR(abt_errno);
             }
+#endif
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_MPSC:
             if (p_pool->reader && p_pool->reader != p_xstream) {
@@ -589,6 +600,7 @@ fn_fail:
     goto fn_exit;
 }
 
+#ifndef UNSAFE_MODE
 /* Set the associated writer ES of a pool. This function has no effect on pools
  * of shared-write access mode.
  * If a pool is private-write to an ES, we check that the previous value of the
@@ -634,11 +646,13 @@ fn_fail:
     HANDLE_ERROR_WITH_CODE("ABTI_pool_set_writer", abt_errno);
     goto fn_exit;
 }
+#endif
 
 /* Check if a pool accept migrations or not. When the writer of the destination
  * pool is ES private, we have to ensure thaht we are on the right ES */
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
 {
+#ifndef UNSAFE_MODE
     switch (p_pool->access)
     {
         /* Need writer in the same ES */
@@ -652,8 +666,10 @@ int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
         case ABT_POOL_ACCESS_MPSC:
         case ABT_POOL_ACCESS_MPMC:
             return ABT_TRUE;
-
         default:
             return ABT_FALSE;
     }
+#else
+    return ABT_TRUE;
+#endif
 }

@@ -525,7 +525,6 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
 int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    int p;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
@@ -550,6 +549,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 
     /* We check that from the pool set of the scheduler we do not find a pool
      * with another associated pool, and set the right value if it is okay  */
+    int p;
     for (p = 0; p < p_sched->num_pools; p++) {
       abt_errno =  ABTI_pool_set_reader(p_sched->pools[p], p_xstream);
       ABTI_CHECK_ERROR(abt_errno);
@@ -570,12 +570,6 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 
     /* Set the scheduler */
     p_xstream->p_main_sched = p_sched;
-
-    /* Set the associated ES for each pool of the scheduler */
-    for (p = 0; p < p_sched->num_pools; p++) {
-      abt_errno =  ABTI_pool_set_reader(p_sched->pools[p], p_xstream);
-      ABTI_CHECK_ERROR(abt_errno);
-    }
 
     /* Set the scheduler as a main scheduler */
     abt_errno = ABTI_sched_associate(p_sched, ABTI_SCHED_MAIN);

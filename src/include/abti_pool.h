@@ -73,9 +73,11 @@ int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_writer)
 {
     int abt_errno = ABT_SUCCESS;
 
+#ifndef UNSAFE_MODE
     /* Save the writer ES information in the pool */
     abt_errno = ABTI_pool_set_writer(p_pool, p_writer);
     ABTI_CHECK_ERROR(abt_errno);
+#endif
 
     /* Push unit into pool */
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
@@ -93,8 +95,10 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_reader)
 {
     int abt_errno = ABT_SUCCESS;
 
+#ifndef UNSAFE_MODE
     abt_errno = ABTI_pool_set_reader(p_pool, p_reader);
     ABTI_CHECK_ERROR(abt_errno);
+#endif
 
     abt_errno = p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);
     ABTI_CHECK_ERROR(abt_errno);
