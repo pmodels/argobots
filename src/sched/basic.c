@@ -45,8 +45,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     int num_pools;
 
     /* Default settings */
-    sched_data *p_data;
-    p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
+    sched_data *p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
     p_data->event_freq = ABTI_global_get_default_sched_event_freq();
 
     /* Set the variables from the config */
