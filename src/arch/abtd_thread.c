@@ -73,7 +73,7 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
         arg_upper = (int)((uintptr_t)p_arg >> shift_bits);
         arg_lower = (int)(uintptr_t)p_arg;
     } else {
-        assert(0);
+        ABTI_ASSERT(0);
     }
 
     makecontext(p_newctx, (void (*)())ABTD_thread_func_wrapper,
@@ -136,7 +136,7 @@ int ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
     sp = (unsigned long int *)((((uintptr_t)sp) & -16L) - 8);
 
     /* The value in stack must be the same as that in the thread context. */
-    assert(sp[idx_uc_link] == (unsigned long int)p_ctx->uc_link);
+    ABTI_ASSERT(sp[idx_uc_link] == (unsigned long int)p_ctx->uc_link);
     sp[idx_uc_link] = (unsigned long int)p_link;
 #endif
 
@@ -188,7 +188,7 @@ static void ABTD_thread_func_wrapper(int func_upper, int func_lower,
                 ((uintptr_t)arg_upper << shift_bits) |
                 ((uintptr_t)arg_lower & mask));
     } else {
-        assert(0);
+        ABTI_ASSERT(0);
     }
 
     thread_func(p_arg);

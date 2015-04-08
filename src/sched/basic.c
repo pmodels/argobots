@@ -155,7 +155,7 @@ static int pool_get_access_num(ABT_pool *p_pool)
         case ABT_POOL_ACCESS_MPSC: num = 1; break;
         case ABT_POOL_ACCESS_SPMC:
         case ABT_POOL_ACCESS_MPMC: num = 2; break;
-        default: assert(0); break;
+        default: ABTI_ASSERT(0); break;
     }
 
     return num;

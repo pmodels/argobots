@@ -130,7 +130,7 @@ void ABTI_pool_retain(ABTI_pool *p_pool)
 static inline
 void ABTI_pool_release(ABTI_pool *p_pool)
 {
-    assert(p_pool->num_scheds > 0);
+    ABTI_ASSERT(p_pool->num_scheds > 0);
     ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1);
 }
 

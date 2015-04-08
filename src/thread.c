@@ -881,9 +881,6 @@ int ABT_thread_migrate(ABT_thread thread)
             if (p_thread->p_pool->consumer == NULL) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 ABTI_CHECK_ERROR(abt_errno);
-#ifdef UNSAFE_MODE
-                assert(0);
-#endif
             }
             ABTI_elem *p_next =
                 ABTI_elem_get_next(p_thread->p_pool->consumer->elem);
@@ -1475,11 +1472,10 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
 /* NOTE: This routine should be called after ABTI_thread_set_blocked. */
 void ABTI_thread_suspend(ABTI_thread *p_thread)
 {
-    assert(p_thread == ABTI_local_get_thread());
-    assert(p_thread->p_last_xstream == ABTI_local_get_xstream());
-    if (p_thread->type != ABTI_THREAD_TYPE_MAIN) {
-        assert(p_thread->request & ABTI_THREAD_REQ_BLOCK);
-    }
+    ABTI_ASSERT(p_thread == ABTI_local_get_thread());
+    ABTI_ASSERT(p_thread->p_last_xstream == ABTI_local_get_xstream());
+    ABTI_ASSERT(p_thread->type == ABTI_THREAD_TYPE_MAIN
+             || p_thread->request & ABTI_THREAD_REQ_BLOCK);
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
