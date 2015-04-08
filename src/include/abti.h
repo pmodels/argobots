@@ -334,24 +334,6 @@ ABTI_thread *ABTI_global_get_main(void);
 /* ES Local Data */
 int ABTI_local_init(void);
 int ABTI_local_finalize(void);
-static inline ABTI_xstream *ABTI_local_get_xstream(void) {
-    return lp_ABTI_local->p_xstream;
-}
-static inline void ABTI_local_set_xstream(ABTI_xstream *p_xstream) {
-    lp_ABTI_local->p_xstream = p_xstream;
-}
-static inline ABTI_thread *ABTI_local_get_thread(void) {
-    return lp_ABTI_local->p_thread;
-}
-static inline void ABTI_local_set_thread(ABTI_thread *p_thread) {
-    lp_ABTI_local->p_thread = p_thread;
-}
-static inline ABTI_task *ABTI_local_get_task(void) {
-    return lp_ABTI_local->p_task;
-}
-static inline void ABTI_local_set_task(ABTI_task *p_task) {
-    lp_ABTI_local->p_task = p_task;
-}
 
 /* Container */
 int        ABTI_contn_create(ABTI_contn **pp_contn);
@@ -453,6 +435,7 @@ void ABTI_eventual_signal(ABTI_eventual *p_eventual);
 /* Future */
 void ABTI_future_signal(ABTI_future *p_future);
 
+#include "abti_local.h"
 #include "abti_stream.h"
 #include "abti_sched.h"
 #include "abti_config.h"

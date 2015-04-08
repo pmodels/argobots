@@ -12,6 +12,7 @@ noinst_HEADERS = \
 	include/abtd_ucontext.h \
 	include/abti.h \
 	include/abti_error.h \
+	include/abti_local.h \
 	include/abti_stream.h \
 	include/abti_sched.h \
 	include/abti_config.h \
