@@ -543,8 +543,6 @@ int ABT_thread_yield_to(ABT_thread thread)
         abt_errno = ABTI_xstream_schedule_thread(p_xstream, p_tar_thread);
         ABTI_CHECK_ERROR(abt_errno);
 
-        ABTI_local_set_thread(p_cur_thread);
-
         /* Yield to another thread to execute all threads */
         if (p_cur_thread->type == ABTI_THREAD_TYPE_MAIN)
             ABT_thread_yield();

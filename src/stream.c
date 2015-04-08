@@ -906,12 +906,7 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
 
     ABT_unit_type type = p_pool->u_get_type(unit);
 
-    /* Unset the current running ULT/tasklet */
-    ABTI_thread *last_thread = ABTI_local_get_thread();
-    ABTI_task *last_task = ABTI_local_get_task();
-
     if (type == ABT_UNIT_TYPE_THREAD) {
-        ABTI_local_set_task(NULL);
         ABT_thread thread = p_pool->u_get_thread(unit);
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
         /* Switch the context */
@@ -919,7 +914,6 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
         ABTI_CHECK_ERROR(abt_errno);
 
     } else if (type == ABT_UNIT_TYPE_TASK) {
-        ABTI_local_set_thread(NULL);
         ABT_task task = p_pool->u_get_task(unit);
         ABTI_task *p_task = ABTI_task_get_ptr(task);
         /* Execute the task */
@@ -931,10 +925,6 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
         abt_errno = ABT_ERR_INV_UNIT;
         goto fn_fail;
     }
-
-    /* Set the current running ULT/tasklet */
-    ABTI_local_set_thread(last_thread);
-    ABTI_local_set_task(last_task);
 
   fn_exit:
     return abt_errno;
@@ -1123,8 +1113,13 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         goto fn_exit;
     }
 
+    /* Unset the current running ULT/tasklet */
+    ABTI_thread *last_thread = ABTI_local_get_thread();
+    ABTI_task *last_task = ABTI_local_get_task();
+
     /* Set the current running ULT */
     ABTI_local_set_thread(p_thread);
+    ABTI_local_set_task(NULL);
 
     /* Now we can set the right link in the context */
     ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
@@ -1183,6 +1178,10 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     }
     ABTI_CHECK_ERROR(abt_errno);
 
+    /* Set the current running ULT/tasklet */
+    ABTI_local_set_thread(last_thread);
+    ABTI_local_set_task(last_task);
+
   fn_exit:
     return abt_errno;
 
@@ -1201,8 +1200,13 @@ int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
         goto fn_exit;
     }
 
+    /* Unset the current running ULT/tasklet */
+    ABTI_thread *last_thread = ABTI_local_get_thread();
+    ABTI_task *last_task = ABTI_local_get_task();
+
     /* Set the current running tasklet */
     ABTI_local_set_task(p_task);
+    ABTI_local_set_thread(NULL);
 
     /* Change the task state */
     p_task->state = ABT_TASK_STATE_RUNNING;
@@ -1239,6 +1243,10 @@ int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
 
     abt_errno = ABTI_xstream_terminate_task(p_task);
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Set the current running ULT/tasklet */
+    ABTI_local_set_thread(last_thread);
+    ABTI_local_set_task(last_task);
 
   fn_exit:
     return abt_errno;
