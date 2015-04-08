@@ -9,6 +9,12 @@
 #include <assert.h>
 
 #ifndef UNSAFE_MODE
+#define ABTI_ASSERT(cond) assert(cond)
+#else
+#define ABTI_ASSERT(cond)
+#endif
+
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_INITIALIZED()                \
     do {                                        \
         if (gp_ABTI_global == NULL) {           \
