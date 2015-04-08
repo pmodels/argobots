@@ -424,7 +424,6 @@ int ABTI_thread_attr_print(ABTI_thread_attr *p_attr);
 /* Tasklet */
 int  ABTI_task_free(ABTI_task *p_task);
 int  ABTI_task_print(ABTI_task *p_task);
-ABTI_task *ABTI_task_current(void);
 void ABTI_task_retain(ABTI_task *p_task);
 void ABTI_task_release(ABTI_task *p_task);
 void ABTI_task_reset_id(void);

@@ -619,11 +619,6 @@ int ABTI_task_print(ABTI_task *p_task)
     return abt_errno;
 }
 
-ABTI_task *ABTI_task_current(void)
-{
-    return ABTI_local_get_task();
-}
-
 void ABTI_task_retain(ABTI_task *p_task)
 {
     ABTD_atomic_fetch_add_uint32(&p_task->refcount, 1);

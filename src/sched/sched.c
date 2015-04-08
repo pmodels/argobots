@@ -468,7 +468,7 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
         if (size == 0) {
             ABTI_thread *p_main_thread = ABTI_global_get_main();
             ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
-            if (ABTI_task_current() == NULL) {
+            if (ABTI_local_get_task() == NULL) {
                 assert(p_thread == ABTI_local_get_thread());
             }
             ABTD_thread_context_switch(&p_thread->ctx, &p_main_thread->ctx);
