@@ -328,8 +328,6 @@ int ABTI_global_add_xstream(ABTI_xstream *p_xstream);
 int ABTI_global_move_xstream(ABTI_xstream *p_xstream);
 int ABTI_global_del_xstream(ABTI_xstream *p_xstream);
 int ABTI_global_get_created_xstream(ABTI_xstream **p_xstream);
-size_t ABTI_global_get_default_stacksize();
-ABTI_thread *ABTI_global_get_main(void);
 
 /* ES Local Data */
 int ABTI_local_init(void);
@@ -436,6 +434,7 @@ void ABTI_eventual_signal(ABTI_eventual *p_eventual);
 void ABTI_future_signal(ABTI_future *p_future);
 
 #include "abti_local.h"
+#include "abti_global.h"
 #include "abti_stream.h"
 #include "abti_sched.h"
 #include "abti_config.h"

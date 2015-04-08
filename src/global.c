@@ -342,11 +342,3 @@ int ABTI_global_get_created_xstream(ABTI_xstream **p_xstream)
     return abt_errno;
 }
 
-size_t ABTI_global_get_default_stacksize()
-{
-    return gp_ABTI_global->default_stacksize;
-}
-
-ABTI_thread *ABTI_global_get_main(void) {
-    return gp_ABTI_global->p_thread_main;
-}
