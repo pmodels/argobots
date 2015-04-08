@@ -878,10 +878,8 @@ int ABT_thread_migrate(ABT_thread thread)
             ABTI_xstream *p_xstream;
             ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
             /* If the pool is not associated with an ES */
-            if (p_thread->p_pool->consumer == NULL) {
-                abt_errno = ABT_ERR_INV_POOL_ACCESS;
-                ABTI_CHECK_ERROR(abt_errno);
-            }
+            ABTI_CHECK_TRUE(p_thread->p_pool->consumer != NULL,
+                            ABT_ERR_INV_POOL_ACCESS);
             ABTI_elem *p_next =
                 ABTI_elem_get_next(p_thread->p_pool->consumer->elem);
             p_xstream = ABTI_elem_get_xstream(p_next);
