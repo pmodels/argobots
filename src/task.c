@@ -91,7 +91,7 @@ int ABT_task_create(ABT_pool pool,
 
   fn_fail:
     if (newtask) *newtask = ABT_TASK_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_task_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -144,7 +144,7 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
 
   fn_fail:
     if (newtask) *newtask = ABT_TASK_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_task_create_on_xstream", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -195,7 +195,7 @@ int ABT_task_free(ABT_task *task)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -220,7 +220,7 @@ int ABT_task_cancel(ABT_task task)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_cancel", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -295,7 +295,7 @@ int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_get_xstream", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -322,7 +322,7 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_get_state", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -352,7 +352,7 @@ int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_get_last_pool", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -384,7 +384,7 @@ int ABT_task_set_migratable(ABT_task task, ABT_bool flag)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_set_migratable", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -414,7 +414,7 @@ int ABT_task_is_migratable(ABT_task task, ABT_bool *flag)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_is_migratable", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -465,7 +465,7 @@ int ABT_task_retain(ABT_task task)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_retain", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -493,7 +493,7 @@ int ABT_task_release(ABT_task task)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_release", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -524,7 +524,7 @@ int ABT_task_set_name(ABT_task task, const char *name)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_set_name", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -560,7 +560,7 @@ int ABT_task_get_name(ABT_task task, char *name, size_t *len)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_task_get_name", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

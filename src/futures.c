@@ -73,7 +73,7 @@ int ABT_future_create(int compartments, void (*cb_func)(void **arg),
 
   fn_fail:
     *newfuture = ABT_FUTURE_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_future_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -104,7 +104,7 @@ int ABT_future_free(ABT_future *future)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_future_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -179,7 +179,7 @@ int ABT_future_wait(ABT_future future)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_future_wait", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -207,7 +207,7 @@ int ABT_future_test(ABT_future future, ABT_bool *flag)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_future_test", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -255,7 +255,7 @@ int ABT_future_set(ABT_future future, void *value)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_future_set", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

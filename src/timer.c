@@ -59,7 +59,7 @@ int ABT_timer_create(ABT_timer *newtimer)
 
   fn_fail:
     *newtimer = ABT_TIMER_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_timer_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -99,7 +99,7 @@ int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_timer_dup", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -134,7 +134,7 @@ int ABT_timer_free(ABT_timer *timer)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_timer_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -162,7 +162,7 @@ int ABT_timer_start(ABT_timer timer)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_timer_start", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -190,7 +190,7 @@ int ABT_timer_stop(ABT_timer timer)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_timer_stop", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -225,7 +225,7 @@ int ABT_timer_read(ABT_timer timer, double *secs)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_timer_read", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -262,7 +262,7 @@ int ABT_timer_stop_and_read(ABT_timer timer, double *secs)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_timer_stop_and_read", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -299,7 +299,7 @@ int ABT_timer_stop_and_add(ABT_timer timer, double *secs)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_timer_stop_and_add", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -343,7 +343,7 @@ int ABT_timer_get_overhead(double *overhead)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_timer_get_overhead", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

@@ -46,7 +46,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
 
   fn_fail:
     *neweventual = ABT_EVENTUAL_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_eventual_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -77,7 +77,7 @@ int ABT_eventual_free(ABT_eventual *eventual)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_eventual_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -155,7 +155,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_eventual_wait", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -192,7 +192,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_eventual_set", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

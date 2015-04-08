@@ -88,7 +88,7 @@ int ABTD_xstream_context_set_affinity(ABTD_xstream_context ctx, int rank)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTD_xstream_context_set_affinitiy", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
     return ABT_SUCCESS;

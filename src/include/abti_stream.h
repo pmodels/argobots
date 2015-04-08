@@ -89,7 +89,7 @@ int ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_pop_sched", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -115,7 +115,7 @@ int ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_push_sched", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

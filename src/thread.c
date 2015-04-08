@@ -107,7 +107,7 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
 
   fn_fail:
     if (newthread) *newthread = ABT_THREAD_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_thread_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -170,7 +170,7 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
 
   fn_fail:
     if (newthread) *newthread = ABT_THREAD_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_thread_create_on_xstream", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -238,7 +238,7 @@ int ABT_thread_free(ABT_thread *thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -297,7 +297,7 @@ int ABT_thread_join(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_join", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -341,7 +341,7 @@ int ABT_thread_exit(void)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_exit", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -373,7 +373,7 @@ int ABT_thread_cancel(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_cancel", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -447,7 +447,7 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_get_state", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -477,7 +477,7 @@ int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_get_last_pool", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -594,7 +594,7 @@ int ABT_thread_yield_to(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_yield_to", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -639,7 +639,7 @@ int ABT_thread_yield(void)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_yield", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -733,7 +733,7 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_migrate_to_xstream", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -792,7 +792,7 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_migrate_to_sched", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -828,7 +828,7 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_migrate_to_pool", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -903,7 +903,7 @@ int ABT_thread_migrate(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_migrate", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -935,7 +935,7 @@ int ABT_thread_set_callback(ABT_thread thread,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_set_callback", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -968,7 +968,7 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_set_migratable", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -998,7 +998,7 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_is_migratable", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1032,7 +1032,7 @@ int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_is_primary", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1083,7 +1083,7 @@ int ABT_thread_retain(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_retain", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1110,7 +1110,7 @@ int ABT_thread_release(ABT_thread thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_release", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1139,7 +1139,7 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_get_stacksize", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1169,7 +1169,7 @@ int ABT_thread_set_name(ABT_thread thread, const char *name)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_set_name", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1205,7 +1205,7 @@ int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_get_name", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1233,7 +1233,7 @@ int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_get_id", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1283,7 +1283,7 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_thread_migrate_to_pool", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1326,7 +1326,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 
   fn_fail:
     *p_thread = NULL;
-    HANDLE_ERROR_WITH_CODE("ABTI_thread_create_main", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1383,7 +1383,7 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
 
   fn_fail:
     if (newthread) *newthread = ABT_THREAD_NULL;
-    HANDLE_ERROR_WITH_CODE("ABTI_thread_create_main_sched", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1400,7 +1400,7 @@ int ABTI_thread_free_main(ABTI_thread *p_thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_thread_free_main", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1434,7 +1434,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_thread_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1468,7 +1468,7 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_thread_set_blocked", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1520,7 +1520,7 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_set_ready", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

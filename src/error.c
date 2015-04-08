@@ -81,7 +81,7 @@ int ABT_error_get_str(int errno, char *str, size_t *len)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_error_get_str", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

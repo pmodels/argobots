@@ -45,7 +45,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
 
   fn_fail:
     *newattr = ABT_THREAD_ATTR_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -78,7 +78,7 @@ int ABT_thread_attr_free(ABT_thread_attr *attr)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -107,7 +107,7 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_set_stacksize", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -135,7 +135,7 @@ int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_get_stacksize", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -167,7 +167,7 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_set_callback", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -200,7 +200,7 @@ int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_thread_attr_set_migratable", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

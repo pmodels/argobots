@@ -112,7 +112,7 @@ int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_create_basic", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     *newpool = ABT_SCHED_NULL;
     goto fn_exit;
 }
@@ -146,7 +146,7 @@ int ABT_pool_free(ABT_pool *pool)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -171,7 +171,7 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_get_access", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -205,7 +205,7 @@ int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_get_total_size", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -235,7 +235,7 @@ int ABT_pool_get_size(ABT_pool pool, size_t *size)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_get_size", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -269,7 +269,7 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_pop", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     unit = ABT_UNIT_NULL;
     goto fn_exit;
 }
@@ -308,7 +308,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_push", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -342,7 +342,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_remove", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -371,7 +371,7 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_set_data", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -400,7 +400,7 @@ int ABT_pool_get_data(ABT_pool pool, void **data)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_get_data", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -495,7 +495,7 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_pool_add_sched", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -524,7 +524,7 @@ int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_pool_add_thread", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -596,7 +596,7 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_pool_set_consumer", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -643,7 +643,7 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_pool_set_producer", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 #endif

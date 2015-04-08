@@ -178,7 +178,7 @@ int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_config_read", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -239,7 +239,7 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_sched_config_read_global", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

@@ -23,7 +23,7 @@ int ABTI_contn_create(ABTI_contn **pp_contn)
 
   fn_fail:
     *pp_contn = NULL;
-    HANDLE_ERROR_WITH_CODE("ABTI_contn_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -71,7 +71,7 @@ int ABTI_contn_free(ABTI_contn **pp_contn)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_contn_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

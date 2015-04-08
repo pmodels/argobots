@@ -50,7 +50,7 @@ int ABT_cond_create(ABT_cond *newcond)
 
   fn_fail:
     *newcond = ABT_COND_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_cond_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -86,7 +86,7 @@ int ABT_cond_free(ABT_cond *cond)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_cond_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -188,7 +188,7 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_cond_wait", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -245,7 +245,7 @@ int ABT_cond_signal(ABT_cond cond)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_cond_signal", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -312,7 +312,7 @@ int ABT_cond_broadcast(ABT_cond cond)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_cond_broadcast", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

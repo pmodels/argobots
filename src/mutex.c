@@ -44,7 +44,7 @@ int ABT_mutex_create(ABT_mutex *newmutex)
 
   fn_fail:
     *newmutex = ABT_MUTEX_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_mutex_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -79,7 +79,7 @@ int ABT_mutex_free(ABT_mutex *mutex)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_mutex_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -112,7 +112,7 @@ int ABT_mutex_lock(ABT_mutex mutex)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_mutex_lock", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -144,7 +144,7 @@ int ABT_mutex_trylock(ABT_mutex mutex)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_mutex_trylock", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -174,7 +174,7 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_mutex_spinlock", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -203,7 +203,7 @@ int ABT_mutex_unlock(ABT_mutex mutex)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_mutex_unlock", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

@@ -76,7 +76,7 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 
   fn_fail:
     *newxstream = ABT_XSTREAM_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -114,7 +114,7 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_create_basic", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -228,7 +228,7 @@ int ABT_xstream_free(ABT_xstream *xstream)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -341,7 +341,7 @@ int ABT_xstream_exit(void)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_exit", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -416,7 +416,7 @@ int ABT_xstream_self(ABT_xstream *xstream)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_self", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -456,7 +456,7 @@ int ABT_xstream_self_rank(int *rank)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_self_rank", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -481,7 +481,7 @@ int ABT_xstream_set_rank(ABT_xstream xstream, const int rank)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_set_rank", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -505,7 +505,7 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_rank", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -586,7 +586,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_set_main_sched", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -620,7 +620,7 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_set_main_sched_basic", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -649,7 +649,7 @@ int ABT_xstream_get_main_sched(ABT_xstream xstream, ABT_sched *sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_main_sched", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -683,7 +683,7 @@ int ABT_xstream_get_main_pools(ABT_xstream xstream, int max_pools,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_set_sched", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -710,7 +710,7 @@ int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_state", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -764,7 +764,7 @@ int ABT_xstream_set_name(ABT_xstream xstream, const char *name)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_set_name", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -800,7 +800,7 @@ int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_get_name", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -866,7 +866,7 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_is_primary", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -895,7 +895,7 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_run_unit", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -940,7 +940,7 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_run_unit", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -980,7 +980,7 @@ int ABT_xstream_check_events(ABT_sched sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_xstream_check_events", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1005,7 +1005,7 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_check_events", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1046,7 +1046,7 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1102,7 +1102,7 @@ int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_schedule", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1187,7 +1187,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_schedule_thread", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1244,7 +1244,7 @@ int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_schedule_task", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1299,7 +1299,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_migrate_thread", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1391,7 +1391,7 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_print", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1421,7 +1421,7 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     return NULL;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_xstream_launch_main_sched", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

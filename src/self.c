@@ -62,7 +62,7 @@ int ABT_self_get_type(ABT_unit_type *type)
 
   fn_fail:
     *type = ABT_UNIT_TYPE_EXT;
-    HANDLE_ERROR_WITH_CODE("ABT_self_get_type", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -160,7 +160,7 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_self_on_primary_xstream", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 

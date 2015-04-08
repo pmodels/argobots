@@ -189,5 +189,8 @@
     fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n)
     //fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n); exit(-1)
 
+#define HANDLE_ERROR_FUNC_WITH_CODE(n) \
+    fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, __func__, n)
+    //fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, __func__, n); exit(-1)
 
 #endif /* ABTI_ERROR_H_INCLUDED */

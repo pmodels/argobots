@@ -94,7 +94,7 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 
   fn_fail:
     *newsched = ABT_SCHED_NULL;
-    HANDLE_ERROR_WITH_CODE("ABT_sched_create", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -225,7 +225,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_create_basic", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     *newsched = ABT_SCHED_NULL;
     goto fn_exit;
 }
@@ -280,7 +280,7 @@ int ABT_sched_free(ABT_sched *sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_free", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -310,7 +310,7 @@ int ABT_sched_get_num_pools(ABT_sched sched, int *num_pools)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_get_num_pools", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -347,7 +347,7 @@ int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_get_pools", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -374,7 +374,7 @@ int ABT_sched_finish(ABT_sched sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_finish", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -401,7 +401,7 @@ int ABT_sched_exit(ABT_sched sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("XXX", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -445,7 +445,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_has_to_stop", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -520,7 +520,7 @@ int ABT_sched_set_data(ABT_sched sched, void *data)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_set_data", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -549,7 +549,7 @@ int ABT_sched_get_data(ABT_sched sched, void **data)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_get_data", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -579,7 +579,7 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_get_size", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -624,7 +624,7 @@ int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_sched_get_total_size", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -662,7 +662,7 @@ int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_sched_associate", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -704,7 +704,7 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_sched_get_migration_pool", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -748,7 +748,7 @@ int ABTI_sched_print(ABTI_sched *p_sched)
     return abt_errno;
 
   fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABTI_sched_print", abt_errno);
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
