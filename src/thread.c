@@ -197,18 +197,15 @@ int ABT_thread_free(ABT_thread *thread)
 
     /* We first need to check whether lp_ABTI_local is NULL because external
      * threads might call this routine. */
-    if (lp_ABTI_local != NULL && p_thread == ABTI_local_get_thread()) {
-        HANDLE_ERROR("The current thread cannot be freed.");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(lp_ABTI_local == NULL ||
+                          p_thread != ABTI_local_get_thread(),
+                        ABT_ERR_INV_THREAD,
+                        "The current thread cannot be freed.");
 
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
-            p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        HANDLE_ERROR("The main thread cannot be freed explicitly.");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
+                          p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+                        ABT_ERR_INV_THREAD,
+                        "The main thread cannot be freed explicitly.");
 
     /* Wait until the thread terminates */
     while (p_thread->state != ABT_THREAD_STATE_TERMINATED &&
@@ -258,12 +255,10 @@ int ABT_thread_join(ABT_thread thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
-        p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        HANDLE_ERROR("The main ULT cannot be joined.");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
+                          p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+                        ABT_ERR_INV_THREAD,
+                        "The main ULT cannot be joined.");
 
     ABT_self_get_type(&type);
 
@@ -271,11 +266,9 @@ int ABT_thread_join(ABT_thread thread)
     if (type == ABT_UNIT_TYPE_THREAD) {
         ABTI_thread *p_caller = ABTI_local_get_thread();
 
-        if (p_thread == p_caller) {
-            HANDLE_ERROR("The target ULT should be different.");
-            abt_errno = ABT_ERR_INV_THREAD;
-            goto fn_fail;
-        }
+        ABTI_CHECK_TRUE_MSG(p_thread != p_caller,
+                            ABT_ERR_INV_THREAD,
+                            "The target ULT should be different.");
 
         while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
             /* FIXME: instead of same pool, runnable by the same ES */
@@ -358,12 +351,10 @@ int ABT_thread_cancel(ABT_thread thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN ||
-            p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        HANDLE_ERROR("The main thread cannot be canceled.");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
+                          p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+                        ABT_ERR_INV_THREAD,
+                        "The main thread cannot be canceled.");
 
     /* Set the cancel request */
     ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_THREAD_REQ_CANCEL);
@@ -515,19 +506,15 @@ int ABT_thread_yield_to(ABT_thread thread)
      * its execution. */
     if (p_cur_thread == p_tar_thread) goto fn_exit;
 
-    if (p_tar_thread->state == ABT_THREAD_STATE_TERMINATED) {
-        HANDLE_ERROR("Cannot yield to the terminated thread");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_tar_thread->state != ABT_THREAD_STATE_TERMINATED,
+                        ABT_ERR_INV_THREAD,
+                        "Cannot yield to the terminated thread");
 
     /* Both threads must be associated with the same pool. */
     /* FIXME: instead of same pool, runnable by the same ES */
-    if (p_cur_thread->p_pool != p_tar_thread->p_pool) {
-        HANDLE_ERROR("The target thread's pool is not the same as mine.");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_cur_thread->p_pool == p_tar_thread->p_pool,
+                        ABT_ERR_INV_THREAD,
+                        "The target thread's pool is not the same as mine.");
 
     /* If the target thread is not in READY, we don't yield. */
     if (ABTI_thread_is_ready(p_tar_thread) == ABT_FALSE) {

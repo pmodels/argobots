@@ -114,18 +114,14 @@ int ABT_finalize(void)
     ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    if (p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
-        HANDLE_ERROR("ABT_finalize must be called by the primary ES.");
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY,
+                        ABT_ERR_INV_XSTREAM,
+                        "ABT_finalize must be called by the primary ES.");
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
-    if (p_thread->type != ABTI_THREAD_TYPE_MAIN) {
-        HANDLE_ERROR("ABT_finalize must be called by the primary ULT.");
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_thread->type == ABTI_THREAD_TYPE_MAIN,
+                        ABT_ERR_INV_THREAD,
+                        "ABT_finalize must be called by the primary ULT.");
 
     /* Set the join request */
     ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_JOIN);

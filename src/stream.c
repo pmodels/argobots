@@ -195,17 +195,14 @@ int ABT_xstream_free(ABT_xstream *xstream)
 
     /* We first need to check whether lp_ABTI_local is NULL because this
      * routine might be called by external threads. */
-    if (lp_ABTI_local != NULL && p_xstream == ABTI_local_get_xstream()) {
-        HANDLE_ERROR("The current xstream cannot be freed.");
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(lp_ABTI_local == NULL ||
+                          p_xstream != ABTI_local_get_xstream(),
+                        ABT_ERR_INV_XSTREAM,
+                        "The current xstream cannot be freed.");
 
-    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        HANDLE_ERROR("The primary xstream cannot be freed explicitly.");
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY,
+                        ABT_ERR_INV_XSTREAM,
+                        "The primary xstream cannot be freed explicitly.");
 
     /* If the xstream is running, wait until it terminates */
     if (p_xstream->state == ABT_XSTREAM_STATE_RUNNING) {
@@ -250,17 +247,14 @@ int ABT_xstream_join(ABT_xstream xstream)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
 
     /* The target ES must not be the same as the calling thread's ES */
-    if (lp_ABTI_local != NULL && p_xstream == ABTI_local_get_xstream()) {
-        HANDLE_ERROR("The target ES should be different.");
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(lp_ABTI_local == NULL ||
+                          p_xstream != ABTI_local_get_xstream(),
+                        ABT_ERR_INV_XSTREAM,
+                        "The target ES should be different.");
 
-    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        HANDLE_ERROR("The primary ES cannot be joined.");
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY,
+                        ABT_ERR_INV_XSTREAM,
+                        "The primary ES cannot be joined.");
 
     if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
         ABTI_mutex_spinlock(&p_xstream->mutex);
@@ -358,11 +352,9 @@ int ABT_xstream_cancel(ABT_xstream xstream)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
 
-    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        HANDLE_ERROR("The primary xstream cannot be canceled.");
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_fail;
-    }
+    ABTI_CHECK_TRUE_MSG(p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY,
+                        ABT_ERR_INV_XSTREAM,
+                        "The primary xstream cannot be canceled.");
 
     /* Set the cancel request */
     ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_CANCEL);
