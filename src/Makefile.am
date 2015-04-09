@@ -4,6 +4,7 @@
 #
 
 abt_sources = \
+	barrier.c \
 	cond.c \
 	error.c \
 	eventual.c \

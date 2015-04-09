@@ -27,6 +27,7 @@ noinst_HEADERS = \
 	include/abti_cond.h \
 	include/abti_eventual.h \
 	include/abti_future.h \
+	include/abti_barrier.h \
 	include/abti_timer.h \
 	include/abti_valgrind.h \
 	include/abtu.h

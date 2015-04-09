@@ -74,24 +74,26 @@ extern "C" {
 #define ABT_ERR_INV_COND           19  /* Invalid condition variable */
 #define ABT_ERR_INV_EVENTUAL       20  /* Invalid eventual */
 #define ABT_ERR_INV_FUTURE         21  /* Invalid future */
-#define ABT_ERR_INV_TIMER          22  /* Invalid timer */
-#define ABT_ERR_XSTREAM            23  /* ES-related error */
-#define ABT_ERR_XSTREAM_STATE      24  /* ES state error */
-#define ABT_ERR_SCHED              25  /* Scheduler-related error */
-#define ABT_ERR_SCHED_CONFIG       26  /* Scheduler config error */
-#define ABT_ERR_POOL               27  /* Pool-related error */
-#define ABT_ERR_UNIT               28  /* Scheduling unit-related error */
-#define ABT_ERR_THREAD             29  /* ULT-related error */
-#define ABT_ERR_TASK               30  /* Task-related error */
-#define ABT_ERR_MUTEX              31  /* Mutex-related error */
-#define ABT_ERR_MUTEX_LOCKED       32  /* Return value when mutex is locked */
-#define ABT_ERR_COND               33  /* Condition-related error */
-#define ABT_ERR_EVENTUAL           34  /* Eventual-related error */
-#define ABT_ERR_FUTURE             35  /* Future-related error */
-#define ABT_ERR_TIMER              36  /* Timer-related error */
-#define ABT_ERR_MIGRATION_TARGET   37  /* Migration target error */
-#define ABT_ERR_MIGRATION_NA       38  /* Migration not available */
-#define ABT_ERR_MISSING_JOIN       39  /* An ES or more did not join */
+#define ABT_ERR_INV_BARRIER        22  /* Invalid barrier */
+#define ABT_ERR_INV_TIMER          23  /* Invalid timer */
+#define ABT_ERR_XSTREAM            24  /* ES-related error */
+#define ABT_ERR_XSTREAM_STATE      25  /* ES state error */
+#define ABT_ERR_SCHED              26  /* Scheduler-related error */
+#define ABT_ERR_SCHED_CONFIG       27  /* Scheduler config error */
+#define ABT_ERR_POOL               28  /* Pool-related error */
+#define ABT_ERR_UNIT               29  /* Scheduling unit-related error */
+#define ABT_ERR_THREAD             30  /* ULT-related error */
+#define ABT_ERR_TASK               31  /* Task-related error */
+#define ABT_ERR_MUTEX              32  /* Mutex-related error */
+#define ABT_ERR_MUTEX_LOCKED       33  /* Return value when mutex is locked */
+#define ABT_ERR_COND               34  /* Condition-related error */
+#define ABT_ERR_EVENTUAL           35  /* Eventual-related error */
+#define ABT_ERR_FUTURE             36  /* Future-related error */
+#define ABT_ERR_BARRIER            37  /* Barrier-related error */
+#define ABT_ERR_TIMER              38  /* Timer-related error */
+#define ABT_ERR_MIGRATION_TARGET   39  /* Migration target error */
+#define ABT_ERR_MIGRATION_NA       40  /* Migration not available */
+#define ABT_ERR_MISSING_JOIN       41  /* An ES or more did not join */
 
 
 /* Constants */
@@ -184,6 +186,7 @@ typedef void *                 ABT_mutex;         /* Mutex */
 typedef void *                 ABT_cond;          /* Condition variable */
 typedef void *                 ABT_eventual;      /* Eventual */
 typedef void *                 ABT_future;        /* Future */
+typedef void *                 ABT_barrier;       /* Barrier */
 typedef void *                 ABT_timer;         /* Timer */
 typedef int                    ABT_bool;          /* Boolean type */
 
@@ -204,6 +207,7 @@ typedef int                    ABT_bool;          /* Boolean type */
 #define ABT_COND_NULL           ((ABT_cond)        NULL)
 #define ABT_EVENTUAL_NULL       ((ABT_eventual)    NULL)
 #define ABT_FUTURE_NULL         ((ABT_future)      NULL)
+#define ABT_BARRIER_NULL        ((ABT_barrier)     NULL)
 #define ABT_TIMER_NULL          ((ABT_timer)       NULL)
 #else
 #define ABT_XSTREAM_NULL        ((ABT_xstream)     (0x01))
@@ -219,7 +223,8 @@ typedef int                    ABT_bool;          /* Boolean type */
 #define ABT_COND_NULL           ((ABT_cond)        (0x0b))
 #define ABT_EVENTUAL_NULL       ((ABT_eventual)    (0x0c))
 #define ABT_FUTURE_NULL         ((ABT_future)      (0x0d))
-#define ABT_TIMER_NULL          ((ABT_timer)       (0x0e))
+#define ABT_BARRIER_NULL        ((ABT_barrier)     (0x0e))
+#define ABT_TIMER_NULL          ((ABT_timer)       (0x0f))
 #endif
 
 /* Scheduler config */
@@ -464,6 +469,11 @@ int ABT_future_free(ABT_future *future);
 int ABT_future_wait(ABT_future future);
 int ABT_future_test(ABT_future future, ABT_bool *flag);
 int ABT_future_set(ABT_future future, void *value);
+
+/* Barrier */
+int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier);
+int ABT_barrier_free(ABT_barrier *barrier);
+int ABT_barrier_wait(ABT_barrier barrier);
 
 /* Error */
 int ABT_error_get_str(int errno, char *str, size_t *len);

@@ -94,6 +94,7 @@ typedef struct ABTI_mutex           ABTI_mutex;
 typedef struct ABTI_cond            ABTI_cond;
 typedef struct ABTI_eventual        ABTI_eventual;
 typedef struct ABTI_future          ABTI_future;
+typedef struct ABTI_barrier         ABTI_barrier;
 typedef struct ABTI_timer           ABTI_timer;
 
 
@@ -319,6 +320,14 @@ struct ABTI_future {
     ABTI_thread_list waiters;
 };
 
+struct ABTI_barrier {
+    uint32_t num_waiters;
+    volatile uint32_t counter;
+    ABTI_thread **waiters;
+    ABT_unit_type *waiter_type;
+    ABTI_mutex mutex;
+};
+
 struct ABTI_timer {
     ABTD_time start;
     ABTD_time end;
@@ -473,6 +482,7 @@ void ABTI_future_signal(ABTI_future *p_future);
 #include "abti_cond.h"
 #include "abti_eventual.h"
 #include "abti_future.h"
+#include "abti_barrier.h"
 #include "abti_timer.h"
 
 #endif /* ABTI_H_INCLUDED */

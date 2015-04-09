@@ -191,6 +191,18 @@
 #endif
 
 #ifndef UNSAFE_MODE
+#define ABTI_CHECK_NULL_BARRIER_PTR(p)          \
+    do {                                        \
+        if (p == NULL) {                        \
+            abt_errno = ABT_ERR_INV_BARRIER;    \
+            goto fn_fail;                       \
+        }                                       \
+    } while (0)
+#else
+#define ABTI_CHECK_NULL_BARRIER_PTR(p)
+#endif
+
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_SCHED_PRIO(prio)             \
     do {                                        \
         if (prio > ABT_SCHED_PRIO_HIGH) {       \
