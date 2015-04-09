@@ -488,18 +488,11 @@ int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
 {
     int abt_errno;
 
-    /* The thread's ES must not be changed during this function.
-     * So, its mutex is used to guarantee it. */
-    ABTI_mutex_spinlock(&p_thread->mutex);
-
     /* Set the ULT's state as READY */
     p_thread->state = ABT_THREAD_STATE_READY;
 
     /* Add the ULT to the associated pool */
     abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, p_producer);
-
-    ABTI_mutex_unlock(&p_thread->mutex);
-
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
