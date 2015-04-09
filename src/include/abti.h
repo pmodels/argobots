@@ -397,7 +397,6 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
 
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
-int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer);
 int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 #ifndef UNSAFE_MODE
 int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);

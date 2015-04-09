@@ -134,5 +134,25 @@ void ABTI_pool_release(ABTI_pool *p_pool)
     ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1);
 }
 
+static inline
+int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
+{
+    int abt_errno;
+
+    /* Set the ULT's state as READY */
+    p_thread->state = ABT_THREAD_STATE_READY;
+
+    /* Add the ULT to the associated pool */
+    abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, p_producer);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
 #endif /* POOL_H_INCLUDED */
 
