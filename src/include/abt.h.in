@@ -188,6 +188,23 @@ typedef int                    ABT_bool;          /* Boolean type */
 
 
 /* Null Object Handles */
+#define ABT_NULL @ABT_NULL@
+#if ABT_NULL == 1
+#define ABT_XSTREAM_NULL        ((ABT_xstream)     NULL)
+#define ABT_SCHED_NULL          ((ABT_sched)       NULL)
+#define ABT_SCHED_CONFIG_NULL   ((ABT_sched_config)NULL)
+#define ABT_POOL_NULL           ((ABT_pool)        NULL)
+#define ABT_POOL_CONFIG_NULL    ((ABT_pool_config) NULL)
+#define ABT_UNIT_NULL           ((ABT_unit)        NULL)
+#define ABT_THREAD_NULL         ((ABT_thread)      NULL)
+#define ABT_THREAD_ATTR_NULL    ((ABT_thread_attr) NULL)
+#define ABT_TASK_NULL           ((ABT_task)        NULL)
+#define ABT_MUTEX_NULL          ((ABT_mutex)       NULL)
+#define ABT_COND_NULL           ((ABT_cond)        NULL)
+#define ABT_EVENTUAL_NULL       ((ABT_eventual)    NULL)
+#define ABT_FUTURE_NULL         ((ABT_future)      NULL)
+#define ABT_TIMER_NULL          ((ABT_timer)       NULL)
+#else
 #define ABT_XSTREAM_NULL        ((ABT_xstream)     (0x01))
 #define ABT_SCHED_NULL          ((ABT_sched)       (0x02))
 #define ABT_SCHED_CONFIG_NULL   ((ABT_sched_config)(0x03))
@@ -202,6 +219,7 @@ typedef int                    ABT_bool;          /* Boolean type */
 #define ABT_EVENTUAL_NULL       ((ABT_eventual)    (0x0c))
 #define ABT_FUTURE_NULL         ((ABT_future)      (0x0d))
 #define ABT_TIMER_NULL          ((ABT_timer)       (0x0e))
+#endif
 
 /* Scheduler config */
 typedef enum {
