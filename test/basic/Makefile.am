@@ -30,6 +30,7 @@ TESTS = \
 	cond_signal_in_main \
 	future_create \
 	eventual_create \
+	barrier \
 	self_type \
 	ext_thread \
 	timer
@@ -65,6 +66,7 @@ cond_join_SOURCES = cond_join.c
 cond_signal_in_main_SOURCES = cond_signal_in_main.c
 future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
+barrier_SOURCES = barrier.c
 self_type_SOURCES = self_type.c
 ext_thread_SOURCES = ext_thread.c
 timer_SOURCES = timer.c
@@ -96,6 +98,7 @@ testing:
 	./cond_signal_in_main
 	./future_create
 	./eventual_create
+	./barrier
 	./self_type
 	./ext_thread
 	./timer

@@ -27,6 +27,7 @@ basic/cond_join
 basic/cond_signal_in_main
 basic/future_create
 basic/eventual_create
+basic/barrier
 basic/self_type
 basic/ext_thread
 basic/timer
