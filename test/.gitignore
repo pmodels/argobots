@@ -50,5 +50,15 @@ basic/ext_thread
 basic/timer
 basic/info_print
 
+# benchmark
+benchmark/init_finalize
+benchmark/xstream_ops
+benchmark/thread_ops
+benchmark/thread_many_ops
+benchmark/thread_ops_all
+benchmark/task_ops
+benchmark/task_ops_all
+benchmark/sync_ops
+
 # code builds
 util/libutil.la

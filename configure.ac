@@ -776,6 +776,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  test/Makefile
                  test/basic/Makefile
+                 test/benchmark/Makefile
                  test/util/Makefile
                  examples/Makefile
                  examples/dynamic-es/Makefile])
