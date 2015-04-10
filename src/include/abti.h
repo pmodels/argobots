@@ -301,8 +301,8 @@ struct ABTI_eventual {
 struct ABTI_future {
     ABTI_mutex mutex;
     ABT_bool ready;
-    int counter;
-    int compartments;
+    uint32_t counter;
+    uint32_t compartments;
     void **array;
     void (*p_callback)(void **arg);
     ABTI_thread_list waiters;
