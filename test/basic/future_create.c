@@ -8,94 +8,124 @@
 #include "abt.h"
 #include "abttest.h"
 
+#define DEFAULT_NUM_XSTREAMS    2
+#define DEFAULT_NUM_THREADS     3
 #define BUFFER_SIZE 10
 
-ABT_thread th1, th2, th3;
 ABT_future myfuture;
+ABT_future myfuture2;
 
-#define LOOP_CNT  10
-void fn1(void *args)
+/* Total number of threads (num_xstreams * num_threads) */
+int num_xstreams = DEFAULT_NUM_XSTREAMS;
+int num_threads = DEFAULT_NUM_THREADS;
+int total_num_threads;
+
+
+void future_wait(void *args)
 {
-    ABT_TEST_UNUSED(args);
-    int i = 0;
-    ABT_test_printf(1, "Thread 1 iteration %d waiting for future\n", i);
+    int th = (int)(intptr_t)args;
+    ABT_test_printf(1, "Thread %d is waiting for future\n", th);
     ABT_future_wait(myfuture);
-    ABT_test_printf(1, "Thread 1 continue iteration %d returning from "
-            "future\n", i);
+    ABT_test_printf(1, "Thread %d returns from future_wait\n", th);
 }
 
-void fn2(void *args)
+void future_set(void *args)
 {
-    ABT_TEST_UNUSED(args);
-    int i = 0;
-    ABT_test_printf(1, "Thread 2 iteration %d waiting from future\n", i);
-    ABT_future_wait(myfuture);
-    ABT_test_printf(1, "Thread 2 continue iteration %d returning from "
-            "future\n", i);
+    int th = (int)(intptr_t)args;
+    ABT_future_set(myfuture, (void *)(intptr_t)th);
+    ABT_test_printf(1, "Thread %d signals future\n", th);
 }
 
-void fn3(void *args)
+void future_cb(void **args)
 {
-    ABT_TEST_UNUSED(args);
-    int i = 0;
-    ABT_test_printf(1, "Thread 3 iteration %d signaling future\n", i);
-    char *data = (char *) malloc(BUFFER_SIZE);
-    ABT_future_set(myfuture, (void *)data);
-    ABT_test_printf(1, "Thread 3 continue iteration %d\n", i);
+    int i;
+    int total = 0;
+    for (i = 0; i < total_num_threads; i++) {
+        total += (int)(intptr_t)args[i];
+    }
+    if (total_num_threads*(total_num_threads-1)/2 != total) {
+        ABT_TEST_ERROR(ABT_ERR_OTHER, "Wrong value!");
+    }
+
+    ABT_future_set(myfuture2,  NULL);
+    ABT_test_printf(1, "Callback signals future\n");
 }
 
 int main(int argc, char *argv[])
 {
+    int i, j;
     int ret;
-    ABT_xstream xstream;
+    if (argc > 1) num_xstreams = atoi(argv[1]);
+    assert(num_xstreams >= 0);
+    if (argc > 2) num_threads = atoi(argv[2]);
+    assert(num_threads >= 0);
+    total_num_threads = num_threads*num_xstreams;
 
     /* init and thread creation */
     ABT_test_init(argc, argv);
 
-    ret = ABT_xstream_self(&xstream);
+    /* Create Execution Streams */
+    ABT_xstream *xstreams =
+      (ABT_xstream *)malloc(num_xstreams*sizeof(ABT_xstream));
+    ret = ABT_xstream_self(&xstreams[0]);
     ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
+        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+    }
 
     /* Get the pools attached to an execution stream */
-    ABT_pool pool;
-    ret = ABT_xstream_get_main_pools(xstream, 1, &pool);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    ABT_pool *pools = (ABT_pool *)malloc(num_xstreams*sizeof(ABT_pool));
+    for (i = 0; i < num_xstreams; i++) {
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    }
 
-    ret = ABT_thread_create(pool, fn1, NULL, ABT_THREAD_ATTR_NULL, &th1);
-    ABT_TEST_ERROR(ret, "ABT_thread_create");
-    ret = ABT_thread_create(pool, fn2, NULL, ABT_THREAD_ATTR_NULL, &th2);
-    ABT_TEST_ERROR(ret, "ABT_thread_create");
-    ret = ABT_thread_create(pool, fn3, NULL, ABT_THREAD_ATTR_NULL, &th3);
-    ABT_TEST_ERROR(ret, "ABT_thread_create");
-
-    ret = ABT_future_create(1, NULL, &myfuture);
+    ret = ABT_future_create(total_num_threads, future_cb, &myfuture);
+    ABT_TEST_ERROR(ret, "ABT_future_create");
+    ret = ABT_future_create(1, NULL, &myfuture2);
     ABT_TEST_ERROR(ret, "ABT_future_create");
 
-    ABT_test_printf(1, "START\n");
+    for (i = 0; i < num_xstreams; i++) {
+        for (j = 0; j < num_threads; j++) {
+            int idx = i*num_threads+j;
+            ret = ABT_thread_create(pools[i], future_wait,
+                                    (void *)(intptr_t)(idx+total_num_threads),
+                                    ABT_THREAD_ATTR_NULL, NULL);
+            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ret = ABT_thread_create(pools[i], future_set, (void *)(intptr_t)idx,
+                                    ABT_THREAD_ATTR_NULL, NULL);
+            ABT_TEST_ERROR(ret, "ABT_thread_create");
+        }
+    }
 
-    int i = 0;
-    ABT_test_printf(1, "Thread main iteration %d waiting from future\n", i);
-    ABT_future_wait(myfuture);
-    ABT_test_printf(1, "Thread main continue iteration %d returning from "
-            "future\n", i);
+    ABT_test_printf(1, "Thread main is waiting for future2\n");
+    ABT_future_wait(myfuture2);
+    ABT_test_printf(1, "Thread main returns from future2\n");
 
-    /* switch to other user-level threads */
-    ABT_thread_yield();
+    /* Join Execution Streams */
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_join(xstreams[i]);
+        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+    }
 
-    /* join other threads */
-    ret = ABT_thread_join(th1);
-    ABT_TEST_ERROR(ret, "ABT_thread_join");
-    ret = ABT_thread_join(th2);
-    ABT_TEST_ERROR(ret, "ABT_thread_join");
-    ret = ABT_thread_join(th3);
-    ABT_TEST_ERROR(ret, "ABT_thread_join");
+    /* Free Execution Streams */
+    for (i = 1; i < num_xstreams; i++) {
+        ret = ABT_xstream_free(&xstreams[i]);
+        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+    }
 
-    /* release future */
+    /* Release futures */
     ret = ABT_future_free(&myfuture);
     ABT_TEST_ERROR(ret, "ABT_future_free");
+    ret = ABT_future_free(&myfuture2);
+    ABT_TEST_ERROR(ret, "ABT_future_free");
 
-    ABT_test_printf(1, "END\n");
-
+    /* Finalize */
     ret = ABT_test_finalize(0);
+
+    free(xstreams);
+    free(pools);
 
     return ret;
 }
