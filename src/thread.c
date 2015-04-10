@@ -1447,8 +1447,11 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
 
     if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
         while (p_thread->state == ABT_THREAD_STATE_BLOCKED) {
-            ABT_thread_yield();
+            /* Switch to the top scheduler */
+            ABTD_thread_context_switch(&p_thread->ctx,
+                ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream));
         }
+        ABTI_local_set_thread(p_thread);
         p_thread->state = ABT_THREAD_STATE_RUNNING;
     }
 }
