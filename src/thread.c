@@ -1382,8 +1382,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
 
     /* Free the stack and the context */
     ABTU_free(p_thread->p_stack);
-    abt_errno = ABTD_thread_context_free(&p_thread->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTD_thread_context_free(&p_thread->ctx);
 
     ABTU_free(p_thread);
 

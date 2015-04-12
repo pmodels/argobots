@@ -86,14 +86,8 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
 #endif
 }
 
-static inline
-int ABTD_thread_context_free(ABTD_thread_context *p_ctx)
-{
-    ABTI_UNUSED(p_ctx);
-    int abt_errno = ABT_SUCCESS;
-    /* Currently, nothing to do */
-    return abt_errno;
-}
+/* Currently, nothing to do */
+#define ABTD_thread_context_free(p_ctx)
 
 static inline
 int ABTD_thread_context_switch(ABTD_thread_context *p_old,
