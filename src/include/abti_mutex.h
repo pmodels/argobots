@@ -82,7 +82,7 @@ int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
 static inline
 void ABTI_mutex_unlock(ABTI_mutex *p_mutex)
 {
-    p_mutex->val = 0;
+    *(volatile uint32_t *)&p_mutex->val = 0;
 }
 
 static inline
