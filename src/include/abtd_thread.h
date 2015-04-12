@@ -90,32 +90,23 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
 #define ABTD_thread_context_free(p_ctx)
 
 static inline
-int ABTD_thread_context_switch(ABTD_thread_context *p_old,
-                               ABTD_thread_context *p_new)
+void ABTD_thread_context_switch(ABTD_thread_context *p_old,
+                                ABTD_thread_context *p_new)
 {
-    int abt_errno = ABT_SUCCESS;
-
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     jump_fcontext(&p_old->fctx, p_new->fctx, p_new,
                   ABTD_FCONTEXT_PRESERVE_FPU);
 
 #else
     int ret = swapcontext(p_old, p_new);
-    if (ret != 0) {
-        HANDLE_ERROR("swapcontext");
-        abt_errno = ABT_ERR_THREAD;
-    }
+    ABTI_ASSERT(ret != 0);
 #endif
-
-    return abt_errno;
 }
 
 static inline
-int ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
-                                    ABTD_thread_context *p_link)
+void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
+                                     ABTD_thread_context *p_link)
 {
-    int abt_errno = ABT_SUCCESS;
-
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     p_ctx->p_link = p_link;
 
@@ -138,8 +129,6 @@ int ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
 
     p_ctx->uc_link = p_link;
 #endif
-
-    return abt_errno;
 }
 
 #endif /* ABTD_THREAD_H_INCLUDED */

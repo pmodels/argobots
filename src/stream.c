@@ -1129,11 +1129,9 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     /* Switch the context */
     DEBUG_PRINT("[S%" PRIu64 ":TH%" PRIu64 "] START\n",
                 p_xstream->rank, ABTI_thread_get_id(p_thread));
-    abt_errno = ABTD_thread_context_switch(p_ctx, &p_thread->ctx);
+    ABTD_thread_context_switch(p_ctx, &p_thread->ctx);
 
     /* The scheduler continues from here. */
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_thread_context_switch");
-
     /* The previous ULT may not be the same as one to which the
      * context has been switched. */
     p_thread = ABTI_local_get_thread();

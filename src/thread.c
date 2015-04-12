@@ -567,9 +567,7 @@ int ABT_thread_yield_to(ABT_thread thread)
         /* Switch the context */
         ABTI_local_set_thread(p_tar_thread);
         p_tar_thread->state = ABT_THREAD_STATE_RUNNING;
-        abt_errno = ABTD_thread_context_switch(&p_cur_thread->ctx,
-                                               &p_tar_thread->ctx);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTD_thread_context_switch(&p_cur_thread->ctx, &p_tar_thread->ctx);
 
         ABTI_local_set_thread(p_cur_thread);
     }
@@ -611,9 +609,8 @@ int ABT_thread_yield(void)
     p_thread->state = ABT_THREAD_STATE_READY;
 
     /* Switch to the top scheduler */
-    abt_errno = ABTD_thread_context_switch(&p_thread->ctx,
+    ABTD_thread_context_switch(&p_thread->ctx,
         ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream));
-    ABTI_CHECK_ERROR(abt_errno);
 
     /* Back to the original thread */
     p_thread->state = ABT_THREAD_STATE_RUNNING;
