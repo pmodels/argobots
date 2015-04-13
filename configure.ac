@@ -140,6 +140,9 @@ fi
 dnl ----------------------------------------------------------------------------
 dnl setup top-level argument handling
 dnl ----------------------------------------------------------------------------
+AC_ARG_ENABLE([perf-opt],
+    AS_HELP_STRING([--enable-perf-opt], [enable performance optimization]))
+
 AC_ARG_ENABLE([fcontext],
     AS_HELP_STRING([--disable-fcontext],
         [do not use fcontext even though it is supported. If you disable
@@ -169,6 +172,13 @@ AS_IF([test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"],
 dnl ----------------------------------------------------------------------------
 dnl define constants according to top-level arguments
 dnl ----------------------------------------------------------------------------
+# perf-opt
+if test "x$enable_perf_opt" = "xyes"; then
+    if test "x$GCC" = "xyes"; then
+        CFLAGS="-O3 -ftls-model=initial-exec"
+    fi
+fi
+
 # preserve-fpu
 AS_IF([test "x$enable_preserve_fpu" != "xno"],
       [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 1,
