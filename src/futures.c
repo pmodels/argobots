@@ -231,18 +231,19 @@ int ABT_future_set(ABT_future future, void *value)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-    uint32_t compartment = ABTD_atomic_fetch_add_uint32(&p_future->counter, 1);
-    ABTI_CHECK_TRUE(compartment < p_future->compartments, ABT_ERR_FUTURE);
-    p_future->array[compartment] = value;
+    ABTI_mutex_spinlock(&p_future->mutex);
+    p_future->array[p_future->counter] = value;
+    p_future->counter++;
+    ABTI_CHECK_TRUE(p_future->counter <= p_future->compartments,
+                    ABT_ERR_FUTURE);
 
-    if (compartment == p_future->compartments-1) {
-        ABTI_mutex_lock(&p_future->mutex);
+    if (p_future->counter == p_future->compartments) {
         p_future->ready = ABT_TRUE;
         if (p_future->p_callback != NULL)
             (*p_future->p_callback)(p_future->array);
         ABTI_future_signal(p_future);
-        ABTI_mutex_unlock(&p_future->mutex);
     }
+    ABTI_mutex_unlock(&p_future->mutex);
 
   fn_exit:
     return abt_errno;
