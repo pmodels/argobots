@@ -10,6 +10,38 @@
 #define ABTD_SCHED_DEFAULT_STACKSIZE    (4*1024*1024)
 #define ABTD_SCHED_EVENT_FREQ           50
 
+
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+static cpu_set_t g_cpusets[CPU_SETSIZE];
+
+static void ABTD_env_get_affinity(void)
+{
+    cpu_set_t cpuset;
+    int i, ret;
+    int num_cores = 0;
+
+    ret = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuset);
+    ABTI_ASSERT(ret == 0);
+
+    for (i = 0; i < CPU_SETSIZE; i++) {
+        CPU_ZERO(&g_cpusets[i]);
+        if (CPU_ISSET(i, &cpuset)) {
+            CPU_SET(i, &g_cpusets[num_cores]);
+            num_cores++;
+        }
+    }
+    gp_ABTI_global->num_cores = num_cores;
+}
+
+cpu_set_t ABTD_env_get_cpuset(int rank)
+{
+    return g_cpusets[rank % gp_ABTI_global->num_cores];
+}
+#else
+#define ABTD_env_get_affinity()
+#endif
+
+
 void ABTD_env_init(ABTI_global *p_global)
 {
     char *env;
@@ -25,6 +57,9 @@ void ABTD_env_init(ABTI_global *p_global)
             strcmp(env, "no") == 0 || strcmp(env, "No") == 0) {
             p_global->set_affinity = ABT_FALSE;
         }
+    }
+    if (p_global->set_affinity == ABT_TRUE) {
+        ABTD_env_get_affinity();
     }
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
