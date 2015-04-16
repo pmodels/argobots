@@ -1058,6 +1058,38 @@ int ABTI_xstream_start_any(void)
     goto fn_exit;
 }
 
+int ABT_xstream_explicit_schedule()
+{
+  int abt_errno = ABT_SUCCESS;
+  ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+  ABTI_sched *p_sched = p_xstream->p_main_sched;
+  ABT_sched sched = ABTI_sched_get_handle(p_sched);
+//  p_sched->run(sched);
+  ABT_pool pool;
+  int work_count = 0;
+  void *data;
+
+  ABT_sched_get_data(sched, &data);
+  ABT_sched_get_pools(sched, 1, 0, &pool);
+  while(1) {
+    size_t size;
+    ABT_pool_get_size(pool, &size);
+    if (size > 0) {
+      /* Pop one work unit */
+      ABT_unit unit;
+      abt_errno = ABT_pool_pop(pool, &unit);
+      if (unit != ABT_UNIT_NULL) {
+        ABT_xstream_run_unit(unit, pool);
+      }
+    }
+    else
+      break;
+  }
+  return abt_errno;
+}
+
+
+
 int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
