@@ -99,7 +99,7 @@ void ABTD_thread_context_switch(ABTD_thread_context *p_old,
 
 #else
     int ret = swapcontext(p_old, p_new);
-    ABTI_ASSERT(ret != 0);
+    ABTI_ASSERT(ret == 0);
 #endif
 }
 
