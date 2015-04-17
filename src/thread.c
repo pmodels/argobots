@@ -77,7 +77,7 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     p_newthread->is_sched       = NULL;
     p_newthread->p_pool         = p_pool;
     p_newthread->type           = ABTI_THREAD_TYPE_USER;
-    p_newthread->state          = ABT_THREAD_STATE_CREATED;
+    p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
     p_newthread->request        = 0;
     p_newthread->p_req_arg      = NULL;
@@ -91,12 +91,11 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     /* Add this thread to the pool */
     abt_errno = ABTI_pool_push(p_pool, p_newthread->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
+        p_newthread->state = ABT_THREAD_STATE_CREATED;
         int ret = ABT_thread_free(&h_newthread);
         ABTI_CHECK_TRUE(ret == ABT_SUCCESS, ret);
         goto fn_fail;
     }
-
-    p_newthread->state = ABT_THREAD_STATE_READY;
 
     /* Return value */
     if (newthread) *newthread = h_newthread;

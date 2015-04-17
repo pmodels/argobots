@@ -59,7 +59,7 @@ int ABT_task_create(ABT_pool pool,
     p_newtask->p_xstream  = NULL;
     p_newtask->is_sched   = NULL;
     p_newtask->p_pool     = p_pool;
-    p_newtask->state      = ABT_TASK_STATE_CREATED;
+    p_newtask->state      = ABT_TASK_STATE_READY;
     p_newtask->migratable = ABT_TRUE;
     p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
     p_newtask->request    = 0;
@@ -75,12 +75,12 @@ int ABT_task_create(ABT_pool pool,
     /* Add this task to the scheduler's pool */
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
+        p_newtask->state = ABT_TASK_STATE_CREATED;
         int ret = ABT_task_free(&h_newtask);
         ABTI_CHECK_TRUE(ret == ABT_SUCCESS, ret);
         goto fn_fail;
     }
 
-    p_newtask->state = ABT_TASK_STATE_READY;
 
     /* Return value */
     if (newtask) *newtask = h_newtask;
