@@ -68,6 +68,10 @@ AC_HEADER_STDC
 dnl ----------------------------------------------------------------------------
 dnl check function availability
 dnl ----------------------------------------------------------------------------
+# check pthread
+AC_CHECK_HEADERS(pthread.h)
+AC_CHECK_LIB(pthread, pthread_join)
+
 AC_ARG_ENABLE([affinity],
     AS_HELP_STRING([--enable-affinity],
         [enable ES affinity]),,
