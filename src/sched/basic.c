@@ -22,21 +22,20 @@ ABT_sched_def ABTI_sched_basic = {
     .get_migr_pool = NULL,
 };
 
-struct sched_data {
+typedef struct {
     uint32_t event_freq;
     int num_pools;
     ABT_pool *pools;
-};
-typedef struct sched_data sched_data;
+} sched_data;
 
-static inline sched_data *sched_data_get_ptr(ABT_sched_config config)
+static inline sched_data *sched_data_get_ptr(void *data)
 {
-    return (sched_data *)config;
+    return (sched_data *)data;
 }
 
 ABT_sched_config_var ABT_sched_basic_freq = {
-  .idx = 0,
-  .type = ABT_SCHED_CONFIG_INT
+    .idx = 0,
+    .type = ABT_SCHED_CONFIG_INT
 };
 
 static int sched_init(ABT_sched sched, ABT_sched_config config)
