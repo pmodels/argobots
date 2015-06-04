@@ -20,13 +20,13 @@ static ABT_sched_def sched_prio_def = {
     .get_migr_pool = NULL
 };
 
-typedef struct sched_config {
+typedef struct {
     uint32_t event_freq;
-} sched_config;
+} sched_data;
 
-static inline sched_config *sched_config_get_ptr(ABT_sched_config config)
+static inline sched_data *sched_data_get_ptr(void *data)
 {
-    return (sched_config *)config;
+    return (sched_data *)data;
 }
 
 
@@ -44,13 +44,13 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     int abt_errno = ABT_SUCCESS;
 
     /* Default settings */
-    sched_config *p_config = (sched_config *)ABTU_malloc(sizeof(sched_config));
-    p_config->event_freq = ABTI_global_get_default_sched_event_freq();
+    sched_data *p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
+    p_data->event_freq = ABTI_global_get_default_sched_event_freq();
 
     /* Set the variables from the config */
-    ABT_sched_config_read(config, 1, &p_config->event_freq);
+    ABT_sched_config_read(config, 1, &p_data->event_freq);
 
-    abt_errno = ABT_sched_set_data(sched, (void *)p_config);
+    abt_errno = ABT_sched_set_data(sched, (void *)p_data);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -64,24 +64,20 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 static void sched_run(ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    int i;
     uint32_t work_count = 0;
-    sched_config *p_config;
+    void *data;
+    sched_data *p_data;
     uint32_t event_freq;
     int num_pools;
     ABT_pool *p_pools;
-    void *p_data;
-    ABT_unit unit;
-    size_t size;
+    int i;
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
 
-    abt_errno = ABT_sched_get_data(sched, &p_data);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    p_config   = sched_config_get_ptr(p_data);
-    event_freq = p_config->event_freq;
+    ABT_sched_get_data(sched, &data);
+    p_data = sched_data_get_ptr(data);
+    event_freq = p_data->event_freq;
 
     /* Get the list of pools */
     ABT_sched_get_num_pools(sched, &num_pools);
@@ -94,12 +90,11 @@ static void sched_run(ABT_sched sched)
         for (i = 0; i < num_pools; i++) {
             ABT_pool pool = p_pools[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-            size = p_pool->p_get_size(pool);
+            size_t size = p_pool->p_get_size(pool);
             if (size > 0) {
-                unit = p_pool->p_pop(pool);
+                ABT_unit unit = p_pool->p_pop(pool);
                 if (unit != ABT_UNIT_NULL) {
-                    abt_errno = ABTI_xstream_run_unit(p_xstream, unit, p_pool);
-                    ABTI_CHECK_ERROR(abt_errno);
+                    ABTI_xstream_run_unit(p_xstream, unit, p_pool);
                 }
                 break;
             }
@@ -126,20 +121,13 @@ static void sched_run(ABT_sched sched)
 static int sched_free(ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    void *p_data;
-    sched_config *p_config;
+    void *data;
+    sched_data *p_data;
 
-    abt_errno = ABT_sched_get_data(sched, &p_data);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABT_sched_get_data(sched, &data);
+    p_data = sched_data_get_ptr(data);
+    ABTU_free(p_data);
 
-    p_config = sched_config_get_ptr(p_data);
-    ABTU_free(p_config);
-
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("prio: sched_free", abt_errno);
-    goto fn_exit;
 }
 
