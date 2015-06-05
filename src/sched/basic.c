@@ -14,7 +14,7 @@ static void sched_run(ABT_sched sched);
 static int  sched_free(ABT_sched);
 static void sched_sort_pools(int num_pools, ABT_pool *pools);
 
-ABT_sched_def ABTI_sched_basic = {
+static ABT_sched_def sched_basic_def = {
     .type = ABT_SCHED_TYPE_TASK,
     .init = sched_init,
     .run = sched_run,
@@ -28,15 +28,20 @@ typedef struct {
     ABT_pool *pools;
 } sched_data;
 
-static inline sched_data *sched_data_get_ptr(void *data)
-{
-    return (sched_data *)data;
-}
-
 ABT_sched_config_var ABT_sched_basic_freq = {
     .idx = 0,
     .type = ABT_SCHED_CONFIG_INT
 };
+
+ABT_sched_def *ABTI_sched_get_basic_def(void)
+{
+    return &sched_basic_def;
+}
+
+static inline sched_data *sched_data_get_ptr(void *data)
+{
+    return (sched_data *)data;
+}
 
 static int sched_init(ABT_sched sched, ABT_sched_config config)
 {

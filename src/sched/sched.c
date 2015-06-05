@@ -10,9 +10,6 @@
  * This group is for Scheduler.
  */
 
-/* Predefined schedulers */
-extern ABT_sched_def ABTI_sched_basic;
-
 /**
  * @ingroup SCHED
  * @brief   Create a new user-defined scheduler and return its handle through
@@ -150,7 +147,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         switch (predef) {
             case ABT_SCHED_DEFAULT:
             case ABT_SCHED_BASIC:
-                abt_errno = ABT_sched_create(&ABTI_sched_basic,
+                abt_errno = ABT_sched_create(ABTI_sched_get_basic_def(),
                                              num_pools, pool_list,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
@@ -198,7 +195,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         switch (predef) {
             case ABT_SCHED_DEFAULT:
             case ABT_SCHED_BASIC:
-                abt_errno = ABT_sched_create(&ABTI_sched_basic,
+                abt_errno = ABT_sched_create(ABTI_sched_get_basic_def(),
                                              num_pools, pool_list,
                                              config, newsched);
                 break;
@@ -714,7 +711,7 @@ int ABTI_sched_print(ABTI_sched *p_sched)
 
     printf("== SCHEDULER (%p) ==\n", p_sched);
     printf("id: ");
-    if (p_sched->kind == ABTI_sched_get_kind(&ABTI_sched_basic)) {
+    if (p_sched->kind == ABTI_sched_get_kind(ABTI_sched_get_basic_def())) {
         printf("BASIC\n");
     } else {
         printf("%" PRIu64 " (USER)\n", p_sched->kind);

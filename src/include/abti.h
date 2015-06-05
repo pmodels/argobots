@@ -381,6 +381,7 @@ void ABTI_xstream_reset_rank(void);
 int ABTI_xstream_print(ABTI_xstream *p_xstream);
 
 /* Scheduler */
+ABT_sched_def *ABTI_sched_get_basic_def(void);
 int ABTI_sched_create_prio(int num_pools, ABT_pool *p_pools,
                            ABT_sched *newsched);
 int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use);
