@@ -24,20 +24,16 @@ typedef struct {
     uint32_t event_freq;
 } sched_data;
 
+
+ABT_sched_def *ABTI_sched_get_prio_def(void)
+{
+    return &sched_prio_def;
+}
+
 static inline sched_data *sched_data_get_ptr(void *data)
 {
     return (sched_data *)data;
 }
-
-
-/* Create a predefined priority scheduler */
-int ABTI_sched_create_prio(int num_pools, ABT_pool *p_pools,
-                           ABT_sched *newsched)
-{
-    return ABT_sched_create(&sched_prio_def, num_pools, p_pools,
-                            ABT_SCHED_CONFIG_NULL, newsched);
-}
-
 
 static int sched_init(ABT_sched sched, ABT_sched_config config)
 {

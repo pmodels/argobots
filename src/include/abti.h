@@ -382,8 +382,7 @@ int ABTI_xstream_print(ABTI_xstream *p_xstream);
 
 /* Scheduler */
 ABT_sched_def *ABTI_sched_get_basic_def(void);
-int ABTI_sched_create_prio(int num_pools, ABT_pool *p_pools,
-                           ABT_sched *newsched);
+ABT_sched_def *ABTI_sched_get_prio_def(void);
 int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
 ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);

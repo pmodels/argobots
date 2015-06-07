@@ -153,8 +153,10 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                                              newsched);
                 break;
             case ABT_SCHED_PRIO:
-                abt_errno = ABTI_sched_create_prio(num_pools, pool_list,
-                                                   newsched);
+                abt_errno = ABT_sched_create(ABTI_sched_get_prio_def(),
+                                             num_pools, pool_list,
+                                             ABT_SCHED_CONFIG_NULL,
+                                             newsched);
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
@@ -200,8 +202,9 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                                              config, newsched);
                 break;
             case ABT_SCHED_PRIO:
-                abt_errno = ABTI_sched_create_prio(num_pools, pool_list,
-                                                   newsched);
+                abt_errno = ABT_sched_create(ABTI_sched_get_prio_def(),
+                                             num_pools, pool_list,
+                                             config, newsched);
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
@@ -702,6 +705,7 @@ ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
 int ABTI_sched_print(ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_sched_kind kind;
     int p;
 
     if (p_sched == NULL) {
@@ -711,10 +715,13 @@ int ABTI_sched_print(ABTI_sched *p_sched)
 
     printf("== SCHEDULER (%p) ==\n", p_sched);
     printf("id: ");
-    if (p_sched->kind == ABTI_sched_get_kind(ABTI_sched_get_basic_def())) {
+    kind = p_sched->kind;
+    if (kind == ABTI_sched_get_kind(ABTI_sched_get_basic_def())) {
         printf("BASIC\n");
+    } else if (kind == ABTI_sched_get_kind(ABTI_sched_get_prio_def())) {
+        printf("PRIO\n");
     } else {
-        printf("%" PRIu64 " (USER)\n", p_sched->kind);
+        printf("%" PRIu64 " (USER)\n", kind);
     }
 
     printf("automatic: %d", p_sched->automatic);
