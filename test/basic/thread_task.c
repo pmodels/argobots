@@ -52,7 +52,7 @@ void thread_func(void *arg)
     thread_arg_t *t_arg = (thread_arg_t *)arg;
     ABT_thread next;
 
-    ABT_test_printf(1, "[TH%d]: brefore yield\n", t_arg->id);
+    ABT_test_printf(1, "[TH%d]: before yield\n", t_arg->id);
     next = pick_one(t_arg->threads, t_arg->num_threads);
     ABT_thread_yield_to(next);
 
