@@ -240,34 +240,12 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
 int ABT_sched_free(ABT_sched *sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_sched h_sched = *sched;
-    ABTI_sched *p_sched = ABTI_sched_get_ptr(h_sched);
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(*sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    /* If sched is a default provided one, it should free its pool here.
-     * Otherwise, freeing the pool is the user's reponsibility. */
-    int p;
-    for (p = 0; p < p_sched->num_pools; p++) {
-        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        ABTI_pool_release(p_pool);
-        if (p_pool->automatic == ABT_TRUE && p_pool->num_scheds == 0) {
-            abt_errno = ABT_pool_free(p_sched->pools+p);
-            ABTI_CHECK_ERROR(abt_errno);
-        }
-    }
-    ABTU_free(p_sched->pools);
-
-    /* Free the associated thread */
-    if (p_sched->thread != ABT_THREAD_NULL) {
-        ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
-        if (p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED)
-            ABT_thread_free(&p_sched->thread);
-    }
-
-    p_sched->free(h_sched);
-    p_sched->data = NULL;
-
-    ABTU_free(p_sched);
+    /* Free the scheduler */
+    abt_errno = ABTI_sched_free(p_sched);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
     *sched = ABT_SCHED_NULL;
@@ -639,6 +617,43 @@ size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
+
+int ABTI_sched_free(ABTI_sched *p_sched)
+{
+    int abt_errno = ABT_SUCCESS;
+    int p;
+
+    /* If sched is a default provided one, it should free its pool here.
+     * Otherwise, freeing the pool is the user's reponsibility. */
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        ABTI_pool_release(p_pool);
+        if (p_pool->automatic == ABT_TRUE && p_pool->num_scheds == 0) {
+            abt_errno = ABT_pool_free(p_sched->pools+p);
+            ABTI_CHECK_ERROR(abt_errno);
+        }
+    }
+    ABTU_free(p_sched->pools);
+
+    /* Free the associated thread */
+    if (p_sched->thread != ABT_THREAD_NULL) {
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
+        if (p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED)
+            ABT_thread_free(&p_sched->thread);
+    }
+
+    p_sched->free(ABTI_sched_get_handle(p_sched));
+    p_sched->data = NULL;
+
+    ABTU_free(p_sched);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
 
 /* Mark the scheduler as used and how it is used */
 int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use)
