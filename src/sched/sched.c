@@ -232,6 +232,9 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
  *
  * If this routine successfully returns, sched is set as ABT_SCHED_NULL. The
  * scheduler will be automatically freed.
+ * If \c sched is currently being used by an ES or in a pool, freeing \c sched
+ * is not allowed. In this case, this routine fails and returns \c
+ * ABT_ERR_SCHED.
  *
  * @param[in,out] sched  handle to the target scheduler
  * @return Error code
@@ -622,6 +625,12 @@ int ABTI_sched_free(ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
     int p;
+
+    /* If sched is currently used, free is not allowed. */
+    if (p_sched->used != ABTI_SCHED_NOT_USED) {
+        abt_errno = ABT_ERR_SCHED;
+        goto fn_fail;
+    }
 
     /* If sched is a default provided one, it should free its pool here.
      * Otherwise, freeing the pool is the user's reponsibility. */
