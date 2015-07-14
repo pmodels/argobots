@@ -22,6 +22,7 @@ TESTS = \
 	sched_set_main \
 	sched_stack \
 	sched_config \
+	sched_user_ws \
 	pool_access \
 	mutex \
 	cond_test \
@@ -56,6 +57,7 @@ sched_prio_SOURCES = sched_prio.c
 sched_set_main_SOURCES = sched_set_main.c
 sched_stack_SOURCES = sched_stack.c
 sched_config_SOURCES = sched_config.c
+sched_user_ws_SOURCES = sched_user_ws.c
 pool_access_SOURCES = pool_access.c
 mutex_SOURCES = mutex.c
 cond_test_SOURCES = cond_test.c
@@ -86,6 +88,7 @@ testing:
 	./sched_set_main
 	./sched_stack
 	./sched_config
+	./sched_user_ws
 	./pool_access
 	./mutex
 	./cond_test
