@@ -1000,8 +1000,8 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
 
     /* Free the scheduler */
     ABTI_sched *p_cursched = p_xstream->p_main_sched;
-    if (p_cursched != NULL && p_cursched->automatic == ABT_TRUE) {
-        abt_errno = ABTI_sched_free(p_cursched);
+    if (p_cursched != NULL) {
+        abt_errno = ABTI_sched_discard_and_free(p_cursched);
         ABTI_CHECK_ERROR(abt_errno);
     }
 
