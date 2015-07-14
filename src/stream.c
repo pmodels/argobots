@@ -570,6 +570,11 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 
     /* If it is the primary ES, we need to start it again */
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
+        /* Since the primary ES does not finish its execution until
+         * ABT_finalize is called, its main scheduler needs to be automatically
+         * freed when it is freed in ABT_finalize. */
+        p_sched->automatic = ABT_TRUE;
+
         p_xstream->state = ABT_XSTREAM_STATE_CREATED;
         ABT_xstream_start(xstream);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
