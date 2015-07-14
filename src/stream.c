@@ -503,11 +503,18 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
 
 /**
  * @ingroup ES
- * @brief   Set \c sched as the main scheduler for \c xstream.
+ * @brief   Set the main scheduler of the target ES.
  *
- * The scheduler \c sched will be the main scheduler that will first run
- * when the ES is started. Once the ES is started, it is currently not allowed
- * to change the main scheduler for the ES.
+ * \c ABT_xstream_set_main_sched() sets \c sched as the main scheduler for
+ * \c xstream.  The scheduler \c sched will first run when the ES \c xstream is
+ * started.
+ * If \c xstream is a handle to the primary ES, \c sched will be automatically
+ * freed on \c ABT_finalize() or when the main scheduler of the primary ES is
+ * changed again.  In this case, the explicit call \c ABT_sched_free() for
+ * \c sched may cause undefined behavior.
+ *
+ * NOTE: If the ES is running, it is currently not allowed to change the main
+ * scheduler for the ES.
  *
  * @param[in] xstream  handle to the target ES
  * @param[in] sched    handle to the scheduler
