@@ -552,7 +552,10 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
             abt_errno = ABTI_xstream_pop_sched(p_xstream);
             ABTI_CHECK_ERROR(abt_errno);
         }
-        // TODO free
+
+        /* Free the old scheduler */
+        abt_errno = ABTI_sched_discard_and_free(p_xstream->p_main_sched);
+        ABTI_CHECK_ERROR(abt_errno);
     }
 
     /* The main scheduler will to be a ULT, not a tasklet */
