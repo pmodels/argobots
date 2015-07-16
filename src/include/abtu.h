@@ -18,4 +18,7 @@
 #define ABTU_strcpy(d,s)        strcpy(d,s)
 #define ABTU_strncpy(d,s,n)     strncpy(d,s,n)
 
+/* The caller should free the memory returned. */
+char *ABTU_get_indent_str(int indent);
+
 #endif /* ABTU_H_INCLUDED */
