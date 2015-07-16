@@ -484,28 +484,70 @@ fn_fail:
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
-int ABTI_pool_print(ABTI_pool *p_pool)
+void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 {
-    int abt_errno = ABT_SUCCESS;
+    char *prefix = ABTU_get_indent_str(indent);
+
     if (p_pool == NULL) {
-        printf("NULL POOL\n");
+        fprintf(p_os, "%s== NULL POOL ==\n", prefix);
         goto fn_exit;
     }
-    ABT_pool pool = ABTI_pool_get_handle(p_pool);
 
-    printf("== POOL (%p) ==\n", p_pool);
-    printf("access mode: %d", p_pool->access);
-    printf("automatic: %d", p_pool->automatic);
-    printf("number of schedulers: %d", p_pool->num_scheds);
-    printf("consumer: %p", p_pool->consumer);
+    ABT_pool pool = ABTI_pool_get_handle(p_pool);
+    char *access;
+    size_t consumer_rank = 0;
 #ifndef UNSAFE_MODE
-    printf("producer: %p", p_pool->producer);
+    size_t producer_rank = 0;
 #endif
-    printf("number of blocked units: %d", p_pool->num_blocked);
-    printf("size: %lu", (unsigned long)p_pool->p_get_size(pool));
+
+    switch (p_pool->access) {
+        case ABT_POOL_ACCESS_PRIV: access = "PRIV"; break;
+        case ABT_POOL_ACCESS_SPSC: access = "SPSC"; break;
+        case ABT_POOL_ACCESS_MPSC: access = "MPSC"; break;
+        case ABT_POOL_ACCESS_SPMC: access = "SPMC"; break;
+        case ABT_POOL_ACCESS_MPMC: access = "MPMC"; break;
+        default:                   access = "UNKNOWN"; break;
+    }
+
+    if (p_pool->consumer) {
+        consumer_rank = p_pool->consumer->rank;
+    }
+#ifndef UNSAFE_MODE
+    if (p_pool->producer) {
+        producer_rank = p_pool->producer->rank;
+    }
+#endif
+
+    fprintf(p_os,
+        "%s== POOL (%p) ==\n"
+        "%saccess        : %s\n"
+        "%sautomatic     : %s\n"
+        "%snum_scheds    : %d\n"
+        "%sconsumer ES   : %p (%" PRIu64 ")\n"
+#ifndef UNSAFE_MODE
+        "%sproducer ES   : %p (%" PRIu64 ")\n"
+#endif
+        "%ssize          : %" PRIu64 "\n"
+        "%snum_blocked   : %u\n"
+        "%snum_migrations: %d\n"
+        "%sdata          : %p\n",
+        prefix, p_pool,
+        prefix, access,
+        prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
+        prefix, p_pool->num_scheds,
+        prefix, p_pool->consumer, consumer_rank,
+#ifndef UNSAFE_MODE
+        prefix, p_pool->producer, producer_rank,
+#endif
+        prefix, p_pool->p_get_size(pool),
+        prefix, p_pool->num_blocked,
+        prefix, p_pool->num_migrations,
+        prefix, p_pool->data
+    );
 
   fn_exit:
-    return abt_errno;
+    fflush(p_os);
+    ABTU_free(prefix);
 }
 
 /* Set the associated consumer ES of a pool. This function has no effect on pools

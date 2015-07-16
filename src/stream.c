@@ -1358,49 +1358,84 @@ int ABTI_xstream_keep_task(ABTI_task *p_task)
     return ABT_SUCCESS;
 }
 
-int ABTI_xstream_print(ABTI_xstream *p_xstream)
+void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
 {
-    int abt_errno = ABT_SUCCESS;
+    char *prefix = ABTU_get_indent_str(indent);
+
     if (p_xstream == NULL) {
-        printf("NULL XSTREAM\n");
+        fprintf(p_os, "%s== NULL ES ==\n", prefix);
         goto fn_exit;
     }
 
-    printf("== XSTREAM (%p) ==\n", p_xstream);
-    printf("elem      : ");
-    ABTI_elem_print(&p_xstream->elem);
-    printf("rank      : %" PRIu64 "\n", p_xstream->rank);
-    printf("name      : %s\n", p_xstream->p_name);
-    printf("type      : ");
+    char *type, *state;
+    char *scheds_str;
+    int i;
+    size_t size, pos;
+
     switch (p_xstream->type) {
-        case ABTI_XSTREAM_TYPE_PRIMARY:   printf("PRIMARY\n"); break;
-        case ABTI_XSTREAM_TYPE_SECONDARY: printf("SECONDARY\n"); break;
-        default: printf("UNKNOWN\n"); break;
+        case ABTI_XSTREAM_TYPE_PRIMARY:   type = "PRIMARY"; break;
+        case ABTI_XSTREAM_TYPE_SECONDARY: type = "SECONDARY"; break;
+        default:                          type = "UNKNOWN"; break;
     }
-    printf("state     : ");
     switch (p_xstream->state) {
-        case ABT_XSTREAM_STATE_CREATED:    printf("CREATED\n"); break;
-        case ABT_XSTREAM_STATE_READY:      printf("READY\n"); break;
-        case ABT_XSTREAM_STATE_RUNNING:    printf("RUNNING\n"); break;
-        case ABT_XSTREAM_STATE_TERMINATED: printf("TERMINATED\n"); break;
-        default: printf("UNKNOWN\n"); break;
+        case ABT_XSTREAM_STATE_CREATED:    state = "CREATED"; break;
+        case ABT_XSTREAM_STATE_READY:      state = "READY"; break;
+        case ABT_XSTREAM_STATE_RUNNING:    state = "RUNNING"; break;
+        case ABT_XSTREAM_STATE_TERMINATED: state = "TERMINATED"; break;
+        default:                           state = "UNKNOWN"; break;
     }
-    printf("request   : %x\n", p_xstream->request);
 
-    printf("main sched: %p\n", p_xstream->p_main_sched);
-    abt_errno = ABTI_sched_print(p_xstream->p_main_sched);
-    ABTI_CHECK_ERROR(abt_errno);
+    size = sizeof(char) * (p_xstream->num_scheds * 12 + 1);
+    scheds_str = (char *)ABTU_calloc(size, 1);
+    scheds_str[0] = '[';
+    scheds_str[1] = ' ';
+    pos = 2;
+    for (i = 0; i < p_xstream->num_scheds; i++) {
+        sprintf(&scheds_str[pos], "%p ", p_xstream->scheds[i]);
+        pos = strlen(scheds_str);
+    }
+    scheds_str[pos] = ']';
 
-    printf("deads     :");
-    abt_errno = ABTI_contn_print(p_xstream->deads);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_contn *deads = p_xstream->deads;
+
+    fprintf(p_os,
+        "%s== ES (%p) ==\n"
+        "%srank      : %" PRIu64 "\n"
+        "%stype      : %s\n"
+        "%sstate     : %s\n"
+        "%selem      : %p\n"
+        "%srequest   : 0x%x\n"
+        "%smax_scheds: %d\n"
+        "%snum_scheds: %d\n"
+        "%sscheds    : %s\n"
+        "%smain_sched: %p\n"
+        "%sdeads     : %p (num_elems: %" PRIu64 ")\n"
+        "%sname      : %s\n",
+        prefix, p_xstream,
+        prefix, p_xstream->rank,
+        prefix, type,
+        prefix, state,
+        prefix, &p_xstream->elem,
+        prefix, p_xstream->request,
+        prefix, p_xstream->max_scheds,
+        prefix, p_xstream->num_scheds,
+        prefix, scheds_str,
+        prefix, p_xstream->p_main_sched,
+        prefix, deads, deads->num_elems,
+        prefix, p_xstream->p_name
+    );
+    ABTU_free(scheds_str);
+
+    ABTI_elem_print(&p_xstream->elem, p_os, indent + ABTI_INDENT, ABT_FALSE);
+    ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT);
+    if (deads->num_elems > 0) {
+        fprintf(p_os, "%s== ES (%p) deads ==\n", prefix, p_xstream);
+        ABTI_contn_print(deads, p_os, indent + ABTI_INDENT, ABT_TRUE);
+    }
 
   fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    fflush(p_os);
+    ABTU_free(prefix);
 }
 
 void *ABTI_xstream_launch_main_sched(void *p_arg)

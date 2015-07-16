@@ -588,32 +588,56 @@ int ABTI_task_free(ABTI_task *p_task)
     goto fn_exit;
 }
 
-int ABTI_task_print(ABTI_task *p_task)
+void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
 {
-    int abt_errno = ABT_SUCCESS;
+    char *prefix = ABTU_get_indent_str(indent);
+
     if (p_task == NULL) {
-        printf("[NULL TASK]");
+        fprintf(p_os, "%s== NULL TASKLET ==\n", prefix);
         goto fn_exit;
     }
 
-    printf("[");
-    printf("id:%" PRIu64 " ", ABTI_task_get_id(p_task));
-    printf("xstream:%" PRIu64 " ", p_task->p_xstream->rank);
-    printf("name:%s ", p_task->p_name);
-    printf("state:");
+    ABTI_xstream *p_xstream = p_task->p_xstream;
+    size_t xstream_rank = p_xstream ? p_xstream->rank : 0;
+    char *state;
     switch (p_task->state) {
-        case ABT_TASK_STATE_CREATED:    printf("CREATED "); break;
-        case ABT_TASK_STATE_READY:      printf("READY "); break;
-        case ABT_TASK_STATE_RUNNING:    printf("RUNNING "); break;
-        case ABT_TASK_STATE_TERMINATED: printf("TERMINATED "); break;
-        default: printf("UNKNOWN ");
+        case ABT_TASK_STATE_CREATED:    state = "CREATED"; break;
+        case ABT_TASK_STATE_READY:      state = "READY"; break;
+        case ABT_TASK_STATE_RUNNING:    state = "RUNNING"; break;
+        case ABT_TASK_STATE_TERMINATED: state = "TERMINATED"; break;
+        default:                        state = "UNKNOWN";
     }
-    printf("refcount:%u ", p_task->refcount);
-    printf("request:%x ", p_task->request);
-    printf("]");
+
+    fprintf(p_os,
+        "%s== TASKLET (%p) ==\n"
+        "%sid        : %" PRIu64 "\n"
+        "%sstate     : %s\n"
+        "%sES        : %p (%" PRIu64 ")\n"
+        "%sis_sched  : %p\n"
+        "%spool      : %p\n"
+        "%smigratable: %s\n"
+        "%srefcount  : %u\n"
+        "%srequest   : 0x%x\n"
+        "%sf_task    : %p\n"
+        "%sp_arg     : %p\n"
+        "%sname      : %s\n",
+        prefix, p_task,
+        prefix, ABTI_task_get_id(p_task),
+        prefix, state,
+        prefix, p_task->p_xstream, xstream_rank,
+        prefix, p_task->is_sched,
+        prefix, p_task->p_pool,
+        prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
+        prefix, p_task->refcount,
+        prefix, p_task->request,
+        prefix, p_task->f_task,
+        prefix, p_task->p_arg,
+        prefix, p_task->p_name
+    );
 
   fn_exit:
-    return abt_errno;
+    fflush(p_os);
+    ABTU_free(prefix);
 }
 
 void ABTI_task_retain(ABTI_task *p_task)

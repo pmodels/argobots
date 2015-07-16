@@ -42,6 +42,8 @@
 #define ABTI_THREAD_INIT_ID         0xFFFFFFFFFFFFFFFF
 #define ABTI_TASK_INIT_ID           0xFFFFFFFFFFFFFFFF
 
+#define ABTI_INDENT                 4
+
 enum ABTI_xstream_type {
     ABTI_XSTREAM_TYPE_PRIMARY,
     ABTI_XSTREAM_TYPE_SECONDARY
@@ -348,7 +350,8 @@ size_t     ABTI_contn_get_size(ABTI_contn *p_contn);
 void       ABTI_contn_push(ABTI_contn *p_contn, ABTI_elem *p_elem);
 ABTI_elem *ABTI_contn_pop(ABTI_contn *p_contn);
 void       ABTI_contn_remove(ABTI_contn *p_contn, ABTI_elem *p_elem);
-int        ABTI_contn_print(ABTI_contn *p_contn);
+void       ABTI_contn_print(ABTI_contn *p_contn, FILE *p_os, int indent,
+                            ABT_bool detail);
 
 /* Element */
 ABT_unit_type ABTI_elem_get_type(ABTI_elem *p_elem);
@@ -360,7 +363,8 @@ void          ABTI_elem_create_from_xstream(ABTI_xstream *p_xstream);
 ABTI_elem    *ABTI_elem_create_from_thread(ABTI_thread *p_thread);
 ABTI_elem    *ABTI_elem_create_from_task(ABTI_task *p_task);
 void          ABTI_elem_free(ABTI_elem **pp_elem);
-int           ABTI_elem_print(ABTI_elem *p_elem);
+void          ABTI_elem_print(ABTI_elem *p_elem, FILE *p_os, int indent,
+                              ABT_bool detail);
 
 /* Execution Stream (ES) */
 int ABTI_xstream_free(ABTI_xstream *p_xstream);
@@ -378,7 +382,7 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched);
 void ABTI_xstream_loop(void *p_arg);
 void *ABTI_xstream_launch_main_sched(void *p_arg);
 void ABTI_xstream_reset_rank(void);
-int ABTI_xstream_print(ABTI_xstream *p_xstream);
+void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent);
 
 /* Scheduler */
 ABT_sched_def *ABTI_sched_get_basic_def(void);
@@ -390,7 +394,7 @@ ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
 ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream);
 size_t ABTI_sched_get_size(ABTI_sched *p_sched);
 size_t ABTI_sched_get_total_size(ABTI_sched *p_sched);
-int ABTI_sched_print(ABTI_sched *p_sched);
+void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent);
 
 /* Scheduler config */
 int ABTI_sched_config_read_global(ABT_sched_config config,
@@ -403,7 +407,7 @@ int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 #endif
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
-int ABTI_pool_print(ABTI_pool *p_pool);
+void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 
 /* User-level Thread (ULT)  */
 int   ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool);
@@ -416,7 +420,7 @@ void  ABTI_thread_suspend(ABTI_thread *p_thread);
 int   ABTI_thread_set_ready(ABTI_thread *p_thread);
 ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
 void  ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr);
-int   ABTI_thread_print(ABTI_thread *p_thread);
+void  ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 void  ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
 void  ABTI_thread_retain(ABTI_thread *p_thread);
@@ -425,11 +429,12 @@ void  ABTI_thread_reset_id(void);
 ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread);
 
 /* ULT Attributes */
-int ABTI_thread_attr_print(ABTI_thread_attr *p_attr);
+void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);
+void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf);
 
 /* Tasklet */
 int  ABTI_task_free(ABTI_task *p_task);
-int  ABTI_task_print(ABTI_task *p_task);
+void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent);
 void ABTI_task_retain(ABTI_task *p_task);
 void ABTI_task_release(ABTI_task *p_task);
 void ABTI_task_reset_id(void);

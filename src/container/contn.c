@@ -153,26 +153,38 @@ void ABTI_contn_remove(ABTI_contn *p_contn, ABTI_elem *p_elem)
     p_elem->p_next = NULL;
 }
 
-int ABTI_contn_print(ABTI_contn *p_contn)
+void ABTI_contn_print(ABTI_contn *p_contn, FILE *p_os, int indent, ABT_bool detail)
 {
-    int abt_errno = ABT_SUCCESS;
     size_t i;
+    char *prefix = ABTU_get_indent_str(indent);
 
     if (p_contn == NULL) {
-        printf("NULL CONTN\n");
+        fprintf(p_os, "%s== NULL CONTN ==\n", prefix);
         goto fn_exit;
     }
 
-    printf("num_elems: %zu ", p_contn->num_elems);
-    printf("{ ");
-    ABTI_elem *p_current = p_contn->p_head;
-    for (i = 0; i < p_contn->num_elems; i++) {
-        if (i != 0) printf(" -> ");
-        ABTI_elem_print(p_current);
+    fprintf(p_os,
+        "%s== CONTN (%p) ==\n"
+        "%snum_elems: %" PRIu64 "\n"
+        "%shead     : %p\n"
+        "%stail     : %p\n",
+        prefix, p_contn,
+        prefix, p_contn->num_elems,
+        prefix, p_contn->p_head,
+        prefix, p_contn->p_tail
+    );
+
+    if (p_contn->num_elems > 0) {
+        fprintf(p_os, "%sCONTN (%p) elements:\n", prefix, p_contn);
+        ABTI_elem *p_current = p_contn->p_head;
+        for (i = 0; i < p_contn->num_elems; i++) {
+            if (i != 0) fprintf(p_os, "%s  -->\n", prefix);
+            ABTI_elem_print(p_current, p_os, indent + ABTI_INDENT, detail);
+        }
     }
-    printf(" }\n");
 
   fn_exit:
-    return abt_errno;
+    fflush(p_os);
+    ABTU_free(prefix);
 }
 

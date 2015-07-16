@@ -1509,46 +1509,67 @@ void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
     }
 }
 
-int ABTI_thread_print(ABTI_thread *p_thread)
+void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
 {
-    int abt_errno = ABT_SUCCESS;
+    char *prefix = ABTU_get_indent_str(indent);
+
     if (p_thread == NULL) {
-        printf("[NULL THREAD]");
+        fprintf(p_os, "%s== NULL ULT ==\n", prefix);
         goto fn_exit;
     }
 
-    printf("[");
-    printf("id:%" PRIu64 " ", ABTI_thread_get_id(p_thread));
-    if (p_thread->p_last_xstream == NULL)
-        printf("last xstream: NULL");
-    else
-        printf("last xstream:%" PRIu64 " ", p_thread->p_last_xstream->rank);
-    printf("name:%s ", p_thread->p_name);
-    printf("type:");
+    ABTI_xstream *p_xstream = p_thread->p_last_xstream;
+    size_t xstream_rank = p_xstream ? p_xstream->rank : 0;
+    char *type, *state;
+    char attr[100];
+
     switch (p_thread->type) {
-        case ABTI_THREAD_TYPE_MAIN:       printf("MAIN "); break;
-        case ABTI_THREAD_TYPE_MAIN_SCHED: printf("MAIN_SCHED "); break;
-        case ABTI_THREAD_TYPE_USER:       printf("USER "); break;
-        default: printf("UNKNOWN "); break;
+        case ABTI_THREAD_TYPE_MAIN:       type = "MAIN"; break;
+        case ABTI_THREAD_TYPE_MAIN_SCHED: type = "MAIN_SCHED"; break;
+        case ABTI_THREAD_TYPE_USER:       type = "USER"; break;
+        default:                          type = "UNKNOWN"; break;
     }
-    printf("state:");
     switch (p_thread->state) {
-        case ABT_THREAD_STATE_READY:      printf("READY "); break;
-        case ABT_THREAD_STATE_RUNNING:    printf("RUNNING "); break;
-        case ABT_THREAD_STATE_BLOCKED:    printf("BLOCKED "); break;
-        case ABT_THREAD_STATE_TERMINATED: printf("TERMINATED "); break;
-        default: printf("UNKNOWN ");
+        case ABT_THREAD_STATE_READY:      state = "READY"; break;
+        case ABT_THREAD_STATE_RUNNING:    state = "RUNNING"; break;
+        case ABT_THREAD_STATE_BLOCKED:    state = "BLOCKED"; break;
+        case ABT_THREAD_STATE_TERMINATED: state = "TERMINATED"; break;
+        default:                          state = "UNKNOWN"; break;
     }
-    printf("attr:");
-    ABTI_thread_attr_print(&p_thread->attr);
-    printf("refcount:%u ", p_thread->refcount);
-    printf("request:%x ", p_thread->request);
-    printf("req_arg:%p ", p_thread->p_req_arg);
-    printf("stack:%p", p_thread->p_stack);
-    printf("]");
+    ABTI_thread_attr_get_str(&p_thread->attr, attr);
+
+    fprintf(p_os,
+        "%s== ULT (%p) ==\n"
+        "%sid      : %" PRIu64 "\n"
+        "%stype    : %s\n"
+        "%sstate   : %s\n"
+        "%slast_ES : %p (%" PRIu64 ")\n"
+        "%sis_sched: %p\n"
+        "%spool    : %p\n"
+        "%sstack   : %p\n"
+        "%srefcount: %u\n"
+        "%srequest : 0x%x\n"
+        "%sreq_arg : %p\n"
+        "%sattr    : %s\n"
+        "%sname    : %s\n",
+        prefix, p_thread,
+        prefix, ABTI_thread_get_id(p_thread),
+        prefix, type,
+        prefix, state,
+        prefix, p_xstream, xstream_rank,
+        prefix, p_thread->is_sched,
+        prefix, p_thread->p_pool,
+        prefix, p_thread->p_stack,
+        prefix, p_thread->refcount,
+        prefix, p_thread->request,
+        prefix, p_thread->p_req_arg,
+        prefix, attr,
+        prefix, p_thread->p_name
+    );
 
   fn_exit:
-    return abt_errno;
+    fflush(p_os);
+    ABTU_free(prefix);
 }
 
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg)

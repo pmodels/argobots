@@ -90,35 +90,65 @@ void ABTI_elem_free(ABTI_elem **pp_elem)
     *pp_elem = NULL;
 }
 
-int ABTI_elem_print(ABTI_elem *p_elem)
+void ABTI_elem_print(ABTI_elem *p_elem, FILE *p_os, int indent, ABT_bool detail)
 {
-    int abt_errno = ABT_SUCCESS;
+    char *prefix = ABTU_get_indent_str(indent);
 
-    printf("<");
-    printf("contn:%p ", p_elem->p_contn);
-    printf("type:");
-    switch (p_elem->type) {
-        case ABT_UNIT_TYPE_THREAD:
-            printf("thread");
-            ABTI_thread *p_thread = (ABTI_thread *)p_elem->p_obj;
-            ABTI_thread_print(p_thread);
-            break;
-
-        case ABT_UNIT_TYPE_TASK:
-            printf("task");
-            ABTI_task *p_task = (ABTI_task *)p_elem->p_obj;
-            ABTI_task_print(p_task);
-            break;
-
-        case ABT_UNIT_TYPE_XSTREAM:
-            printf("xstream");
-            break;
-
-        default:
-            printf("unknown");
+    if (p_elem == NULL) {
+        fprintf(p_os, "%s== NULL ELEM ==\n", prefix);
+        goto fn_exit;
     }
-    printf(">");
 
-    return abt_errno;
+    char *type;
+    switch (p_elem->type) {
+        case ABT_UNIT_TYPE_THREAD : type = "ULT"; break;
+        case ABT_UNIT_TYPE_TASK   : type = "TASKLET"; break;
+        case ABT_UNIT_TYPE_XSTREAM: type = "ES"; break;
+        default:                    type = "UNKNOWN"; break;
+    }
+
+    fprintf(p_os,
+        "%s== ELEM (%p) ==\n"
+        "%scontn: %p\n"
+        "%stype : %s\n"
+        "%sobj  : %p\n"
+        "%sprev : %p\n"
+        "%snext : %p\n",
+        prefix, p_elem,
+        prefix, p_elem->p_contn,
+        prefix, type,
+        prefix, p_elem->p_obj,
+        prefix, p_elem->p_prev,
+        prefix, p_elem->p_next
+    );
+
+    if (detail == ABT_TRUE) {
+        switch (p_elem->type) {
+            case ABT_UNIT_TYPE_THREAD: {
+                ABTI_thread *p_thread = (ABTI_thread *)p_elem->p_obj;
+                ABTI_thread_print(p_thread, p_os, indent + ABTI_INDENT);
+                break;
+            }
+
+            case ABT_UNIT_TYPE_TASK: {
+                ABTI_task *p_task = (ABTI_task *)p_elem->p_obj;
+                ABTI_task_print(p_task, p_os, indent + ABTI_INDENT);
+                break;
+            }
+
+            case ABT_UNIT_TYPE_XSTREAM: {
+                ABTI_xstream *p_xstream = (ABTI_xstream *)p_elem->p_obj;
+                ABTI_xstream_print(p_xstream, p_os, indent + ABTI_INDENT);
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+  fn_exit:
+    fflush(p_os);
+    ABTU_free(prefix);
 }
 

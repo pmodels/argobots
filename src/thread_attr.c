@@ -221,23 +221,37 @@ int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag)
  * \c ABTI_thread_attr struct.
  *
  * @param[in] p_attr  pointer to ABTI_thread_attr
+ * @param[in] p_os    pointer to a FILE object (output stream)
+ * @param[in] indent  amount of space to indent
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABTI_thread_attr_print(ABTI_thread_attr *p_attr)
+void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
 {
-    int abt_errno = ABT_SUCCESS;
+    char *prefix = ABTU_get_indent_str(indent);
+    char attr[100];
+
+    ABTI_thread_attr_get_str(p_attr, attr);
+    fprintf(p_os, "%sULT attr: %s\n", prefix, attr);
+    fflush(p_os);
+    ABTU_free(prefix);
+}
+
+void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
+{
     if (p_attr == NULL) {
-        printf("[NULL ATTR]");
-        goto fn_exit;
+        sprintf(p_buf, "[NULL ATTR]");
+        return;
     }
 
-    printf("[");
-    printf("stacksize:%zu ", (size_t)p_attr->stacksize);
-    printf("cb_func:%p ", p_attr->f_cb);
-    printf("cb_arg:%p", p_attr->p_cb_arg);
-    printf("]");
-
-  fn_exit:
-    return abt_errno;
+    sprintf(p_buf,
+        "["
+        "stacksize:%zu "
+        "cb_func:%p "
+        "cb_arg:%p"
+        "]",
+        (size_t)p_attr->stacksize,
+        p_attr->f_cb,
+        p_attr->p_cb_arg
+    );
 }

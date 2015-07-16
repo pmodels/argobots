@@ -726,46 +726,96 @@ ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
   return (ABTI_sched_kind)def;
 }
 
-int ABTI_sched_print(ABTI_sched *p_sched)
+void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent)
 {
-    int abt_errno = ABT_SUCCESS;
-    ABTI_sched_kind kind;
-    int p;
+    char *prefix = ABTU_get_indent_str(indent);
 
     if (p_sched == NULL) {
-        printf("NULL SCHEDULER\n");
+        fprintf(p_os, "%s== NULL SCHED ==\n", prefix);
         goto fn_exit;
     }
 
-    printf("== SCHEDULER (%p) ==\n", p_sched);
-    printf("id: ");
+    ABTI_sched_kind kind;
+    char *kind_str, *type, *state, *used;
+    char *pools_str;
+    int i;
+    size_t size, pos;
+
     kind = p_sched->kind;
     if (kind == ABTI_sched_get_kind(ABTI_sched_get_basic_def())) {
-        printf("BASIC\n");
+        kind_str = "BASIC";
     } else if (kind == ABTI_sched_get_kind(ABTI_sched_get_prio_def())) {
-        printf("PRIO\n");
+        kind_str = "PRIO";
     } else {
-        printf("%" PRIu64 " (USER)\n", kind);
+        kind_str = "USER";
     }
 
-    printf("automatic: %d", p_sched->automatic);
-    printf("number of pools: %d", p_sched->num_pools);
-    for (p = 0; p < p_sched->num_pools; p++) {
-        printf("pool %d: ", p);
-        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        abt_errno = ABTI_pool_print(p_pool);
-        ABTI_CHECK_ERROR(abt_errno);
+    switch (p_sched->type) {
+        case ABT_SCHED_TYPE_ULT:  type = "ULT"; break;
+        case ABT_SCHED_TYPE_TASK: type = "TASKLET"; break;
+        default:                  type = "UNKNOWN"; break;
     }
-    size_t size = ABTI_sched_get_size(p_sched);
-    printf("size: %lu\n", (unsigned long)size);
-    size = ABTI_sched_get_total_size(p_sched);
-    printf("total size: %lu\n", (unsigned long)size);
+    switch (p_sched->state) {
+        case ABT_SCHED_STATE_READY:      state = "READY"; break;
+        case ABT_SCHED_STATE_RUNNING:    state = "RUNNING"; break;
+        case ABT_SCHED_STATE_STOPPED:    state = "STOPPED"; break;
+        case ABT_SCHED_STATE_TERMINATED: state = "TERMINATED"; break;
+        default:                         state = "UNKNOWN"; break;
+    }
+    switch (p_sched->used) {
+        case ABTI_SCHED_NOT_USED: used = "NOT_USED"; break;
+        case ABTI_SCHED_MAIN:     used = "MAIN"; break;
+        case ABTI_SCHED_IN_POOL:  used = "IN_POOL"; break;
+        default:                  type = "UNKNOWN"; break;
+    }
+
+    size = sizeof(char) * (p_sched->num_pools * 12 + 1);
+    pools_str = (char *)ABTU_calloc(size, 1);
+    pools_str[0] = '[';
+    pools_str[1] = ' ';
+    pos = 2;
+    for (i = 0; i < p_sched->num_pools; i++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
+        sprintf(&pools_str[pos], "%p ", p_pool);
+        pos = strlen(pools_str);
+    }
+    pools_str[pos] = ']';
+
+    fprintf(p_os,
+        "%s== SCHED (%p) ==\n"
+        "%skind     : 0x%lx (%s)\n"
+        "%stype     : %s\n"
+        "%sstate    : %s\n"
+        "%sused     : %s\n"
+        "%sautomatic: %s\n"
+        "%srequest  : 0x%x\n"
+        "%snum_pools: %d\n"
+        "%spools    : %s\n"
+        "%ssize     : %" PRIu64 "\n"
+        "%stot_size : %" PRIu64 "\n"
+        "%sdata     : %p\n",
+        prefix, p_sched,
+        prefix, p_sched->kind, kind_str,
+        prefix, type,
+        prefix, state,
+        prefix, used,
+        prefix, (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
+        prefix, p_sched->request,
+        prefix, p_sched->num_pools,
+        prefix, pools_str,
+        prefix, ABTI_sched_get_size(p_sched),
+        prefix, ABTI_sched_get_total_size(p_sched),
+        prefix, p_sched->data
+    );
+    ABTU_free(pools_str);
+
+    for (i = 0; i < p_sched->num_pools; i++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
+        ABTI_pool_print(p_pool, p_os, indent + 2);
+    }
 
   fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    fflush(p_os);
+    ABTU_free(prefix);
 }
 
