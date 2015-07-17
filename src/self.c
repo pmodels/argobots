@@ -48,21 +48,17 @@ int ABT_self_get_type(ABT_unit_type *type)
         goto fn_exit;
     }
 
-    if (ABTI_local_get_thread() != NULL) {
-        *type = ABT_UNIT_TYPE_THREAD;
-    } else if (ABTI_local_get_task() != NULL) {
+    if (ABTI_local_get_task() != NULL) {
         *type = ABT_UNIT_TYPE_TASK;
     } else {
-        ABTI_CHECK_TRUE(0, ABT_ERR_OTHER);
+        /* Since ABTI_local_get_thread() can return NULL during executing
+         * ABTI_init(), it should always be safe to say that the type of caller
+         * is ULT if the control reaches here. */
+        *type = ABT_UNIT_TYPE_THREAD;
     }
 
   fn_exit:
     return abt_errno;
-
-  fn_fail:
-    *type = ABT_UNIT_TYPE_EXT;
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**
