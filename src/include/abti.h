@@ -375,6 +375,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream,
                                  ABTI_thread *p_thread);
 int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task);
 int ABTI_xstream_migrate_thread(ABTI_thread *p_thread);
+int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched);
 void ABTI_xstream_loop(void *p_arg);
 void *ABTI_xstream_launch_main_sched(void *p_arg);

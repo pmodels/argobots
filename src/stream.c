@@ -55,8 +55,8 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     ABTI_mutex_init(&p_newxstream->top_sched_mutex);
 
     /* Set the main scheduler */
-    ABT_xstream xstream = ABTI_xstream_get_handle(p_newxstream);
-    abt_errno = ABT_xstream_set_main_sched(xstream, sched);
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    abt_errno = ABTI_xstream_set_main_sched(p_newxstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Add this xstream to the global ES pool */
@@ -529,56 +529,10 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    /* TODO: permit to change the scheduler even when running */
-    /* We check that the ES is just created */
-    ABTI_CHECK_TRUE(p_xstream->state == ABT_XSTREAM_STATE_CREATED ||
-                      p_xstream->state == ABT_XSTREAM_STATE_READY,
-                    ABT_ERR_XSTREAM_STATE);
-
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
 
-    /* We check that from the pool set of the scheduler we do not find a pool
-     * with another associated pool, and set the right value if it is okay  */
-    int p;
-    for (p = 0; p < p_sched->num_pools; p++) {
-      abt_errno = ABTI_pool_set_consumer(p_sched->pools[p], p_xstream);
-      ABTI_CHECK_ERROR(abt_errno);
-    }
-
-    /* We free the old scheduler */
-    if (p_xstream->p_main_sched != NULL) {
-        /* The primary ES is in this state if this call is explicit */
-        if (p_xstream->state == ABT_XSTREAM_STATE_READY) {
-            abt_errno = ABTI_xstream_pop_sched(p_xstream);
-            ABTI_CHECK_ERROR(abt_errno);
-        }
-
-        /* Free the old scheduler */
-        abt_errno = ABTI_sched_discard_and_free(p_xstream->p_main_sched);
-        ABTI_CHECK_ERROR(abt_errno);
-    }
-
-    /* The main scheduler will to be a ULT, not a tasklet */
-    p_sched->type = ABT_SCHED_TYPE_ULT;
-
-    /* Set the scheduler */
-    p_xstream->p_main_sched = p_sched;
-
-    /* Set the scheduler as a main scheduler */
-    abt_errno = ABTI_sched_associate(p_sched, ABTI_SCHED_MAIN);
+    abt_errno = ABTI_xstream_set_main_sched(p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
-
-    /* If it is the primary ES, we need to start it again */
-    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        /* Since the primary ES does not finish its execution until
-         * ABT_finalize is called, its main scheduler needs to be automatically
-         * freed when it is freed in ABT_finalize. */
-        p_sched->automatic = ABT_TRUE;
-
-        p_xstream->state = ABT_XSTREAM_STATE_CREATED;
-        ABT_xstream_start(xstream);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
-    }
 
   fn_exit:
     return abt_errno;
@@ -606,12 +560,16 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
 {
     int abt_errno = ABT_SUCCESS;
 
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
     ABT_sched sched;
     abt_errno = ABT_sched_create_basic(predef, num_pools, pools,
                                        ABT_SCHED_CONFIG_NULL, &sched);
     ABTI_CHECK_ERROR(abt_errno);
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
 
-    abt_errno = ABT_xstream_set_main_sched(xstream, sched);
+    abt_errno = ABTI_xstream_set_main_sched(p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -1288,6 +1246,67 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
     if (newstream && newstream->state == ABT_XSTREAM_STATE_CREATED) {
         ABT_xstream h_newstream = ABTI_xstream_get_handle(newstream);
         abt_errno = ABT_xstream_start(h_newstream);
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
+{
+    int abt_errno = ABT_SUCCESS;
+    int p;
+
+    /* TODO: permit to change the scheduler even when running */
+    /* We check that the ES is just created */
+    ABTI_CHECK_TRUE(p_xstream->state == ABT_XSTREAM_STATE_CREATED ||
+                      p_xstream->state == ABT_XSTREAM_STATE_READY,
+                    ABT_ERR_XSTREAM_STATE);
+
+    /* We check that from the pool set of the scheduler we do not find a pool
+     * with another associated pool, and set the right value if it is okay  */
+    for (p = 0; p < p_sched->num_pools; p++) {
+        abt_errno = ABTI_pool_set_consumer(p_sched->pools[p], p_xstream);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+
+    /* We free the old scheduler */
+    if (p_xstream->p_main_sched != NULL) {
+        /* The primary ES is in this state if this call is explicit */
+        if (p_xstream->state == ABT_XSTREAM_STATE_READY) {
+            abt_errno = ABTI_xstream_pop_sched(p_xstream);
+            ABTI_CHECK_ERROR(abt_errno);
+        }
+
+        /* Free the old scheduler */
+        abt_errno = ABTI_sched_discard_and_free(p_xstream->p_main_sched);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+
+    /* The main scheduler will to be a ULT, not a tasklet */
+    p_sched->type = ABT_SCHED_TYPE_ULT;
+
+    /* Set the scheduler */
+    p_xstream->p_main_sched = p_sched;
+
+    /* Set the scheduler as a main scheduler */
+    abt_errno = ABTI_sched_associate(p_sched, ABTI_SCHED_MAIN);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* If it is the primary ES, we need to start it again */
+    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
+        /* Since the primary ES does not finish its execution until
+         * ABT_finalize is called, its main scheduler needs to be automatically
+         * freed when it is freed in ABT_finalize. */
+        p_sched->automatic = ABT_TRUE;
+
+        p_xstream->state = ABT_XSTREAM_STATE_CREATED;
+        abt_errno = ABT_xstream_start(ABTI_xstream_get_handle(p_xstream));
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
     }
 
