@@ -520,24 +520,22 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
 
+    if (sched == ABT_SCHED_NULL) {
+        abt_errno = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
+                                           ABT_SCHED_CONFIG_NULL, &sched);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
-    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
-    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-
-    if (sched == ABT_SCHED_NULL) {
-        abt_errno = ABT_xstream_set_main_sched_basic(xstream, ABT_SCHED_DEFAULT,
-                                                     0, NULL);
-        ABTI_CHECK_ERROR(abt_errno);
-        return abt_errno;
-    }
 
     /* TODO: permit to change the scheduler even when running */
     /* We check that the ES is just created */
     ABTI_CHECK_TRUE(p_xstream->state == ABT_XSTREAM_STATE_CREATED ||
                       p_xstream->state == ABT_XSTREAM_STATE_READY,
                     ABT_ERR_XSTREAM_STATE);
+
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
 
     /* We check that from the pool set of the scheduler we do not find a pool
      * with another associated pool, and set the right value if it is okay  */
