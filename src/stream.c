@@ -30,10 +30,9 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     ABT_xstream h_newxstream;
 
     if (sched == ABT_SCHED_NULL) {
-        abt_errno = ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
-                                             ABT_SCHED_CONFIG_NULL, newxstream);
+        abt_errno = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
+                                           ABT_SCHED_CONFIG_NULL, &sched);
         ABTI_CHECK_ERROR(abt_errno);
-        return abt_errno;
     }
 
     p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
