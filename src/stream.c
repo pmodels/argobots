@@ -27,13 +27,32 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_newxstream;
-    ABT_xstream h_newxstream;
 
     if (sched == ABT_SCHED_NULL) {
         abt_errno = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
                                            ABT_SCHED_CONFIG_NULL, &sched);
         ABTI_CHECK_ERROR(abt_errno);
     }
+
+    abt_errno = ABTI_xstream_create(ABTI_sched_get_ptr(sched), &p_newxstream);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Return value */
+    *newxstream = ABTI_xstream_get_handle(p_newxstream);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    *newxstream = ABT_XSTREAM_NULL;
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_newxstream;
 
     p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
 
@@ -55,22 +74,45 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     ABTI_mutex_init(&p_newxstream->top_sched_mutex);
 
     /* Set the main scheduler */
-    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     abt_errno = ABTI_xstream_set_main_sched(p_newxstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Add this xstream to the global ES pool */
+    /* Add this ES to the global ES container */
     ABTI_global_add_xstream(p_newxstream);
 
     /* Return value */
-    h_newxstream = ABTI_xstream_get_handle(p_newxstream);
-    *newxstream = h_newxstream;
+    *pp_xstream = p_newxstream;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    *newxstream = ABT_XSTREAM_NULL;
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_newxstream;
+    ABT_sched sched;
+
+    /* For the primary ES, a default scheduler is created. */
+    abt_errno = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
+                                       ABT_SCHED_CONFIG_NULL, &sched);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    abt_errno = ABTI_xstream_create(ABTI_sched_get_ptr(sched), &p_newxstream);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    p_newxstream->type = ABTI_XSTREAM_TYPE_PRIMARY;
+
+    *pp_xstream = p_newxstream;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

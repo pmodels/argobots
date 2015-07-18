@@ -59,11 +59,9 @@ int ABT_init(int argc, char **argv)
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_local_init");
 
     /* Create the primary ES */
-    ABT_xstream newxstream;
-    abt_errno = ABT_xstream_create(ABT_SCHED_NULL, &newxstream);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_create");
-    ABTI_xstream *p_newxstream = ABTI_xstream_get_ptr(newxstream);
-    p_newxstream->type = ABTI_XSTREAM_TYPE_PRIMARY;
+    ABTI_xstream *p_newxstream;
+    abt_errno = ABTI_xstream_create_primary(&p_newxstream);
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_create_primary");
     ABTI_local_set_xstream(p_newxstream);
 
     /* Create the primary ULT, i.e., the main thread */
@@ -74,7 +72,7 @@ int ABT_init(int argc, char **argv)
     ABTI_local_set_thread(p_main_thread);
 
     /* Start the primary ES */
-    abt_errno = ABT_xstream_start(newxstream);
+    abt_errno = ABT_xstream_start(ABTI_xstream_get_handle(p_newxstream));
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
 
   fn_exit:
