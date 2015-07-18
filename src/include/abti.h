@@ -367,7 +367,6 @@ void          ABTI_elem_print(ABTI_elem *p_elem, FILE *p_os, int indent,
 
 /* Execution Stream (ES) */
 int ABTI_xstream_free(ABTI_xstream *p_xstream);
-int ABTI_xstream_start_any(void);
 int ABTI_xstream_schedule(ABTI_xstream *p_xstream);
 int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
                           ABTI_pool *p_pool);

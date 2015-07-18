@@ -988,36 +988,6 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     goto fn_exit;
 }
 
-int ABTI_xstream_start_any(void)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_xstream_contn *p_xstreams = gp_ABTI_global->p_xstreams;
-
-    /* If there exist one or more active xstreams or there is no xstream
-     * created, we have nothing to do. */
-    if (ABTI_contn_get_size(p_xstreams->active) > 0) goto fn_exit;
-    if (ABTI_contn_get_size(p_xstreams->created) == 0) goto fn_exit;
-
-    /* Pop one xstream from the global ES pool and start it */
-    ABTI_xstream *p_xstream;
-    abt_errno = ABTI_global_get_created_xstream(&p_xstream);
-    ABTI_CHECK_ERROR(abt_errno);
-    if (p_xstream == NULL) goto fn_exit;
-
-    if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
-        ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
-        abt_errno = ABT_xstream_start(xstream);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
-    }
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    goto fn_exit;
-}
-
 int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
