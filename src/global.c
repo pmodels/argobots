@@ -72,8 +72,8 @@ int ABT_init(int argc, char **argv)
     ABTI_local_set_thread(p_main_thread);
 
     /* Start the primary ES */
-    abt_errno = ABT_xstream_start(ABTI_xstream_get_handle(p_newxstream));
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
+    abt_errno = ABTI_xstream_start(p_newxstream);
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start");
 
   fn_exit:
     return abt_errno;

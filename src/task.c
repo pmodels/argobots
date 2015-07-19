@@ -45,15 +45,6 @@ int ABT_task_create(ABT_pool pool,
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    /* If the pool is directly associated to a ES and this ES is not running,
-     * then start it */
-    ABTI_xstream *p_xstream = p_pool->consumer;
-    if (p_xstream && p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
-        ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
-        abt_errno = ABT_xstream_start(xstream);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
-    }
-
     p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
 
     p_newtask->p_xstream  = NULL;

@@ -37,6 +37,10 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     abt_errno = ABTI_xstream_create(ABTI_sched_get_ptr(sched), &p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
+    /* Start this ES */
+    abt_errno = ABTI_xstream_start(p_newxstream);
+    ABTI_CHECK_ERROR(abt_errno);
+
     /* Return value */
     *newxstream = ABTI_xstream_get_handle(p_newxstream);
 
@@ -159,10 +163,10 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
  * @ingroup ES
  * @brief   Start the target ES.
  *
- * The primary ES does not need to be started explicitly. Other ESs will be
- * started automatically if a ULT or a tasklet is pushed to a pool that belongs
- * exclusively to them. Except these cases, the user needs to start ES manually
- * by calling this routine.
+ * \c ABT_xstream_start() starts the target ES \c xstream if it has not been
+ * started.  That is, this routine is effective only when the state of the
+ * target ES is CREATED or READY, and once this routine returns, the ES's state
+ * becomes RUNNING.
  *
  * @param[in] xstream  handle to the target ES
  * @return Error code
@@ -172,8 +176,24 @@ int ABT_xstream_start(ABT_xstream xstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    /* Set the xstream's state as READY */
+    abt_errno = ABTI_xstream_start(p_xstream);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_xstream_start(ABTI_xstream *p_xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    /* Set the ES's state as READY */
     ABT_xstream_state old_state;
     old_state = ABTD_atomic_cas_int32((int32_t *)&p_xstream->state,
             ABT_XSTREAM_STATE_CREATED, ABT_XSTREAM_STATE_READY);
@@ -191,20 +211,21 @@ int ABT_xstream_start(ABT_xstream xstream)
         ABTI_CHECK_ERROR(abt_errno);
 
     } else {
-        /* Start the main scheduler on a different kernel thread */
+        /* Start the main scheduler on a different ES */
         abt_errno = ABTD_xstream_context_create(
                 ABTI_xstream_launch_main_sched, (void *)p_xstream,
                 &p_xstream->ctx);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_create");
     }
 
-    /* Move the xstream to the global active ES pool */
+    /* Move the ES to the global active ES pool */
     ABTI_global_move_xstream(p_xstream);
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -1256,9 +1277,8 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
 
     /* checking the state destination xstream */
     if (newstream && newstream->state == ABT_XSTREAM_STATE_CREATED) {
-        ABT_xstream h_newstream = ABTI_xstream_get_handle(newstream);
-        abt_errno = ABT_xstream_start(h_newstream);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
+        abt_errno = ABTI_xstream_start(newstream);
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start");
     }
 
   fn_exit:
@@ -1318,8 +1338,8 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
         p_sched->automatic = ABT_TRUE;
 
         p_xstream->state = ABT_XSTREAM_STATE_CREATED;
-        abt_errno = ABT_xstream_start(ABTI_xstream_get_handle(p_xstream));
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABT_xstream_start");
+        abt_errno = ABTI_xstream_start(p_xstream);
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start");
     }
 
   fn_exit:
