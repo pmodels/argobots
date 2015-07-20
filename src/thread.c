@@ -1270,15 +1270,20 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
+    ABT_thread_attr attr;
     size_t stacksize;
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
 
     /* Set attributes */
-    ABTI_thread_set_attr(p_newthread, ABT_THREAD_ATTR_NULL);
+    stacksize = ABTI_global_get_sched_stacksize();
+    ABT_thread_attr_create(&attr);
+    ABT_thread_attr_set_stacksize(attr, stacksize);
+    ABT_thread_attr_set_migratable(attr, ABT_FALSE);
+    ABTI_thread_set_attr(p_newthread, attr);
+    ABT_thread_attr_free(&attr);
 
     /* Create a stack for this thread */
-    stacksize = p_newthread->attr.stacksize;
     p_newthread->p_stack = ABTU_malloc(stacksize);
     ABTI_VALGRIND_STACK_REGISTER(p_newthread->p_stack, stacksize);
 

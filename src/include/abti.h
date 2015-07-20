@@ -110,6 +110,7 @@ struct ABTI_global {
     int num_cores;                     /* Number of CPU cores */
     int set_affinity;                  /* Whether CPU affinity is used */
     size_t default_stacksize;          /* Default stack size (in bytes) */
+    size_t sched_stacksize;            /* Stack size for sched (in bytes) */
     uint32_t default_sched_event_freq; /* Default check frequency for sched */
     ABTI_thread *p_thread_main;        /* ULT of the main function */
 };

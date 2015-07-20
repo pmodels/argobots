@@ -1437,9 +1437,8 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
         ABTU_malloc(sizeof(ABTD_thread_context));
 
     /* Create a context */
-    // TODO size of the stack? XXX
     abt_errno = ABTD_thread_context_create(NULL, NULL, NULL,
-            ABTI_global_get_default_stacksize(), NULL, p_sched->p_ctx);
+            ABTI_global_get_sched_stacksize(), NULL, p_sched->p_ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTI_xstream_loop(p_arg);
