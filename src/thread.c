@@ -1486,7 +1486,7 @@ void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
         my_attr->f_cb       = p_attr->f_cb;
         my_attr->p_cb_arg   = p_attr->p_cb_arg;
     } else {
-        my_attr->stacksize  = gp_ABTI_global->default_stacksize;
+        my_attr->stacksize  = ABTI_global_get_thread_stacksize();
         my_attr->migratable = ABT_TRUE;
         my_attr->f_cb       = NULL;
         my_attr->p_cb_arg   = NULL;

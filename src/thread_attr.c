@@ -32,7 +32,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     p_newattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
 
     /* Default values */
-    p_newattr->stacksize  = gp_ABTI_global->default_stacksize;
+    p_newattr->stacksize  = ABTI_global_get_thread_stacksize();
     p_newattr->migratable = ABT_TRUE;
     p_newattr->f_cb       = NULL;
     p_newattr->p_cb_arg   = NULL;

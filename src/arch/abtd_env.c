@@ -30,10 +30,10 @@ void ABTD_env_init(ABTI_global *p_global)
     /* Default stack size for ULT */
     env = getenv("ABT_ENV_THREAD_STACKSIZE");
     if (env != NULL) {
-        p_global->default_stacksize = (size_t)atol(env);
-        ABTI_ASSERT(p_global->default_stacksize >= 512);
+        p_global->thread_stacksize = (size_t)atol(env);
+        ABTI_ASSERT(p_global->thread_stacksize >= 512);
     } else {
-        p_global->default_stacksize = ABTD_THREAD_DEFAULT_STACKSIZE;
+        p_global->thread_stacksize = ABTD_THREAD_DEFAULT_STACKSIZE;
     }
 
     /* Default stack size for scheduler */
@@ -48,10 +48,10 @@ void ABTD_env_init(ABTI_global *p_global)
     /* Default frequency for event checking by the scheduler */
     env = getenv("ABT_ENV_SCHED_EVENT_FREQ");
     if (env != NULL) {
-        p_global->default_sched_event_freq = (uint32_t)atol(env);
-        ABTI_ASSERT(p_global->default_sched_event_freq >= 1);
+        p_global->sched_event_freq = (uint32_t)atol(env);
+        ABTI_ASSERT(p_global->sched_event_freq >= 1);
     } else {
-        p_global->default_sched_event_freq = ABTD_SCHED_EVENT_FREQ;
+        p_global->sched_event_freq = ABTD_SCHED_EVENT_FREQ;
     }
 
     /* Init timer */
