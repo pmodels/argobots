@@ -21,4 +21,6 @@
 /* The caller should free the memory returned. */
 char *ABTU_get_indent_str(int indent);
 
+int ABTU_get_int_len(size_t num);
+
 #endif /* ABTU_H_INCLUDED */

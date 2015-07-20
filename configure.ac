@@ -114,6 +114,9 @@ fi
 if test -z "$timer_type" ; then
     AC_MSG_ERROR([No timer function found])
 fi
+
+# check math library
+AC_CHECK_LIB([m], [log10])
 dnl ----------------------------------------------------------------------------
 
 dnl ----------------------------------------------------------------------------
