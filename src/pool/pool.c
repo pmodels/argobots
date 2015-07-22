@@ -62,14 +62,20 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     *newpool = ABTI_pool_get_handle(p_pool);
 
     /* Configure the pool */
-    if (p_pool->p_init)
-        p_pool->p_init(*newpool, config);
-
+    if (p_pool->p_init) {
+        abt_errno = p_pool->p_init(*newpool, config);
+        if (abt_errno != ABT_SUCCESS) {
+            ABTU_free(p_pool);
+            goto fn_fail;
+        }
+    }
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
+    *newpool = ABT_POOL_NULL;
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
