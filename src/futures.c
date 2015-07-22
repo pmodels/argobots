@@ -68,13 +68,7 @@ int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
     p_future->waiters.head = p_future->waiters.tail = NULL;
     *newfuture = ABTI_future_get_handle(p_future);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    *newfuture = ABT_FUTURE_NULL;
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**

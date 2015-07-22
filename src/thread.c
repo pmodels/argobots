@@ -1337,12 +1337,7 @@ int ABTI_thread_free_main(ABTI_thread *p_thread)
 
     ABTU_free(p_thread);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 int ABTI_thread_free(ABTI_thread *p_thread)
@@ -1366,12 +1361,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
 
     ABTU_free(p_thread);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 int ABTI_thread_set_blocked(ABTI_thread *p_thread)

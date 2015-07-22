@@ -131,11 +131,7 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
 
     ABT_pool_set_data(pool, p_data);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    goto fn_exit;
 }
 
 static int pool_free(ABT_pool pool)

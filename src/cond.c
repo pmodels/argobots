@@ -45,13 +45,7 @@ int ABT_cond_create(ABT_cond *newcond)
     /* Return value */
     *newcond = ABTI_cond_get_handle(p_newcond);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    *newcond = ABT_COND_NULL;
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**

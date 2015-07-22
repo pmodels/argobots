@@ -80,7 +80,6 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
 static void sched_run(ABT_sched sched)
 {
-    int abt_errno = ABT_SUCCESS;
     uint32_t work_count = 0;
     void *data;
     sched_data *p_data;
@@ -122,13 +121,6 @@ static void sched_run(ABT_sched sched)
             ABTI_xstream_check_events(p_xstream, sched);
         }
     }
-
-  fn_exit:
-    return ;
-
-  fn_fail:
-    HANDLE_ERROR_WITH_CODE("basic: sched_run", abt_errno);
-    goto fn_exit;
 }
 
 static int sched_free(ABT_sched sched)

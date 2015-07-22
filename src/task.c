@@ -560,11 +560,7 @@ int ABTI_task_free(ABTI_task *p_task)
 
     ABTU_free(p_task);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    goto fn_exit;
 }
 
 void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)

@@ -41,13 +41,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     p_eventual->waiters.head = p_eventual->waiters.tail = NULL;
     *neweventual = ABTI_eventual_get_handle(p_eventual);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    *neweventual = ABT_EVENTUAL_NULL;
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**

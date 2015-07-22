@@ -39,13 +39,7 @@ int ABT_mutex_create(ABT_mutex *newmutex)
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    *newmutex = ABT_MUTEX_NULL;
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**

@@ -40,13 +40,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     /* Return value */
     *newattr = ABTI_thread_attr_get_handle(p_newattr);
 
-  fn_exit:
     return abt_errno;
-
-  fn_fail:
-    *newattr = ABT_THREAD_ATTR_NULL;
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**
