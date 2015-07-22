@@ -26,10 +26,6 @@ ABT_sched_config_var ABT_sched_config_access = {
 };
 
 
-size_t ABTI_sched_config_type_size(ABT_sched_config_type type);
-int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
-                           void **variables);
-
 /**
  * @ingroup SCHED_CONFIG
  * @brief   Create a scheduler configuration.

@@ -398,6 +398,9 @@ size_t ABTI_sched_get_total_size(ABTI_sched *p_sched);
 void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent);
 
 /* Scheduler config */
+size_t ABTI_sched_config_type_size(ABT_sched_config_type type);
+int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
+                           void **variables);
 int ABTI_sched_config_read_global(ABT_sched_config config,
                                   ABT_pool_access *access, ABT_bool *automatic);
 
