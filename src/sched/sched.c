@@ -664,24 +664,6 @@ int ABTI_sched_free(ABTI_sched *p_sched)
     goto fn_exit;
 }
 
-/* Mark the scheduler as used and how it is used */
-int ABTI_sched_associate(ABTI_sched *p_sched, ABTI_sched_used use)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-    if (p_sched->used != ABTI_SCHED_NOT_USED)
-        abt_errno = ABT_ERR_SCHED;
-
-    p_sched->used = use;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
 /* Get the pool suitable for receiving a migrating ULT */
 int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
                                   ABTI_pool **pp_pool)

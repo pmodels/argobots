@@ -26,15 +26,21 @@ static uint64_t ABTI_xstream_get_new_rank(void);
 int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_sched *p_sched;
     ABTI_xstream *p_newxstream;
 
     if (sched == ABT_SCHED_NULL) {
         abt_errno = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
                                            ABT_SCHED_CONFIG_NULL, &sched);
         ABTI_CHECK_ERROR(abt_errno);
+        p_sched = ABTI_sched_get_ptr(sched);
+    } else {
+        p_sched = ABTI_sched_get_ptr(sched);
+        ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED,
+                        ABT_ERR_INV_SCHED);
     }
 
-    abt_errno = ABTI_xstream_create(ABTI_sched_get_ptr(sched), &p_newxstream);
+    abt_errno = ABTI_xstream_create(p_sched, &p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Start this ES */
@@ -580,17 +586,21 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
 int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_sched *p_sched;
 
     if (sched == ABT_SCHED_NULL) {
         abt_errno = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
                                            ABT_SCHED_CONFIG_NULL, &sched);
         ABTI_CHECK_ERROR(abt_errno);
+        p_sched = ABTI_sched_get_ptr(sched);
+    } else {
+        p_sched = ABTI_sched_get_ptr(sched);
+        ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED,
+                        ABT_ERR_INV_SCHED);
     }
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
-    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
 
     abt_errno = ABTI_xstream_set_main_sched(p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
@@ -1311,8 +1321,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     p_xstream->p_main_sched = p_sched;
 
     /* Set the scheduler as a main scheduler */
-    abt_errno = ABTI_sched_associate(p_sched, ABTI_SCHED_MAIN);
-    ABTI_CHECK_ERROR(abt_errno);
+    p_sched->used = ABTI_SCHED_MAIN;
 
     /* If it is the primary ES, we need to start it again */
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {

@@ -463,8 +463,8 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
             ABTI_CHECK_TRUE(0, ABT_ERR_INV_POOL_ACCESS);
     }
 
-    abt_errno = ABTI_sched_associate(p_sched, ABTI_SCHED_IN_POOL);
-    ABTI_CHECK_ERROR(abt_errno);
+    /* Mark the scheduler as it is used in pool */
+    p_sched->used = ABTI_SCHED_IN_POOL;
 
     if (p_sched->type == ABT_SCHED_TYPE_ULT) {
         abt_errno = ABT_thread_create(pool, p_sched->run, sched,
