@@ -204,8 +204,7 @@ int ABT_thread_free(ABT_thread *thread)
     }
 
     /* Free the ABTI_thread structure */
-    abt_errno = ABTI_thread_free(p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_thread_free(p_thread);
 
     /* Return value */
     *thread = ABT_THREAD_NULL;
@@ -819,8 +818,7 @@ int ABT_thread_migrate(ABT_thread thread)
         }
         if (ABTI_contn_get_size(p_xstreams->created) > 0) {
             ABTI_xstream *p_xstream;
-            abt_errno = ABTI_global_get_created_xstream(&p_xstream);
-            ABTI_CHECK_ERROR(abt_errno);
+            ABTI_global_get_created_xstream(&p_xstream);
             if (p_xstream == NULL) continue;
             xstream = ABTI_xstream_get_handle(p_xstream);
         } else {
@@ -1328,22 +1326,16 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     goto fn_exit;
 }
 
-int ABTI_thread_free_main(ABTI_thread *p_thread)
+void ABTI_thread_free_main(ABTI_thread *p_thread)
 {
-    int abt_errno = ABT_SUCCESS;
-
     /* Free the name */
     if (p_thread->p_name) ABTU_free(p_thread->p_name);
 
     ABTU_free(p_thread);
-
-    return abt_errno;
 }
 
-int ABTI_thread_free(ABTI_thread *p_thread)
+void ABTI_thread_free(ABTI_thread *p_thread)
 {
-    int abt_errno = ABT_SUCCESS;
-
     /* Mutex of p_thread may have been locked somewhere. We free p_thread when
        mutex can be locked here. Since p_thread and its mutex will be freed,
        we don't need to unlock the mutex. */
@@ -1360,8 +1352,6 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     ABTD_thread_context_free(&p_thread->ctx);
 
     ABTU_free(p_thread);
-
-    return abt_errno;
 }
 
 int ABTI_thread_set_blocked(ABTI_thread *p_thread)

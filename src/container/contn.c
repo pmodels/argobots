@@ -6,9 +6,8 @@
 #include "abti.h"
 
 
-int ABTI_contn_create(ABTI_contn **pp_contn)
+void ABTI_contn_create(ABTI_contn **pp_contn)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_contn *p_contn;
 
     p_contn = (ABTI_contn *)ABTU_malloc(sizeof(ABTI_contn));
@@ -17,8 +16,6 @@ int ABTI_contn_create(ABTI_contn **pp_contn)
     p_contn->p_tail = NULL;
 
     *pp_contn = p_contn;
-
-    return abt_errno;
 }
 
 int ABTI_contn_free(ABTI_contn **pp_contn)
@@ -34,14 +31,12 @@ int ABTI_contn_free(ABTI_contn **pp_contn)
         switch (ABTI_elem_get_type(p_elem)) {
             case ABT_UNIT_TYPE_THREAD: {
                 ABTI_thread *p_thread = ABTI_elem_get_thread(p_elem);
-                abt_errno = ABTI_thread_free(p_thread);
-                ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_free");
+                ABTI_thread_free(p_thread);
                 break;
             }
             case ABT_UNIT_TYPE_TASK: {
                 ABTI_task *p_task = ABTI_elem_get_task(p_elem);
-                abt_errno = ABTI_task_free(p_task);
-                ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_task_free");
+                ABTI_task_free(p_task);
                 break;
             }
             case ABT_UNIT_TYPE_XSTREAM: {

@@ -269,8 +269,7 @@ int ABT_xstream_free(ABT_xstream *xstream)
     }
 
     /* Remove this xstream from the global ES pool */
-    abt_errno = ABTI_global_del_xstream(p_xstream);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_global_del_xstream(p_xstream);
 
     /* Free the xstream object */
     abt_errno = ABTI_xstream_free(p_xstream);
@@ -324,9 +323,8 @@ int ABT_xstream_join(ABT_xstream xstream)
             ABTI_mutex_unlock(&p_xstream->mutex);
             goto fn_body;
         }
-        abt_errno = ABTI_global_move_xstream(p_xstream);
+        ABTI_global_move_xstream(p_xstream);
         ABTI_mutex_unlock(&p_xstream->mutex);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_global_move_xstream");
         goto fn_exit;
     }
 
@@ -936,8 +934,7 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
         ABT_task task = p_pool->u_get_task(unit);
         ABTI_task *p_task = ABTI_task_get_ptr(task);
         /* Execute the task */
-        abt_errno = ABTI_xstream_schedule_task(p_xstream, p_task);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTI_xstream_schedule_task(p_xstream, p_task);
 
     } else {
         HANDLE_ERROR("Not supported type!");
@@ -1083,8 +1080,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 
     if ((p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
         (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
-        abt_errno = ABTI_xstream_terminate_thread(p_thread);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTI_xstream_terminate_thread(p_thread);
         goto fn_exit;
     }
 
@@ -1145,7 +1141,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         (p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
         (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
         /* The ULT needs to be terminated. */
-        abt_errno = ABTI_xstream_terminate_thread(p_thread);
+        ABTI_xstream_terminate_thread(p_thread);
     } else if (p_thread->request & ABTI_THREAD_REQ_BLOCK) {
         ABTD_atomic_fetch_and_uint32(&p_thread->request,
                                      ~ABTI_THREAD_REQ_BLOCK);
@@ -1154,8 +1150,8 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
          * Change the state of current running ULT and
          * add it to the pool again. */
         abt_errno = ABTI_pool_add_thread(p_thread, p_xstream);
+        ABTI_CHECK_ERROR(abt_errno);
     }
-    ABTI_CHECK_ERROR(abt_errno);
 
     /* Set the current running ULT/tasklet */
     ABTI_local_set_thread(last_thread);
@@ -1169,14 +1165,11 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     goto fn_exit;
 }
 
-int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
+void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
 {
-    int abt_errno = ABT_SUCCESS;
-
     if (p_task->request & ABTI_TASK_REQ_CANCEL) {
-        abt_errno = ABTI_xstream_terminate_task(p_task);
-        ABTI_CHECK_ERROR(abt_errno);
-        goto fn_exit;
+        ABTI_xstream_terminate_task(p_task);
+        return;
     }
 
     /* Unset the current running ULT/tasklet */
@@ -1220,19 +1213,11 @@ int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
         ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
     }
 
-    abt_errno = ABTI_xstream_terminate_task(p_task);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_xstream_terminate_task(p_task);
 
     /* Set the current running ULT/tasklet */
     ABTI_local_set_thread(last_thread);
     ABTI_local_set_task(last_task);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
@@ -1311,8 +1296,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     if (p_xstream->p_main_sched != NULL) {
         /* The primary ES is in this state if this call is explicit */
         if (p_xstream->state == ABT_XSTREAM_STATE_READY) {
-            abt_errno = ABTI_xstream_pop_sched(p_xstream);
-            ABTI_CHECK_ERROR(abt_errno);
+            ABTI_xstream_pop_sched(p_xstream);
         }
 
         /* Free the old scheduler */

@@ -50,8 +50,7 @@ int ABT_init(int argc, char **argv)
 
     /* Initialize the ES container */
     p_xstreams = (ABTI_xstream_contn *)ABTU_malloc(sizeof(ABTI_xstream_contn));
-    abt_errno = ABTI_xstream_contn_init(p_xstreams);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_contn_init");
+    ABTI_xstream_contn_init(p_xstreams);
     gp_ABTI_global->p_xstreams = p_xstreams;
 
     /* Init the ES local data */
@@ -130,8 +129,7 @@ int ABT_finalize(void)
     }
 
     /* Remove the primary ES from the global ES container */
-    abt_errno = ABTI_global_del_xstream(p_xstream);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_global_del_xstream(p_xstream);
 
     /* Finalize the ES container */
     abt_errno = ABTI_xstream_contn_finalize(gp_ABTI_global->p_xstreams);
@@ -139,8 +137,7 @@ int ABT_finalize(void)
     ABTU_free(gp_ABTI_global->p_xstreams);
 
     /* Remove the primary ULT */
-    abt_errno = ABTI_thread_free_main(p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_thread_free_main(p_thread);
 
     /* Free the primary ES */
     abt_errno = ABTI_xstream_free(p_xstream);
@@ -189,29 +186,15 @@ int ABT_initialized(void)
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-int ABTI_xstream_contn_init(ABTI_xstream_contn *p_xstreams)
+void ABTI_xstream_contn_init(ABTI_xstream_contn *p_xstreams)
 {
-    int abt_errno = ABT_SUCCESS;
-
     /* Create ES containers */
-    abt_errno = ABTI_contn_create(&p_xstreams->created);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    abt_errno = ABTI_contn_create(&p_xstreams->active);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    abt_errno = ABTI_contn_create(&p_xstreams->deads);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_contn_create(&p_xstreams->created);
+    ABTI_contn_create(&p_xstreams->active);
+    ABTI_contn_create(&p_xstreams->deads);
 
     /* Initialize the mutex */
     ABTI_mutex_init(&p_xstreams->mutex);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 int ABTI_xstream_contn_finalize(ABTI_xstream_contn *p_xstreams)
@@ -237,9 +220,8 @@ int ABTI_xstream_contn_finalize(ABTI_xstream_contn *p_xstreams)
     goto fn_exit;
 }
 
-int ABTI_global_add_xstream(ABTI_xstream *p_xstream)
+void ABTI_global_add_xstream(ABTI_xstream *p_xstream)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
 
     ABTI_mutex_spinlock(&p_gxstreams->mutex);
@@ -255,18 +237,14 @@ int ABTI_global_add_xstream(ABTI_xstream *p_xstream)
             ABTI_contn_push(p_gxstreams->deads, &p_xstream->elem);
             break;
         default:
-            HANDLE_ERROR("Unknown xstream state");
-            abt_errno = ABT_ERR_INV_XSTREAM;
+            HANDLE_ERROR("UNKNOWN ES STATE");
             break;
     }
     ABTI_mutex_unlock(&p_gxstreams->mutex);
-
-    return abt_errno;
 }
 
-int ABTI_global_move_xstream(ABTI_xstream *p_xstream)
+void ABTI_global_move_xstream(ABTI_xstream *p_xstream)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
 
     ABTI_elem *p_elem = &p_xstream->elem;
@@ -278,7 +256,6 @@ int ABTI_global_move_xstream(ABTI_xstream *p_xstream)
     switch (p_xstream->state) {
         case ABT_XSTREAM_STATE_CREATED:
             HANDLE_ERROR("SHOULD NOT REACH HERE");
-            abt_errno = ABT_ERR_XSTREAM;
             break;
         case ABT_XSTREAM_STATE_READY:
         case ABT_XSTREAM_STATE_RUNNING:
@@ -288,18 +265,14 @@ int ABTI_global_move_xstream(ABTI_xstream *p_xstream)
             ABTI_contn_push(p_gxstreams->deads, &p_xstream->elem);
             break;
         default:
-            HANDLE_ERROR("UNKNOWN XSTREAM STATE");
-            abt_errno = ABT_ERR_INV_XSTREAM;
+            HANDLE_ERROR("UNKNOWN ES STATE");
             break;
     }
     ABTI_mutex_unlock(&p_gxstreams->mutex);
-
-    return abt_errno;
 }
 
-int ABTI_global_del_xstream(ABTI_xstream *p_xstream)
+void ABTI_global_del_xstream(ABTI_xstream *p_xstream)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
 
     ABTI_elem *p_elem = &p_xstream->elem;
@@ -308,13 +281,10 @@ int ABTI_global_del_xstream(ABTI_xstream *p_xstream)
     ABTI_mutex_spinlock(&p_gxstreams->mutex);
     ABTI_contn_remove(prev_contn, &p_xstream->elem);
     ABTI_mutex_unlock(&p_gxstreams->mutex);
-
-    return abt_errno;
 }
 
-int ABTI_global_get_created_xstream(ABTI_xstream **p_xstream)
+void ABTI_global_get_created_xstream(ABTI_xstream **p_xstream)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
 
     /* Pop one ES */
@@ -327,7 +297,5 @@ int ABTI_global_get_created_xstream(ABTI_xstream **p_xstream)
         *p_xstream = NULL;
     else
         *p_xstream = ABTI_elem_get_xstream(elem);
-
-    return abt_errno;
 }
 

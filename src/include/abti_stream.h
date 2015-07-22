@@ -74,30 +74,16 @@ ABTD_thread_context *ABTI_xstream_get_sched_ctx(ABTI_xstream *p_xstream)
 
 /* Remove the top scheduler from the sched stack (field scheds) */
 static inline
-int ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
+void ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
 {
-    int abt_errno = ABT_SUCCESS;
-
     p_xstream->num_scheds--;
-
-    ABTI_CHECK_TRUE(p_xstream->num_scheds >= 0, ABT_ERR_XSTREAM);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    ABTI_ASSERT(p_xstream->num_scheds >= 0);
 }
 
 /* Add the specified scheduler to the sched stack (field scheds) */
 static inline
-int ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
+void ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 {
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
     if (p_xstream->num_scheds == p_xstream->max_scheds) {
         int max_size = p_xstream->max_scheds+10;
         void *temp;
@@ -107,42 +93,28 @@ int ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     }
 
     p_xstream->scheds[p_xstream->num_scheds++] = p_sched;
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 static inline
-int ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
+void ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
 {
-    int abt_errno = ABT_SUCCESS;
-
     /* Set the thread's state as TERMINATED */
     p_thread->state = ABT_THREAD_STATE_TERMINATED;
 
     if (p_thread->refcount == 0) {
-        abt_errno = ABTI_thread_free(p_thread);
+        ABTI_thread_free(p_thread);
     }
-    return abt_errno;
 }
 
 static inline
-int ABTI_xstream_terminate_task(ABTI_task *p_task)
+void ABTI_xstream_terminate_task(ABTI_task *p_task)
 {
-    int abt_errno = ABT_SUCCESS;
-
     /* Set the task's state as TERMINATED */
     p_task->state = ABT_TASK_STATE_TERMINATED;
 
     if (p_task->refcount == 0) {
-        abt_errno = ABTI_task_free(p_task);
+        ABTI_task_free(p_task);
     }
-    return abt_errno;
 }
-
 
 #endif /* XSTREAM_H_INCLUDED */

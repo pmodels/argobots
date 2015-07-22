@@ -165,8 +165,7 @@ int ABT_task_free(ABT_task *task)
     }
 
     /* Free the ABTI_task structure */
-    abt_errno = ABTI_task_free(p_task);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_task_free(p_task);
 
     /* Return value */
     *task = ABT_TASK_NULL;
@@ -549,18 +548,14 @@ int ABT_task_get_name(ABT_task task, char *name, size_t *len)
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-int ABTI_task_free(ABTI_task *p_task)
+void ABTI_task_free(ABTI_task *p_task)
 {
-    int abt_errno = ABT_SUCCESS;
-
     /* Free the unit */
     p_task->p_pool->u_free(&p_task->unit);
 
     if (p_task->p_name) ABTU_free(p_task->p_name);
 
     ABTU_free(p_task);
-
-    return abt_errno;
 }
 
 void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
