@@ -1289,7 +1289,7 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
     abt_errno = ABTD_thread_context_create(p_ctx,
-            ABTI_xstream_loop, (void *)p_xstream,
+            ABTI_xstream_schedule, (void *)p_xstream,
             stacksize, p_newthread->p_stack, &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 

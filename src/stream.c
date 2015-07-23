@@ -1058,30 +1058,62 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     goto fn_exit;
 }
 
-int ABTI_xstream_schedule(ABTI_xstream *p_xstream)
+void ABTI_xstream_schedule(void *p_arg)
 {
-    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
 
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+    /* Set the CPU affinity for the ES */
+    if (gp_ABTI_global->set_affinity == ABT_TRUE) {
+        ABTD_xstream_context_set_affinity(p_xstream->ctx, p_xstream->rank);
+    }
 
-    p_xstream->state = ABT_XSTREAM_STATE_RUNNING;
-    ABTI_sched *p_sched = p_xstream->p_main_sched;
-    ABT_sched sched = ABTI_sched_get_handle(p_sched);
-    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    DEBUG_PRINT("[S%" PRIu64 "] START\n", p_xstream->rank);
 
-    p_sched->state = ABT_SCHED_STATE_RUNNING;
+    /* Set this ES as the current ES */
+    ABTI_local_set_xstream(p_xstream);
 
-    p_sched->run(sched);
-    p_sched->state = ABT_SCHED_STATE_TERMINATED;
+    /* Set the sched ULT as the current thread */
+    ABT_thread sched_thread = ABTI_xstream_get_top_sched(p_xstream)->thread;
+    ABTI_local_set_thread(ABTI_thread_get_ptr(sched_thread));
 
-    p_xstream->state = ABT_XSTREAM_STATE_READY;
+    while (1) {
+        p_xstream->state = ABT_XSTREAM_STATE_RUNNING;
+        ABTI_sched *p_sched = p_xstream->p_main_sched;
+        ABT_sched sched = ABTI_sched_get_handle(p_sched);
 
-  fn_exit:
-    return abt_errno;
+        p_sched->state = ABT_SCHED_STATE_RUNNING;
+        p_sched->run(sched);
+        p_sched->state = ABT_SCHED_STATE_TERMINATED;
 
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+        p_xstream->state = ABT_XSTREAM_STATE_READY;
+        ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
+
+        /* If there is an exit or a cancel request, the ES terminates
+         * regardless of remaining work units. */
+        if ((p_xstream->request & ABTI_XSTREAM_REQ_EXIT) ||
+            (p_xstream->request & ABTI_XSTREAM_REQ_CANCEL))
+            break;
+
+        /* When join is requested, the ES terminates after finishing
+         * execution of all work units. */
+        if (p_xstream->request & ABTI_XSTREAM_REQ_JOIN)
+            break;
+    }
+
+    /* Set the xstream's state as TERMINATED */
+    p_xstream->state = ABT_XSTREAM_STATE_TERMINATED;
+
+    if (p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
+        /* Move the xstream to the deads pool */
+        ABTI_global_move_xstream(p_xstream);
+
+        /* Reset the current ES and thread info. */
+        ABTI_local_finalize();
+
+        DEBUG_PRINT("[S%" PRIu64 "] END\n", p_xstream->rank);
+
+        ABTD_xstream_context_exit();
+    }
 }
 
 int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
@@ -1434,7 +1466,7 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
             ABTI_global_get_sched_stacksize(), NULL, p_sched->p_ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_xstream_loop(p_arg);
+    ABTI_xstream_schedule(p_arg);
 
   fn_exit:
     return NULL;
@@ -1444,60 +1476,6 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     goto fn_exit;
 }
 
-// TODO merge with ABTI_xstream_schedule
-void ABTI_xstream_loop(void *p_arg)
-{
-    ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
-
-    /* Set the CPU affinity for the ES */
-    if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_xstream_context_set_affinity(p_xstream->ctx, p_xstream->rank);
-    }
-
-    DEBUG_PRINT("[S%" PRIu64 "] START\n", p_xstream->rank);
-
-    /* Set this ES as the current ES */
-    ABTI_local_set_xstream(p_xstream);
-
-    /* Set the sched ULT as the current thread */
-    ABT_thread sched_thread = ABTI_xstream_get_top_sched(p_xstream)->thread;
-    ABTI_local_set_thread(ABTI_thread_get_ptr(sched_thread));
-
-    while (1) {
-        int abt_errno = ABTI_xstream_schedule(p_xstream);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_schedule");
-        ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
-
-        /* If there is an exit or a cancel request, the ES terminates
-         * regardless of remaining work units. */
-        if ((p_xstream->request & ABTI_XSTREAM_REQ_EXIT) ||
-            (p_xstream->request & ABTI_XSTREAM_REQ_CANCEL))
-            break;
-
-        /* When join is requested, the ES terminates after finishing
-         * execution of all work units. */
-        if (p_xstream->request & ABTI_XSTREAM_REQ_JOIN)
-            break;
-    }
-
-    /* Set the xstream's state as TERMINATED */
-    p_xstream->state = ABT_XSTREAM_STATE_TERMINATED;
-
-    if (p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
-        /* Move the xstream to the deads pool */
-        ABTI_global_move_xstream(p_xstream);
-
-        /* Reset the current ES and thread info. */
-        ABTI_local_finalize();
-
-        DEBUG_PRINT("[S%" PRIu64 "] END\n", p_xstream->rank);
-
-        ABTD_xstream_context_exit();
-    }
-  fn_fail:
-    return;
-
-}
 
 /* global rank variable for ES */
 static uint64_t g_xstream_rank = 0;

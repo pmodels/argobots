@@ -371,7 +371,7 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream);
 int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
 int ABTI_xstream_start(ABTI_xstream *p_xstream);
 int ABTI_xstream_free(ABTI_xstream *p_xstream);
-int ABTI_xstream_schedule(ABTI_xstream *p_xstream);
+void ABTI_xstream_schedule(void *p_arg);
 int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
                           ABTI_pool *p_pool);
 int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream,
@@ -380,7 +380,6 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task);
 int ABTI_xstream_migrate_thread(ABTI_thread *p_thread);
 int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched);
-void ABTI_xstream_loop(void *p_arg);
 void *ABTI_xstream_launch_main_sched(void *p_arg);
 void ABTI_xstream_reset_rank(void);
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent);
