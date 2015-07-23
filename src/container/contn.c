@@ -154,7 +154,7 @@ void ABTI_contn_print(ABTI_contn *p_contn, FILE *p_os, int indent, ABT_bool deta
 
     fprintf(p_os,
         "%s== CONTN (%p) ==\n"
-        "%snum_elems: %" PRIu64 "\n"
+        "%snum_elems: %zu\n"
         "%shead     : %p\n"
         "%stail     : %p\n",
         prefix, p_contn,

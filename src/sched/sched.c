@@ -765,7 +765,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent)
 
     fprintf(p_os,
         "%s== SCHED (%p) ==\n"
-        "%skind     : 0x%lx (%s)\n"
+        "%skind     : %" PRIu64 " (%s)\n"
         "%stype     : %s\n"
         "%sstate    : %s\n"
         "%sused     : %s\n"
@@ -773,8 +773,8 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent)
         "%srequest  : 0x%x\n"
         "%snum_pools: %d\n"
         "%spools    : %s\n"
-        "%ssize     : %" PRIu64 "\n"
-        "%stot_size : %" PRIu64 "\n"
+        "%ssize     : %zu\n"
+        "%stot_size : %zu\n"
         "%sdata     : %p\n",
         prefix, p_sched,
         prefix, p_sched->kind, kind_str,

@@ -1483,7 +1483,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     }
 
     ABTI_xstream *p_xstream = p_thread->p_last_xstream;
-    size_t xstream_rank = p_xstream ? p_xstream->rank : 0;
+    uint64_t xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *type, *state;
     char attr[100];
 

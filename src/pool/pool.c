@@ -501,9 +501,9 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
     char *access;
-    size_t consumer_rank = 0;
+    uint64_t consumer_rank = 0;
 #ifndef UNSAFE_MODE
-    size_t producer_rank = 0;
+    uint64_t producer_rank = 0;
 #endif
 
     switch (p_pool->access) {
@@ -533,7 +533,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 #ifndef UNSAFE_MODE
         "%sproducer ES   : %p (%" PRIu64 ")\n"
 #endif
-        "%ssize          : %" PRIu64 "\n"
+        "%ssize          : %zu\n"
         "%snum_blocked   : %u\n"
         "%snum_migrations: %d\n"
         "%sdata          : %p\n",
