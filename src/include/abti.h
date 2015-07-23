@@ -148,7 +148,6 @@ struct ABTI_xstream {
     uint32_t request;           /* Request */
     ABTI_mutex mutex;           /* Mutex */
     ABTI_sched *p_main_sched;   /* Main scheduler */
-    ABTI_contn *deads;          /* Units terminated but still referenced */
 
     ABTD_xstream_context ctx;   /* ES context */
 };
@@ -376,8 +375,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream,
                                  ABTI_thread *p_thread);
 int ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task);
 int ABTI_xstream_migrate_thread(ABTI_thread *p_thread);
-int ABTI_xstream_keep_thread(ABTI_thread *p_thread);
-int ABTI_xstream_keep_task(ABTI_task *p_task);
 int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched);
 void ABTI_xstream_loop(void *p_arg);
 void *ABTI_xstream_launch_main_sched(void *p_arg);

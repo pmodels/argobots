@@ -173,16 +173,6 @@ int ABT_task_free(ABT_task *task)
         ABT_thread_yield();
     }
 
-    if (p_task->refcount > 0 &&
-        p_task->state != ABT_TASK_STATE_CREATED) {
-        /* The task has finished but it is still referenced.
-         * Thus it exists in the deads pool of ES. */
-        ABTI_xstream *p_xstream = p_task->p_xstream;
-        ABTI_mutex_spinlock(&p_xstream->mutex);
-        ABTI_contn_remove(p_xstream->deads, p_task->unit);
-        ABTI_mutex_unlock(&p_xstream->mutex);
-    }
-
     /* Free the ABTI_task structure */
     abt_errno = ABTI_task_free(p_task);
     ABTI_CHECK_ERROR(abt_errno);
@@ -573,9 +563,7 @@ int ABTI_task_free(ABTI_task *p_task)
     int abt_errno = ABT_SUCCESS;
 
     /* Free the unit */
-    if (p_task->refcount == 0) {
-        p_task->p_pool->u_free(&p_task->unit);
-    }
+    p_task->p_pool->u_free(&p_task->unit);
 
     if (p_task->p_name) ABTU_free(p_task->p_name);
 

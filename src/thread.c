@@ -212,16 +212,6 @@ int ABT_thread_free(ABT_thread *thread)
         ABT_thread_yield();
     }
 
-    if (p_thread->refcount > 0 &&
-        p_thread->state != ABT_THREAD_STATE_CREATED) {
-        /* The thread has finished but it is still referenced.
-         * Thus it exists in the xstream's deads pool. */
-        ABTI_xstream *p_xstream = p_thread->p_last_xstream;
-        ABTI_mutex_spinlock(&p_xstream->mutex);
-        ABTI_contn_remove(p_xstream->deads, p_thread->unit);
-        ABTI_mutex_unlock(&p_xstream->mutex);
-    }
-
     /* Free the ABTI_thread structure */
     abt_errno = ABTI_thread_free(p_thread);
     ABTI_CHECK_ERROR(abt_errno);
@@ -1369,9 +1359,7 @@ int ABTI_thread_free(ABTI_thread *p_thread)
     ABTI_mutex_spinlock(&p_thread->mutex);
 
     /* Free the unit */
-    if (p_thread->refcount == 0) {
-        p_thread->p_pool->u_free(&p_thread->unit);
-    }
+    p_thread->p_pool->u_free(&p_thread->unit);
 
     /* Free the name */
     if (p_thread->p_name) ABTU_free(p_thread->p_name);

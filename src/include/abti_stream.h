@@ -119,12 +119,13 @@ int ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 static inline
 int ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
 {
-    int abt_errno;
+    int abt_errno = ABT_SUCCESS;
+
+    /* Set the thread's state as TERMINATED */
+    p_thread->state = ABT_THREAD_STATE_TERMINATED;
+
     if (p_thread->refcount == 0) {
-        p_thread->state = ABT_THREAD_STATE_TERMINATED;
         abt_errno = ABTI_thread_free(p_thread);
-    } else {
-        abt_errno = ABTI_xstream_keep_thread(p_thread);
     }
     return abt_errno;
 }
@@ -132,12 +133,13 @@ int ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
 static inline
 int ABTI_xstream_terminate_task(ABTI_task *p_task)
 {
-    int abt_errno;
+    int abt_errno = ABT_SUCCESS;
+
+    /* Set the task's state as TERMINATED */
+    p_task->state = ABT_TASK_STATE_TERMINATED;
+
     if (p_task->refcount == 0) {
-        p_task->state = ABT_TASK_STATE_TERMINATED;
         abt_errno = ABTI_task_free(p_task);
-    } else {
-        abt_errno = ABTI_xstream_keep_task(p_task);
     }
     return abt_errno;
 }

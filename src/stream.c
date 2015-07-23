@@ -60,10 +60,6 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     abt_errno = ABT_xstream_set_main_sched(xstream, sched);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Create a work unit pool that contains terminated work units */
-    abt_errno = ABTI_contn_create(&p_newxstream->deads);
-    ABTI_CHECK_ERROR(abt_errno);
-
     /* Add this xstream to the global ES pool */
     ABTI_global_add_xstream(p_newxstream);
 
@@ -1020,11 +1016,6 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
         ABTI_CHECK_ERROR(abt_errno);
     }
 
-    /* Clean up the deads pool */
-    ABTI_mutex_spinlock(&p_xstream->mutex);
-    ABTI_contn_free(&p_xstream->deads);
-    ABTI_mutex_unlock(&p_xstream->mutex);
-
     /* Free the array of sched contexts */
     ABTU_free(p_xstream->scheds);
 
@@ -1311,53 +1302,6 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
     goto fn_exit;
 }
 
-int ABTI_xstream_keep_thread(ABTI_thread *p_thread)
-{
-    /* The thread's ES must not be changed during this function.
-     * So, its mutex is used to guarantee it. */
-    ABTI_mutex_spinlock(&p_thread->mutex);
-
-    ABTI_xstream *p_xstream = p_thread->p_last_xstream;
-
-    /* Free the unit and create an internal unit to add to the deads pool. */
-    ABTI_pool *p_pool = p_thread->p_pool;
-    p_pool->u_free(&p_thread->unit);
-    p_thread->unit = (ABT_unit)ABTI_elem_create_from_thread(p_thread);
-
-    /* Add the unit to the deads pool */
-    ABTI_mutex_spinlock(&p_xstream->mutex);
-    ABTI_contn_push(p_xstream->deads, p_thread->unit);
-    ABTI_mutex_unlock(&p_xstream->mutex);
-
-    /* Set the thread's state as TERMINATED */
-    p_thread->state = ABT_THREAD_STATE_TERMINATED;
-
-    ABTI_mutex_unlock(&p_thread->mutex);
-
-    return ABT_SUCCESS;
-}
-
-int ABTI_xstream_keep_task(ABTI_task *p_task)
-{
-    ABTI_xstream *p_xstream = p_task->p_xstream;
-
-    /* Free the unit and create an internal unit to add to the deads pool. */
-    ABTI_pool *p_pool = p_task->p_pool;
-    p_pool->u_free(&p_task->unit);
-
-    p_task->unit = (ABT_unit)ABTI_elem_create_from_task(p_task);
-
-    /* Add the unit to the deads pool */
-    ABTI_mutex_spinlock(&p_xstream->mutex);
-    ABTI_contn_push(p_xstream->deads, p_task->unit);
-    ABTI_mutex_unlock(&p_xstream->mutex);
-
-    /* Set the task's state as TERMINATED */
-    p_task->state = ABT_TASK_STATE_TERMINATED;
-
-    return ABT_SUCCESS;
-}
-
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
 {
     char *prefix = ABTU_get_indent_str(indent);
@@ -1396,8 +1340,6 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
     }
     scheds_str[pos] = ']';
 
-    ABTI_contn *deads = p_xstream->deads;
-
     fprintf(p_os,
         "%s== ES (%p) ==\n"
         "%srank      : %" PRIu64 "\n"
@@ -1409,7 +1351,6 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
         "%snum_scheds: %d\n"
         "%sscheds    : %s\n"
         "%smain_sched: %p\n"
-        "%sdeads     : %p (num_elems: %" PRIu64 ")\n"
         "%sname      : %s\n",
         prefix, p_xstream,
         prefix, p_xstream->rank,
@@ -1421,17 +1362,12 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
         prefix, p_xstream->num_scheds,
         prefix, scheds_str,
         prefix, p_xstream->p_main_sched,
-        prefix, deads, deads->num_elems,
         prefix, p_xstream->p_name
     );
     ABTU_free(scheds_str);
 
     ABTI_elem_print(&p_xstream->elem, p_os, indent + ABTI_INDENT, ABT_FALSE);
     ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT);
-    if (deads->num_elems > 0) {
-        fprintf(p_os, "%s== ES (%p) deads ==\n", prefix, p_xstream);
-        ABTI_contn_print(deads, p_os, indent + ABTI_INDENT, ABT_TRUE);
-    }
 
   fn_exit:
     fflush(p_os);
