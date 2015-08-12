@@ -61,7 +61,7 @@ ABTI_elem *ABTI_elem_create_from_thread(ABTI_thread *p_thread)
 {
     ABTI_elem *p_elem;
 
-    p_elem = &p_thread->elem_def;
+    p_elem = (ABTI_elem *)ABTU_malloc(sizeof(ABTI_elem));
     p_elem->p_contn = NULL;
     p_elem->type    = ABT_UNIT_TYPE_THREAD;
     p_elem->p_obj   = (void *)p_thread;
@@ -75,7 +75,7 @@ ABTI_elem *ABTI_elem_create_from_task(ABTI_task *p_task)
 {
     ABTI_elem *p_elem;
 
-    p_elem = &p_task->elem_def;
+    p_elem = (ABTI_elem *)ABTU_malloc(sizeof(ABTI_elem));
     p_elem->p_contn = NULL;
     p_elem->type    = ABT_UNIT_TYPE_TASK;
     p_elem->p_obj   = (void *)p_task;
@@ -87,6 +87,7 @@ ABTI_elem *ABTI_elem_create_from_task(ABTI_task *p_task)
 
 void ABTI_elem_free(ABTI_elem **pp_elem)
 {
+    ABTU_free(*pp_elem);
     *pp_elem = NULL;
 }
 

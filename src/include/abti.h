@@ -232,10 +232,7 @@ struct ABTI_thread_attr {
 
 struct ABTI_thread {
     ABT_unit unit;                  /* Unit enclosing this thread */
-    union {
-        ABTI_unit unit_def;         /* Internal unit definition */
-        ABTI_elem elem_def;         /* Elem definition */
-    };
+    ABTI_unit unit_def;             /* Internal unit definition */
     ABTI_thread_attr attr;          /* Attributes */
     void *p_stack;                  /* Stack */
     ABTD_thread_context ctx;        /* Context */
@@ -273,10 +270,7 @@ struct ABTI_thread_entry {
 
 struct ABTI_task {
     ABT_unit unit;             /* Unit enclosing this task */
-    union {
-        ABTI_unit unit_def;    /* Internal unit definition */
-        ABTI_elem elem_def;    /* Elem definition */
-    };
+    ABTI_unit unit_def;        /* Internal unit definition */
     ABTI_xstream *p_xstream;   /* Associated ES */
     ABTI_sched *is_sched;      /* If it is a scheduler, its ptr */
     ABTI_pool *p_pool;         /* Associated pool */
