@@ -22,7 +22,6 @@ TESTS = \
 	sched_stack \
 	sched_config \
 	pool_access \
-	name \
 	mutex \
 	cond_test \
 	cond_join \
@@ -56,7 +55,6 @@ sched_prio_SOURCES = sched_prio.c
 sched_stack_SOURCES = sched_stack.c
 sched_config_SOURCES = sched_config.c
 pool_access_SOURCES = pool_access.c
-name_SOURCES = name.c
 mutex_SOURCES = mutex.c
 cond_test_SOURCES = cond_test.c
 cond_join_SOURCES = cond_join.c
@@ -86,7 +84,6 @@ testing:
 	./sched_stack
 	./sched_config
 	./pool_access
-	./name
 	./mutex
 	./cond_test
 	./cond_join
