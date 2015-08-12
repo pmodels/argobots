@@ -450,10 +450,10 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
         }
     }
 
-    /* Check join request */
     size = ABTI_sched_get_effective_size(p_sched);
     if (size == 0) {
         if (p_sched->request & ABTI_SCHED_REQ_FINISH) {
+            /* Check join request */
             /* We need to lock in case someone wants to migrate to this
              * scheduler */
             ABTI_mutex_spinlock(&p_xstream->top_sched_mutex);
@@ -464,6 +464,20 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
             }
             else
                 ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
+        } else if (p_sched->used == ABTI_SCHED_IN_POOL) {
+            /* If the scheduler is a stacked one, we have to escape from the
+             * scheduling function. The scheduler will be stopped if it is a
+             * tasklet type. However, if the scheduler is a ULT type, we
+             * context switch to the parent scheduler. */
+            if (p_sched->type == ABT_SCHED_TYPE_TASK) {
+                p_sched->state = ABT_SCHED_STATE_TERMINATED;
+                stop = ABT_TRUE;
+            } else {
+                ABTI_ASSERT(p_sched->type == ABT_SCHED_TYPE_ULT);
+                ABTI_sched *p_par_sched;
+                p_par_sched = ABTI_xstream_get_parent_sched(p_xstream);
+                ABTD_thread_context_switch(p_par_sched->p_ctx, p_sched->p_ctx);
+            }
         }
     }
 
