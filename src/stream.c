@@ -1029,8 +1029,11 @@ void ABTI_xstream_schedule(void *p_arg)
 
         /* When join is requested, the ES terminates after finishing
          * execution of all work units. */
-        if (p_xstream->request & ABTI_XSTREAM_REQ_JOIN)
-            break;
+        if (p_xstream->request & ABTI_XSTREAM_REQ_JOIN) {
+            if (ABTI_sched_get_effective_size(p_xstream->p_main_sched) == 0) {
+                break;
+            }
+        }
     }
 
     /* Set the xstream's state as TERMINATED */
