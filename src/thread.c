@@ -1257,11 +1257,6 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     goto fn_exit;
 }
 
-void ABTI_thread_free_main(ABTI_thread *p_thread)
-{
-    ABTU_free(p_thread);
-}
-
 void ABTI_thread_free(ABTI_thread *p_thread)
 {
     /* Mutex of p_thread may have been locked somewhere. We free p_thread when
@@ -1274,6 +1269,20 @@ void ABTI_thread_free(ABTI_thread *p_thread)
 
     /* Free the stack and the context */
     ABTU_free(p_thread->p_stack);
+    ABTD_thread_context_free(&p_thread->ctx);
+
+    ABTU_free(p_thread);
+}
+
+void ABTI_thread_free_main(ABTI_thread *p_thread)
+{
+    ABTU_free(p_thread);
+}
+
+void ABTI_thread_free_main_sched(ABTI_thread *p_thread)
+{
+    /* Free the stack and the context */
+    if (p_thread->p_stack) ABTU_free(p_thread->p_stack);
     ABTD_thread_context_free(&p_thread->ctx);
 
     ABTU_free(p_thread);
