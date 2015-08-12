@@ -76,6 +76,14 @@ ABTI_sched *ABTI_xstream_get_top_sched(ABTI_xstream *p_xstream)
     return p_xstream->scheds[p_xstream->num_scheds-1];
 }
 
+/* Get the parent scheduler of the current scheduler */
+static inline
+ABTI_sched *ABTI_xstream_get_parent_sched(ABTI_xstream *p_xstream)
+{
+    ABTI_ASSERT(p_xstream->num_scheds >= 2);
+    return p_xstream->scheds[p_xstream->num_scheds-2];
+}
+
 /* Get the scheduling context */
 static inline
 ABTD_thread_context *ABTI_xstream_get_sched_ctx(ABTI_xstream *p_xstream)
