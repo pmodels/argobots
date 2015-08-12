@@ -1036,20 +1036,8 @@ void ABTI_xstream_schedule(void *p_arg)
         }
     }
 
-    /* Set the xstream's state as TERMINATED */
+    /* Set the ES's state as TERMINATED */
     p_xstream->state = ABT_XSTREAM_STATE_TERMINATED;
-
-    if (p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
-        /* Move the xstream to the deads pool */
-        ABTI_global_move_xstream(p_xstream);
-
-        /* Reset the current ES and thread info. */
-        ABTI_local_finalize();
-
-        DEBUG_PRINT("[S%" PRIu64 "] END\n", p_xstream->rank);
-
-        ABTD_xstream_context_exit();
-    }
 }
 
 int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
@@ -1400,7 +1388,18 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
             ABTI_global_get_sched_stacksize(), NULL, p_sched->p_ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
+    /* Execute the main scheduler of this ES */
     ABTI_xstream_schedule(p_arg);
+
+    /* Move the ES to the deads pool */
+    ABTI_global_move_xstream(p_xstream);
+
+    /* Reset the current ES and its local info. */
+    ABTI_local_finalize();
+
+    DEBUG_PRINT("[S%" PRIu64 "] END\n", p_xstream->rank);
+
+    ABTD_xstream_context_exit();
 
   fn_exit:
     return NULL;
