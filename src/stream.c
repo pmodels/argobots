@@ -210,12 +210,11 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
-        /* Create the context of the main scheduler */
+
+        /* Create the main sched ULT */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
-        ABT_thread thread;
-        abt_errno = ABTI_thread_create_main_sched(p_sched, &thread);
+        abt_errno = ABTI_thread_create_main_sched(p_xstream, p_sched);
         ABTI_CHECK_ERROR(abt_errno);
-        p_sched->p_thread = ABTI_thread_get_ptr(thread);
 
     } else {
         /* Start the main scheduler on a different ES */
@@ -1379,14 +1378,13 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     ABTI_CHECK_ERROR(abt_errno);
     ABTI_local_set_xstream(p_xstream);
 
+    /* Create the main sched ULT */
     ABTI_sched *p_sched = p_xstream->p_main_sched;
-    p_sched->p_ctx = (ABTD_thread_context *)
-        ABTU_malloc(sizeof(ABTD_thread_context));
-
-    /* Create a context */
-    abt_errno = ABTD_thread_context_create(NULL, NULL, NULL,
-            ABTI_global_get_sched_stacksize(), NULL, p_sched->p_ctx);
+    abt_errno = ABTI_thread_create_main_sched(p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Set the sched ULT as the current ULT */
+    ABTI_local_set_thread(p_sched->p_thread);
 
     /* Execute the main scheduler of this ES */
     ABTI_xstream_schedule(p_arg);

@@ -1196,7 +1196,8 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     goto fn_exit;
 }
 
-int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
+/* This routine is to create a ULT for the main scheduler of ES. */
+int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
@@ -1213,46 +1214,50 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     ABTI_thread_set_attr(p_newthread, attr);
     ABT_thread_attr_free(&attr);
 
-    /* Create a stack for this thread */
-    p_newthread->p_stack = ABTU_malloc(stacksize);
-    ABTI_VALGRIND_STACK_REGISTER(p_newthread->p_stack, stacksize);
-
-    /* Create a thread context */
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
-    abt_errno = ABTD_thread_context_create(p_ctx,
-            ABTI_xstream_schedule, (void *)p_xstream,
-            stacksize, p_newthread->p_stack, &p_newthread->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    p_sched->p_ctx = &p_newthread->ctx;
+    /* Create a ULT context */
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
+        /* Create a stack for this ULT */
+        p_newthread->p_stack = ABTU_malloc(stacksize);
+        ABTI_VALGRIND_STACK_REGISTER(p_newthread->p_stack, stacksize);
+
+        /* When the main scheduler is terminated, the control will jump to the
+         * primary ULT. */
         ABTI_thread *p_main_thread = ABTI_global_get_main();
-        ABTD_thread_context_change_link(p_sched->p_ctx, &p_main_thread->ctx);
+        abt_errno = ABTD_thread_context_create(&p_main_thread->ctx,
+                ABTI_xstream_schedule, (void *)p_xstream,
+                stacksize, p_newthread->p_stack, &p_newthread->ctx);
+        ABTI_CHECK_ERROR(abt_errno);
+    } else {
+        /* For secondary ESs, the stack of OS thread is used for the main
+         * scheduler's ULT. */
+        p_newthread->p_stack = NULL;
+        abt_errno = ABTD_thread_context_create(NULL, NULL, NULL, 0, NULL,
+                                               &p_newthread->ctx);
+        ABTI_CHECK_ERROR(abt_errno);
     }
 
     /* Initialize the mutex */
     ABTI_mutex_init(&p_newthread->mutex);
 
     p_newthread->unit           = ABT_UNIT_NULL;
-    p_newthread->p_last_xstream = NULL;
+    p_newthread->p_last_xstream = p_xstream;
     p_newthread->is_sched       = p_sched;
     p_newthread->p_pool         = NULL;
     p_newthread->type           = ABTI_THREAD_TYPE_MAIN_SCHED;
     p_newthread->state          = ABT_THREAD_STATE_READY;
-    p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
+    p_newthread->refcount       = 0;
     p_newthread->request        = 0;
     p_newthread->p_req_arg      = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
     /* Return value */
-    if (newthread) *newthread = ABTI_thread_get_handle(p_newthread);
+    p_sched->p_thread = p_newthread;
+    p_sched->p_ctx = &p_newthread->ctx;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    if (newthread) *newthread = ABT_THREAD_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
