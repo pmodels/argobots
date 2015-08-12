@@ -451,13 +451,13 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
     }
 
     /* Check join request */
-    size = ABTI_sched_get_total_size(p_sched);
+    size = ABTI_sched_get_effective_size(p_sched);
     if (size == 0) {
         if (p_sched->request & ABTI_SCHED_REQ_FINISH) {
             /* We need to lock in case someone wants to migrate to this
              * scheduler */
             ABTI_mutex_spinlock(&p_xstream->top_sched_mutex);
-            size_t size = ABTI_sched_get_total_size(p_sched);
+            size_t size = ABTI_sched_get_effective_size(p_sched);
             if (size == 0) {
                 p_sched->state = ABT_SCHED_STATE_TERMINATED;
                 stop = ABT_TRUE;
@@ -612,6 +612,42 @@ size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
         ABT_pool pool = p_sched->pools[p];
         ABT_pool_get_total_size(pool, &s);
         pool_size += s;
+    }
+
+    return pool_size;
+}
+
+/* Compared to \c ABTI_sched_get_total_size, ABTI_sched_get_effective_size does
+ * not count the number of blocked ULTs if a pool has more than one consumer or
+ * the caller ES is not the latest consumer. This is necessary when the ES
+ * associated with the target scheduler has to be joined and the pool is shared
+ * between different schedulers associated with different ESs. */
+size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched)
+{
+    size_t pool_size = 0;
+    int p;
+
+    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABT_pool pool = p_sched->pools[p];
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+        pool_size += p_pool->p_get_size(pool);
+        pool_size += p_pool->num_migrations;
+        switch (p_pool->access) {
+            case ABT_POOL_ACCESS_PRIV:
+                pool_size += p_pool->num_blocked;
+                break;
+            case ABT_POOL_ACCESS_SPSC:
+            case ABT_POOL_ACCESS_MPSC:
+            case ABT_POOL_ACCESS_SPMC:
+            case ABT_POOL_ACCESS_MPMC:
+                if (p_pool->num_scheds == 1 && p_pool->consumer == p_xstream) {
+                    pool_size += p_pool->num_blocked;
+                }
+                break;
+            default: break;
+        }
     }
 
     return pool_size;
