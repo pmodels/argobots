@@ -336,7 +336,7 @@ int ABT_xstream_join(ABT_xstream xstream)
 
   fn_body:
     /* Set the join request */
-    ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_JOIN);
+    ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
 
     /* Wait until the target ES terminates */
     while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
@@ -386,7 +386,7 @@ int ABT_xstream_exit(void)
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     /* Set the exit request */
-    ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_EXIT);
+    ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_EXIT);
 
     /* Wait until the ES terminates */
     do {
@@ -419,7 +419,7 @@ int ABT_xstream_cancel(ABT_xstream xstream)
                         "The primary xstream cannot be canceled.");
 
     /* Set the cancel request */
-    ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_CANCEL);
+    ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_CANCEL);
 
   fn_exit:
     return abt_errno;

@@ -121,7 +121,7 @@ int ABT_finalize(void)
                         "ABT_finalize must be called by the primary ULT.");
 
     /* Set the join request */
-    ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_JOIN);
+    ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
 
     /* We wait for the remaining jobs */
     while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
