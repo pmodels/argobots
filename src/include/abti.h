@@ -247,7 +247,6 @@ struct ABTI_thread {
     ABTI_thread_req_arg *p_req_arg; /* Request argument */
 
     ABT_thread_id id;               /* ID */
-    char *p_name;                   /* Name */
 };
 
 struct ABTI_thread_req_arg {

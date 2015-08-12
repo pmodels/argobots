@@ -73,7 +73,6 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     p_newthread->request        = 0;
     p_newthread->p_req_arg      = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
-    p_newthread->p_name         = NULL;
 
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);
@@ -1087,72 +1086,6 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
 
 /**
  * @ingroup ULT
- * @brief   Set the thread's name.
- *
- * @param[in] thread  handle to the target thread
- * @param[in] name    thread name
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_set_name(ABT_thread thread, const char *name)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    size_t len = strlen(name);
-    ABTI_mutex_spinlock(&p_thread->mutex);
-    if (p_thread->p_name) ABTU_free(p_thread->p_name);
-    p_thread->p_name = (char *)ABTU_malloc(len + 1);
-    ABTU_strcpy(p_thread->p_name, name);
-    ABTI_mutex_unlock(&p_thread->mutex);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ULT
- * @brief   Return the name of ULT and its length.
- *
- * \c ABT_thread_get_name() gets the string name of target ULT and the length
- * of name in bytes. If \c name is NULL, only \c len is returned.
- * If \c name is not NULL, it should have enough space to save \c len bytes of
- * characters. If \c len is NULL, \c len is ignored.
- *
- * @param[in]  thread  handle to the target ULT
- * @param[out] name    ULT name
- * @param[out] len     the length of name in bytes
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    if (name != NULL) {
-        ABTU_strcpy(name, p_thread->p_name);
-    }
-    if (len != NULL) {
-        *len = strlen(p_thread->p_name);
-    }
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ULT
  * @brief   Get the ULT's id
  *
  * \c ABT_thread_get_id() returns the id of \c a thread.
@@ -1251,7 +1184,6 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     p_newthread->request         = 0;
     p_newthread->p_req_arg       = NULL;
     p_newthread->id              = ABTI_THREAD_INIT_ID;
-    p_newthread->p_name          = NULL;
 
     *p_thread = p_newthread;
 
@@ -1312,7 +1244,6 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
     p_newthread->request        = 0;
     p_newthread->p_req_arg      = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
-    p_newthread->p_name         = NULL;
 
     /* Return value */
     if (newthread) *newthread = ABTI_thread_get_handle(p_newthread);
@@ -1328,9 +1259,6 @@ int ABTI_thread_create_main_sched(ABTI_sched *p_sched, ABT_thread *newthread)
 
 void ABTI_thread_free_main(ABTI_thread *p_thread)
 {
-    /* Free the name */
-    if (p_thread->p_name) ABTU_free(p_thread->p_name);
-
     ABTU_free(p_thread);
 }
 
@@ -1343,9 +1271,6 @@ void ABTI_thread_free(ABTI_thread *p_thread)
 
     /* Free the unit */
     p_thread->p_pool->u_free(&p_thread->unit);
-
-    /* Free the name */
-    if (p_thread->p_name) ABTU_free(p_thread->p_name);
 
     /* Free the stack and the context */
     ABTU_free(p_thread->p_stack);
@@ -1514,8 +1439,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         "%srefcount: %u\n"
         "%srequest : 0x%x\n"
         "%sreq_arg : %p\n"
-        "%sattr    : %s\n"
-        "%sname    : %s\n",
+        "%sattr    : %s\n",
         prefix, p_thread,
         prefix, ABTI_thread_get_id(p_thread),
         prefix, type,
@@ -1527,8 +1451,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         prefix, p_thread->refcount,
         prefix, p_thread->request,
         prefix, p_thread->p_req_arg,
-        prefix, attr,
-        prefix, p_thread->p_name
+        prefix, attr
     );
 
   fn_exit:
