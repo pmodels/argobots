@@ -168,8 +168,8 @@ struct ABTI_sched {
     uint32_t request;           /* Request */
     ABT_pool *pools;            /* Work unit pools */
     int num_pools;              /* Number of work unit pools */
-    ABT_thread thread;          /* Associated thread */
-    ABT_task task;              /* Associated task */
+    ABTI_thread *p_thread;      /* Associated ULT */
+    ABTI_task *p_task;          /* Associated tasklet */
     ABTD_thread_context *p_ctx; /* Context */
     void *data;                 /* Data for a specific scheduler */
 

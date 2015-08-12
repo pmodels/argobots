@@ -467,14 +467,18 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     p_sched->used = ABTI_SCHED_IN_POOL;
 
     if (p_sched->type == ABT_SCHED_TYPE_ULT) {
+        ABT_thread thread;
         abt_errno = ABT_thread_create(pool, p_sched->run, sched,
-                                      ABT_THREAD_ATTR_NULL, &p_sched->thread);
+                                      ABT_THREAD_ATTR_NULL, &thread);
         ABTI_CHECK_ERROR(abt_errno);
-        ABTI_thread_get_ptr(p_sched->thread)->is_sched = p_sched;
+        p_sched->p_thread = ABTI_thread_get_ptr(thread);
+        p_sched->p_thread->is_sched = p_sched;
     } else if (p_sched->type == ABT_SCHED_TYPE_TASK){
-        abt_errno = ABT_task_create(pool, p_sched->run, sched, &p_sched->task);
+        ABT_task task;
+        abt_errno = ABT_task_create(pool, p_sched->run, sched, &task);
         ABTI_CHECK_ERROR(abt_errno);
-        ABTI_task_get_ptr(p_sched->task)->is_sched = p_sched;
+        p_sched->p_task = ABTI_task_get_ptr(task);
+        p_sched->p_task->is_sched = p_sched;
     } else {
         ABTI_CHECK_TRUE(0, ABT_ERR_SCHED);
     }

@@ -68,8 +68,9 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->pools         = pool_list;
     p_sched->num_pools     = num_pools;
     p_sched->type          = def->type;
-    p_sched->thread        = ABT_THREAD_NULL;
-    p_sched->task          = ABT_TASK_NULL;
+    p_sched->p_thread      = NULL;
+    p_sched->p_task        = NULL;
+    p_sched->p_ctx         = NULL;
 
     p_sched->init          = def->init;
     p_sched->run           = def->run;
@@ -441,7 +442,7 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
         size = ABTI_sched_get_size(p_sched);
         if (size == 0) {
             ABTI_thread *p_main_thread = ABTI_global_get_main();
-            ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
+            ABTI_thread *p_thread = p_sched->p_thread;
             ABTI_ASSERT(ABTI_local_get_task() != NULL
                 || p_thread == ABTI_local_get_thread());
             ABTD_thread_context_switch(&p_thread->ctx, &p_main_thread->ctx);
@@ -644,11 +645,19 @@ int ABTI_sched_free(ABTI_sched *p_sched)
     }
     ABTU_free(p_sched->pools);
 
-    /* Free the associated thread */
-    if (p_sched->thread != ABT_THREAD_NULL) {
-        ABTI_thread *p_thread = ABTI_thread_get_ptr(p_sched->thread);
-        if (p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED)
-            ABT_thread_free(&p_sched->thread);
+    /* Free the associated work unit */
+    if (p_sched->type == ABT_SCHED_TYPE_ULT) {
+        if (p_sched->p_thread) {
+            if (p_sched->p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
+                ABTI_thread_free_main_sched(p_sched->p_thread);
+            } else {
+                ABTI_thread_free(p_sched->p_thread);
+            }
+        }
+    } else if (p_sched->type == ABT_SCHED_TYPE_TASK) {
+        if (p_sched->p_task) {
+            ABTI_task_free(p_sched->p_task);
+        }
     }
 
     p_sched->free(ABTI_sched_get_handle(p_sched));

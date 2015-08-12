@@ -212,8 +212,10 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
         /* Create the context of the main scheduler */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
-        abt_errno = ABTI_thread_create_main_sched(p_sched, &p_sched->thread);
+        ABT_thread thread;
+        abt_errno = ABTI_thread_create_main_sched(p_sched, &thread);
         ABTI_CHECK_ERROR(abt_errno);
+        p_sched->p_thread = ABTI_thread_get_ptr(thread);
 
     } else {
         /* Start the main scheduler on a different ES */
@@ -1004,8 +1006,8 @@ void ABTI_xstream_schedule(void *p_arg)
     ABTI_local_set_xstream(p_xstream);
 
     /* Set the sched ULT as the current thread */
-    ABT_thread sched_thread = ABTI_xstream_get_top_sched(p_xstream)->thread;
-    ABTI_local_set_thread(ABTI_thread_get_ptr(sched_thread));
+    ABTI_thread *p_sched_thread = ABTI_xstream_get_top_sched(p_xstream)->p_thread;
+    ABTI_local_set_thread(p_sched_thread);
 
     while (1) {
         p_xstream->state = ABT_XSTREAM_STATE_RUNNING;
@@ -1162,12 +1164,12 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
     /* Add a new scheduler if the task is a scheduler */
     if (p_task->is_sched != NULL) {
         ABTI_sched *current_sched = ABTI_xstream_get_top_sched(p_xstream);
-        ABTI_thread *last_thread = current_sched->thread;
+        ABTI_thread *p_last_thread = current_sched->p_thread;
 
         p_task->is_sched->p_ctx = current_sched->p_ctx;
         ABTI_xstream_push_sched(p_xstream, p_task->is_sched);
         p_task->is_sched->state = ABT_SCHED_STATE_RUNNING;
-        p_task->is_sched->thread = last_thread;
+        p_task->is_sched->p_thread = p_last_thread;
     }
 
     /* Execute the task function */
