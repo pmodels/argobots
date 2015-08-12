@@ -1108,8 +1108,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         /* The ULT needs to be terminated. */
         ABTI_xstream_terminate_thread(p_thread);
     } else if (p_thread->request & ABTI_THREAD_REQ_BLOCK) {
-        ABTD_atomic_fetch_and_uint32(&p_thread->request,
-                                     ~ABTI_THREAD_REQ_BLOCK);
+        ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
     } else {
         /* The ULT did not finish its execution.
          * Change the state of current running ULT and
@@ -1204,8 +1203,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         p_pool = (ABTI_pool *)ABTI_thread_extract_req_arg(p_thread,
                 ABTI_THREAD_REQ_MIGRATE);
         pool = ABTI_pool_get_handle(p_pool);
-        ABTD_atomic_fetch_and_uint32(&p_thread->request,
-                ~ABTI_THREAD_REQ_MIGRATE);
+        ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
         newstream = p_pool->consumer;
         DEBUG_PRINT("[TH%" PRIu64 "] Migration: S%" PRIu64 " -> S%" PRIu64 "\n",

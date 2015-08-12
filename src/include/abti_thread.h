@@ -40,5 +40,17 @@ ABT_thread ABTI_thread_get_handle(ABTI_thread *p_thread)
 #endif
 }
 
+static inline
+void ABTI_thread_set_request(ABTI_thread *p_thread, uint32_t req)
+{
+    ABTD_atomic_fetch_or_uint32(&p_thread->request, req);
+}
+
+static inline
+void ABTI_thread_unset_request(ABTI_thread *p_thread, uint32_t req)
+{
+    ABTD_atomic_fetch_and_uint32(&p_thread->request, ~req);
+}
+
 #endif /* THREAD_H_INCLUDED */
 
