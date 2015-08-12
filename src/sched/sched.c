@@ -343,7 +343,7 @@ int ABT_sched_finish(ABT_sched sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    ABTD_atomic_fetch_or_uint32(&p_sched->request, ABTI_SCHED_REQ_FINISH);
+    ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_FINISH);
 
   fn_exit:
     return abt_errno;
@@ -370,7 +370,7 @@ int ABT_sched_exit(ABT_sched sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    ABTD_atomic_fetch_or_uint32(&p_sched->request, ABTI_SCHED_REQ_EXIT);
+    ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_EXIT);
 
   fn_exit:
     return abt_errno;

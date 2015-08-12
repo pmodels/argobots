@@ -53,5 +53,17 @@ int ABTI_sched_discard_and_free(ABTI_sched *p_sched)
     return abt_errno;
 }
 
+static inline
+void ABTI_sched_set_request(ABTI_sched *p_sched, uint32_t req)
+{
+    ABTD_atomic_fetch_or_uint32(&p_sched->request, req);
+}
+
+static inline
+void ABTI_sched_unset_request(ABTI_sched *p_sched, uint32_t req)
+{
+    ABTD_atomic_fetch_and_uint32(&p_sched->request, ~req);
+}
+
 #endif /* SCHED_H_INCLUDED */
 
