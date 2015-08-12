@@ -1109,6 +1109,12 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         ABTI_xstream_terminate_thread(p_thread);
     } else if (p_thread->request & ABTI_THREAD_REQ_BLOCK) {
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
+    } else if (p_thread->request & ABTI_THREAD_REQ_ORPHAN) {
+        /* The ULT is not pushed back to the pool and is disconnected from any
+         * pool. */
+        ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
+        p_thread->p_pool->u_free(&p_thread->unit);
+        p_thread->p_pool = NULL;
     } else {
         /* The ULT did not finish its execution.
          * Change the state of current running ULT and
