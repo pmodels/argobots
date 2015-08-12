@@ -192,7 +192,7 @@ int ABT_task_cancel(ABT_task task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Set the cancel request */
-    ABTD_atomic_fetch_or_uint32(&p_task->request, ABTI_TASK_REQ_CANCEL);
+    ABTI_task_set_request(p_task, ABTI_TASK_REQ_CANCEL);
 
   fn_exit:
     return abt_errno;
