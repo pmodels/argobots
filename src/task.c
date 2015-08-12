@@ -57,7 +57,6 @@ int ABT_task_create(ABT_pool pool,
     p_newtask->f_task     = task_func;
     p_newtask->p_arg      = arg;
     p_newtask->id         = ABTI_TASK_INIT_ID;
-    p_newtask->p_name     = NULL;
 
     /* Create a wrapper work unit */
     h_newtask = ABTI_task_get_handle(p_newtask);
@@ -476,73 +475,6 @@ int ABT_task_release(ABT_task task)
     goto fn_exit;
 }
 
-/**
- * @ingroup TASK
- * @brief   Set the task's name.
- *
- * @param[in] task  handle to the target task
- * @param[in] name  task name
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_task_set_name(ABT_task task, const char *name)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    size_t len = strlen(name);
-    ABTI_mutex *p_mutex = &p_task->p_xstream->mutex;
-    ABTI_mutex_spinlock(p_mutex);
-    if (p_task->p_name) ABTU_free(p_task->p_name);
-    p_task->p_name = (char *)ABTU_malloc(len + 1);
-    ABTU_strcpy(p_task->p_name, name);
-    ABTI_mutex_unlock(p_mutex);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup TASK
- * @brief   Return the name of tasklet and its length.
- *
- * \c ABT_task_get_name() gets the string name of target tasklet and the length
- * of name in bytes. If \c name is NULL, only \c len is returned.
- * If \c name is not NULL, it should have enough space to save \c len bytes of
- * characters. If \c len is NULL, \c len is ignored.
- *
- * @param[in]  task  handle to the target tasklet
- * @param[out] name  tasklet name
- * @param[out] len   the length of name in bytes
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_task_get_name(ABT_task task, char *name, size_t *len)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    if (name != NULL) {
-        ABTU_strcpy(name, p_task->p_name);
-    }
-    if (len != NULL) {
-        *len = strlen(p_task->p_name);
-    }
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
 
 /*****************************************************************************/
 /* Private APIs                                                              */
@@ -552,8 +484,6 @@ void ABTI_task_free(ABTI_task *p_task)
 {
     /* Free the unit */
     p_task->p_pool->u_free(&p_task->unit);
-
-    if (p_task->p_name) ABTU_free(p_task->p_name);
 
     ABTU_free(p_task);
 }
@@ -589,8 +519,7 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
         "%srefcount  : %u\n"
         "%srequest   : 0x%x\n"
         "%sf_task    : %p\n"
-        "%sp_arg     : %p\n"
-        "%sname      : %s\n",
+        "%sp_arg     : %p\n",
         prefix, p_task,
         prefix, ABTI_task_get_id(p_task),
         prefix, state,
@@ -601,8 +530,7 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
         prefix, p_task->refcount,
         prefix, p_task->request,
         prefix, p_task->f_task,
-        prefix, p_task->p_arg,
-        prefix, p_task->p_name
+        prefix, p_task->p_arg
     );
 
   fn_exit:

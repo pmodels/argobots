@@ -280,7 +280,6 @@ struct ABTI_task {
     void *p_arg;               /* Task arguments */
 
     uint64_t id;               /* ID */
-    char *p_name;              /* Name */
 };
 
 struct ABTI_cond {
