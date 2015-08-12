@@ -70,7 +70,6 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     ABTI_elem_create_from_xstream(p_newxstream);
 
     p_newxstream->rank         = ABTI_xstream_get_new_rank();
-    p_newxstream->p_name       = NULL;
     p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
     p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
     p_newxstream->scheds       = NULL;
@@ -767,72 +766,6 @@ int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
 
 /**
  * @ingroup ES
- * @brief   Set the name for target ES
- *
- * @param[in] xstream  handle to the target ES
- * @param[in] name     ES name
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_xstream_set_name(ABT_xstream xstream, const char *name)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
-    size_t len = strlen(name);
-    ABTI_mutex_spinlock(&p_xstream->mutex);
-    if (p_xstream->p_name) ABTU_free(p_xstream->p_name);
-    p_xstream->p_name = (char *)ABTU_malloc(len + 1);
-    ABTU_strcpy(p_xstream->p_name, name);
-    ABTI_mutex_unlock(&p_xstream->mutex);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ES
- * @brief   Return the name of ES and its length.
- *
- * \c ABT_xstream_get_name() gets the string name of target ES and the length
- * of name in bytes. If \c name is NULL, only \c len is returned.
- * If \c name is not NULL, it should have enough space to save \c len bytes of
- * characters. If \c len is NULL, \c len is ignored.
- *
- * @param[in]  xstream  handle to the target ES
- * @param[out] name     ES name
- * @param[out] len      the length of name in bytes
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
-    if (name != NULL) {
-        ABTU_strcpy(name, p_xstream->p_name);
-    }
-    if (len != NULL) {
-        *len = strlen(p_xstream->p_name);
-    }
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ES
  * @brief   Return the number of current existing ESs.
  *
  * \c ABT_xstream_get_num() returns the number of ESs that exist in the current
@@ -1031,8 +964,6 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
 int ABTI_xstream_free(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
-
-    if (p_xstream->p_name) ABTU_free(p_xstream->p_name);
 
     /* Free the scheduler */
     ABTI_sched *p_cursched = p_xstream->p_main_sched;
@@ -1423,8 +1354,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
         "%smax_scheds: %d\n"
         "%snum_scheds: %d\n"
         "%sscheds    : %s\n"
-        "%smain_sched: %p\n"
-        "%sname      : %s\n",
+        "%smain_sched: %p\n",
         prefix, p_xstream,
         prefix, p_xstream->rank,
         prefix, type,
@@ -1434,8 +1364,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
         prefix, p_xstream->max_scheds,
         prefix, p_xstream->num_scheds,
         prefix, scheds_str,
-        prefix, p_xstream->p_main_sched,
-        prefix, p_xstream->p_name
+        prefix, p_xstream->p_main_sched
     );
     ABTU_free(scheds_str);
 

@@ -138,7 +138,6 @@ struct ABTI_elem {
 struct ABTI_xstream {
     ABTI_elem elem;             /* Elem enclosing this ES */
     uint64_t rank;              /* Rank */
-    char *p_name;               /* Name */
     ABTI_xstream_type type;     /* Type */
     ABT_xstream_state state;    /* State */
     ABTI_sched **scheds;        /* Stack of running schedulers */
