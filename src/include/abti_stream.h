@@ -100,6 +100,14 @@ void ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
     ABTI_ASSERT(p_xstream->num_scheds >= 0);
 }
 
+/* Replace the top scheduler of the sched stack (field scheds) with the target
+ * scheduler */
+static inline
+void ABTI_xstream_replace_top_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
+{
+    p_xstream->scheds[p_xstream->num_scheds-1] = p_sched;
+}
+
 /* Add the specified scheduler to the sched stack (field scheds) */
 static inline
 void ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
