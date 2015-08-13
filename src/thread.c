@@ -476,9 +476,6 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
-    DEBUG_PRINT("YIELD_TO: TH%" PRIu64 " -> TH%" PRIu64 "\n",
-                ABTI_thread_get_id(p_cur_thread),
-                ABTI_thread_get_id(p_tar_thread));
 
     /* If the target thread is the same as the running thread, just keep
      * its execution. */

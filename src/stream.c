@@ -1107,8 +1107,6 @@ void ABTI_xstream_schedule(void *p_arg)
         ABTD_xstream_context_set_affinity(p_xstream->ctx, p_xstream->rank);
     }
 
-    DEBUG_PRINT("[S%" PRIu64 "] START\n", p_xstream->rank);
-
     while (1) {
         p_xstream->state = ABT_XSTREAM_STATE_RUNNING;
 
@@ -1189,8 +1187,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     p_thread->state = ABT_THREAD_STATE_RUNNING;
 
     /* Switch the context */
-    DEBUG_PRINT("[S%" PRIu64 ":TH%" PRIu64 "] START\n",
-                p_xstream->rank, ABTI_thread_get_id(p_thread));
     ABTD_thread_context_switch(p_ctx, &p_thread->ctx);
 
     /* The scheduler continues from here. */
@@ -1198,8 +1194,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
      * context has been switched. */
     p_thread = ABTI_local_get_thread();
     p_xstream = p_thread->p_last_xstream;
-    DEBUG_PRINT("[S%" PRIu64 ":TH%" PRIu64 "] END\n",
-                p_xstream->rank, ABTI_thread_get_id(p_thread));
 
     /* Delete the last scheduler if the ULT was a scheduler */
     if (p_thread->is_sched != NULL) {
@@ -1279,11 +1273,7 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
     }
 
     /* Execute the task function */
-    DEBUG_PRINT("[S%" PRIu64 ":TK%" PRIu64 "] START\n",
-                p_xstream->rank, ABTI_task_get_id(p_task));
     p_task->f_task(p_task->p_arg);
-    DEBUG_PRINT("[S%" PRIu64 ":TK%" PRIu64 "] END\n",
-                p_xstream->rank, ABTI_task_get_id(p_task));
 
     /* Delete the last scheduler if the tasklet was a scheduler */
     if (p_task->is_sched != NULL) {
@@ -1322,9 +1312,6 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
         newstream = p_pool->consumer;
-        DEBUG_PRINT("[TH%" PRIu64 "] Migration: S%" PRIu64 " -> S%" PRIu64 "\n",
-                ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
-                newstream? newstream->rank: -1);
 
         /* Change the associated pool */
         p_thread->p_pool = p_pool;
@@ -1563,8 +1550,6 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 
     /* Reset the current ES and its local info. */
     ABTI_local_finalize();
-
-    DEBUG_PRINT("[S%" PRIu64 "] END\n", p_xstream->rank);
 
     ABTD_xstream_context_exit();
 

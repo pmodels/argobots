@@ -460,11 +460,4 @@ void ABTI_future_signal(ABTI_future *p_future);
 #include "abti_future.h"
 #include "abti_timer.h"
 
-#define DEBUG 0
-#if (DEBUG == 1)
-#define DEBUG_PRINT(...)    fprintf(stderr, __VA_ARGS__); fflush(stderr)
-#else
-#define DEBUG_PRINT(...)
-#endif
-
 #endif /* ABTI_H_INCLUDED */
