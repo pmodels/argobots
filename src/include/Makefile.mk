@@ -14,6 +14,7 @@ noinst_HEADERS = \
 	include/abti.h \
 	include/abti_error.h \
 	include/abti_local.h \
+	include/abti_log.h \
 	include/abti_global.h \
 	include/abti_stream.h \
 	include/abti_sched.h \

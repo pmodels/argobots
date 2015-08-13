@@ -10,6 +10,7 @@ abt_sources = \
 	futures.c \
 	global.c \
 	local.c \
+	log.c \
 	mutex.c \
 	self.c \
 	stream.c \
