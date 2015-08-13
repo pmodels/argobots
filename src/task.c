@@ -62,6 +62,8 @@ int ABT_task_create(ABT_pool pool,
     h_newtask = ABTI_task_get_handle(p_newtask);
     p_newtask->unit = p_pool->u_create_from_task(h_newtask);
 
+    LOG_EVENT("[T%" PRIu64 "] created\n", ABTI_task_get_id(p_newtask));
+
     /* Add this task to the scheduler's pool */
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
@@ -482,6 +484,8 @@ int ABT_task_release(ABT_task task)
 
 void ABTI_task_free(ABTI_task *p_task)
 {
+    LOG_EVENT("[T%" PRIu64 "] freed\n", ABTI_task_get_id(p_task));
+
     /* Free the unit */
     p_task->p_pool->u_free(&p_task->unit);
 

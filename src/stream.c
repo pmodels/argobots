@@ -87,6 +87,8 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     abt_errno = ABTI_xstream_set_main_sched(p_newxstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
+    LOG_EVENT("[E%" PRIu64 "] created\n", p_newxstream->rank);
+
     /* Add this ES to the global ES container */
     ABTI_global_add_xstream(p_newxstream);
 
@@ -209,6 +211,8 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
     ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
+        LOG_EVENT("[E%" PRIu64 "] start\n", p_xstream->rank);
+
         abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
 
@@ -254,6 +258,8 @@ int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     /* Move the ES to the global active ES pool */
     ABTI_global_move_xstream(p_xstream);
 
+    LOG_EVENT("[E%" PRIu64 "] start\n", p_xstream->rank);
+
     abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
 
@@ -263,10 +269,15 @@ int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Start the scheduler by context switching to it */
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] yield\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+    ABTI_LOG_SET_SCHED(p_sched);
     ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
 
     /* Back to the main ULT */
     ABTI_local_set_thread(p_thread);
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
   fn_exit:
     return abt_errno;
@@ -972,6 +983,8 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
 {
     int abt_errno = ABT_SUCCESS;
 
+    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
+
     ABT_unit_type type = p_pool->u_get_type(unit);
 
     if (type == ABT_UNIT_TYPE_THREAD) {
@@ -1087,6 +1100,8 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     abt_errno = ABTD_xstream_context_free(&p_xstream->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
+    LOG_EVENT("[E%" PRIu64 "] freed\n", p_xstream->rank);
+
     ABTU_free(p_xstream);
 
   fn_exit:
@@ -1112,8 +1127,11 @@ void ABTI_xstream_schedule(void *p_arg)
 
         /* Execute the run function of scheduler */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
+        ABTI_LOG_SET_SCHED(p_sched);
         p_sched->state = ABT_SCHED_STATE_RUNNING;
+        LOG_EVENT("[S%" PRIu64 "] start\n", p_sched->id);
         p_sched->run(ABTI_sched_get_handle(p_sched));
+        LOG_EVENT("[S%" PRIu64 "] end\n", p_sched->id);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
 
         p_xstream->state = ABT_XSTREAM_STATE_READY;
@@ -1143,6 +1161,7 @@ void ABTI_xstream_schedule(void *p_arg)
 
     /* Set the ES's state as TERMINATED */
     p_xstream->state = ABT_XSTREAM_STATE_TERMINATED;
+    LOG_EVENT("[E%" PRIu64 "] terminated\n", p_xstream->rank);
 }
 
 int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
@@ -1187,6 +1206,9 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     p_thread->state = ABT_THREAD_STATE_RUNNING;
 
     /* Switch the context */
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] start running\n",
+              ABTI_thread_get_id(p_thread), p_xstream->rank);
+    ABTI_LOG_SET_SCHED(NULL);
     ABTD_thread_context_switch(p_ctx, &p_thread->ctx);
 
     /* The scheduler continues from here. */
@@ -1194,6 +1216,8 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
      * context has been switched. */
     p_thread = ABTI_local_get_thread();
     p_xstream = p_thread->p_last_xstream;
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] stopped\n",
+              ABTI_thread_get_id(p_thread), p_xstream->rank);
 
     /* Delete the last scheduler if the ULT was a scheduler */
     if (p_thread->is_sched != NULL) {
@@ -1211,14 +1235,20 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         ABTI_xstream_terminate_thread(p_thread);
     } else if (p_thread->request & ABTI_THREAD_REQ_BLOCK) {
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] check blocked\n",
+                  ABTI_thread_get_id(p_thread), p_xstream->rank);
     } else if (p_thread->request & ABTI_THREAD_REQ_ORPHAN) {
         /* The ULT is not pushed back to the pool and is disconnected from any
          * pool. */
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] orphaned\n",
+                  ABTI_thread_get_id(p_thread), p_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
         p_thread->p_pool->u_free(&p_thread->unit);
         p_thread->p_pool = NULL;
     } else if (p_thread->request & ABTI_THREAD_REQ_NOPUSH) {
         /* The ULT is not pushed back to the pool */
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] not pushed\n",
+                  ABTI_thread_get_id(p_thread), p_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
     } else {
         /* The ULT did not finish its execution.
@@ -1270,9 +1300,15 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
         ABTI_xstream_push_sched(p_xstream, p_task->is_sched);
         p_task->is_sched->state = ABT_SCHED_STATE_RUNNING;
         p_task->is_sched->p_thread = p_last_thread;
+        LOG_EVENT("[S%" PRIu64 ":E%" PRIu64 "] stacked sched start\n",
+                  p_task->is_sched->id, p_xstream->rank);
     }
 
     /* Execute the task function */
+    LOG_EVENT("[T%" PRIu64 ":E%" PRIu64 "] running\n",
+              ABTI_task_get_id(p_task), p_xstream->rank);
+    ABTI_LOG_SET_SCHED(p_task->is_sched ? p_task->is_sched : NULL);
+
     p_task->f_task(p_task->p_arg);
 
     /* Delete the last scheduler if the tasklet was a scheduler */
@@ -1281,8 +1317,16 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
         ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
+        ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
+        LOG_EVENT("[S%" PRIu64 ":E%" PRIu64 "] stacked sched end\n",
+                  p_task->is_sched->id, p_xstream->rank);
     }
 
+    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
+    LOG_EVENT("[T%" PRIu64 ":E%" PRIu64 "] stopped\n",
+              ABTI_task_get_id(p_task), p_xstream->rank);
+
+    /* Terminate the tasklet */
     ABTI_xstream_terminate_task(p_task);
 
     /* Set the current running ULT/tasklet */
@@ -1312,6 +1356,9 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
         newstream = p_pool->consumer;
+        LOG_EVENT("[U%" PRIu64 "] migration: E%" PRIu64 " -> E%" PRIu64 "\n",
+                ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
+                newstream ? newstream->rank : -1);
 
         /* Change the associated pool */
         p_thread->p_pool = p_pool;
@@ -1439,6 +1486,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 
         /* Switch to the current main scheduler */
         ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
+        ABTI_LOG_SET_SCHED(p_main_sched);
         ABTD_thread_context_switch(&p_thread->ctx, p_main_sched->p_ctx);
 
         /* Now, we free the current main scheduler */
@@ -1542,8 +1590,13 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     /* Set the sched ULT as the current ULT */
     ABTI_local_set_thread(p_sched->p_thread);
 
+    /* Set the current scheduler for logging */
+    ABTI_LOG_SET_SCHED(p_sched);
+
     /* Execute the main scheduler of this ES */
+    LOG_EVENT("[E%" PRIu64 "] start\n", p_xstream->rank);
     ABTI_xstream_schedule(p_arg);
+    LOG_EVENT("[E%" PRIu64 "] end\n", p_xstream->rank);
 
     /* Move the ES to the deads pool */
     ABTI_global_move_xstream(p_xstream);

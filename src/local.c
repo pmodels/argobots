@@ -23,6 +23,8 @@ int ABTI_local_init(void)
     lp_ABTI_local->p_thread = NULL;
     lp_ABTI_local->p_task = NULL;
 
+    ABTI_LOG_INIT();
+
   fn_exit:
     return abt_errno;
 
@@ -37,6 +39,8 @@ int ABTI_local_finalize(void)
     ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_OTHER);
     ABTU_free(lp_ABTI_local);
     lp_ABTI_local = NULL;
+
+    ABTI_LOG_FINALIZE();
 
   fn_exit:
     return abt_errno;

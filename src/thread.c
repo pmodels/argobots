@@ -78,6 +78,8 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     h_newthread = ABTI_thread_get_handle(p_newthread);
     p_newthread->unit = p_pool->u_create_from_thread(h_newthread);
 
+    LOG_EVENT("[U%" PRIu64 "] created\n", ABTI_thread_get_id(p_newthread));
+
     /* Add this thread to the pool */
     abt_errno = ABTI_pool_push(p_pool, p_newthread->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
@@ -476,6 +478,10 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] yield_to -> U%" PRIu64 "\n",
+              ABTI_thread_get_id(p_cur_thread),
+              p_cur_thread->p_last_xstream->rank,
+              ABTI_thread_get_id(p_tar_thread));
 
     /* If the target thread is the same as the running thread, just keep
      * its execution. */
@@ -556,6 +562,7 @@ int ABT_thread_yield(void)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = NULL;
+    ABTI_sched *p_sched;
 
     /* If this routine is called by non-ULT, just return. */
     if (lp_ABTI_local != NULL) {
@@ -566,16 +573,22 @@ int ABT_thread_yield(void)
     ABTI_CHECK_TRUE(p_thread->p_last_xstream == ABTI_local_get_xstream(),
                     ABT_ERR_THREAD);
 
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] yield\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
     /* Change the state of current running thread */
     p_thread->state = ABT_THREAD_STATE_READY;
 
     /* Switch to the top scheduler */
-    ABTD_thread_context_switch(&p_thread->ctx,
-        ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream));
+    p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
+    ABTI_LOG_SET_SCHED(p_sched);
+    ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
 
     /* Back to the original thread */
     p_thread->state = ABT_THREAD_STATE_RUNNING;
     ABTI_local_set_thread(p_thread);
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume after yield\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
   fn_exit:
     return abt_errno;
@@ -1176,6 +1189,10 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     h_newthread = ABTI_thread_get_handle(p_newthread);
     p_newthread->unit = p_pool->u_create_from_thread(h_newthread);
 
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main ULT created\n",
+              ABTI_thread_get_id(p_newthread),
+              p_newthread->p_last_xstream->rank);
+
     /* Although this main ULT is running now, we add this main ULT to the pool
      * so that the scheduler can schedule the main ULT when the main ULT is
      * context switched to the scheduler for the first time. */
@@ -1251,6 +1268,9 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     p_newthread->p_req_arg      = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main sched ULT created\n",
+              ABTI_thread_get_id(p_newthread), p_xstream->rank);
+
     /* Return value */
     p_sched->p_thread = p_newthread;
     p_sched->p_ctx = &p_newthread->ctx;
@@ -1270,6 +1290,9 @@ void ABTI_thread_free(ABTI_thread *p_thread)
        we don't need to unlock the mutex. */
     ABTI_mutex_spinlock(&p_thread->mutex);
 
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] freed\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
     /* Free the unit */
     p_thread->p_pool->u_free(&p_thread->unit);
 
@@ -1282,11 +1305,17 @@ void ABTI_thread_free(ABTI_thread *p_thread)
 
 void ABTI_thread_free_main(ABTI_thread *p_thread)
 {
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main ULT freed\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
     ABTU_free(p_thread);
 }
 
 void ABTI_thread_free_main_sched(ABTI_thread *p_thread)
 {
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main sched ULT freed\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
     /* Free the stack and the context */
     if (p_thread->p_stack) ABTU_free(p_thread->p_stack);
     ABTD_thread_context_free(&p_thread->ctx);
@@ -1312,6 +1341,9 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     ABTI_pool *p_pool = p_thread->p_pool;
     ABTI_pool_inc_num_blocked(p_pool);
 
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] blocked\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
   fn_exit:
     return abt_errno;
 
@@ -1328,9 +1360,14 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] suspended\n",
+              ABTI_thread_get_id(p_thread), p_xstream->rank);
+    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
     ABTD_thread_context_switch(&p_thread->ctx, ABTI_xstream_get_sched_ctx(p_xstream));
 
     /* The suspended ULT resumes its execution from here. */
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resumed\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
     ABTI_local_set_thread(p_thread);
 }
 
@@ -1340,6 +1377,9 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
 
     /* The ULT should be in BLOCKED state. */
     ABTI_CHECK_TRUE(p_thread->state == ABT_THREAD_STATE_BLOCKED, ABT_ERR_THREAD);
+
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] set ready\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     /* Add the ULT to its associated pool */
     ABTI_xstream *p_xstream = ABTI_xstream_self();

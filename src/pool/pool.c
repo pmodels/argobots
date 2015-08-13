@@ -64,6 +64,7 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     p_pool->id                   = ABTI_pool_get_new_id();
 #endif
+    LOG_EVENT("[P%" PRIu64 "] created\n", p_pool->id);
 
     *newpool = ABTI_pool_get_handle(p_pool);
 
@@ -145,6 +146,8 @@ int ABT_pool_free(ABT_pool *pool)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(h_pool);
 
     ABTI_CHECK_TRUE(p_pool != NULL && h_pool != ABT_POOL_NULL, ABT_ERR_INV_POOL);
+
+    LOG_EVENT("[P%" PRIu64 "] freed\n", p_pool->id);
 
     p_pool->p_free(h_pool);
     ABTU_free(p_pool);
@@ -269,6 +272,8 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     unit = p_pool->p_pop(pool);
+
+    LOG_EVENT_POOL_POP(p_pool, unit);
 
   fn_exit:
     *p_unit = unit;

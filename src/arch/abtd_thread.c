@@ -21,6 +21,10 @@ void ABTD_thread_func_wrapper(void *p_arg)
 
     /* Since fcontext does not switch to the other fcontext when it finishes,
        we need to explicitly switch to the scheduler. */
+    ABTI_LOG_SET_SCHED((ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream)
+                        == p_fctx->p_link)
+                       ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
+                       : NULL);
     jump_fcontext(&p_fctx->fctx, p_fctx->p_link->fctx, NULL,
                   ABTD_FCONTEXT_PRESERVE_FPU);
 }

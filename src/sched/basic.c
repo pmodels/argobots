@@ -106,6 +106,7 @@ static void sched_run(ABT_sched sched)
             if (size > 0) {
                 /* Pop one work unit */
                 ABT_unit unit = p_pool->p_pop(pool);
+                LOG_EVENT_POOL_POP(p_pool, unit);
                 if (unit != ABT_UNIT_NULL) {
                     ABTI_xstream_run_unit(p_xstream, unit, p_pool);
                 }

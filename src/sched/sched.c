@@ -82,6 +82,7 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     p_sched->id            = ABTI_sched_get_new_id();
 #endif
+    LOG_EVENT("[S%" PRIu64 "] created\n", p_sched->id);
 
     /* Return value */
     *newsched = ABTI_sched_get_handle(p_sched);
@@ -712,6 +713,8 @@ int ABTI_sched_free(ABTI_sched *p_sched)
             ABTI_task_free(p_sched->p_task);
         }
     }
+
+    LOG_EVENT("[S%" PRIu64 "] freed\n", p_sched->id);
 
     p_sched->free(ABTI_sched_get_handle(p_sched));
     p_sched->data = NULL;

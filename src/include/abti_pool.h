@@ -73,6 +73,8 @@ int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_producer)
 {
     int abt_errno = ABT_SUCCESS;
 
+    LOG_EVENT_POOL_PUSH(p_pool, unit, p_producer);
+
 #ifndef UNSAFE_MODE
     /* Save the producer ES information in the pool */
     abt_errno = ABTI_pool_set_producer(p_pool, p_producer);
@@ -95,6 +97,8 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
 {
     int abt_errno = ABT_SUCCESS;
 
+    LOG_EVENT_POOL_REMOVE(p_pool, unit, p_consumer);
+
 #ifndef UNSAFE_MODE
     abt_errno = ABTI_pool_set_consumer(p_pool, p_consumer);
     ABTI_CHECK_ERROR(abt_errno);
@@ -114,7 +118,13 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
 static inline
 ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)
 {
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+    ABT_unit unit = p_pool->p_pop(ABTI_pool_get_handle(p_pool));
+    LOG_EVENT_POOL_POP(p_pool, unit);
+    return unit;
+#else
     return p_pool->p_pop(ABTI_pool_get_handle(p_pool));
+#endif
 }
 
 /* Increase num_scheds to mark the pool as having another scheduler. If the
