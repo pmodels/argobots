@@ -5,6 +5,8 @@
 
 #include "abti.h"
 
+static inline uint64_t ABTI_sched_get_new_id(void);
+
 
 /** @defgroup SCHED Scheduler
  * This group is for Scheduler.
@@ -76,6 +78,10 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->run           = def->run;
     p_sched->free          = def->free;
     p_sched->get_migr_pool = def->get_migr_pool;
+
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+    p_sched->id            = ABTI_sched_get_new_id();
+#endif
 
     /* Return value */
     *newsched = ABTI_sched_get_handle(p_sched);
@@ -821,6 +827,9 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent)
 
     fprintf(p_os,
         "%s== SCHED (%p) ==\n"
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+        "%sid       : %" PRIu64 "\n"
+#endif
         "%skind     : %" PRIu64 " (%s)\n"
         "%stype     : %s\n"
         "%sstate    : %s\n"
@@ -833,6 +842,9 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent)
         "%stot_size : %zu\n"
         "%sdata     : %p\n",
         prefix, p_sched,
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+        prefix, p_sched->id,
+#endif
         prefix, p_sched->kind, kind_str,
         prefix, type,
         prefix, state,
@@ -857,3 +869,17 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent)
     ABTU_free(prefix);
 }
 
+static uint64_t g_sched_id = 0;
+void ABTI_sched_reset_id(void)
+{
+    g_sched_id = 0;
+}
+
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
+static inline uint64_t ABTI_sched_get_new_id(void)
+{
+    return (uint64_t)ABTD_atomic_fetch_add_uint64(&g_sched_id, 1);
+}

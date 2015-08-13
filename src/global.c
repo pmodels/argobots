@@ -47,6 +47,7 @@ int ABT_init(int argc, char **argv)
     ABTI_xstream_reset_rank();
     ABTI_thread_reset_id();
     ABTI_task_reset_id();
+    ABTI_sched_reset_id();
 
     /* Initialize the ES container */
     p_xstreams = (ABTI_xstream_contn *)ABTU_malloc(sizeof(ABTI_xstream_contn));

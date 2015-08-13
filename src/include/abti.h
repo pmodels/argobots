@@ -181,6 +181,10 @@ struct ABTI_sched {
     ABT_sched_run_fn  run;
     ABT_sched_free_fn free;
     ABT_sched_get_migr_pool_fn get_migr_pool;
+
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+    uint64_t id;                /* ID */
+#endif
 };
 
 struct ABTI_pool {
@@ -390,6 +394,7 @@ size_t ABTI_sched_get_size(ABTI_sched *p_sched);
 size_t ABTI_sched_get_total_size(ABTI_sched *p_sched);
 size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched);
 void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent);
+void ABTI_sched_reset_id(void);
 
 /* Scheduler config */
 size_t ABTI_sched_config_type_size(ABT_sched_config_type type);
