@@ -94,16 +94,26 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 
 /**
  * @ingroup SCHED
- * @brief   Create a predefined scheduler and return its handle through
- * newsched.
+ * @brief   Create a predefined scheduler.
  *
- * The pools used by the new scheduler are provided by \c pools. The contents
- * of this array is copied, so it can be freed. If a pool in the array is
- * ABT_POOL_NULL, the corresponding pool is automatically created.
- * The pool array can be NULL and all the pools will be created automatically.
- * The config must have been created by ABT_sched_config_create, and will be
- * used as argument in the initialization. If no specific configuration is
- * required, the parameter will be ABT_CONFIG_NULL.
+ * \c ABT_sched_create_basic() creates a predefined scheduler and returns its
+ * handle through \c newsched.  The pools used by the new scheduler are
+ * provided by \c pools.  The contents of this array is copied, so it can be
+ * freed. If a pool in the array is \c ABT_POOL_NULL, the corresponding pool is
+ * automatically created.  The pool array can be \c NULL.  In this case, all
+ * the pools will be created automatically.  The config must have been created
+ * by \c ABT_sched_config_create(), and will be used as argument in the
+ * initialization. If no specific configuration is required, the parameter can
+ * be \c ABT_CONFIG_NULL.
+ *
+ * NOTE: The new scheduler will be automatically freed when it is not used
+ * anymore or its associated ES is terminated.  Accordingly, the pools
+ * associated with the new scheduler will be automatically freed if they are
+ * exclusive to the scheduler and are not user-defined ones (i.e., created by
+ * \c ABT_pool_create_basic() or implicitly created because \c pools is \c NULL
+ * or a pool in the \c pools array is \c ABT_POOL_NULL).  If the pools were
+ * created using \c ABT_pool_create() by the user, they have to be freed
+ * explicitly with \c ABT_pool_free().
  *
  * @param[in]  predef    predefined scheduler
  * @param[in]  num_pools number of pools associated with this scheduler
