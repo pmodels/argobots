@@ -71,8 +71,8 @@ int ABT_init(int argc, char **argv)
     ABTI_local_set_thread(p_main_thread);
 
     /* Start the primary ES */
-    abt_errno = ABTI_xstream_start(p_newxstream);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start");
+    abt_errno = ABTI_xstream_start_primary(p_newxstream, p_main_thread);
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");
 
   fn_exit:
     return abt_errno;
@@ -122,6 +122,9 @@ int ABT_finalize(void)
 
     /* Set the join request */
     ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
+
+    /* Set the orphan request for the primary ULT */
+    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
 
     /* We wait for the remaining jobs */
     while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {

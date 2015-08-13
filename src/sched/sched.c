@@ -447,19 +447,6 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
         goto fn_exit;
     }
 
-    /* We jump back to the main ULT if there is one */
-    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        size = ABTI_sched_get_size(p_sched);
-        if (size == 0) {
-            ABTI_thread *p_main_thread = ABTI_global_get_main();
-            ABTI_thread *p_thread = p_sched->p_thread;
-            ABTI_ASSERT(ABTI_local_get_task() != NULL
-                || p_thread == ABTI_local_get_thread());
-            ABTD_thread_context_switch(&p_thread->ctx, &p_main_thread->ctx);
-            ABTI_local_set_thread(p_thread);
-        }
-    }
-
     size = ABTI_sched_get_effective_size(p_sched);
     if (size == 0) {
         if (p_sched->request & ABTI_SCHED_REQ_FINISH) {
@@ -471,9 +458,9 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
             if (size == 0) {
                 p_sched->state = ABT_SCHED_STATE_TERMINATED;
                 stop = ABT_TRUE;
-            }
-            else
+            } else {
                 ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
+            }
         } else if (p_sched->used == ABTI_SCHED_IN_POOL) {
             /* If the scheduler is a stacked one, we have to escape from the
              * scheduling function. The scheduler will be stopped if it is a

@@ -363,6 +363,7 @@ void          ABTI_elem_print(ABTI_elem *p_elem, FILE *p_os, int indent,
 int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream);
 int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
 int ABTI_xstream_start(ABTI_xstream *p_xstream);
+int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread);
 int ABTI_xstream_free(ABTI_xstream *p_xstream);
 void ABTI_xstream_schedule(void *p_arg);
 int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,

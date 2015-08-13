@@ -499,56 +499,42 @@ int ABT_thread_yield_to(ABT_thread thread)
         goto fn_exit;
     }
 
-    if (p_cur_thread->type == ABTI_THREAD_TYPE_MAIN ||
-            p_cur_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        /* Remove the target ULT from the pool */
-        ABTI_pool_remove(p_tar_thread->p_pool, p_tar_thread->unit, p_xstream);
+    p_cur_thread->state = ABT_THREAD_STATE_READY;
 
-        abt_errno = ABTI_xstream_schedule_thread(p_xstream, p_tar_thread);
-        ABTI_CHECK_ERROR(abt_errno);
+    /* Add the current thread to the pool again */
+    abt_errno = ABTI_pool_push(p_cur_thread->p_pool, p_cur_thread->unit,
+                               p_xstream);
+    ABTI_CHECK_ERROR(abt_errno);
 
-        /* Yield to another thread to execute all threads */
-        if (p_cur_thread->type == ABTI_THREAD_TYPE_MAIN)
-            ABT_thread_yield();
-
-    } else {
-        p_cur_thread->state = ABT_THREAD_STATE_READY;
-
-        /* Add the current thread to the pool again */
-        abt_errno = ABTI_pool_push(p_cur_thread->p_pool, p_cur_thread->unit,
-                                   p_xstream);
-        ABTI_CHECK_ERROR(abt_errno);
-
-        /* Delete the last context if the ULT is a scheduler */
-        if (p_cur_thread->is_sched != NULL) {
-            ABTI_xstream_pop_sched(p_xstream);
-            p_cur_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
-        }
-
-        /* Remove the target ULT from the pool */
-        ABTI_pool_remove(p_tar_thread->p_pool, p_tar_thread->unit, p_xstream);
-
-        /* Add a new scheduler if the ULT is a scheduler */
-        if (p_tar_thread->is_sched != NULL) {
-            p_tar_thread->is_sched->p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
-            ABTI_xstream_push_sched(p_xstream, p_tar_thread->is_sched);
-            p_tar_thread->is_sched->state = ABT_SCHED_STATE_RUNNING;
-        }
-
-        /* We set the link in the context for the target thread */
-        ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
-        ABTD_thread_context_change_link(&p_tar_thread->ctx, p_ctx);
-
-        /* We set the last ES */
-        p_tar_thread->p_last_xstream = p_xstream;
-
-        /* Switch the context */
-        ABTI_local_set_thread(p_tar_thread);
-        p_tar_thread->state = ABT_THREAD_STATE_RUNNING;
-        ABTD_thread_context_switch(&p_cur_thread->ctx, &p_tar_thread->ctx);
-
-        ABTI_local_set_thread(p_cur_thread);
+    /* Delete the last context if the ULT is a scheduler */
+    if (p_cur_thread->is_sched != NULL) {
+        ABTI_xstream_pop_sched(p_xstream);
+        p_cur_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
     }
+
+    /* Remove the target ULT from the pool */
+    ABTI_pool_remove(p_tar_thread->p_pool, p_tar_thread->unit, p_xstream);
+
+    /* Add a new scheduler if the ULT is a scheduler */
+    if (p_tar_thread->is_sched != NULL) {
+        p_tar_thread->is_sched->p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
+        ABTI_xstream_push_sched(p_xstream, p_tar_thread->is_sched);
+        p_tar_thread->is_sched->state = ABT_SCHED_STATE_RUNNING;
+    }
+
+    /* We set the link in the context for the target thread */
+    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
+    ABTD_thread_context_change_link(&p_tar_thread->ctx, p_ctx);
+
+    /* We set the last ES */
+    p_tar_thread->p_last_xstream = p_xstream;
+
+    /* Switch the context */
+    ABTI_local_set_thread(p_tar_thread);
+    p_tar_thread->state = ABT_THREAD_STATE_RUNNING;
+    ABTD_thread_context_switch(&p_cur_thread->ctx, &p_tar_thread->ctx);
+
+    ABTI_local_set_thread(p_cur_thread);
 
   fn_exit:
     return abt_errno;
@@ -1158,6 +1144,11 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
+    ABT_thread h_newthread;
+    ABTI_pool *p_pool;
+
+    /* Get the first pool of ES */
+    p_pool = ABTI_pool_get_ptr(p_xstream->p_main_sched->pools[0]);
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
 
@@ -1174,10 +1165,9 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     /* Initialize the mutex */
     ABTI_mutex_init(&p_newthread->mutex);
 
-    p_newthread->unit            = ABT_UNIT_NULL;
     p_newthread->p_last_xstream  = p_xstream;
     p_newthread->is_sched        = NULL;
-    p_newthread->p_pool          = NULL;
+    p_newthread->p_pool          = p_pool;
     p_newthread->type            = ABTI_THREAD_TYPE_MAIN;
     p_newthread->state           = ABT_THREAD_STATE_RUNNING;
     p_newthread->refcount        = 0;
@@ -1185,6 +1175,20 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     p_newthread->p_req_arg       = NULL;
     p_newthread->id              = ABTI_THREAD_INIT_ID;
 
+    /* Create a wrapper unit */
+    h_newthread = ABTI_thread_get_handle(p_newthread);
+    p_newthread->unit = p_pool->u_create_from_thread(h_newthread);
+
+    /* Although this main ULT is running now, we add this main ULT to the pool
+     * so that the scheduler can schedule the main ULT when the main ULT is
+     * context switched to the scheduler for the first time. */
+    abt_errno = ABTI_pool_push(p_pool, p_newthread->unit, p_xstream);
+    if (abt_errno != ABT_SUCCESS) {
+        ABTI_thread_free_main(p_newthread);
+        goto fn_fail;
+    }
+
+    /* Return value */
     *p_thread = p_newthread;
 
   fn_exit:
@@ -1301,22 +1305,15 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
                     ABT_ERR_THREAD);
 
-    /* The main ULT */
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
-        /* Change the ULT's state to BLOCKED */
-        p_thread->state = ABT_THREAD_STATE_BLOCKED;
+    /* To prevent the scheduler from adding the ULT to the pool */
+    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_BLOCK);
 
-    } else {
-        /* To prevent the scheduler from adding the ULT to the pool */
-        ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_BLOCK);
+    /* Change the ULT's state to BLOCKED */
+    p_thread->state = ABT_THREAD_STATE_BLOCKED;
 
-        /* Change the ULT's state to BLOCKED */
-        p_thread->state = ABT_THREAD_STATE_BLOCKED;
-
-        /* Increase the number of blocked ULTs */
-        ABTI_pool *p_pool = p_thread->p_pool;
-        ABTI_pool_inc_num_blocked(p_pool);
-    }
+    /* Increase the number of blocked ULTs */
+    ABTI_pool *p_pool = p_thread->p_pool;
+    ABTI_pool_inc_num_blocked(p_pool);
 
   fn_exit:
     return abt_errno;
@@ -1331,8 +1328,6 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
 {
     ABTI_ASSERT(p_thread == ABTI_local_get_thread());
     ABTI_ASSERT(p_thread->p_last_xstream == ABTI_local_get_xstream());
-    ABTI_ASSERT(p_thread->type == ABTI_THREAD_TYPE_MAIN
-             || p_thread->request & ABTI_THREAD_REQ_BLOCK);
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
@@ -1340,16 +1335,6 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
 
     /* The suspended ULT resumes its execution from here. */
     ABTI_local_set_thread(p_thread);
-
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
-        while (p_thread->state == ABT_THREAD_STATE_BLOCKED) {
-            /* Switch to the top scheduler */
-            ABTD_thread_context_switch(&p_thread->ctx,
-                ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream));
-        }
-        ABTI_local_set_thread(p_thread);
-        p_thread->state = ABT_THREAD_STATE_RUNNING;
-    }
 }
 
 int ABTI_thread_set_ready(ABTI_thread *p_thread)
@@ -1359,18 +1344,13 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
     /* The ULT should be in BLOCKED state. */
     ABTI_CHECK_TRUE(p_thread->state == ABT_THREAD_STATE_BLOCKED, ABT_ERR_THREAD);
 
-    if (p_thread->type == ABTI_THREAD_TYPE_MAIN) {
-        p_thread->state = ABT_THREAD_STATE_READY;
+    /* Add the ULT to its associated pool */
+    ABTI_xstream *p_xstream = ABTI_xstream_self();
+    abt_errno = ABTI_pool_add_thread(p_thread, p_xstream);
+    ABTI_CHECK_ERROR(abt_errno);
 
-    } else {
-        /* Add the ULT to its associated pool */
-        ABTI_xstream *p_xstream = ABTI_xstream_self();
-        abt_errno = ABTI_pool_add_thread(p_thread, p_xstream);
-        ABTI_CHECK_ERROR(abt_errno);
-
-        /* Decrease the number of blocked threads */
-        ABTI_pool_dec_num_blocked(p_thread->p_pool);
-    }
+    /* Decrease the number of blocked threads */
+    ABTI_pool_dec_num_blocked(p_thread->p_pool);
 
   fn_exit:
     return abt_errno;
