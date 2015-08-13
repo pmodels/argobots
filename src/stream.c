@@ -1177,12 +1177,11 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
     DEBUG_PRINT("[S%" PRIu64 ":TK%" PRIu64 "] END\n",
                 p_xstream->rank, ABTI_task_get_id(p_task));
 
-    /* Delete the last scheduler if the ULT was a scheduler */
+    /* Delete the last scheduler if the tasklet was a scheduler */
     if (p_task->is_sched != NULL) {
         ABTI_xstream_pop_sched(p_xstream);
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
-        p_task->is_sched->state = ABT_SCHED_STATE_STOPPED;
         ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
     }
 
