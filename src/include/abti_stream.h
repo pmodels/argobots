@@ -134,6 +134,9 @@ void ABTI_xstream_terminate_task(ABTI_task *p_task)
 
     if (p_task->refcount == 0) {
         ABTI_task_free(p_task);
+    } else if (p_task->is_sched) {
+        /* NOTE: p_task itself will be freed in ABTI_sched_free. */
+        ABTI_sched_discard_and_free(p_task->is_sched);
     }
 }
 

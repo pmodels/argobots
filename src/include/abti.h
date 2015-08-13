@@ -445,10 +445,10 @@ void ABTI_future_signal(ABTI_future *p_future);
 
 #include "abti_local.h"
 #include "abti_global.h"
-#include "abti_stream.h"
 #include "abti_sched.h"
 #include "abti_config.h"
 #include "abti_pool.h"
+#include "abti_stream.h"
 #include "abti_thread.h"
 #include "abti_thread_attr.h"
 #include "abti_task.h"
