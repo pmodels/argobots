@@ -57,7 +57,7 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 
     /* Check if the pools are available */
     for (p = 0; p < num_pools; p++) {
-      ABTI_pool_retain(pool_list[p]);
+        ABTI_pool_retain(ABTI_pool_get_ptr(pool_list[p]));
     }
 
     p_sched->used          = ABTI_SCHED_NOT_USED;
