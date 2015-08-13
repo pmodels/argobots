@@ -5,6 +5,8 @@
 
 #include "abti.h"
 
+static inline uint64_t ABTI_pool_get_new_id(void);
+
 
 /** @defgroup POOL Pool
  * This group is for Pool.
@@ -58,6 +60,10 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->p_pop                = def->p_pop;
     p_pool->p_remove             = def->p_remove;
     p_pool->p_free               = def->p_free;
+
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+    p_pool->id                   = ABTI_pool_get_new_id();
+#endif
 
     *newpool = ABTI_pool_get_handle(p_pool);
 
@@ -530,6 +536,9 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 
     fprintf(p_os,
         "%s== POOL (%p) ==\n"
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+        "%sid            : %" PRIu64 "\n"
+#endif
         "%saccess        : %s\n"
         "%sautomatic     : %s\n"
         "%snum_scheds    : %d\n"
@@ -542,6 +551,9 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         "%snum_migrations: %d\n"
         "%sdata          : %p\n",
         prefix, p_pool,
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+        prefix, p_pool->id,
+#endif
         prefix, access,
         prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
         prefix, p_pool->num_scheds,
@@ -677,4 +689,20 @@ int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
 #else
     return ABT_TRUE;
 #endif
+}
+
+
+static uint64_t g_pool_id = 0;
+void ABTI_pool_reset_id(void)
+{
+    g_pool_id = 0;
+}
+
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
+static inline uint64_t ABTI_pool_get_new_id(void)
+{
+    return (uint64_t)ABTD_atomic_fetch_add_uint64(&g_pool_id, 1);
 }
