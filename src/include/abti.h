@@ -148,6 +148,7 @@ struct ABTI_xstream {
     ABTI_mutex top_sched_mutex; /* Mutex for the top scheduler */
 
     uint32_t request;           /* Request */
+    void *p_req_arg;            /* Request argument */
     ABTI_mutex mutex;           /* Mutex */
     ABTI_sched *p_main_sched;   /* Main scheduler */
 

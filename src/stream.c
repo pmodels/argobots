@@ -76,6 +76,7 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     p_newxstream->num_scheds   = 0;
     p_newxstream->max_scheds   = 0;
     p_newxstream->request      = 0;
+    p_newxstream->p_req_arg    = NULL;
     p_newxstream->p_main_sched = NULL;
 
     /* Create mutex */
@@ -348,12 +349,8 @@ int ABT_xstream_join(ABT_xstream xstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-
-    /* The target ES must not be the same as the calling thread's ES */
-    ABTI_CHECK_TRUE_MSG(lp_ABTI_local == NULL ||
-                          p_xstream != ABTI_local_get_xstream(),
-                        ABT_ERR_INV_XSTREAM,
-                        "The target ES should be different.");
+    ABTI_thread *p_thread;
+    ABT_bool is_blockable = ABT_FALSE;
 
     ABTI_CHECK_TRUE_MSG(p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY,
                         ABT_ERR_INV_XSTREAM,
@@ -375,12 +372,49 @@ int ABT_xstream_join(ABT_xstream xstream)
     }
 
   fn_body:
-    /* Set the join request */
-    ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
+    /* When the associated pool of the caller ULT has multiple-writer access
+     * mode, the ULT can be blocked. Otherwise, the access mode, if it is a
+     * single-writer access mode, may be violated because another ES has to set
+     * the blocked ULT ready. */
+    p_thread = lp_ABTI_local ? ABTI_local_get_thread() : NULL;
+    if (p_thread) {
+        ABT_pool_access access = p_thread->p_pool->access;
+        if (access == ABT_POOL_ACCESS_MPSC || access == ABT_POOL_ACCESS_MPMC) {
+            is_blockable = ABT_TRUE;
+        }
+
+        /* The target ES must not be the same as the caller ULT's ES if the
+         * access mode of the associated pool is not MPMC. */
+        if (access != ABT_POOL_ACCESS_MPMC) {
+            ABTI_CHECK_TRUE_MSG(p_xstream != ABTI_local_get_xstream(),
+                                ABT_ERR_INV_XSTREAM,
+                                "The target ES should be different.");
+        }
+    }
 
     /* Wait until the target ES terminates */
-    while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
-        ABT_thread_yield();
+    if (is_blockable == ABT_TRUE) {
+        abt_errno = ABTI_pool_set_consumer(p_thread->p_pool,
+                                           ABTI_local_get_xstream());
+        ABTI_CHECK_ERROR(abt_errno);
+
+        /* Save the caller ULT to set it ready when the ES is terminated */
+        p_xstream->p_req_arg = (void *)p_thread;
+        ABTI_thread_set_blocked(p_thread);
+
+        /* Set the join request */
+        ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_JOIN);
+
+        /* If the caller is a ULT, it is blocked here */
+        ABTI_thread_suspend(p_thread);
+        ABTI_ASSERT(p_xstream->state == ABT_XSTREAM_STATE_TERMINATED);
+    } else {
+        /* Set the join request */
+        ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_JOIN);
+
+        while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
+            ABT_thread_yield();
+        }
     }
 
     /* Normal join request */
@@ -1097,6 +1131,13 @@ void ABTI_xstream_schedule(void *p_arg)
          * execution of all work units. */
         if (p_xstream->request & ABTI_XSTREAM_REQ_JOIN) {
             if (ABTI_sched_get_effective_size(p_xstream->p_main_sched) == 0) {
+                /* If a ULT has been blocked on the join call, we make it ready */
+                if (p_xstream->p_req_arg) {
+                    ABTI_thread *p_thread = (ABTI_thread *)p_xstream->p_req_arg;
+                    while (p_thread->request & ABTI_THREAD_REQ_BLOCK);
+                    ABTI_thread_set_ready((ABTI_thread *)p_xstream->p_req_arg);
+                    p_xstream->p_req_arg = NULL;
+                }
                 break;
             }
         }
