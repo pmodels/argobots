@@ -66,37 +66,8 @@ AC_PROG_CC
 AC_HEADER_STDC
 
 dnl ----------------------------------------------------------------------------
-dnl check function availability
+dnl check the environment and the function availability
 dnl ----------------------------------------------------------------------------
-# check pthread
-AC_CHECK_HEADERS(pthread.h)
-AC_CHECK_LIB(pthread, pthread_join)
-
-AC_ARG_ENABLE([affinity],
-    AS_HELP_STRING([--enable-affinity],
-        [enable ES affinity]),,
-        [enable_affinity=no])
-AS_IF([test "x$enable_affinity" != "xno"], [
-       AC_CHECK_LIB(pthread, pthread_setaffinity_np,
-                    [AC_DEFINE(HAVE_PTHREAD_SETAFFINITY_NP, 1,
-                     [Define if pthread_setaffinity_np is available])])
-       ])
-
-# enable valgrind support if requested
-AC_ARG_ENABLE([valgrind],
-    AS_HELP_STRING([--enable-valgrind], [enable valgrind support]))
-AS_IF([test "x$enable_valgrind" = "xyes"], [
-       AC_DEFINE(HAVE_VALGRIND_SUPPORT, 1, [Define valgrind support])
-       ])
-
-# Disable checks if requested
-AC_ARG_ENABLE([checks],
-    AS_HELP_STRING([--disable-checks], [disable checks (unsafe mode)]))
-AS_IF([test "x$enable_checks" = "xno"],
-      [AC_DEFINE(UNSAFE_MODE, 1, [Define unsafe mode]) ABT_NULL="1"],
-      [ABT_NULL="0"])
-AC_SUBST([ABT_NULL])
-
 # compute canonical system types
 AC_CANONICAL_HOST
 
@@ -117,6 +88,10 @@ AS_CASE([$host_cpu],
               [darwin*], [fctx_arch_bin="ppc64_sysv_macho_gas"])])
 AC_SUBST([fctx_arch_bin])
 AM_SUBST_NOTMAKE([fctx_arch_bin])
+
+# check pthread
+AC_CHECK_HEADERS(pthread.h)
+AC_CHECK_LIB(pthread, pthread_join)
 
 # check timer functions
 # for clock_gettime and clock_getres, we need to search them from librt or
@@ -139,24 +114,65 @@ fi
 if test -z "$timer_type" ; then
     AC_MSG_ERROR([No timer function found])
 fi
-
+dnl ----------------------------------------------------------------------------
 
 dnl ----------------------------------------------------------------------------
 dnl setup top-level argument handling
 dnl ----------------------------------------------------------------------------
+AC_ARG_ENABLE([affinity],
+    AS_HELP_STRING([--enable-affinity],
+        [enable ES affinity]),,
+        [enable_affinity=no])
+AS_IF([test "x$enable_affinity" != "xno"], [
+       AC_CHECK_LIB(pthread, pthread_setaffinity_np,
+                    [AC_DEFINE(HAVE_PTHREAD_SETAFFINITY_NP, 1,
+                     [Define if pthread_setaffinity_np is available])])
+       ])
+
+# set CFLAGS for the performance optimization
 AC_ARG_ENABLE([perf-opt],
     AS_HELP_STRING([--enable-perf-opt], [enable performance optimization]))
+if test "x$enable_perf_opt" = "xyes"; then
+    if test "x$GCC" = "xyes"; then
+        CFLAGS="-O3 -ftls-model=initial-exec"
+    fi
+fi
+
+# enable valgrind support if requested
+AC_ARG_ENABLE([valgrind],
+    AS_HELP_STRING([--enable-valgrind], [enable valgrind support]))
+AS_IF([test "x$enable_valgrind" = "xyes"], [
+       AC_DEFINE(HAVE_VALGRIND_SUPPORT, 1, [Define valgrind support])
+       ])
+
+# Disable checks if requested
+AC_ARG_ENABLE([checks],
+    AS_HELP_STRING([--disable-checks], [disable checks (unsafe mode)]))
+AS_IF([test "x$enable_checks" = "xno"],
+      [AC_DEFINE(UNSAFE_MODE, 1, [Define unsafe mode]) ABT_NULL="1"],
+      [ABT_NULL="0"])
+AC_SUBST([ABT_NULL])
 
 AC_ARG_ENABLE([fcontext],
     AS_HELP_STRING([--disable-fcontext],
         [do not use fcontext even though it is supported. If you disable
          fcontext, ucontext in libc is used.]),,
         [enable_fcontext=yes])
+# if fcontext supports this platform and the user does not specify
+# --disable-fcontext, we use fcontext instead of ucontext.
+AM_CONDITIONAL([ABT_USE_FCONTEXT],
+               [test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"])
+AS_IF([test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"],
+      [AC_DEFINE(ABT_CONFIG_USE_FCONTEXT, 1, [Define to use fcontext])])
 
 AC_ARG_ENABLE([preserve-fpu],
     AS_HELP_STRING([--disable-preserve-fpu],
         [do not preserve fpu registers when fcontext is used]),,
         [enable_preserve_fpu=yes])
+AS_IF([test "x$enable_preserve_fpu" != "xno"],
+      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 1,
+                 [Define to 1 if we preserve fpu registers])],
+      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 0)])
 dnl ----------------------------------------------------------------------------
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])
@@ -165,30 +181,6 @@ AM_PROG_AS
 AM_PROG_AR
 
 LT_INIT
-
-# if fcontext supports this platform and the user does not specify
-# --disable-fcontext, we use fcontext instead of ucontext.
-AM_CONDITIONAL([ABT_USE_FCONTEXT],
-               [test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"])
-AS_IF([test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"],
-      [AC_DEFINE(ABT_CONFIG_USE_FCONTEXT, 1, [Define to use fcontext])])
-
-dnl ----------------------------------------------------------------------------
-dnl define constants according to top-level arguments
-dnl ----------------------------------------------------------------------------
-# perf-opt
-if test "x$enable_perf_opt" = "xyes"; then
-    if test "x$GCC" = "xyes"; then
-        CFLAGS="-O3 -ftls-model=initial-exec"
-    fi
-fi
-
-# preserve-fpu
-AS_IF([test "x$enable_preserve_fpu" != "xno"],
-      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 1,
-                 [Define to 1 if we preserve fpu registers])],
-      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 0)])
-dnl ----------------------------------------------------------------------------
 
 AC_PROG_INSTALL
 
