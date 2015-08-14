@@ -1232,10 +1232,20 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
         /* The ULT needs to be terminated. */
         ABTI_xstream_terminate_thread(p_thread);
+    } else if (!p_thread->request) {
+        /* The ULT did not finish its execution.
+         * Change the state of current running ULT and
+         * add it to the pool again. */
+        abt_errno = ABTI_pool_add_thread(p_thread, p_xstream);
+        ABTI_CHECK_ERROR(abt_errno);
     } else if (p_thread->request & ABTI_THREAD_REQ_BLOCK) {
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
         LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] check blocked\n",
                   ABTI_thread_get_id(p_thread), p_xstream->rank);
+    } else if (p_thread->request & ABTI_THREAD_REQ_MIGRATE) {
+        /* This is the case when the ULT requests migration of itself. */
+        abt_errno = ABTI_xstream_migrate_thread(p_thread);
+        ABTI_CHECK_ERROR(abt_errno);
     } else if (p_thread->request & ABTI_THREAD_REQ_ORPHAN) {
         /* The ULT is not pushed back to the pool and is disconnected from any
          * pool. */
@@ -1250,11 +1260,8 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
                   ABTI_thread_get_id(p_thread), p_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
     } else {
-        /* The ULT did not finish its execution.
-         * Change the state of current running ULT and
-         * add it to the pool again. */
-        abt_errno = ABTI_pool_add_thread(p_thread, p_xstream);
-        ABTI_CHECK_ERROR(abt_errno);
+        abt_errno = ABT_ERR_THREAD;
+        goto fn_fail;
     }
 
     /* Set the current running ULT/tasklet */
