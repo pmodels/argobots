@@ -418,7 +418,6 @@ int ABT_xstream_join(ABT_xstream xstream)
 
         /* If the caller is a ULT, it is blocked here */
         ABTI_thread_suspend(p_thread);
-        ABTI_ASSERT(p_xstream->state == ABT_XSTREAM_STATE_TERMINATED);
     } else {
         /* Set the join request */
         ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_JOIN);
