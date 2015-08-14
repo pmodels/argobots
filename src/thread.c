@@ -1279,6 +1279,72 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     goto fn_exit;
 }
 
+/* This routine is to create a ULT for the scheduler. */
+int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_newthread;
+    ABT_thread h_newthread;
+    ABT_thread_attr attr;
+    size_t stacksize;
+
+    p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
+
+    /* Set attributes */
+    stacksize = ABTI_global_get_sched_stacksize();
+    ABT_thread_attr_create(&attr);
+    ABT_thread_attr_set_stacksize(attr, stacksize);
+    ABT_thread_attr_set_migratable(attr, ABT_FALSE);
+    ABTI_thread_set_attr(p_newthread, attr);
+    ABT_thread_attr_free(&attr);
+
+    /* Create a stack for this ULT */
+    p_newthread->p_stack = ABTU_malloc(stacksize);
+
+    /* Create a ULT context */
+    abt_errno = ABTD_thread_context_create(NULL,
+            p_sched->run, (void *)ABTI_sched_get_handle(p_sched), stacksize,
+            p_newthread->p_stack, &p_newthread->ctx);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
+
+    p_newthread->p_last_xstream = NULL;
+    p_newthread->is_sched       = p_sched;
+    p_newthread->p_pool         = p_pool;
+    p_newthread->type           = ABTI_THREAD_TYPE_USER;
+    p_newthread->state          = ABT_THREAD_STATE_READY;
+    p_newthread->refcount       = 1;
+    p_newthread->request        = 0;
+    p_newthread->p_req_arg      = NULL;
+    p_newthread->id             = ABTI_THREAD_INIT_ID;
+
+    /* Create a wrapper unit */
+    h_newthread = ABTI_thread_get_handle(p_newthread);
+    p_newthread->unit = p_pool->u_create_from_thread(h_newthread);
+
+    LOG_EVENT("[U%" PRIu64 "] created\n", ABTI_thread_get_id(p_newthread));
+
+    /* Save the ULT pointer in p_sched */
+    p_sched->p_thread = p_newthread;
+
+    /* Add this thread to the pool */
+    abt_errno = ABTI_pool_push(p_pool, p_newthread->unit, ABTI_xstream_self());
+    if (abt_errno != ABT_SUCCESS) {
+        p_sched->p_thread = NULL;
+        ABTI_thread_free(p_newthread);
+        goto fn_fail;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
 void ABTI_thread_free(ABTI_thread *p_thread)
 {
     /* Mutex of p_thread may have been locked somewhere. We free p_thread when

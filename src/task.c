@@ -86,6 +86,51 @@ int ABT_task_create(ABT_pool pool,
     goto fn_exit;
 }
 
+/* This routine is to create a tasklet for the scheduler. */
+int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_task *p_newtask;
+    ABT_task h_newtask;
+
+    p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
+
+    p_newtask->p_xstream  = NULL;
+    p_newtask->is_sched   = p_sched;
+    p_newtask->p_pool     = p_pool;
+    p_newtask->state      = ABT_TASK_STATE_READY;
+    p_newtask->migratable = ABT_TRUE;
+    p_newtask->refcount   = 1;
+    p_newtask->request    = 0;
+    p_newtask->f_task     = p_sched->run;
+    p_newtask->p_arg      = (void *)ABTI_sched_get_handle(p_sched);
+    p_newtask->id         = ABTI_TASK_INIT_ID;
+
+    /* Create a wrapper unit */
+    h_newtask = ABTI_task_get_handle(p_newtask);
+    p_newtask->unit = p_pool->u_create_from_task(h_newtask);
+
+    LOG_EVENT("[T%" PRIu64 "] created\n", ABTI_task_get_id(p_newtask));
+
+    /* Save the tasklet pointer in p_sched */
+    p_sched->p_task = p_newtask;
+
+    /* Add this tasklet to the pool */
+    abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
+    if (abt_errno != ABT_SUCCESS) {
+        p_sched->p_task = NULL;
+        ABTI_task_free(p_newtask);
+        goto fn_fail;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
 /**
  * @ingroup TASK
  * @brief   Create a new tasklet associated with the target ES (\c xstream).

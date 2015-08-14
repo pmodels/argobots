@@ -422,6 +422,7 @@ void ABTI_pool_reset_id(void);
 int   ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool);
 int   ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread);
 int   ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
+int   ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched);
 void  ABTI_thread_free(ABTI_thread *p_thread);
 void  ABTI_thread_free_main(ABTI_thread *p_thread);
 void  ABTI_thread_free_main_sched(ABTI_thread *p_thread);
@@ -443,6 +444,7 @@ void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);
 void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf);
 
 /* Tasklet */
+int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched);
 void ABTI_task_free(ABTI_task *p_task);
 void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent);
 void ABTI_task_retain(ABTI_task *p_task);
