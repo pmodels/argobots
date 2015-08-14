@@ -138,10 +138,10 @@ void ABTI_pool_retain(ABTI_pool *p_pool)
 /* Decrease the num_scheds to realease this pool from a scheduler. Call when
  * the pool is removed from a scheduler or when it stops. */
 static inline
-void ABTI_pool_release(ABTI_pool *p_pool)
+int32_t ABTI_pool_release(ABTI_pool *p_pool)
 {
     ABTI_ASSERT(p_pool->num_scheds > 0);
-    ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1);
+    return ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1) - 1;
 }
 
 static inline

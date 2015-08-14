@@ -691,8 +691,8 @@ int ABTI_sched_free(ABTI_sched *p_sched)
      * Otherwise, freeing the pool is the user's reponsibility. */
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        ABTI_pool_release(p_pool);
-        if (p_pool->automatic == ABT_TRUE && p_pool->num_scheds == 0) {
+        int32_t num_scheds = ABTI_pool_release(p_pool);
+        if (p_pool->automatic == ABT_TRUE && num_scheds == 0) {
             abt_errno = ABT_pool_free(p_sched->pools+p);
             ABTI_CHECK_ERROR(abt_errno);
         }
