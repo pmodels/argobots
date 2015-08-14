@@ -19,6 +19,7 @@ void thread_func(void *arg)
     ABT_thread_self(&thread);
     ABT_thread_get_id(thread, &thread_id);
     ABT_test_printf(1, "My thread id is %lu\n", thread_id);
+    ABT_thread_release(thread);
 }
 
 int main(int argc, char *argv[])
