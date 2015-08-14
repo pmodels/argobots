@@ -537,8 +537,6 @@ int ABT_thread_yield_to(ABT_thread thread)
     p_tar_thread->state = ABT_THREAD_STATE_RUNNING;
     ABTD_thread_context_switch(&p_cur_thread->ctx, &p_tar_thread->ctx);
 
-    ABTI_local_set_thread(p_cur_thread);
-
   fn_exit:
     return abt_errno;
 
@@ -585,8 +583,6 @@ int ABT_thread_yield(void)
     ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
 
     /* Back to the original thread */
-    p_thread->state = ABT_THREAD_STATE_RUNNING;
-    ABTI_local_set_thread(p_thread);
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume after yield\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
@@ -1368,7 +1364,6 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
     /* The suspended ULT resumes its execution from here. */
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resumed\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
-    ABTI_local_set_thread(p_thread);
 }
 
 int ABTI_thread_set_ready(ABTI_thread *p_thread)

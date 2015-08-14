@@ -125,12 +125,22 @@ int ABT_finalize(void)
     /* Set the join request */
     ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
 
-    /* Set the orphan request for the primary ULT */
-    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
-
     /* We wait for the remaining jobs */
-    while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
-        ABT_thread_yield();
+    if (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
+        /* Set the orphan request for the primary ULT */
+        ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
+
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] yield to scheduler\n",
+                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
+        /* Switch to the top scheduler */
+        ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
+        ABTI_LOG_SET_SCHED(p_sched);
+        ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
+
+        /* Back to the original thread */
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume after yield\n",
+                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
     }
 
     /* Remove the primary ES from the global ES container */
