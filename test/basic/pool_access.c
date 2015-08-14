@@ -8,7 +8,6 @@
 #include "abt.h"
 #include "abttest.h"
 
-// TODO free memory
 
 ABT_pool_access accesses[5] = {
   ABT_POOL_ACCESS_PRIV, ABT_POOL_ACCESS_SPSC, ABT_POOL_ACCESS_MPSC,
@@ -20,6 +19,8 @@ int add_to_another_ES(int accessIdx, int result)
     int ret;
     int s;
     ABT_pool_access access = accesses[accessIdx];
+
+    ABT_test_printf(1, "add_to_another_ES: %d\n", accessIdx);
 
     ABT_pool pool;
     ret = ABT_pool_create_basic(ABT_POOL_FIFO, access, ABT_TRUE, &pool);
@@ -55,8 +56,15 @@ int add_to_another_ES(int accessIdx, int result)
     /* Use the pool with another scheduler in another ES */
     ret =  ABT_pool_add_sched(pool2, scheds[2]);
 
+    /* Free scheds[2] if it was not added to pool2 */
+    if (ret != ABT_SUCCESS) {
+        ABT_TEST_ERROR(ABT_sched_free(&scheds[2]), "ABT_sched_free");
+    }
+
     ABT_TEST_ERROR(ABT_xstream_join(xstream1), "ABT_xstream_join");
     ABT_TEST_ERROR(ABT_xstream_join(xstream2), "ABT_xstream_join");
+    ABT_TEST_ERROR(ABT_xstream_free(&xstream1), "ABT_xstream_free");
+    ABT_TEST_ERROR(ABT_xstream_free(&xstream2), "ABT_xstream_free");
 
     if ((ret != ABT_SUCCESS && result == ABT_SUCCESS) ||
         (ret == ABT_SUCCESS && result != ABT_SUCCESS))
@@ -79,6 +87,9 @@ void task_func1(void *arg)
     ABT_TEST_ERROR(ret, "ABT_pool_add_sched");
 
     ret = ABT_pool_add_sched(pool_dest, sched);
+    if (ret != ABT_SUCCESS) {
+        ABT_TEST_ERROR(ABT_sched_free(&sched), "ABT_sched_free");
+    }
 
     if ((ret != ABT_SUCCESS && result == ABT_SUCCESS) ||
         (ret == ABT_SUCCESS && result != ABT_SUCCESS))
@@ -96,6 +107,8 @@ int add_to_another_access(int accessIdx, int *results)
     ABT_pool_access access = accesses[accessIdx];
 
     for (p = 0; p < 5; p++) {
+        ABT_test_printf(1, "add_to_another_access: %d-%d\n", accessIdx, p);
+
         /* Creation of the ES */
         ABT_xstream xstream;
         ret = ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
@@ -132,6 +145,7 @@ int add_to_another_access(int accessIdx, int *results)
         ABT_TEST_ERROR(ret, "ABT_task_create");
 
         ABT_TEST_ERROR(ABT_xstream_join(xstream), "ABT_xstream_join");
+        ABT_TEST_ERROR(ABT_xstream_free(&xstream), "ABT_xstream_free");
     }
     return ABT_SUCCESS;
 }
@@ -165,6 +179,8 @@ int push_from_another_es(int accessIdx, int *results)
     int ret;
     ABT_pool_access access = accesses[accessIdx];
 
+    ABT_test_printf(1, "push_from_another_es: %d\n", accessIdx);
+
     /* Creation of the ES */
     ABT_sched_config config;
     ret = ABT_sched_config_create(&config,
@@ -194,6 +210,7 @@ int push_from_another_es(int accessIdx, int *results)
         ret = ABT_SUCCESS;
 
     ABT_TEST_ERROR(ABT_xstream_join(xstream), "ABT_xstream_join");
+    ABT_TEST_ERROR(ABT_xstream_free(&xstream), "ABT_xstream_free");
 
     return ret;
 }
