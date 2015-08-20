@@ -252,5 +252,6 @@ AC_CONFIG_FILES([Makefile
                  test/Makefile
                  test/basic/Makefile
                  test/util/Makefile
-                 examples/Makefile])
+                 examples/Makefile
+                 examples/dynamic-es/Makefile])
 AC_OUTPUT
