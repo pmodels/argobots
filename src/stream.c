@@ -6,6 +6,7 @@
 #include "abti.h"
 
 static uint64_t ABTI_xstream_get_new_rank(void);
+static void ABTI_xstream_return_rank(uint64_t);
 
 
 /** @defgroup ES Execution Stream (ES)
@@ -1100,6 +1101,9 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
 
     LOG_EVENT("[E%" PRIu64 "] freed\n", p_xstream->rank);
 
+    /* Return rank for reuse */
+    ABTI_xstream_return_rank(p_xstream->rank);
+
     ABTU_free(p_xstream);
 
   fn_exit:
@@ -1620,11 +1624,20 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 
 /* global rank variable for ES */
 static uint64_t g_xstream_rank = 0;
+static uint32_t *g_rank_list = NULL;
 
 /* Reset the ES rank value */
 void ABTI_xstream_reset_rank(void)
 {
-    g_xstream_rank = 0;
+    g_rank_list = (uint32_t *)ABTU_calloc(gp_ABTI_global->num_cores,
+                                          sizeof(uint32_t));
+    g_xstream_rank = gp_ABTI_global->num_cores;
+}
+
+void ABTI_xstream_free_ranks(void)
+{
+    ABTU_free(g_rank_list);
+    g_rank_list = NULL;
 }
 
 /*****************************************************************************/
@@ -1634,7 +1647,22 @@ void ABTI_xstream_reset_rank(void)
 /* Get a new ES rank */
 static uint64_t ABTI_xstream_get_new_rank(void)
 {
+    uint64_t i;
+
+    for (i = 0; i < gp_ABTI_global->num_cores; i++) {
+        if (g_rank_list[i] == 0) {
+            if (ABTD_atomic_cas_uint32(&g_rank_list[i], 0, 1) == 0) {
+                return i;
+            }
+        }
+    }
     return ABTD_atomic_fetch_add_uint64(&g_xstream_rank, 1);
 }
 
+static void ABTI_xstream_return_rank(uint64_t rank)
+{
+    if (rank < gp_ABTI_global->num_cores) {
+        g_rank_list[rank] = 0;
+    }
+}
 

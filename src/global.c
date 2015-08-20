@@ -166,6 +166,9 @@ int ABT_finalize(void)
     ABTU_free(gp_ABTI_global);
     gp_ABTI_global = NULL;
 
+    /* Free internal arrays */
+    ABTI_xstream_free_ranks();
+
   fn_exit:
     return abt_errno;
 
