@@ -1604,9 +1604,6 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     ABTI_xstream_schedule(p_arg);
     LOG_EVENT("[E%" PRIu64 "] end\n", p_xstream->rank);
 
-    /* Move the ES to the deads pool */
-    ABTI_global_move_xstream(p_xstream);
-
     /* Reset the current ES and its local info. */
     ABTI_local_finalize();
 
