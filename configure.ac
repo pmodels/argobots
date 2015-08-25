@@ -216,6 +216,14 @@ AS_IF([test "x$enable_preserve_fpu" != "xno"],
       [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 1,
                  [Define to 1 if we preserve fpu registers])],
       [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 0)])
+
+# Power management events from outside
+AC_ARG_ENABLE([power-event],
+    AS_HELP_STRING([--enable-power-event],
+        [enable handling power management events]))
+AS_IF([test "x$enable_power_event" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_HANDLE_POWER_EVENT, 1,
+                 [Define to handle power management events])])
 dnl ----------------------------------------------------------------------------
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])
