@@ -15,8 +15,10 @@ basic/thread_task
 basic/thread_task_num
 basic/sched_basic
 basic/sched_prio
+basic/sched_set_main
 basic/sched_stack
 basic/sched_config
+basic/sched_user_ws
 basic/pool_access
 basic/name
 basic/mutex
