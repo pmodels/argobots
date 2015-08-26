@@ -251,13 +251,7 @@ int ABT_thread_join(ABT_thread thread)
                             "The target ULT should be different.");
 
         while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
-            /* FIXME: instead of same pool, runnable by the same ES */
-            if (p_thread->p_pool == p_caller->p_pool &&
-                ABTI_thread_is_ready(p_thread) == ABT_TRUE) {
-                ABT_thread_yield_to(thread);
-            }
-            else
-                ABT_thread_yield();
+            ABT_thread_yield();
         }
     } else {
         while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
