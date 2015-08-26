@@ -54,6 +54,7 @@ int ABT_error_get_str(int errno, char *str, size_t *len)
         "ABT_ERR_XSTREAM",
         "ABT_ERR_XSTREAM_STATE",
         "ABT_ERR_SCHED",
+        "ABT_ERR_SCHED_CONFIG",
         "ABT_ERR_POOL",
         "ABT_ERR_UNIT",
         "ABT_ERR_THREAD",
