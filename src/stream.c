@@ -1243,9 +1243,9 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         abt_errno = ABTI_pool_add_thread(p_thread, p_xstream);
         ABTI_CHECK_ERROR(abt_errno);
     } else if (p_thread->request & ABTI_THREAD_REQ_BLOCK) {
-        ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
         LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] check blocked\n",
                   ABTI_thread_get_id(p_thread), p_xstream->rank);
+        ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
     } else if (p_thread->request & ABTI_THREAD_REQ_MIGRATE) {
         /* This is the case when the ULT requests migration of itself. */
         abt_errno = ABTI_xstream_migrate_thread(p_thread);
