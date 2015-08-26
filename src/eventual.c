@@ -62,6 +62,11 @@ int ABT_eventual_free(ABT_eventual *eventual)
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(*eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
+    /* The lock needs to be acquired to safely free the eventual structure.
+     * However, we do not have to unlock it because the entire structure is
+     * freed here. */
+    ABTI_mutex_spinlock(&p_eventual->mutex);
+
     ABTU_free(p_eventual->value);
     ABTU_free(p_eventual);
 

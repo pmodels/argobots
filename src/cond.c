@@ -70,6 +70,11 @@ int ABT_cond_free(ABT_cond *cond)
     ABTI_CHECK_TRUE(p_cond->num_waiters == 0, ABT_ERR_COND);
     ABTI_CHECK_TRUE(p_cond->waiters.head != NULL, ABT_ERR_COND);
 
+    /* The lock needs to be acquired to safely free the condition structure.
+     * However, we do not have to unlock it because the entire structure is
+     * freed here. */
+    ABTI_mutex_spinlock(&p_cond->mutex);
+
     ABTU_free(p_cond->waiters.head);
     ABTU_free(p_cond);
 

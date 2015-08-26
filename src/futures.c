@@ -89,6 +89,11 @@ int ABT_future_free(ABT_future *future)
     ABTI_future *p_future = ABTI_future_get_ptr(*future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
+    /* The lock needs to be acquired to safely free the future structure.
+     * However, we do not have to unlock it because the entire structure is
+     * freed here. */
+    ABTI_mutex_spinlock(&p_future->mutex);
+
     ABTU_free(p_future->array);
     ABTU_free(p_future);
 
