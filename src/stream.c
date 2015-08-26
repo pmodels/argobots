@@ -1151,9 +1151,6 @@ void ABTI_xstream_schedule(void *p_arg)
             if (ABTI_sched_get_effective_size(p_xstream->p_main_sched) == 0) {
                 /* If a ULT has been blocked on the join call, we make it ready */
                 if (p_xstream->p_req_arg) {
-                    ABTI_thread *p_thread = (ABTI_thread *)p_xstream->p_req_arg;
-                    while (*(volatile uint32_t *)(&p_thread->request)
-                           & ABTI_THREAD_REQ_BLOCK);
                     ABTI_thread_set_ready((ABTI_thread *)p_xstream->p_req_arg);
                     p_xstream->p_req_arg = NULL;
                 }
