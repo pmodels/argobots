@@ -262,6 +262,16 @@ AS_IF([test "x$enable_aligned_alloc" != "xno"],
     [AC_DEFINE(ABT_CONFIG_USE_ALIGNED_ALLOC, 1,
         [Define to allocate objects aligned to the cache line size])])
 
+# libhugetlbfs
+AC_ARG_WITH([hugetlbfs],
+    AS_HELP_STRING([--with-hugetlbfs=PATH],
+        [specify path where hugetlbfs include directory and lib directory can be found]))
+if test "x$with_hugetlbfs" != "x"; then
+    CFLAGS="-I$with_hugetlbfs/include $CFLAGS"
+    LDFLAGS="-L$with_hugetlbfs/lib64 -lhugetlbfs $LDFLAGS"
+fi
+AC_CHECK_LIB(hugetlbfs, get_huge_pages)
+
 # Power management events from outside
 AC_ARG_ENABLE([power-event],
     AS_HELP_STRING([--enable-power-event],
