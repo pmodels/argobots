@@ -1168,8 +1168,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
 
-    if ((p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
-        (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
+    if (p_thread->request & ABTI_THREAD_REQ_CANCEL) {
         ABTI_xstream_terminate_thread(p_thread);
         goto fn_exit;
     }
