@@ -21,9 +21,9 @@ abt_sources = \
 	timer.c
 
 include $(top_srcdir)/src/arch/Makefile.mk
-include $(top_srcdir)/src/sched/Makefile.mk
-include $(top_srcdir)/src/pool/Makefile.mk
 include $(top_srcdir)/src/container/Makefile.mk
+include $(top_srcdir)/src/pool/Makefile.mk
+include $(top_srcdir)/src/sched/Makefile.mk
 include $(top_srcdir)/src/util/Makefile.mk
 
 include $(top_srcdir)/src/include/Makefile.mk

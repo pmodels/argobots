@@ -4,6 +4,6 @@
 #
 
 abt_sources += \
-	pool/pool.c \
-	pool/fifo.c
+	pool/fifo.c \
+	pool/pool.c
 
