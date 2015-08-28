@@ -544,5 +544,6 @@ void ABTI_event_publish_info(void);
 #include "abti_future.h"
 #include "abti_barrier.h"
 #include "abti_timer.h"
+#include "abti_mem.h"
 
 #endif /* ABTI_H_INCLUDED */
