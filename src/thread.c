@@ -64,7 +64,9 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     p_newthread->p_last_xstream = NULL;
     p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->request        = 0;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched       = NULL;
+#endif
     p_newthread->p_pool         = p_pool;
     p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
     p_newthread->type           = ABTI_THREAD_TYPE_USER;
@@ -535,21 +537,25 @@ int ABT_thread_yield_to(ABT_thread thread)
     /* Add the current thread to the pool again */
     ABTI_POOL_PUSH(p_cur_thread->p_pool, p_cur_thread->unit, p_xstream);
 
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Delete the last context if the ULT is a scheduler */
     if (p_cur_thread->is_sched != NULL) {
         ABTI_xstream_pop_sched(p_xstream);
         p_cur_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
     }
+#endif
 
     /* Remove the target ULT from the pool */
     ABTI_POOL_REMOVE(p_tar_thread->p_pool, p_tar_thread->unit, p_xstream);
 
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Add a new scheduler if the ULT is a scheduler */
     if (p_tar_thread->is_sched != NULL) {
         p_tar_thread->is_sched->p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
         ABTI_xstream_push_sched(p_xstream, p_tar_thread->is_sched);
         p_tar_thread->is_sched->state = ABT_SCHED_STATE_RUNNING;
     }
+#endif
 
     /* We set the link in the context for the target thread */
     ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
@@ -1293,7 +1299,9 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     p_newthread->p_last_xstream  = p_xstream;
     p_newthread->state           = ABT_THREAD_STATE_RUNNING;
     p_newthread->request         = 0;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched        = NULL;
+#endif
     p_newthread->p_pool          = p_pool;
     p_newthread->refcount        = 0;
     p_newthread->type            = ABTI_THREAD_TYPE_MAIN;
@@ -1380,7 +1388,9 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     p_newthread->p_last_xstream = p_xstream;
     p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->request        = 0;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched       = p_sched;
+#endif
     p_newthread->p_pool         = NULL;
     p_newthread->unit           = ABT_UNIT_NULL;
     p_newthread->refcount       = 0;
@@ -1438,7 +1448,9 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     p_newthread->p_last_xstream = NULL;
     p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->request        = 0;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched       = p_sched;
+#endif
     p_newthread->p_pool         = p_pool;
     p_newthread->refcount       = 1;
     p_newthread->type           = ABTI_THREAD_TYPE_USER;
@@ -1685,7 +1697,9 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         "%stype    : %s\n"
         "%sstate   : %s\n"
         "%slast_ES : %p (%" PRIu64 ")\n"
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
         "%sis_sched: %p\n"
+#endif
         "%spool    : %p\n"
         "%sstack   : %p\n"
         "%srefcount: %u\n"
@@ -1698,7 +1712,9 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         prefix, type,
         prefix, state,
         prefix, p_xstream, xstream_rank,
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
         prefix, p_thread->is_sched,
+#endif
         prefix, p_thread->p_pool,
         prefix, p_thread->p_stack,
         prefix, p_thread->refcount,

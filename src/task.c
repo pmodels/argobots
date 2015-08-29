@@ -52,7 +52,9 @@ int ABT_task_create(ABT_pool pool,
     p_newtask->request    = 0;
     p_newtask->f_task     = task_func;
     p_newtask->p_arg      = arg;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newtask->is_sched   = NULL;
+#endif
     p_newtask->p_pool     = p_pool;
     p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
     p_newtask->p_keytable = NULL;
@@ -106,7 +108,9 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     p_newtask->request    = 0;
     p_newtask->f_task     = p_sched->run;
     p_newtask->p_arg      = (void *)ABTI_sched_get_handle(p_sched);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newtask->is_sched   = p_sched;
+#endif
     p_newtask->p_pool     = p_pool;
     p_newtask->refcount   = 1;
     p_newtask->p_keytable = NULL;
@@ -655,7 +659,9 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
         "%sid        : %" PRIu64 "\n"
         "%sstate     : %s\n"
         "%sES        : %p (%" PRIu64 ")\n"
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
         "%sis_sched  : %p\n"
+#endif
         "%spool      : %p\n"
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         "%smigratable: %s\n"
@@ -669,7 +675,9 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
         prefix, ABTI_task_get_id(p_task),
         prefix, state,
         prefix, p_task->p_xstream, xstream_rank,
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
         prefix, p_task->is_sched,
+#endif
         prefix, p_task->p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",

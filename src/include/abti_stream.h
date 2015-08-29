@@ -133,9 +133,11 @@ void ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
     if (p_thread->refcount == 0) {
         ABTI_thread_free(p_thread);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     } else if (p_thread->is_sched) {
         /* NOTE: p_thread itself will be freed in ABTI_sched_free. */
         ABTI_sched_discard_and_free(p_thread->is_sched);
+#endif
     }
 }
 
@@ -149,9 +151,11 @@ void ABTI_xstream_terminate_task(ABTI_task *p_task)
               ABTI_task_get_id(p_task), p_task->p_xstream->rank);
     if (p_task->refcount == 0) {
         ABTI_task_free(p_task);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     } else if (p_task->is_sched) {
         /* NOTE: p_task itself will be freed in ABTI_sched_free. */
         ABTI_sched_discard_and_free(p_task->is_sched);
+#endif
     }
 }
 

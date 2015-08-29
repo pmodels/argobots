@@ -266,7 +266,9 @@ struct ABTI_thread {
     ABTI_xstream *p_last_xstream;   /* Last ES where it ran */
     ABT_thread_state state;         /* State */
     uint32_t request;               /* Request */
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_sched *is_sched;           /* If it is a scheduler, its ptr */
+#endif
     ABTI_pool *p_pool;              /* Associated pool */
     ABT_unit unit;                  /* Unit enclosing this thread */
     ABTI_unit unit_def;             /* Internal unit definition */
@@ -303,7 +305,9 @@ struct ABTI_task {
     uint32_t request;          /* Request */
     void (*f_task)(void *);    /* Task function */
     void *p_arg;               /* Task arguments */
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_sched *is_sched;      /* If it is a scheduler, its ptr */
+#endif
     ABTI_pool *p_pool;         /* Associated pool */
     ABT_unit unit;             /* Unit enclosing this task */
     ABTI_unit unit_def;        /* Internal unit definition */

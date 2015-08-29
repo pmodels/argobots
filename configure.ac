@@ -270,6 +270,13 @@ AC_ARG_ENABLE([migration],
 AS_IF([test "x$enable_migration" != "xyes"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_MIGRATION, 1,
         [Define to disable ULT migration])])
+
+AC_ARG_ENABLE([stackable-sched],
+    AS_HELP_STRING([--disable-stackable-sched], [disable stackable scheduler]),,
+    [enable_stackable_sched=yes])
+AS_IF([test "x$enable_stackable_sched" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_STACKABLE_SCHED, 1,
+        [Define to disable stackable scheduler])])
 dnl ----------------------------------------------------------------------------
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])
