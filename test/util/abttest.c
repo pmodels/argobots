@@ -93,6 +93,11 @@ void ABT_test_error(int err, const char *msg, const char *file, int line)
     int ret;
 
     if (err == ABT_SUCCESS) return;
+    if (err == ABT_ERR_FEATURE_NA) {
+        printf("Skipped\n");
+        fflush(stdout);
+        exit(77);
+    }
 
     ret = ABT_error_get_str(err, NULL, &len);
     assert(ret == ABT_SUCCESS);
