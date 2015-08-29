@@ -251,10 +251,14 @@ struct ABTI_unit {
 };
 
 struct ABTI_thread_attr {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     size_t   stacksize;                 /* Stack size */
     ABT_bool migratable;                /* Migratability */
     void (*f_cb)(ABT_thread, void *);   /* Callback function */
     void *p_cb_arg;                     /* Callback function argument */
+#else
+    size_t   stacksize;                 /* Stack size */
+#endif
 };
 
 struct ABTI_thread {
@@ -305,7 +309,9 @@ struct ABTI_task {
     ABTI_unit unit_def;        /* Internal unit definition */
     uint32_t refcount;         /* Reference count */
     ABTI_ktable *p_keytable;   /* Tasklet-specific data */
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABT_bool migratable;       /* Migratability */
+#endif
     uint64_t id;               /* ID */
 };
 
@@ -465,8 +471,10 @@ int   ABTI_thread_set_ready(ABTI_thread *p_thread);
 ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
 void  ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr);
 void  ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
 void  ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
+#endif
 void  ABTI_thread_retain(ABTI_thread *p_thread);
 void  ABTI_thread_release(ABTI_thread *p_thread);
 void  ABTI_thread_reset_id(void);

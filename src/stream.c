@@ -1272,11 +1272,13 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     }
 #endif
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     if (p_thread->request & ABTI_THREAD_REQ_MIGRATE) {
         abt_errno = ABTI_xstream_migrate_thread(p_thread);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
+#endif
 
     /* Unset the current running ULT/tasklet */
     ABTI_thread *last_thread = ABTI_local_get_thread();
@@ -1340,10 +1342,12 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] check blocked\n",
                   ABTI_thread_get_id(p_thread), p_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     } else if (p_thread->request & ABTI_THREAD_REQ_MIGRATE) {
         /* This is the case when the ULT requests migration of itself. */
         abt_errno = ABTI_xstream_migrate_thread(p_thread);
         ABTI_CHECK_ERROR(abt_errno);
+#endif
     } else if (p_thread->request & ABTI_THREAD_REQ_ORPHAN) {
         /* The ULT is not pushed back to the pool and is disconnected from any
          * pool. */
@@ -1442,6 +1446,9 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
 
 int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
 {
+#ifdef ABT_CONFIG_DISABLE_MIGRATION
+    return ABT_ERR_MIGRATION_NA;
+#else
     int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool;
     ABT_pool pool;
@@ -1493,6 +1500,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#endif
 }
 
 int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)

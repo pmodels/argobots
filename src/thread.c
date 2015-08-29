@@ -675,6 +675,7 @@ int ABT_thread_resume(ABT_thread thread)
  */
 int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -741,6 +742,9 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_MIGRATION_NA;
+#endif
 }
 
 /**
@@ -763,6 +767,7 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
  */
 int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -794,6 +799,9 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_MIGRATION_NA;
+#endif
 }
 
 /**
@@ -813,6 +821,7 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
  */
 int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -830,6 +839,9 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_MIGRATION_NA;
+#endif
 }
 
 /**
@@ -850,6 +862,7 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
  */
 int ABT_thread_migrate(ABT_thread thread)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     /* TODO: fix the bug(s) */
     int abt_errno = ABT_SUCCESS;
     ABT_xstream xstream;
@@ -892,6 +905,9 @@ int ABT_thread_migrate(ABT_thread thread)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_MIGRATION_NA;
+#endif
 }
 
 /**
@@ -911,6 +927,7 @@ int ABT_thread_set_callback(ABT_thread thread,
                             void(*cb_func)(ABT_thread thread, void *cb_arg),
                             void *cb_arg)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -924,6 +941,9 @@ int ABT_thread_set_callback(ABT_thread thread,
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
 }
 
 /**
@@ -943,6 +963,7 @@ int ABT_thread_set_callback(ABT_thread thread,
  */
 int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -957,6 +978,9 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
 }
 
 /**
@@ -975,6 +999,7 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
  */
 int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -987,6 +1012,9 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
 }
 
 /**
@@ -1199,6 +1227,7 @@ int ABT_thread_get_arg(ABT_thread thread, void **arg)
 
 int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
 
     /* checking for cases when migration is not allowed */
@@ -1232,6 +1261,9 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_MIGRATION_NA;
+#endif
 }
 
 int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
@@ -1248,7 +1280,9 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 
     /* Set attributes */
     ABTI_thread_set_attr(p_newthread, ABT_THREAD_ATTR_NULL);
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newthread->attr.migratable = ABT_FALSE;
+#endif
 
     /* Create a context */
     p_newthread->p_stack = NULL;
@@ -1593,6 +1627,7 @@ ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread)
 void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
 {
     ABTI_thread_attr *my_attr = &p_thread->attr;
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     if (attr != ABT_THREAD_ATTR_NULL) {
         ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
         my_attr->stacksize  = p_attr->stacksize;
@@ -1605,6 +1640,14 @@ void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
         my_attr->f_cb       = NULL;
         my_attr->p_cb_arg   = NULL;
     }
+#else
+    if (attr != ABT_THREAD_ATTR_NULL) {
+        ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+        my_attr->stacksize  = p_attr->stacksize;
+    } else {
+        my_attr->stacksize  = ABTI_global_get_thread_stacksize();
+    }
+#endif
 }
 
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
@@ -1670,6 +1713,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     ABTU_free(prefix);
 }
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg)
 {
     ABTI_thread_req_arg *new;
@@ -1720,6 +1764,7 @@ void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req)
 
     return result;
 }
+#endif /* ABT_CONFIG_DISABLE_MIGRATION */
 
 void ABTI_thread_retain(ABTI_thread *p_thread)
 {

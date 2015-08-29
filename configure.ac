@@ -263,6 +263,13 @@ AC_ARG_ENABLE([task-cancel],
 AS_IF([test "x$enable_task_cancel" != "xyes"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_TASK_CANCEL, 1,
         [Define to disable tasklet cancellation])])
+
+AC_ARG_ENABLE([migration],
+    AS_HELP_STRING([--disable-migration], [disable ULT migration]),,
+    [enable_migration=yes])
+AS_IF([test "x$enable_migration" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_MIGRATION, 1,
+        [Define to disable ULT migration])])
 dnl ----------------------------------------------------------------------------
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])

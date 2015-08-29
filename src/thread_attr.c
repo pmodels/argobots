@@ -33,9 +33,11 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
 
     /* Default values */
     p_newattr->stacksize  = ABTI_global_get_thread_stacksize();
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newattr->migratable = ABT_TRUE;
     p_newattr->f_cb       = NULL;
     p_newattr->p_cb_arg   = NULL;
+#endif
 
     /* Return value */
     *newattr = ABTI_thread_attr_get_handle(p_newattr);
@@ -90,6 +92,7 @@ int ABT_thread_attr_free(ABT_thread_attr *attr)
  */
 int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
@@ -103,6 +106,9 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
 }
 
 /**
@@ -149,6 +155,7 @@ int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,
         void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
@@ -163,6 +170,9 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
 }
 
 /**
@@ -183,6 +193,7 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
  */
 int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
@@ -196,6 +207,9 @@ int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
 }
 
 
@@ -238,6 +252,7 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
         return;
     }
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     sprintf(p_buf,
         "["
         "stacksize:%zu "
@@ -248,4 +263,12 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
         p_attr->f_cb,
         p_attr->p_cb_arg
     );
+#else
+    sprintf(p_buf,
+        "["
+        "stacksize:%zu "
+        "]",
+        (size_t)p_attr->stacksize
+    );
+#endif
 }

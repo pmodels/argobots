@@ -56,7 +56,9 @@ int ABT_task_create(ABT_pool pool,
     p_newtask->p_pool     = p_pool;
     p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
     p_newtask->p_keytable = NULL;
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newtask->migratable = ABT_TRUE;
+#endif
     p_newtask->id         = ABTI_TASK_INIT_ID;
 
     /* Create a wrapper work unit */
@@ -108,7 +110,9 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     p_newtask->p_pool     = p_pool;
     p_newtask->refcount   = 1;
     p_newtask->p_keytable = NULL;
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newtask->migratable = ABT_TRUE;
+#endif
     p_newtask->id         = ABTI_TASK_INIT_ID;
 
     /* Create a wrapper unit */
@@ -446,6 +450,7 @@ int ABT_task_get_last_pool_id(ABT_task task, int *id)
  */
 int ABT_task_set_migratable(ABT_task task, ABT_bool flag)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
@@ -458,6 +463,9 @@ int ABT_task_set_migratable(ABT_task task, ABT_bool flag)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_MIGRATION_NA;
+#endif
 }
 
 /**
@@ -476,6 +484,7 @@ int ABT_task_set_migratable(ABT_task task, ABT_bool flag)
  */
 int ABT_task_is_migratable(ABT_task task, ABT_bool *flag)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
@@ -488,6 +497,9 @@ int ABT_task_is_migratable(ABT_task task, ABT_bool *flag)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_MIGRATION_NA;
+#endif
 }
 
 /**
@@ -645,7 +657,9 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
         "%sES        : %p (%" PRIu64 ")\n"
         "%sis_sched  : %p\n"
         "%spool      : %p\n"
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
         "%smigratable: %s\n"
+#endif
         "%srefcount  : %u\n"
         "%srequest   : 0x%x\n"
         "%sf_task    : %p\n"
@@ -657,7 +671,9 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
         prefix, p_task->p_xstream, xstream_rank,
         prefix, p_task->is_sched,
         prefix, p_task->p_pool,
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
         prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
+#endif
         prefix, p_task->refcount,
         prefix, p_task->request,
         prefix, p_task->f_task,
