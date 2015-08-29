@@ -203,18 +203,6 @@
 #endif
 
 #ifndef UNSAFE_MODE
-#define ABTI_CHECK_SCHED_PRIO(prio)             \
-    do {                                        \
-        if (prio > ABT_SCHED_PRIO_HIGH) {       \
-            abt_errno = ABT_ERR_INV_SCHED_PRIO; \
-            goto fn_fail;                       \
-        }                                       \
-    } while(0)
-#else
-#define ABTI_CHECK_SCHED_PRIO(prio)
-#endif
-
-#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_TIMER_PTR(p)            \
     do {                                        \
         if (p == NULL) {                        \
