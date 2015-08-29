@@ -1227,10 +1227,9 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
     }
 
-    if ((p_thread->request & ABTI_THREAD_REQ_TERMINATE) ||
-        (p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
-        (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
-        /* The ULT needs to be terminated. */
+    /* Request handling */
+    if (p_thread->request & ABTI_THREAD_REQ_TERMINATE) {
+        /* The ULT has completed its execution. */
         ABTI_xstream_terminate_thread(p_thread);
     } else if (!p_thread->request) {
         /* The ULT did not finish its execution.
@@ -1246,6 +1245,10 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         /* This is the case when the ULT requests migration of itself. */
         abt_errno = ABTI_xstream_migrate_thread(p_thread);
         ABTI_CHECK_ERROR(abt_errno);
+    } else if ((p_thread->request & ABTI_THREAD_REQ_CANCEL) ||
+               (p_thread->request & ABTI_THREAD_REQ_EXIT)) {
+        /* The ULT needs to be terminated. */
+        ABTI_xstream_terminate_thread(p_thread);
     } else if (p_thread->request & ABTI_THREAD_REQ_ORPHAN) {
         /* The ULT is not pushed back to the pool and is disconnected from any
          * pool. */
