@@ -37,7 +37,6 @@ int ABT_error_get_str(int errno, char *str, size_t *len)
         "ABT_ERR_INV_SCHED_KIND",
         "ABT_ERR_INV_SCHED_PREDEF",
         "ABT_ERR_INV_SCHED_TYPE",
-        "ABT_ERR_INV_SCHED_PRIO",
         "ABT_ERR_INV_SCHED_CONFIG",
         "ABT_ERR_INV_POOL",
         "ABT_ERR_INV_POOL_KIND",
