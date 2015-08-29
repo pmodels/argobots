@@ -248,6 +248,14 @@ AC_ARG_ENABLE([power-event],
 AS_IF([test "x$enable_power_event" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_HANDLE_POWER_EVENT, 1,
                  [Define to handle power management events])])
+
+# Disable features
+AC_ARG_ENABLE([thread-cancel],
+    AS_HELP_STRING([--disable-thread-cancel], [disable ULT cancellation]),,
+    [enable_thread_cancel=yes])
+AS_IF([test "x$enable_thread_cancel" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_THREAD_CANCEL, 1,
+        [Define to disable ULT cancellation])])
 dnl ----------------------------------------------------------------------------
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])

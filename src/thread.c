@@ -321,6 +321,9 @@ int ABT_thread_exit(void)
  */
 int ABT_thread_cancel(ABT_thread thread)
 {
+#ifdef ABT_CONFIG_DISABLE_THREAD_CANCEL
+    return ABT_ERR_FEATURE_NA;
+#else
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -339,6 +342,7 @@ int ABT_thread_cancel(ABT_thread thread)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#endif
 }
 
 /**

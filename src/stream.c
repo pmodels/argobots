@@ -1265,10 +1265,12 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
 
+#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     if (p_thread->request & ABTI_THREAD_REQ_CANCEL) {
         ABTI_xstream_terminate_thread(p_thread);
         goto fn_exit;
     }
+#endif
 
     if (p_thread->request & ABTI_THREAD_REQ_MIGRATE) {
         abt_errno = ABTI_xstream_migrate_thread(p_thread);
