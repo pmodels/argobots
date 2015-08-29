@@ -242,11 +242,9 @@ int ABT_thread_join(ABT_thread thread)
 
     ABT_self_get_type(&type);
 
-    /* If the caller is ULT, we can use yield_to-based implementation. */
+    /* TODO: If the caller is ULT, we can use yield_to-based implementation. */
     if (type == ABT_UNIT_TYPE_THREAD) {
-        ABTI_thread *p_caller = ABTI_local_get_thread();
-
-        ABTI_CHECK_TRUE_MSG(p_thread != p_caller,
+        ABTI_CHECK_TRUE_MSG(p_thread != ABTI_local_get_thread(),
                             ABT_ERR_INV_THREAD,
                             "The target ULT should be different.");
 
