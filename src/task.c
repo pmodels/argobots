@@ -45,7 +45,8 @@ int ABT_task_create(ABT_pool pool,
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
+    /* Allocate a task object */
+    p_newtask = ABTI_mem_alloc_task();
 
     p_newtask->p_xstream  = NULL;
     p_newtask->state      = ABT_TASK_STATE_READY;
@@ -112,7 +113,8 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
         goto fn_exit;
     }
 
-    p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
+    /* Allocate a task object */
+    p_newtask = ABTI_mem_alloc_task();
 
     p_newtask->p_xstream  = NULL;
     p_newtask->state      = ABT_TASK_STATE_READY;
@@ -810,7 +812,7 @@ void ABTI_task_free(ABTI_task *p_task)
         ABTI_ktable_free(p_task->p_keytable);
     }
 
-    ABTU_free(p_task);
+    ABTI_mem_free_task(p_task);
 }
 
 void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)

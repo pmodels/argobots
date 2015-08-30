@@ -46,6 +46,9 @@ int ABT_init(int argc, char **argv)
     /* Initialize the system environment */
     ABTD_env_init(gp_ABTI_global);
 
+    /* Initialize memory pool */
+    ABTI_mem_init(gp_ABTI_global);
+
     /* Initialize the event environment */
     ABTI_event_init();
 
@@ -173,6 +176,9 @@ int ABT_finalize(void)
 
     /* Free the ES array */
     ABTU_free(gp_ABTI_global->p_xstreams);
+
+    /* Finalize the memory pool */
+    ABTI_mem_finalize(gp_ABTI_global);
 
     /* Free the ABTI_global structure */
     ABTU_free(gp_ABTI_global);

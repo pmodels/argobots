@@ -107,6 +107,10 @@ typedef struct ABTI_eventual        ABTI_eventual;
 typedef struct ABTI_future          ABTI_future;
 typedef struct ABTI_barrier         ABTI_barrier;
 typedef struct ABTI_timer           ABTI_timer;
+#ifdef ABT_CONFIG_USE_MEM_POOL
+typedef struct ABTI_stack_header    ABTI_stack_header;
+typedef struct ABTI_page_header     ABTI_page_header;
+#endif
 
 
 /* Architecture-Dependent Definitions */
@@ -134,6 +138,14 @@ struct ABTI_global {
     uint32_t sched_event_freq;  /* Default check frequency for sched */
     ABTI_thread *p_thread_main; /* ULT of the main function */
 
+#ifdef ABT_CONFIG_USE_MEM_POOL
+    uint32_t cache_line_size;          /* Cache line size */
+    uint32_t max_stacks;               /* Max. # of stacks for each ES */
+    size_t page_size;                  /* Page size for memory allocation */
+    ABTI_stack_header *p_mem_stack;    /* List of ULT stack */
+    ABTI_page_header *p_mem_task;      /* List of task block pages */
+#endif
+
     ABT_bool pm_connected;      /* Is power mgmt. daemon connected? */
     char *pm_host;              /* Hostname for power mgmt. daemon */
     int pm_port;                /* Port number for power mgmt. daemon */
@@ -148,6 +160,13 @@ struct ABTI_local {
     ABTI_xstream *p_xstream;    /* Current ES */
     ABTI_thread *p_thread;      /* Current running ULT */
     ABTI_task *p_task;          /* Current running tasklet */
+
+#ifdef ABT_CONFIG_USE_MEM_POOL
+    uint32_t num_stacks;                /* Current # of stacks */
+    ABTI_stack_header *p_mem_stack;     /* Free stack list */
+    ABTI_page_header *p_mem_task_head;  /* Head of page list */
+    ABTI_page_header *p_mem_task_tail;  /* Tail of page list */
+#endif
 };
 
 struct ABTI_contn {

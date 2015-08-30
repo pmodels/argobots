@@ -244,6 +244,15 @@ AS_IF([test "x$enable_preserve_fpu" != "xno"],
                  [Define to 1 if we preserve fpu registers])],
       [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 0)])
 
+# Memory pool is enabled by default.
+AC_ARG_ENABLE([mem-pool],
+    AS_HELP_STRING([--disable-mem-pool],
+        [do not use memory pools for ULT and tasklet creation]),,
+        [enable_mem_pool=yes])
+AS_IF([test "x$enable_mem_pool" != "xno"],
+      [AC_DEFINE(ABT_CONFIG_USE_MEM_POOL, 1,
+          [Define to use memory pools for ULT and tasklet creation])])
+
 # Power management events from outside
 AC_ARG_ENABLE([power-event],
     AS_HELP_STRING([--enable-power-event],

@@ -10,6 +10,9 @@
 #define ABTD_THREAD_DEFAULT_STACKSIZE   16384
 #define ABTD_SCHED_DEFAULT_STACKSIZE    (4*1024*1024)
 #define ABTD_SCHED_EVENT_FREQ           50
+#define ABTD_CACHE_LINE_SIZE            64
+#define ABTD_MAX_NUM_STACKS             65536
+#define ABTD_MEM_PAGE_SIZE              (2*1024*1024)
 
 
 void ABTD_env_init(ABTI_global *p_global)
@@ -103,6 +106,32 @@ void ABTD_env_init(ABTI_global *p_global)
     } else {
         p_global->sched_event_freq = ABTD_SCHED_EVENT_FREQ;
     }
+
+#ifdef ABT_CONFIG_USE_MEM_POOL
+    /* Cache line size */
+    env = getenv("ABT_ENV_CACHE_LINE_SIZE");
+    if (env != NULL) {
+        p_global->cache_line_size = (uint32_t)atol(env);
+    } else {
+        p_global->cache_line_size = ABTD_CACHE_LINE_SIZE;
+    }
+
+    /* Maximum number of stacks that each ES can keep during execution */
+    env = getenv("ABT_ENV_MAX_NUM_STACKS");
+    if (env != NULL) {
+        p_global->max_stacks = (uint32_t)atol(env);
+    } else {
+        p_global->max_stacks = ABTD_MAX_NUM_STACKS;
+    }
+
+    /* Page size for memory allocation */
+    env = getenv("ABT_ENV_MEM_PAGE_SIZE");
+    if (env != NULL) {
+        p_global->page_size = (size_t)atol(env);
+    } else {
+        p_global->page_size = ABTD_MEM_PAGE_SIZE;
+    }
+#endif
 
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
     /* Hostname for power management daemon */
