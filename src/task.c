@@ -246,6 +246,9 @@ int ABT_task_free(ABT_task *task)
  */
 int ABT_task_cancel(ABT_task task)
 {
+#ifdef ABT_CONFIG_DISABLE_TASK_CANCEL
+    return ABT_ERR_FEATURE_NA;
+#else
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
@@ -259,6 +262,7 @@ int ABT_task_cancel(ABT_task task)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#endif
 }
 
 /**

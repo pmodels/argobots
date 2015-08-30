@@ -1376,10 +1376,12 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 
 void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
 {
+#ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
     if (p_task->request & ABTI_TASK_REQ_CANCEL) {
         ABTI_xstream_terminate_task(p_task);
         return;
     }
+#endif
 
     /* Unset the current running ULT/tasklet */
     ABTI_thread *last_thread = ABTI_local_get_thread();
