@@ -17,6 +17,7 @@ abt_sources = \
 	mutex.c \
 	self.c \
 	stream.c \
+	stream_barrier.c \
 	task.c \
 	thread.c \
 	thread_attr.c \
