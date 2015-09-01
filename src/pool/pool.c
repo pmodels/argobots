@@ -579,6 +579,10 @@ int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
 
+    if (p_pool->num_scheds == 0) {
+        return abt_errno;
+    }
+
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
 #ifndef UNSAFE_MODE
@@ -625,6 +629,10 @@ fn_fail:
 int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
+
+    if (p_pool->num_scheds == 0) {
+        return abt_errno;
+    }
 
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
