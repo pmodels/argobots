@@ -7,6 +7,8 @@
 #define ABTTEST_H_INCLUDED
 
 #include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 /* We always have to use assert in our test suite. */
 #ifdef NDEBUG
@@ -127,5 +129,17 @@ void ABT_test_print_line(FILE *fp, char c, int len);
 
 #define ABT_TEST_ERROR(e,m)     ABT_test_error(e,m,__FILE__,__LINE__)
 #define ABT_TEST_UNUSED(a)      (void)(a)
+
+#if defined(__x86_64__)
+static inline uint64_t ABT_test_get_cycles()
+{
+    unsigned hi, lo;
+    __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+    uint64_t cycle = ((uint64_t)lo) | (((int64_t)hi) << 32);
+    return cycle;
+}
+#else
+#error "Cycle information is not supported on this platform"
+#endif
 
 #endif /* ABTTEST_H_INCLUDED */
