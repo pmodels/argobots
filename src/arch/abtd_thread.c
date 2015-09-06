@@ -27,8 +27,7 @@ void ABTD_thread_func_wrapper(void *p_arg)
                         == p_fctx->p_link)
                        ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
                        : NULL);
-    jump_fcontext(&p_fctx->fctx, p_fctx->p_link->fctx, NULL,
-                  ABTD_FCONTEXT_PRESERVE_FPU);
+    ABTD_thread_finish_context(p_fctx, p_fctx->p_link);
 }
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,

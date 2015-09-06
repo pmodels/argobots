@@ -106,6 +106,19 @@ void ABTD_thread_context_switch(ABTD_thread_context *p_old,
 }
 
 static inline
+void ABTD_thread_finish_context(ABTD_thread_context *p_old,
+                                ABTD_thread_context *p_new)
+{
+#if defined(ABT_CONFIG_USE_FCONTEXT)
+    take_fcontext(&p_old->fctx, p_new->fctx, p_new,
+                  ABTD_FCONTEXT_PRESERVE_FPU);
+#else
+    int ret = swapcontext(p_old, p_new);
+    ABTI_ASSERT(ret == 0);
+#endif
+}
+
+static inline
 void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
                                      ABTD_thread_context *p_link)
 {
