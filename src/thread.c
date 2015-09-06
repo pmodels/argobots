@@ -424,6 +424,64 @@ int ABT_thread_join(ABT_thread thread)
 
 /**
  * @ingroup ULT
+ * @brief   Wait for a number of ULTs to terminate.
+ *
+ * The caller of \c ABT_thread_join_many() waits until all ULTs in
+ * \c thread_list, which should have \c num_threads ULT handles, are terminated.
+ *
+ * NOTE: The current implementation is very experimental. It works only for the
+ * case where all ULTs in \c thread_list are mapped to the same ES as that of
+ * the calller. They do not need to be in the same pool, but pools associated
+ * with target ULTs should be exclusively associated with the caller's ES.
+ *
+ * @param[in] num_threads  the number of ULTs to join
+ * @param[in] thread_list  array of target ULT handles
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
+{
+    int i;
+    ABTI_thread *p_self = ABTI_local_get_thread();
+    ABTI_xstream *p_xstream = p_self->p_last_xstream;
+    ABTI_thread *p_next;
+
+    for (i = 0; i < num_threads; i++) {
+        p_next = ABTI_thread_get_ptr(thread_list[i]);
+        if (p_next->state != ABT_THREAD_STATE_TERMINATED) {
+            /* FIXME: pool_remove may not be safe if the pool has
+             * multiple-consumer access mode. */
+            ABTI_POOL_REMOVE(p_next->p_pool, p_next->unit, p_xstream);
+
+            ABTI_thread_join_arg join_arg;
+            join_arg.num_threads = num_threads;
+            join_arg.counter = i;
+            join_arg.p_threads = thread_list;
+            join_arg.p_caller = p_self;
+
+            ABTI_thread_req_arg req_arg;
+            req_arg.request = ABTI_THREAD_REQ_JOIN_MANY;
+            req_arg.p_arg = (void *)&join_arg;
+            req_arg.next = NULL;
+
+            /* Switch to the ULT to join */
+            ABTI_thread_put_req_arg(p_next, &req_arg);
+            ABTI_thread_set_request(p_next, ABTI_THREAD_REQ_JOIN_MANY);
+            p_next->p_last_xstream = p_xstream;
+            p_next->state = ABT_THREAD_STATE_RUNNING;
+            ABTI_local_set_thread(p_next);
+            ABTD_thread_context_switch(&p_self->ctx, &p_next->ctx);
+
+            /* Resume */
+            break;
+        }
+    }
+
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup ULT
  * @brief   The calling ULT terminates its execution.
  *
  * Since the calling ULT terminates, this routine never returns.
@@ -2018,6 +2076,48 @@ void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req)
     }
 
     return result;
+}
+
+void ABTI_thread_put_req_arg(ABTI_thread *p_thread,
+                             ABTI_thread_req_arg *p_req_arg)
+{
+    ABTI_spinlock_acquire(&p_thread->lock);
+    ABTI_thread_req_arg *p_head = p_thread->p_req_arg;
+
+    if (p_head == NULL) {
+        p_thread->p_req_arg = p_req_arg;
+    } else {
+        while (p_head->next != NULL) {
+            p_head = p_head->next;
+        }
+        p_head->next = p_req_arg;
+    }
+    ABTI_spinlock_release(&p_thread->lock);
+}
+
+ABTI_thread_req_arg *ABTI_thread_get_req_arg(ABTI_thread *p_thread,
+                                             uint32_t req)
+{
+    ABTI_thread_req_arg *p_result = NULL;
+    ABTI_thread_req_arg *p_last = NULL;
+
+    ABTI_spinlock_acquire(&p_thread->lock);
+    ABTI_thread_req_arg *p_head = p_thread->p_req_arg;
+    while (p_head != NULL) {
+        if (p_head->request == req) {
+            p_result = p_head;
+            if (p_last == NULL)
+                p_thread->p_req_arg = p_head->next;
+            else
+                p_last->next = p_head->next;
+            break;
+        }
+        p_last = p_head;
+        p_head = p_head->next;
+    }
+    ABTI_spinlock_release(&p_thread->lock);
+
+    return p_result;
 }
 #endif /* ABT_CONFIG_DISABLE_MIGRATION */
 

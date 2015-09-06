@@ -52,6 +52,25 @@ void ABTI_thread_unset_request(ABTI_thread *p_thread, uint32_t req)
     ABTD_atomic_fetch_and_uint32(&p_thread->request, ~req);
 }
 
+#ifdef ABT_CONFIG_DISABLE_MIGRATION
+static inline
+void  ABTI_thread_put_req_arg(ABTI_thread *p_thread,
+                              ABTI_thread_req_arg *p_req_arg)
+{
+    ABTI_ASSERT(p_thread->p_req_arg == NULL);
+    p_thread->p_req_arg = p_req_arg;
+}
+
+static inline
+ABTI_thread_req_arg *ABTI_thread_get_req_arg(ABTI_thread *p_thread,
+                                             uint32_t req)
+{
+    ABTI_thread_req_arg *p_result = p_thread->p_req_arg;
+    p_thread->p_req_arg = NULL;
+    return p_result;
+}
+#endif /* ABT_CONFIG_DISABLE_MIGRATION */
+
 static inline
 void ABTI_thread_yield(ABTI_thread *p_thread)
 {

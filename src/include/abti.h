@@ -39,6 +39,7 @@
 #define ABTI_THREAD_REQ_BLOCK       (1 << 5)
 #define ABTI_THREAD_REQ_ORPHAN      (1 << 6)
 #define ABTI_THREAD_REQ_NOPUSH      (1 << 7)
+#define ABTI_THREAD_REQ_JOIN_MANY   (1 << 8)
 #define ABTI_THREAD_REQ_STOP        \
     (ABTI_THREAD_REQ_EXIT | ABTI_THREAD_REQ_TERMINATE)
 #define ABTI_THREAD_REQ_NON_YIELD   \
@@ -99,6 +100,7 @@ typedef struct ABTI_thread_attr     ABTI_thread_attr;
 typedef struct ABTI_thread          ABTI_thread;
 typedef enum ABTI_thread_type       ABTI_thread_type;
 typedef struct ABTI_thread_req_arg  ABTI_thread_req_arg;
+typedef struct ABTI_thread_join_arg ABTI_thread_join_arg;
 typedef struct ABTI_thread_list     ABTI_thread_list;
 typedef struct ABTI_thread_entry    ABTI_thread_entry;
 typedef struct ABTI_thread_htable   ABTI_thread_htable;
@@ -353,6 +355,13 @@ struct ABTI_thread_req_arg {
     ABTI_thread_req_arg *next;
 };
 
+struct ABTI_thread_join_arg {
+    int num_threads;
+    int counter;
+    ABT_thread *p_threads;
+    ABTI_thread *p_caller;
+};
+
 struct ABTI_thread_list {
     ABTI_thread_entry *head;
     ABTI_thread_entry *tail;
@@ -556,6 +565,10 @@ void  ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 void  ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
+void  ABTI_thread_put_req_arg(ABTI_thread *p_thread,
+                              ABTI_thread_req_arg *p_req_arg);
+ABTI_thread_req_arg *ABTI_thread_get_req_arg(ABTI_thread *p_thread,
+                                             uint32_t req);
 #endif
 void  ABTI_thread_retain(ABTI_thread *p_thread);
 void  ABTI_thread_release(ABTI_thread *p_thread);

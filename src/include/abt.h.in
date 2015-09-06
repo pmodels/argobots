@@ -440,6 +440,7 @@ int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
                       ABT_thread *thread) ABT_API_PUBLIC;
 int ABT_thread_free(ABT_thread *thread) ABT_API_PUBLIC;
 int ABT_thread_join(ABT_thread thread) ABT_API_PUBLIC;
+int ABT_thread_join_many(int num_threads, ABT_thread *thread_list) ABT_API_PUBLIC;
 int ABT_thread_exit(void) ABT_API_PUBLIC;
 int ABT_thread_cancel(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_thread_self(ABT_thread *thread) ABT_API_PUBLIC;

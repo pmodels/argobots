@@ -67,6 +67,45 @@ static inline void ABTD_thread_terminate(ABTI_thread *p_thread)
     ABTD_thread_context *p_fctx = &p_thread->ctx;
 
     /* Now, the ULT has finished its job. Terminate the ULT. */
+    if (p_thread->request & ABTI_THREAD_REQ_JOIN_MANY) {
+        /* ABT_thread_join_many case */
+        p_thread->state = ABT_THREAD_STATE_TERMINATED;
+
+        ABTI_thread_req_arg *p_req_arg;
+        ABTI_thread_join_arg *p_jarg;
+        p_req_arg = ABTI_thread_get_req_arg(p_thread, ABTI_THREAD_REQ_JOIN_MANY);
+        p_jarg = (ABTI_thread_join_arg *)p_req_arg->p_arg;
+
+        p_jarg->counter++;
+        if (p_jarg->counter < p_jarg->num_threads) {
+            int i;
+            ABTI_thread *p_next;
+            for (i = p_jarg->counter; i < p_jarg->num_threads; i++) {
+                p_next = ABTI_thread_get_ptr(p_jarg->p_threads[i]);
+                if (p_next->state != ABT_THREAD_STATE_TERMINATED) {
+                    ABTI_xstream *p_xstream = p_thread->p_last_xstream;
+                    ABTI_POOL_REMOVE(p_next->p_pool, p_next->unit, p_xstream);
+                    ABTI_thread_put_req_arg(p_next, p_req_arg);
+                    /* FIXME: we may need ABTI_thread_set_request */
+                    p_next->request |= ABTI_THREAD_REQ_JOIN_MANY;
+                    p_next->p_last_xstream = p_xstream;
+                    p_next->state = ABT_THREAD_STATE_RUNNING;
+                    ABTI_local_set_thread(p_next);
+                    ABTD_thread_finish_context(p_fctx, &p_next->ctx);
+                    return;
+                } else {
+                    p_jarg->counter++;
+                }
+            }
+        } else {
+            /* Switch back to the caller ULT of join_many */
+            ABTI_thread *p_caller = p_jarg->p_caller;
+            ABTI_local_set_thread(p_caller);
+            ABTD_thread_finish_context(p_fctx, &p_caller->ctx);
+            return;
+        }
+    }
+
     if (p_fctx->p_link) {
         /* If p_link is set, it means that other ULT has called the join. */
         ABTI_thread *p_joiner = (ABTI_thread *)p_fctx->p_link;
