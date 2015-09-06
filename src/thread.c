@@ -198,8 +198,8 @@ int ABT_thread_free(ABT_thread *thread)
                         "The main thread cannot be freed explicitly.");
 
     /* Wait until the thread terminates */
-    while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
-        ABT_thread_yield();
+    if (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
+        ABT_thread_join(h_thread);
     }
 
     /* Free the ABTI_thread structure */
