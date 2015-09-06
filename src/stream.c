@@ -1290,10 +1290,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     ABTI_local_set_thread(p_thread);
     ABTI_local_set_task(NULL);
 
-    /* Now we can set the right link in the context */
-    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
-    ABTD_thread_context_change_link(&p_thread->ctx, p_ctx);
-
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Add the new scheduler if the ULT is a scheduler */
     if (p_thread->is_sched != NULL) {
@@ -1313,6 +1309,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] start running\n",
               ABTI_thread_get_id(p_thread), p_xstream->rank);
     ABTI_LOG_SET_SCHED(NULL);
+    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
     ABTD_thread_context_switch(p_ctx, &p_thread->ctx);
 
     /* The scheduler continues from here. */

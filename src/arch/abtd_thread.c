@@ -16,18 +16,30 @@ void ABTD_thread_func_wrapper(void *p_arg)
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_fctx;
 
-    /* Now, the ULT has finished its job. Terminate the ULT.
-     * We don't need to use the atomic operation here because the ULT will be
-     * terminated regardless of other requests. */
-    p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
+    /* Now, the ULT has finished its job. Terminate the ULT. */
+    if (p_fctx->p_link) {
+        /* If p_link is set, it means that another ULT has called the join.
+         * We jump to the caller ULT. */
+        p_thread->state = ABT_THREAD_STATE_TERMINATED;
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] terminated\n",
+                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
-    /* Since fcontext does not switch to the other fcontext when it finishes,
-       we need to explicitly switch to the scheduler. */
-    ABTI_LOG_SET_SCHED((ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream)
-                        == p_fctx->p_link)
-                       ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
-                       : NULL);
-    ABTD_thread_finish_context(p_fctx, p_fctx->p_link);
+        ABTD_thread_finish_context(p_fctx, p_fctx->p_link);
+    } else {
+        /* No other ULT is waiting or blocked for this ULT. Since fcontext does
+         * not switch to other fcontext when it finishes, we need to explicitly
+         * switch to the scheduler. */
+        ABTD_thread_context *p_sched_ctx;
+        p_sched_ctx = ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream);
+        ABTI_LOG_SET_SCHED((p_sched_ctx == p_fctx->p_link)
+                           ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
+                           : NULL);
+
+        /* We don't need to use the atomic operation here because the ULT will be
+         * terminated regardless of other requests. */
+        p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
+        ABTD_thread_finish_context(p_fctx, p_sched_ctx);
+    }
 }
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,

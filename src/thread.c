@@ -557,10 +557,6 @@ int ABT_thread_yield_to(ABT_thread thread)
     }
 #endif
 
-    /* We set the link in the context for the target thread */
-    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
-    ABTD_thread_context_change_link(&p_tar_thread->ctx, p_ctx);
-
     /* We set the last ES */
     p_tar_thread->p_last_xstream = p_xstream;
 
