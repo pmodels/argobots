@@ -11,6 +11,8 @@ void ABTD_thread_func_wrapper(void *p_arg);
 fcontext_t make_fcontext(void *sp, size_t size, void (*thread_func)(void *));
 void *jump_fcontext(fcontext_t *old, fcontext_t new, void *arg,
                     int preserve_fpu);
+void *take_fcontext(fcontext_t *old, fcontext_t new, void *arg,
+                    int preserve_fpu);
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
                               int arg_upper, int arg_lower);

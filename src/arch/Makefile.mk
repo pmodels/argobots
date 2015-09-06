@@ -12,5 +12,6 @@ abt_sources += \
 if ABT_USE_FCONTEXT
 abt_sources += \
 	arch/fcontext/jump_@fctx_arch_bin@.S \
-	arch/fcontext/make_@fctx_arch_bin@.S
+	arch/fcontext/make_@fctx_arch_bin@.S \
+	arch/fcontext/take_@fctx_arch_bin@.S
 endif
