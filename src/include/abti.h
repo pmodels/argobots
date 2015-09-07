@@ -39,6 +39,8 @@
 #define ABTI_THREAD_REQ_BLOCK       (1 << 5)
 #define ABTI_THREAD_REQ_ORPHAN      (1 << 6)
 #define ABTI_THREAD_REQ_NOPUSH      (1 << 7)
+#define ABTI_THREAD_REQ_STOP        \
+    (ABTI_THREAD_REQ_EXIT | ABTI_THREAD_REQ_CANCEL | ABTI_THREAD_REQ_TERMINATE)
 
 #define ABTI_TASK_REQ_CANCEL        (1 << 0)
 
