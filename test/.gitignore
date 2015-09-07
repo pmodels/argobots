@@ -59,6 +59,8 @@ benchmark/thread_ops_all
 benchmark/task_ops
 benchmark/task_ops_all
 benchmark/sync_ops
+benchmark/thread_fork_join
+benchmark/thread_fork_join_papi
 
 # code builds
 util/libutil.la

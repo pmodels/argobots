@@ -9,6 +9,8 @@ TESTS = \
 	thread_ops \
 	thread_ops_all \
 	thread_many_ops \
+	thread_fork_join \
+	thread_fork_join_papi \
 	task_ops \
 	task_ops_all \
 	sync_ops
@@ -23,9 +25,13 @@ xstream_ops_SOURCES = xstream_ops.c
 thread_ops_SOURCES = thread_ops.c
 thread_ops_all_SOURCES = thread_ops_all.c
 thread_many_ops_SOURCES = thread_many_ops.c
+thread_fork_join_SOURCES =  thread_fork_join.c
+thread_fork_join_papi_SOURCES = thread_fork_join.c
 task_ops_SOURCES = task_ops.c
 task_ops_all_SOURCES = task_ops_all.c
 sync_ops_SOURCES = sync_ops.c
+
+thread_fork_join_papi_CFLAGS = -DUSE_PAPI @PAPI_FLAGS@ -lpapi
 
 testing:
 	./init_finalize -i 100
@@ -33,6 +39,8 @@ testing:
 	./thread_ops -e 4 -u 10 -i 100
 	./thread_ops_all -e 4 -u 10 -i 100
 	./thread_many_ops -e 4 -u 10 -i 100
+	./thread_fork_join -e 1 -u1024 -i 100
+	./thread_fork_join_papi -e 1 -u1024 -i 100
 	./task_ops -e 4 -t 10 -i 100
 	./task_ops_all -e 4 -t 10 -i 100
 	./sync_ops -e 4 -u 10 -i 100
