@@ -6,6 +6,7 @@
 #include "abti.h"
 
 static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
+static inline void ABTI_thread_free_internal(ABTI_thread *p_thread);
 static inline ABT_thread_id ABTI_thread_get_new_id(void);
 
 
@@ -166,6 +167,132 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
 
 /**
  * @ingroup ULT
+ * @brief   Create a set of ULTs.
+ *
+ * \c ABT_thread_create_many() creates a set of ULTs, i.e., \c num ULTs, having
+ * the same attribute and returns ULT handles to \c newthread_list.  Each newly
+ * created ULT is pushed to each pool of \c pool_list.  That is, the \a i-th
+ * ULT is pushed to \a i-th pool in \c pool_list.
+ *
+ * NOTE: Since this routine uses the same ULT attribute for creating all ULTs,
+ * it does not support using the user-provided stack.  If \c attr contains the
+ * user-provided stack, it will be ignored in this routine.
+ * \c newthread_list cannot be NULL, and \c ABT_thread_free_many() should be
+ * used to explicitly release all ULT objects.
+ *
+ * @param[in] num               the number of array elements
+ * @param[in] pool_list         array of pool handles
+ * @param[in] thread_func_list  array of ULT functions
+ * @param[in] arg_list          array of arguments for each ULT function
+ * @param[in] attr              ULT attribute
+ * @param[out] newthread_list   array of newly created ULT handles
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_create_many(int num, ABT_pool *pool_list,
+                      void (**thread_func_list)(void *), void **arg_list,
+                      ABT_thread_attr attr, ABT_thread *newthread_list)
+{
+    int abt_errno = ABT_SUCCESS;
+    const size_t header_size = sizeof(ABTI_thread);
+    size_t stacksize, actual_stacksize;
+    size_t allocsize = 0;
+    char *p_blk;
+    void *p_stack;
+    ABT_thread h_newthread;
+    ABTI_thread *p_newthread;
+    ABTI_thread_attr *p_attr = NULL;
+    ABTI_pool *p_pool;
+    int i;
+
+    ABTI_CHECK_TRUE(newthread_list != NULL, ABT_ERR_OTHER);
+
+    /* Sum the stack sizes needed for all ULTs. */
+    if (attr == ABT_THREAD_ATTR_NULL) {
+        stacksize = ABTI_global_get_thread_stacksize();
+    } else {
+        p_attr = ABTI_thread_attr_get_ptr(attr);
+        stacksize = p_attr->stacksize;
+    }
+    allocsize = stacksize * num;
+    actual_stacksize = stacksize - header_size;
+
+    p_blk = (char *)ABTU_CA_MALLOC(allocsize);
+    for (i = 0; i < num; i++) {
+        p_newthread = (ABTI_thread *)p_blk;
+
+        /* Stack address */
+        p_stack = (void *)(p_blk + header_size);
+
+        /* Set attributes */
+        if (attr == ABT_THREAD_ATTR_NULL) {
+            ABTI_thread_attr_init(&p_newthread->attr, p_stack, actual_stacksize,
+                                  ABT_TRUE);
+        } else {
+            ABTI_thread_attr_copy(&p_newthread->attr, p_attr);
+            p_newthread->attr.p_stack = p_stack;
+            p_newthread->attr.stacksize = actual_stacksize;
+        }
+
+        /* Create a ULT context */
+        abt_errno = ABTD_thread_context_create(NULL,
+                thread_func_list[i], arg_list ? arg_list[i] : NULL,
+                actual_stacksize, p_newthread->attr.p_stack,
+                &p_newthread->ctx);
+        ABTI_CHECK_ERROR(abt_errno);
+
+        /* Check the target pool */
+        p_pool = ABTI_pool_get_ptr(pool_list[i]);
+        ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+        p_newthread->state          = ABT_THREAD_STATE_READY;
+        p_newthread->request        = 0;
+        p_newthread->p_last_xstream = NULL;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+        p_newthread->is_sched       = NULL;
+#endif
+        p_newthread->p_pool         = p_pool;
+        p_newthread->refcount       = 1;
+        p_newthread->type           = ABTI_THREAD_TYPE_USER;
+        p_newthread->p_req_arg      = NULL;
+        p_newthread->p_keytable     = NULL;
+        p_newthread->id             = ABTI_THREAD_INIT_ID;
+
+        /* Create a spinlock */
+        ABTI_spinlock_create(&p_newthread->lock);
+
+        /* Create a wrapper unit */
+        h_newthread = ABTI_thread_get_handle(p_newthread);
+        p_newthread->unit = p_pool->u_create_from_thread(h_newthread);
+
+        LOG_EVENT("[U%" PRIu64 "] created\n", ABTI_thread_get_id(p_newthread));
+
+        /* Add this ULT to the pool */
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+        ABTI_pool_push(p_pool, p_newthread->unit);
+#else
+        abt_errno = ABTI_pool_push(p_pool, p_newthread->unit,
+                                   ABTI_xstream_self());
+        ABTI_CHECK_ERROR(abt_errno);
+#endif
+
+        /* Return value */
+        newthread_list[i] = h_newthread;
+
+        /* Next stack pointer */
+        p_blk += stacksize;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Revive the ULT.
  *
  * \c ABT_thread_revive() revives the ULT, \c thread, with \c thread_func and
@@ -282,6 +409,63 @@ int ABT_thread_free(ABT_thread *thread)
 
     /* Return value */
     *thread = ABT_THREAD_NULL;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Release a set of ULT objects.
+ *
+ * \c ABT_thread_free_many() releases a set of ULT objects listed in
+ * \c thread_list. \c thread_list should have been allocated by
+ * \c ABT_thread_create_many(). If any ULT in \c thread_list is still running
+ * when this routine is called, the deallocation happens after all ULTs
+ * terminate and then this routine returns. If it is successfully processed,
+ * all elements in \c thread_list are set to \c ABT_THREAD_NULL.
+ *
+ * @param[in]     num          the number of array elements
+ * @param[in,out] thread_list  array of ULT handles
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_free_many(int num, ABT_thread *thread_list)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_thread h_thread;
+    ABTI_thread *p_thread;
+    ABTI_thread *p_first;
+    int i;
+
+    p_first = ABTI_thread_get_ptr(thread_list[0]);
+    ABTI_CHECK_NULL_THREAD_PTR(p_first);
+
+    abt_errno = ABT_thread_join_many(num, thread_list);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    for (i = 0; i < num; i++) {
+        h_thread = thread_list[i];
+        p_thread = ABTI_thread_get_ptr(h_thread);
+        ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+        ABTI_ASSERT(p_thread->state == ABT_THREAD_STATE_TERMINATED);
+
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] freed\n",
+                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
+        ABTI_thread_free_internal(p_thread);
+
+        /* Return value */
+        thread_list[i] = ABT_THREAD_NULL;
+    }
+
+    /* Free the memory for all ULTs */
+    ABTU_free(p_first);
 
   fn_exit:
     return abt_errno;
@@ -1811,17 +1995,9 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     goto fn_exit;
 }
 
-void ABTI_thread_free(ABTI_thread *p_thread)
+static inline
+void ABTI_thread_free_internal(ABTI_thread *p_thread)
 {
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    /* p_thread's lock may have been acquired somewhere. We free p_thread when
-       the lock can be acquired here. */
-    ABTI_spinlock_acquire(&p_thread->lock);
-#endif
-
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] freed\n",
-              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
-
     /* Free the unit */
     p_thread->p_pool->u_free(&p_thread->unit);
 
@@ -1835,6 +2011,20 @@ void ABTI_thread_free(ABTI_thread *p_thread)
 
     /* Free the spinlock */
     ABTI_spinlock_free(&p_thread->lock);
+}
+
+void ABTI_thread_free(ABTI_thread *p_thread)
+{
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+    /* p_thread's lock may have been acquired somewhere. We free p_thread when
+       the lock can be acquired here. */
+    ABTI_spinlock_acquire(&p_thread->lock);
+#endif
+
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] freed\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
+    ABTI_thread_free_internal(p_thread);
 
     /* Free ABTI_thread (stack will also be freed) */
     ABTI_mem_free_thread(p_thread);

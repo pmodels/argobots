@@ -436,9 +436,14 @@ int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
 int ABT_thread_create_on_xstream(ABT_xstream xstream,
                       void (*thread_func)(void *), void *arg,
                       ABT_thread_attr attr, ABT_thread *newthread) ABT_API_PUBLIC;
+int ABT_thread_create_many(int num, ABT_pool *pool_list,
+                      void (**thread_func_list)(void *), void **arg_list,
+                      ABT_thread_attr attr, ABT_thread *newthread_list)
+                      ABT_API_PUBLIC;
 int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
                       ABT_thread *thread) ABT_API_PUBLIC;
 int ABT_thread_free(ABT_thread *thread) ABT_API_PUBLIC;
+int ABT_thread_free_many(int num, ABT_thread *thread_list) ABT_API_PUBLIC;
 int ABT_thread_join(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_thread_join_many(int num_threads, ABT_thread *thread_list) ABT_API_PUBLIC;
 int ABT_thread_exit(void) ABT_API_PUBLIC;
