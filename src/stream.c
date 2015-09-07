@@ -1331,7 +1331,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         /* The ULT has completed its execution or it needs to be terminated
          * due to a cancel or exit request. */
         ABTI_xstream_terminate_thread(p_thread);
-    } else if (!p_thread->request) {
+    } else if (!(p_thread->request & ABTI_THREAD_REQ_NON_YIELD)) {
         /* The ULT did not finish its execution.
          * Change the state of current running ULT and
          * add it to the pool again. */
