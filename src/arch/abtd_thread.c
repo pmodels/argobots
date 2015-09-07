@@ -18,28 +18,39 @@ void ABTD_thread_func_wrapper(void *p_arg)
 
     /* Now, the ULT has finished its job. Terminate the ULT. */
     if (p_fctx->p_link) {
-        /* If p_link is set, it means that another ULT has called the join.
-         * We jump to the caller ULT. */
-        p_thread->state = ABT_THREAD_STATE_TERMINATED;
-        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] terminated\n",
-                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+        /* If p_link is set, it means that other ULT has called the join. */
+        ABTI_thread *p_joiner = (ABTI_thread *)p_fctx->p_link;
+        if (p_thread->p_last_xstream == p_joiner->p_last_xstream) {
+            /* Only when the current ULT is on the same ES as p_joiner's,
+             * we can jump to the joiner ULT. */
+            p_thread->state = ABT_THREAD_STATE_TERMINATED;
+            LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] terminated\n",
+                      ABTI_thread_get_id(p_thread),
+                      p_thread->p_last_xstream->rank);
 
-        ABTD_thread_finish_context(p_fctx, p_fctx->p_link);
-    } else {
-        /* No other ULT is waiting or blocked for this ULT. Since fcontext does
-         * not switch to other fcontext when it finishes, we need to explicitly
-         * switch to the scheduler. */
-        ABTD_thread_context *p_sched_ctx;
-        p_sched_ctx = ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream);
-        ABTI_LOG_SET_SCHED((p_sched_ctx == p_fctx->p_link)
-                           ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
-                           : NULL);
-
-        /* We don't need to use the atomic operation here because the ULT will be
-         * terminated regardless of other requests. */
-        p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
-        ABTD_thread_finish_context(p_fctx, p_sched_ctx);
+            ABTD_thread_finish_context(p_fctx, p_fctx->p_link);
+            return;
+        } else {
+            /* If the current ULT's associated ES is different from p_joiner's,
+             * we can't directly jump to p_joiner.  Instead, we wake up
+             * p_joiner here so that p_joiner's scheduler can resume it. */
+            ABTI_thread_set_ready(p_joiner);
+        }
     }
+
+    /* No other ULT is waiting or blocked for this ULT. Since fcontext does
+     * not switch to other fcontext when it finishes, we need to explicitly
+     * switch to the scheduler. */
+    ABTD_thread_context *p_sched_ctx;
+    p_sched_ctx = ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream);
+    ABTI_LOG_SET_SCHED((p_sched_ctx == p_fctx->p_link)
+                       ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
+                       : NULL);
+
+    /* We don't need to use the atomic operation here because the ULT will be
+     * terminated regardless of other requests. */
+    p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
+    ABTD_thread_finish_context(p_fctx, p_sched_ctx);
 }
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
@@ -76,4 +87,23 @@ void ABTD_thread_func_wrapper(int func_upper, int func_lower,
     p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
 }
 #endif
+
+void ABTD_thread_exit(ABTI_thread *p_thread)
+{
+#if defined(ABT_CONFIG_USE_FCONTEXT)
+    ABTD_thread_context *p_fctx = &p_thread->ctx;
+    if (p_fctx->p_link) {
+        p_thread->state = ABT_THREAD_STATE_TERMINATED;
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] terminated\n",
+                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
+        take_fcontext(&p_fctx->fctx, p_fctx->p_link->fctx, NULL,
+                      ABTD_FCONTEXT_PRESERVE_FPU);
+    } else {
+        ABT_thread_yield();
+    }
+#else
+#error "Not implemented yet"
+#endif
+}
 

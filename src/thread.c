@@ -239,26 +239,80 @@ int ABT_thread_join(ABT_thread thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
+    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) goto fn_exit;
+
     ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
                           p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
                         ABT_ERR_INV_THREAD,
                         "The main ULT cannot be joined.");
 
     ABT_self_get_type(&type);
+    if (type != ABT_UNIT_TYPE_THREAD) goto yield_based;
 
-    /* TODO: If the caller is ULT, we can use yield_to-based implementation. */
-    if (type == ABT_UNIT_TYPE_THREAD) {
-        ABTI_CHECK_TRUE_MSG(p_thread != ABTI_local_get_thread(),
-                            ABT_ERR_INV_THREAD,
-                            "The target ULT should be different.");
+    ABTI_CHECK_TRUE_MSG(p_thread != ABTI_local_get_thread(), ABT_ERR_INV_THREAD,
+                        "The target ULT should be different.");
 
-        while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
-            ABT_thread_yield();
-        }
-    } else {
-        while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
-            ABT_thread_yield();
-        }
+#ifdef ABT_CONFIG_USE_ULT_JOIN_OPT
+    /* If the caller is ULT, we can use yield_to-based implementation. */
+    /* Check conditions for yield-to. */
+    if (ABTI_thread_is_ready(p_thread) == ABT_FALSE) goto yield_based;
+    switch (p_thread->p_pool->access) {
+        case ABT_POOL_ACCESS_SPMC:
+        case ABT_POOL_ACCESS_MPMC:
+            goto yield_based;
+        default: break;
+    }
+
+    ABTI_thread *p_self = ABTI_local_get_thread();
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
+    if (p_thread->p_pool->consumer != p_self->p_last_xstream) goto yield_based;
+#else
+    if (p_thread->p_pool != p_self->p_pool) goto yield_based;
+#endif
+    ABTI_xstream *p_xstream = p_self->p_last_xstream;
+
+    /* Remove the target ULT from the pool */
+    ABTI_POOL_REMOVE(p_thread->p_pool, p_thread->unit, p_xstream);
+
+    /* Set the link in the context for the target ULT */
+    ABTD_thread_context_change_link(&p_thread->ctx, &p_self->ctx);
+
+    /* Set the last ES */
+    p_thread->p_last_xstream = p_xstream;
+    p_thread->state = ABT_THREAD_STATE_RUNNING;
+
+    /* Make the current ULT BLOCKED */
+    p_self->state = ABT_THREAD_STATE_BLOCKED;
+    ABTI_pool_inc_num_blocked(p_self->p_pool);
+
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] blocked for join\n",
+              ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] start running\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
+    /* Switch the context */
+    ABTI_local_set_thread(p_thread);
+    ABTD_thread_context_switch(&p_self->ctx, &p_thread->ctx);
+
+    /* Resume */
+    /* If p_self's state is BLOCKED, the target ULT has terminated on the same
+     * ES as p_self's ES and the control has come from the target ULT.
+     * Otherwise, the target ULT had been migrated to a different ES, p_self
+     * has been resumed by p_self's scheduler.  In the latter case, we don't
+     * need to change p_self's state and the local ULT information. */
+    if (p_self->state == ABT_THREAD_STATE_BLOCKED) {
+        p_self->state = ABT_THREAD_STATE_RUNNING;
+        ABTI_pool_dec_num_blocked(p_self->p_pool);
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume after join\n",
+                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
+        ABTI_local_set_thread(p_self);
+        goto fn_exit;
+    }
+#endif /* ABT_CONFIG_USE_ULT_JOIN_OPT */
+
+  yield_based:
+    while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
+        ABT_thread_yield();
     }
 
   fn_exit:
@@ -302,8 +356,8 @@ int ABT_thread_exit(void)
     /* Set the exit request */
     ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_EXIT);
 
-    /* Switch the context to the scheduler */
-    ABT_thread_yield();
+    /* Terminate this ULT */
+    ABTD_thread_exit(p_thread);
 
   fn_exit:
     return abt_errno;
