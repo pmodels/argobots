@@ -56,3 +56,4 @@ doc/doxygen/
 *.trs
 *.out
 *.files
+*.dSYM/
