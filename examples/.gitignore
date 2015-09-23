@@ -4,5 +4,6 @@ fibonacci_task
 fibonacci_thread_task
 hello_world
 hello_world_thread
+sched_predef
 dynamic-es/dyn_server
 dynamic-es/dyn_app

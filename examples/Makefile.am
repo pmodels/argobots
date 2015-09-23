@@ -8,7 +8,8 @@ TESTS = \
 	hello_world_thread \
 	fibonacci_future \
 	fibonacci_task \
-	fibonacci_thread_task
+	fibonacci_thread_task \
+    sched_predef
 
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)
@@ -20,6 +21,7 @@ hello_world_thread_SOURCES = hello_world_thread.c
 fibonacci_future_SOURCES = fibonacci_future.c
 fibonacci_task_SOURCES = fibonacci_task.c
 fibonacci_thread_task_SOURCES = fibonacci_thread_task.c
+sched_predef_SOURCES = sched_predef.c
 
 testing:
 	./hello_world
@@ -27,3 +29,4 @@ testing:
 	./fibonacci_future
 	./fibonacci_task
 	./fibonacci_thread_task
+	./sched_predef
