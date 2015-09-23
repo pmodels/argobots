@@ -10,7 +10,8 @@ TESTS = \
 	fibonacci_task \
 	fibonacci_thread_task \
     sched_predef \
-    sched_shared_pool
+    sched_shared_pool \
+    sched_stack
 
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)
@@ -24,6 +25,7 @@ fibonacci_task_SOURCES = fibonacci_task.c
 fibonacci_thread_task_SOURCES = fibonacci_thread_task.c
 sched_predef_SOURCES = sched_predef.c
 sched_shared_pool_SOURCES = sched_shared_pool.c
+sched_stack_SOURCES = sched_stack.c
 
 testing:
 	./hello_world
@@ -33,3 +35,4 @@ testing:
 	./fibonacci_thread_task
 	./sched_predef
 	./sched_shared_pool
+	./sched_stack

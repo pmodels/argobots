@@ -6,5 +6,6 @@ hello_world
 hello_world_thread
 sched_predef
 sched_shared_pool
+sched_stack
 dynamic-es/dyn_server
 dynamic-es/dyn_app
