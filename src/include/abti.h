@@ -201,6 +201,7 @@ struct ABTI_pool {
     uint32_t num_blocked;    /* Number of blocked ULTs */
     int32_t num_migrations;  /* Number of migrating ULTs */
     void *data;              /* Specific data */
+    uint64_t id;             /* ID */
 
     /* Functions to manage units */
     ABT_unit_get_type_fn           u_get_type;
@@ -218,10 +219,6 @@ struct ABTI_pool {
     ABT_pool_pop_fn                p_pop;
     ABT_pool_remove_fn             p_remove;
     ABT_pool_free_fn               p_free;
-
-#ifdef ABT_CONFIG_USE_DEBUG_LOG
-    uint64_t id;             /* ID */
-#endif
 };
 
 struct ABTI_unit {

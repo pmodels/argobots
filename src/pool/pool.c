@@ -60,10 +60,7 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->p_pop                = def->p_pop;
     p_pool->p_remove             = def->p_remove;
     p_pool->p_free               = def->p_free;
-
-#ifdef ABT_CONFIG_USE_DEBUG_LOG
     p_pool->id                   = ABTI_pool_get_new_id();
-#endif
     LOG_EVENT("[P%" PRIu64 "] created\n", p_pool->id);
 
     *newpool = ABTI_pool_get_handle(p_pool);
@@ -495,6 +492,34 @@ fn_fail:
     goto fn_exit;
 }
 
+/**
+ * @ingroup POOL
+ * @brief   Get the ID of the target pool
+ *
+ * \c ABT_pool_get_id() returns the ID of \c pool.
+ *
+ * @param[in]  pool  handle to the target pool
+ * @param[out] id    pool id
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_pool_get_id(ABT_pool pool, int *id)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    *id = (int)p_pool->id;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
@@ -534,9 +559,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 
     fprintf(p_os,
         "%s== POOL (%p) ==\n"
-#ifdef ABT_CONFIG_USE_DEBUG_LOG
         "%sid            : %" PRIu64 "\n"
-#endif
         "%saccess        : %s\n"
         "%sautomatic     : %s\n"
         "%snum_scheds    : %d\n"
@@ -549,9 +572,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         "%snum_migrations: %d\n"
         "%sdata          : %p\n",
         prefix, p_pool,
-#ifdef ABT_CONFIG_USE_DEBUG_LOG
         prefix, p_pool->id,
-#endif
         prefix, access,
         prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
         prefix, p_pool->num_scheds,
