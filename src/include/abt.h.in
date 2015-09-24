@@ -388,6 +388,7 @@ int ABT_thread_cancel(ABT_thread thread);
 int ABT_thread_self(ABT_thread *thread);
 int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
 int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool);
+int ABT_thread_get_last_pool_id(ABT_thread thread, int *id);
 int ABT_thread_yield_to(ABT_thread thread);
 int ABT_thread_yield(void);
 int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream);

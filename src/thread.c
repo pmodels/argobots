@@ -443,6 +443,37 @@ int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Get the last pool's ID of the ULT
+ *
+ * \c ABT_thread_get_last_pool_id() returns the last pool's ID of \c thread.
+ * If the ULT is not running, this routine returns the ID of the pool where it
+ * is residing.  Otherwise, it returns the ID of the last pool where the ULT
+ * was (i.e., the pool from which the ULT was popped).
+ *
+ * @param[in]  thread  handle to the target ULT
+ * @param[out] id      pool id
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    ABTI_ASSERT(p_thread->p_pool);
+    *id = (int)(p_thread->p_pool->id);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
 
 /**
  * @ingroup ULT
