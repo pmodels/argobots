@@ -441,6 +441,7 @@ int ABT_task_get_name(ABT_task task, char *name, size_t *len);
 int ABT_self_get_type(ABT_unit_type *type);
 int ABT_self_is_primary(ABT_bool *flag);
 int ABT_self_on_primary_xstream(ABT_bool *flag);
+int ABT_self_get_last_pool_id(int *pool_id);
 
 /* Mutex */
 int ABT_mutex_create(ABT_mutex *newmutex);

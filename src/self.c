@@ -159,3 +159,55 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
     goto fn_exit;
 }
 
+/**
+ * @ingroup SELF
+ * @brief   Get the last pool's ID of calling work unit.
+ *
+ * \c ABT_self_get_last_pool_id() returns the last pool's ID of caller work
+ * unit.  If the work unit is not running, this routine returns the ID of the
+ * pool where it is residing.  Otherwise, it returns the ID of the last pool
+ * where the work unit was (i.e., the pool from which the work unit was
+ * popped).
+ * NOTE: If this routine is not called by Argobots work unit (ULT or tasklet),
+ * \c pool_id will be set to \c -1.
+ *
+ * @param[out] pool_id  pool id
+ * @return Error code
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ */
+int ABT_self_get_last_pool_id(int *pool_id)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread;
+    ABTI_task *p_task;
+
+    /* If Argobots has not been initialized, set type to ABT_UNIT_TYPE_EXIT. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        *pool_id = -1;
+        goto fn_exit;
+    }
+
+    /* This is when an external thread called this routine. */
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        *pool_id = -1;
+        goto fn_exit;
+    }
+
+    if ((p_thread = ABTI_local_get_thread())) {
+        ABTI_ASSERT(p_thread->p_pool);
+        *pool_id = (int)(p_thread->p_pool->id);
+    } else if ((p_task = ABTI_local_get_task())) {
+        ABTI_ASSERT(p_task->p_pool);
+        *pool_id = (int)(p_task->p_pool->id);
+    } else {
+        abt_errno = ABT_ERR_OTHER;
+        *pool_id = -1;
+    }
+
+  fn_exit:
+    return abt_errno;
+}
