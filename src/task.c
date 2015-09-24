@@ -383,6 +383,38 @@ int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool)
 
 /**
  * @ingroup TASK
+ * @brief   Get the last pool's ID of the tasklet
+ *
+ * \c ABT_task_get_last_pool_id() returns the last pool's ID of \c task.  If
+ * the tasklet is not running, this routine returns the ID of the pool where it
+ * is residing.  Otherwise, it returns the ID of the last pool where the
+ * tasklet was (i.e., the pool from which the tasklet was popped).
+ *
+ * @param[in]  task  handle to the target tasklet
+ * @param[out] id    pool id
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_get_last_pool_id(ABT_task task, int *id)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_THREAD_PTR(p_task);
+
+    ABTI_ASSERT(p_task->p_pool);
+    *id = (int)(p_task->p_pool->id);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Set the tasklet's migratability.
  *
  * \c ABT_task_set_migratable() sets the tasklet's migratability. By default,

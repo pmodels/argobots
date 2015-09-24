@@ -428,6 +428,7 @@ int ABT_task_self(ABT_task *task);
 int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream);
 int ABT_task_get_state(ABT_task task, ABT_task_state *state);
 int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool);
+int ABT_task_get_last_pool_id(ABT_task task, int *id);
 int ABT_task_set_migratable(ABT_task task, ABT_bool flag);
 int ABT_task_is_migratable(ABT_task task, ABT_bool *flag);
 int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
