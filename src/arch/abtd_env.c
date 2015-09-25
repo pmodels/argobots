@@ -80,6 +80,14 @@ void ABTD_env_init(ABTI_global *p_global)
         }
     }
 
+    /* Maximum size of the internal ES array */
+    env = getenv("ABT_ENV_MAX_NUM_XSTREAMS");
+    if (env != NULL) {
+        p_global->max_xstreams = atoi(env);
+    } else {
+        p_global->max_xstreams = p_global->num_cores;
+    }
+
     /* Default stack size for ULT */
     env = getenv("ABT_ENV_THREAD_STACKSIZE");
     if (env != NULL) {

@@ -108,6 +108,7 @@ struct ABTI_mutex {
 };
 
 struct ABTI_global {
+    int max_xstreams;           /* Max. size of p_xstreams */
     ABTI_xstream_contn *p_xstreams;    /* ES container */
 
     int num_cores;              /* Number of CPU cores */
