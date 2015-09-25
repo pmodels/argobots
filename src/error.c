@@ -33,6 +33,7 @@ int ABT_error_get_str(int errno, char *str, size_t *len)
         "ABT_ERR_MEM",
         "ABT_ERR_OTHER",
         "ABT_ERR_INV_XSTREAM",
+        "ABT_ERR_INV_XSTREAM_RANK",
         "ABT_ERR_INV_SCHED",
         "ABT_ERR_INV_SCHED_KIND",
         "ABT_ERR_INV_SCHED_PREDEF",
