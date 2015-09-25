@@ -20,7 +20,7 @@ static void handle_error(const char *msg);
 
 int main(int argc, char *argv[])
 {
-    int sockfd, port;
+    int sockfd, port = DEFAULT_PORT;
     struct sockaddr_in my_addr;
     struct sockaddr_in abt_addr;
     socklen_t addrlen;
@@ -32,11 +32,15 @@ int main(int argc, char *argv[])
     int abt_alive = 0;
     int n, ret;
 
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
-        exit(1);
+    if (argc == 2) {
+        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+            fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+            exit(1);
+        } else {
+            port = atoi(argv[1]);
+        }
     }
-    port = atoi(argv[1]);
+    printf("Port: %d\n", port);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) handle_error("ERROR: socket");

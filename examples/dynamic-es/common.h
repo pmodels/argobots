@@ -6,6 +6,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#define DEFAULT_PORT    60439
 #define SEND_BUF_LEN    20
 #define RECV_BUF_LEN    20
 
