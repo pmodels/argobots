@@ -120,7 +120,7 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
 
 void ABTI_log_debug(FILE *fh, char *path, int line, const char *format, ...)
 {
-    if (gp_ABTI_global->use_logging == ABT_FALSE) return;
+    if (gp_ABTI_global->use_debug == ABT_FALSE) return;
 
     int line_len;
     size_t newfmt_len;

@@ -66,9 +66,11 @@ void ABTD_env_init(ABTI_global *p_global)
     /* If the debug logging is set in configure, logging is turned on by
      * default. */
     p_global->use_logging = ABT_TRUE;
+    p_global->use_debug = ABT_TRUE;
 #else
     /* Otherwise, logging is not turned on by default. */
     p_global->use_logging = ABT_FALSE;
+    p_global->use_debug = ABT_FALSE;
 #endif
     env = getenv("ABT_ENV_USE_LOG");
     if (env != NULL) {
@@ -77,6 +79,15 @@ void ABTD_env_init(ABTI_global *p_global)
             p_global->use_logging = ABT_FALSE;
         } else {
             p_global->use_logging = ABT_TRUE;
+        }
+    }
+    env = getenv("ABT_ENV_USE_DEBUG");
+    if (env != NULL) {
+        if (strcmp(env, "0") == 0 || strcmp(env, "NO") == 0 ||
+            strcmp(env, "no") == 0 || strcmp(env, "No") == 0) {
+            p_global->use_debug = ABT_FALSE;
+        } else {
+            p_global->use_debug = ABT_TRUE;
         }
     }
 
