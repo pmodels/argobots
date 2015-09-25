@@ -7,6 +7,7 @@
 
 static uint64_t ABTI_xstream_get_new_rank(void);
 static void ABTI_xstream_return_rank(uint64_t);
+static ABT_bool ABTI_xstream_take_rank(uint64_t);
 
 
 /** @defgroup ES Execution Stream (ES)
@@ -172,6 +173,88 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
+ * @brief   Create a new ES with a specific rank.
+ *
+ * @param[in]  sched  handle to the scheduler used for a new ES. If this is
+ *                    ABT_SCHED_NULL, the runtime-provided scheduler is used.
+ * @param[in]  rank   target rank
+ * @param[out] newxstream  handle to a newly created ES. This cannot be NULL
+ *                    because unnamed ES is not allowed.
+ * @return Error code
+ * @retval ABT_SUCCESS               on success
+ * @retval ABT_ERR_INV_XSTREAM_RANK  invalid rank
+ */
+int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
+                                 ABT_xstream *newxstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_newxstream;
+    ABTI_sched *p_sched;
+
+    if (gp_ABTI_global->p_xstreams[rank] ||
+        ABTI_xstream_take_rank(rank) == ABT_FALSE) {
+        abt_errno = ABT_ERR_INV_XSTREAM_RANK;
+        goto fn_fail;
+    }
+
+    if (sched == ABT_SCHED_NULL) {
+        abt_errno = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
+                                           ABT_SCHED_CONFIG_NULL, &sched);
+        ABTI_CHECK_ERROR(abt_errno);
+        p_sched = ABTI_sched_get_ptr(sched);
+    } else {
+        p_sched = ABTI_sched_get_ptr(sched);
+        ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED,
+                        ABT_ERR_INV_SCHED);
+    }
+
+    p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
+
+    /* Create a wrapper unit */
+    ABTI_elem_create_from_xstream(p_newxstream);
+
+    p_newxstream->rank         = rank;
+    p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
+    p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
+    p_newxstream->scheds       = NULL;
+    p_newxstream->num_scheds   = 0;
+    p_newxstream->max_scheds   = 0;
+    p_newxstream->request      = 0;
+    p_newxstream->p_req_arg    = NULL;
+    p_newxstream->p_main_sched = NULL;
+
+    /* Create mutex */
+    ABTI_mutex_init(&p_newxstream->mutex);
+    ABTI_mutex_init(&p_newxstream->top_sched_mutex);
+
+    /* Set the main scheduler */
+    abt_errno = ABTI_xstream_set_main_sched(p_newxstream, p_sched);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    LOG_EVENT("[E%" PRIu64 "] created\n", p_newxstream->rank);
+
+    /* Add this ES to the global ES array */
+    gp_ABTI_global->p_xstreams[rank] = p_newxstream;
+    ABTD_atomic_fetch_add_int32(&gp_ABTI_global->num_xstreams, 1);
+
+    /* Start this ES */
+    abt_errno = ABTI_xstream_start(p_newxstream);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Return value */
+    *newxstream = ABTI_xstream_get_handle(p_newxstream);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    *newxstream = ABT_XSTREAM_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -1669,6 +1752,15 @@ static uint64_t ABTI_xstream_get_new_rank(void)
         }
     }
     return gp_ABTI_global->max_xstreams;
+}
+
+static ABT_bool ABTI_xstream_take_rank(uint64_t rank)
+{
+    if (ABTD_atomic_cas_uint32(&g_rank_list[rank], 0, 1) == 0) {
+        return ABT_TRUE;
+    } else {
+        return ABT_FALSE;
+    }
 }
 
 static void ABTI_xstream_return_rank(uint64_t rank)

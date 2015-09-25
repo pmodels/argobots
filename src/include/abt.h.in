@@ -310,6 +310,8 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream);
 int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
                              ABT_pool *pools, ABT_sched_config config,
                              ABT_xstream *newxstream);
+int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
+                                 ABT_xstream *newxstream);
 int ABT_xstream_start(ABT_xstream xstream);
 int ABT_xstream_free(ABT_xstream *xstream);
 int ABT_xstream_join(ABT_xstream xstream);
