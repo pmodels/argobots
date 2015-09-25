@@ -64,13 +64,20 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_newxstream;
+    uint64_t rank;
+
+    rank = ABTI_xstream_get_new_rank();
+    if (rank >= gp_ABTI_global->max_xstreams) {
+        abt_errno = ABT_ERR_XSTREAM;
+        goto fn_fail;
+    }
 
     p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
 
     /* Create a wrapper unit */
     ABTI_elem_create_from_xstream(p_newxstream);
 
-    p_newxstream->rank         = ABTI_xstream_get_new_rank();
+    p_newxstream->rank         = rank;
     p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
     p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
     p_newxstream->scheds       = NULL;
@@ -90,8 +97,9 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
 
     LOG_EVENT("[E%" PRIu64 "] created\n", p_newxstream->rank);
 
-    /* Add this ES to the global ES container */
-    ABTI_global_add_xstream(p_newxstream);
+    /* Add this ES to the global ES array */
+    gp_ABTI_global->p_xstreams[rank] = p_newxstream;
+    ABTD_atomic_fetch_add_int32(&gp_ABTI_global->num_xstreams, 1);
 
     /* Return value */
     *pp_xstream = p_newxstream;
@@ -230,9 +238,6 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_create");
     }
 
-    /* Move the ES to the global active ES pool */
-    ABTI_global_move_xstream(p_xstream);
-
   fn_exit:
     return abt_errno;
 
@@ -255,9 +260,6 @@ int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     /* Set the ES's state to READY.  The ES's state will be set to RUNNING in
      * ABTI_xstream_schedule(). */
     p_xstream->state = ABT_XSTREAM_STATE_READY;
-
-    /* Move the ES to the global active ES pool */
-    ABTI_global_move_xstream(p_xstream);
 
     LOG_EVENT("[E%" PRIu64 "] start\n", p_xstream->rank);
 
@@ -326,8 +328,9 @@ int ABT_xstream_free(ABT_xstream *xstream)
         ABTI_CHECK_ERROR(abt_errno);
     }
 
-    /* Remove this xstream from the global ES pool */
-    ABTI_global_del_xstream(p_xstream);
+    /* Remove this xstream from the global ES array */
+    gp_ABTI_global->p_xstreams[p_xstream->rank] = NULL;
+    ABTD_atomic_fetch_sub_int32(&gp_ABTI_global->num_xstreams, 1);
 
     /* Free the xstream object */
     abt_errno = ABTI_xstream_free(p_xstream);
@@ -377,7 +380,6 @@ int ABT_xstream_join(ABT_xstream xstream)
             ABTI_mutex_unlock(&p_xstream->mutex);
             goto fn_body;
         }
-        ABTI_global_move_xstream(p_xstream);
         ABTI_mutex_unlock(&p_xstream->mutex);
         goto fn_exit;
     }
@@ -906,9 +908,7 @@ int ABT_xstream_get_num(int *num_xstreams)
         goto fn_exit;
     }
 
-    ABTI_xstream_contn *p_xstreams = gp_ABTI_global->p_xstreams;
-    *num_xstreams = (int)(ABTI_contn_get_size(p_xstreams->created)
-            + ABTI_contn_get_size(p_xstreams->active));
+    *num_xstreams = gp_ABTI_global->num_xstreams;
 
   fn_exit:
     return abt_errno;
@@ -1622,15 +1622,13 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 
 
 /* global rank variable for ES */
-static uint64_t g_xstream_rank = 0;
 static uint32_t *g_rank_list = NULL;
 
 /* Reset the ES rank value */
 void ABTI_xstream_reset_rank(void)
 {
-    g_rank_list = (uint32_t *)ABTU_calloc(gp_ABTI_global->num_cores,
+    g_rank_list = (uint32_t *)ABTU_calloc(gp_ABTI_global->max_xstreams,
                                           sizeof(uint32_t));
-    g_xstream_rank = gp_ABTI_global->num_cores;
 }
 
 void ABTI_xstream_free_ranks(void)
@@ -1647,20 +1645,38 @@ void ABTI_xstream_free_ranks(void)
 static uint64_t ABTI_xstream_get_new_rank(void)
 {
     uint64_t i;
+    int max_xstreams;
 
-    for (i = 0; i < gp_ABTI_global->num_cores; i++) {
+    if (gp_ABTI_global->num_xstreams >= gp_ABTI_global->max_xstreams) {
+        ABTI_mutex_spinlock(&gp_ABTI_global->mutex);
+        if (gp_ABTI_global->num_xstreams >= gp_ABTI_global->max_xstreams) {
+            max_xstreams = gp_ABTI_global->max_xstreams * 2;
+            gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_realloc(
+                    gp_ABTI_global->p_xstreams,
+                    max_xstreams * sizeof(ABTI_xstream *));
+            g_rank_list = (uint32_t *)ABTU_realloc(g_rank_list,
+                    max_xstreams * sizeof(uint32_t));
+            for (i = gp_ABTI_global->num_xstreams; i < max_xstreams; i++) {
+                g_rank_list[i] = 0;
+            }
+            gp_ABTI_global->max_xstreams = max_xstreams;
+        }
+        ABTI_mutex_unlock(&gp_ABTI_global->mutex);
+    }
+
+    for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {
         if (g_rank_list[i] == 0) {
             if (ABTD_atomic_cas_uint32(&g_rank_list[i], 0, 1) == 0) {
                 return i;
             }
         }
     }
-    return ABTD_atomic_fetch_add_uint64(&g_xstream_rank, 1);
+    return gp_ABTI_global->max_xstreams;
 }
 
 static void ABTI_xstream_return_rank(uint64_t rank)
 {
-    if (rank < gp_ABTI_global->num_cores) {
+    if (rank < gp_ABTI_global->max_xstreams) {
         g_rank_list[rank] = 0;
     }
 }

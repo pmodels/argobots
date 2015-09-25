@@ -815,8 +815,12 @@ int ABT_thread_migrate(ABT_thread thread)
     /* TODO: fix the bug(s) */
     int abt_errno = ABT_SUCCESS;
     ABT_xstream xstream;
+    ABTI_xstream *p_xstream;
 
-    ABTI_xstream_contn *p_xstreams = gp_ABTI_global->p_xstreams;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    ABTI_xstream **p_xstreams = gp_ABTI_global->p_xstreams;
 
     /* Choose the destination xstream */
     /* FIXME: Currenlty, the target xstream is randomly chosen. We need a
@@ -825,33 +829,22 @@ int ABT_thread_migrate(ABT_thread thread)
     /* TODO: choose a pool also when (p_thread->p_pool->consumer == NULL) */
     while (1) {
         /* Only one ES */
-        if (ABTI_contn_get_size(p_xstreams->created) +
-            ABTI_contn_get_size(p_xstreams->active) == 1) {
+        if (gp_ABTI_global->num_xstreams == 1) {
             abt_errno = ABT_ERR_MIGRATION_NA;
             break;
         }
-        if (ABTI_contn_get_size(p_xstreams->created) > 0) {
-            ABTI_xstream *p_xstream;
-            ABTI_global_get_created_xstream(&p_xstream);
-            if (p_xstream == NULL) continue;
-            xstream = ABTI_xstream_get_handle(p_xstream);
-        } else {
-            ABTI_xstream *p_xstream;
-            ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-            /* If the pool is not associated with an ES */
-            ABTI_CHECK_TRUE(p_thread->p_pool->consumer != NULL,
-                            ABT_ERR_INV_POOL_ACCESS);
-            ABTI_elem *p_next =
-                ABTI_elem_get_next(&p_thread->p_pool->consumer->elem);
-            p_xstream = ABTI_elem_get_xstream(p_next);
-            xstream = ABTI_xstream_get_handle(p_xstream);
-        }
 
-        abt_errno = ABT_thread_migrate_to_xstream(thread, xstream);
-        if (abt_errno != ABT_ERR_INV_XSTREAM &&
-            abt_errno != ABT_ERR_MIGRATION_TARGET) {
-            ABTI_CHECK_ERROR(abt_errno);
-            break;
+        p_xstream = p_xstreams[rand() % gp_ABTI_global->num_xstreams];
+        if (p_xstream && p_xstream != p_thread->p_last_xstream) {
+            if (p_xstream->state == ABT_XSTREAM_STATE_RUNNING) {
+                xstream = ABTI_xstream_get_handle(p_xstream);
+                abt_errno = ABT_thread_migrate_to_xstream(thread, xstream);
+                if (abt_errno != ABT_ERR_INV_XSTREAM &&
+                        abt_errno != ABT_ERR_MIGRATION_TARGET) {
+                    ABTI_CHECK_ERROR(abt_errno);
+                    break;
+                }
+            }
         }
     }
 

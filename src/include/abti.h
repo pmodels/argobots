@@ -109,7 +109,9 @@ struct ABTI_mutex {
 
 struct ABTI_global {
     int max_xstreams;           /* Max. size of p_xstreams */
-    ABTI_xstream_contn *p_xstreams;    /* ES container */
+    int num_xstreams;           /* Current # of ESs */
+    ABTI_xstream **p_xstreams;  /* ES array */
+    ABTI_mutex mutex;           /* Mutex */
 
     int num_cores;              /* Number of CPU cores */
     int set_affinity;           /* Whether CPU affinity is used */
@@ -338,16 +340,6 @@ extern ABTI_global *gp_ABTI_global;
 /* ES Local Data */
 extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
 
-
-/* Init & Finalize */
-void ABTI_xstream_contn_init(ABTI_xstream_contn *p_xstreams);
-int ABTI_xstream_contn_finalize(ABTI_xstream_contn *p_xstreams);
-
-/* Global Data */
-void ABTI_global_add_xstream(ABTI_xstream *p_xstream);
-void ABTI_global_move_xstream(ABTI_xstream *p_xstream);
-void ABTI_global_del_xstream(ABTI_xstream *p_xstream);
-void ABTI_global_get_created_xstream(ABTI_xstream **p_xstream);
 
 /* ES Local Data */
 int ABTI_local_init(void);

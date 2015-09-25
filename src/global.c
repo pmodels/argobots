@@ -33,7 +33,6 @@ int ABT_init(int argc, char **argv)
 {
     ABTI_UNUSED(argc); ABTI_UNUSED(argv);
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream_contn *p_xstreams;
 
     /* If Argobots has already been initialized, just return. */
     if (gp_ABTI_global != NULL) goto fn_exit;
@@ -50,10 +49,11 @@ int ABT_init(int argc, char **argv)
     ABTI_sched_reset_id();
     ABTI_pool_reset_id();
 
-    /* Initialize the ES container */
-    p_xstreams = (ABTI_xstream_contn *)ABTU_malloc(sizeof(ABTI_xstream_contn));
-    ABTI_xstream_contn_init(p_xstreams);
-    gp_ABTI_global->p_xstreams = p_xstreams;
+    /* Initialize the ES array */
+    gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_calloc(
+            gp_ABTI_global->max_xstreams, sizeof(ABTI_xstream *));
+    gp_ABTI_global->num_xstreams = 0;
+    ABTI_mutex_init(&gp_ABTI_global->mutex);
 
     /* Init the ES local data */
     abt_errno = ABTI_local_init();
@@ -143,13 +143,9 @@ int ABT_finalize(void)
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
     }
 
-    /* Remove the primary ES from the global ES container */
-    ABTI_global_del_xstream(p_xstream);
-
-    /* Finalize the ES container */
-    abt_errno = ABTI_xstream_contn_finalize(gp_ABTI_global->p_xstreams);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_contn_finalize");
-    ABTU_free(gp_ABTI_global->p_xstreams);
+    /* Remove the primary ES from the global ES array */
+    gp_ABTI_global->p_xstreams[p_xstream->rank] = NULL;
+    gp_ABTI_global->num_xstreams--;
 
     /* Remove the primary ULT */
     ABTI_thread_free_main(p_thread);
@@ -161,6 +157,9 @@ int ABT_finalize(void)
     /* Finalize the ES local data */
     abt_errno = ABTI_local_finalize();
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Free the ES array */
+    ABTU_free(gp_ABTI_global->p_xstreams);
 
     /* Free the ABTI_global structure */
     ABTU_free(gp_ABTI_global);
@@ -197,123 +196,5 @@ int ABT_initialized(void)
     }
 
     return abt_errno;
-}
-
-
-/*****************************************************************************/
-/* Private APIs                                                              */
-/*****************************************************************************/
-
-void ABTI_xstream_contn_init(ABTI_xstream_contn *p_xstreams)
-{
-    /* Create ES containers */
-    ABTI_contn_create(&p_xstreams->created);
-    ABTI_contn_create(&p_xstreams->active);
-    ABTI_contn_create(&p_xstreams->deads);
-
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_xstreams->mutex);
-}
-
-int ABTI_xstream_contn_finalize(ABTI_xstream_contn *p_xstreams)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    /* Check there is no running ES anymore */
-    ABTI_CHECK_TRUE(ABTI_contn_get_size(p_xstreams->active) == 0,
-                    ABT_ERR_MISSING_JOIN);
-
-    /* Free all containers */
-    ABTI_mutex_spinlock(&p_xstreams->mutex);
-    ABTI_contn_free(&p_xstreams->created);
-    ABTI_contn_free(&p_xstreams->active);
-    ABTI_contn_free(&p_xstreams->deads);
-    ABTI_mutex_unlock(&p_xstreams->mutex);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-void ABTI_global_add_xstream(ABTI_xstream *p_xstream)
-{
-    ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
-
-    ABTI_mutex_spinlock(&p_gxstreams->mutex);
-    switch (p_xstream->state) {
-        case ABT_XSTREAM_STATE_CREATED:
-            ABTI_contn_push(p_gxstreams->created, &p_xstream->elem);
-            break;
-        case ABT_XSTREAM_STATE_READY:
-        case ABT_XSTREAM_STATE_RUNNING:
-            ABTI_contn_push(p_gxstreams->active, &p_xstream->elem);
-            break;
-        case ABT_XSTREAM_STATE_TERMINATED:
-            ABTI_contn_push(p_gxstreams->deads, &p_xstream->elem);
-            break;
-        default:
-            HANDLE_ERROR("UNKNOWN ES STATE");
-            break;
-    }
-    ABTI_mutex_unlock(&p_gxstreams->mutex);
-}
-
-void ABTI_global_move_xstream(ABTI_xstream *p_xstream)
-{
-    ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
-
-    ABTI_elem *p_elem = &p_xstream->elem;
-    ABTI_contn *prev_contn = p_elem->p_contn;
-
-    /* Remove from the previous container and add to the new container */
-    ABTI_mutex_spinlock(&p_gxstreams->mutex);
-    ABTI_contn_remove(prev_contn, &p_xstream->elem);
-    switch (p_xstream->state) {
-        case ABT_XSTREAM_STATE_CREATED:
-            HANDLE_ERROR("SHOULD NOT REACH HERE");
-            break;
-        case ABT_XSTREAM_STATE_READY:
-        case ABT_XSTREAM_STATE_RUNNING:
-            ABTI_contn_push(p_gxstreams->active, &p_xstream->elem);
-            break;
-        case ABT_XSTREAM_STATE_TERMINATED:
-            ABTI_contn_push(p_gxstreams->deads, &p_xstream->elem);
-            break;
-        default:
-            HANDLE_ERROR("UNKNOWN ES STATE");
-            break;
-    }
-    ABTI_mutex_unlock(&p_gxstreams->mutex);
-}
-
-void ABTI_global_del_xstream(ABTI_xstream *p_xstream)
-{
-    ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
-
-    ABTI_elem *p_elem = &p_xstream->elem;
-    ABTI_contn *prev_contn = p_elem->p_contn;
-
-    ABTI_mutex_spinlock(&p_gxstreams->mutex);
-    ABTI_contn_remove(prev_contn, &p_xstream->elem);
-    ABTI_mutex_unlock(&p_gxstreams->mutex);
-}
-
-void ABTI_global_get_created_xstream(ABTI_xstream **p_xstream)
-{
-    ABTI_xstream_contn *p_gxstreams = gp_ABTI_global->p_xstreams;
-
-    /* Pop one ES */
-    ABTI_mutex_spinlock(&p_gxstreams->mutex);
-    ABTI_elem *elem = ABTI_contn_pop(p_gxstreams->created);
-    ABTI_mutex_unlock(&p_gxstreams->mutex);
-
-    /* If the list is empty */
-    if (!elem)
-        *p_xstream = NULL;
-    else
-        *p_xstream = ABTI_elem_get_xstream(elem);
 }
 
