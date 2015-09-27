@@ -1222,6 +1222,11 @@ void ABTI_xstream_schedule(void *p_arg)
         p_xstream->state = ABT_XSTREAM_STATE_READY;
         ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
 
+#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
+        /* If there is a stop request, the ES has to be terminated/ */
+        if (p_xstream->request & ABTI_XSTREAM_REQ_STOP) break;
+#endif
+
         /* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */
         if ((p_xstream->request & ABTI_XSTREAM_REQ_EXIT) ||

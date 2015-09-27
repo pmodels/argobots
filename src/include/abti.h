@@ -26,6 +26,7 @@
 #define ABTI_XSTREAM_REQ_JOIN       (1 << 0)
 #define ABTI_XSTREAM_REQ_EXIT       (1 << 1)
 #define ABTI_XSTREAM_REQ_CANCEL     (1 << 2)
+#define ABTI_XSTREAM_REQ_STOP       (1 << 3)
 
 #define ABTI_SCHED_REQ_FINISH       (1 << 0)
 #define ABTI_SCHED_REQ_EXIT         (1 << 1)
