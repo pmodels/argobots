@@ -67,6 +67,8 @@ int main(int argc, char *argv[])
         while (abt_alive) {
             printf("d: decrease # of ESs\n");
             printf("i: increase # of ESs\n");
+            printf("s [ES rank]: stop a specific ES\n");
+            printf("c [ES rank]: create a specific ES\n");
             printf("n: ask # of ESs\n");
             printf("q: quit\n");
             printf("Please enter your command: ");
@@ -74,6 +76,7 @@ int main(int argc, char *argv[])
             fgets(send_buf, SEND_BUF_LEN, stdin);
 
             if (send_buf[0] != 'd' && send_buf[0] != 'i' &&
+                send_buf[0] != 's' && send_buf[0] != 'c' &&
                 send_buf[0] != 'n' && send_buf[0] != 'q') {
                 printf("Unknown command: %s\n", send_buf);
                 continue;
