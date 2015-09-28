@@ -1156,6 +1156,12 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
     }
 
     // TODO: check event queue
+#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
+    if (ABTI_event_check_power() == ABT_TRUE) {
+        abt_errno = ABT_sched_exit(sched);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+#endif
 
   fn_exit:
     return abt_errno;
