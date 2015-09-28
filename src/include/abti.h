@@ -122,6 +122,7 @@ struct ABTI_global {
     size_t sched_stacksize;     /* Default stack size for sched (in bytes) */
     uint32_t sched_event_freq;  /* Default check frequency for sched */
     ABTI_thread *p_thread_main; /* ULT of the main function */
+    ABT_bool pm_connected;      /* Is power mgmt. daemon connected? */
 };
 
 struct ABTI_local {
@@ -458,6 +459,15 @@ void ABTI_eventual_signal(ABTI_eventual *p_eventual);
 
 /* Future */
 void ABTI_future_signal(ABTI_future *p_future);
+
+/* Event */
+void ABTI_event_init(void);
+void ABTI_event_finalize(void);
+#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
+void ABTI_event_connect_power(char *p_host, int port);
+void ABTI_event_disconnect_power(void);
+ABT_bool ABTI_event_check_power(void);
+#endif
 
 #include "abti_log.h"
 #include "abti_local.h"

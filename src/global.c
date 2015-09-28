@@ -39,6 +39,9 @@ int ABT_init(int argc, char **argv)
 
     gp_ABTI_global = (ABTI_global *)ABTU_malloc(sizeof(ABTI_global));
 
+    /* Initialize the event environment */
+    ABTI_event_init();
+
     /* Initialize the system environment */
     ABTD_env_init(gp_ABTI_global);
 
@@ -157,6 +160,9 @@ int ABT_finalize(void)
     /* Finalize the ES local data */
     abt_errno = ABTI_local_finalize();
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Finalize the event environment */
+    ABTI_event_finalize();
 
     /* Free the ES array */
     ABTU_free(gp_ABTI_global->p_xstreams);

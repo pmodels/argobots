@@ -76,24 +76,26 @@ extern "C" {
 #define ABT_ERR_INV_FUTURE         21  /* Invalid future */
 #define ABT_ERR_INV_BARRIER        22  /* Invalid barrier */
 #define ABT_ERR_INV_TIMER          23  /* Invalid timer */
-#define ABT_ERR_XSTREAM            24  /* ES-related error */
-#define ABT_ERR_XSTREAM_STATE      25  /* ES state error */
-#define ABT_ERR_SCHED              26  /* Scheduler-related error */
-#define ABT_ERR_SCHED_CONFIG       27  /* Scheduler config error */
-#define ABT_ERR_POOL               28  /* Pool-related error */
-#define ABT_ERR_UNIT               29  /* Scheduling unit-related error */
-#define ABT_ERR_THREAD             30  /* ULT-related error */
-#define ABT_ERR_TASK               31  /* Task-related error */
-#define ABT_ERR_MUTEX              32  /* Mutex-related error */
-#define ABT_ERR_MUTEX_LOCKED       33  /* Return value when mutex is locked */
-#define ABT_ERR_COND               34  /* Condition-related error */
-#define ABT_ERR_EVENTUAL           35  /* Eventual-related error */
-#define ABT_ERR_FUTURE             36  /* Future-related error */
-#define ABT_ERR_BARRIER            37  /* Barrier-related error */
-#define ABT_ERR_TIMER              38  /* Timer-related error */
-#define ABT_ERR_MIGRATION_TARGET   39  /* Migration target error */
-#define ABT_ERR_MIGRATION_NA       40  /* Migration not available */
-#define ABT_ERR_MISSING_JOIN       41  /* An ES or more did not join */
+#define ABT_ERR_INV_EVENT          24  /* Invalid event */
+#define ABT_ERR_XSTREAM            25  /* ES-related error */
+#define ABT_ERR_XSTREAM_STATE      26  /* ES state error */
+#define ABT_ERR_SCHED              27  /* Scheduler-related error */
+#define ABT_ERR_SCHED_CONFIG       28  /* Scheduler config error */
+#define ABT_ERR_POOL               29  /* Pool-related error */
+#define ABT_ERR_UNIT               30  /* Scheduling unit-related error */
+#define ABT_ERR_THREAD             31  /* ULT-related error */
+#define ABT_ERR_TASK               32  /* Task-related error */
+#define ABT_ERR_MUTEX              33  /* Mutex-related error */
+#define ABT_ERR_MUTEX_LOCKED       34  /* Return value when mutex is locked */
+#define ABT_ERR_COND               35  /* Condition-related error */
+#define ABT_ERR_EVENTUAL           36  /* Eventual-related error */
+#define ABT_ERR_FUTURE             37  /* Future-related error */
+#define ABT_ERR_BARRIER            38  /* Barrier-related error */
+#define ABT_ERR_TIMER              39  /* Timer-related error */
+#define ABT_ERR_EVENT              40  /* Event-related error */
+#define ABT_ERR_MIGRATION_TARGET   41  /* Migration target error */
+#define ABT_ERR_MIGRATION_NA       42  /* Migration not available */
+#define ABT_ERR_MISSING_JOIN       43  /* An ES or more did not join */
 
 
 /* Constants */
@@ -156,6 +158,11 @@ enum ABT_unit_type {
     ABT_UNIT_TYPE_EXT       /* External thread */
 };
 
+enum ABT_event_kind {
+    ABT_EVENT_STOP_XSTREAM,     /* stop the target ES */
+    ABT_EVENT_ADD_XSTREAM,      /* create a new ES */
+};
+
 
 /* Constants for ABT_bool */
 #define ABT_TRUE    1
@@ -191,6 +198,7 @@ typedef void *                 ABT_future;        /* Future */
 typedef void *                 ABT_barrier;       /* Barrier */
 typedef void *                 ABT_timer;         /* Timer */
 typedef int                    ABT_bool;          /* Boolean type */
+typedef enum ABT_event_kind    ABT_event_kind;    /* Event kind */
 
 
 /* Null Object Handles */
@@ -497,6 +505,14 @@ int ABT_timer_read(ABT_timer timer, double *secs);
 int ABT_timer_stop_and_read(ABT_timer timer, double *secs);
 int ABT_timer_stop_and_add(ABT_timer timer, double *secs);
 int ABT_timer_get_overhead(double *overhead);
+
+/* Event */
+typedef ABT_bool (*ABT_event_cb_fn)(void *user_arg, void *abt_arg);
+int ABT_event_add_callback(ABT_event_kind event,
+                           ABT_event_cb_fn ask_cb, void *ask_user_arg,
+                           ABT_event_cb_fn act_cb, void *act_user_arg,
+                           int *cb_id);
+int ABT_event_del_callback(ABT_event_kind event, int cb_id);
 
 #if defined(__cplusplus)
 }

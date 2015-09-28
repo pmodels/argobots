@@ -126,6 +126,25 @@ void ABTD_env_init(ABTI_global *p_global)
         p_global->sched_event_freq = ABTD_SCHED_EVENT_FREQ;
     }
 
+#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
+    char *p_host = "localhost";
+    int port = 60439;
+
+    /* Hostname for power management daemon */
+    env = getenv("ABT_ENV_POWER_EVENT_HOSTNAME");
+    if (env != NULL) {
+        p_host = env;
+    }
+
+    /* Port number for power management daemon */
+    env = getenv("ABT_ENV_POWER_EVENT_PORT");
+    if (env != NULL) {
+        port = atoi(env);
+    }
+
+    ABTI_event_connect_power(p_host, port);
+#endif
+
     /* Init timer */
     ABTD_time_init();
 }
