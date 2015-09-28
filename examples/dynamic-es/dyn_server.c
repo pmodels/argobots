@@ -3,7 +3,6 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,12 +58,24 @@ int main(int argc, char *argv[])
         addrlen = sizeof(abt_addr);
         abt_pfd.fd = accept(sockfd, (struct sockaddr *)&abt_addr, &addrlen);
         if (abt_pfd.fd < 0) handle_error("ERROR: accept");
-        abt_pfd.events = POLLIN | POLLRDHUP;
+        abt_pfd.events = POLLIN | POLLHUP;
         abt_alive = 1;
 
         printf("Client connected...\n\n");
 
         while (abt_alive) {
+            ret = poll(&abt_pfd, 1, 10);
+            if (ret == -1) {
+                handle_error("ERROR: poll");
+            } else if (ret != 0) {
+                if (abt_pfd.revents & POLLHUP) {
+                    abt_pfd.revents = 0;
+                    abt_alive = 0;
+                    printf("Client disconnected...\n");
+                    continue;
+                }
+            }
+
             printf("d: decrease # of ESs\n");
             printf("i: increase # of ESs\n");
             printf("s [ES rank]: stop a specific ES\n");
@@ -100,7 +111,7 @@ int main(int argc, char *argv[])
 
                         printf("Response: %s\n\n", recv_buf);
                     }
-                    if (abt_pfd.revents & POLLRDHUP) {
+                    if (abt_pfd.revents & POLLHUP) {
                         abt_alive = 0;
                         printf("Client disconnected...\n");
                         break;

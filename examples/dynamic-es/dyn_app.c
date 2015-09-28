@@ -3,7 +3,6 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -216,7 +215,7 @@ static void abt_connect(char *host_str, char *port_str)
         return;
     }
     abt_pfd.fd = sockfd;
-    abt_pfd.events = POLLIN | POLLRDHUP;
+    abt_pfd.events = POLLIN | POLLHUP;
     abt_alive = 1;
 
     printf("Connected...\n");
@@ -267,7 +266,7 @@ static void abt_check_events(int idx)
             }
         }
 
-        if (abt_pfd.revents & POLLRDHUP) {
+        if (abt_pfd.revents & POLLHUP) {
             abt_alive = 0;
             printf("Server disconnected...\n");
         }
