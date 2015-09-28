@@ -488,6 +488,10 @@ int ABT_xstream_join(ABT_xstream xstream)
         }
     }
 
+    if (p_xstream->state == ABT_XSTREAM_STATE_TERMINATED) {
+        goto fn_join;
+    }
+
     /* Wait until the target ES terminates */
     if (is_blockable == ABT_TRUE) {
         abt_errno = ABTI_pool_set_consumer(p_thread->p_pool,
@@ -512,6 +516,7 @@ int ABT_xstream_join(ABT_xstream xstream)
         }
     }
 
+  fn_join:
     /* Normal join request */
     abt_errno = ABTD_xstream_context_join(p_xstream->ctx);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_join");
