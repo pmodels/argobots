@@ -161,6 +161,8 @@ enum ABT_unit_type {
 #define ABT_TRUE    1
 #define ABT_FALSE   0
 
+/* Rank for any ES */
+#define ABT_XSTREAM_ANY_RANK    -1
 
 /* Data Types */
 typedef void *                 ABT_xstream;       /* Execution Stream */
