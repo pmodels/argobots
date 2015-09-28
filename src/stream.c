@@ -1554,7 +1554,6 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
         "%srank      : %" PRIu64 "\n"
         "%stype      : %s\n"
         "%sstate     : %s\n"
-        "%selem      : %p\n"
         "%srequest   : 0x%x\n"
         "%smax_scheds: %d\n"
         "%snum_scheds: %d\n"
@@ -1564,7 +1563,6 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
         prefix, p_xstream->rank,
         prefix, type,
         prefix, state,
-        prefix, &p_xstream->elem,
         prefix, p_xstream->request,
         prefix, p_xstream->max_scheds,
         prefix, p_xstream->num_scheds,
@@ -1573,7 +1571,6 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
     );
     ABTU_free(scheds_str);
 
-    ABTI_elem_print(&p_xstream->elem, p_os, indent + ABTI_INDENT, ABT_FALSE);
     ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT);
 
   fn_exit:

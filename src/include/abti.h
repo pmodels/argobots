@@ -143,7 +143,6 @@ struct ABTI_elem {
 };
 
 struct ABTI_xstream {
-    ABTI_elem elem;             /* Elem enclosing this ES */
     uint64_t rank;              /* Rank */
     ABTI_xstream_type type;     /* Type */
     ABT_xstream_state state;    /* State */
@@ -361,7 +360,7 @@ ABTI_xstream *ABTI_elem_get_xstream(ABTI_elem *p_elem);
 ABTI_thread  *ABTI_elem_get_thread(ABTI_elem *p_elem);
 ABTI_task    *ABTI_elem_get_task(ABTI_elem *p_elem);
 ABTI_elem    *ABTI_elem_get_next(ABTI_elem *p_elem);
-void          ABTI_elem_create_from_xstream(ABTI_xstream *p_xstream);
+ABTI_elem    *ABTI_elem_create_from_xstream(ABTI_xstream *p_xstream);
 ABTI_elem    *ABTI_elem_create_from_thread(ABTI_thread *p_thread);
 ABTI_elem    *ABTI_elem_create_from_task(ABTI_task *p_task);
 void          ABTI_elem_free(ABTI_elem **pp_elem);

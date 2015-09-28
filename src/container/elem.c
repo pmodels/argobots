@@ -45,16 +45,18 @@ ABTI_elem *ABTI_elem_get_next(ABTI_elem *p_elem)
     return p_elem->p_next;
 }
 
-void ABTI_elem_create_from_xstream(ABTI_xstream *p_xstream)
+ABTI_elem *ABTI_elem_create_from_xstream(ABTI_xstream *p_xstream)
 {
     ABTI_elem *p_elem;
 
-    p_elem = &p_xstream->elem;
+    p_elem = (ABTI_elem *)ABTU_malloc(sizeof(ABTI_elem));
     p_elem->p_contn = NULL;
     p_elem->type    = ABT_UNIT_TYPE_XSTREAM;
     p_elem->p_obj   = (void *)p_xstream;
     p_elem->p_prev  = NULL;
     p_elem->p_next  = NULL;
+
+    return p_elem;
 }
 
 ABTI_elem *ABTI_elem_create_from_thread(ABTI_thread *p_thread)
