@@ -341,8 +341,6 @@ int ABT_xstream_get_main_pools(ABT_xstream xstream, int max_pools,
 int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state);
 int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
                       ABT_bool *result);
-int ABT_xstream_set_name(ABT_xstream xstream, const char *name);
-int ABT_xstream_get_name(ABT_xstream xstream, char *name, size_t *len);
 int ABT_xstream_get_num(int *num_xstreams);
 int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag);
 int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool);
@@ -417,8 +415,6 @@ int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result);
 int ABT_thread_retain(ABT_thread thread);
 int ABT_thread_release(ABT_thread thread);
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize);
-int ABT_thread_set_name(ABT_thread thread, const char *name);
-int ABT_thread_get_name(ABT_thread thread, char *name, size_t *len);
 int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id);
 
 /* ULT Attributes */
@@ -447,8 +443,6 @@ int ABT_task_is_migratable(ABT_task task, ABT_bool *flag);
 int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
 int ABT_task_retain(ABT_task task);
 int ABT_task_release(ABT_task task);
-int ABT_task_set_name(ABT_task task, const char *name);
-int ABT_task_get_name(ABT_task task, char *name, size_t *len);
 
 /* Self */
 int ABT_self_get_type(ABT_unit_type *type);
