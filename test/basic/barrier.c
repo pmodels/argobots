@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     ABT_test_printf(1, "# of iter: %d\n", iter);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_xstream));
+    pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
 
     values = (int *)malloc(N * sizeof(int));
     row_barrier = (ABT_barrier *)malloc(N * sizeof(ABT_barrier));
