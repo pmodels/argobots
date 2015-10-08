@@ -27,9 +27,9 @@ void thread_create(void *arg)
     ABT_pool my_pool;
 
     ret = ABT_thread_self(&my_thread);
+    ABT_TEST_ERROR(ret, "ABT_thread_self");
     ret = ABT_thread_get_last_pool(my_thread, &my_pool);
-
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ABT_TEST_ERROR(ret, "ABT_thread_get_last_pool");
 
     /* Create threads */
     for (i = 0; i < num_threads; i++) {
