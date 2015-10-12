@@ -12,6 +12,7 @@ TESTS = \
 	thread_yield \
 	thread_yield_to \
 	thread_migrate \
+	thread_data \
 	thread_id \
 	task_create \
 	task_create_on_xstream \
@@ -48,6 +49,7 @@ thread_attr_SOURCES = thread_attr.c
 thread_yield_SOURCES = thread_yield.c
 thread_yield_to_SOURCES = thread_yield_to.c
 thread_migrate_SOURCES = thread_migrate.c
+thread_data_SOURCES = thread_data.c
 thread_id_SOURCES = thread_id.c
 task_create_SOURCES = task_create.c
 task_create_on_xstream_SOURCES = task_create_on_xstream.c
@@ -80,6 +82,7 @@ testing:
 	./thread_yield
 	./thread_yield_to
 	./thread_migrate
+	./thread_data
 	./thread_id
 	./task_create
 	./task_create_on_xstream

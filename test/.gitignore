@@ -8,6 +8,7 @@ basic/thread_yield
 basic/thread_yield_to
 basic/thread_migrate_to
 basic/thread_migrate
+basic/thread_data
 basic/thread_id
 basic/task_create
 basic/task_create_on_xstream
