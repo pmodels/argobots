@@ -121,6 +121,7 @@ struct ABTI_global {
     int set_affinity;           /* Whether CPU affinity is used */
     ABT_bool use_logging;       /* Whether logging is used */
     ABT_bool use_debug;         /* Whether debug output is used */
+    int key_table_size;         /* Default key table size */
     size_t thread_stacksize;    /* Default stack size for ULT (in bytes) */
     size_t sched_stacksize;     /* Default stack size for sched (in bytes) */
     uint32_t sched_event_freq;  /* Default check frequency for sched */

@@ -6,6 +6,7 @@
 #include "abti.h"
 #include <unistd.h>
 
+#define ABTD_KEY_TABLE_DEFAULT_SIZE     4
 #define ABTD_THREAD_DEFAULT_STACKSIZE   16384
 #define ABTD_SCHED_DEFAULT_STACKSIZE    (4*1024*1024)
 #define ABTD_SCHED_EVENT_FREQ           50
@@ -97,6 +98,14 @@ void ABTD_env_init(ABTI_global *p_global)
         p_global->max_xstreams = atoi(env);
     } else {
         p_global->max_xstreams = p_global->num_cores;
+    }
+
+    /* Default key table size */
+    env = getenv("ABT_ENV_KEY_TABLE_SIZE");
+    if (env != NULL) {
+        p_global->key_table_size = (int)atoi(env);
+    } else {
+        p_global->key_table_size = ABTD_KEY_TABLE_DEFAULT_SIZE;
     }
 
     /* Default stack size for ULT */

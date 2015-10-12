@@ -5,8 +5,6 @@
 
 #include "abti.h"
 
-#define ABTI_KEY_TABLE_SIZE     4
-
 /** @defgroup ULT_KEY ULT Local Storage (TLS)
  * This group is for ULT-specific data, which can be described as ULT local
  * storage (TLS).
@@ -122,7 +120,8 @@ int ABT_key_set(ABT_key key, void *value)
     p_thread = ABTI_local_get_thread();
     if (p_thread) {
         if (p_thread->p_keytable == NULL) {
-            p_thread->p_keytable = ABTI_ktable_alloc(ABTI_KEY_TABLE_SIZE);
+            int key_table_size = gp_ABTI_global->key_table_size;
+            p_thread->p_keytable = ABTI_ktable_alloc(key_table_size);
         }
         p_ktable = p_thread->p_keytable;
     } else {
