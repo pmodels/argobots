@@ -374,12 +374,12 @@ ABT_bool ABTI_event_check_power(void)
  * used to delete registered callbacks in \c ABT_event_del_callback().  All
  * registered callbacks will be invoked when the event happens.
  *
- * @param[in] event    event kind
- * @param[in] ask_cb   callback to ask whether the event can be handled
- * @param[in] ask_arg  user argument for \c ask_cb
- * @param[in] act_cb   callback to notify that the event will be handled
- * @param[in] act_arg  user argument for \c act_cb
- * @param[out] cb_id   callback ID
+ * @param[in] event         event kind
+ * @param[in] ask_cb        callback to ask whether the event can be handled
+ * @param[in] ask_user_arg  user argument for \c ask_cb
+ * @param[in] act_cb        callback to notify that the event will be handled
+ * @param[in] act_user_arg  user argument for \c act_cb
+ * @param[out] cb_id        callback ID
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
