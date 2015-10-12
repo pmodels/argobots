@@ -19,6 +19,7 @@ noinst_HEADERS = \
 	include/abti_eventual.h \
 	include/abti_future.h \
 	include/abti_global.h \
+	include/abti_key.h \
 	include/abti_local.h \
 	include/abti_log.h \
 	include/abti_mutex.h \

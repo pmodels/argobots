@@ -72,6 +72,7 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
     p_newthread->request        = 0;
     p_newthread->p_req_arg      = NULL;
+    p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
     /* Create a wrapper unit */
@@ -1195,6 +1196,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     p_newthread->refcount        = 0;
     p_newthread->request         = 0;
     p_newthread->p_req_arg       = NULL;
+    p_newthread->p_keytable      = NULL;
     p_newthread->id              = ABTI_THREAD_INIT_ID;
 
     /* Create a wrapper unit */
@@ -1278,6 +1280,7 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     p_newthread->refcount       = 0;
     p_newthread->request        = 0;
     p_newthread->p_req_arg      = NULL;
+    p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main sched ULT created\n",
@@ -1334,6 +1337,7 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     p_newthread->refcount       = 1;
     p_newthread->request        = 0;
     p_newthread->p_req_arg      = NULL;
+    p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
     /* Create a wrapper unit */
@@ -1378,6 +1382,11 @@ void ABTI_thread_free(ABTI_thread *p_thread)
     ABTU_free(p_thread->p_stack);
     ABTD_thread_context_free(&p_thread->ctx);
 
+    /* Free the key-value table */
+    if (p_thread->p_keytable) {
+        ABTI_ktable_free(p_thread->p_keytable);
+    }
+
     ABTU_free(p_thread);
 }
 
@@ -1385,6 +1394,11 @@ void ABTI_thread_free_main(ABTI_thread *p_thread)
 {
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main ULT freed\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
+    /* Free the key-value table */
+    if (p_thread->p_keytable) {
+        ABTI_ktable_free(p_thread->p_keytable);
+    }
 
     ABTU_free(p_thread);
 }
@@ -1397,6 +1411,11 @@ void ABTI_thread_free_main_sched(ABTI_thread *p_thread)
     /* Free the stack and the context */
     if (p_thread->p_stack) ABTU_free(p_thread->p_stack);
     ABTD_thread_context_free(&p_thread->ctx);
+
+    /* Free the key-value table */
+    if (p_thread->p_keytable) {
+        ABTI_ktable_free(p_thread->p_keytable);
+    }
 
     ABTU_free(p_thread);
 }
@@ -1552,6 +1571,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         "%srefcount: %u\n"
         "%srequest : 0x%x\n"
         "%sreq_arg : %p\n"
+        "%skeytable: %p\n"
         "%sattr    : %s\n",
         prefix, p_thread,
         prefix, ABTI_thread_get_id(p_thread),
@@ -1564,6 +1584,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         prefix, p_thread->refcount,
         prefix, p_thread->request,
         prefix, p_thread->p_req_arg,
+        prefix, p_thread->p_keytable,
         prefix, attr
     );
 

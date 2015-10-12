@@ -143,6 +143,18 @@
 #endif
 
 #ifndef UNSAFE_MODE
+#define ABTI_CHECK_NULL_KEY_PTR(p)              \
+    do {                                        \
+        if (p == NULL) {                        \
+            abt_errno = ABT_ERR_INV_KEY;        \
+            goto fn_fail;                       \
+        }                                       \
+    } while(0)
+#else
+#define ABTI_CHECK_NULL_KEY_PTR(p)
+#endif
+
+#ifndef UNSAFE_MODE
 #define ABTI_CHECK_NULL_MUTEX_PTR(p)            \
     do {                                        \
         if (p == NULL) {                        \

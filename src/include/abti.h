@@ -91,6 +91,9 @@ typedef struct ABTI_thread_req_arg  ABTI_thread_req_arg;
 typedef struct ABTI_thread_list     ABTI_thread_list;
 typedef struct ABTI_thread_entry    ABTI_thread_entry;
 typedef struct ABTI_task            ABTI_task;
+typedef struct ABTI_key             ABTI_key;
+typedef struct ABTI_ktelem          ABTI_ktelem;
+typedef struct ABTI_ktable          ABTI_ktable;
 typedef struct ABTI_mutex           ABTI_mutex;
 typedef struct ABTI_cond            ABTI_cond;
 typedef struct ABTI_eventual        ABTI_eventual;
@@ -260,6 +263,7 @@ struct ABTI_thread {
     uint32_t refcount;              /* Reference count */
     uint32_t request;               /* Request */
     ABTI_thread_req_arg *p_req_arg; /* Request argument */
+    ABTI_ktable *p_keytable;        /* ULT-specific data */
 
     ABT_thread_id id;               /* ID */
 };
@@ -295,6 +299,23 @@ struct ABTI_task {
     void *p_arg;               /* Task arguments */
 
     uint64_t id;               /* ID */
+};
+
+struct ABTI_key {
+    void (*f_destructor)(void *value);
+    uint32_t id;
+};
+
+struct ABTI_ktelem {
+    ABTI_key *p_key;
+    void *value;
+    struct ABTI_ktelem *p_next;
+};
+
+struct ABTI_ktable {
+    int size;                   /* size of the table */
+    int num;                    /* number of elements stored */
+    ABTI_ktelem **p_elems;      /* element array */
 };
 
 struct ABTI_cond {
@@ -454,6 +475,10 @@ void ABTI_task_release(ABTI_task *p_task);
 void ABTI_task_reset_id(void);
 uint64_t ABTI_task_get_id(ABTI_task *p_task);
 
+/* Key */
+ABTI_ktable *ABTI_ktable_alloc(int size);
+void ABTI_ktable_free(ABTI_ktable *p_ktable);
+
 /* Eventual */
 void ABTI_eventual_signal(ABTI_eventual *p_eventual);
 
@@ -479,6 +504,7 @@ ABT_bool ABTI_event_check_power(void);
 #include "abti_thread.h"
 #include "abti_thread_attr.h"
 #include "abti_task.h"
+#include "abti_key.h"
 #include "abti_mutex.h"
 #include "abti_cond.h"
 #include "abti_eventual.h"
