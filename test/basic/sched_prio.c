@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "abt.h"
 #include "abttest.h"
 
@@ -244,6 +245,7 @@ static void gen_work(void *arg)
     ABT_pool *my_pools = g_data.pools[idx];
     ABT_bool flag;
     int i, ret;
+    unsigned seed = time(NULL);
 
     ABT_test_printf(1, "[E%d] creating work units\n", idx);
 
@@ -253,7 +255,7 @@ static void gen_work(void *arg)
         unit_arg_t *my_arg = (unit_arg_t *)malloc(sizeof(unit_arg_t));
         my_arg->es_id = idx;
         my_arg->my_id = i;
-        my_arg->prio = rand() % num_pools;
+        my_arg->prio = rand_r(&seed) % num_pools;
 
         if (i & 1) {
             ret = ABT_thread_create(my_pools[my_arg->prio],

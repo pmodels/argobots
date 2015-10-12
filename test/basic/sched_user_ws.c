@@ -40,8 +40,6 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     ret = ABT_sched_set_data(sched, (void *)p_data);
 
-    srand(time(NULL));
-
     return ret;
 }
 
@@ -57,6 +55,8 @@ static void sched_run(ABT_sched sched)
     uint32_t event_freq;
     int num_pools;
     ABT_pool *pools;
+    int target;
+    unsigned seed = time(NULL);
 
     ABT_sched_get_data(sched, &data);
     p_data = sched_data_get_ptr(data);
@@ -77,7 +77,7 @@ static void sched_run(ABT_sched sched)
             ABT_xstream_run_unit(unit, my_pool);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
-            int target = (num_pools == 2) ? 1 : (rand() % (num_pools - 1) + 1);
+            target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
             ABT_pool tar_pool = pools[target];
             ABT_pool_get_size(tar_pool, &size);
             if (size > 0) {
