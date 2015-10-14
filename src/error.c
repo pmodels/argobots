@@ -74,10 +74,11 @@ int ABT_error_get_str(int errno, char *str, size_t *len)
         "ABT_ERR_MIGRATION_TARGET",
         "ABT_ERR_MIGRATION_NA",
         "ABT_ERR_MISSING_JOIN",
+        "ABT_ERR_FEATURE_NA"
     };
 
     int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_TRUE(errno >= ABT_SUCCESS && errno <= ABT_ERR_MISSING_JOIN,
+    ABTI_CHECK_TRUE(errno >= ABT_SUCCESS && errno <= ABT_ERR_FEATURE_NA,
                     ABT_ERR_OTHER);
     if (str) ABTU_strcpy(str, err_str[errno]);
     if (len) *len = strlen(err_str[errno]);

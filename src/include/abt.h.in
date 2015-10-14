@@ -98,6 +98,7 @@ extern "C" {
 #define ABT_ERR_MIGRATION_TARGET   43  /* Migration target error */
 #define ABT_ERR_MIGRATION_NA       44  /* Migration not available */
 #define ABT_ERR_MISSING_JOIN       45  /* An ES or more did not join */
+#define ABT_ERR_FEATURE_NA         46  /* Feature not available */
 
 
 /* Constants */
