@@ -109,7 +109,6 @@ enum ABT_xstream_state {
 };
 
 enum ABT_thread_state {
-    ABT_THREAD_STATE_CREATED,
     ABT_THREAD_STATE_READY,
     ABT_THREAD_STATE_RUNNING,
     ABT_THREAD_STATE_BLOCKED,

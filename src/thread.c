@@ -84,7 +84,6 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     /* Add this thread to the pool */
     abt_errno = ABTI_pool_push(p_pool, p_newthread->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
-        p_newthread->state = ABT_THREAD_STATE_CREATED;
         ABTI_thread_free(p_newthread);
         goto fn_fail;
     }
@@ -199,8 +198,7 @@ int ABT_thread_free(ABT_thread *thread)
                         "The main thread cannot be freed explicitly.");
 
     /* Wait until the thread terminates */
-    while (p_thread->state != ABT_THREAD_STATE_TERMINATED &&
-           p_thread->state != ABT_THREAD_STATE_CREATED) {
+    while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
         ABT_thread_yield();
     }
 
