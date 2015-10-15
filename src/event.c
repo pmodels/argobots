@@ -13,13 +13,16 @@
 #include <netdb.h>
 #include <poll.h>
 
-typedef struct ABTI_event_info  ABTI_event_info;
-
 #define ABTI_DEFAULT_MAX_CB_FN  4
 #define ABTI_MSG_BUF_LEN        20
+#endif
+
+typedef struct ABTI_event_info  ABTI_event_info;
 
 struct ABTI_event_info {
     ABTI_mutex mutex;
+
+#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
     struct pollfd pfd;
 
     int max_stop_xstream_fn;
@@ -31,10 +34,10 @@ struct ABTI_event_info {
     int num_add_xstream_fn;
     ABT_event_cb_fn *add_xstream_fn;
     void **add_xstream_arg;
+#endif
 };
 
 static ABTI_event_info *gp_einfo = NULL;
-#endif
 
 /** @defgroup EVENT Event
  * This group is for event handling.
@@ -44,10 +47,10 @@ void ABTI_event_init(void)
 {
     gp_ABTI_global->pm_connected = ABT_FALSE;
 
-#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
     gp_einfo = (ABTI_event_info *)ABTU_calloc(1, sizeof(ABTI_event_info));
     ABTI_mutex_init(&gp_einfo->mutex);
 
+#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
     gp_einfo->max_stop_xstream_fn = ABTI_DEFAULT_MAX_CB_FN;
     gp_einfo->num_stop_xstream_fn = 0;
     gp_einfo->stop_xstream_fn = (ABT_event_cb_fn *)
@@ -75,9 +78,10 @@ void ABTI_event_finalize(void)
     ABTU_free(gp_einfo->stop_xstream_arg);
     ABTU_free(gp_einfo->add_xstream_fn);
     ABTU_free(gp_einfo->add_xstream_arg);
+#endif
+
     ABTU_free(gp_einfo);
     gp_einfo = NULL;
-#endif
 }
 
 
