@@ -61,6 +61,8 @@ void ABTI_event_init(void)
         ABTU_calloc(ABTI_DEFAULT_MAX_CB_FN * 2, sizeof(ABT_event_cb_fn));
     gp_einfo->add_xstream_arg = (void **)
         ABTU_calloc(ABTI_DEFAULT_MAX_CB_FN * 2, sizeof(void *));
+
+    ABTI_event_connect_power(gp_ABTI_global->pm_host, gp_ABTI_global->pm_port);
 #endif
 }
 

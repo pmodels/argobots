@@ -133,7 +133,10 @@ struct ABTI_global {
     size_t sched_stacksize;     /* Default stack size for sched (in bytes) */
     uint32_t sched_event_freq;  /* Default check frequency for sched */
     ABTI_thread *p_thread_main; /* ULT of the main function */
+
     ABT_bool pm_connected;      /* Is power mgmt. daemon connected? */
+    char *pm_host;              /* Hostname for power mgmt. daemon */
+    int pm_port;                /* Port number for power mgmt. daemon */
 };
 
 struct ABTI_local {

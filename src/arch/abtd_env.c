@@ -105,22 +105,13 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
-    char *p_host = "localhost";
-    int port = 60439;
-
     /* Hostname for power management daemon */
     env = getenv("ABT_ENV_POWER_EVENT_HOSTNAME");
-    if (env != NULL) {
-        p_host = env;
-    }
+    p_global->pm_host = (env != NULL) ? env : "localhost";
 
     /* Port number for power management daemon */
     env = getenv("ABT_ENV_POWER_EVENT_PORT");
-    if (env != NULL) {
-        port = atoi(env);
-    }
-
-    ABTI_event_connect_power(p_host, port);
+    p_global->pm_port = (env != NULL) ? atoi(env) : 60439;
 #endif
 
     /* Init timer */

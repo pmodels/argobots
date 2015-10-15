@@ -43,11 +43,11 @@ int ABT_init(int argc, char **argv)
 
     gp_ABTI_global = (ABTI_global *)ABTU_malloc(sizeof(ABTI_global));
 
-    /* Initialize the event environment */
-    ABTI_event_init();
-
     /* Initialize the system environment */
     ABTD_env_init(gp_ABTI_global);
+
+    /* Initialize the event environment */
+    ABTI_event_init();
 
     /* Initialize rank and IDs. */
     ABTI_xstream_reset_rank();
