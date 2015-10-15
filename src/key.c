@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-/** @defgroup ULT_KEY ULT Local Storage (TLS)
+/** @defgroup KEY ULT Local Storage (TLS)
  * This group is for ULT-specific data, which can be described as ULT local
  * storage (TLS).
  */
