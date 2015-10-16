@@ -1175,6 +1175,7 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
         ABTI_CHECK_ERROR(abt_errno);
     }
 #endif
+    ABTI_EVENT_PUBLISH_INFO();
 
   fn_exit:
     return abt_errno;

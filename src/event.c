@@ -16,6 +16,9 @@
 #define ABTI_DEFAULT_MAX_CB_FN  4
 #define ABTI_MSG_BUF_LEN        20
 #endif
+#ifdef ABT_CONFIG_PUBLISH_INFO
+#include <stdio.h>
+#endif
 
 typedef struct ABTI_event_info  ABTI_event_info;
 
@@ -34,6 +37,16 @@ struct ABTI_event_info {
     int num_add_xstream_fn;
     ABT_event_cb_fn *add_xstream_fn;
     void **add_xstream_arg;
+#endif
+#ifdef ABT_CONFIG_PUBLISH_INFO
+    FILE *out_file;
+    int max_xstream_rank;
+    uint32_t *num_threads;      /* # of ULTs terminated on each ES */
+    uint32_t *num_tasks;        /* # of tasklets terminated on each ES */
+    double *idle_time;          /* idle time of each ES */
+    uint32_t *old_num_units;    /* # of units executed at the last timestamp */
+    double *old_timestamp;
+    double timestamp;           /* last timestamp */
 #endif
 };
 
@@ -67,6 +80,35 @@ void ABTI_event_init(void)
 
     ABTI_event_connect_power(gp_ABTI_global->pm_host, gp_ABTI_global->pm_port);
 #endif
+#ifdef ABT_CONFIG_PUBLISH_INFO
+    if (gp_ABTI_global->pub_needed == ABT_TRUE) {
+        if (!strcmp(gp_ABTI_global->pub_filename, "stdout")) {
+            gp_einfo->out_file = stdout;
+        } else if (!strcmp(gp_ABTI_global->pub_filename, "stderr")) {
+            gp_einfo->out_file = stderr;
+        } else {
+            gp_einfo->out_file = fopen(gp_ABTI_global->pub_filename, "w");
+            if (!gp_einfo->out_file) {
+                gp_ABTI_global->pub_needed = ABT_FALSE;
+            }
+        }
+
+        if (gp_einfo->out_file) {
+            gp_einfo->max_xstream_rank = gp_ABTI_global->max_xstreams;
+            gp_einfo->num_threads = (uint32_t *)ABTU_calloc(
+                    gp_einfo->max_xstream_rank, sizeof(uint32_t));
+            gp_einfo->num_tasks = (uint32_t *)ABTU_calloc(
+                    gp_einfo->max_xstream_rank, sizeof(uint32_t));
+            gp_einfo->idle_time = (double *)ABTU_calloc(
+                    gp_einfo->max_xstream_rank, sizeof(double));
+            gp_einfo->old_num_units = (uint32_t *)ABTU_calloc(
+                    gp_einfo->max_xstream_rank, sizeof(uint32_t));
+            gp_einfo->old_timestamp = (double *)ABTU_calloc(
+                    gp_einfo->max_xstream_rank, sizeof(double));
+            gp_einfo->timestamp = ABT_get_wtime();
+        }
+    }
+#endif
 }
 
 void ABTI_event_finalize(void)
@@ -78,6 +120,17 @@ void ABTI_event_finalize(void)
     ABTU_free(gp_einfo->stop_xstream_arg);
     ABTU_free(gp_einfo->add_xstream_fn);
     ABTU_free(gp_einfo->add_xstream_arg);
+#endif
+#ifdef ABT_CONFIG_PUBLISH_INFO
+    if (gp_ABTI_global->pub_needed == ABT_TRUE) {
+        if (gp_einfo->out_file != stdout && gp_einfo->out_file != stderr) {
+            fclose(gp_einfo->out_file);
+            gp_einfo->out_file = NULL;
+        }
+        ABTU_free(gp_einfo->num_threads);
+        ABTU_free(gp_einfo->num_tasks);
+        ABTU_free(gp_einfo->idle_time);
+    }
 #endif
 
     ABTU_free(gp_einfo);
@@ -551,3 +604,135 @@ int ABT_event_del_callback(ABT_event_kind event, int cb_id)
 #endif
 }
 
+#ifdef ABT_CONFIG_PUBLISH_INFO
+void ABTI_event_realloc_pub_arrays(int size)
+{
+    ABTI_ASSERT(0);
+}
+
+void ABTI_event_inc_unit_cnt(ABTI_xstream *p_xstream, ABT_unit_type type)
+{
+    if (gp_ABTI_global->pub_needed == ABT_FALSE) return;
+
+    int rank = (int)p_xstream->rank;
+
+    if (rank > gp_einfo->max_xstream_rank) {
+        ABTI_event_realloc_pub_arrays(rank);
+    }
+
+    if (type == ABT_UNIT_TYPE_THREAD) {
+        ABTD_atomic_fetch_add_uint32(&gp_einfo->num_threads[rank], 1);
+    } else if (type == ABT_UNIT_TYPE_TASK) {
+        ABTD_atomic_fetch_add_uint32(&gp_einfo->num_tasks[rank], 1);
+    }
+}
+
+void ABTI_event_publish_info(void)
+{
+    ABTI_xstream *p_xstream;
+    int rank, i, ret;
+    double cur_time, elapsed_time;
+    double idle_time, idle_ratio;
+    uint32_t cur_num_units, num_threads, num_tasks;
+    FILE *fp;
+    ABT_bool is_first;
+
+    if (gp_ABTI_global->pub_needed == ABT_FALSE) return;
+
+    p_xstream = ABTI_local_get_xstream();
+    rank = (int)p_xstream->rank;
+    if (rank > gp_einfo->max_xstream_rank) {
+        ABTI_event_realloc_pub_arrays(rank);
+    }
+
+    cur_time = ABT_get_wtime();
+    elapsed_time = cur_time - gp_einfo->timestamp;
+
+    /* Update the idle time of the current ES */
+    cur_num_units = gp_einfo->num_threads[rank]
+                  + gp_einfo->num_tasks[rank];
+    if (gp_einfo->old_timestamp[rank] > 0.0) {
+        if (cur_num_units == gp_einfo->old_num_units[rank]) {
+            idle_time = cur_time - gp_einfo->old_timestamp[rank];
+            ABTD_atomic_fetch_add_double(&gp_einfo->idle_time[rank], idle_time);
+        }
+    }
+    gp_einfo->old_num_units[rank] = cur_num_units;
+    gp_einfo->old_timestamp[rank] = cur_time;
+
+    if (elapsed_time < gp_ABTI_global->pub_interval) return;
+
+    /* Only one scheduler has to write to the output file. */
+    ret = ABTI_mutex_trylock(&gp_einfo->mutex);
+    if (ret == ABT_ERR_MUTEX_LOCKED) return;
+    ABTI_ASSERT(ret == ABT_SUCCESS);
+
+    /* Update timestamp */
+    gp_einfo->timestamp = cur_time;
+
+    fp = gp_einfo->out_file;
+    fprintf(fp, "{\"sample\":\"argobots\","
+                "\"time\":%.3f,\"num_es\":%d,",
+            cur_time, gp_ABTI_global->num_xstreams);
+
+    is_first = ABT_TRUE;
+    fprintf(fp, "\"num_threads\":{");
+    for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {
+        num_threads = gp_einfo->num_threads[i];
+        if (num_threads > 0) {
+            ABTD_atomic_fetch_sub_uint32(&gp_einfo->num_threads[i], num_threads);
+        }
+        if (gp_ABTI_global->p_xstreams[i]) {
+            if (is_first == ABT_TRUE) {
+                is_first = ABT_FALSE;
+            } else {
+                fprintf(fp, ",");
+            }
+            fprintf(fp, "\"es%d\":%d", i, num_threads);
+        }
+    }
+    fprintf(fp, "},");
+
+    is_first = ABT_TRUE;
+    fprintf(fp, "\"num_tasks\":{");
+    for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {
+        num_tasks = gp_einfo->num_tasks[i];
+        if (num_tasks > 0) {
+            ABTD_atomic_fetch_sub_uint32(&gp_einfo->num_tasks[i], num_tasks);
+        }
+        if (gp_ABTI_global->p_xstreams[i]) {
+            if (is_first == ABT_TRUE) {
+                is_first = ABT_FALSE;
+            } else {
+                fprintf(fp, ",");
+            }
+            fprintf(fp, "\"es%d\":%d", i, num_tasks);
+        }
+    }
+    fprintf(fp, "},");
+
+    is_first = ABT_TRUE;
+    fprintf(fp, "\"idle\":{");
+    for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {
+        idle_time = gp_einfo->idle_time[i];
+        if (idle_time > 0.0) {
+            ABTD_atomic_fetch_sub_double(&gp_einfo->idle_time[i], idle_time);
+        }
+        if (gp_ABTI_global->p_xstreams[i]) {
+            if (is_first == ABT_TRUE) {
+                is_first = ABT_FALSE;
+            } else {
+                fprintf(fp, ",");
+            }
+            idle_ratio = idle_time / elapsed_time * 100.0;
+            fprintf(fp, "\"es%d\":%.1f", i, idle_ratio);
+        }
+    }
+    fprintf(fp, "}");
+
+    fprintf(fp, "}\n");
+    fflush(fp);
+
+    ABTI_mutex_unlock(&gp_einfo->mutex);
+}
+#endif

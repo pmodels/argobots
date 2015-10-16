@@ -137,6 +137,11 @@ struct ABTI_global {
     ABT_bool pm_connected;      /* Is power mgmt. daemon connected? */
     char *pm_host;              /* Hostname for power mgmt. daemon */
     int pm_port;                /* Port number for power mgmt. daemon */
+#ifdef ABT_CONFIG_PUBLISH_INFO
+    ABT_bool pub_needed;        /* Is info. publishing needed? */
+    char *pub_filename;         /* Filename for publishing */
+    double pub_interval;        /* Time interval in seconds */
+#endif
 };
 
 struct ABTI_local {
@@ -516,8 +521,13 @@ void ABTI_event_connect_power(char *p_host, int port);
 void ABTI_event_disconnect_power(void);
 ABT_bool ABTI_event_check_power(void);
 #endif
+#ifdef ABT_CONFIG_PUBLISH_INFO
+void ABTI_event_inc_unit_cnt(ABTI_xstream *p_xstream, ABT_unit_type type);
+void ABTI_event_publish_info(void);
+#endif
 
 #include "abti_log.h"
+#include "abti_event.h"
 #include "abti_local.h"
 #include "abti_global.h"
 #include "abti_sched.h"

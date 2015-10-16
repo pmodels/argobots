@@ -114,6 +114,29 @@ void ABTD_env_init(ABTI_global *p_global)
     p_global->pm_port = (env != NULL) ? atoi(env) : 60439;
 #endif
 
+#ifdef ABT_CONFIG_PUBLISH_INFO
+    /* Do we need to publish exec. information? */
+    env = getenv("ABT_ENV_PUBLISH_INFO");
+    if (env != NULL) {
+        if (strcmp(env, "0") == 0 || strcmp(env, "NO") == 0 ||
+            strcmp(env, "no") == 0 || strcmp(env, "No") == 0) {
+            p_global->pub_needed = ABT_FALSE;
+        } else {
+            p_global->pub_needed = ABT_TRUE;
+        }
+    } else {
+        p_global->pub_needed = ABT_TRUE;
+    }
+
+    /* Filename for exec. information publishing */
+    env = getenv("ABT_ENV_PUBLISH_FILENAME");
+    p_global->pub_filename = env ? env : "stdout";
+
+    /* Time interval for exec. information publishing */
+    env = getenv("ABT_ENV_PUBLISH_INTERVAL");
+    p_global->pub_interval = env ? atof(env) : 1.0;
+#endif
+
     /* Init timer */
     ABTD_time_init();
 }

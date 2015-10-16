@@ -252,6 +252,14 @@ AS_IF([test "x$enable_power_event" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_HANDLE_POWER_EVENT, 1,
                  [Define to handle power management events])])
 
+# Publish execution information
+AC_ARG_ENABLE([publish-info],
+    AS_HELP_STRING([--enable-publish-info],
+        [enable publishing execution information]))
+AS_IF([test "x$enable_publish_info" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_PUBLISH_INFO, 1,
+                 [Define to publish execution information])])
+
 # Disable features
 AC_ARG_ENABLE([thread-cancel],
     AS_HELP_STRING([--disable-thread-cancel], [disable ULT cancellation]),,
