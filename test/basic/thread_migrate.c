@@ -30,7 +30,6 @@ void thread_func(void *arg)
     }
 
     __sync_fetch_and_add(&value, 1);
-    ABT_thread_release(thread);
 }
 
 int main(int argc, char *argv[])

@@ -201,7 +201,6 @@ static void thread_func(void *arg)
     ABT_xstream_self_rank(&cur_rank);
     ABT_thread_self(&self);
     ABT_thread_get_id(self, &id);
-    ABT_thread_release(self);
 
     ABT_test_printf(1, "[U%lu:E%d] Hello, world!\n", id, cur_rank);
 
@@ -246,7 +245,6 @@ static void create_threads(void *arg)
     ABT_xstream_get_rank(xstream, &rank);
     ABT_thread_self(&self);
     ABT_thread_get_id(self, &id);
-    ABT_thread_release(self);
 
     ABT_test_printf(1, "[U%lu:E%d] creating ULTs\n", id, rank);
     threads = (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);

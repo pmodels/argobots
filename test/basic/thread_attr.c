@@ -19,7 +19,6 @@ void thread_func(void *arg)
     ABT_thread_self(&thread);
     ABT_thread_get_stacksize(thread, &stacksize);
     ABT_test_printf(1, "[TH%lu]: stacksize=%lu\n", my_id, stacksize);
-    ABT_thread_release(thread);
 }
 
 int main(int argc, char *argv[])

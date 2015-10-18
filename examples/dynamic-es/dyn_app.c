@@ -454,7 +454,6 @@ static void thread_add_sched(void *arg)
     ABT_pool_add_sched(cur_pool, sched);
 
     /* Free */
-    ABT_thread_release(cur_thread);
     ABT_sched_config_free(&config);
     free(my_pools);
 
@@ -487,7 +486,6 @@ static void thread_work(void *arg)
 
     ABT_thread_self(&cur_thread);
     ABT_thread_get_last_pool(cur_thread, &cur_pool);
-    ABT_thread_release(cur_thread);
 
     t_start = ABT_get_wtime();
     while (1) {
@@ -537,7 +535,6 @@ static void thread_hello(void *arg)
     ABT_xstream_self_rank(&cur_rank);
     ABT_thread_self(&self);
     ABT_thread_get_id(self, &id);
-    ABT_thread_release(self);
 
     test_printf("[U%lu:E%d] Hello, world!\n", id, cur_rank);
 

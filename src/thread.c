@@ -373,7 +373,6 @@ int ABT_thread_self(ABT_thread *thread)
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
     if (p_thread != NULL) {
-        ABTI_thread_retain(p_thread);
         *thread = ABTI_thread_get_handle(p_thread);
     } else {
         abt_errno = ABT_ERR_INV_THREAD;
@@ -1011,8 +1010,8 @@ int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
  * @brief   Increment the ULT's reference count.
  *
  * \c ABT_thread_retain() increments the ULT's reference count by one. If the
- * user obtains a ULT handle through \c ABT_thread_create() or
- * \c ABT_thread_self(), those routines perform an implicit retain.
+ * user obtains a ULT handle through \c ABT_thread_create(), the creation
+ * routine performs an implicit retain.
  *
  * @param[in] thread  handle to the ULT
  * @return Error code

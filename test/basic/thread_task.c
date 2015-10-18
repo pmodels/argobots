@@ -48,7 +48,6 @@ void thread_func(void *arg)
     if (my_state != ABT_THREAD_STATE_RUNNING) {
         fprintf(stderr, "ERROR: not in the RUNNUNG state\n");
     }
-    ABT_thread_release(my_handle);
 
     thread_arg_t *t_arg = (thread_arg_t *)arg;
     ABT_thread next;

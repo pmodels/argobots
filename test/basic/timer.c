@@ -55,8 +55,6 @@ void thread_create(void *arg)
                     (int)my_id, t_start, num_threads, t_create);
     ret = ABT_timer_free(&my_timer);
     ABT_TEST_ERROR(ret, "ABT_timer_free");
-
-    ABT_thread_release(my_thread);
 }
 
 int main(int argc, char *argv[])

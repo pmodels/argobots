@@ -126,7 +126,6 @@ void rt1_launcher(void *arg)
     ABT_pool_add_sched(cur_pool, sched);
 
     /* Free */
-    ABT_thread_release(cur_thread);
     ABT_sched_config_free(&config);
 
     t_start = ABT_get_wtime();

@@ -23,7 +23,6 @@ static void thread_hello(void *arg)
     ABT_xstream_self_rank(&rank);
     ABT_thread_self(&self);
     ABT_thread_get_id(self, &id);
-    ABT_thread_release(self);
 
     ABT_test_printf(1, "[U%lu:E%d] Hello, world!\n", id, rank);
 }
@@ -46,7 +45,6 @@ static void thread_func(void *arg)
     ret = ABT_thread_self(&self);
     ABT_TEST_ERROR(ret, "ABT_thread_self");
     ABT_thread_get_id(self, &id);
-    ABT_thread_release(self);
 
     ABT_test_printf(1, "[U%lu:E%d] change the main scheduler\n", id, rank);
 
