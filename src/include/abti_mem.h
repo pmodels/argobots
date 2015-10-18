@@ -17,8 +17,15 @@
 #ifdef ABT_CONFIG_USE_MEM_POOL
 typedef struct ABTI_blk_header  ABTI_blk_header;
 
+struct ABTI_sp_header {
+    uint32_t num_total_stacks;  /* Number of total stacks */
+    uint32_t num_empty_stacks;  /* Number of empty stacks */
+    ABTI_sp_header *p_next;     /* Next stack page header */
+};
+
 struct ABTI_stack_header {
     ABTI_stack_header *p_next;
+    ABTI_sp_header *p_sph;
 };
 
 struct ABTI_page_header {
@@ -50,6 +57,8 @@ void ABTI_mem_free_page(ABTI_local *p_local, ABTI_page_header *p_ph);
 void ABTI_mem_take_free(ABTI_page_header *p_ph);
 void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh);
 ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local);
+
+char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t *p_stacksize);
 
 /* ABTI_EXT_STACK means that the block will not be managed by ES's stack pool
  * and it needs to be freed with ABTU_free. */
@@ -185,11 +194,11 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         if (gp_ABTI_global->p_mem_stack) {
             p_blk = ABTI_mem_take_global_stack(p_local);
             if (p_blk == NULL) {
-                p_blk = (char *)ABTU_CA_MALLOC(stacksize);
+                p_blk = ABTI_mem_alloc_sp(p_local, &stacksize);
             }
         } else {
             /* Allocate a new stack if we don't have any empty stack */
-            p_blk = (char *)ABTU_CA_MALLOC(stacksize);
+            p_blk = ABTI_mem_alloc_sp(p_local, &stacksize);
         }
 
         p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));

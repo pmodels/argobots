@@ -19,12 +19,14 @@ static inline void ABTI_mem_add_page(ABTI_local *p_local,
                                      ABTI_page_header *p_ph);
 static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
                                                 ABTI_page_header *p_tail);
+static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph);
 
 
 void ABTI_mem_init(ABTI_global *p_global)
 {
     p_global->p_mem_stack = NULL;
     p_global->p_mem_task = NULL;
+    p_global->p_mem_sph = NULL;
 }
 
 void ABTI_mem_init_local(ABTI_local *p_local)
@@ -47,6 +49,10 @@ void ABTI_mem_finalize(ABTI_global *p_global)
     /* Free all task blocks */
     ABTI_mem_free_page_list(p_global->p_mem_task);
     p_global->p_mem_task = NULL;
+
+    /* Free all stack pages */
+    ABTI_mem_free_sph_list(p_global->p_mem_sph);
+    p_global->p_mem_sph = NULL;
 }
 
 void ABTI_mem_finalize_local(ABTI_local *p_local)
@@ -101,8 +107,7 @@ static inline void ABTI_mem_free_stack_list(ABTI_stack_header *p_stack)
     while (p_cur) {
         p_tmp = p_cur;
         p_cur = p_cur->p_next;
-        char *p_blk = (char *)p_tmp - sizeof(ABTI_thread);
-        ABTU_free(p_blk);
+        ABTD_atomic_fetch_add_uint32(&p_tmp->p_sph->num_empty_stacks, 1);
     }
 }
 
@@ -373,6 +378,100 @@ ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local)
     }
 
     return p_ph;
+}
+
+#include <sys/types.h>
+#include <sys/mman.h>
+
+#define PROTS       (PROT_READ | PROT_WRITE)
+#define FLAGS_HP    (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB)
+#define FLAGS_RP    (MAP_PRIVATE | MAP_ANONYMOUS)
+#define PAGESIZE    (2 * 1024 * 1024)
+
+static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph)
+{
+    ABTI_sp_header *p_cur, *p_tmp;
+
+    p_cur = p_sph;
+    while (p_cur) {
+        p_tmp = p_cur;
+        p_cur = p_cur->p_next;
+
+        if (p_tmp->num_total_stacks != p_tmp->num_empty_stacks) {
+            LOG_DEBUG("%u ULTs are not freed\n",
+                      p_tmp->num_total_stacks - p_tmp->num_empty_stacks);
+        }
+
+        if (munmap(p_tmp, PAGESIZE)) {
+            ABTI_ASSERT(0);
+        }
+    }
+}
+
+/* Allocate a stack page and divide it to multiple stacks by making a liked
+ * list.  Then, the first stack is returned. */
+char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t *p_stacksize)
+{
+    char *p_sp, *p_first;
+    ABTI_sp_header *p_sph;
+    ABTI_stack_header *p_sh, *p_next;
+    uint32_t num_stacks;
+    size_t stacksize;
+    int i;
+
+    p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);
+    if ((void *)p_sp == MAP_FAILED) {
+        /* Huge pages are run out of. Use a normal mmap. */
+        p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_RP, 0, 0);
+        ABTI_ASSERT((void *)p_sp != MAP_FAILED);
+        LOG_DEBUG("mmap normal pages (2MB): %p\n", p_sp);
+    } else {
+        LOG_DEBUG("mmap a hugepage (2MB):%p\n", p_sp);
+    }
+
+    /* Use the first cache line as the stack page hader. */
+    num_stacks = PAGESIZE / *p_stacksize;
+    p_sph = (ABTI_sp_header *)p_sp;
+    p_sph->num_total_stacks = num_stacks;
+    p_sph->num_empty_stacks = 0;
+
+    /* First stack */
+    stacksize = *p_stacksize;
+    p_first = p_sp + gp_ABTI_global->cache_line_size;
+    p_sh = (ABTI_stack_header *)(p_first + sizeof(ABTI_thread));
+    p_sh->p_sph = p_sph;
+
+    if (num_stacks > 1) {
+        /* Make a linked list */
+        p_sh = (ABTI_stack_header *)(p_sp + stacksize + sizeof(ABTI_thread));
+        for (i = 1; i < num_stacks; i++) {
+            p_next = (i + 1) < num_stacks
+                   ? (ABTI_stack_header *)((char *)p_sh + stacksize)
+                   : NULL;
+            p_sh->p_next = p_next;
+            p_sh->p_sph = p_sph;
+
+            p_sh = p_next;
+        }
+
+        p_local->num_stacks = num_stacks - 1;
+        p_local->p_mem_stack = (ABTI_stack_header *)
+                               (p_sp + stacksize + sizeof(ABTI_thread));
+    }
+
+    /* Add this stack page to the global stack page list */
+    uint64_t *ptr = (uint64_t *)&gp_ABTI_global->p_mem_sph;
+    uint64_t old, ret;
+    do {
+        p_sph->p_next = gp_ABTI_global->p_mem_sph;
+        old = (uint64_t)p_sph->p_next;
+        ret = ABTD_atomic_cas_uint64(ptr, old, (uint64_t)p_sph);
+    } while (old != ret);
+
+    /* Return stack size */
+    *p_stacksize = stacksize - gp_ABTI_global->cache_line_size;
+
+    return p_first;
 }
 
 #endif /* ABT_CONFIG_USE_MEM_POOL */

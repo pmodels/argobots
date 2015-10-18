@@ -110,6 +110,7 @@ typedef struct ABTI_timer           ABTI_timer;
 #ifdef ABT_CONFIG_USE_MEM_POOL
 typedef struct ABTI_stack_header    ABTI_stack_header;
 typedef struct ABTI_page_header     ABTI_page_header;
+typedef struct ABTI_sp_header       ABTI_sp_header;
 #endif
 
 
@@ -144,6 +145,7 @@ struct ABTI_global {
     size_t page_size;                  /* Page size for memory allocation */
     ABTI_stack_header *p_mem_stack;    /* List of ULT stack */
     ABTI_page_header *p_mem_task;      /* List of task block pages */
+    ABTI_sp_header *p_mem_sph;         /* List of stack pages */
 #endif
 
     ABT_bool pm_connected;      /* Is power mgmt. daemon connected? */
