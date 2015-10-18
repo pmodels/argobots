@@ -85,6 +85,14 @@ int main(int argc, char *argv[])
     /* Switch to other user level threads */
     ABT_thread_yield();
 
+    /* Join and free threads */
+    for (i = 0; i < num_xstreams; i++) {
+        for (j = 0; j < num_threads; j++) {
+            ret = ABT_thread_free(&threads[i][j]);
+            ABT_TEST_ERROR(ret, "ABT_thread_free");
+        }
+    }
+
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
