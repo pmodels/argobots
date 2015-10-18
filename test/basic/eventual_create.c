@@ -83,13 +83,13 @@ int main(int argc, char *argv[])
     /* switch to other user-level threads */
     ABT_thread_yield();
 
-    /* join other threads */
-    ret = ABT_thread_join(th1);
-    ABT_TEST_ERROR(ret, "ABT_thread_join");
-    ret = ABT_thread_join(th2);
-    ABT_TEST_ERROR(ret, "ABT_thread_join");
-    ret = ABT_thread_join(th3);
-    ABT_TEST_ERROR(ret, "ABT_thread_join");
+    /* Join and free other threads */
+    ret = ABT_thread_free(&th1);
+    ABT_TEST_ERROR(ret, "ABT_thread_free");
+    ret = ABT_thread_free(&th2);
+    ABT_TEST_ERROR(ret, "ABT_thread_free");
+    ret = ABT_thread_free(&th3);
+    ABT_TEST_ERROR(ret, "ABT_thread_free");
 
     ABT_test_printf(1, "END\n");
 
