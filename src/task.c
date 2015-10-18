@@ -283,7 +283,6 @@ int ABT_task_self(ABT_task *task)
 
     ABTI_task *p_task = ABTI_local_get_task();
     if (p_task != NULL) {
-        ABTI_task_retain(p_task);
         *task = ABTI_task_get_handle(p_task);
     } else {
         abt_errno = ABT_ERR_INV_TASK;
@@ -503,8 +502,8 @@ int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result)
  * @brief   Increment the tasklet's reference count.
  *
  * \c ABT_task_retain() increments the tasklet's reference count by one.
- * If the user obtains a tasklet handle through \c ABT_task_create() or
- * \c ABT_task_self(), those routines perform an implicit retain.
+ * If the user obtains a tasklet handle through \c ABT_task_create(),
+ * the creation routine performs an implicit retain.
  *
  * @param[in] task  handle to the tasklet
  * @return Error code

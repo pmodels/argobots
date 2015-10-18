@@ -79,7 +79,6 @@ void task_func1(void *arg)
     if (my_state != ABT_TASK_STATE_RUNNING) {
         fprintf(stderr, "ERROR: not in the RUNNUNG state\n");
     }
-    ABT_task_release(my_handle);
 
     size_t i;
     size_t num = (size_t)arg;
