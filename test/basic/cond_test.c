@@ -107,11 +107,14 @@ int main(int argc, char *argv[])
     }
 
     ABT_xstream *xstreams;
+    ABT_thread **threads;
     thread_arg_t **args;
 
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
+    threads = (ABT_thread **)malloc(sizeof(ABT_thread *) * num_xstreams);
     args = (thread_arg_t **)malloc(sizeof(thread_arg_t *) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
+        threads[i] = (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);
         args[i] = (thread_arg_t *)malloc(sizeof(thread_arg_t) * num_threads);
     }
 
@@ -144,7 +147,7 @@ int main(int argc, char *argv[])
     ret = ABT_cond_create(&broadcast);
     ABT_TEST_ERROR(ret, "ABT_cond_create");
 
-    /* Create threads */
+    /* Create ULTs */
     args[0][0].sid = 0;
     args[0][0].tid = 1;
     ret = ABT_thread_create(pools[0], watch_counter, (void *)&args[0][0],
@@ -159,13 +162,19 @@ int main(int argc, char *argv[])
             args[i][j].tid = tid;
             ret = ABT_thread_create(pools[i],
                     inc_counter, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
-                    NULL);
+                    &threads[i][j]);
             ABT_TEST_ERROR(ret, "ABT_thread_create");
         }
     }
 
-    /* Switch to other user level threads */
-    ABT_thread_yield();
+    /* Join and free ULTs */
+    for (i = 0; i < num_xstreams; i++) {
+        for (j = 0; j < num_threads; j++) {
+            if (!i && !j) continue;
+            ret = ABT_thread_free(&threads[i][j]);
+            ABT_TEST_ERROR(ret, "ABT_thread_free");
+        }
+    }
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
@@ -199,8 +208,10 @@ int main(int argc, char *argv[])
     ret = ABT_test_finalize(g_counter != expected);
 
     for (i = 0; i < num_xstreams; i++) {
+        free(threads[i]);
         free(args[i]);
     }
+    free(threads);
     free(args);
     free(xstreams);
     free(pools);

@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
 {
     ABT_xstream *xstreams;
     ABT_pool *pools;
+    ABT_thread *threads;
     int num_xstreams;
     int es = 0;
     int *args;
@@ -64,6 +65,7 @@ int main(int argc, char *argv[])
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    threads = (ABT_thread *)malloc(N * N * sizeof(ABT_thread));
 
     values = (int *)malloc(N * sizeof(int));
     row_barrier = (ABT_barrier *)malloc(N * sizeof(ABT_barrier));
@@ -106,14 +108,19 @@ int main(int argc, char *argv[])
                 args[2*(i*N+j)] = i;
                 args[2*(i*N+j)+1] = j;
                 ret = ABT_thread_create(pools[es], run, (void *)&args[2*(i*N+j)],
-                                        ABT_THREAD_ATTR_NULL, NULL);
+                                        ABT_THREAD_ATTR_NULL, &threads[i*N+j]);
                 ABT_TEST_ERROR(ret, "ABT_thread_create");
                 es = (es + 1) % num_xstreams;
             }
         }
 
-        /* Switch to other work units */
-        ABT_thread_yield();
+        /* Join and free ULTs */
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++) {
+                ret = ABT_thread_free(&threads[i*N+j]);
+                ABT_TEST_ERROR(ret, "ABT_thread_free");
+            }
+        }
 
         /* Join ESs */
         for (i = 1; i < num_xstreams; i++) {
@@ -143,6 +150,7 @@ int main(int argc, char *argv[])
 
     free(xstreams);
     free(pools);
+    free(threads);
     free(values);
     free(row_barrier);
     free(col_barrier);
