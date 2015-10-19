@@ -111,10 +111,6 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "ABT_thread_create");
     }
 
-    /* Switch to other work units */
-    //sleep(1);
-    ABT_thread_yield();
-
     /* Join and free ESs */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);

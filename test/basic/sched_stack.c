@@ -98,12 +98,9 @@ int main(int argc, char *argv[])
     ret = ABT_task_create(pool_mainsched, task_func, (void *)++num, NULL);
     ABT_TEST_ERROR(ret, "ABT_task_create");
 
-    /* Switch to other user level threads */
-    ABT_thread_yield();
-
     /* Finalize */
     ret = ABT_test_finalize(0);
-    
+
     assert(value == 3+2*num_tasks);
     return ret;
 }

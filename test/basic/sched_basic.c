@@ -80,9 +80,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* Switch to other work units */
-    ABT_thread_yield();
-
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);

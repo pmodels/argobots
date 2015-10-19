@@ -272,9 +272,6 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "push_from_another_es");
     }
 
-    /* Switch to other user level threads */
-    ABT_thread_yield();
-
     /* Finalize */
     ret = ABT_test_finalize(0);
     return ret;

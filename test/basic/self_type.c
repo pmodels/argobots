@@ -196,12 +196,7 @@ int main(int argc, char *argv[])
     ret = pthread_create(&pthread, NULL, pthread_hello, NULL);
     assert(ret == 0);
 
-    /* Switch to other work units */
-    ABT_thread_yield();
-
     /* Join & Free */
-    ret = pthread_join(pthread, NULL);
-    assert(ret == 0);
     for (i = 0; i < 2; i++) {
         ret = ABT_thread_join(threads[i]);
         ABT_TEST_ERROR(ret, "ABT_thread_join");
@@ -212,6 +207,8 @@ int main(int argc, char *argv[])
     ABT_TEST_ERROR(ret, "ABT_xstream_join");
     ret = ABT_xstream_free(&xstreams[1]);
     ABT_TEST_ERROR(ret, "ABT_xstream_free");
+    ret = pthread_join(pthread, NULL);
+    assert(ret == 0);
 
     /* Finalize */
     return ABT_test_finalize(0);

@@ -201,9 +201,6 @@ int main(int argc, char *argv[])
     args_task->parent = NULL;
     ABT_task_create(g_pool, fibonacci_task, args_task, &task);
 
-    /* switch to other user-level threads */
-    ABT_thread_yield();
-
     /* join other threads */
     ABT_thread_join(thread);
     ABT_thread_free(&thread);

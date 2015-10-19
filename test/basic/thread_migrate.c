@@ -81,9 +81,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* Switch to other user level threads */
-    ABT_thread_yield();
-
     /* Join and free threads */
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
@@ -104,7 +101,6 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "ABT_xstream_free");
     }
 
-    ABT_thread_yield(); /* to be sure no job on this ES */
     if (value != num_xstreams*num_threads)
         ABT_TEST_ERROR(ABT_ERR_OTHER, "wrong value");
 

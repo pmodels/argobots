@@ -80,9 +80,6 @@ int main(int argc, char *argv[])
     ABT_test_printf(1, "Thread main continue iteration %d returning from "
             "eventual\n", 0);
 
-    /* switch to other user-level threads */
-    ABT_thread_yield();
-
     /* Join and free other threads */
     ret = ABT_thread_free(&th1);
     ABT_TEST_ERROR(ret, "ABT_thread_free");

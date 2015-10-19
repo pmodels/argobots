@@ -76,9 +76,6 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "ABT_thread_create_on_xstream");
     }
 
-    /* Switch to other work units */
-    ABT_thread_yield();
-
     /* Join and free ULTs */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_thread_join(threads[i]);

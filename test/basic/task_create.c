@@ -93,9 +93,6 @@ int main(int argc, char *argv[])
         ABT_TEST_ERROR(ret, "ABT_task_create");
     }
 
-    /* Switch to other work units */
-    ABT_thread_yield();
-
     /* Results of task_funcs2 */
     for (i = 0; i < num_tasks; i++) {
         ABT_task_state state;

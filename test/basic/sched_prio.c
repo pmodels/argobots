@@ -57,9 +57,6 @@ int main(int argc, char *argv[])
     /* Create work units */
     create_work_units();
 
-    /* Switch to other work units */
-    ABT_thread_yield();
-
     /* Join ESs */
     for (i = 1; i < g_data.num_scheds; i++) {
         ret = ABT_xstream_join(g_data.xstreams[i]);

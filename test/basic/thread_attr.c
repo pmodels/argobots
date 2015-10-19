@@ -72,9 +72,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* Switch to other user level threads */
-    ABT_thread_yield();
-
     /* Free the attribute */
     ret = ABT_thread_attr_free(&attr);
     ABT_TEST_ERROR(ret, "ABT_thread_attr_free");

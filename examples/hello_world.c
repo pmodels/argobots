@@ -51,9 +51,6 @@ int main(int argc, char *argv[])
                           ABT_THREAD_ATTR_NULL, &threads[i]);
     }
 
-    /* Switch to other work units */
-    ABT_thread_yield();
-
     /* Join & Free */
     for (i = 0; i < NUM_XSTREAMS; i++) {
         ABT_thread_join(threads[i]);
