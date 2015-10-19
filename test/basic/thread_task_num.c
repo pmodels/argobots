@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
 
     ABT_xstream xstream;
     size_t n_units;
+    size_t pool_size;
     int err = 0;
 
     /* Initialize */
@@ -65,11 +66,11 @@ int main(int argc, char *argv[])
     }
 
     /* Get the numbers of ULTs and tasklets */
-		ABT_sched sched;
-		ret = ABT_xstream_get_main_sched(xstream, &sched);
-		ABT_TEST_ERROR(ret, "ABT_xstream_get_main_sched");
-		ABT_sched_get_total_size(sched, &n_units);
-		ABT_TEST_ERROR(ret, "ABT_sched_get_total_size");
+    ABT_sched sched;
+    ret = ABT_xstream_get_main_sched(xstream, &sched);
+    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_sched");
+    ABT_sched_get_total_size(sched, &n_units);
+    ABT_TEST_ERROR(ret, "ABT_sched_get_total_size");
 
     if (n_units != num_units) {
         err++;
@@ -77,16 +78,20 @@ int main(int argc, char *argv[])
                num_units, (unsigned long)n_units);
     }
 
-    /* Switch to other work units */
-    ABT_thread_yield();
+    do {
+        /* Switch to other work units */
+        ABT_thread_yield();
+        ret = ABT_pool_get_size(pool, &pool_size);
+        ABT_TEST_ERROR(ret, "ABT_pool_get_size");
+    } while (pool_size > 0);
 
     /* Get the numbers of ULTs and tasklets */
-		ABT_sched_get_total_size(sched, &n_units);
-		ABT_TEST_ERROR(ret, "ABT_sched_get_total_size");
+    ret = ABT_sched_get_total_size(sched, &n_units);
+    ABT_TEST_ERROR(ret, "ABT_sched_get_total_size");
     if (n_units != 0) {
         err++;
         printf("# of units: expected(%d) vs. result(%lu)\n",
-						0, (unsigned long)n_units);
+               0, (unsigned long)n_units);
     }
 
     /* Finalize */
