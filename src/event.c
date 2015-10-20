@@ -39,6 +39,7 @@ struct ABTI_event_info {
     void **add_xstream_arg;
 #endif
 #ifdef ABT_CONFIG_PUBLISH_INFO
+    char hostname[100];
     FILE *out_file;
     int max_xstream_rank;
     uint32_t *num_threads;      /* # of ULTs terminated on each ES */
@@ -94,6 +95,7 @@ void ABTI_event_init(void)
         }
 
         if (gp_einfo->out_file) {
+            gethostname(gp_einfo->hostname, 100);
             gp_einfo->max_xstream_rank = gp_ABTI_global->max_xstreams;
             gp_einfo->num_threads = (uint32_t *)ABTU_calloc(
                     gp_einfo->max_xstream_rank, sizeof(uint32_t));
@@ -672,8 +674,8 @@ void ABTI_event_publish_info(void)
 
     fp = gp_einfo->out_file;
     fprintf(fp, "{\"sample\":\"argobots\","
-                "\"time\":%.3f,\"num_es\":%d,",
-            cur_time, gp_ABTI_global->num_xstreams);
+                "\"time\":%.3f,\"node\":\"%s\",\"num_es\":%d,",
+            cur_time, gp_einfo->hostname, gp_ABTI_global->num_xstreams);
 
     is_first = ABT_TRUE;
     fprintf(fp, "\"num_threads\":{");
