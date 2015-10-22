@@ -402,23 +402,25 @@ static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph)
                       p_tmp->num_total_stacks - p_tmp->num_empty_stacks);
         }
 
-        if (munmap(p_tmp, PAGESIZE)) {
+        if (munmap(p_tmp->p_sp, PAGESIZE)) {
             ABTI_ASSERT(0);
         }
+        ABTU_free(p_tmp);
     }
 }
 
 /* Allocate a stack page and divide it to multiple stacks by making a liked
  * list.  Then, the first stack is returned. */
-char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t *p_stacksize)
+char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
 {
     char *p_sp, *p_first;
     ABTI_sp_header *p_sph;
     ABTI_stack_header *p_sh, *p_next;
     uint32_t num_stacks;
-    size_t stacksize;
     int i;
 
+    /* Allocate a stack page. We first try to mmap a huge page, and then if it
+     * fails, we mmap a normal page. */
     p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);
     if ((void *)p_sp == MAP_FAILED) {
         /* Huge pages are run out of. Use a normal mmap. */
@@ -429,20 +431,21 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t *p_stacksize)
         LOG_DEBUG("mmap a hugepage (2MB):%p\n", p_sp);
     }
 
-    /* Use the first cache line as the stack page hader. */
-    num_stacks = PAGESIZE / *p_stacksize;
-    p_sph = (ABTI_sp_header *)p_sp;
+    /* Allocate a stack page header */
+    p_sph = (ABTI_sp_header *)ABTU_malloc(sizeof(ABTI_sp_header));
+    num_stacks = PAGESIZE / stacksize;
     p_sph->num_total_stacks = num_stacks;
     p_sph->num_empty_stacks = 0;
+    p_sph->stacksize = stacksize;
+    p_sph->p_sp = p_sp;
 
     /* First stack */
-    stacksize = *p_stacksize;
-    p_first = p_sp + gp_ABTI_global->cache_line_size;
+    p_first = p_sp;
     p_sh = (ABTI_stack_header *)(p_first + sizeof(ABTI_thread));
     p_sh->p_sph = p_sph;
 
     if (num_stacks > 1) {
-        /* Make a linked list */
+        /* Make a linked list with remaining stacks */
         p_sh = (ABTI_stack_header *)(p_sp + stacksize + sizeof(ABTI_thread));
         for (i = 1; i < num_stacks; i++) {
             p_next = (i + 1) < num_stacks
@@ -467,9 +470,6 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t *p_stacksize)
         old = (uint64_t)p_sph->p_next;
         ret = ABTD_atomic_cas_uint64(ptr, old, (uint64_t)p_sph);
     } while (old != ret);
-
-    /* Return stack size */
-    *p_stacksize = stacksize - gp_ABTI_global->cache_line_size;
 
     return p_first;
 }
