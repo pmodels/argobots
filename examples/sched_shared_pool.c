@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     }
 
     /* Join & Free */
-    for (i = 0; i < NUM_XSTREAMS; i++) {
+    for (i = 0; i < NUM_THREADS; i++) {
         ABT_thread_join(threads[i]);
         ABT_thread_free(&threads[i]);
     }
