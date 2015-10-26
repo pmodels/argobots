@@ -222,6 +222,11 @@ AC_ARG_WITH([beacon],
 AC_ARG_WITH([intercoolr],
     AS_HELP_STRING([--with-intercoolr=PATH],
         [specify path where intercoolr include directory and lib directory can be found]))
+
+# --with-papi
+AC_ARG_WITH([papi],
+    AS_HELP_STRING([--with-papi=PATH],
+        [specify path where papi include directory and lib directory can be found]))
 dnl ----------------------------------------------------------------------------
 
 
@@ -647,6 +652,13 @@ if test "x$with_intercoolr" != "x"; then
 fi
 AC_CHECK_HEADERS(raplreader.h)
 AC_CHECK_LIB(intercoolr, raplreader_init)
+
+
+# --with-papi
+PAPI_FLAGS=""
+AS_IF([test "x$with_papi" != "x"],
+    PAPI_FLAGS="-I$with_papi/include -L$with_papi/lib")
+AC_SUBST(PAPI_FLAGS)
 dnl ----------------------------------------------------------------------------
 
 
