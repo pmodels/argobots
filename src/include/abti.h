@@ -148,6 +148,7 @@ struct ABTI_global {
     ABTI_sp_header *p_mem_sph;         /* List of stack pages */
     uint32_t header_size;              /* Stack header (including ABTI_thread
                                           ABTI_stack_header) size */
+    int mem_sp_alloc;                  /* How to allocate stack pages */
 #endif
 
     ABT_bool pm_connected;      /* Is power mgmt. daemon connected? */

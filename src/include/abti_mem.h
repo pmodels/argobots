@@ -17,10 +17,19 @@
 #ifdef ABT_CONFIG_USE_MEM_POOL
 typedef struct ABTI_blk_header  ABTI_blk_header;
 
+enum {
+    ABTI_MEM_SP_MALLOC = 0,
+    ABTI_MEM_SP_MMAP_RP,
+    ABTI_MEM_SP_MMAP_HP_RP,
+    ABTI_MEM_SP_MMAP_HP_THP,
+    ABTI_MEM_SP_THP
+};
+
 struct ABTI_sp_header {
     uint32_t num_total_stacks;  /* Number of total stacks */
     uint32_t num_empty_stacks;  /* Number of empty stacks */
     size_t stacksize;           /* Stack size */
+    ABT_bool is_mmapped;        /* ABT_TRUE if it is mmapped */
     void *p_sp;                 /* Pointer to the allocated stack page */
     ABTI_sp_header *p_next;     /* Next stack page header */
 };

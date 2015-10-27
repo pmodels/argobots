@@ -5,6 +5,7 @@
 
 #include "abti.h"
 #include <unistd.h>
+#include <strings.h>
 
 #define ABTD_KEY_TABLE_DEFAULT_SIZE     4
 #define ABTD_THREAD_DEFAULT_STACKSIZE   16384
@@ -130,6 +131,28 @@ void ABTD_env_init(ABTI_global *p_global)
         p_global->page_size = (size_t)atol(env);
     } else {
         p_global->page_size = ABTD_MEM_PAGE_SIZE;
+    }
+
+    /* How to allocate stack pages.  The default is to use mmap() for huge
+     * pages and then to fall back to allocate regular pages using mmap() when
+     * huge pages are run out of. */
+    env = getenv("ABT_ENV_MEM_SP_ALLOC");
+    if (env != NULL) {
+        if (strcasecmp(env, "malloc") == 0) {
+            p_global->mem_sp_alloc = ABTI_MEM_SP_MALLOC;
+        } else if (strcasecmp(env, "mmap_rp") == 0) {
+            p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_RP;
+        } else if (strcasecmp(env, "mmap_hp_rp") == 0) {
+            p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_HP_RP;
+        } else if (strcasecmp(env, "mmap_hp_thp") == 0) {
+            p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_HP_THP;
+        } else if (strcasecmp(env, "thp") == 0) {
+            p_global->mem_sp_alloc = ABTI_MEM_SP_THP;
+        } else {
+            p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_HP_RP;
+        }
+    } else {
+        p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_HP_RP;
     }
 #endif
 
