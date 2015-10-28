@@ -101,7 +101,8 @@ static inline void ABTI_mem_free_stack_list(ABTI_stack_header *p_stack)
     while (p_cur) {
         p_tmp = p_cur;
         p_cur = p_cur->p_next;
-        ABTU_free(p_tmp);
+        char *p_blk = (char *)p_tmp - sizeof(ABTI_thread);
+        ABTU_free(p_blk);
     }
 }
 
@@ -192,7 +193,7 @@ char *ABTI_mem_take_global_stack(ABTI_local *p_local)
     p_local->num_stacks = cnt_stacks;
     p_local->p_mem_stack = p_sh->p_next;
 
-    return (char *)p_sh;
+    return (char *)p_sh - sizeof(ABTI_thread);
 }
 
 void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh)

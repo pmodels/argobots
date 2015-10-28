@@ -49,6 +49,24 @@ ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local);
  * and it needs to be freed with ABTU_free. */
 #define ABTI_EXT_STACK      (ABTI_stack_header *)(UINTPTR_MAX)
 
+
+/******************************************************************************
+ * Unless the stack is given by the user, we allocate a stack first and then
+ * use the beginning of the allocated stack for allocating ABTI_thread and
+ * ABTI_stack_header.  This way we need only one memory allocation call (e.g.,
+ * ABTU_malloc).  The memory layout of the allocated stack will look like
+ *  |-------------------|
+ *  | ABTI_thread       |
+ *  |-------------------|
+ *  | ABTI_stack_header |
+ *  |-------------------|
+ *  | actual stack area |
+ *  |-------------------|
+ * Thus, the actual size of stack becomes
+ * (requested stack size) - sizeof(ABTI_thread) - sizeof(ABTI_stack_header)
+ * and it is set in the attribute field of ABTI_thread.
+ *****************************************************************************/
+
 /* Inline functions */
 static inline
 ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
@@ -56,8 +74,8 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
     const size_t header_size = sizeof(ABTI_stack_header) + sizeof(ABTI_thread);
     size_t stacksize, actual_stacksize;
     char *p_blk;
-    ABTI_stack_header *p_sh;
     ABTI_thread *p_thread;
+    ABTI_stack_header *p_sh;
     void *p_stack;
 
     /* Get the stack size */
@@ -66,12 +84,13 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
 
     /* Allocate a stack */
     p_blk = (char *)ABTU_malloc(stacksize);
-    p_sh = (ABTI_stack_header *)p_blk;
-    p_sh->p_next = ABTI_EXT_STACK;
 
-    /* Get the ABTI_thread pointer and stack pointer */
-    p_thread = (ABTI_thread *)(p_blk + sizeof(ABTI_stack_header));
-    p_stack  = (void *)(p_blk + header_size);
+    /* Allocate ABTI_thread, ABTI_stack_header, and the actual stack area in
+     * the allocated stack memory */
+    p_thread = (ABTI_thread *)p_blk;
+    p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
+    p_sh->p_next = ABTI_EXT_STACK;
+    p_stack = (void *)(p_blk + header_size);
 
     /* Set attributes */
     ABTI_thread_attr *p_myattr = &p_thread->attr;
@@ -92,8 +111,8 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
     size_t stacksize, def_stacksize, actual_stacksize;
     ABTI_local *p_local = lp_ABTI_local;
     char *p_blk = NULL;
-    ABTI_stack_header *p_sh;
     ABTI_thread *p_thread;
+    ABTI_stack_header *p_sh;
     void *p_stack;
 
     /* Get the stack size */
@@ -111,13 +130,14 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
 
         if (p_attr->p_stack != NULL) {
-            /* Since the stack is given by the user, we create
-             * ABTI_stack_header and ABTI_thread explicitly with a single
-             * ABTU_malloc call. */
+            /* Since the stack is given by the user, we create ABTI_thread and
+             * ABTI_stack_header explicitly with a single ABTU_malloc call. */
             p_blk = (char *)ABTU_malloc(header_size);
-            p_sh = (ABTI_stack_header *)p_blk;
+
+            p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
             p_sh->p_next = ABTI_EXT_STACK;
-            p_thread = (ABTI_thread *)(p_blk + sizeof(ABTI_stack_header));
+
+            p_thread = (ABTI_thread *)p_blk;
             ABTI_thread_attr_copy(&p_thread->attr, p_attr);
 
             *p_stacksize = p_attr->stacksize;
@@ -129,11 +149,12 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
             /* Since the stack size requested is not the same as default one,
              * we use ABTU_malloc. */
             p_blk = (char *)ABTU_malloc(stacksize);
-            p_sh = (ABTI_stack_header *)p_blk;
+
+            p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
             p_sh->p_next = ABTI_EXT_STACK;
 
             actual_stacksize = stacksize - header_size;
-            p_thread = (ABTI_thread *)(p_blk + sizeof(ABTI_stack_header));
+            p_thread = (ABTI_thread *)p_blk;
             ABTI_thread_attr_copy(&p_thread->attr, p_attr);
             p_thread->attr.stacksize = actual_stacksize;
             p_thread->attr.p_stack = (void *)(p_blk + header_size);
@@ -151,7 +172,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         p_local->num_stacks--;
 
         p_sh->p_next = NULL;
-        p_blk = (char *)p_sh;
+        p_blk = (char *)p_sh - sizeof(ABTI_thread);
 
     } else {
         /* Check stacks in the global data */
@@ -165,7 +186,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
             p_blk = (char *)ABTU_malloc(stacksize);
         }
 
-        p_sh = (ABTI_stack_header *)p_blk;
+        p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
         p_sh->p_next = NULL;
     }
 
@@ -173,7 +194,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
     actual_stacksize = stacksize - header_size;
 
     /* Get the ABTI_thread pointer and stack pointer */
-    p_thread = (ABTI_thread *)(p_blk + sizeof(ABTI_stack_header));
+    p_thread = (ABTI_thread *)p_blk;
     p_stack  = (void *)(p_blk + header_size);
 
     /* Set attributes */
@@ -200,10 +221,11 @@ ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
     ABTI_thread *p_thread;
 
     p_blk = (char *)ABTU_malloc(header_size);
-    p_sh = (ABTI_stack_header *)p_blk;
+
+    p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
     p_sh->p_next = ABTI_EXT_STACK;
 
-    p_thread = (ABTI_thread *)(p_blk + sizeof(ABTI_stack_header));
+    p_thread = (ABTI_thread *)p_blk;
 
     /* Set attributes */
     /* TODO: Need to set the actual stack address and size for the main ULT */
@@ -219,10 +241,10 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
     ABTI_local *p_local;
     ABTI_stack_header *p_sh;
 
-    p_sh = (ABTI_stack_header *)((char *)p_thread - sizeof(ABTI_stack_header));
+    p_sh = (ABTI_stack_header *)((char *)p_thread + sizeof(ABTI_thread));
 
     if (p_sh->p_next == ABTI_EXT_STACK) {
-        ABTU_free((void *)p_sh);
+        ABTU_free((void *)p_thread);
         return;
     }
 
