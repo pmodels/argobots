@@ -8,6 +8,12 @@
 
 /* Memory allocation */
 
+#ifdef ABT_CONFIG_USE_ALIGNED_ALLOC
+#define ABTU_CA_MALLOC(s)   ABTU_memalign(gp_ABTI_global->cache_line_size,s)
+#else
+#define ABTU_CA_MALLOC(s)   ABTU_malloc(s)
+#endif
+
 #ifdef ABT_CONFIG_USE_MEM_POOL
 typedef struct ABTI_blk_header  ABTI_blk_header;
 
@@ -83,7 +89,7 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
     actual_stacksize = stacksize - header_size;
 
     /* Allocate a stack */
-    p_blk = (char *)ABTU_malloc(stacksize);
+    p_blk = (char *)ABTU_CA_MALLOC(stacksize);
 
     /* Allocate ABTI_thread, ABTI_stack_header, and the actual stack area in
      * the allocated stack memory */
@@ -132,7 +138,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         if (p_attr->p_stack != NULL) {
             /* Since the stack is given by the user, we create ABTI_thread and
              * ABTI_stack_header explicitly with a single ABTU_malloc call. */
-            p_blk = (char *)ABTU_malloc(header_size);
+            p_blk = (char *)ABTU_CA_MALLOC(header_size);
 
             p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
             p_sh->p_next = ABTI_EXT_STACK;
@@ -148,7 +154,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         if (stacksize != def_stacksize) {
             /* Since the stack size requested is not the same as default one,
              * we use ABTU_malloc. */
-            p_blk = (char *)ABTU_malloc(stacksize);
+            p_blk = (char *)ABTU_CA_MALLOC(stacksize);
 
             p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
             p_sh->p_next = ABTI_EXT_STACK;
@@ -179,11 +185,11 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         if (gp_ABTI_global->p_mem_stack) {
             p_blk = ABTI_mem_take_global_stack(p_local);
             if (p_blk == NULL) {
-                p_blk = (char *)ABTU_malloc(stacksize);
+                p_blk = (char *)ABTU_CA_MALLOC(stacksize);
             }
         } else {
             /* Allocate a new stack if we don't have any empty stack */
-            p_blk = (char *)ABTU_malloc(stacksize);
+            p_blk = (char *)ABTU_CA_MALLOC(stacksize);
         }
 
         p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
@@ -220,7 +226,7 @@ ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
     ABTI_stack_header *p_sh;
     ABTI_thread *p_thread;
 
-    p_blk = (char *)ABTU_malloc(header_size);
+    p_blk = (char *)ABTU_CA_MALLOC(header_size);
 
     p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
     p_sh->p_next = ABTI_EXT_STACK;
@@ -267,7 +273,7 @@ ABTI_task *ABTI_mem_alloc_task(void)
 
     if (p_local == NULL) {
         /* For external threads */
-        char *p_blk = (char *)ABTU_malloc(blk_size);
+        char *p_blk = (char *)ABTU_CA_MALLOC(blk_size);
         ABTI_blk_header *p_blk_header = (ABTI_blk_header *)p_blk;
         p_blk_header->p_ph = NULL;
         p_task = (ABTI_task *)(p_blk + sizeof(ABTI_blk_header));
@@ -363,7 +369,7 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
     actual_stacksize = stacksize - sizeof(ABTI_thread);
 
     /* Allocate ABTI_thread and a stack */
-    p_blk = (char *)ABTU_malloc(stacksize);
+    p_blk = (char *)ABTU_CA_MALLOC(stacksize);
     p_thread = (ABTI_thread *)p_blk;
     p_stack = (void *)(p_blk + sizeof(ABTI_thread));
 
@@ -390,7 +396,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
     if (p_attr->p_stack == NULL) {
         ABTI_ASSERT(p_attr->userstack == ABT_FALSE);
 
-        char *p_blk = (char *)ABTU_malloc(p_attr->stacksize);
+        char *p_blk = (char *)ABTU_CA_MALLOC(p_attr->stacksize);
         p_thread = (ABTI_thread *)p_blk;
 
         ABTI_thread_attr_copy(&p_thread->attr, p_attr);
@@ -401,7 +407,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         /* Since the stack is given by the user, we create ABTI_thread
          * explicitly instead of using a part of stack because the stack
          * will be freed by the user. */
-        p_thread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
+        p_thread = (ABTI_thread *)ABTU_CA_MALLOC(sizeof(ABTI_thread));
         ABTI_thread_attr_copy(&p_thread->attr, p_attr);
     }
 
@@ -414,7 +420,7 @@ ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
 {
     ABTI_thread *p_thread;
 
-    p_thread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
+    p_thread = (ABTI_thread *)ABTU_CA_MALLOC(sizeof(ABTI_thread));
 
     /* Set attributes */
     /* TODO: Need to set the actual stack address and size for the main ULT */
@@ -433,7 +439,7 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
 static inline
 ABTI_task *ABTI_mem_alloc_task(void)
 {
-    return (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
+    return (ABTI_task *)ABTU_CA_MALLOC(sizeof(ABTI_task));
 }
 
 static inline

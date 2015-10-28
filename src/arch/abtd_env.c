@@ -107,7 +107,6 @@ void ABTD_env_init(ABTI_global *p_global)
         p_global->sched_event_freq = ABTD_SCHED_EVENT_FREQ;
     }
 
-#ifdef ABT_CONFIG_USE_MEM_POOL
     /* Cache line size */
     env = getenv("ABT_ENV_CACHE_LINE_SIZE");
     if (env != NULL) {
@@ -116,6 +115,7 @@ void ABTD_env_init(ABTI_global *p_global)
         p_global->cache_line_size = ABTD_CACHE_LINE_SIZE;
     }
 
+#ifdef ABT_CONFIG_USE_MEM_POOL
     /* Maximum number of stacks that each ES can keep during execution */
     env = getenv("ABT_ENV_MAX_NUM_STACKS");
     if (env != NULL) {

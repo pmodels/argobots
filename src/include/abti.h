@@ -138,8 +138,8 @@ struct ABTI_global {
     uint32_t sched_event_freq;  /* Default check frequency for sched */
     ABTI_thread *p_thread_main; /* ULT of the main function */
 
-#ifdef ABT_CONFIG_USE_MEM_POOL
     uint32_t cache_line_size;          /* Cache line size */
+#ifdef ABT_CONFIG_USE_MEM_POOL
     uint32_t max_stacks;               /* Max. # of stacks for each ES */
     size_t page_size;                  /* Page size for memory allocation */
     ABTI_stack_header *p_mem_stack;    /* List of ULT stack */
