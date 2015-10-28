@@ -27,6 +27,14 @@ void ABTI_mem_init(ABTI_global *p_global)
     p_global->p_mem_stack = NULL;
     p_global->p_mem_task = NULL;
     p_global->p_mem_sph = NULL;
+
+    /* Calculate the header size that should be a multiple of cache line size */
+    size_t header_size = sizeof(ABTI_thread) + sizeof(ABTI_stack_header);
+    uint32_t rem = header_size % p_global->cache_line_size;
+    if (rem > 0) {
+        header_size += (p_global->cache_line_size - rem);
+    }
+    p_global->header_size = header_size;
 }
 
 void ABTI_mem_init_local(ABTI_local *p_local)
@@ -419,6 +427,10 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     uint32_t num_stacks;
     int i;
 
+    uint32_t header_size = gp_ABTI_global->header_size;
+    size_t actual_stacksize = stacksize - header_size;
+    void *p_stack = NULL;
+
     /* Allocate a stack page. We first try to mmap a huge page, and then if it
      * fails, we mmap a normal page. */
     p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);
@@ -443,23 +455,26 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     p_first = p_sp;
     p_sh = (ABTI_stack_header *)(p_first + sizeof(ABTI_thread));
     p_sh->p_sph = p_sph;
+    p_sh->p_stack = (void *)(p_first + header_size * num_stacks);
+    p_stack = p_sh->p_stack;
 
     if (num_stacks > 1) {
         /* Make a linked list with remaining stacks */
-        p_sh = (ABTI_stack_header *)(p_sp + stacksize + sizeof(ABTI_thread));
+        p_sh = (ABTI_stack_header *)((char *)p_sh + header_size);
+
+        p_local->num_stacks = num_stacks - 1;
+        p_local->p_mem_stack = p_sh;
+
         for (i = 1; i < num_stacks; i++) {
             p_next = (i + 1) < num_stacks
-                   ? (ABTI_stack_header *)((char *)p_sh + stacksize)
+                   ? (ABTI_stack_header *)((char *)p_sh + header_size)
                    : NULL;
             p_sh->p_next = p_next;
             p_sh->p_sph = p_sph;
+            p_sh->p_stack = (void *)((char *)p_stack + i * actual_stacksize);
 
             p_sh = p_next;
         }
-
-        p_local->num_stacks = num_stacks - 1;
-        p_local->p_mem_stack = (ABTI_stack_header *)
-                               (p_sp + stacksize + sizeof(ABTI_thread));
     }
 
     /* Add this stack page to the global stack page list */

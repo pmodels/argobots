@@ -146,6 +146,8 @@ struct ABTI_global {
     ABTI_stack_header *p_mem_stack;    /* List of ULT stack */
     ABTI_page_header *p_mem_task;      /* List of task block pages */
     ABTI_sp_header *p_mem_sph;         /* List of stack pages */
+    uint32_t header_size;              /* Stack header (including ABTI_thread
+                                          ABTI_stack_header) size */
 #endif
 
     ABT_bool pm_connected;      /* Is power mgmt. daemon connected? */
