@@ -61,6 +61,13 @@ benchmark/task_ops_all
 benchmark/sync_ops
 benchmark/thread_fork_join
 benchmark/thread_fork_join_papi
+benchmark/thread_fork_join_papi_l1m_l2m
+benchmark/thread_fork_join_many
+benchmark/thread_fork_join_many_papi
+benchmark/thread_fork_join_many_papi_l1m_l2m
+benchmark/thread_fork_join_many_priv_pool
+benchmark/thread_fork_join_many_priv_pool_papi
+benchmark/thread_fork_join_many_priv_pool_papi_l1m_l2m
 
 # code builds
 util/libutil.la
