@@ -29,6 +29,7 @@ struct ABTI_sp_header {
     uint32_t num_total_stacks;  /* Number of total stacks */
     uint32_t num_empty_stacks;  /* Number of empty stacks */
     size_t stacksize;           /* Stack size */
+    uint64_t id;                /* ID */
     ABT_bool is_mmapped;        /* ABT_TRUE if it is mmapped */
     void *p_sp;                 /* Pointer to the allocated stack page */
     ABTI_sp_header *p_next;     /* Next stack page header */

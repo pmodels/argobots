@@ -20,6 +20,7 @@ static inline void ABTI_mem_add_page(ABTI_local *p_local,
 static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
                                                 ABTI_page_header *p_tail);
 static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph);
+static uint64_t g_sp_id = 0;
 
 
 void ABTI_mem_init(ABTI_global *p_global)
@@ -35,6 +36,8 @@ void ABTI_mem_init(ABTI_global *p_global)
         header_size += (p_global->cache_line_size - rem);
     }
     p_global->header_size = header_size;
+
+    g_sp_id = 0;
 }
 
 void ABTI_mem_init_local(ABTI_local *p_local)
@@ -455,6 +458,7 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     p_sph->num_total_stacks = num_stacks;
     p_sph->num_empty_stacks = 0;
     p_sph->stacksize = stacksize;
+    p_sph->id = ABTD_atomic_fetch_add_uint64(&g_sp_id, 1);
 
     /* Allocate a stack page */
     switch (gp_ABTI_global->mem_sp_alloc) {
@@ -517,11 +521,13 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     p_sph->p_sp = p_sp;
 
     /* First stack */
-    p_first = p_sp;
+    int first_pos = p_sph->id % num_stacks;
+    p_first = p_sp + actual_stacksize * first_pos;
     p_sh = (ABTI_stack_header *)(p_first + sizeof(ABTI_thread));
     p_sh->p_sph = p_sph;
-    p_sh->p_stack = (void *)(p_first + header_size * num_stacks);
-    p_stack = p_sh->p_stack;
+    p_stack = (first_pos == 0)
+            ? (void *)(p_first + header_size * num_stacks) : (void *)p_sp;
+    p_sh->p_stack = p_stack;
 
     if (num_stacks > 1) {
         /* Make a linked list with remaining stacks */
@@ -536,7 +542,16 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
                    : NULL;
             p_sh->p_next = p_next;
             p_sh->p_sph = p_sph;
-            p_sh->p_stack = (void *)((char *)p_stack + i * actual_stacksize);
+            if (first_pos == 0) {
+                p_sh->p_stack = (void *)((char *)p_stack + i * actual_stacksize);
+            } else {
+                if (i < first_pos) {
+                    p_sh->p_stack = (void *)(p_sp + i * actual_stacksize);
+                } else {
+                    p_sh->p_stack = (void *)(p_first + header_size * num_stacks
+                                  + (i - first_pos) * actual_stacksize);
+                }
+            }
 
             p_sh = p_next;
         }
