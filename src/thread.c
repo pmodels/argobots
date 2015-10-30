@@ -616,6 +616,41 @@ int ABT_thread_yield(void)
 
 /**
  * @ingroup ULT
+ * @brief   Resume the target ULT.
+ *
+ * \c ABT_thread_resume() makes the blocked ULT schedulable by changing the
+ * state of the target ULT to READY and pushing it to its associated pool.
+ * The ULT will resume its execution when the scheduler schedules it.
+ *
+ * The ULT should have been blocked by \c ABT_self_suspend() or
+ * \c ABT_thread_suspend().  Otherwise, the behavior of this routine is
+ * undefined.
+ *
+ * @param[in] thread   handle to the target ULT
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_resume(ABT_thread thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread;
+
+    p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    abt_errno = ABTI_thread_set_ready(p_thread);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Migrate a thread to a specific ES.
  *
  * The actual migration occurs asynchronously with this function call.

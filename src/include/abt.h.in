@@ -406,6 +406,7 @@ int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool);
 int ABT_thread_get_last_pool_id(ABT_thread thread, int *id);
 int ABT_thread_yield_to(ABT_thread thread);
 int ABT_thread_yield(void);
+int ABT_thread_resume(ABT_thread thread);
 int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream);
 int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched);
 int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool);
@@ -453,6 +454,7 @@ int ABT_self_get_type(ABT_unit_type *type);
 int ABT_self_is_primary(ABT_bool *flag);
 int ABT_self_on_primary_xstream(ABT_bool *flag);
 int ABT_self_get_last_pool_id(int *pool_id);
+int ABT_self_suspend(void);
 
 /* ULT-specific data */
 int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey);

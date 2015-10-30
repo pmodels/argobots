@@ -211,3 +211,47 @@ int ABT_self_get_last_pool_id(int *pool_id)
   fn_exit:
     return abt_errno;
 }
+
+/**
+ * @ingroup SELF
+ * @brief   Suspend the current ULT.
+ *
+ * \c ABT_self_suspend() suspends the execution of current ULT and switches
+ * to the scheduler.  The caller ULT is not pushed to its associated pool and
+ * its state becomes BLOCKED.  It can be awakened and be pushed back to the
+ * pool when \c ABT_thread_resume() is called.
+ *
+ * This routine must be called by a ULT.  Otherwise, it returns
+ * \c ABT_ERR_INV_THREAD without suspending the caller.
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS          on success
+ * @retval ABT_ERR_INV_THREAD   called by a non-ULT
+ */
+int ABT_self_suspend(void)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = NULL;
+
+    /* If this routine is called by non-ULT, just return. */
+    if (lp_ABTI_local != NULL) {
+        p_thread = ABTI_local_get_thread();
+    }
+    if (p_thread == NULL) {
+        abt_errno = ABT_ERR_INV_THREAD;
+        goto fn_fail;
+    }
+
+    abt_errno = ABTI_thread_set_blocked(p_thread);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    ABTI_thread_suspend(p_thread);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
