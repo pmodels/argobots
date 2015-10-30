@@ -11,6 +11,7 @@ TESTS = \
 	thread_attr \
 	thread_yield \
 	thread_yield_to \
+	thread_self_suspend_resume \
 	thread_migrate \
 	thread_data \
 	thread_id \
@@ -48,6 +49,7 @@ thread_create_on_xstream_SOURCES = thread_create_on_xstream.c
 thread_attr_SOURCES = thread_attr.c
 thread_yield_SOURCES = thread_yield.c
 thread_yield_to_SOURCES = thread_yield_to.c
+thread_self_suspend_resume_SOURCES = thread_self_suspend_resume.c
 thread_migrate_SOURCES = thread_migrate.c
 thread_data_SOURCES = thread_data.c
 thread_id_SOURCES = thread_id.c
@@ -81,6 +83,7 @@ testing:
 	./thread_attr
 	./thread_yield
 	./thread_yield_to
+	./thread_self_suspend_resume
 	./thread_migrate
 	./thread_data
 	./thread_id
