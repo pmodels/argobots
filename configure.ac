@@ -260,6 +260,20 @@ AS_IF([test "x$enable_publish_info" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_PUBLISH_INFO, 1,
                  [Define to publish execution information])])
 
+# BEACON path
+AC_ARG_WITH([beacon],
+    AS_HELP_STRING([--with-beacon=PATH],
+        [specify path where beacon include directory and lib directory can be found]))
+if test "x$with_beacon" != "x"; then
+    CFLAGS="-I$with_beacon/include $CFLAGS"
+    LDFLAGS="-L$with_beacon/lib -lbeacon $LDFLAGS"
+fi
+AC_CHECK_HEADERS(beacon.h)
+default_pub_filename="stdout"
+AC_CHECK_LIB(beacon, BEACON_Publish, [default_pub_filename="beacon"])
+AC_DEFINE_UNQUOTED(ABT_CONFIG_DEFAULT_PUB_FILENAME, ["$default_pub_filename"],
+                   [Default filename for publishing the performance data])
+
 # Disable features
 AC_ARG_ENABLE([thread-cancel],
     AS_HELP_STRING([--disable-thread-cancel], [disable ULT cancellation]),,

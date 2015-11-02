@@ -130,7 +130,7 @@ void ABTD_env_init(ABTI_global *p_global)
 
     /* Filename for exec. information publishing */
     env = getenv("ABT_ENV_PUBLISH_FILENAME");
-    p_global->pub_filename = env ? env : "stdout";
+    p_global->pub_filename = env ? env : ABT_CONFIG_DEFAULT_PUB_FILENAME;
 
     /* Time interval for exec. information publishing */
     env = getenv("ABT_ENV_PUBLISH_INTERVAL");
