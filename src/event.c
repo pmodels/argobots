@@ -47,6 +47,15 @@
 #include <beacon.h>
 #endif
 
+#if defined(HAVE_RAPLREADER_H) && defined(HAVE_LIBINTERCOOLR)
+#include <raplreader.h>
+#define RAPLREADER_INIT(p_rr)       raplreader_init(p_rr)
+#define RAPLREADER_SAMPLE(p_rr)     raplreader_sample(p_rr)
+#else
+#define RAPLREADER_INIT(p_rr)       (0)
+#define RAPLREADER_SAMPLE(p_rr)
+#endif
+
 typedef enum {
     ABTI_PUB_TYPE_BEACON,
     ABTI_PUB_TYPE_FILE
@@ -91,6 +100,12 @@ struct ABTI_event_info {
     uint32_t *old_num_units;    /* # of units executed at the last timestamp */
     double *old_timestamp;
     double timestamp;           /* last timestamp */
+
+#if defined(HAVE_RAPLREADER_H) && defined(HAVE_LIBINTERCOOLR)
+    struct raplreader rr;       /* For power profiling with RAPL */
+#endif
+    double prof_start_time;     /* Profiling start time */
+    double prof_stop_time;      /* Profiling stop_time */
 #endif
 };
 
@@ -181,6 +196,12 @@ void ABTI_event_init(void)
         gp_einfo->old_timestamp = (double *)ABTU_calloc(
                 gp_einfo->max_xstream_rank, sizeof(double));
         gp_einfo->timestamp = ABT_get_wtime();
+
+        int ret = RAPLREADER_INIT(&gp_einfo->rr);
+        if (ret) {
+            printf("raplrease_init is not successful ret=%d\n", ret);
+            exit(-1);
+        }
     }
 
   fn_exit:
@@ -853,4 +874,83 @@ void ABTI_event_publish_info(void)
 
     ABTI_mutex_unlock(&gp_einfo->mutex);
 }
+
+int ABT_event_prof_start(void)
+{
+    gp_einfo->prof_start_time = ABT_get_wtime();
+    RAPLREADER_SAMPLE(&gp_einfo->rr);
+    return ABT_SUCCESS;
+}
+
+int ABT_event_prof_stop(void)
+{
+    gp_einfo->prof_stop_time = ABT_get_wtime();
+    RAPLREADER_SAMPLE(&gp_einfo->rr);
+    return ABT_SUCCESS;
+}
+
+int ABT_event_prof_publish(const char *unit_name, double local_work,
+                           double global_work)
+{
+    const char *sample_name = "application";
+    double elapsed_time = gp_einfo->prof_stop_time - gp_einfo->prof_start_time;
+#if defined(HAVE_RAPLREADER_H) && defined(HAVE_LIBINTERCOOLR)
+    double power = gp_einfo->rr.power_total;
 #endif
+    double local_rate = local_work / elapsed_time;
+    double global_rate = global_work / elapsed_time;
+
+    char *info = (char *)ABTU_calloc(1024, sizeof(char));
+#if defined(HAVE_RAPLREADER_H) && defined(HAVE_LIBINTERCOOLR)
+    sprintf(info,
+            "{\"node\":\"%s\",\"sample\":\"%s\",\"time\":%lf,\"%s_per_sec_per_node\":%lf,"
+            "\"%s_per_watt_per_node\":%lf,\"%s_per_sec\":%lf}\n",
+            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name, local_rate,
+            unit_name, local_work/power, unit_name, global_rate);
+#else
+    sprintf(info,
+            "{\"node\":\"%s\",\"sample\":\"%s\",\"time\":%lf,\"%s_per_sec_per_node\":%lf,"
+            "\"%s_per_sec\":%lf}\n",
+            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name, local_rate,
+            unit_name, global_rate);
+#endif
+
+    LOG_DEBUG("%s", info);
+    if (gp_einfo->pub_type == ABTI_PUB_TYPE_BEACON) {
+#ifdef HAVE_BEACON_H
+        ABTU_strcpy(gp_einfo->eprop->topic_payload, info);
+        int ret = BEACON_Publish(gp_einfo->handle, gp_einfo->topic_info->topic_name,
+                                 gp_einfo->eprop);
+        if (ret != BEACON_SUCCESS) {
+            printf("BEACON_Publish failed with ret=%d\n", ret);
+            exit(-1);
+        }
+#endif
+    } else if (gp_einfo->pub_type == ABTI_PUB_TYPE_FILE) {
+        fprintf(gp_einfo->out_file, "%s", info);
+    }
+
+    ABTU_free(info);
+
+    return ABT_SUCCESS;
+}
+
+#else /* ABT_CONFIG_PUBLISH_INFO */
+
+int ABT_event_prof_start(void)
+{
+    return ABT_SUCCESS;
+}
+
+int ABT_event_prof_stop(void)
+{
+    return ABT_SUCCESS;
+}
+
+int ABT_event_prof_publish(const char *unit_name, double local_work,
+                           double global_work)
+{
+    return ABT_SUCCESS;
+}
+#endif /* ABT_CONFIG_PUBLISH_INFO */
+

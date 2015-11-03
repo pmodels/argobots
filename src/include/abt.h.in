@@ -563,6 +563,10 @@ int ABT_event_add_callback(ABT_event_kind event,
                            ABT_event_cb_fn act_cb, void *act_user_arg,
                            int *cb_id);
 int ABT_event_del_callback(ABT_event_kind event, int cb_id);
+int ABT_event_prof_start(void);
+int ABT_event_prof_stop(void);
+int ABT_event_prof_publish(const char *unit_name, double local_work,
+                           double global_work);
 
 #if defined(__cplusplus)
 }
