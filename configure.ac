@@ -274,6 +274,17 @@ AC_CHECK_LIB(beacon, BEACON_Publish, [default_pub_filename="beacon"])
 AC_DEFINE_UNQUOTED(ABT_CONFIG_DEFAULT_PUB_FILENAME, ["$default_pub_filename"],
                    [Default filename for publishing the performance data])
 
+# INTERCOOLR path
+AC_ARG_WITH([intercoolr],
+    AS_HELP_STRING([--with-intercoolr=PATH],
+        [specify path where intercoolr include directory and lib directory can be found]))
+if test "x$with_intercoolr" != "x"; then
+    CFLAGS="-I$with_intercoolr/include $CFLAGS"
+    LDFLAGS="-L$with_intercoolr/lib -lintercoolr $LDFLAGS"
+fi
+AC_CHECK_HEADERS(raplreader.h)
+AC_CHECK_LIB(intercoolr, raplreader_init)
+
 # Disable features
 AC_ARG_ENABLE([thread-cancel],
     AS_HELP_STRING([--disable-thread-cancel], [disable ULT cancellation]),,
