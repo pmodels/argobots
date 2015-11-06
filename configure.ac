@@ -255,6 +255,7 @@ dnl ----------------------------------------------------------------------------
 
 AC_CONFIG_FILES([Makefile
                  Doxyfile
+                 maint/argobots.pc
                  src/include/abt.h
                  src/Makefile
                  test/Makefile

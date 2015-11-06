@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: Argobots
+Description: a low-level infrastructure that supports a lightweight thread and task model for massive concurrency
+Version: @ABT_VERSION@
+URL: https://collab.cels.anl.gov/display/ARGOBOTS/
+Requires:
+Libs.private: @LIBS@
+Libs: -L${libdir} -labt
+Cflags: -I${includedir}

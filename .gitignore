@@ -11,6 +11,7 @@ src/include/abt_config.h
 src/include/abt_config.h.in
 stamp-h1
 Doxyfile
+maint/argobots.pc
 
 # m4 additions
 m4/ar-lib

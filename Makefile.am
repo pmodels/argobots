@@ -12,6 +12,9 @@ EXTRA_DIST = autogen.sh
 
 .PHONY: build-all clean-all doxygen
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = maint/argobots.pc
+
 build-all:
 	$(MAKE)
 	$(MAKE) -C test
