@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
     masters = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
     threads = (ABT_thread **)malloc(num_xstreams * sizeof(ABT_thread *));
-    values = (int **)calloc(num_xstreams * num_threads, sizeof(int *));
+    values = (int **)malloc(num_xstreams * sizeof(int *));
     for (i = 0; i < num_xstreams; i++) {
         threads[i] = (ABT_thread *)malloc(num_threads * sizeof(ABT_thread));
         values[i] = (int *)calloc(num_threads, sizeof(int));
