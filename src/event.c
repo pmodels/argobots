@@ -877,6 +877,8 @@ void ABTI_event_publish_info(void)
 
 int ABT_event_prof_start(void)
 {
+    if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
+
     gp_einfo->prof_start_time = ABT_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
     return ABT_SUCCESS;
@@ -884,6 +886,8 @@ int ABT_event_prof_start(void)
 
 int ABT_event_prof_stop(void)
 {
+    if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
+
     gp_einfo->prof_stop_time = ABT_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
     return ABT_SUCCESS;
@@ -892,6 +896,8 @@ int ABT_event_prof_stop(void)
 int ABT_event_prof_publish(const char *unit_name, double local_work,
                            double global_work)
 {
+    if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
+
     const char *sample_name = "application";
     double elapsed_time = gp_einfo->prof_stop_time - gp_einfo->prof_start_time;
 #if defined(HAVE_RAPLREADER_H) && defined(HAVE_LIBINTERCOOLR)
