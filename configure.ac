@@ -203,6 +203,13 @@ AS_IF([test "x$enable_error_check" != "xyes" -o "x$enable_checks" = "xno"],
     [ABT_NULL="0"])
 AC_SUBST([ABT_NULL])
 
+AC_ARG_ENABLE([pool-producer-check],
+    AS_HELP_STRING([--disable-pool-producer-check], [disable pool producer check]),,
+    [enable_pool_producer_check=yes])
+AS_IF([test "x$enable_pool_producer_check" != "xyes" -o "x$enable_checks" = "xno"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK, 1,
+        [Define to disable pool producer check])])
+
 AC_ARG_ENABLE([fcontext],
     AS_HELP_STRING([--disable-fcontext],
         [do not use fcontext even though it is supported. If you disable

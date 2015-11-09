@@ -66,6 +66,9 @@ int ABT_task_create(ABT_pool pool,
     LOG_EVENT("[T%" PRIu64 "] created\n", ABTI_task_get_id(p_newtask));
 
     /* Add this task to the scheduler's pool */
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    ABTI_pool_push(p_pool, p_newtask->unit);
+#else
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
         p_newtask->state = ABT_TASK_STATE_CREATED;
@@ -73,7 +76,7 @@ int ABT_task_create(ABT_pool pool,
         ABTI_CHECK_TRUE(ret == ABT_SUCCESS, ret);
         goto fn_fail;
     }
-
+#endif
 
     /* Return value */
     if (newtask) *newtask = h_newtask;
@@ -117,6 +120,12 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     /* Save the tasklet pointer in p_sched */
     p_sched->p_task = p_newtask;
 
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    /* Add this tasklet to the pool */
+    ABTI_pool_push(p_pool, p_newtask->unit);
+
+    return abt_errno;
+#else
     /* Add this tasklet to the pool */
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
     if (abt_errno != ABT_SUCCESS) {
@@ -131,6 +140,7 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#endif
 }
 
 /**

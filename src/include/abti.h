@@ -211,7 +211,7 @@ struct ABTI_pool {
     int32_t num_scheds;      /* Number of associated schedulers */
                              /* NOTE: int32_t to check if still positive */
     ABTI_xstream *consumer;  /* Associated consumer ES */
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     ABTI_xstream *producer;  /* Associated producer ES */
 #endif
     uint32_t num_blocked;    /* Number of blocked ULTs */
@@ -440,7 +440,7 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
 int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
 int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 #endif
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);

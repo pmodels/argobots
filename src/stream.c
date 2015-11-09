@@ -1335,8 +1335,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         /* The ULT did not finish its execution.
          * Change the state of current running ULT and
          * add it to the pool again. */
-        abt_errno = ABTI_pool_add_thread(p_thread, p_xstream);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTI_POOL_ADD_THREAD(p_thread, p_xstream);
     } else if (p_thread->request & ABTI_THREAD_REQ_BLOCK) {
         LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] check blocked\n",
                   ABTI_thread_get_id(p_thread), p_xstream->rank);
@@ -1553,8 +1552,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
          * it is freed in ABT_finalize. */
         p_sched->automatic = ABT_TRUE;
 
-        abt_errno = ABTI_pool_push(p_tar_pool, p_thread->unit, p_xstream);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_pool_push");
+        ABTI_POOL_PUSH(p_tar_pool, p_thread->unit, p_xstream);
 
         /* Pop the top scheduler */
         ABTI_xstream_pop_sched(p_xstream);
@@ -1580,8 +1578,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
          * the new scheduler starts (see below), it can be scheduled by the new
          * scheduler. When the current ULT resumes its execution, it will free
          * the current main scheduler (see below). */
-        abt_errno = ABTI_pool_push(p_tar_pool, p_thread->unit, p_xstream);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_pool_push");
+        ABTI_POOL_PUSH(p_tar_pool, p_thread->unit, p_xstream);
 
         /* Set the scheduler */
         p_xstream->p_main_sched = p_sched;

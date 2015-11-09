@@ -8,6 +8,8 @@
 
 /* Inlined functions for Pool */
 
+static inline ABTI_xstream *ABTI_xstream_self(void);
+
 static inline
 ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool)
 {
@@ -68,6 +70,34 @@ void ABTI_pool_dec_num_migrations(ABTI_pool *p_pool)
     ABTD_atomic_fetch_sub_int32(&p_pool->num_migrations, 1);
 }
 
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+static inline
+void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
+{
+    LOG_EVENT_POOL_PUSH(p_pool, unit, ABTI_xstream_self());
+
+    /* Push unit into pool */
+    p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
+}
+
+static inline
+void ABTI_pool_add_thread(ABTI_thread *p_thread)
+{
+    /* Set the ULT's state as READY */
+    p_thread->state = ABT_THREAD_STATE_READY;
+
+    /* Add the ULT to the associated pool */
+    ABTI_pool_push(p_thread->p_pool, p_thread->unit);
+}
+
+#define ABTI_POOL_PUSH(p_pool,unit,p_producer)      \
+    ABTI_pool_push(p_pool, unit)
+
+#define ABTI_POOL_ADD_THREAD(p_thread,p_producer)   \
+    ABTI_pool_add_thread(p_thread)
+
+#else /* ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK */
+
 static inline
 int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_producer)
 {
@@ -75,11 +105,9 @@ int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_producer)
 
     LOG_EVENT_POOL_PUSH(p_pool, unit, p_producer);
 
-#ifndef UNSAFE_MODE
     /* Save the producer ES information in the pool */
     abt_errno = ABTI_pool_set_producer(p_pool, p_producer);
     ABTI_CHECK_ERROR(abt_errno);
-#endif
 
     /* Push unit into pool */
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
@@ -91,6 +119,40 @@ int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_producer)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
+
+static inline
+int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
+{
+    int abt_errno;
+
+    /* Set the ULT's state as READY */
+    p_thread->state = ABT_THREAD_STATE_READY;
+
+    /* Add the ULT to the associated pool */
+    abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, p_producer);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+#define ABTI_POOL_PUSH(p_pool,unit,p_producer)                  \
+    do {                                                        \
+        abt_errno = ABTI_pool_push(p_pool, unit, p_producer);   \
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_pool_push");      \
+    } while(0)
+
+#define ABTI_POOL_ADD_THREAD(p_thread,p_producer)               \
+    do {                                                        \
+        abt_errno = ABTI_pool_add_thread(p_thread, p_producer); \
+        ABTI_CHECK_ERROR(abt_errno);                            \
+    } while(0)
+
+#endif /* ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK */
 
 static inline
 int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
@@ -142,26 +204,6 @@ int32_t ABTI_pool_release(ABTI_pool *p_pool)
 {
     ABTI_ASSERT(p_pool->num_scheds > 0);
     return ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1) - 1;
-}
-
-static inline
-int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
-{
-    int abt_errno;
-
-    /* Set the ULT's state as READY */
-    p_thread->state = ABT_THREAD_STATE_READY;
-
-    /* Add the ULT to the associated pool */
-    abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, p_producer);
-    ABTI_CHECK_ERROR(abt_errno);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 #endif /* POOL_H_INCLUDED */

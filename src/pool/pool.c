@@ -39,7 +39,7 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->automatic            = ABT_FALSE;
     p_pool->num_scheds           = 0;
     p_pool->consumer             = NULL;
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     p_pool->producer             = NULL;
 #endif
     p_pool->num_blocked          = 0;
@@ -300,14 +300,14 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 
     ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_UNIT);
 
-#ifndef UNSAFE_MODE
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    ABTI_pool_push(p_pool, unit);
+#else
     /* Save the producer ES information in the pool */
     ABTI_xstream *p_xstream = ABTI_xstream_self();
-#else
-    ABTI_xstream *p_xstream = NULL;
-#endif
     abt_errno = ABTI_pool_push(p_pool, unit, p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
+#endif
 
   fn_exit:
     return abt_errno;
@@ -535,9 +535,6 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
     char *access;
     uint64_t consumer_rank = 0;
-#ifndef UNSAFE_MODE
-    uint64_t producer_rank = 0;
-#endif
 
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV: access = "PRIV"; break;
@@ -551,11 +548,6 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
     if (p_pool->consumer) {
         consumer_rank = p_pool->consumer->rank;
     }
-#ifndef UNSAFE_MODE
-    if (p_pool->producer) {
-        producer_rank = p_pool->producer->rank;
-    }
-#endif
 
     fprintf(p_os,
         "%s== POOL (%p) ==\n"
@@ -564,7 +556,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         "%sautomatic     : %s\n"
         "%snum_scheds    : %d\n"
         "%sconsumer ES   : %p (%" PRIu64 ")\n"
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
         "%sproducer ES   : %p (%" PRIu64 ")\n"
 #endif
         "%ssize          : %zu\n"
@@ -577,8 +569,8 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
         prefix, p_pool->num_scheds,
         prefix, p_pool->consumer, consumer_rank,
-#ifndef UNSAFE_MODE
-        prefix, p_pool->producer, producer_rank,
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+        prefix, p_pool->producer, p_pool->producer ? p_pool->producer->rank : 0,
 #endif
         prefix, p_pool->p_get_size(pool),
         prefix, p_pool->num_blocked,
@@ -606,7 +598,7 @@ int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
 
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
             if (p_pool->producer && p_xstream != p_pool->producer) {
                 abt_errno = ABT_ERR_INV_POOL_ACCESS;
                 ABTI_CHECK_ERROR(abt_errno);
@@ -641,7 +633,7 @@ fn_fail:
     goto fn_exit;
 }
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
 /* Set the associated producer ES of a pool. This function has no effect on pools
  * of shared-write access mode.
  * If a pool is private-write to an ES, we check that the previous value of the
@@ -692,7 +684,7 @@ fn_fail:
  * ES */
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     switch (p_pool->access)
     {
         /* Need producer in the same ES */
