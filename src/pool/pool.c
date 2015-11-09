@@ -38,7 +38,9 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->access               = def->access;
     p_pool->automatic            = ABT_FALSE;
     p_pool->num_scheds           = 0;
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     p_pool->consumer             = NULL;
+#endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     p_pool->producer             = NULL;
 #endif
@@ -336,8 +338,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    abt_errno = ABTI_pool_remove(p_pool, unit, p_xstream);
+    abt_errno = ABTI_POOL_REMOVE(p_pool, unit, ABTI_local_get_xstream());
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -434,6 +435,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     int p;
 
     switch (p_pool->access) {
@@ -470,6 +472,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
         default:
             ABTI_CHECK_TRUE(0, ABT_ERR_INV_POOL_ACCESS);
     }
+#endif
 
     /* Mark the scheduler as it is used in pool */
     p_sched->used = ABTI_SCHED_IN_POOL;
@@ -534,7 +537,6 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
     char *access;
-    uint64_t consumer_rank = 0;
 
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV: access = "PRIV"; break;
@@ -545,17 +547,15 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         default:                   access = "UNKNOWN"; break;
     }
 
-    if (p_pool->consumer) {
-        consumer_rank = p_pool->consumer->rank;
-    }
-
     fprintf(p_os,
         "%s== POOL (%p) ==\n"
         "%sid            : %" PRIu64 "\n"
         "%saccess        : %s\n"
         "%sautomatic     : %s\n"
         "%snum_scheds    : %d\n"
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
         "%sconsumer ES   : %p (%" PRIu64 ")\n"
+#endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
         "%sproducer ES   : %p (%" PRIu64 ")\n"
 #endif
@@ -568,7 +568,9 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         prefix, access,
         prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
         prefix, p_pool->num_scheds,
-        prefix, p_pool->consumer, consumer_rank,
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
+        prefix, p_pool->consumer, p_pool->consumer ? p_pool->consumer->rank : 0,
+#endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
         prefix, p_pool->producer, p_pool->producer ? p_pool->producer->rank : 0,
 #endif
@@ -583,6 +585,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
     ABTU_free(prefix);
 }
 
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
 /* Set the associated consumer ES of a pool. This function has no effect on pools
  * of shared-read access mode.
  * If a pool is private-read to an ES, we check that the previous value of the
@@ -632,6 +635,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
+#endif
 
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
 /* Set the associated producer ES of a pool. This function has no effect on pools
@@ -649,8 +653,10 @@ int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
 
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
             ABTI_CHECK_TRUE(!p_pool->consumer || p_xstream == p_pool->consumer,
                             ABT_ERR_INV_POOL_ACCESS);
+#endif
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_SPMC:
             ABTI_CHECK_TRUE(!p_pool->producer || p_pool->producer == p_xstream,
@@ -684,7 +690,8 @@ fn_fail:
  * ES */
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
 {
-#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+#if !defined(ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK) && \
+    !defined(ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK)
     switch (p_pool->access)
     {
         /* Need producer in the same ES */

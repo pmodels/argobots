@@ -645,7 +645,9 @@ size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched)
     size_t pool_size = 0;
     int p;
 
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+#endif
 
     for (p = 0; p < p_sched->num_pools; p++) {
         ABT_pool pool = p_sched->pools[p];
@@ -660,9 +662,15 @@ size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched)
             case ABT_POOL_ACCESS_MPSC:
             case ABT_POOL_ACCESS_SPMC:
             case ABT_POOL_ACCESS_MPMC:
+#ifdef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
+                if (p_pool->num_scheds == 1) {
+                    pool_size += p_pool->num_blocked;
+                }
+#else
                 if (p_pool->num_scheds == 1 && p_pool->consumer == p_xstream) {
                     pool_size += p_pool->num_blocked;
                 }
+#endif
                 break;
             default: break;
         }

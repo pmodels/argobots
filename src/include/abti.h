@@ -210,7 +210,9 @@ struct ABTI_pool {
     ABT_bool automatic;      /* To know if automatic data free */
     int32_t num_scheds;      /* Number of associated schedulers */
                              /* NOTE: int32_t to check if still positive */
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     ABTI_xstream *consumer;  /* Associated consumer ES */
+#endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     ABTI_xstream *producer;  /* Associated producer ES */
 #endif
@@ -439,7 +441,9 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
 
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
 int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
+#endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
 int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 #endif

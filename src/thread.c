@@ -538,7 +538,7 @@ int ABT_thread_yield_to(ABT_thread thread)
     }
 
     /* Remove the target ULT from the pool */
-    ABTI_pool_remove(p_tar_thread->p_pool, p_tar_thread->unit, p_xstream);
+    ABTI_POOL_REMOVE(p_tar_thread->p_pool, p_tar_thread->unit, p_xstream);
 
     /* Add a new scheduler if the ULT is a scheduler */
     if (p_tar_thread->is_sched != NULL) {

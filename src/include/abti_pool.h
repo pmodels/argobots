@@ -154,17 +154,13 @@ int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
 
 #endif /* ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK */
 
+#ifdef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
 static inline
-int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
+int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
 {
     int abt_errno = ABT_SUCCESS;
 
-    LOG_EVENT_POOL_REMOVE(p_pool, unit, p_consumer);
-
-#ifndef UNSAFE_MODE
-    abt_errno = ABTI_pool_set_consumer(p_pool, p_consumer);
-    ABTI_CHECK_ERROR(abt_errno);
-#endif
+    LOG_EVENT_POOL_REMOVE(p_pool, unit, ABTI_xstream_self());
 
     abt_errno = p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);
     ABTI_CHECK_ERROR(abt_errno);
@@ -176,6 +172,43 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
+
+#define ABTI_POOL_REMOVE(p_pool,unit,p_consumer)    \
+    ABTI_pool_remove(p_pool, unit)
+#define ABTI_POOL_SET_CONSUMER(p_pool,p_consumer)
+
+#else /* ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK */
+
+static inline
+int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    LOG_EVENT_POOL_REMOVE(p_pool, unit, p_consumer);
+
+    abt_errno = ABTI_pool_set_consumer(p_pool, p_consumer);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    abt_errno = p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+#define ABTI_POOL_REMOVE(p_pool,unit,p_consumer)                \
+    ABTI_pool_remove(p_pool, unit, p_consumer)
+#define ABTI_POOL_SET_CONSUMER(p_pool,p_consumer)               \
+    do {                                                        \
+        abt_errno = ABTI_pool_set_consumer(p_pool, p_consumer); \
+        ABTI_CHECK_ERROR(abt_errno);                            \
+    } while(0)
+
+#endif /* ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK */
 
 static inline
 ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)

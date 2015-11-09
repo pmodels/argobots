@@ -494,9 +494,7 @@ int ABT_xstream_join(ABT_xstream xstream)
 
     /* Wait until the target ES terminates */
     if (is_blockable == ABT_TRUE) {
-        abt_errno = ABTI_pool_set_consumer(p_thread->p_pool,
-                                           ABTI_local_get_xstream());
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTI_POOL_SET_CONSUMER(p_thread->p_pool, ABTI_local_get_xstream());
 
         /* Save the caller ULT to set it ready when the ES is terminated */
         p_xstream->p_req_arg = (void *)p_thread;
@@ -1459,7 +1457,9 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         pool = ABTI_pool_get_handle(p_pool);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
         newstream = p_pool->consumer;
+#endif
         LOG_EVENT("[U%" PRIu64 "] migration: E%" PRIu64 " -> E%" PRIu64 "\n",
                 ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
                 newstream ? newstream->rank : -1);
@@ -1499,6 +1499,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     ABTI_pool *p_tar_pool = NULL;
     int p;
 
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     /* We check that from the pool set of the scheduler we do not find a pool
      * with another associated pool, and set the right value if it is okay  */
     for (p = 0; p < p_sched->num_pools; p++) {
@@ -1506,6 +1507,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
         abt_errno = ABTI_pool_set_consumer(p_pool, p_xstream);
         ABTI_CHECK_ERROR(abt_errno);
     }
+#endif
 
     /* The main scheduler will to be a ULT, not a tasklet */
     p_sched->type = ABT_SCHED_TYPE_ULT;
