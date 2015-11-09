@@ -61,19 +61,19 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
             &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
-
     p_newthread->p_last_xstream = NULL;
+    p_newthread->state          = ABT_THREAD_STATE_READY;
+    p_newthread->request        = 0;
     p_newthread->is_sched       = NULL;
     p_newthread->p_pool         = p_pool;
-    p_newthread->type           = ABTI_THREAD_TYPE_USER;
-    p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->refcount       = (newthread != NULL) ? 1 : 0;
-    p_newthread->request        = 0;
+    p_newthread->type           = ABTI_THREAD_TYPE_USER;
     p_newthread->p_req_arg      = NULL;
     p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
+
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
 
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);
@@ -1250,19 +1250,19 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
                                            &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
-
     p_newthread->p_last_xstream  = p_xstream;
+    p_newthread->state           = ABT_THREAD_STATE_RUNNING;
+    p_newthread->request         = 0;
     p_newthread->is_sched        = NULL;
     p_newthread->p_pool          = p_pool;
-    p_newthread->type            = ABTI_THREAD_TYPE_MAIN;
-    p_newthread->state           = ABT_THREAD_STATE_RUNNING;
     p_newthread->refcount        = 0;
-    p_newthread->request         = 0;
+    p_newthread->type            = ABTI_THREAD_TYPE_MAIN;
     p_newthread->p_req_arg       = NULL;
     p_newthread->p_keytable      = NULL;
     p_newthread->id              = ABTI_THREAD_INIT_ID;
+
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
 
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);
@@ -1333,20 +1333,20 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
         ABTI_CHECK_ERROR(abt_errno);
     }
 
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
-
-    p_newthread->unit           = ABT_UNIT_NULL;
     p_newthread->p_last_xstream = p_xstream;
+    p_newthread->state          = ABT_THREAD_STATE_READY;
+    p_newthread->request        = 0;
     p_newthread->is_sched       = p_sched;
     p_newthread->p_pool         = NULL;
-    p_newthread->type           = ABTI_THREAD_TYPE_MAIN_SCHED;
-    p_newthread->state          = ABT_THREAD_STATE_READY;
+    p_newthread->unit           = ABT_UNIT_NULL;
     p_newthread->refcount       = 0;
-    p_newthread->request        = 0;
+    p_newthread->type           = ABTI_THREAD_TYPE_MAIN_SCHED;
     p_newthread->p_req_arg      = NULL;
     p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
+
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
 
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main sched ULT created\n",
               ABTI_thread_get_id(p_newthread), p_xstream->rank);
@@ -1391,19 +1391,19 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
             p_newthread->p_stack, &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
-
     p_newthread->p_last_xstream = NULL;
+    p_newthread->state          = ABT_THREAD_STATE_READY;
+    p_newthread->request        = 0;
     p_newthread->is_sched       = p_sched;
     p_newthread->p_pool         = p_pool;
-    p_newthread->type           = ABTI_THREAD_TYPE_USER;
-    p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->refcount       = 1;
-    p_newthread->request        = 0;
+    p_newthread->type           = ABTI_THREAD_TYPE_USER;
     p_newthread->p_req_arg      = NULL;
     p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
+
+    /* Initialize the mutex */
+    ABTI_mutex_init(&p_newthread->mutex);
 
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);

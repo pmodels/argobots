@@ -256,23 +256,21 @@ struct ABTI_thread_attr {
 };
 
 struct ABTI_thread {
-    ABT_unit unit;                  /* Unit enclosing this thread */
-    ABTI_unit unit_def;             /* Internal unit definition */
-    ABTI_thread_attr attr;          /* Attributes */
-    void *p_stack;                  /* Stack */
     ABTD_thread_context ctx;        /* Context */
-    ABTI_mutex mutex;               /* Mutex */
-
     ABTI_xstream *p_last_xstream;   /* Last ES where it ran */
+    ABT_thread_state state;         /* State */
+    uint32_t request;               /* Request */
     ABTI_sched *is_sched;           /* If it is a scheduler, its ptr */
     ABTI_pool *p_pool;              /* Associated pool */
-    ABTI_thread_type type;          /* Type */
-    ABT_thread_state state;         /* State */
+    ABT_unit unit;                  /* Unit enclosing this thread */
+    ABTI_unit unit_def;             /* Internal unit definition */
     uint32_t refcount;              /* Reference count */
-    uint32_t request;               /* Request */
+    ABTI_thread_type type;          /* Type */
     ABTI_thread_req_arg *p_req_arg; /* Request argument */
+    ABTI_mutex mutex;               /* Mutex */
+    void *p_stack;                  /* Stack */
     ABTI_ktable *p_keytable;        /* ULT-specific data */
-
+    ABTI_thread_attr attr;          /* Attributes */
     ABT_thread_id id;               /* ID */
 };
 
