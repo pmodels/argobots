@@ -11,7 +11,7 @@
 static inline
 ABTI_key *ABTI_key_get_ptr(ABT_key key)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_key *p_key;
     if (key == ABT_KEY_NULL) {
         p_key = NULL;
@@ -27,7 +27,7 @@ ABTI_key *ABTI_key_get_ptr(ABT_key key)
 static inline
 ABT_key ABTI_key_get_handle(ABTI_key *p_key)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_key h_key;
     if (p_key == NULL) {
         h_key = ABT_KEY_NULL;

@@ -11,7 +11,7 @@
 static inline
 ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_mutex *p_mutex;
     if (mutex == ABT_MUTEX_NULL) {
         p_mutex = NULL;
@@ -27,7 +27,7 @@ ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
 static inline
 ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_mutex h_mutex;
     if (p_mutex == NULL) {
         h_mutex = ABT_MUTEX_NULL;

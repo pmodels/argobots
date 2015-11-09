@@ -11,7 +11,7 @@
 static inline
 ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_thread *p_thread;
     if (thread == ABT_THREAD_NULL) {
         p_thread = NULL;
@@ -27,7 +27,7 @@ ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread)
 static inline
 ABT_thread ABTI_thread_get_handle(ABTI_thread *p_thread)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_thread h_thread;
     if (p_thread == NULL) {
         h_thread = ABT_THREAD_NULL;

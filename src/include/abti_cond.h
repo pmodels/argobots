@@ -11,7 +11,7 @@
 static inline
 ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_cond *p_cond;
     if (cond == ABT_COND_NULL) {
         p_cond = NULL;
@@ -27,7 +27,7 @@ ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond)
 static inline
 ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_cond h_cond;
     if (p_cond == NULL) {
         h_cond = ABT_COND_NULL;

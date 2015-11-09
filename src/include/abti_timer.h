@@ -11,7 +11,7 @@
 static inline
 ABTI_timer *ABTI_timer_get_ptr(ABT_timer timer)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_timer *p_timer;
     if (timer == ABT_TIMER_NULL) {
         p_timer = NULL;
@@ -27,7 +27,7 @@ ABTI_timer *ABTI_timer_get_ptr(ABT_timer timer)
 static inline
 ABT_timer ABTI_timer_get_handle(ABTI_timer *p_timer)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_timer h_timer;
     if (p_timer == NULL) {
         h_timer = ABT_TIMER_NULL;

@@ -11,7 +11,7 @@
 static inline
 ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_xstream *p_xstream;
     if (xstream == ABT_XSTREAM_NULL) {
         p_xstream = NULL;
@@ -27,7 +27,7 @@ ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream)
 static inline
 ABT_xstream ABTI_xstream_get_handle(ABTI_xstream *p_xstream)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_xstream h_xstream;
     if (p_xstream == NULL) {
         h_xstream = ABT_XSTREAM_NULL;

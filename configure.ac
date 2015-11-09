@@ -190,10 +190,17 @@ AS_IF([test "x$enable_valgrind" = "xyes"], [
 
 # Disable checks if requested
 AC_ARG_ENABLE([checks],
-    AS_HELP_STRING([--disable-checks], [disable checks (unsafe mode)]))
-AS_IF([test "x$enable_checks" = "xno"],
-      [AC_DEFINE(UNSAFE_MODE, 1, [Define unsafe mode]) ABT_NULL="1"],
-      [ABT_NULL="0"])
+    AS_HELP_STRING([--disable-checks],
+        [disable error and pool access checks (unsafe mode)]))
+
+AC_ARG_ENABLE([error-check],
+    AS_HELP_STRING([--disable-error-check], [disable error checks]),,
+    [enable_error_check=yes])
+AS_IF([test "x$enable_error_check" != "xyes" -o "x$enable_checks" = "xno"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_ERROR_CHECK, 1,
+        [Define to disable error check])
+     ABT_NULL="1"],
+    [ABT_NULL="0"])
 AC_SUBST([ABT_NULL])
 
 AC_ARG_ENABLE([fcontext],

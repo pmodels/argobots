@@ -22,7 +22,7 @@
 static inline
 ABTI_thread_attr *ABTI_thread_attr_get_ptr(ABT_thread_attr attr)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_thread_attr *p_attr;
     if (attr == ABT_THREAD_ATTR_NULL) {
         p_attr = NULL;
@@ -49,7 +49,7 @@ ABTI_thread_attr *ABTI_thread_attr_get_ptr(ABT_thread_attr attr)
 static inline
 ABT_thread_attr ABTI_thread_attr_get_handle(ABTI_thread_attr *p_attr)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_thread_attr h_attr;
     if (p_attr == NULL) {
         h_attr = ABT_THREAD_ATTR_NULL;

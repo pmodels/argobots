@@ -11,7 +11,7 @@
 static inline
 ABTI_task *ABTI_task_get_ptr(ABT_task task)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_task *p_task;
     if (task == ABT_TASK_NULL) {
         p_task = NULL;
@@ -27,7 +27,7 @@ ABTI_task *ABTI_task_get_ptr(ABT_task task)
 static inline
 ABT_task ABTI_task_get_handle(ABTI_task *p_task)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_task h_task;
     if (p_task == NULL) {
         h_task = ABT_TASK_NULL;

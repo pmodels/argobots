@@ -11,7 +11,7 @@
 static inline
 ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_sched *p_sched;
     if (sched == ABT_SCHED_NULL) {
         p_sched = NULL;
@@ -27,7 +27,7 @@ ABTI_sched *ABTI_sched_get_ptr(ABT_sched sched)
 static inline
 ABT_sched ABTI_sched_get_handle(ABTI_sched *p_sched)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_sched h_sched;
     if (p_sched == NULL) {
         h_sched = ABT_SCHED_NULL;

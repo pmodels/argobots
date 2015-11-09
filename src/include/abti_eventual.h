@@ -11,7 +11,7 @@
 static inline
 ABTI_eventual *ABTI_eventual_get_ptr(ABT_eventual eventual)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_eventual *p_eventual;
     if (eventual == ABT_EVENTUAL_NULL) {
         p_eventual = NULL;
@@ -27,7 +27,7 @@ ABTI_eventual *ABTI_eventual_get_ptr(ABT_eventual eventual)
 static inline
 ABT_eventual ABTI_eventual_get_handle(ABTI_eventual *p_eventual)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_eventual h_eventual;
     if (p_eventual == NULL) {
         h_eventual = ABT_EVENTUAL_NULL;

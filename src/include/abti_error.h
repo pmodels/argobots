@@ -8,13 +8,13 @@
 
 #include <assert.h>
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_ASSERT(cond) assert(cond)
 #else
 #define ABTI_ASSERT(cond)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_INITIALIZED()                \
     do {                                        \
         if (gp_ABTI_global == NULL) {           \
@@ -26,14 +26,14 @@
 #define ABTI_CHECK_INITIALIZED()
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_ERROR(abt_errno)             \
     if (abt_errno != ABT_SUCCESS) goto fn_fail
 #else
 #define ABTI_CHECK_ERROR(abt_errno)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_ERROR_MSG(abt_errno,msg)     \
     do {                                        \
         if (abt_errno != ABT_SUCCESS) {         \
@@ -45,7 +45,7 @@
 #define ABTI_CHECK_ERROR_MSG(abt_errno,msg)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_TRUE(cond,val)               \
     do {                                        \
         if (!(cond)) {                          \
@@ -57,7 +57,7 @@
 #define ABTI_CHECK_TRUE(cond,val)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_TRUE_MSG(cond,val,msg)       \
     do {                                        \
         if (!(cond)) {                          \
@@ -70,7 +70,7 @@
 #define ABTI_CHECK_TRUE_MSG(cond,val,msg)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_XSTREAM_PTR(p)          \
     do {                                        \
         if (p == NULL) {                        \
@@ -82,7 +82,7 @@
 #define ABTI_CHECK_NULL_XSTREAM_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_POOL_PTR(p)             \
     do {                                        \
         if (p == NULL) {                        \
@@ -94,7 +94,7 @@
 #define ABTI_CHECK_NULL_POOL_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_SCHED_PTR(p)            \
     do {                                        \
         if (p == NULL) {                        \
@@ -106,7 +106,7 @@
 #define ABTI_CHECK_NULL_SCHED_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_THREAD_PTR(p)           \
     do {                                        \
         if (p == NULL) {                        \
@@ -118,7 +118,7 @@
 #define ABTI_CHECK_NULL_THREAD_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_THREAD_ATTR_PTR(p)          \
     do {                                            \
         if (p == NULL) {                            \
@@ -130,7 +130,7 @@
 #define ABTI_CHECK_NULL_THREAD_ATTR_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_TASK_PTR(p)             \
     do {                                        \
         if (p == NULL) {                        \
@@ -142,7 +142,7 @@
 #define ABTI_CHECK_NULL_TASK_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_KEY_PTR(p)              \
     do {                                        \
         if (p == NULL) {                        \
@@ -154,7 +154,7 @@
 #define ABTI_CHECK_NULL_KEY_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_MUTEX_PTR(p)            \
     do {                                        \
         if (p == NULL) {                        \
@@ -166,7 +166,7 @@
 #define ABTI_CHECK_NULL_MUTEX_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_COND_PTR(p)             \
     do {                                        \
         if (p == NULL) {                        \
@@ -178,7 +178,7 @@
 #define ABTI_CHECK_NULL_COND_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_FUTURE_PTR(p)           \
     do {                                        \
         if (p == NULL) {                        \
@@ -190,7 +190,7 @@
 #define ABTI_CHECK_NULL_FUTURE_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_EVENTUAL_PTR(p)         \
     do {                                        \
         if (p == NULL) {                        \
@@ -202,7 +202,7 @@
 #define ABTI_CHECK_NULL_EVENTUAL_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_BARRIER_PTR(p)          \
     do {                                        \
         if (p == NULL) {                        \
@@ -214,7 +214,7 @@
 #define ABTI_CHECK_NULL_BARRIER_PTR(p)
 #endif
 
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_TIMER_PTR(p)            \
     do {                                        \
         if (p == NULL) {                        \

@@ -11,7 +11,7 @@
 static inline
 ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_pool *p_pool;
     if (pool == ABT_POOL_NULL) {
         p_pool = NULL;
@@ -27,7 +27,7 @@ ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool)
 static inline
 ABT_pool ABTI_pool_get_handle(ABTI_pool *p_pool)
 {
-#ifndef UNSAFE_MODE
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_pool h_pool;
     if (p_pool == NULL) {
         h_pool = ABT_POOL_NULL;
