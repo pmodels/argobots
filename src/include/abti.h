@@ -292,18 +292,17 @@ struct ABTI_thread_entry {
 };
 
 struct ABTI_task {
-    ABT_unit unit;             /* Unit enclosing this task */
-    ABTI_unit unit_def;        /* Internal unit definition */
     ABTI_xstream *p_xstream;   /* Associated ES */
-    ABTI_sched *is_sched;      /* If it is a scheduler, its ptr */
-    ABTI_pool *p_pool;         /* Associated pool */
     ABT_task_state state;      /* State */
-    ABT_bool migratable;       /* Migratability */
-    uint32_t refcount;         /* Reference count */
     uint32_t request;          /* Request */
     void (*f_task)(void *);    /* Task function */
     void *p_arg;               /* Task arguments */
-
+    ABTI_sched *is_sched;      /* If it is a scheduler, its ptr */
+    ABTI_pool *p_pool;         /* Associated pool */
+    ABT_unit unit;             /* Unit enclosing this task */
+    ABTI_unit unit_def;        /* Internal unit definition */
+    uint32_t refcount;         /* Reference count */
+    ABT_bool migratable;       /* Migratability */
     uint64_t id;               /* ID */
 };
 

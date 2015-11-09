@@ -48,14 +48,14 @@ int ABT_task_create(ABT_pool pool,
     p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
 
     p_newtask->p_xstream  = NULL;
-    p_newtask->is_sched   = NULL;
-    p_newtask->p_pool     = p_pool;
     p_newtask->state      = ABT_TASK_STATE_READY;
-    p_newtask->migratable = ABT_TRUE;
-    p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
     p_newtask->request    = 0;
     p_newtask->f_task     = task_func;
     p_newtask->p_arg      = arg;
+    p_newtask->is_sched   = NULL;
+    p_newtask->p_pool     = p_pool;
+    p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
+    p_newtask->migratable = ABT_TRUE;
     p_newtask->id         = ABTI_TASK_INIT_ID;
 
     /* Create a wrapper work unit */
@@ -96,14 +96,14 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
 
     p_newtask->p_xstream  = NULL;
-    p_newtask->is_sched   = p_sched;
-    p_newtask->p_pool     = p_pool;
     p_newtask->state      = ABT_TASK_STATE_READY;
-    p_newtask->migratable = ABT_TRUE;
-    p_newtask->refcount   = 1;
     p_newtask->request    = 0;
     p_newtask->f_task     = p_sched->run;
     p_newtask->p_arg      = (void *)ABTI_sched_get_handle(p_sched);
+    p_newtask->is_sched   = p_sched;
+    p_newtask->p_pool     = p_pool;
+    p_newtask->refcount   = 1;
+    p_newtask->migratable = ABT_TRUE;
     p_newtask->id         = ABTI_TASK_INIT_ID;
 
     /* Create a wrapper unit */
