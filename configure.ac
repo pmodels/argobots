@@ -217,6 +217,9 @@ AS_IF([test "x$enable_pool_consumer_check" != "xyes" -o "x$enable_checks" = "xno
     [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK, 1,
         [Define to disable pool consumer check])])
 
+AM_CONDITIONAL([ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK],
+    [test "x$enable_checks" = "xno" -o "x$enable_pool_producer_check" != "xyes" -o "x$enable_pool_consumer_check" != "xyes"])
+
 AC_ARG_ENABLE([fcontext],
     AS_HELP_STRING([--disable-fcontext],
         [do not use fcontext even though it is supported. If you disable

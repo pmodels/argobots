@@ -40,6 +40,11 @@ TESTS = \
 	ext_thread \
 	timer
 
+XFAIL_TESTS =
+if ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK
+XFAIL_TESTS += pool_access
+endif
+
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)
 
