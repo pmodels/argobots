@@ -8,6 +8,6 @@ Description: a low-level infrastructure that supports a lightweight thread and t
 Version: @ABT_VERSION@
 URL: https://collab.cels.anl.gov/display/ARGOBOTS/
 Requires:
-Libs.private: @LIBS@
 Libs: -L${libdir} -labt
+Libs.private: @LIBS@
 Cflags: -I${includedir}
