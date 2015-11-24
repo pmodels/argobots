@@ -242,8 +242,8 @@ struct ABTI_unit {
 };
 
 struct ABTI_thread_attr {
-    size_t   stacksize : 63;            /* Stack size */
-    ABT_bool migratable : 1;            /* Migratability */
+    size_t   stacksize;                 /* Stack size */
+    ABT_bool migratable;                /* Migratability */
     void (*f_cb)(ABT_thread, void *);   /* Callback function */
     void *p_cb_arg;                     /* Callback function argument */
 };
