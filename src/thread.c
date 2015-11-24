@@ -1152,6 +1152,40 @@ int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Retrieve the argument for the ULT function
+ *
+ * \c ABT_thread_get_arg() returns the argument for the ULT function, which was
+ * passed to \c ABT_thread_create() when the target ULT \c thread was created.
+ * If \c thread is the primary ULT, \c NULL will be returned to \c arg.
+ *
+ * @param[in]  thread  handle to the target ULT
+ * @param[out] arg     argument for the ULT function
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_arg(ABT_thread thread, void **arg)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    if (p_thread->type != ABTI_THREAD_TYPE_USER) {
+        *arg = NULL;
+    } else {
+        *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
 
 /*****************************************************************************/
 /* Private APIs                                                              */
