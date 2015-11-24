@@ -449,6 +449,7 @@ int ABT_task_is_migratable(ABT_task task, ABT_bool *flag);
 int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
 int ABT_task_retain(ABT_task task);
 int ABT_task_release(ABT_task task);
+int ABT_task_get_arg(ABT_task task, void **arg);
 
 /* Self */
 int ABT_self_get_type(ABT_unit_type *type);
