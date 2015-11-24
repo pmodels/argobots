@@ -131,4 +131,14 @@ void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
 #endif
 }
 
+static inline
+void *ABTD_thread_context_get_arg(ABTD_thread_context *p_ctx)
+{
+#if defined(ABT_CONFIG_USE_FCONTEXT)
+    return p_ctx->p_arg;
+#else
+#error "Not implemented yet"
+#endif
+}
+
 #endif /* ABTD_THREAD_H_INCLUDED */
