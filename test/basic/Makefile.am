@@ -18,6 +18,7 @@ TESTS = \
 	task_create \
 	task_create_on_xstream \
 	thread_task \
+	thread_task_arg \
 	thread_task_num \
 	sched_basic \
 	sched_prio \
@@ -56,6 +57,7 @@ thread_id_SOURCES = thread_id.c
 task_create_SOURCES = task_create.c
 task_create_on_xstream_SOURCES = task_create_on_xstream.c
 thread_task_SOURCES = thread_task.c
+thread_task_arg_SOURCES = thread_task_arg.c
 thread_task_num_SOURCES = thread_task_num.c
 sched_basic_SOURCES = sched_basic.c
 sched_prio_SOURCES = sched_prio.c
@@ -90,6 +92,7 @@ testing:
 	./task_create
 	./task_create_on_xstream
 	./thread_task
+	./thread_task_arg
 	./thread_task_num
 	./sched_basic
 	./sched_prio
