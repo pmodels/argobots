@@ -255,3 +255,59 @@ int ABT_self_suspend(void)
     goto fn_exit;
 }
 
+/**
+ * @ingroup SELF
+ * @brief   Retrieve the argument for the work unit function
+ *
+ * \c ABT_self_get_arg() returns the argument for the caller's work unit
+ * function.  If the caller is a ULT, this routine returns the function argument
+ * passed to \c ABT_thread_create() when the caller was created.  On the other
+ * hand, if the caller is a tasklet, this routine returns the function argument
+ * passed to \c ABT_task_create().  If the caller is the primary ULT or an
+ * external thread, \c NULL will be returned to \c arg.
+ *
+ * @param[out] arg  argument for the work unit function
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_self_get_arg(void **arg)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread;
+    ABTI_task *p_task;
+
+    /* When Argobots has not been initialized */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        *arg = NULL;
+        goto fn_exit;
+    }
+
+    /* When an external thread called this routine */
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        *arg = NULL;
+        goto fn_exit;
+    }
+
+    if ((p_thread = ABTI_local_get_thread())) {
+        if (p_thread->type != ABTI_THREAD_TYPE_USER) {
+            *arg = NULL;
+        } else {
+            *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
+        }
+    } else if ((p_task = ABTI_local_get_task())) {
+        *arg = p_task->p_arg;
+    } else {
+        *arg = NULL;
+        abt_errno = ABT_ERR_OTHER;
+        goto fn_fail;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
