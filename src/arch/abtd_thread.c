@@ -13,10 +13,12 @@ void ABTD_thread_func_wrapper(void *p_arg)
 
     thread_func(p_fctx->p_arg);
 
+    /* NOTE: ctx is located in the beginning of ABTI_thread */
+    ABTI_thread *p_thread = (ABTI_thread *)p_fctx;
+
     /* Now, the ULT has finished its job. Terminate the ULT.
      * We don't need to use the atomic operation here because the ULT will be
      * terminated regardless of other requests. */
-    ABTI_thread *p_thread = ABTI_local_get_thread();
     p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
 
     /* Since fcontext does not switch to the other fcontext when it finishes,
