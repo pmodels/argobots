@@ -52,7 +52,7 @@ _jump_fcontext:
     movl  0x20(%esp), %edx
 
     /* third arg of jump_fcontext() == value to be returned after jump */
-    movl  0x24(%esp), %eax
+    /* movl  0x24(%esp), %eax */
 
     /* restore ESP (pointing to context-data) from EDX */
     movl  %edx, %esp
