@@ -263,15 +263,15 @@ struct ABTI_thread_attr {
 
 struct ABTI_thread {
     ABTD_thread_context ctx;        /* Context */
-    ABTI_xstream *p_last_xstream;   /* Last ES where it ran */
+    ABTI_unit unit_def;             /* Internal unit definition */
     ABT_thread_state state;         /* State */
     uint32_t request;               /* Request */
+    ABTI_xstream *p_last_xstream;   /* Last ES where it ran */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_sched *is_sched;           /* If it is a scheduler, its ptr */
 #endif
-    ABTI_pool *p_pool;              /* Associated pool */
     ABT_unit unit;                  /* Unit enclosing this thread */
-    ABTI_unit unit_def;             /* Internal unit definition */
+    ABTI_pool *p_pool;              /* Associated pool */
     uint32_t refcount;              /* Reference count */
     ABTI_thread_type type;          /* Type */
     ABTI_thread_req_arg *p_req_arg; /* Request argument */

@@ -61,9 +61,9 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
             &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
-    p_newthread->p_last_xstream = NULL;
     p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->request        = 0;
+    p_newthread->p_last_xstream = NULL;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched       = NULL;
 #endif
@@ -1346,9 +1346,9 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
                                            &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
-    p_newthread->p_last_xstream  = p_xstream;
     p_newthread->state           = ABT_THREAD_STATE_RUNNING;
     p_newthread->request         = 0;
+    p_newthread->p_last_xstream  = p_xstream;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched        = NULL;
 #endif
@@ -1435,14 +1435,14 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
         ABTI_CHECK_ERROR(abt_errno);
     }
 
-    p_newthread->p_last_xstream = p_xstream;
     p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->request        = 0;
+    p_newthread->p_last_xstream = p_xstream;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched       = p_sched;
 #endif
-    p_newthread->p_pool         = NULL;
     p_newthread->unit           = ABT_UNIT_NULL;
+    p_newthread->p_pool         = NULL;
     p_newthread->refcount       = 0;
     p_newthread->type           = ABTI_THREAD_TYPE_MAIN_SCHED;
     p_newthread->p_req_arg      = NULL;
@@ -1495,9 +1495,9 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
             p_newthread->p_stack, &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
-    p_newthread->p_last_xstream = NULL;
     p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->request        = 0;
+    p_newthread->p_last_xstream = NULL;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched       = p_sched;
 #endif
