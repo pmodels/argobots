@@ -51,6 +51,7 @@ struct ABTI_page_header {
     ABTI_xstream *p_owner;      /* Owner ES */
     ABTI_page_header *p_prev;   /* Prev page header */
     ABTI_page_header *p_next;   /* Next page header */
+    ABT_bool is_mmapped;        /* ABT_TRUE if it is mmapped */
 };
 
 struct ABTI_blk_header {

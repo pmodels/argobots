@@ -13,6 +13,28 @@
  * global data.  When ABTI_finalize is called, all memory objects that we have
  * allocated are returned to the higher-level memory allocator. */
 
+#include <sys/types.h>
+#include <sys/mman.h>
+
+#define PAGESIZE        (4*1024*1024)
+#define PAGESIZE_MB     (PAGESIZE/1024/1024)
+#define ALIGNMENT       (2*1024*1024)
+#define PROTS           (PROT_READ | PROT_WRITE)
+#define FLAGS_RP        (MAP_PRIVATE | MAP_ANONYMOUS)
+
+#if defined(HAVE_MAP_HUGETLB)
+#define FLAGS_HP        (FLAGS_RP | MAP_HUGETLB)
+#define FD_HP           0
+#define MMAP_DBG_MSG    "mmap a hugepage"
+#else
+/* NOTE: On Mac OS, we tried VM_FLAGS_SUPERPAGE_SIZE_ANY that is defined in
+ * <mach/vm_statistics.h>, but mmap() failed with it and its execution was too
+ * slow.  By that reason, we do not support it for now. */
+#define FLAGS_HP        FLAGS_RP
+#define FD_HP           0
+#define MMAP_DBG_MSG    "mmap regular pages"
+#endif
+
 static inline void ABTI_mem_free_stack_list(ABTI_stack_header *p_stack);
 static inline void ABTI_mem_free_page_list(ABTI_page_header *p_ph);
 static inline void ABTI_mem_add_page(ABTI_local *p_local,
@@ -83,7 +105,11 @@ void ABTI_mem_finalize_local(ABTI_local *p_local)
 
         size_t num_free_blks = p_tmp->num_empty_blks + p_tmp->num_remote_free;
         if (num_free_blks == p_tmp->num_total_blks) {
-            ABTU_free(p_tmp);
+            if (p_tmp->is_mmapped == ABT_TRUE) {
+                munmap(p_tmp, gp_ABTI_global->page_size);
+            } else {
+                ABTU_free(p_tmp);
+            }
         } else {
             if (p_tmp->p_free) {
                 ABTI_mem_take_free(p_tmp);
@@ -130,7 +156,11 @@ static inline void ABTI_mem_free_page_list(ABTI_page_header *p_ph)
     while (p_cur) {
         p_tmp = p_cur;
         p_cur = p_cur->p_next;
-        ABTU_free(p_tmp);
+        if (p_tmp->is_mmapped == ABT_TRUE) {
+            munmap(p_tmp, gp_ABTI_global->page_size);
+        } else {
+            ABTU_free(p_tmp);
+        }
     }
 }
 
@@ -242,6 +272,69 @@ void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh)
     }
 }
 
+static char *ABTI_mem_alloc_large_page(int pgsize, ABT_bool *p_is_mmapped)
+{
+    char *p_page = NULL;
+
+    switch (gp_ABTI_global->mem_sp_alloc) {
+        case ABTI_MEM_SP_MALLOC:
+            *p_is_mmapped = ABT_FALSE;
+            p_page = (char *)ABTU_malloc(pgsize);
+            LOG_DEBUG("malloc a regular page (%d): %p\n", pgsize, p_page);
+            break;
+
+        case ABTI_MEM_SP_MMAP_RP:
+            *p_is_mmapped = ABT_TRUE;
+            p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_RP, 0, 0);
+            ABTI_ASSERT((void *)p_page != MAP_FAILED);
+            LOG_DEBUG("mmap a regular page (%d): %p\n", pgsize, p_page);
+            break;
+
+        case ABTI_MEM_SP_MMAP_HP_RP:
+            *p_is_mmapped = ABT_TRUE;
+
+            /* We first try to mmap a huge page, and then if it fails, we mmap
+             * a regular page. */
+            p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_HP, 0, 0);
+            if ((void *)p_page != MAP_FAILED) {
+                LOG_DEBUG(MMAP_DBG_MSG" (%d): %p\n", pgsize, p_page);
+            } else {
+                /* Huge pages are run out of. Use a normal mmap. */
+                p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_RP, 0, 0);
+                ABTI_ASSERT((void *)p_page != MAP_FAILED);
+                LOG_DEBUG("fall back to mmap regular pages (%d): %p\n",
+                          pgsize, p_page);
+            }
+            break;
+
+        case ABTI_MEM_SP_MMAP_HP_THP:
+            /* We first try to mmap a huge page, and then if it fails, try to
+             * use a THP. */
+            p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_HP, 0, 0);
+            if ((void *)p_page != MAP_FAILED) {
+                *p_is_mmapped = ABT_TRUE;
+                LOG_DEBUG(MMAP_DBG_MSG" (%d): %p\n", pgsize, p_page);
+            } else {
+                *p_is_mmapped = ABT_FALSE;
+                p_page = (char *)ABTU_memalign(ALIGNMENT, pgsize);
+                LOG_DEBUG("memalign a THP (%d): %p\n", pgsize, p_page);
+            }
+            break;
+
+        case ABTI_MEM_SP_THP:
+            *p_is_mmapped = ABT_FALSE;
+            p_page = (char *)ABTU_memalign(ALIGNMENT, pgsize);
+            LOG_DEBUG("memalign a THP (%d): %p\n", pgsize, p_page);
+            break;
+
+        default:
+            ABTI_ASSERT(0);
+            break;
+    }
+
+    return p_page;
+}
+
 ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
 {
     int i;
@@ -250,12 +343,13 @@ ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
     ABTI_global *p_global = gp_ABTI_global;
     uint32_t clsize = p_global->cache_line_size;
     size_t pgsize = p_global->page_size;
+    ABT_bool is_mmapped;
 
     /* Make the page header size a multiple of cache line size */
     const size_t ph_size = (sizeof(ABTI_page_header)+clsize) / clsize * clsize;
 
     uint32_t num_blks = (pgsize - ph_size) / blk_size;
-    char *p_page = (char *)ABTU_memalign(clsize, pgsize);
+    char *p_page = ABTI_mem_alloc_large_page(pgsize, &is_mmapped);
 
     /* Set the page header */
     p_ph = (ABTI_page_header *)p_page;
@@ -266,6 +360,7 @@ ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
     p_ph->p_head = (ABTI_blk_header *)(p_page + ph_size);
     p_ph->p_free = NULL;
     ABTI_mem_add_page(p_local, p_ph);
+    p_ph->is_mmapped = is_mmapped;
 
     /* Make a liked list of all free blocks */
     p_cur = p_ph->p_head;
@@ -296,7 +391,11 @@ void ABTI_mem_free_page(ABTI_local *p_local, ABTI_page_header *p_ph)
         } else if (p_ph == p_local->p_mem_task_tail) {
             p_local->p_mem_task_tail = p_ph->p_prev;
         }
-        ABTU_free(p_ph);
+        if (p_ph->is_mmapped == ABT_TRUE) {
+            munmap(p_ph, gp_ABTI_global->page_size);
+        } else {
+            ABTU_free(p_ph);
+        }
     }
 }
 
@@ -391,28 +490,6 @@ ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local)
     return p_ph;
 }
 
-#include <sys/types.h>
-#include <sys/mman.h>
-
-#define PAGESIZE        (4*1024*1024)
-#define PAGESIZE_MB     (PAGESIZE/1024/1024)
-#define ALIGNMENT       (2*1024*1024)
-#define PROTS           (PROT_READ | PROT_WRITE)
-#define FLAGS_RP        (MAP_PRIVATE | MAP_ANONYMOUS)
-
-#if defined(HAVE_MAP_HUGETLB)
-#define FLAGS_HP        (FLAGS_RP | MAP_HUGETLB)
-#define FD_HP           0
-#define MMAP_DBG_MSG    "mmap a hugepage"
-#else
-/* NOTE: On Mac OS, we tried VM_FLAGS_SUPERPAGE_SIZE_ANY that is defined in
- * <mach/vm_statistics.h>, but mmap() failed with it and its execution was too
- * slow.  By that reason, we do not support it for now. */
-#define FLAGS_HP        FLAGS_RP
-#define FD_HP           0
-#define MMAP_DBG_MSG    "mmap regular pages"
-#endif
-
 static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph)
 {
     ABTI_sp_header *p_cur, *p_tmp;
@@ -461,61 +538,7 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     p_sph->id = ABTD_atomic_fetch_add_uint64(&g_sp_id, 1);
 
     /* Allocate a stack page */
-    switch (gp_ABTI_global->mem_sp_alloc) {
-        case ABTI_MEM_SP_MALLOC:
-            p_sph->is_mmapped = ABT_FALSE;
-            p_sp = (char *)ABTU_malloc(PAGESIZE);
-            LOG_DEBUG("malloc a regular page (%d MB): %p\n", PAGESIZE_MB, p_sp);
-            break;
-
-        case ABTI_MEM_SP_MMAP_RP:
-            p_sph->is_mmapped = ABT_TRUE;
-            p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_RP, 0, 0);
-            ABTI_ASSERT((void *)p_sp != MAP_FAILED);
-            LOG_DEBUG("mmap a regular page (%d MB): %p\n", PAGESIZE_MB, p_sp);
-            break;
-
-        case ABTI_MEM_SP_MMAP_HP_RP:
-            p_sph->is_mmapped = ABT_TRUE;
-
-            /* We first try to mmap a huge page, and then if it fails, we mmap
-             * a regular page. */
-            p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);
-            if ((void *)p_sp != MAP_FAILED) {
-                LOG_DEBUG(MMAP_DBG_MSG" (%d MB): %p\n", PAGESIZE_MB, p_sp);
-            } else {
-                /* Huge pages are run out of. Use a normal mmap. */
-                p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_RP, 0, 0);
-                ABTI_ASSERT((void *)p_sp != MAP_FAILED);
-                LOG_DEBUG("fall back to mmap regular pages (%d MB): %p\n",
-                          PAGESIZE_MB, p_sp);
-            }
-            break;
-
-        case ABTI_MEM_SP_MMAP_HP_THP:
-            /* We first try to mmap a huge page, and then if it fails, try to
-             * use a THP. */
-            p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);
-            if ((void *)p_sp != MAP_FAILED) {
-                p_sph->is_mmapped = ABT_TRUE;
-                LOG_DEBUG(MMAP_DBG_MSG" (%d MB): %p\n", PAGESIZE_MB, p_sp);
-            } else {
-                p_sph->is_mmapped = ABT_FALSE;
-                p_sp = (char *)ABTU_memalign(ALIGNMENT, PAGESIZE);
-                LOG_DEBUG("memalign a THP (%d MB): %p\n", PAGESIZE_MB, p_sp);
-            }
-            break;
-
-        case ABTI_MEM_SP_THP:
-            p_sph->is_mmapped = ABT_FALSE;
-            p_sp = (char *)ABTU_memalign(ALIGNMENT, PAGESIZE);
-            LOG_DEBUG("memalign a THP (%d MB): %p\n", PAGESIZE_MB, p_sp);
-            break;
-
-        default:
-            ABTI_ASSERT(0);
-            break;
-    }
+    p_sp = ABTI_mem_alloc_large_page(PAGESIZE, &p_sph->is_mmapped);
 
     /* Save the stack page pointer */
     p_sph->p_sp = p_sp;
