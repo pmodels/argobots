@@ -4,9 +4,9 @@
  */
 
 #include "abti.h"
+#include <unistd.h>
 
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -66,6 +66,8 @@ typedef struct ABTI_event_info  ABTI_event_info;
 
 struct ABTI_event_info {
     ABTI_mutex mutex;
+    char hostname[100];
+    ABT_bool use_debug;
 
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
     struct pollfd pfd;
@@ -90,7 +92,6 @@ struct ABTI_event_info {
     BEACON_topic_properties_t *eprop;
 #endif
 
-    char hostname[100];
     FILE *out_file;
 
     int max_xstream_rank;
@@ -111,16 +112,40 @@ struct ABTI_event_info {
 
 static ABTI_event_info *gp_einfo = NULL;
 
+
+#define EVT_DEBUG(fmt,...)                      \
+    do {                                        \
+        if (gp_einfo->use_debug == ABT_TRUE)    \
+            printf(fmt,__VA_ARGS__);            \
+    } while (0)
+
+
 /** @defgroup EVENT Event
  * This group is for event handling.
  */
 
 void ABTI_event_init(void)
 {
+    char *env;
+
     gp_ABTI_global->pm_connected = ABT_FALSE;
 
     gp_einfo = (ABTI_event_info *)ABTU_calloc(1, sizeof(ABTI_event_info));
     ABTI_mutex_init(&gp_einfo->mutex);
+
+    gethostname(gp_einfo->hostname, 100);
+
+    env = getenv("ABT_ENV_USE_EVENT_DEBUG");
+    if (env != NULL) {
+        if (strcmp(env, "0") == 0 || strcmp(env, "NO") == 0 ||
+            strcmp(env, "no") == 0 || strcmp(env, "No") == 0) {
+            gp_einfo->use_debug = ABT_FALSE;
+        } else {
+            gp_einfo->use_debug = ABT_TRUE;
+        }
+    } else {
+        gp_einfo->use_debug = ABT_TRUE;
+    }
 
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
     gp_einfo->max_stop_xstream_fn = ABTI_DEFAULT_MAX_CB_FN;
@@ -183,7 +208,6 @@ void ABTI_event_init(void)
             }
         }
 
-        gethostname(gp_einfo->hostname, 100);
         gp_einfo->max_xstream_rank = gp_ABTI_global->max_xstreams * 2;
         gp_einfo->num_threads = (uint32_t *)ABTU_calloc(
                 gp_einfo->max_xstream_rank, sizeof(uint32_t));
@@ -254,13 +278,14 @@ void ABTI_event_connect_power(char *p_host, int port)
 
     server = gethostbyname(p_host);
     if (server == NULL) {
-        LOG_DEBUG("Power mgmt. (%s:%d) not available\n", p_host, port);
+        EVT_DEBUG("[%s] Power mgmt. (%s:%d) not available\n",
+                  gp_einfo->hostname, p_host, port);
         return;
     }
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        LOG_DEBUG("Power event: socket failed%s\n", "");
+        EVT_DEBUG("[%s] Power event: socket failed\n", gp_einfo->hostname);
         return;
     }
 
@@ -272,7 +297,8 @@ void ABTI_event_connect_power(char *p_host, int port)
 
     ret = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     if (ret < 0) {
-        LOG_DEBUG("Power mgmt. (%s:%d) connect failed\n", p_host, port);
+        EVT_DEBUG("[%s] Power mgmt. (%s:%d) connect failed\n",
+                  gp_einfo->hostname, p_host, port);
         return;
     }
     gp_einfo->pfd.fd = sockfd;
@@ -280,7 +306,8 @@ void ABTI_event_connect_power(char *p_host, int port)
 
     gp_ABTI_global->pm_connected = ABT_TRUE;
 
-    LOG_DEBUG("Power mgmt. (%s:%d) connected\n", p_host, port);
+    EVT_DEBUG("[%s] Power mgmt. (%s:%d) connected\n",
+              gp_einfo->hostname, p_host, port);
 }
 
 void ABTI_event_disconnect_power(void)
@@ -290,7 +317,7 @@ void ABTI_event_disconnect_power(void)
     close(gp_einfo->pfd.fd);
     gp_ABTI_global->pm_connected = ABT_FALSE;
 
-    LOG_DEBUG("power mgmt. disconnected%s\n", "");
+    EVT_DEBUG("[%s] power mgmt. disconnected\n", gp_einfo->hostname);
 }
 
 void ABTI_event_send_num_xstream(void)
@@ -514,7 +541,7 @@ ABT_bool ABTI_event_check_power(void)
 
         if (gp_einfo->pfd.revents & POLLHUP) {
             gp_ABTI_global->pm_connected = ABT_FALSE;
-            LOG_DEBUG("Server disconnected...%s\n", "");
+            EVT_DEBUG("[%s] Server disconnected...\n", gp_einfo->hostname);
         }
         gp_einfo->pfd.revents = 0;
     }
@@ -969,9 +996,9 @@ int ABT_event_prof_publish(const char *unit_name, double local_work,
             unit_name, global_rate);
 #endif
 
-    LOG_DEBUG("%s", info);
     if (gp_einfo->pub_type == ABTI_PUB_TYPE_BEACON) {
 #ifdef HAVE_BEACON_H
+        EVT_DEBUG("%s", info);
         ABTU_strcpy(gp_einfo->eprop->topic_payload, info);
         int ret = BEACON_Publish(gp_einfo->handle, gp_einfo->topic_info->topic_name,
                                  gp_einfo->eprop);

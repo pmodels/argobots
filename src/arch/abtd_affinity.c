@@ -7,11 +7,25 @@
 #include <unistd.h>
 
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
+enum {
+    ABTI_ES_AFFINITY_CHAMELEON,
+    ABTI_ES_AFFINITY_DEFAULT
+};
+static int g_affinity_type = ABTI_ES_AFFINITY_DEFAULT;
 static cpu_set_t g_cpusets[CPU_SETSIZE];
 
 static inline cpu_set_t ABTD_affinity_get_cpuset_for_rank(int rank)
 {
-    return g_cpusets[rank % gp_ABTI_global->num_cores];
+    if (g_affinity_type == ABTI_ES_AFFINITY_CHAMELEON) {
+        int num_threads_per_socket = gp_ABTI_global->num_cores / 2;
+        int rem = rank % 2;
+        int socket_id = rank / num_threads_per_socket;
+        int target = (rank - num_threads_per_socket * socket_id - rem + socket_id)
+                   + num_threads_per_socket * rem;
+        return g_cpusets[target % gp_ABTI_global->num_cores];
+    } else {
+        return g_cpusets[rank % gp_ABTI_global->num_cores];
+    }
 }
 #endif
 
@@ -33,6 +47,14 @@ void ABTD_affinity_init(void)
         }
     }
     gp_ABTI_global->num_cores = num_cores;
+
+    /* affinity type */
+    char *env = getenv("ABT_ENV_AFFINITY_TYPE");
+    if (env != NULL) {
+        if (strcmp(env, "chameleon") == 0) {
+            g_affinity_type = ABTI_ES_AFFINITY_CHAMELEON;
+        }
+    }
 #else
     /* Nothing to do */
 #endif
