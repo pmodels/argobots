@@ -13,11 +13,22 @@
 static inline
 void ABTI_cond_init(ABTI_cond *p_cond)
 {
-    ABTI_mutex_init(&p_cond->mutex);
+    ABTI_spinlock_create(&p_cond->lock);
     p_cond->p_waiter_mutex = NULL;
     p_cond->num_waiters  = 0;
     p_cond->p_head = NULL;
     p_cond->p_tail = NULL;
+}
+
+static inline
+void ABTI_cond_fini(ABTI_cond *p_cond)
+{
+    /* The lock needs to be acquired to safely free the condition structure.
+     * However, we do not have to unlock it because the entire structure is
+     * freed here. */
+    ABTI_spinlock_acquire(&p_cond->lock);
+
+    ABTI_spinlock_free(&p_cond->lock);
 }
 
 static inline
@@ -78,14 +89,14 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
         p_unit->type = type;
     }
 
-    ABTI_mutex_spinlock(&p_cond->mutex);
+    ABTI_spinlock_acquire(&p_cond->lock);
 
     if (p_cond->p_waiter_mutex == NULL) {
         p_cond->p_waiter_mutex = p_mutex;
     } else {
         ABT_bool result = ABTI_mutex_equal(p_cond->p_waiter_mutex, p_mutex);
         if (result == ABT_FALSE) {
-            ABTI_mutex_unlock(&p_cond->mutex);
+            ABTI_spinlock_release(&p_cond->lock);
             abt_errno = ABT_ERR_INV_MUTEX;
             goto fn_fail;
         }
@@ -110,7 +121,7 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
         /* Change the ULT's state to BLOCKED */
         ABTI_thread_set_blocked(p_thread);
 
-        ABTI_mutex_unlock(&p_cond->mutex);
+        ABTI_spinlock_release(&p_cond->lock);
 
         /* Unlock the mutex that the calling ULT is holding */
         /* FIXME: should check if mutex was locked by the calling ULT */
@@ -120,7 +131,7 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
         ABTI_thread_suspend(p_thread);
 
     } else { /* TYPE == ABT_UNIT_TYPE_EXT */
-        ABTI_mutex_unlock(&p_cond->mutex);
+        ABTI_spinlock_release(&p_cond->lock);
         ABTI_mutex_unlock(p_mutex);
 
         /* External thread is waiting here polling ext_signal. */
@@ -144,10 +155,10 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 static inline
 void ABTI_cond_broadcast(ABTI_cond *p_cond)
 {
-    ABTI_mutex_spinlock(&p_cond->mutex);
+    ABTI_spinlock_acquire(&p_cond->lock);
 
     if (p_cond->num_waiters == 0) {
-        ABTI_mutex_unlock(&p_cond->mutex);
+        ABTI_spinlock_release(&p_cond->lock);
         return;
     }
 
@@ -182,7 +193,7 @@ void ABTI_cond_broadcast(ABTI_cond *p_cond)
     p_cond->p_head = NULL;
     p_cond->p_tail = NULL;
 
-    ABTI_mutex_unlock(&p_cond->mutex);
+    ABTI_spinlock_release(&p_cond->lock);
 }
 
 #endif /* COND_H_INCLUDED */

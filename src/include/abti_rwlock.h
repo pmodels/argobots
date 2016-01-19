@@ -53,6 +53,13 @@ void ABTI_rwlock_init(ABTI_rwlock *p_rwlock)
 }
 
 static inline
+void ABTI_rwlock_fini(ABTI_rwlock *p_rwlock)
+{
+    ABTI_mutex_fini(&p_rwlock->mutex);
+    ABTI_cond_fini(&p_rwlock->cond);
+}
+
+static inline
 int ABTI_rwlock_rdlock(ABTI_rwlock *p_rwlock)
 {
     int abt_errno = ABT_SUCCESS;

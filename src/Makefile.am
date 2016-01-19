@@ -24,6 +24,7 @@ abt_sources = \
 	task.c \
 	thread.c \
 	thread_attr.c \
+	thread_htable.c \
 	timer.c \
 	unit.c
 

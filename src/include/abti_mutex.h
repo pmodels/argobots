@@ -8,6 +8,50 @@
 
 /* Inlined functions for Mutex */
 
+#define ABTI_PTR_SPINLOCK(ptr)                          \
+    while (ABTD_atomic_cas_uint32(ptr, 0, 1) != 0) {    \
+        while (*(volatile uint32_t *)(ptr) != 0) {      \
+        }                                               \
+    }
+
+#define ABTI_PTR_UNLOCK(ptr)                            \
+    do {                                                \
+        *(volatile uint32_t *)(ptr) = 0;                \
+    } while (0)
+
+#define ABTI_PTR_SPINLOCK_HIGH(ptr)                                 \
+{                                                                   \
+    uint64_t old_v = (uint64_t)1 << 32;                             \
+    uint64_t new_v = ((uint64_t)1 << 32) | 1;                       \
+    ptr[1] = 1;                                                     \
+    uint64_t *v_ptr = (uint64_t *)ptr;                              \
+    while (ABTD_atomic_cas_uint64(v_ptr, old_v, new_v) != old_v) {  \
+        while (*(volatile uint32_t *)(&ptr[0]) != 0 ) {             \
+        }                                                           \
+        ptr[1] = 1;                                                 \
+    }                                                               \
+}
+
+#define ABTI_PTR_UNLOCK_HIGH(ptr)                       \
+    do {                                                \
+        *(volatile uint64_t *)(ptr) = 0;                \
+    } while (0)
+
+#define ABTI_PTR_SPINLOCK_LOW(ptr)                      \
+{                                                       \
+    uint64_t *v_ptr = (uint64_t *)ptr;                  \
+    while (ABTD_atomic_cas_uint64(v_ptr, 0, 1) != 0) {  \
+        while (*(volatile uint32_t *)(&ptr[0]) != 0) {  \
+        }                                               \
+    }                                                   \
+}
+
+#define ABTI_PTR_UNLOCK_LOW(ptr)                        \
+    do {                                                \
+        ptr[0] = 0;                                     \
+    } while (0)
+
+
 static inline
 ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
 {
@@ -45,30 +89,77 @@ void ABTI_mutex_init(ABTI_mutex *p_mutex)
 {
     p_mutex->val = 0;
     p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
+    p_mutex->attr.max_handovers = ABTI_global_get_mutex_max_handovers();
+    p_mutex->attr.max_wakeups = ABTI_global_get_mutex_max_wakeups();
+    p_mutex->p_htable = ABTI_thread_htable_create(gp_ABTI_global->max_xstreams);
+    p_mutex->p_handover = NULL;
+    p_mutex->p_giver = NULL;
+}
+
+static inline
+void ABTI_mutex_fini(ABTI_mutex *p_mutex)
+{
+    ABTI_thread_htable_free(p_mutex->p_htable);
 }
 
 static inline
 void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
 {
-    while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
-    }
+    ABTI_PTR_SPINLOCK(&p_mutex->val);
+    LOG_EVENT("%p: spinlock\n", p_mutex);
 }
 
 static inline
 void ABTI_mutex_lock(ABTI_mutex *p_mutex)
 {
+    int abt_errno;
     ABT_unit_type type;
 
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
     ABT_self_get_type(&type);
     if (type == ABT_UNIT_TYPE_THREAD) {
-        while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
-            ABT_thread_yield();
+        LOG_EVENT("%p: lock - try\n", p_mutex);
+        int c;
+        if ((c = ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1)) != 0) {
+            if (c != 2) {
+                c = __atomic_exchange_n(&p_mutex->val, 2, __ATOMIC_SEQ_CST);
+            }
+            while (c != 0) {
+                ABTI_mutex_wait(p_mutex, 2);
+
+                /* If the mutex has been handed over to the current ULT from
+                 * other ULT on the same ES, we don't need to change the mutex
+                 * state. */
+                if (p_mutex->p_handover) {
+                    ABTI_thread *p_self = ABTI_local_get_thread();
+                    if (p_self == p_mutex->p_handover) {
+                        p_mutex->p_handover = NULL;
+                        p_mutex->val = 2;
+
+                        /* Push the previous ULT to its pool */
+                        ABTI_thread *p_giver = p_mutex->p_giver;
+                        p_giver->state = ABT_THREAD_STATE_READY;
+                        ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
+                                       p_self->p_last_xstream);
+                        break;
+                    }
+                }
+
+                c = __atomic_exchange_n(&p_mutex->val, 2, __ATOMIC_SEQ_CST);
+            }
         }
+        LOG_EVENT("%p: lock - acquired\n", p_mutex);
     } else {
         ABTI_mutex_spinlock(p_mutex);
     }
+
+  fn_exit:
+    return ;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 static inline
@@ -83,8 +174,13 @@ int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
 static inline
 void ABTI_mutex_unlock(ABTI_mutex *p_mutex)
 {
-    ABTD_atomic_mem_barrier();
-    *(volatile uint32_t *)&p_mutex->val = 0;
+    if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) != 1) {
+        ABTI_PTR_UNLOCK(&p_mutex->val);
+        LOG_EVENT("%p: unlock with wake\n", p_mutex);
+        ABTI_mutex_wake_de(p_mutex);
+    } else {
+        LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
+    }
 }
 
 static inline

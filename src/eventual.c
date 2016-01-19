@@ -36,7 +36,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     ABTI_eventual *p_eventual;
 
     p_eventual = (ABTI_eventual *)ABTU_malloc(sizeof(ABTI_eventual));
-    ABTI_mutex_init(&p_eventual->mutex);
+    ABTI_spinlock_create(&p_eventual->lock);
     p_eventual->ready = ABT_FALSE;
     p_eventual->nbytes = nbytes;
     p_eventual->value = (nbytes == 0) ? NULL : ABTU_malloc(nbytes);
@@ -69,8 +69,9 @@ int ABT_eventual_free(ABT_eventual *eventual)
     /* The lock needs to be acquired to safely free the eventual structure.
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
-    ABTI_mutex_spinlock(&p_eventual->mutex);
+    ABTI_spinlock_acquire(&p_eventual->lock);
 
+    ABTI_spinlock_free(&p_eventual->lock);
     if (p_eventual->value) ABTU_free(p_eventual->value);
     ABTU_free(p_eventual);
 
@@ -107,7 +108,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-    ABTI_mutex_spinlock(&p_eventual->mutex);
+    ABTI_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready == ABT_FALSE) {
         ABTI_thread *p_current;
         ABTI_unit *p_unit;
@@ -142,13 +143,13 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread_set_blocked(p_current);
 
-            ABTI_mutex_unlock(&p_eventual->mutex);
+            ABTI_spinlock_release(&p_eventual->lock);
 
             /* Suspend the current ULT */
             ABTI_thread_suspend(p_current);
 
         } else {
-            ABTI_mutex_unlock(&p_eventual->mutex);
+            ABTI_spinlock_release(&p_eventual->lock);
 
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
@@ -157,7 +158,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
             ABTU_free(p_unit);
         }
     } else {
-        ABTI_mutex_unlock(&p_eventual->mutex);
+        ABTI_spinlock_release(&p_eventual->lock);
     }
     if (value) *value = p_eventual->value;
 
@@ -193,13 +194,13 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
     ABTI_CHECK_TRUE(nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);
 
-    ABTI_mutex_spinlock(&p_eventual->mutex);
+    ABTI_spinlock_acquire(&p_eventual->lock);
 
     p_eventual->ready = ABT_TRUE;
     if (p_eventual->value) memcpy(p_eventual->value, value, nbytes);
 
     if (p_eventual->p_head == NULL) {
-        ABTI_mutex_unlock(&p_eventual->mutex);
+        ABTI_spinlock_release(&p_eventual->lock);
         goto fn_exit;
     }
 
@@ -232,7 +233,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     p_eventual->p_head = NULL;
     p_eventual->p_tail = NULL;
 
-    ABTI_mutex_unlock(&p_eventual->mutex);
+    ABTI_spinlock_release(&p_eventual->lock);
 
   fn_exit:
     return abt_errno;
@@ -260,9 +261,9 @@ int ABT_eventual_reset(ABT_eventual eventual)
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-    ABTI_mutex_spinlock(&p_eventual->mutex);
+    ABTI_spinlock_acquire(&p_eventual->lock);
     p_eventual->ready = ABT_FALSE;
-    ABTI_mutex_unlock(&p_eventual->mutex);
+    ABTI_spinlock_release(&p_eventual->lock);
 
   fn_exit:
     return abt_errno;

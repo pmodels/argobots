@@ -265,6 +265,7 @@ void ABTI_event_finalize(void)
     }
 #endif
 
+    ABTI_mutex_fini(&gp_einfo->mutex);
     ABTU_free(gp_einfo);
     gp_einfo = NULL;
 }

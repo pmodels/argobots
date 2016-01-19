@@ -131,6 +131,25 @@ void ABTD_env_init(ABTI_global *p_global)
         p_global->sched_sleep_nsec = ABTD_SCHED_SLEEP_NSEC;
     }
 
+    /* Mutex attributes */
+    env = getenv("ABT_MUTEX_MAX_HANDOVERS");
+    if (env == NULL) env = getenv("ABT_ENV_MUTEX_MAX_HANDOVERS");
+    if (env != NULL) {
+        p_global->mutex_max_handovers = (uint32_t)atoi(env);
+        ABTI_ASSERT(p_global->mutex_max_handovers >= 1);
+    } else {
+        p_global->mutex_max_handovers = 64;
+    }
+
+    env = getenv("ABT_MUTEX_MAX_WAKEUPS");
+    if (env == NULL) env = getenv("ABT_ENV_MUTEX_MAX_WAKEUPS");
+    if (env != NULL) {
+        p_global->mutex_max_wakeups = (uint32_t)atoi(env);
+        ABTI_ASSERT(p_global->mutex_max_wakeups >= 1);
+    } else {
+        p_global->mutex_max_wakeups = 1;
+    }
+
     /* Cache line size */
     env = getenv("ABT_CACHE_LINE_SIZE");
     if (env == NULL) env = getenv("ABT_ENV_CACHE_LINE_SIZE");

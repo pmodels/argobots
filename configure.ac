@@ -189,6 +189,11 @@ AC_ARG_ENABLE([feature],
 AC_ARG_ENABLE([sched-sleep],
     AS_HELP_STRING([--enable-sched-sleep], [enable scheduler sleep]))
 
+# --with-lts
+AC_ARG_WITH([lts],
+    AS_HELP_STRING([--with-lts=PATH],
+        [specify path where lts include directory and lib directory can be found]))
+
 # --with-hugetlbfs
 AC_ARG_WITH([hugetlbfs],
     AS_HELP_STRING([--with-hugetlbfs=PATH],
@@ -543,6 +548,14 @@ AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
 AS_IF([test "x$enable_sched_sleep" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SCHED_SLEEP, 1,
                  [Define to make the scheduler sleep when its pools are empty])])
+
+
+# --with-lts
+if test "x$with_lts" != "x"; then
+    PAC_PREPEND_FLAG([-I${with_lts}/include], [CFLAGS])
+    PAC_PREPEND_FLAG([-Wl,-rpath,${with_lts}/lib -L${with_lts}/lib -lthsync], [LDFLAGS])
+    AC_CHECK_HEADERS(lh_lock.h clh.h)
+fi
 
 
 # --with-hugetlbfs

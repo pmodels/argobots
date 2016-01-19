@@ -61,7 +61,7 @@ int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
     ABTI_future *p_future;
 
     p_future = (ABTI_future *)ABTU_malloc(sizeof(ABTI_future));
-    ABTI_mutex_init(&p_future->mutex);
+    ABTI_spinlock_create(&p_future->lock);
     p_future->ready = ABT_FALSE;
     p_future->counter = 0;
     p_future->compartments = compartments;
@@ -96,8 +96,9 @@ int ABT_future_free(ABT_future *future)
     /* The lock needs to be acquired to safely free the future structure.
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
-    ABTI_mutex_spinlock(&p_future->mutex);
+    ABTI_spinlock_acquire(&p_future->lock);
 
+    ABTI_spinlock_free(&p_future->lock);
     ABTU_free(p_future->array);
     ABTU_free(p_future);
 
@@ -132,7 +133,7 @@ int ABT_future_wait(ABT_future future)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-    ABTI_mutex_lock(&p_future->mutex);
+    ABTI_spinlock_acquire(&p_future->lock);
     if (p_future->ready == ABT_FALSE) {
         ABTI_thread *p_current;
         ABTI_unit *p_unit;
@@ -166,19 +167,14 @@ int ABT_future_wait(ABT_future future)
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread_set_blocked(p_current);
-        }
-        ABTI_mutex_unlock(&p_future->mutex);
 
-        if (type == ABT_UNIT_TYPE_THREAD) {
-            ABTI_thread_suspend(p_current);
-
-            ABTI_mutex_unlock(&p_future->mutex);
+            ABTI_spinlock_release(&p_future->lock);
 
             /* Suspend the current ULT */
             ABTI_thread_suspend(p_current);
 
         } else {
-            ABTI_mutex_unlock(&p_future->mutex);
+            ABTI_spinlock_release(&p_future->lock);
 
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
@@ -187,7 +183,7 @@ int ABT_future_wait(ABT_future future)
             ABTU_free(p_unit);
         }
     } else {
-        ABTI_mutex_unlock(&p_future->mutex);
+        ABTI_spinlock_release(&p_future->lock);
     }
 
   fn_exit:
@@ -249,7 +245,7 @@ int ABT_future_set(ABT_future future, void *value)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-    ABTI_mutex_spinlock(&p_future->mutex);
+    ABTI_spinlock_acquire(&p_future->lock);
 
     p_future->array[p_future->counter] = value;
     p_future->counter++;
@@ -262,7 +258,7 @@ int ABT_future_set(ABT_future future, void *value)
             (*p_future->p_callback)(p_future->array);
 
         if (p_future->p_head == NULL) {
-            ABTI_mutex_unlock(&p_future->mutex);
+            ABTI_spinlock_release(&p_future->lock);
             goto fn_exit;
         }
 
@@ -295,7 +291,7 @@ int ABT_future_set(ABT_future future, void *value)
         p_future->p_tail = NULL;
     }
 
-    ABTI_mutex_unlock(&p_future->mutex);
+    ABTI_spinlock_release(&p_future->lock);
 
   fn_exit:
     return abt_errno;
@@ -323,9 +319,9 @@ int ABT_future_reset(ABT_future future)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_future);
 
-    ABTI_mutex_lock(&p_future->mutex);
+    ABTI_spinlock_acquire(&p_future->lock);
     p_future->ready = ABT_FALSE;
-    ABTI_mutex_unlock(&p_future->mutex);
+    ABTI_spinlock_release(&p_future->lock);
 
   fn_exit:
     return abt_errno;

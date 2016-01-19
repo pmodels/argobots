@@ -59,11 +59,7 @@ int ABT_cond_free(ABT_cond *cond)
 
     ABTI_CHECK_TRUE(p_cond->num_waiters == 0, ABT_ERR_COND);
 
-    /* The lock needs to be acquired to safely free the condition structure.
-     * However, we do not have to unlock it because the entire structure is
-     * freed here. */
-    ABTI_mutex_spinlock(&p_cond->mutex);
-
+    ABTI_cond_fini(p_cond);
     ABTU_free(p_cond);
 
     /* Return value */
@@ -145,10 +141,10 @@ void remove_unit(ABTI_cond *p_cond, ABTI_unit *p_unit)
 {
     if (p_unit->p_next == NULL) return;
 
-    ABTI_mutex_spinlock(&p_cond->mutex);
+    ABTI_spinlock_acquire(&p_cond->lock);
 
     if (p_unit->p_next == NULL) {
-        ABTI_mutex_unlock(&p_cond->mutex);
+        ABTI_spinlock_release(&p_cond->lock);
         return ;
     }
 
@@ -168,7 +164,7 @@ void remove_unit(ABTI_cond *p_cond, ABTI_unit *p_unit)
         }
     }
 
-    ABTI_mutex_unlock(&p_cond->mutex);
+    ABTI_spinlock_release(&p_cond->lock);
 
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
@@ -214,14 +210,14 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     p_unit->pool = (ABT_pool)&ext_signal;
     p_unit->type = ABT_UNIT_TYPE_EXT;
 
-    ABTI_mutex_spinlock(&p_cond->mutex);
+    ABTI_spinlock_acquire(&p_cond->lock);
 
     if (p_cond->p_waiter_mutex == NULL) {
         p_cond->p_waiter_mutex = p_mutex;
     } else {
         ABT_bool result = ABTI_mutex_equal(p_cond->p_waiter_mutex, p_mutex);
         if (result == ABT_FALSE) {
-            ABTI_mutex_unlock(&p_cond->mutex);
+            ABTI_spinlock_release(&p_cond->lock);
             abt_errno = ABT_ERR_INV_MUTEX;
             goto fn_fail;
         }
@@ -242,7 +238,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
 
     p_cond->num_waiters++;
 
-    ABTI_mutex_unlock(&p_cond->mutex);
+    ABTI_spinlock_release(&p_cond->lock);
 
     /* Unlock the mutex that the calling ULT is holding */
     ABTI_mutex_unlock(p_mutex);
@@ -290,10 +286,10 @@ int ABT_cond_signal(ABT_cond cond)
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
-    ABTI_mutex_spinlock(&p_cond->mutex);
+    ABTI_spinlock_acquire(&p_cond->lock);
 
     if (p_cond->num_waiters == 0) {
-        ABTI_mutex_unlock(&p_cond->mutex);
+        ABTI_spinlock_release(&p_cond->lock);
         goto fn_exit;
     }
 
@@ -322,7 +318,7 @@ int ABT_cond_signal(ABT_cond cond)
         *p_ext_signal = 1;
     }
 
-    ABTI_mutex_unlock(&p_cond->mutex);
+    ABTI_spinlock_release(&p_cond->lock);
 
   fn_exit:
     return abt_errno;

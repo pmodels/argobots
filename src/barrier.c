@@ -31,7 +31,7 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
 
     p_newbarrier = (ABTI_barrier *)ABTU_malloc(sizeof(ABTI_barrier));
 
-    ABTI_mutex_init(&p_newbarrier->mutex);
+    ABTI_spinlock_create(&p_newbarrier->lock);
     p_newbarrier->num_waiters = num_waiters;
     p_newbarrier->counter = 0;
     p_newbarrier->waiters =
@@ -114,8 +114,9 @@ int ABT_barrier_free(ABT_barrier *barrier)
     /* The lock needs to be acquired to safely free the barrier structure.
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
-    ABTI_mutex_spinlock(&p_barrier->mutex);
+    ABTI_spinlock_acquire(&p_barrier->lock);
 
+    ABTI_spinlock_free(&p_barrier->lock);
     ABTU_free(p_barrier->waiters);
     ABTU_free(p_barrier->waiter_type);
     ABTU_free(p_barrier);
@@ -149,7 +150,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
     uint32_t pos;
 
-    ABTI_mutex_spinlock(&p_barrier->mutex);
+    ABTI_spinlock_acquire(&p_barrier->lock);
 
     ABTI_ASSERT(p_barrier->counter < p_barrier->num_waiters);
     pos = p_barrier->counter++;
@@ -182,7 +183,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
             ABTI_thread_set_blocked(p_thread);
         }
 
-        ABTI_mutex_unlock(&p_barrier->mutex);
+        ABTI_spinlock_release(&p_barrier->lock);
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             /* Suspend the current ULT */
@@ -211,7 +212,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
         /* Reset counter */
         p_barrier->counter = 0;
 
-        ABTI_mutex_unlock(&p_barrier->mutex);
+        ABTI_spinlock_release(&p_barrier->lock);
     }
 
   fn_exit:

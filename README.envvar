@@ -84,6 +84,20 @@ ABT_SCHED_SLEEP_NSEC
     Values: long
     Default: 100
 
+ABT_MUTEX_MAX_HANDOVERS
+    Aliases: ABT_ENV_MUTEX_MAX_HANDOVERS
+    Description: Set the maximum number of mutex handovers within an ES before
+                 giving up the mutex.
+    Values: unsigned integer
+    Default: 64
+
+ABT_MUTEX_MAX_WAKEUPS
+    Aliases: ABT_ENV_MUTEX_MAX_WAKEUPS
+    Description: Set the maximum number of ULTs to wake up at once in
+                 ABT_mutex_unlock() or ABT_mutex_unlock_de().
+    Values: unsigned integer
+    Default: 1
+
 ABT_CACHE_LINE_SIZE
     Aliases: ABT_ENV_CACHE_LINE_SIZE
     Description: Set the cache line size.
