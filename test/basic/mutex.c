@@ -10,8 +10,10 @@
 
 #define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_THREADS     4
+#define DEFAULT_NUM_ITER        100
 
 int g_counter = 0;
+int g_iter = DEFAULT_NUM_ITER;
 
 typedef struct thread_arg {
     int id;
@@ -20,14 +22,26 @@ typedef struct thread_arg {
 
 void thread_func(void *arg)
 {
+    int i;
+    int rank;
+    ABT_thread_id id;
+    ABT_thread self;
     thread_arg_t *t_arg = (thread_arg_t *)arg;
+
+    ABT_xstream_self_rank(&rank);
+    ABT_thread_self(&self);
+    ABT_thread_get_id(self, &id);
+    t_arg->id = (int)id;
 
     ABT_thread_yield();
 
-    ABT_mutex_lock(t_arg->mutex);
-    g_counter++;
-    ABT_mutex_unlock(t_arg->mutex);
-    ABT_test_printf(1, "[TH%d] increased\n", t_arg->id);
+    ABT_test_printf(1, "[U%d:E%d] START\n", t_arg->id, rank);
+    for (i = 0; i < g_iter; i++) {
+        ABT_mutex_lock(t_arg->mutex);
+        g_counter++;
+        ABT_mutex_unlock(t_arg->mutex);
+    }
+    ABT_test_printf(1, "[U%d:E%d] END\n", t_arg->id, rank);
 
     ABT_thread_yield();
 }
@@ -38,10 +52,19 @@ int main(int argc, char *argv[])
     int ret, expected;
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
-    if (argc > 1) num_xstreams = atoi(argv[1]);
-    assert(num_xstreams >= 0);
-    if (argc > 2) num_threads = atoi(argv[2]);
-    assert(num_threads >= 0);
+
+    /* Initialize */
+    ABT_test_init(argc, argv);
+
+    if (argc >= 2) {
+        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
+        num_threads = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
+        g_iter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+    }
+
+    ABT_test_printf(2, "# of ESs : %d\n", num_xstreams);
+    ABT_test_printf(1, "# of ULTs: %d\n", num_threads);
+    ABT_test_printf(1, "# of iter: %d\n", g_iter);
 
     ABT_mutex mutex;
     ABT_xstream *xstreams;
@@ -57,9 +80,6 @@ int main(int argc, char *argv[])
         threads[i] = (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);
         args[i] = (thread_arg_t *)malloc(sizeof(thread_arg_t) * num_threads);
     }
-
-    /* Initialize */
-    ABT_test_init(argc, argv);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
@@ -119,9 +139,9 @@ int main(int argc, char *argv[])
     }
 
     /* Validation */
-    expected = num_xstreams * num_threads;
+    expected = num_xstreams * num_threads * g_iter;
     if (g_counter != expected) {
-        printf("g_counter = %d\n", g_counter);
+        printf("g_counter = %d vs. expected = %d\n", g_counter, expected);
     }
 
     /* Finalize */
