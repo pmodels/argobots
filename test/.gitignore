@@ -31,6 +31,7 @@ basic/sched_user_ws
 basic/pool_access
 basic/mutex
 basic/mutex_recursive
+basic/mutex_unlock_se
 basic/cond_test
 basic/cond_join
 basic/cond_signal_in_main
