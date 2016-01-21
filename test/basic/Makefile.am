@@ -36,6 +36,7 @@ TESTS = \
 	pool_access \
 	mutex \
 	mutex_recursive \
+	mutex_spinlock \
 	mutex_unlock_se \
 	cond_test \
 	cond_join \
@@ -98,6 +99,7 @@ sched_user_ws_SOURCES = sched_user_ws.c
 pool_access_SOURCES = pool_access.c
 mutex_SOURCES = mutex.c
 mutex_recursive_SOURCES = mutex_recursive.c
+mutex_spinlock_SOURCES = mutex_spinlock.c
 mutex_unlock_se_SOURCES = mutex_unlock_se.c
 cond_test_SOURCES = cond_test.c
 cond_join_SOURCES = cond_join.c
@@ -148,6 +150,7 @@ testing:
 	./pool_access
 	./mutex
 	./mutex_recursive
+	./mutex_spinlock
 	./mutex_unlock_se
 	./cond_test
 	./cond_join
