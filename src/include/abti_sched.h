@@ -65,5 +65,21 @@ void ABTI_sched_unset_request(ABTI_sched *p_sched, uint32_t req)
     ABTD_atomic_fetch_and_uint32(&p_sched->request, ~req);
 }
 
+static inline
+ABT_bool ABTI_sched_has_unit(ABTI_sched *p_sched)
+{
+    int p;
+    size_t s;
+
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABT_pool pool = p_sched->pools[p];
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+        s = p_pool->p_get_size(pool);
+        if (s > 0) return ABT_TRUE;
+    }
+
+    return ABT_FALSE;
+}
+
 #endif /* SCHED_H_INCLUDED */
 
