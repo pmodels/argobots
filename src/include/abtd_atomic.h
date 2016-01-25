@@ -152,4 +152,10 @@ uint64_t ABTD_atomic_fetch_xor_uint64(uint64_t *ptr, uint64_t v)
     return __sync_fetch_and_xor(ptr, v);
 }
 
+static inline
+void ABTD_atomic_mem_barrier(void)
+{
+    __sync_synchronize();
+}
+
 #endif /* ABTD_ATOMIC_H_INCLUDED */
