@@ -227,6 +227,10 @@ AC_ARG_WITH([intercoolr],
 AC_ARG_WITH([papi],
     AS_HELP_STRING([--with-papi=PATH],
         [specify path where papi include directory and lib directory can be found]))
+
+# --enable-papi
+AC_ARG_ENABLE([papi],
+    AS_HELP_STRING([--enable-papi], [use papi in benchmarking]))
 dnl ----------------------------------------------------------------------------
 
 
@@ -659,6 +663,9 @@ PAPI_FLAGS=""
 AS_IF([test "x$with_papi" != "x"],
     PAPI_FLAGS="-I$with_papi/include -L$with_papi/lib")
 AC_SUBST(PAPI_FLAGS)
+
+# --enable-papi
+AM_CONDITIONAL([ABT_USE_PAPI], [test "x$enable_papi" = "xyes"])
 dnl ----------------------------------------------------------------------------
 
 
