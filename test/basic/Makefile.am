@@ -35,6 +35,7 @@ TESTS = \
 	sched_user_ws \
 	pool_access \
 	mutex \
+	mutex_prio \
 	mutex_recursive \
 	mutex_spinlock \
 	mutex_unlock_se \
@@ -98,6 +99,7 @@ sched_config_SOURCES = sched_config.c
 sched_user_ws_SOURCES = sched_user_ws.c
 pool_access_SOURCES = pool_access.c
 mutex_SOURCES = mutex.c
+mutex_prio_SOURCES = mutex_prio.c
 mutex_recursive_SOURCES = mutex_recursive.c
 mutex_spinlock_SOURCES = mutex_spinlock.c
 mutex_unlock_se_SOURCES = mutex_unlock_se.c
@@ -149,6 +151,7 @@ testing:
 	./sched_user_ws
 	./pool_access
 	./mutex
+	./mutex_prio
 	./mutex_recursive
 	./mutex_spinlock
 	./mutex_unlock_se

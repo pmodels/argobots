@@ -30,6 +30,7 @@ basic/sched_config
 basic/sched_user_ws
 basic/pool_access
 basic/mutex
+basic/mutex_prio
 basic/mutex_recursive
 basic/mutex_spinlock
 basic/mutex_unlock_se
