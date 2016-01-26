@@ -52,5 +52,26 @@ void ABTI_thread_unset_request(ABTI_thread *p_thread, uint32_t req)
     ABTD_atomic_fetch_and_uint32(&p_thread->request, ~req);
 }
 
+static inline
+void ABTI_thread_yield(ABTI_thread *p_thread)
+{
+    ABTI_sched *p_sched;
+
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] yield\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
+    /* Change the state of current running thread */
+    p_thread->state = ABT_THREAD_STATE_READY;
+
+    /* Switch to the top scheduler */
+    p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
+    ABTI_LOG_SET_SCHED(p_sched);
+    ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
+
+    /* Back to the original thread */
+    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume after yield\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+}
+
 #endif /* THREAD_H_INCLUDED */
 

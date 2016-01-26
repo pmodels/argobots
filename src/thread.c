@@ -822,7 +822,6 @@ int ABT_thread_yield(void)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = NULL;
-    ABTI_sched *p_sched;
 
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
     p_thread = ABTI_local_get_thread();
@@ -837,20 +836,7 @@ int ABT_thread_yield(void)
     ABTI_CHECK_TRUE(p_thread->p_last_xstream == ABTI_local_get_xstream(),
                     ABT_ERR_THREAD);
 
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] yield\n",
-              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
-
-    /* Change the state of current running thread */
-    p_thread->state = ABT_THREAD_STATE_READY;
-
-    /* Switch to the top scheduler */
-    p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
-    ABTI_LOG_SET_SCHED(p_sched);
-    ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
-
-    /* Back to the original thread */
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume after yield\n",
-              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+    ABTI_thread_yield(p_thread);
 
   fn_exit:
     return abt_errno;
@@ -1549,7 +1535,7 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
 
     /* yielding if it is the same thread */
     if (lp_ABTI_local != NULL && p_thread == ABTI_local_get_thread()) {
-        ABT_thread_yield();
+        ABTI_thread_yield(p_thread);
     }
     goto fn_exit;
 
