@@ -124,6 +124,11 @@ typedef struct ABTI_sp_header       ABTI_sp_header;
 #include "abtd.h"
 
 
+/* Spinlock */
+typedef struct ABTI_spinlock        ABTI_spinlock;
+#include "abti_spinlock.h"
+
+
 /* Definitions */
 struct ABTI_mutex_attr {
     uint32_t attrs;             /* bit-or'ed attributes */
