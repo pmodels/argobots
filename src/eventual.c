@@ -19,9 +19,11 @@
  * @brief   Create an eventual.
  *
  * \c ABT_eventual_create creates an eventual and returns a handle to the newly
- * created eventual into \c neweventual. This routine allocates a memory buffer
- * of \c nbytes size and creates a list of entries for all the ULTs that will
- * be blocked waiting for the eventual to be ready. The list is initially empty.
+ * created eventual into \c neweventual.  If \c nbytes is not zero, this routine
+ * allocates a memory buffer of \c nbytes size and creates a list of entries
+ * for all the ULTs that will be blocked waiting for the eventual to be ready.
+ * The list is initially empty.  If \c nbytes is zero, the eventual is used
+ * without passing the data.
  *
  * @param[in]  nbytes       size in bytes of the memory buffer
  * @param[out] neweventual  handle to a new eventual
@@ -37,7 +39,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     ABTI_mutex_init(&p_eventual->mutex);
     p_eventual->ready = ABT_FALSE;
     p_eventual->nbytes = nbytes;
-    p_eventual->value = ABTU_malloc(nbytes);
+    p_eventual->value = (nbytes == 0) ? NULL : ABTU_malloc(nbytes);
     p_eventual->waiters.head = p_eventual->waiters.tail = NULL;
     *neweventual = ABTI_eventual_get_handle(p_eventual);
 
@@ -67,7 +69,7 @@ int ABT_eventual_free(ABT_eventual *eventual)
      * freed here. */
     ABTI_mutex_spinlock(&p_eventual->mutex);
 
-    ABTU_free(p_eventual->value);
+    if (p_eventual->value) ABTU_free(p_eventual->value);
     ABTU_free(p_eventual);
 
     *eventual = ABT_EVENTUAL_NULL;
@@ -145,7 +147,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     } else {
         ABTI_mutex_unlock(&p_eventual->mutex);
     }
-    *value = p_eventual->value;
+    if (value) *value = p_eventual->value;
 
   fn_exit:
     return abt_errno;
@@ -177,10 +179,11 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     int abt_errno = ABT_SUCCESS;
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
+    ABTI_CHECK_TRUE(nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);
 
     ABTI_mutex_lock(&p_eventual->mutex);
     p_eventual->ready = ABT_TRUE;
-    memcpy(p_eventual->value, value, nbytes);
+    if (p_eventual->value) memcpy(p_eventual->value, value, nbytes);
     ABTI_eventual_signal(p_eventual);
     ABTI_mutex_unlock(&p_eventual->mutex);
 
