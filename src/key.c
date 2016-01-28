@@ -5,9 +5,9 @@
 
 #include "abti.h"
 
-/** @defgroup KEY ULT Local Storage (TLS)
- * This group is for ULT-specific data, which can be described as ULT local
- * storage (TLS).
+/** @defgroup KEY Work-Unit Local Storage (TLS)
+ * This group is for work-unit specific data, which can be described as
+ * work-unit local storage (TLS).
  */
 
 static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
@@ -19,26 +19,26 @@ static uint32_t g_key_id = 0;
 
 /**
  * @ingroup KEY
- * @brief   Create an ULT-specific data key.
+ * @brief   Create an WU-specific data key.
  *
- * \c ABT_key_create() creates a new ULT-specific data key visible to all ULTs
- * in the process and returns its handle through \c newkey.  Although the same
- * key may be used by different ULTs, the values bound to the key by
- * \c ABT_key_set() are maintained per ULT and persist for the life of the
- * calling ULT.
+ * \c ABT_key_create() creates a new work unit (WU)-specific data key visible
+ * to all WUs (ULTs or tasklets) in the process and returns its handle through
+ * \c newkey.  Although the same key may be used by different WUs, the values
+ * bound to the key by \c ABT_key_set() are maintained per WU and persist for
+ * the life of the calling WU.
  *
  * Upon key creation, the value \c NULL shall be associated with the new key in
- * all active ULTs.  Upon ULT creation, the value \c NULL shall be associated
- * with all defined keys in the new ULT.
+ * all active WUs.  Upon WU creation, the value \c NULL shall be associated
+ * with all defined keys in the new WU.
  *
  * An optional destructor function, \c destructor, may be registered with each
- * key.  When a ULT terminates, if a key has a non-NULL destructor pointer, and
- * the ULT has a non-NULL value associated with that key, the value of the key
+ * key.  When a WU terminates, if a key has a non-NULL destructor pointer, and
+ * the WU has a non-NULL value associated with that key, the value of the key
  * is set to \c NULL, and then \c destructor is called with the previously
  * associated value as its sole argument.  The order of destructor calls is
- * unspecified if more than one destructor exists for an ULT when it exits.
+ * unspecified if more than one destructor exists for a WU when it exits.
  *
- * @param[in]  destructor  destructor function called when a ULT exits
+ * @param[in]  destructor  destructor function called when a WU exits
  * @param[out] newkey      handle to a newly created key
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -60,9 +60,9 @@ int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
 
 /**
  * @ingroup KEY
- * @brief   Free an ULT-specific data key.
+ * @brief   Free an WU-specific data key.
  *
- * \c ABT_key_free() deletes the ULT-specific data key specified by \c key and
+ * \c ABT_key_free() deletes the WU-specific data key specified by \c key and
  * deallocates memory used for the key object.  It is the user's responsibility
  * to free memory for values associated with the deleted key.  This routine
  * does not call the destructor function registered by \c ABT_key_create().
@@ -95,8 +95,8 @@ int ABT_key_free(ABT_key *key)
  * @ingroup KEY
  * @brief   Associate a value with the key.
  *
- * \c ABT_key_set() associates a value, \c value, with the target ULT-specific
- * data key, \c key.  Different ULTs may bind different values to the same key.
+ * \c ABT_key_set() associates a value, \c value, with the target WU-specific
+ * data key, \c key.  Different WUs may bind different values to the same key.
  *
  * @param[in] key    handle to the target key
  * @param[in] value  value for the key
@@ -107,6 +107,7 @@ int ABT_key_set(ABT_key key, void *value)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread;
+    ABTI_task *p_task;
     ABTI_ktable *p_ktable;
 
     ABTI_key *p_key = ABTI_key_get_ptr(key);
@@ -125,8 +126,13 @@ int ABT_key_set(ABT_key key, void *value)
         }
         p_ktable = p_thread->p_keytable;
     } else {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
+        p_task = ABTI_local_get_task();
+        ABTI_CHECK_TRUE(p_task != NULL, ABT_ERR_INV_TASK);
+        if (p_task->p_keytable == NULL) {
+            int key_table_size = gp_ABTI_global->key_table_size;
+            p_task->p_keytable = ABTI_ktable_alloc(key_table_size);
+        }
+        p_ktable = p_task->p_keytable;
     }
 
     /* Save the value in the key-value table */
@@ -144,10 +150,10 @@ int ABT_key_set(ABT_key key, void *value)
  * @ingroup KEY
  * @brief   Get the value associated with the key.
  *
- * \c ABT_key_get() returns the value associated with the target ULT-specific
- * data key, \c key, through \c value on behalf of the calling ULT.  Different
- * ULTs get different values for the target key via this routine if they have
- * set different values with \c ABT_key_set().  If a ULT has never set a value
+ * \c ABT_key_get() returns the value associated with the target WU-specific
+ * data key, \c key, through \c value on behalf of the calling WU.  Different
+ * WUs get different values for the target key via this routine if they have
+ * set different values with \c ABT_key_set().  If a WU has never set a value
  * for the key, this routine returns \c NULL to \c value.
  *
  * @param[in] key    handle to the target key
@@ -159,6 +165,7 @@ int ABT_key_get(ABT_key key, void **value)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread;
+    ABTI_task *p_task;
     ABTI_ktable *p_ktable = NULL;
     void *keyval = NULL;
 
@@ -178,8 +185,13 @@ int ABT_key_get(ABT_key key, void **value)
             keyval = ABTI_ktable_get(p_ktable, p_key);
         }
     } else {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_fail;
+        p_task = ABTI_local_get_task();
+        ABTI_CHECK_TRUE(p_task != NULL, ABT_ERR_INV_TASK);
+        p_ktable = p_task->p_keytable;
+        if (p_ktable) {
+            /* Retrieve the value from the key-value table */
+            keyval = ABTI_ktable_get(p_ktable, p_key);
+        }
     }
 
     *value = keyval;

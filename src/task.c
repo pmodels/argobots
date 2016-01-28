@@ -55,6 +55,7 @@ int ABT_task_create(ABT_pool pool,
     p_newtask->is_sched   = NULL;
     p_newtask->p_pool     = p_pool;
     p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
+    p_newtask->p_keytable = NULL;
     p_newtask->migratable = ABT_TRUE;
     p_newtask->id         = ABTI_TASK_INIT_ID;
 
@@ -103,6 +104,7 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     p_newtask->is_sched   = p_sched;
     p_newtask->p_pool     = p_pool;
     p_newtask->refcount   = 1;
+    p_newtask->p_keytable = NULL;
     p_newtask->migratable = ABT_TRUE;
     p_newtask->id         = ABTI_TASK_INIT_ID;
 
@@ -594,6 +596,11 @@ void ABTI_task_free(ABTI_task *p_task)
     /* Free the unit */
     p_task->p_pool->u_free(&p_task->unit);
 
+    /* Free the key-value table */
+    if (p_task->p_keytable) {
+        ABTI_ktable_free(p_task->p_keytable);
+    }
+
     ABTU_free(p_task);
 }
 
@@ -628,7 +635,8 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
         "%srefcount  : %u\n"
         "%srequest   : 0x%x\n"
         "%sf_task    : %p\n"
-        "%sp_arg     : %p\n",
+        "%sp_arg     : %p\n"
+        "%skeytable  : %p\n",
         prefix, p_task,
         prefix, ABTI_task_get_id(p_task),
         prefix, state,
@@ -639,7 +647,8 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
         prefix, p_task->refcount,
         prefix, p_task->request,
         prefix, p_task->f_task,
-        prefix, p_task->p_arg
+        prefix, p_task->p_arg,
+        prefix, p_task->p_keytable
     );
 
   fn_exit:

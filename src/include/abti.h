@@ -302,6 +302,7 @@ struct ABTI_task {
     ABT_unit unit;             /* Unit enclosing this task */
     ABTI_unit unit_def;        /* Internal unit definition */
     uint32_t refcount;         /* Reference count */
+    ABTI_ktable *p_keytable;   /* Tasklet-specific data */
     ABT_bool migratable;       /* Migratability */
     uint64_t id;               /* ID */
 };
