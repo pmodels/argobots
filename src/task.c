@@ -206,6 +206,74 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
 
 /**
  * @ingroup TASK
+ * @brief   Revive the tasklet.
+ *
+ * \c ABT_task_revive() revives the tasklet, \c task, with \c task_func and
+ * \arg and pushes the revived tasklet into \c pool.
+ *
+ * This function must be called with a valid tasklet handle, which has not been
+ * freed by \c ABT_task_free().  However, the tasklet should have been joined
+ * by \c ABT_task_join() before its handle is used in this routine.
+ *
+ * @param[in]     pool       handle to the associated pool
+ * @param[in]     task_func  function to be executed by the tasklet
+ * @param[in]     arg        argument for task_func
+ * @param[in,out] task       handle to the tasklet
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
+                    ABT_task *task)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_task *p_task = ABTI_task_get_ptr(*task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+    ABTI_CHECK_TRUE(p_task->state == ABT_TASK_STATE_TERMINATED,
+                    ABT_ERR_INV_TASK);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    p_task->p_xstream  = NULL;
+    p_task->state      = ABT_TASK_STATE_READY;
+    p_task->request    = 0;
+    p_task->f_task     = task_func;
+    p_task->p_arg      = arg;
+    p_task->refcount   = 1;
+    p_task->p_keytable = NULL;
+
+    if (p_task->p_pool != p_pool) {
+        /* Free the unit for the old pool */
+        p_task->p_pool->u_free(&p_task->unit);
+
+        /* Set the new pool */
+        p_task->p_pool = p_pool;
+
+        /* Create a wrapper work unit */
+        p_task->unit = p_pool->u_create_from_task(*task);
+    }
+
+    LOG_EVENT("[T%" PRIu64 "] revived\n", ABTI_task_get_id(p_task));
+
+    /* Add this task to the scheduler's pool */
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    ABTI_pool_push(p_pool, p_task->unit);
+#else
+    abt_errno = ABTI_pool_push(p_pool, p_task->unit, ABTI_xstream_self());
+    ABTI_CHECK_ERROR(abt_errno);
+#endif
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Release the task object associated with task handle.
  *
  * This routine deallocates memory used for the task object. If the task is
