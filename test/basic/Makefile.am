@@ -18,6 +18,7 @@ TESTS = \
 	thread_id \
 	task_create \
 	task_create_on_xstream \
+	task_revive \
 	task_data \
 	thread_task \
 	thread_task_arg \
@@ -65,6 +66,7 @@ thread_data_SOURCES = thread_data.c
 thread_id_SOURCES = thread_id.c
 task_create_SOURCES = task_create.c
 task_create_on_xstream_SOURCES = task_create_on_xstream.c
+task_revive_SOURCES = task_revive.c
 task_data_SOURCES = task_data.c
 thread_task_SOURCES = thread_task.c
 thread_task_arg_SOURCES = thread_task_arg.c
@@ -103,6 +105,7 @@ testing:
 	./thread_id
 	./task_create
 	./task_create_on_xstream
+	./task_revive
 	./task_data
 	./thread_task
 	./thread_task_arg
