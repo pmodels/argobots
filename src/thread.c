@@ -171,6 +171,81 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
 
 /**
  * @ingroup ULT
+ * @brief   Revive the ULT.
+ *
+ * \c ABT_thread_revive() revives the ULT, \c thread, with \c thread_func and
+ * \arg while it does not change the attributes used in creating \c thread.
+ * The revived ULT is pushed into \c pool.
+ *
+ * This function must be called with a valid ULT handle, which has not been
+ * freed by \c ABT_thread_free().  However, the ULT should have been joined by
+ * \c ABT_thread_join() before its handle is used in this routine.
+ *
+ * @param[in]     pool         handle to the associated pool
+ * @param[in]     thread_func  function to be executed by the ULT
+ * @param[in]     arg          argument for thread_func
+ * @param[in,out] thread       handle to the ULT
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
+                      ABT_thread *thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    size_t stacksize;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(*thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    ABTI_CHECK_TRUE(p_thread->state == ABT_THREAD_STATE_TERMINATED,
+                    ABT_ERR_INV_THREAD);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    /* Create a ULT context */
+    stacksize = p_thread->attr.stacksize;
+    abt_errno = ABTD_thread_context_create(NULL, thread_func, arg,
+                                           stacksize, p_thread->p_stack,
+                                           &p_thread->ctx);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    p_thread->state          = ABT_THREAD_STATE_READY;
+    p_thread->request        = 0;
+    p_thread->p_last_xstream = NULL;
+    p_thread->refcount       = 1;
+    p_thread->type           = ABTI_THREAD_TYPE_USER;
+
+    if (p_thread->p_pool != p_pool) {
+        /* Free the unit for the old pool */
+        p_thread->p_pool->u_free(&p_thread->unit);
+
+        /* Set the new pool */
+        p_thread->p_pool = p_pool;
+
+        /* Create a wrapper unit */
+        p_thread->unit = p_pool->u_create_from_thread(*thread);
+    }
+
+    LOG_EVENT("[U%" PRIu64 "] revived\n", ABTI_thread_get_id(p_thread));
+
+    /* Add this thread to the pool */
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    ABTI_pool_push(p_pool, p_thread->unit);
+#else
+    abt_errno = ABTI_pool_push(p_pool, p_thread->unit, ABTI_xstream_self());
+    ABTI_CHECK_ERROR(abt_errno);
+#endif
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Release the thread object associated with thread handle.
  *
  * This routine deallocates memory used for the thread object. If the thread
