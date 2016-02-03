@@ -441,6 +441,7 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
 int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                     void *arg, ABT_task *newtask);
 int ABT_task_free(ABT_task *task);
+int ABT_task_join(ABT_task task);
 int ABT_task_cancel(ABT_task task);
 int ABT_task_self(ABT_task *task);
 int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream);

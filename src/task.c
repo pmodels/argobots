@@ -246,6 +246,38 @@ int ABT_task_free(ABT_task *task)
 
 /**
  * @ingroup TASK
+ * @brief   Wait for the tasklet to terminate.
+ *
+ * \c ABT_task_join() blocks until the target tasklet \c task terminates.
+ * Since this routine blocks, only ULTs can call this routine.  If tasklets use
+ * this routine, the behavior is undefined.
+ *
+ * @param[in] task  handle to the target tasklet
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_join(ABT_task task)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    /* TODO: better implementation */
+    while (p_task->state != ABT_TASK_STATE_TERMINATED) {
+        ABT_thread_yield();
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Request the cancelation of the target task.
  *
  * @param[in] task  handle to the target task
