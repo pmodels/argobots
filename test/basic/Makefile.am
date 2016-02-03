@@ -8,6 +8,7 @@ TESTS = \
 	thread_create \
 	thread_create2 \
 	thread_create_on_xstream \
+	thread_revive \
 	thread_attr \
 	thread_yield \
 	thread_yield_to \
@@ -54,6 +55,7 @@ xstream_create_SOURCES = xstream_create.c
 thread_create_SOURCES = thread_create.c
 thread_create2_SOURCES = thread_create2.c
 thread_create_on_xstream_SOURCES = thread_create_on_xstream.c
+thread_revive_SOURCES = thread_revive.c
 thread_attr_SOURCES = thread_attr.c
 thread_yield_SOURCES = thread_yield.c
 thread_yield_to_SOURCES = thread_yield_to.c
@@ -91,6 +93,7 @@ testing:
 	./thread_create
 	./thread_create2
 	./thread_create_on_xstream
+	./thread_revive
 	./thread_attr
 	./thread_yield
 	./thread_yield_to
