@@ -687,6 +687,34 @@ int ABT_task_release(ABT_task task)
 
 /**
  * @ingroup TASK
+ * @brief   Get the tasklet's id
+ *
+ * \c ABT_task_get_id() returns the id of \c task.
+ *
+ * @param[in]  task     handle to the target tasklet
+ * @param[out] task_id  tasklet id
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_get_id(ABT_task task, uint64_t *task_id)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_THREAD_PTR(p_task);
+
+    *task_id = ABTI_task_get_id(p_task);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Retrieve the argument for the tasklet function
  *
  * \c ABT_task_get_arg() returns the argument for the taslet function, which was
