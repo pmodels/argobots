@@ -6,6 +6,7 @@
 #ifndef ABTD_STREAM_H_INCLUDED
 #define ABTD_STREAM_H_INCLUDED
 
+#ifdef HAVE_PTHREAD_BARRIER_INIT
 static inline
 int ABTD_xstream_barrier_init(uint32_t num_waiters,
                               ABTD_xstream_barrier *p_barrier)
@@ -26,5 +27,6 @@ int ABTD_xstream_barrier_wait(ABTD_xstream_barrier *p_barrier)
 {
     return pthread_barrier_wait(p_barrier);
 }
+#endif
 
 #endif /* ABTD_STREAM_H_INCLUDED */

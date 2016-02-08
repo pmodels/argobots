@@ -16,6 +16,7 @@ typedef struct {
 } ABTI_xstream_barrier;
 
 
+#ifdef HAVE_PTHREAD_BARRIER_INIT
 static inline
 ABTI_xstream_barrier *ABTI_xstream_barrier_get_ptr(ABT_xstream_barrier barrier)
 {
@@ -47,6 +48,7 @@ ABT_xstream_barrier ABTI_xstream_barrier_get_handle(ABTI_xstream_barrier *p_barr
     return (ABT_xstream_barrier)p_barrier;
 #endif
 }
+#endif
 
 
 /**
@@ -65,6 +67,7 @@ ABT_xstream_barrier ABTI_xstream_barrier_get_handle(ABTI_xstream_barrier *p_barr
  */
 int ABT_xstream_barrier_create(uint32_t num_waiters, ABT_xstream_barrier *newbarrier)
 {
+#ifdef HAVE_PTHREAD_BARRIER_INIT
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream_barrier *p_newbarrier;
 
@@ -83,6 +86,9 @@ int ABT_xstream_barrier_create(uint32_t num_waiters, ABT_xstream_barrier *newbar
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
 }
 
 /**
@@ -99,6 +105,7 @@ int ABT_xstream_barrier_create(uint32_t num_waiters, ABT_xstream_barrier *newbar
  */
 int ABT_xstream_barrier_free(ABT_barrier *barrier)
 {
+#ifdef HAVE_PTHREAD_BARRIER_INIT
     int abt_errno = ABT_SUCCESS;
     ABT_xstream_barrier h_barrier = *barrier;
     ABTI_xstream_barrier *p_barrier = ABTI_xstream_barrier_get_ptr(h_barrier);
@@ -118,6 +125,9 @@ int ABT_xstream_barrier_free(ABT_barrier *barrier)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
 }
 
 /**
@@ -133,6 +143,7 @@ int ABT_xstream_barrier_free(ABT_barrier *barrier)
  */
 int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier)
 {
+#ifdef HAVE_PTHREAD_BARRIER_INIT
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream_barrier *p_barrier = ABTI_xstream_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
@@ -147,5 +158,8 @@ int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
 }
 

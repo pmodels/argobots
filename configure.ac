@@ -93,6 +93,9 @@ AM_SUBST_NOTMAKE([fctx_arch_bin])
 AC_CHECK_HEADERS(pthread.h)
 AC_CHECK_LIB(pthread, pthread_join)
 
+# check pthread_barrier
+AC_CHECK_FUNCS(pthread_barrier_init)
+
 # check timer functions
 # for clock_gettime and clock_getres, we need to search them from librt or
 # libposix4 because they may not be included in the standard library.

@@ -13,7 +13,11 @@
 /* Data Types */
 typedef pthread_t           ABTD_xstream_context;
 typedef pthread_mutex_t     ABTD_xstream_mutex;
+#ifdef HAVE_PTHREAD_BARRIER_INIT
 typedef pthread_barrier_t   ABTD_xstream_barrier;
+#else
+typedef void *              ABTD_xstream_barrier;
+#endif
 typedef abt_ucontext_t      ABTD_thread_context;
 
 /* ES Storage Qualifier */
