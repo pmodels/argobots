@@ -1579,6 +1579,17 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     ABT_thread_attr attr;
     size_t stacksize;
 
+    /* If p_sched is reused, ABT_thread_revive() can be used. */
+    if (p_sched->p_thread) {
+        ABT_thread h_thread = ABTI_thread_get_handle(p_sched->p_thread);
+        ABT_pool h_pool = ABTI_pool_get_handle(p_pool);
+        ABT_sched h_sched = ABTI_sched_get_handle(p_sched);
+        abt_errno = ABT_thread_revive(h_pool, p_sched->run, (void *)h_sched,
+                                      &h_thread);
+        ABTI_CHECK_ERROR(abt_errno);
+        goto fn_exit;
+    }
+
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
 
     /* Set attributes */

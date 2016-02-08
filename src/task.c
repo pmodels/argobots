@@ -101,6 +101,17 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     ABTI_task *p_newtask;
     ABT_task h_newtask;
 
+    /* If p_sched is reused, ABT_task_revive() can be used. */
+    if (p_sched->p_task) {
+        ABT_task h_task = ABTI_task_get_handle(p_sched->p_task);
+        ABT_pool h_pool = ABTI_pool_get_handle(p_pool);
+        ABT_sched h_sched = ABTI_sched_get_handle(p_sched);
+        abt_errno = ABT_task_revive(h_pool, p_sched->run, (void *)h_sched,
+                                    &h_task);
+        ABTI_CHECK_ERROR(abt_errno);
+        goto fn_exit;
+    }
+
     p_newtask = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
 
     p_newtask->p_xstream  = NULL;
