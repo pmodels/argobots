@@ -478,6 +478,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
 #endif
 
     /* Mark the scheduler as it is used in pool */
+    ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED, ABT_ERR_INV_SCHED);
     p_sched->used = ABTI_SCHED_IN_POOL;
 
     if (p_sched->type == ABT_SCHED_TYPE_ULT) {
