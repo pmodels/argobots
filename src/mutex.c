@@ -112,6 +112,31 @@ int ABT_mutex_lock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
+ * @brief   Lock the mutex with low priority.
+ *
+ * @param[in] mutex  handle to the mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_mutex_lock_low(ABT_mutex mutex)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+
+    /* FIXME: need a real implementation */
+    ABTI_mutex_lock(p_mutex);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup MUTEX
  * @brief   Attempt to lock a mutex without blocking.
  *
  * \c ABT_mutex_trylock attempts to lock the mutex \c mutex without blocking
@@ -191,6 +216,40 @@ int ABT_mutex_unlock(ABT_mutex mutex)
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
+    ABTI_mutex_unlock(p_mutex);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup MUTEX
+ * @brief   Hand off the mutex within the ES.
+ *
+ * \c ABT_mutex_unlock_se() fisrt tries to hand off the mutex to a ULT, which
+ * is waiting for this mutex and is running on the same ES as the caller.
+ * If no ULT on the same ES is waiting, it unlocks the mutex like \c
+ * ABT_mutex_unlock().
+ *
+ * If the caller ULT locked the mutex, this routine unlocks the mutex. However,
+ * if the caller ULT did not lock the mutex, this routine may result in
+ * undefined behavior.
+ *
+ * @param[in] mutex  handle to the mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_mutex_unlock_se(ABT_mutex mutex)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+
+    /* FIXME: need a real implementation */
     ABTI_mutex_unlock(p_mutex);
 
   fn_exit:

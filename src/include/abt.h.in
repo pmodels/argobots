@@ -470,9 +470,11 @@ int ABT_key_get(ABT_key key, void **value);
 int ABT_mutex_create(ABT_mutex *newmutex);
 int ABT_mutex_free(ABT_mutex *mutex);
 int ABT_mutex_lock(ABT_mutex mutex);
+int ABT_mutex_lock_low(ABT_mutex mutex);
 int ABT_mutex_trylock(ABT_mutex mutex);
 int ABT_mutex_spinlock(ABT_mutex mutex);
 int ABT_mutex_unlock(ABT_mutex mutex);
+int ABT_mutex_unlock_se(ABT_mutex mutex);
 int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result);
 
 /* Condition variable */
