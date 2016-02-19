@@ -224,8 +224,8 @@ void ABTI_ktable_free(ABTI_ktable *p_ktable)
     for (i = 0; i < p_ktable->size; i++) {
         p_elem = p_ktable->p_elems[i];
         while (p_elem) {
-            /* Call the destructor if it exists. */
-            if (p_elem->p_key->f_destructor) {
+            /* Call the destructor if it exists and the value is not null. */
+            if (p_elem->p_key->f_destructor && p_elem->value) {
                 p_elem->p_key->f_destructor(p_elem->value);
             }
 
@@ -309,11 +309,6 @@ static inline void ABTI_ktable_delete(ABTI_ktable *p_ktable, ABTI_key *p_key)
                 p_ktable->p_elems[idx] = p_elem->p_next;
             }
             p_ktable->num--;
-
-            /* Call the destructor if it exists. */
-            if (p_key->f_destructor) {
-                p_key->f_destructor(p_elem->value);
-            }
 
             ABTU_free(p_elem);
             return;
