@@ -10,7 +10,7 @@
 
 #define DEFAULT_NUM_XSTREAMS    4
 #define DEFAULT_NUM_TASKS       4
-#define NUM_TLS                 3
+#define NUM_TLS                 4
 
 static ABT_key tls[NUM_TLS];
 static int num_tasks;
@@ -40,6 +40,7 @@ static void task_tls_test(void *arg)
 
     for (i = 0; i < NUM_TLS; i++) {
         value[i] = malloc(16);
+        ABT_test_printf(1, "[T%d] malloc(%p)\n", my_id, value[i]);
         ret = ABT_key_set(tls[i], value[i]);
         ABT_TEST_ERROR(ret, "ABT_key_set");
     }
@@ -58,21 +59,19 @@ static void task_tls_test(void *arg)
     }
     ABT_test_printf(1, "[T%d] passed #2\n", my_id);
 
-    for (i = 1; i < NUM_TLS; i++) {
-        ret = ABT_key_set(tls, NULL);
+    for (i = 2; i < NUM_TLS; i++) {
+        ABT_test_printf(1, "[T%d] free(%p)\n", my_id, value[i]);
+        free(value[i]);
+        ret = ABT_key_set(tls[i], NULL);
         ABT_TEST_ERROR(ret, "ABT_key_set");
 
-        ret = ABT_key_get(tls, &check);
+        ret = ABT_key_get(tls[i], &check);
         ABT_TEST_ERROR(ret, "ABT_key_get");
         assert(check == NULL);
     }
     ABT_test_printf(1, "[T%d] passed #3\n", my_id);
 
-    for (i = 2; i < NUM_TLS; i++) {
-        free(value[i]);
-    }
-
-    ABT_test_printf(1, "[U%d] end\n", my_id);
+    ABT_test_printf(1, "[T%d] end\n", my_id);
 }
 
 static void task_create(void *arg)
@@ -133,12 +132,12 @@ int main(int argc, char *argv[])
     threads = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
 
     /* Create WU-specific data keys */
-    assert(NUM_TLS >= 3);
-    for (i = 0; i < 2; i++) {
+    assert(NUM_TLS >= 4);
+    for (i = 0; i < 3; i++) {
         ret = ABT_key_create(tls_destructor, &tls[i]);
         ABT_TEST_ERROR(ret, "ABT_key_create");
     }
-    for (i = 2; i < NUM_TLS; i++) {
+    for (i = 3; i < NUM_TLS; i++) {
         ret = ABT_key_create(NULL, &tls[i]);
         ABT_TEST_ERROR(ret, "ABT_key_create");
     }
