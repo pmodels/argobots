@@ -250,11 +250,6 @@ static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
     uint32_t idx;
     ABTI_ktelem *p_elem;
 
-    if (value == NULL) {
-        ABTI_ktable_delete(p_ktable, p_key);
-        return;
-    }
-
     /* Look for the same key */
     idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
     p_elem = p_ktable->p_elems[idx];
