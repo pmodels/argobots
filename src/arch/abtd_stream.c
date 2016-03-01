@@ -49,39 +49,3 @@ int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx)
     return abt_errno;
 }
 
-#ifdef HAVE_PTHREAD_SETAFFINITY_NP
-cpu_set_t ABTD_env_get_cpuset(int rank);
-
-int ABTD_xstream_context_set_affinity(ABTD_xstream_context ctx, int rank)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    cpu_set_t cpuset = ABTD_env_get_cpuset(rank);
-    int ret = pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
-    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
-
-#if 0
-    /* For debugging and verification */
-    ret = pthread_getaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
-    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
-    int i;
-    for (i = 0; i < CPU_SETSIZE; i++) {
-        if (CPU_ISSET(i, &cpuset)) {
-            printf("ES%d mapped to core %d\n", rank, i);
-        }
-    }
-#endif
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-#else
-int ABTD_xstream_context_set_affinity(ABTD_xstream_context ctx, int rank)
-{
-    return ABT_SUCCESS;
-}
-#endif

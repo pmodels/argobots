@@ -1213,7 +1213,7 @@ void ABTI_xstream_schedule(void *p_arg)
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_xstream_context_set_affinity(p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
     }
 
     while (1) {

@@ -28,7 +28,10 @@ int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_join(ABTD_xstream_context ctx);
 int ABTD_xstream_context_exit(void);
 int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx);
-int ABTD_xstream_context_set_affinity(ABTD_xstream_context ctx, int rank);
+
+/* ES Affinity */
+void ABTD_affinity_init(void);
+int ABTD_affinity_set(ABTD_xstream_context ctx, int rank);
 
 /* ULT Context */
 #include "abtd_thread.h"
