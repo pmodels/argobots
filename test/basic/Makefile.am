@@ -7,6 +7,7 @@ TESTS = \
 	init_finalize \
 	xstream_create \
 	xstream_affinity \
+	xstream_barrier \
 	thread_create \
 	thread_create2 \
 	thread_create_on_xstream \
@@ -58,6 +59,7 @@ include $(top_srcdir)/test/Makefile.mk
 init_finalize_SOURCES = init_finalize.c
 xstream_create_SOURCES = xstream_create.c
 xstream_affinity_SOURCES = xstream_affinity.c
+xstream_barrier_SOURCES = xstream_barrier.c
 thread_create_SOURCES = thread_create.c
 thread_create2_SOURCES = thread_create2.c
 thread_create_on_xstream_SOURCES = thread_create_on_xstream.c
@@ -100,6 +102,7 @@ testing:
 	./init_finalize
 	./xstream_create
 	./xstream_affinity
+	./xstream_barrier
 	./thread_create
 	./thread_create2
 	./thread_create_on_xstream
