@@ -321,6 +321,11 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_create");
     }
 
+    /* Set the CPU affinity for the ES */
+    if (gp_ABTI_global->set_affinity == ABT_TRUE) {
+        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
+    }
+
   fn_exit:
     return abt_errno;
 
@@ -348,6 +353,11 @@ int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 
     abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
+
+    /* Set the CPU affinity for the ES */
+    if (gp_ABTI_global->set_affinity == ABT_TRUE) {
+        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
+    }
 
     /* Create the main sched ULT */
     ABTI_sched *p_sched = p_xstream->p_main_sched;
@@ -1345,11 +1355,6 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
 void ABTI_xstream_schedule(void *p_arg)
 {
     ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
-
-    /* Set the CPU affinity for the ES */
-    if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
-    }
 
     while (1) {
         p_xstream->state = ABT_XSTREAM_STATE_RUNNING;
