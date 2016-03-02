@@ -70,3 +70,71 @@ int ABTD_affinity_set(ABTD_xstream_context ctx, int rank)
 #endif
 }
 
+int ABTD_affinity_set_cpuset(ABTD_xstream_context ctx, int cpuset_size,
+                             int *p_cpuset)
+{
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+    int abt_errno = ABT_SUCCESS;
+    int i, ret;
+    cpu_set_t cpuset;
+
+    CPU_ZERO(&cpuset);
+    for (i = 0; i < cpuset_size; i++) {
+        ABTI_ASSERT(p_cpuset[i] < CPU_SETSIZE);
+        CPU_SET(p_cpuset[i], &cpuset);
+    }
+
+    ret = pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
+    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
+}
+
+int ABTD_affinity_get_cpuset(ABTD_xstream_context ctx, int cpuset_size,
+                             int *p_cpuset, int *p_num_cpus)
+{
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+    int abt_errno = ABT_SUCCESS;
+    int i, ret;
+    cpu_set_t cpuset;
+    int num_cpus = 0;
+
+    ret = pthread_getaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
+    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
+
+    if (p_cpuset != NULL) {
+        for (i = 0; i < CPU_SETSIZE; i++) {
+            if (CPU_ISSET(i, &cpuset)) {
+                if (num_cpus < cpuset_size) {
+                    p_cpuset[num_cpus] = i;
+                } else {
+                    break;
+                }
+                num_cpus++;
+            }
+        }
+    }
+
+    if (p_num_cpus != NULL) {
+        *p_num_cpus = CPU_COUNT(&cpuset);
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
+}
+

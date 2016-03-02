@@ -1170,6 +1170,141 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
 }
 
 
+/**
+ * @ingroup ES
+ * @brief   Bind the target ES to a target CPU.
+ *
+ * \c ABT_xstream_set_cpubind() binds the target ES \c xstream to the target
+ * CPU whose ID is \c cpuid.  Here, the CPU ID corresponds to the processor
+ * index used by OS.
+ *
+ * @param[in] xstream  handle to the target ES
+ * @param[in] cpuid    CPU ID
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    abt_errno = ABTD_affinity_set_cpuset(p_xstream->ctx, 1, &cpuid);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
+ * @brief   Get the CPU binding for the target ES.
+ *
+ * \c ABT_xstream_get_cpubind() returns the ID of CPU, which the target ES
+ * \c xstream is bound to.  If \c xstream is bound to more than one CPU, only
+ * the first CPU ID is returned.
+ *
+ * @param[in] xstream  handle to the target ES
+ * @param[out] cpuid   CPU ID
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    abt_errno = ABTD_affinity_get_cpuset(p_xstream->ctx, 1, cpuid, NULL);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
+ * @brief   Set the CPU affinity of the target ES.
+ *
+ * \c ABT_xstream_set_cpubind() binds the target ES \c xstream on the given CPU
+ * set, \c cpuset, which is an array of CPU IDs.  Here, the CPU IDs correspond
+ * to processor indexes used by OS.
+ *
+ * @param[in] xstream      handle to the target ES
+ * @param[in] cpuset_size  the number of \c cpuset entries
+ * @param[in] cpuset       array of CPU IDs
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    abt_errno = ABTD_affinity_set_cpuset(p_xstream->ctx, cpuset_size, cpuset);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
+ * @brief   Get the CPU affinity for the target ES.
+ *
+ * \c ABT_xstream_get_cpubind() writes CPU IDs (at most, \c cpuset_size) to
+ * \c cpuset and returns the number of elements written to \c cpuset to
+ * \c num_cpus.  If \c num_cpus is \c NULL, it is ignored.
+ *
+ * If \c cpuset is \c NULL, \c cpuset_size is ignored and the nubmer of all
+ * CPUs on which \c xstream is bound is returned through \c num_cpus.
+ * Otherwise, i.e., if \c cpuset is \c NULL, \c cpuset_size must be greater
+ * than zero.
+ *
+ * @param[in]  xstream      handle to the target ES
+ * @param[in]  cpuset_size  the number of \c cpuset entries
+ * @param[out] cpuset       array of CPU IDs
+ * @param[out] num_cpus     the number of total CPU IDs
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_get_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset,
+                             int *num_cpus)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    if (cpuset == NULL && num_cpus == NULL) {
+        goto fn_exit;
+    }
+
+    abt_errno = ABTD_affinity_get_cpuset(p_xstream->ctx, cpuset_size, cpuset,
+                                         num_cpus);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/

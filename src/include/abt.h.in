@@ -350,6 +350,11 @@ int ABT_xstream_get_num(int *num_xstreams);
 int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag);
 int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool);
 int ABT_xstream_check_events(ABT_sched sched);
+int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid);
+int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid);
+int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset);
+int ABT_xstream_get_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset,
+                             int *num_cpus);
 
 /* Scheduler */
 int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,

@@ -32,6 +32,10 @@ int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx);
 /* ES Affinity */
 void ABTD_affinity_init(void);
 int ABTD_affinity_set(ABTD_xstream_context ctx, int rank);
+int ABTD_affinity_set_cpuset(ABTD_xstream_context ctx, int cpuset_size,
+                             int *p_cpuset);
+int ABTD_affinity_get_cpuset(ABTD_xstream_context ctx, int cpuset_size,
+                             int *p_cpuset, int *p_num_cpus);
 
 /* ULT Context */
 #include "abtd_thread.h"
