@@ -1,5 +1,6 @@
 # basic
 basic/xstream_create
+basic/xstream_affinity
 basic/thread_create
 basic/thread_create2
 basic/thread_create_on_xstream
