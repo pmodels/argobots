@@ -1,4 +1,5 @@
 # basic
+basic/init_finalize
 basic/xstream_create
 basic/xstream_affinity
 basic/thread_create

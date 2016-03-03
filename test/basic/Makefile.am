@@ -4,6 +4,7 @@
 #
 
 TESTS = \
+	init_finalize \
 	xstream_create \
 	xstream_affinity \
 	thread_create \
@@ -53,6 +54,7 @@ noinst_PROGRAMS = $(TESTS)
 
 include $(top_srcdir)/test/Makefile.mk
 
+init_finalize_SOURCES = init_finalize.c
 xstream_create_SOURCES = xstream_create.c
 xstream_affinity_SOURCES = xstream_affinity.c
 thread_create_SOURCES = thread_create.c
@@ -93,6 +95,7 @@ ext_thread_SOURCES = ext_thread.c
 timer_SOURCES = timer.c
 
 testing:
+	./init_finalize
 	./xstream_create
 	./xstream_affinity
 	./thread_create
