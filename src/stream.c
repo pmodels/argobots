@@ -713,6 +713,11 @@ int ABT_xstream_set_rank(ABT_xstream xstream, const int rank)
 
     p_xstream->rank = (uint64_t)rank;
 
+    /* Set the CPU affinity for the ES */
+    if (gp_ABTI_global->set_affinity == ABT_TRUE) {
+        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
+    }
+
   fn_exit:
     return abt_errno;
 
