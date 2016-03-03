@@ -13,6 +13,9 @@
 /* Global Data */
 ABTI_global *gp_ABTI_global = NULL;
 
+/* To indicate how many times ABT_init is called. */
+static uint32_t g_ABTI_num_inits = 0;
+
 /**
  * @ingroup ENV
  * @brief   Initialize the Argobots execution environment.
@@ -35,7 +38,8 @@ int ABT_init(int argc, char **argv)
     int abt_errno = ABT_SUCCESS;
 
     /* If Argobots has already been initialized, just return. */
-    if (gp_ABTI_global != NULL) goto fn_exit;
+    uint32_t num_inits = ABTD_atomic_fetch_add_uint32(&g_ABTI_num_inits, 1);
+    if (num_inits > 0 || gp_ABTI_global != NULL) goto fn_exit;
 
     gp_ABTI_global = (ABTI_global *)ABTU_malloc(sizeof(ABTI_global));
 
@@ -107,10 +111,13 @@ int ABT_finalize(void)
     int abt_errno = ABT_SUCCESS;
 
     /* If Argobots is not initialized, just return. */
-    if (gp_ABTI_global == NULL) {
+    if (gp_ABTI_global == NULL || g_ABTI_num_inits == 0) {
         abt_errno = ABT_ERR_UNINITIALIZED;
         goto fn_exit;
     }
+
+    uint32_t num_inits = ABTD_atomic_fetch_sub_uint32(&g_ABTI_num_inits, 1);
+    if (num_inits != 1) goto fn_exit;
 
     /* If called by an external thread, return an error. */
     ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
