@@ -545,6 +545,9 @@ void  ABTI_thread_retain(ABTI_thread *p_thread);
 void  ABTI_thread_release(ABTI_thread *p_thread);
 void  ABTI_thread_reset_id(void);
 ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread);
+ABT_thread_id ABTI_thread_self_id(void);
+int ABTI_thread_get_xstream_rank(ABTI_thread *p_thread);
+int ABTI_thread_self_xstream_rank(void);
 
 /* ULT Attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);

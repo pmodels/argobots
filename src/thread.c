@@ -2050,6 +2050,31 @@ ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread)
     return p_thread->id;
 }
 
+ABT_thread_id ABTI_thread_self_id(void)
+{
+    ABTI_thread *p_self = NULL;
+    if (lp_ABTI_local) p_self = ABTI_local_get_thread();
+    return ABTI_thread_get_id(p_self);
+}
+
+int ABTI_thread_get_xstream_rank(ABTI_thread *p_thread)
+{
+    if (p_thread == NULL) return -1;
+
+    if (p_thread->p_last_xstream) {
+        return p_thread->p_last_xstream->rank;
+    } else {
+        return -1;
+    }
+}
+
+int ABTI_thread_self_xstream_rank(void)
+{
+    ABTI_thread *p_self = NULL;
+    if (lp_ABTI_local) p_self = ABTI_local_get_thread();
+    return ABTI_thread_get_xstream_rank(p_self);
+}
+
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
