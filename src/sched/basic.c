@@ -115,11 +115,11 @@ static void sched_run(ABT_sched sched)
         }
 
         if (++work_count >= event_freq) {
+            ABTI_xstream_check_events(p_xstream, sched);
             ABT_bool stop = ABTI_sched_has_to_stop(p_sched, p_xstream);
             if (stop == ABT_TRUE)
                 break;
             work_count = 0;
-            ABTI_xstream_check_events(p_xstream, sched);
         }
     }
 }
