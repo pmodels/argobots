@@ -21,6 +21,9 @@ static ABT_sched_def sched_randws_def = {
 
 typedef struct {
     uint32_t event_freq;
+#ifdef ABT_CONFIG_USE_SCHED_SLEEP
+    struct timespec sleep_time;
+#endif
 } sched_data;
 
 ABT_sched_def *ABTI_sched_get_randws_def(void)
@@ -35,6 +38,10 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     /* Default settings */
     sched_data *p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
     p_data->event_freq = ABTI_global_get_sched_event_freq();
+#ifdef ABT_CONFIG_USE_SCHED_SLEEP
+    p_data->sleep_time.tv_sec = 0;
+    p_data->sleep_time.tv_nsec = ABTI_global_get_sched_sleep_nsec();
+#endif
 
     /* Set the variables from the config */
     ABT_sched_config_read(config, 1, &p_data->event_freq);
@@ -59,6 +66,7 @@ static void sched_run(ABT_sched sched)
     ABT_unit unit;
     int target;
     unsigned seed = time(NULL);
+    CNT_DECL(run_cnt);
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
@@ -69,6 +77,8 @@ static void sched_run(ABT_sched sched)
     ABT_sched_get_pools(sched, num_pools, 0, p_pools);
 
     while (1) {
+        CNT_INIT(run_cnt, 0);
+
         /* Execute one work unit from the scheduler's pool */
         ABT_pool pool = p_pools[0];
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -78,6 +88,7 @@ static void sched_run(ABT_sched sched)
             LOG_EVENT_POOL_POP(p_pool, unit);
             if (unit != ABT_UNIT_NULL) {
                 ABTI_xstream_run_unit(p_xstream, unit, p_pool);
+                CNT_INC(run_cnt);
             }
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
@@ -90,6 +101,7 @@ static void sched_run(ABT_sched sched)
                 LOG_EVENT_POOL_POP(p_pool, unit);
                 if (unit != ABT_UNIT_NULL) {
                     ABTI_xstream_run_unit(p_xstream, unit, p_pool);
+                    CNT_INC(run_cnt);
                 }
             }
         }
@@ -99,6 +111,7 @@ static void sched_run(ABT_sched sched)
             if (stop == ABT_TRUE) break;
             work_count = 0;
             ABTI_xstream_check_events(p_xstream, sched);
+            SCHED_SLEEP(run_cnt, p_data->sleep_time);
         }
     }
 

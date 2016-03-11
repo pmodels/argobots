@@ -150,6 +150,7 @@ struct ABTI_global {
     size_t thread_stacksize;    /* Default stack size for ULT (in bytes) */
     size_t sched_stacksize;     /* Default stack size for sched (in bytes) */
     uint32_t sched_event_freq;  /* Default check frequency for sched */
+    long sched_sleep_nsec;      /* Default nanoseconds for scheduler sleep */
     ABTI_thread *p_thread_main; /* ULT of the main function */
 
     uint32_t cache_line_size;          /* Cache line size */

@@ -185,6 +185,10 @@ AC_ARG_ENABLE([feature],
         none|no             - disable all features above
 ],,[enable_feature=all])
 
+# --enable-sched-sleep
+AC_ARG_ENABLE([sched-sleep],
+    AS_HELP_STRING([--enable-sched-sleep], [enable scheduler sleep]))
+
 # --with-hugetlbfs
 AC_ARG_WITH([hugetlbfs],
     AS_HELP_STRING([--with-hugetlbfs=PATH],
@@ -533,6 +537,12 @@ AS_IF([test "x$enable_ext_thread" = "xno"],
         [Define to disable supporting external threads])])
 AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
     [test "x$enable_ext_thread" = "xno"])
+
+
+# --enable-sched-sleep
+AS_IF([test "x$enable_sched_sleep" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_USE_SCHED_SLEEP, 1,
+                 [Define to make the scheduler sleep when its pools are empty])])
 
 
 # --with-hugetlbfs

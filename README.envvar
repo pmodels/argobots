@@ -77,6 +77,13 @@ ABT_SCHED_EVENT_FREQ
     Values: unsigned integer
     Default: 50
 
+ABT_SCHED_SLEEP_NSEC
+    Aliases: ABT_ENV_SCHED_SLEEP_NSEC
+    Description: Set the default nanosleep value when making the scheduler
+                 sleep.
+    Values: long
+    Default: 100
+
 ABT_CACHE_LINE_SIZE
     Aliases: ABT_ENV_CACHE_LINE_SIZE
     Description: Set the cache line size.

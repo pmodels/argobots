@@ -11,6 +11,7 @@
 #define ABTD_THREAD_DEFAULT_STACKSIZE   16384
 #define ABTD_SCHED_DEFAULT_STACKSIZE    (4*1024*1024)
 #define ABTD_SCHED_EVENT_FREQ           50
+#define ABTD_SCHED_SLEEP_NSEC           100
 
 #define ABTD_CACHE_LINE_SIZE            64
 #define ABTD_OS_PAGE_SIZE               (4*1024)
@@ -118,6 +119,16 @@ void ABTD_env_init(ABTI_global *p_global)
         ABTI_ASSERT(p_global->sched_event_freq >= 1);
     } else {
         p_global->sched_event_freq = ABTD_SCHED_EVENT_FREQ;
+    }
+
+    /* Default nanoseconds for scheduler sleep */
+    env = getenv("ABT_SCHED_SLEEP_NSEC");
+    if (env == NULL) env = getenv("ABT_ENV_SCHED_SLEEP_NSEC");
+    if (env != NULL) {
+        p_global->sched_sleep_nsec = atol(env);
+        ABTI_ASSERT(p_global->sched_sleep_nsec >= 0);
+    } else {
+        p_global->sched_sleep_nsec = ABTD_SCHED_SLEEP_NSEC;
     }
 
     /* Cache line size */
