@@ -2042,6 +2042,8 @@ void ABTI_thread_reset_id(void)
 
 ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread)
 {
+    if (p_thread == NULL) return ABTI_THREAD_INIT_ID;
+
     if (p_thread->id == ABTI_THREAD_INIT_ID) {
         p_thread->id = ABTI_thread_get_new_id();
     }
