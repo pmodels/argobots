@@ -63,7 +63,9 @@ int ABT_init(int argc, char **argv)
     gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_calloc(
             gp_ABTI_global->max_xstreams, sizeof(ABTI_xstream *));
     gp_ABTI_global->num_xstreams = 0;
-    ABTI_mutex_init(&gp_ABTI_global->mutex);
+
+    /* Create a spinlock */
+    ABTI_spinlock_create(&gp_ABTI_global->lock);
 
     /* Init the ES local data */
     abt_errno = ABTI_local_init();
@@ -183,6 +185,9 @@ int ABT_finalize(void)
 
     /* Finalize the memory pool */
     ABTI_mem_finalize(gp_ABTI_global);
+
+    /* Free the spinlock */
+    ABTI_spinlock_free(&gp_ABTI_global->lock);
 
     /* Free the ABTI_global structure */
     ABTU_free(gp_ABTI_global);

@@ -261,10 +261,10 @@ static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
     ABTI_global *p_global = gp_ABTI_global;
 
     /* Add the page list to the global list */
-    ABTI_mutex_spinlock(&p_global->mutex);
+    ABTI_spinlock_acquire(&p_global->lock);
     p_tail->p_next = p_global->p_mem_task;
     p_global->p_mem_task = p_head;
-    ABTI_mutex_unlock(&p_global->mutex);
+    ABTI_spinlock_release(&p_global->lock);
 }
 
 char *ABTI_mem_take_global_stack(ABTI_local *p_local)
@@ -561,12 +561,12 @@ ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local)
     ABTI_page_header *p_ph = NULL;
 
     /* Take the first page out */
-    ABTI_mutex_spinlock(&p_global->mutex);
+    ABTI_spinlock_acquire(&p_global->lock);
     if (p_global->p_mem_task) {
         p_ph = p_global->p_mem_task;
         p_global->p_mem_task = p_ph->p_next;
     }
-    ABTI_mutex_unlock(&p_global->mutex);
+    ABTI_spinlock_release(&p_global->lock);
 
     if (p_ph) {
         ABTI_mem_add_page(p_local, p_ph);

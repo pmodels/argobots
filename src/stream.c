@@ -1933,7 +1933,7 @@ static uint64_t ABTI_xstream_get_new_rank(void)
     int max_xstreams;
 
     if (gp_ABTI_global->num_xstreams >= gp_ABTI_global->max_xstreams) {
-        ABTI_mutex_spinlock(&gp_ABTI_global->mutex);
+        ABTI_spinlock_acquire(&gp_ABTI_global->lock);
         if (gp_ABTI_global->num_xstreams >= gp_ABTI_global->max_xstreams) {
             max_xstreams = gp_ABTI_global->max_xstreams * 2;
             gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_realloc(
@@ -1946,7 +1946,7 @@ static uint64_t ABTI_xstream_get_new_rank(void)
             }
             gp_ABTI_global->max_xstreams = max_xstreams;
         }
-        ABTI_mutex_unlock(&gp_ABTI_global->mutex);
+        ABTI_spinlock_release(&gp_ABTI_global->lock);
     }
 
     for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {

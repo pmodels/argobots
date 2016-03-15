@@ -145,7 +145,7 @@ struct ABTI_global {
     int max_xstreams;           /* Max. size of p_xstreams */
     int num_xstreams;           /* Current # of ESs */
     ABTI_xstream **p_xstreams;  /* ES array */
-    ABTI_mutex mutex;           /* Mutex */
+    ABTI_spinlock lock;         /* Spinlock */
 
     int num_cores;              /* Number of CPU cores */
     ABT_bool set_affinity;      /* Whether CPU affinity is used */
