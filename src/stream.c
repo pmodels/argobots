@@ -90,7 +90,9 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
 
     /* Create mutex */
     ABTI_mutex_init(&p_newxstream->mutex);
-    ABTI_mutex_init(&p_newxstream->top_sched_mutex);
+
+    /* Create the spinlock */
+    ABTI_spinlock_create(&p_newxstream->sched_lock);
 
     /* Set the main scheduler */
     abt_errno = ABTI_xstream_set_main_sched(p_newxstream, p_sched);
@@ -231,7 +233,9 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
 
     /* Create mutex */
     ABTI_mutex_init(&p_newxstream->mutex);
-    ABTI_mutex_init(&p_newxstream->top_sched_mutex);
+
+    /* Create the spinlock */
+    ABTI_spinlock_create(&p_newxstream->sched_lock);
 
     /* Set the main scheduler */
     abt_errno = ABTI_xstream_set_main_sched(p_newxstream, p_sched);
@@ -1347,6 +1351,9 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     /* Return rank for reuse */
     ABTI_xstream_return_rank(p_xstream->rank);
 
+    /* Free the spinlock */
+    ABTI_spinlock_free(&p_xstream->sched_lock);
+
     ABTU_free(p_xstream);
 
   fn_exit:
@@ -1375,7 +1382,7 @@ void ABTI_xstream_schedule(void *p_arg)
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
 
         p_xstream->state = ABT_XSTREAM_STATE_READY;
-        ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
+        ABTI_spinlock_release(&p_xstream->sched_lock);
 
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
         /* If there is a stop request, the ES has to be terminated/ */
@@ -1476,7 +1483,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
         p_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
-        ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
+        ABTI_spinlock_release(&p_xstream->sched_lock);
     }
 #endif
 
@@ -1600,7 +1607,7 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
         ABTI_xstream_pop_sched(p_xstream);
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
-        ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
+        ABTI_spinlock_release(&p_xstream->sched_lock);
         ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
         LOG_EVENT("[S%" PRIu64 ":E%" PRIu64 "] stacked sched end\n",
                   p_task->is_sched->id, p_xstream->rank);

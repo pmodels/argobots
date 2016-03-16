@@ -464,7 +464,7 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
 
     /* Check exit request */
     if (p_sched->request & ABTI_SCHED_REQ_EXIT) {
-        ABTI_mutex_spinlock(&p_xstream->top_sched_mutex);
+        ABTI_spinlock_acquire(&p_xstream->sched_lock);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
         stop = ABT_TRUE;
         goto fn_exit;
@@ -476,13 +476,13 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
             /* Check join request */
             /* We need to lock in case someone wants to migrate to this
              * scheduler */
-            ABTI_mutex_spinlock(&p_xstream->top_sched_mutex);
+            ABTI_spinlock_acquire(&p_xstream->sched_lock);
             size_t size = ABTI_sched_get_effective_size(p_sched);
             if (size == 0) {
                 p_sched->state = ABT_SCHED_STATE_TERMINATED;
                 stop = ABT_TRUE;
             } else {
-                ABTI_mutex_unlock(&p_xstream->top_sched_mutex);
+                ABTI_spinlock_release(&p_xstream->sched_lock);
             }
         } else if (p_sched->used == ABTI_SCHED_IN_POOL) {
             /* If the scheduler is a stacked one, we have to escape from the

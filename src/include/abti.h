@@ -219,7 +219,7 @@ struct ABTI_xstream {
     ABTI_sched **scheds;        /* Stack of running schedulers */
     int max_scheds;             /* Allocation size of the array scheds */
     int num_scheds;             /* Number of scheds */
-    ABTI_mutex top_sched_mutex; /* Mutex for the top scheduler */
+    ABTI_spinlock sched_lock;   /* Lock for the scheduler management */
 
     uint32_t request;           /* Request */
     void *p_req_arg;            /* Request argument */
