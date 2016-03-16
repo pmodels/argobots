@@ -69,8 +69,8 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
+    /* Create a spinlock */
+    ABTI_spinlock_create(&p_newthread->lock);
 
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);
@@ -1528,9 +1528,9 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
     ABTI_CHECK_TRUE(p_thread->p_pool != p_pool, ABT_ERR_MIGRATION_TARGET);
 
     /* adding request to the thread */
-    ABTI_mutex_spinlock(&p_thread->mutex);
+    ABTI_spinlock_acquire(&p_thread->lock);
     ABTI_thread_add_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE, p_pool);
-    ABTI_mutex_unlock(&p_thread->mutex);
+    ABTI_spinlock_release(&p_thread->lock);
     ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
@@ -1581,8 +1581,8 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     p_newthread->p_keytable      = NULL;
     p_newthread->id              = ABTI_THREAD_INIT_ID;
 
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
+    /* Create a spinlock */
+    ABTI_spinlock_create(&p_newthread->lock);
 
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);
@@ -1660,8 +1660,8 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
+    /* Create a spinlock */
+    ABTI_spinlock_create(&p_newthread->lock);
 
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main sched ULT created\n",
               ABTI_thread_get_id(p_newthread), p_xstream->rank);
@@ -1720,8 +1720,8 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
-    /* Initialize the mutex */
-    ABTI_mutex_init(&p_newthread->mutex);
+    /* Create a spinlock */
+    ABTI_spinlock_create(&p_newthread->lock);
 
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);
@@ -1755,10 +1755,9 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
 void ABTI_thread_free(ABTI_thread *p_thread)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    /* Mutex of p_thread may have been locked somewhere. We free p_thread when
-       mutex can be locked here. Since p_thread and its mutex will be freed,
-       we don't need to unlock the mutex. */
-    ABTI_mutex_spinlock(&p_thread->mutex);
+    /* p_thread's lock may have been acquired somewhere. We free p_thread when
+       the lock can be acquired here. */
+    ABTI_spinlock_acquire(&p_thread->lock);
 #endif
 
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] freed\n",
@@ -1774,6 +1773,9 @@ void ABTI_thread_free(ABTI_thread *p_thread)
     if (p_thread->p_keytable) {
         ABTI_ktable_free(p_thread->p_keytable);
     }
+
+    /* Free the spinlock */
+    ABTI_spinlock_free(&p_thread->lock);
 
     /* Free ABTI_thread (stack will also be freed) */
     ABTI_mem_free_thread(p_thread);

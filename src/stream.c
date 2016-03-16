@@ -1635,7 +1635,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
     }
 
-    ABTI_mutex_spinlock(&p_thread->mutex); // TODO: mutex useful?
+    ABTI_spinlock_acquire(&p_thread->lock); // TODO: mutex useful?
     {
         /* extracting argument in migration request */
         p_pool = (ABTI_pool *)ABTI_thread_extract_req_arg(p_thread,
@@ -1656,7 +1656,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         /* Add the unit to the scheduler's pool */
         abt_errno = ABT_pool_push(pool, p_thread->unit);
     }
-    ABTI_mutex_unlock(&p_thread->mutex);
+    ABTI_spinlock_release(&p_thread->lock);
 
     ABTI_pool_dec_num_migrations(p_pool);
 
