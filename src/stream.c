@@ -88,9 +88,6 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     p_newxstream->p_req_arg    = NULL;
     p_newxstream->p_main_sched = NULL;
 
-    /* Create mutex */
-    ABTI_mutex_init(&p_newxstream->mutex);
-
     /* Create the spinlock */
     ABTI_spinlock_create(&p_newxstream->sched_lock);
 
@@ -230,9 +227,6 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     p_newxstream->request      = 0;
     p_newxstream->p_req_arg    = NULL;
     p_newxstream->p_main_sched = NULL;
-
-    /* Create mutex */
-    ABTI_mutex_init(&p_newxstream->mutex);
 
     /* Create the spinlock */
     ABTI_spinlock_create(&p_newxstream->sched_lock);
@@ -468,16 +462,13 @@ int ABT_xstream_join(ABT_xstream xstream)
                         "The primary ES cannot be joined.");
 
     if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
-        ABTI_mutex_spinlock(&p_xstream->mutex);
         /* If xstream's state was changed, we cannot terminate it here */
         if (ABTD_atomic_cas_int32((int32_t *)&p_xstream->state,
                                   ABT_XSTREAM_STATE_CREATED,
                                   ABT_XSTREAM_STATE_TERMINATED)
             != ABT_XSTREAM_STATE_CREATED) {
-            ABTI_mutex_unlock(&p_xstream->mutex);
             goto fn_body;
         }
-        ABTI_mutex_unlock(&p_xstream->mutex);
         goto fn_exit;
     }
 

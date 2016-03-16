@@ -223,7 +223,6 @@ struct ABTI_xstream {
 
     uint32_t request;           /* Request */
     void *p_req_arg;            /* Request argument */
-    ABTI_mutex mutex;           /* Mutex */
     ABTI_sched *p_main_sched;   /* Main scheduler */
 
     ABTD_xstream_context ctx;   /* ES context */
