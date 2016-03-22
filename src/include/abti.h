@@ -487,6 +487,7 @@ ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread);
 /* ULT Attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);
 void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf);
+ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr);
 
 /* Tasklet */
 int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched);

@@ -1377,6 +1377,40 @@ int ABT_thread_get_arg(ABT_thread thread, void **arg)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ULT
+ * @brief   Get attributes of the target ULT
+ *
+ * \c ABT_thread_get_attr() returns the attributes of the ULT \c thread to
+ * \c attr.  \c attr contains actual attribute values that may be different
+ * from those used to create \c thread.  Since this routine allocates an
+ * attribute object, when \c attr is no longer used it should be destroyed
+ * using \c ABT_thread_attr_free().
+ *
+ * @param[in]  thread  handle to the target ULT
+ * @param[out] attr    ULT attributes
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    ABTI_thread_attr *p_attr;
+    p_attr = ABTI_thread_attr_dup(&p_thread->attr);
+
+    *attr = ABTI_thread_attr_get_handle(p_attr);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
 
 /*****************************************************************************/
 /* Private APIs                                                              */

@@ -272,3 +272,14 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
     );
 #endif
 }
+
+ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr)
+{
+    ABTI_thread_attr *p_dupattr;
+
+    p_dupattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
+    memcpy(p_dupattr, p_attr, sizeof(ABTI_thread_attr));
+
+    return p_dupattr;
+}
+
