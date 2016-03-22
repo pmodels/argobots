@@ -277,13 +277,6 @@ AC_ARG_ENABLE([stackable-sched],
 AS_IF([test "x$enable_stackable_sched" != "xyes"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_STACKABLE_SCHED, 1,
         [Define to disable stackable scheduler])])
-
-AC_ARG_ENABLE([ult-join-opt],
-    AS_HELP_STRING([--enable-ult-join-opt],
-        [bypass the scheduler when joining ULT]))
-AS_IF([test "x$enable_ult_join_opt" = "xyes"],
-    [AC_DEFINE(ABT_CONFIG_USE_ULT_JOIN_OPT, 1,
-        [Define to bypass the scheduler when joining ULT])])
 dnl ----------------------------------------------------------------------------
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])

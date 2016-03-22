@@ -327,7 +327,6 @@ int ABT_thread_join(ABT_thread thread)
     ABTI_CHECK_TRUE_MSG(p_thread != ABTI_local_get_thread(), ABT_ERR_INV_THREAD,
                         "The target ULT should be different.");
 
-#ifdef ABT_CONFIG_USE_ULT_JOIN_OPT
     ABTI_thread *p_self = ABTI_local_get_thread();
     ABT_pool_access access = p_self->p_pool->access;
 
@@ -411,7 +410,6 @@ int ABT_thread_join(ABT_thread thread)
         ABTI_local_set_thread(p_self);
         goto fn_exit;
     }
-#endif /* ABT_CONFIG_USE_ULT_JOIN_OPT */
 
   yield_based:
     while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
