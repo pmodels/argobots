@@ -14,11 +14,24 @@
 void thread_func(void *arg)
 {
     size_t my_id = (size_t)arg;
-    size_t stacksize;
     ABT_thread thread;
+    ABT_thread_attr attr;
+    size_t stacksize1, stacksize2;
+    int ret;
+
     ABT_thread_self(&thread);
-    ABT_thread_get_stacksize(thread, &stacksize);
-    ABT_test_printf(1, "[TH%lu]: stacksize=%lu\n", my_id, stacksize);
+    ret = ABT_thread_get_attr(thread, &attr);
+    ABT_TEST_ERROR(ret, "ABT_thread_get_attr");
+
+    ret = ABT_thread_attr_get_stacksize(attr, &stacksize1);
+    ABT_TEST_ERROR(ret, "ABT_thread_attr_get_stacksize");
+    ret = ABT_thread_get_stacksize(thread, &stacksize2);
+    ABT_TEST_ERROR(ret, "ABT_thread_get_stacksize");
+    assert(stacksize1 == stacksize2);
+    ABT_test_printf(1, "[TH%lu]: stacksize=%lu\n", my_id, stacksize1);
+
+    ret = ABT_thread_attr_free(&attr);
+    ABT_TEST_ERROR(ret, "ABT_thread_attr_free");
 }
 
 int main(int argc, char *argv[])
@@ -75,6 +88,8 @@ int main(int argc, char *argv[])
     /* Free the attribute */
     ret = ABT_thread_attr_free(&attr);
     ABT_TEST_ERROR(ret, "ABT_thread_attr_free");
+
+    thread_func((void *)0);
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
