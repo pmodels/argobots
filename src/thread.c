@@ -6,6 +6,7 @@
 #include "abti.h"
 
 static inline ABT_thread_id ABTI_thread_get_new_id(void);
+static inline void ABTI_thread_set_attr(ABTI_thread *, ABT_thread_attr);
 
 
 /** @defgroup ULT User-level Thread (ULT)
@@ -1833,32 +1834,6 @@ ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread)
     return ABT_FALSE;
 }
 
-void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
-{
-    ABTI_thread_attr *my_attr = &p_thread->attr;
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    if (attr != ABT_THREAD_ATTR_NULL) {
-        ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-        my_attr->stacksize  = p_attr->stacksize;
-        my_attr->migratable = p_attr->migratable;
-        my_attr->f_cb       = p_attr->f_cb;
-        my_attr->p_cb_arg   = p_attr->p_cb_arg;
-    } else {
-        my_attr->stacksize  = ABTI_global_get_thread_stacksize();
-        my_attr->migratable = ABT_TRUE;
-        my_attr->f_cb       = NULL;
-        my_attr->p_cb_arg   = NULL;
-    }
-#else
-    if (attr != ABT_THREAD_ATTR_NULL) {
-        ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-        my_attr->stacksize  = p_attr->stacksize;
-    } else {
-        my_attr->stacksize  = ABTI_global_get_thread_stacksize();
-    }
-#endif
-}
-
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
 {
     char *prefix = ABTU_get_indent_str(indent);
@@ -2016,5 +1991,22 @@ ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread)
 static inline ABT_thread_id ABTI_thread_get_new_id(void)
 {
     return (ABT_thread_id)ABTD_atomic_fetch_add_uint64(&g_thread_id, 1);
+}
+
+static inline
+void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
+{
+    ABTI_thread_attr *my_attr = &p_thread->attr;
+    if (attr != ABT_THREAD_ATTR_NULL) {
+        ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+        memcpy(my_attr, p_attr, sizeof(ABTI_thread_attr));
+    } else {
+        my_attr->stacksize  = ABTI_global_get_thread_stacksize();
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+        my_attr->migratable = ABT_TRUE;
+        my_attr->f_cb       = NULL;
+        my_attr->p_cb_arg   = NULL;
+#endif
+    }
 }
 
