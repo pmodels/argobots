@@ -340,7 +340,7 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
         "cb_arg:%p"
         "]",
         p_attr->p_stack,
-        (size_t)p_attr->stacksize,
+        p_attr->stacksize,
         (p_attr->userstack == ABT_TRUE ? "TRUE" : "FALSE"),
         p_attr->f_cb,
         p_attr->p_cb_arg
@@ -353,7 +353,7 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
         "userstack:%s "
         "]",
         p_attr->p_stack,
-        (size_t)p_attr->stacksize,
+        p_attr->stacksize,
         (p_attr->userstack == ABT_TRUE ? "TRUE" : "FALSE")
     );
 #endif
