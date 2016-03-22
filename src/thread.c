@@ -2001,7 +2001,9 @@ void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
         ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
         memcpy(my_attr, p_attr, sizeof(ABTI_thread_attr));
     } else {
+        my_attr->p_stack    = NULL;
         my_attr->stacksize  = ABTI_global_get_thread_stacksize();
+        my_attr->userstack  = ABT_FALSE;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         my_attr->migratable = ABT_TRUE;
         my_attr->f_cb       = NULL;

@@ -251,13 +251,13 @@ struct ABTI_unit {
 };
 
 struct ABTI_thread_attr {
+    void *p_stack;                      /* Stack address */
+    size_t stacksize;                   /* Stack size (in bytes) */
+    ABT_bool userstack;                 /* User-provided stack? */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    size_t   stacksize;                 /* Stack size */
     ABT_bool migratable;                /* Migratability */
     void (*f_cb)(ABT_thread, void *);   /* Callback function */
     void *p_cb_arg;                     /* Callback function argument */
-#else
-    size_t   stacksize;                 /* Stack size */
 #endif
 };
 

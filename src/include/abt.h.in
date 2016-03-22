@@ -435,6 +435,10 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr);
 /* ULT Attributes */
 int ABT_thread_attr_create(ABT_thread_attr *newattr);
 int ABT_thread_attr_free(ABT_thread_attr *attr);
+int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
+                              size_t stacksize);
+int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
+                              size_t *stacksize);
 int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize);
 int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize);
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,

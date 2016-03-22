@@ -32,7 +32,9 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     p_newattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
 
     /* Default values */
+    p_newattr->p_stack    = NULL;
     p_newattr->stacksize  = ABTI_global_get_thread_stacksize();
+    p_newattr->userstack  = ABT_FALSE;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newattr->migratable = ABT_TRUE;
     p_newattr->f_cb       = NULL;
@@ -69,6 +71,86 @@ int ABT_thread_attr_free(ABT_thread_attr *attr)
 
     /* Return value */
     *attr = ABT_THREAD_ATTR_NULL;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT_ATTR
+ * @brief   Set stack attributes.
+ *
+ * \c ABT_thread_attr_set_stack() sets the stack address and the stack size
+ * (in bytes) in the attribute object associated with handle \c attr.
+ * If \c attr is used to create a ULT, the memory pointed to by \c stackaddr
+ * will be used as the stack area for the new ULT.
+ *
+ * If \c stackaddr is \c NULL, a stack with size \c stacksize will be created
+ * by the Argobots runtime.  If it is not \c NULL, it should be aligned by 8
+ * (i.e., \c stackaddr & 0x7 must be zero), and the user has to deallocate
+ * the stack memory after the ULT, for which \c attr was used, terminates.
+ *
+ * @param[in] attr       handle to the target attribute object
+ * @param[in] stackaddr  stack address
+ * @param[in] stacksize  stack size in bytes
+ * @return Error code
+ * @retval ABT_SUCCESS   on success
+ * @retval ABT_ERR_OTHER invalid stack address
+ */
+int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
+                              size_t stacksize)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
+
+    if (stackaddr != NULL) {
+        if (((uintptr_t)stackaddr & 0x7) != 0) {
+            abt_errno = ABT_ERR_OTHER;
+            goto fn_fail;
+        }
+        p_attr->p_stack   = stackaddr;
+        p_attr->userstack = ABT_TRUE;
+    }
+    p_attr->stacksize = stacksize;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT_ATTR
+ * @brief   Get stack attributes.
+ *
+ * \c ABT_thread_attr_get_stack() retrieves the stack address and the stack
+ * size (in bytes) from the attribute \c attr to \c stackaddr and \c stacksize,
+ * respectively.
+ *
+ * The user can obtain the ULT's attributes using \c ABT_thread_get_attr().
+ *
+ * @param[in]  attr       handle to the target attribute object
+ * @param[out] stackaddr  stack address
+ * @param[out] stacksize  stack size in bytes
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
+                              size_t *stacksize)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
+
+    *stackaddr = p_attr->p_stack;
+    *stacksize = p_attr->stacksize;
 
   fn_exit:
     return abt_errno;
@@ -255,20 +337,28 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     sprintf(p_buf,
         "["
+        "stack:%p "
         "stacksize:%zu "
+        "userstack:%s "
         "cb_func:%p "
         "cb_arg:%p"
         "]",
+        p_attr->p_stack,
         (size_t)p_attr->stacksize,
+        (p_attr->userstack == ABT_TRUE ? "TRUE" : "FALSE"),
         p_attr->f_cb,
         p_attr->p_cb_arg
     );
 #else
     sprintf(p_buf,
         "["
+        "stack:%p "
         "stacksize:%zu "
+        "userstack:%s "
         "]",
-        (size_t)p_attr->stacksize
+        p_attr->p_stack,
+        (size_t)p_attr->stacksize,
+        (p_attr->userstack == ABT_TRUE ? "TRUE" : "FALSE")
     );
 #endif
 }
