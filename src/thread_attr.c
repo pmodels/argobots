@@ -174,7 +174,6 @@ int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
  */
 int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 {
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
@@ -188,9 +187,6 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
-#else
-    return ABT_ERR_FEATURE_NA;
-#endif
 }
 
 /**
