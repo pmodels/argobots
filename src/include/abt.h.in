@@ -90,15 +90,16 @@ extern "C" {
 #define ABT_ERR_MUTEX              35  /* Mutex-related error */
 #define ABT_ERR_MUTEX_LOCKED       36  /* Return value when mutex is locked */
 #define ABT_ERR_COND               37  /* Condition-related error */
-#define ABT_ERR_EVENTUAL           38  /* Eventual-related error */
-#define ABT_ERR_FUTURE             39  /* Future-related error */
-#define ABT_ERR_BARRIER            40  /* Barrier-related error */
-#define ABT_ERR_TIMER              41  /* Timer-related error */
-#define ABT_ERR_EVENT              42  /* Event-related error */
-#define ABT_ERR_MIGRATION_TARGET   43  /* Migration target error */
-#define ABT_ERR_MIGRATION_NA       44  /* Migration not available */
-#define ABT_ERR_MISSING_JOIN       45  /* An ES or more did not join */
-#define ABT_ERR_FEATURE_NA         46  /* Feature not available */
+#define ABT_ERR_COND_TIMEDOUT      38  /* Condition-related error */
+#define ABT_ERR_EVENTUAL           39  /* Eventual-related error */
+#define ABT_ERR_FUTURE             40  /* Future-related error */
+#define ABT_ERR_BARRIER            41  /* Barrier-related error */
+#define ABT_ERR_TIMER              42  /* Timer-related error */
+#define ABT_ERR_EVENT              43  /* Event-related error */
+#define ABT_ERR_MIGRATION_TARGET   44  /* Migration target error */
+#define ABT_ERR_MIGRATION_NA       45  /* Migration not available */
+#define ABT_ERR_MISSING_JOIN       46  /* An ES or more did not join */
+#define ABT_ERR_FEATURE_NA         47  /* Feature not available */
 
 
 /* Constants */

@@ -66,6 +66,7 @@ int ABT_error_get_str(int errno, char *str, size_t *len)
         "ABT_ERR_MUTEX",
         "ABT_ERR_MUTEX_LOCKED",
         "ABT_ERR_COND",
+        "ABT_ERR_COND_TIMEDOUT",
         "ABT_ERR_EVENTUAL",
         "ABT_ERR_FUTURE",
         "ABT_ERR_BARRIER",
