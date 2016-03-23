@@ -49,16 +49,26 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
 
-    /* Set attributes */
-    ABTI_thread_set_attr(p_newthread, attr);
-
-    /* Create a stack for this thread */
-    stacksize = p_newthread->attr.stacksize;
-    p_newthread->p_stack = ABTU_malloc(stacksize);
+    /* Create a stack and set attributes */
+    if (attr == ABT_THREAD_ATTR_NULL) {
+        stacksize = ABTI_global_get_thread_stacksize();
+        void *p_stack = ABTU_malloc(stacksize);
+        ABTI_thread_attr *p_myattr = &p_newthread->attr;
+        ABTI_thread_attr_init(p_myattr, p_stack, stacksize, ABT_TRUE);
+    } else {
+        ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+        ABTI_thread_attr_copy(&p_newthread->attr, p_attr);
+        stacksize = p_newthread->attr.stacksize;
+        if (p_newthread->attr.p_stack == NULL) {
+            ABTI_CHECK_TRUE(p_newthread->attr.userstack == ABT_FALSE,
+                            ABT_ERR_INV_THREAD_ATTR);
+            p_newthread->attr.p_stack = ABTU_malloc(stacksize);
+        }
+    }
 
     /* Create a thread context */
     abt_errno = ABTD_thread_context_create(NULL,
-            thread_func, arg, stacksize, p_newthread->p_stack,
+            thread_func, arg, stacksize, p_newthread->attr.p_stack,
             &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -206,7 +216,7 @@ int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
     /* Create a ULT context */
     stacksize = p_thread->attr.stacksize;
     abt_errno = ABTD_thread_context_create(NULL, thread_func, arg,
-                                           stacksize, p_thread->p_stack,
+                                           stacksize, p_thread->attr.p_stack,
                                            &p_thread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -1471,13 +1481,11 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
 
     /* Set attributes */
-    ABTI_thread_set_attr(p_newthread, ABT_THREAD_ATTR_NULL);
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_newthread->attr.migratable = ABT_FALSE;
-#endif
+    /* TODO: Need to set the actual stack address and size for the main ULT */
+    ABTI_thread_attr *p_attr = &p_newthread->attr;
+    ABTI_thread_attr_init(p_attr, NULL, 0, ABT_FALSE);
 
     /* Create a context */
-    p_newthread->p_stack = NULL;
     abt_errno = ABTD_thread_context_create(NULL, NULL, NULL, 0, NULL,
                                            &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
@@ -1536,36 +1544,31 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
-    ABT_thread_attr attr;
-    size_t stacksize;
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
 
-    /* Set attributes */
-    stacksize = ABTI_global_get_sched_stacksize();
-    ABT_thread_attr_create(&attr);
-    ABT_thread_attr_set_stacksize(attr, stacksize);
-    ABT_thread_attr_set_migratable(attr, ABT_FALSE);
-    ABTI_thread_set_attr(p_newthread, attr);
-    ABT_thread_attr_free(&attr);
-
     /* Create a ULT context */
+    ABTI_thread_attr *p_attr = &p_newthread->attr;
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         /* Create a stack for this ULT */
-        p_newthread->p_stack = ABTU_malloc(stacksize);
-        ABTI_VALGRIND_STACK_REGISTER(p_newthread->p_stack, stacksize);
+        size_t stacksize = ABTI_global_get_sched_stacksize();
+        void *p_stack = ABTU_malloc(stacksize);
+        ABTI_VALGRIND_STACK_REGISTER(p_stack, stacksize);
+
+        /* Set attributes */
+        ABTI_thread_attr_init(p_attr, p_stack, stacksize, ABT_FALSE);
 
         /* When the main scheduler is terminated, the control will jump to the
          * primary ULT. */
         ABTI_thread *p_main_thread = ABTI_global_get_main();
         abt_errno = ABTD_thread_context_create(&p_main_thread->ctx,
                 ABTI_xstream_schedule, (void *)p_xstream,
-                stacksize, p_newthread->p_stack, &p_newthread->ctx);
+                stacksize, p_stack, &p_newthread->ctx);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
         /* For secondary ESs, the stack of OS thread is used for the main
          * scheduler's ULT. */
-        p_newthread->p_stack = NULL;
+        ABTI_thread_attr_init(p_attr, NULL, 0, ABT_FALSE);
         abt_errno = ABTD_thread_context_create(NULL, NULL, NULL, 0, NULL,
                                                &p_newthread->ctx);
         ABTI_CHECK_ERROR(abt_errno);
@@ -1609,8 +1612,6 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
     ABT_thread h_newthread;
-    ABT_thread_attr attr;
-    size_t stacksize;
 
     /* If p_sched is reused, ABT_thread_revive() can be used. */
     if (p_sched->p_thread) {
@@ -1625,21 +1626,16 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
 
     p_newthread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
 
-    /* Set attributes */
-    stacksize = ABTI_global_get_sched_stacksize();
-    ABT_thread_attr_create(&attr);
-    ABT_thread_attr_set_stacksize(attr, stacksize);
-    ABT_thread_attr_set_migratable(attr, ABT_FALSE);
-    ABTI_thread_set_attr(p_newthread, attr);
-    ABT_thread_attr_free(&attr);
-
-    /* Create a stack for this ULT */
-    p_newthread->p_stack = ABTU_malloc(stacksize);
+    /* Create a stack and set attributes */
+    size_t stacksize = ABTI_global_get_sched_stacksize();
+    void *p_stack = ABTU_malloc(stacksize);
+    ABTI_thread_attr *p_attr = &p_newthread->attr;
+    ABTI_thread_attr_init(p_attr, p_stack, stacksize, ABT_FALSE);
 
     /* Create a ULT context */
     abt_errno = ABTD_thread_context_create(NULL,
-            p_sched->run, (void *)ABTI_sched_get_handle(p_sched), stacksize,
-            p_newthread->p_stack, &p_newthread->ctx);
+            p_sched->run, (void *)ABTI_sched_get_handle(p_sched),
+            stacksize, p_stack, &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
     p_newthread->state          = ABT_THREAD_STATE_READY;
@@ -1701,7 +1697,9 @@ void ABTI_thread_free(ABTI_thread *p_thread)
     p_thread->p_pool->u_free(&p_thread->unit);
 
     /* Free the stack and the context */
-    ABTU_free(p_thread->p_stack);
+    if (p_thread->attr.userstack == ABT_FALSE) {
+        ABTU_free(p_thread->attr.p_stack);
+    }
     ABTD_thread_context_free(&p_thread->ctx);
 
     /* Free the key-value table */
@@ -1731,7 +1729,7 @@ void ABTI_thread_free_main_sched(ABTI_thread *p_thread)
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     /* Free the stack and the context */
-    if (p_thread->p_stack) ABTU_free(p_thread->p_stack);
+    if (p_thread->attr.p_stack) ABTU_free(p_thread->attr.p_stack);
     ABTD_thread_context_free(&p_thread->ctx);
 
     /* Free the key-value table */
@@ -1873,7 +1871,6 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         "%sis_sched: %p\n"
 #endif
         "%spool    : %p\n"
-        "%sstack   : %p\n"
         "%srefcount: %u\n"
         "%srequest : 0x%x\n"
         "%sreq_arg : %p\n"
@@ -1888,7 +1885,6 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         prefix, p_thread->is_sched,
 #endif
         prefix, p_thread->p_pool,
-        prefix, p_thread->p_stack,
         prefix, p_thread->refcount,
         prefix, p_thread->request,
         prefix, p_thread->p_req_arg,
@@ -1999,16 +1995,10 @@ void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
     ABTI_thread_attr *my_attr = &p_thread->attr;
     if (attr != ABT_THREAD_ATTR_NULL) {
         ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-        memcpy(my_attr, p_attr, sizeof(ABTI_thread_attr));
+        ABTI_thread_attr_copy(my_attr, p_attr);
     } else {
-        my_attr->p_stack    = NULL;
-        my_attr->stacksize  = ABTI_global_get_thread_stacksize();
-        my_attr->userstack  = ABT_FALSE;
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-        my_attr->migratable = ABT_TRUE;
-        my_attr->f_cb       = NULL;
-        my_attr->p_cb_arg   = NULL;
-#endif
+        ABTI_thread_attr_init(my_attr, NULL, ABTI_global_get_thread_stacksize(),
+                              ABT_TRUE);
     }
 }
 

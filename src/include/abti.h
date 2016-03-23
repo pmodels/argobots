@@ -276,7 +276,6 @@ struct ABTI_thread {
     ABTI_thread_type type;          /* Type */
     ABTI_thread_req_arg *p_req_arg; /* Request argument */
     ABTI_mutex mutex;               /* Mutex */
-    void *p_stack;                  /* Stack */
     ABTI_ktable *p_keytable;        /* ULT-specific data */
     ABTI_thread_attr attr;          /* Attributes */
     ABT_thread_id id;               /* ID */
