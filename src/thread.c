@@ -6,7 +6,6 @@
 #include "abti.h"
 
 static inline ABT_thread_id ABTI_thread_get_new_id(void);
-static inline void ABTI_thread_set_attr(ABTI_thread *, ABT_thread_attr);
 
 
 /** @defgroup ULT User-level Thread (ULT)
@@ -1987,18 +1986,5 @@ ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread)
 static inline ABT_thread_id ABTI_thread_get_new_id(void)
 {
     return (ABT_thread_id)ABTD_atomic_fetch_add_uint64(&g_thread_id, 1);
-}
-
-static inline
-void ABTI_thread_set_attr(ABTI_thread *p_thread, ABT_thread_attr attr)
-{
-    ABTI_thread_attr *my_attr = &p_thread->attr;
-    if (attr != ABT_THREAD_ATTR_NULL) {
-        ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-        ABTI_thread_attr_copy(my_attr, p_attr);
-    } else {
-        ABTI_thread_attr_init(my_attr, NULL, ABTI_global_get_thread_stacksize(),
-                              ABT_TRUE);
-    }
 }
 
