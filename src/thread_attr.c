@@ -32,14 +32,8 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     p_newattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
 
     /* Default values */
-    p_newattr->p_stack    = NULL;
-    p_newattr->stacksize  = ABTI_global_get_thread_stacksize();
-    p_newattr->userstack  = ABT_FALSE;
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_newattr->migratable = ABT_TRUE;
-    p_newattr->f_cb       = NULL;
-    p_newattr->p_cb_arg   = NULL;
-#endif
+    ABTI_thread_attr_init(p_newattr, NULL, ABTI_global_get_thread_stacksize(),
+                          ABT_TRUE);
 
     /* Return value */
     *newattr = ABTI_thread_attr_get_handle(p_newattr);
@@ -364,7 +358,7 @@ ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr)
     ABTI_thread_attr *p_dupattr;
 
     p_dupattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
-    memcpy(p_dupattr, p_attr, sizeof(ABTI_thread_attr));
+    ABTI_thread_attr_copy(p_dupattr, p_attr);
 
     return p_dupattr;
 }

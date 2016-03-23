@@ -62,6 +62,28 @@ ABT_thread_attr ABTI_thread_attr_get_handle(ABTI_thread_attr *p_attr)
 #endif
 }
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+#define ABTI_THREAD_ATTR_INIT_MIG(p_attr,mig)           \
+    {                                                   \
+        (p_attr)->migratable = mig;                     \
+        (p_attr)->f_cb       = NULL;                    \
+        (p_attr)->p_cb_arg   = NULL;                    \
+    }
+#else
+#define ABTI_THREAD_ATTR_INIT_MIG(p_attr,mig)
+#endif
+
+#define ABTI_thread_attr_init(p_attr,p_st,st_size,mig)  \
+    {                                                   \
+        (p_attr)->p_stack    = p_st;                    \
+        (p_attr)->stacksize  = st_size;                 \
+        (p_attr)->userstack  = ABT_FALSE;               \
+        ABTI_THREAD_ATTR_INIT_MIG(p_attr,mig);          \
+    }
+
+#define ABTI_thread_attr_copy(p_dest,p_src)             \
+    memcpy(p_dest, p_src, sizeof(ABTI_thread_attr))
+
 
 #endif /* THREAD_ATTR_H_INCLUDED */
 
