@@ -15,6 +15,7 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/time.h>
 
 /* ABT_VERSION is the version string. ABT_NUMVERSION is the
  * numeric version that can be used in numeric comparisons.
@@ -500,6 +501,8 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result);
 int ABT_cond_create(ABT_cond *newcond);
 int ABT_cond_free(ABT_cond *cond);
 int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex);
+int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
+                       const struct timespec *abstime);
 int ABT_cond_signal(ABT_cond cond);
 int ABT_cond_broadcast(ABT_cond cond);
 
