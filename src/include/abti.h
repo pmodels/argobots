@@ -321,6 +321,8 @@ struct ABTI_task {
 struct ABTI_key {
     void (*f_destructor)(void *value);
     uint32_t id;
+    uint32_t refcount;          /* Reference count */
+    ABT_bool freed;             /* TRUE: freed, FALSE: not */
 };
 
 struct ABTI_ktelem {
