@@ -102,6 +102,8 @@ static void thread_create(void *arg)
 
     ABT_test_printf(1, "[U%d] created %d threads\n", my_id, num_threads);
 
+    thread_tls_test(arg);
+
     for (i = 0; i < num_threads; i++) {
         ret = ABT_thread_free(&threads[i]);
         ABT_TEST_ERROR(ret, "ABT_thread_free");
