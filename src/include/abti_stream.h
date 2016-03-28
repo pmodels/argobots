@@ -126,18 +126,23 @@ void ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 static inline
 void ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
 {
-    /* Set the thread's state as TERMINATED */
-    p_thread->state = ABT_THREAD_STATE_TERMINATED;
-
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] terminated\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
     if (p_thread->refcount == 0) {
+        p_thread->state = ABT_THREAD_STATE_TERMINATED;
         ABTI_thread_free(p_thread);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     } else if (p_thread->is_sched) {
         /* NOTE: p_thread itself will be freed in ABTI_sched_free. */
+        p_thread->state = ABT_THREAD_STATE_TERMINATED;
         ABTI_sched_discard_and_free(p_thread->is_sched);
 #endif
+    } else {
+        /* NOTE: We set the ULT's state as TERMINATED after checking refcount
+         * because the ULT can be freed on a different ES.  In other words, we
+         * must not access any field of p_thead after changing the state to
+         * TERMINATED. */
+        p_thread->state = ABT_THREAD_STATE_TERMINATED;
     }
 }
 
