@@ -561,6 +561,46 @@ int ABT_thread_self(ABT_thread *thread)
 
 /**
  * @ingroup ULT
+ * @brief   Return the calling ULT's ID.
+ *
+ * \c ABT_thread_self_id() returns the ID of the calling ULT.
+ *
+ * @param[out] id  ULT id
+ * @return Error code
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_THREAD    called by a tasklet
+ */
+int ABT_thread_self_id(ABT_thread_id *id)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        goto fn_exit;
+    }
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_exit;
+    }
+
+    ABTI_thread *p_thread = ABTI_local_get_thread();
+    if (p_thread != NULL) {
+        *id = ABTI_thread_get_id(p_thread);
+    } else {
+        abt_errno = ABT_ERR_INV_THREAD;
+    }
+
+  fn_exit:
+    return abt_errno;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Return the state of thread.
  *
  * @param[in]  thread  handle to the target thread
