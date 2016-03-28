@@ -457,6 +457,7 @@ int ABT_task_free(ABT_task *task);
 int ABT_task_join(ABT_task task);
 int ABT_task_cancel(ABT_task task);
 int ABT_task_self(ABT_task *task);
+int ABT_task_self_id(uint64_t *id);
 int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream);
 int ABT_task_get_state(ABT_task task, ABT_task_state *state);
 int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool);

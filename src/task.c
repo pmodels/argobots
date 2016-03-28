@@ -430,6 +430,46 @@ int ABT_task_self(ABT_task *task)
 
 /**
  * @ingroup TASK
+ * @brief   Return the ID of the calling tasklet.
+ *
+ * \c ABT_task_self_id() returns the ID of the calling tasklet.
+ *
+ * @param[out] id  tasklet id
+ * @return Error code
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_TASK      called by a ULT
+ */
+int ABT_task_self_id(uint64_t *id)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        goto fn_exit;
+    }
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_exit;
+    }
+
+    ABTI_task *p_task = ABTI_local_get_task();
+    if (p_task != NULL) {
+        *id = ABTI_task_get_id(p_task);
+    } else {
+        abt_errno = ABT_ERR_INV_TASK;
+    }
+
+  fn_exit:
+    return abt_errno;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Get the ES associated with the target tasklet.
  *
  * \c ABT_task_get_xstream() returns the ES handle associated with the target
