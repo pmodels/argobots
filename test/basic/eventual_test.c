@@ -88,7 +88,7 @@ void eventual_test(void *arg)
     for (i = 0; i < num_iter; i++) {
         for (t = 0; t < num_tasks * 2; t++) {
             nbytes = (t & 1) ? sizeof(int) : 0;
-            ret = ABT_eventual_create(sizeof(int), &evs[t]);
+            ret = ABT_eventual_create(nbytes, &evs[t]);
             ABT_TEST_ERROR(ret, "ABT_eventual_create");
         }
 
