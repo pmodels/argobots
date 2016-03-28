@@ -116,3 +116,36 @@ static inline void ABTD_thread_terminate(ABTI_thread *p_thread)
 #error "Not implemented yet"
 #endif
 }
+
+void ABTD_thread_cancel(ABTI_thread *p_thread)
+{
+    /* When we cancel a ULT, if other ULT is blocked to join the canceled ULT,
+     * we have to wake up the joiner ULT.  However, unlike the case when the
+     * ULT has finished its execution and calls ABTD_thread_terminate/exit,
+     * this function is called by the scheduler.  Therefore, we should not
+     * context switch to the joiner ULT and need to always wake it up. */
+#if defined(ABT_CONFIG_USE_FCONTEXT)
+    ABTD_thread_context *p_fctx = &p_thread->ctx;
+
+    if (p_fctx->p_link) {
+        /* If p_link is set, it means that other ULT has called the join. */
+        ABTI_thread *p_joiner = (ABTI_thread *)p_fctx->p_link;
+        ABTI_thread_set_ready(p_joiner);
+    } else {
+        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
+                ABTI_THREAD_REQ_JOIN | ABTI_THREAD_REQ_TERMINATE);
+        if (req & ABTI_THREAD_REQ_JOIN) {
+            /* This case means there has been a join request and the joiner has
+             * blocked.  We have to wake up the joiner ULT. */
+            while ((volatile abt_ucontext_t *)p_fctx->p_link == NULL) {
+                ABTD_atomic_mem_barrier();
+            }
+            ABTI_thread *p_joiner = (ABTI_thread *)p_fctx->p_link;
+            ABTI_thread_set_ready(p_joiner);
+        }
+    }
+#else
+#error "Not implemented yet"
+#endif
+}
+

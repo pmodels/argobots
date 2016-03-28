@@ -1412,6 +1412,9 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     if (p_thread->request & ABTI_THREAD_REQ_CANCEL) {
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] canceled\n",
+                  ABTI_thread_get_id(p_thread), p_xstream->rank);
+        ABTD_thread_cancel(p_thread);
         ABTI_xstream_terminate_thread(p_thread);
         goto fn_exit;
     }
@@ -1478,9 +1481,20 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 
     /* Request handling */
     if (p_thread->request & ABTI_THREAD_REQ_STOP) {
-        /* The ULT has completed its execution or it needs to be terminated
-         * due to a cancel or exit request. */
+        /* The ULT has completed its execution or it called the exit request. */
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] %s\n",
+                  ABTI_thread_get_id(p_thread), p_xstream->rank,
+                  (p_thread->request & ABTI_THREAD_REQ_TERMINATE ? "finished" :
+                  ((p_thread->request & ABTI_THREAD_REQ_EXIT) ? "exit called" :
+                  "UNKNOWN")));
         ABTI_xstream_terminate_thread(p_thread);
+#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
+    } else if (p_thread->request & ABTI_THREAD_REQ_CANCEL) {
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] canceled\n",
+                  ABTI_thread_get_id(p_thread), p_xstream->rank);
+        ABTD_thread_cancel(p_thread);
+        ABTI_xstream_terminate_thread(p_thread);
+#endif
     } else if (!(p_thread->request & ABTI_THREAD_REQ_NON_YIELD)) {
         /* The ULT did not finish its execution.
          * Change the state of current running ULT and

@@ -40,6 +40,7 @@ int ABTD_affinity_get_cpuset(ABTD_xstream_context ctx, int cpuset_size,
 /* ULT Context */
 #include "abtd_thread.h"
 void ABTD_thread_exit(ABTI_thread *p_thread);
+void ABTD_thread_cancel(ABTI_thread *p_thread);
 
 /* Atomic Functions */
 #include "abtd_atomic.h"
