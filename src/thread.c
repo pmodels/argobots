@@ -369,8 +369,9 @@ int ABT_thread_join(ABT_thread thread)
         p_self->state = ABT_THREAD_STATE_BLOCKED;
         ABTI_pool_inc_num_blocked(p_self->p_pool);
 
-        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] blocked for join\n",
-                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] blocked to join U%" PRIu64 "\n",
+                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
+                  ABTI_thread_get_id(p_thread));
         LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] start running\n",
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
@@ -395,7 +396,7 @@ int ABT_thread_join(ABT_thread thread)
         if (req & ABTI_THREAD_REQ_JOIN) goto yield_based;
 
         ABTI_thread_set_blocked(p_self);
-        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] blocked for join U%" PRIu64 "\n",
+        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] blocked to join U%" PRIu64 "\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
                   ABTI_thread_get_id(p_thread));
 
