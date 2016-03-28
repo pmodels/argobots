@@ -36,6 +36,7 @@ TESTS = \
 	cond_test \
 	cond_join \
 	cond_signal_in_main \
+	cond_timedwait \
 	future_create \
 	eventual_create \
 	eventual_test \
@@ -86,6 +87,7 @@ mutex_SOURCES = mutex.c
 cond_test_SOURCES = cond_test.c
 cond_join_SOURCES = cond_join.c
 cond_signal_in_main_SOURCES = cond_signal_in_main.c
+cond_timedwait_SOURCES = cond_timedwait.c
 future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 eventual_test_SOURCES = eventual_test.c
@@ -127,6 +129,7 @@ testing:
 	./cond_test
 	./cond_join
 	./cond_signal_in_main
+	./cond_timedwait
 	./future_create
 	./eventual_create
 	./eventual_test

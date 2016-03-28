@@ -33,6 +33,7 @@ basic/mutex
 basic/cond_test
 basic/cond_join
 basic/cond_signal_in_main
+basic/cond_timedwait
 basic/future_create
 basic/eventual_create
 basic/eventual_test
