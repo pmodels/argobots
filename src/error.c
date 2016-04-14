@@ -19,13 +19,13 @@
  * is returned. If \c str is not NULL, it should have enough space to save
  * \c len bytes of characters. If \c len is NULL, \c len is ignored.
  *
- * @param[in]  errno  error code
+ * @param[in]  err    error code
  * @param[out] str    error string
  * @param[out] len    the length of string in bytes
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_error_get_str(int errno, char *str, size_t *len)
+int ABT_error_get_str(int err, char *str, size_t *len)
 {
     static const char *err_str[] = {
         "ABT_SUCCESS",
@@ -79,10 +79,10 @@ int ABT_error_get_str(int errno, char *str, size_t *len)
     };
 
     int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_TRUE(errno >= ABT_SUCCESS && errno <= ABT_ERR_FEATURE_NA,
+    ABTI_CHECK_TRUE(err >= ABT_SUCCESS && err <= ABT_ERR_FEATURE_NA,
                     ABT_ERR_OTHER);
-    if (str) ABTU_strcpy(str, err_str[errno]);
-    if (len) *len = strlen(err_str[errno]);
+    if (str) ABTU_strcpy(str, err_str[err]);
+    if (len) *len = strlen(err_str[err]);
 
   fn_exit:
     return abt_errno;

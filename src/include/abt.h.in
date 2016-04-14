@@ -526,7 +526,7 @@ int ABT_barrier_free(ABT_barrier *barrier);
 int ABT_barrier_wait(ABT_barrier barrier);
 
 /* Error */
-int ABT_error_get_str(int errno, char *str, size_t *len);
+int ABT_error_get_str(int err, char *str, size_t *len);
 
 /* Timer */
 double ABT_get_wtime(void);
