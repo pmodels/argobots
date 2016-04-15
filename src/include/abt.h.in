@@ -91,7 +91,7 @@ extern "C" {
 #define ABT_ERR_MUTEX              35  /* Mutex-related error */
 #define ABT_ERR_MUTEX_LOCKED       36  /* Return value when mutex is locked */
 #define ABT_ERR_COND               37  /* Condition-related error */
-#define ABT_ERR_COND_TIMEDOUT      38  /* Condition-related error */
+#define ABT_ERR_COND_TIMEDOUT      38  /* Return value when cond is timed out */
 #define ABT_ERR_EVENTUAL           39  /* Eventual-related error */
 #define ABT_ERR_FUTURE             40  /* Future-related error */
 #define ABT_ERR_BARRIER            41  /* Barrier-related error */
