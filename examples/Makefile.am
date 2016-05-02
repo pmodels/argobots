@@ -15,7 +15,8 @@ TESTS = \
     sched_user \
     sched_and_pool_user \
 	stencil_task \
-	stencil_thread
+	stencil_thread \
+	stencil_thread_cond
 
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)
@@ -34,6 +35,7 @@ sched_user_SOURCES = sched_user.c
 sched_and_pool_user_SOURCES = sched_and_pool_user.c
 stencil_task_SOURCES = stencil_task.c
 stencil_thread_SOURCES = stencil_thread.c
+stencil_thread_cond_SOURCES = stencil_thread_cond.c
 
 testing:
 	./hello_world
@@ -48,3 +50,4 @@ testing:
 	./sched_and_pool_user
 	./stencil_task
 	./stencil_thread
+	./stencil_thread_cond
