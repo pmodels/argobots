@@ -9,11 +9,11 @@ TESTS = \
 	fibonacci_future \
 	fibonacci_task \
 	fibonacci_thread_task \
-    sched_predef \
-    sched_shared_pool \
-    sched_stack \
-    sched_user \
-    sched_and_pool_user \
+	sched_predef \
+	sched_shared_pool \
+	sched_stack \
+	sched_user \
+	sched_and_pool_user \
 	stencil_task \
 	stencil_thread \
 	stencil_thread_cond
