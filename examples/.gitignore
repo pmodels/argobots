@@ -9,6 +9,7 @@ sched_shared_pool
 sched_stack
 sched_user
 sched_and_pool_user
+stencil_task
 dynamic-es/dyn_server
 dynamic-es/dyn_app
 dynamic-es/dyn_event

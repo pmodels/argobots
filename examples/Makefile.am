@@ -13,7 +13,8 @@ TESTS = \
     sched_shared_pool \
     sched_stack \
     sched_user \
-    sched_and_pool_user
+    sched_and_pool_user \
+	stencil_task
 
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)
@@ -30,6 +31,7 @@ sched_shared_pool_SOURCES = sched_shared_pool.c
 sched_stack_SOURCES = sched_stack.c
 sched_user_SOURCES = sched_user.c
 sched_and_pool_user_SOURCES = sched_and_pool_user.c
+stencil_task_SOURCES = stencil_task.c
 
 testing:
 	./hello_world
@@ -42,3 +44,4 @@ testing:
 	./sched_stack
 	./sched_user
 	./sched_and_pool_user
+	./stencil_task
