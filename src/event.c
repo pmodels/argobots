@@ -874,28 +874,76 @@ void ABTI_event_publish_info(void)
 
     ABTI_mutex_unlock(&gp_einfo->mutex);
 }
+#endif /* ABT_CONFIG_PUBLISH_INFO */
 
+
+/**
+ * @ingroup EVENT
+ * @brief   Start performance profiling.
+ *
+ * \c ABT_event_prof_start() starts profiling performance data, such as power
+ * consumption.
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_event_prof_start(void)
 {
+#ifdef ABT_CONFIG_PUBLISH_INFO
     if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
 
     gp_einfo->prof_start_time = ABT_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
+#endif
+
     return ABT_SUCCESS;
 }
 
+
+/**
+ * @ingroup EVENT
+ * @brief   Stop performance profiling.
+ *
+ * \c ABT_event_prof_stop() stops performance profiling that was started by
+ * \c ABT_event_prof_start().
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_event_prof_stop(void)
 {
+#ifdef ABT_CONFIG_PUBLISH_INFO
     if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
 
     gp_einfo->prof_stop_time = ABT_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
+#endif
+
     return ABT_SUCCESS;
 }
 
+/**
+ * @ingroup EVENT
+ * @brief   Publish the performance profiling data.
+ *
+ * \c ABT_event_prof_publish() publishes the performance data, which is given
+ * by the user as \c local_work and \c global_work, along with the profiling
+ * data, which is measured by \c ABT_event_perf_start() and
+ * \c ABT_event_perf_stop().  The output target of this routine can be BEACON
+ * or a file.
+ *
+ * This routine is supposed to be called after \c ABT_event_perf_stop().
+ *
+ * @param[in] unit_name    the name of performance unit
+ * @param[in] local_work   the amount of work done in a node
+ * @param[in] global_work  the amount of work done by the application
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
 int ABT_event_prof_publish(const char *unit_name, double local_work,
                            double global_work)
 {
+#ifdef ABT_CONFIG_PUBLISH_INFO
     if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
 
     const char *sample_name = "application";
@@ -937,26 +985,8 @@ int ABT_event_prof_publish(const char *unit_name, double local_work,
     }
 
     ABTU_free(info);
+#endif
 
     return ABT_SUCCESS;
 }
-
-#else /* ABT_CONFIG_PUBLISH_INFO */
-
-int ABT_event_prof_start(void)
-{
-    return ABT_SUCCESS;
-}
-
-int ABT_event_prof_stop(void)
-{
-    return ABT_SUCCESS;
-}
-
-int ABT_event_prof_publish(const char *unit_name, double local_work,
-                           double global_work)
-{
-    return ABT_SUCCESS;
-}
-#endif /* ABT_CONFIG_PUBLISH_INFO */
 
