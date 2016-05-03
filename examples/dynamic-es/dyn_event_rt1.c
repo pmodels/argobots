@@ -6,9 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 #include <assert.h>
 #include "abt.h"
 #include "dyn_event.h"
+
+#define NUM_COMPS   100
+#define NUM_ITERS   1000
 
 typedef struct {
     int max_xstreams;           /* maximum # of ESs */
@@ -16,14 +20,22 @@ typedef struct {
     ABT_xstream *xstreams;      /* ESs for this runtime */
     ABT_pool pool;
     ABT_mutex mutex;
+    ABT_barrier bar;
     int stop_cb_id;
     int add_cb_id;
+
+    int num_comps;
+    int num_iters;
+    double *app_data;
+    unsigned int cnt;
 } rt1_data_t;
 
 static rt1_data_t *rt1_data;
 extern double g_timeout;
 extern ABT_xstream *g_xstreams;
 
+static void rt1_app(int eid);
+static void rt1_app_compute(void *arg);
 static ABT_bool rt1_ask_stop_xstream(void *user_arg, void *abt_arg);
 static ABT_bool rt1_act_stop_xstream(void *user_arg, void *abt_arg);
 static ABT_bool rt1_ask_add_xstream(void *user_arg, void *abt_arg);
@@ -36,10 +48,12 @@ static int sched_free(ABT_sched sched);
 void rt1_init(int max_xstreams, ABT_xstream *xstreams)
 {
     int i;
-    rt1_data = (rt1_data_t *)malloc(sizeof(rt1_data_t));
+    char *env;
+
+    rt1_data = (rt1_data_t *)calloc(1, sizeof(rt1_data_t));
     rt1_data->max_xstreams = max_xstreams;
     rt1_data->num_xstreams = max_xstreams;
-    rt1_data->xstreams = (ABT_xstream *)malloc(max_xstreams*sizeof(ABT_thread));
+    rt1_data->xstreams = (ABT_xstream *)malloc(max_xstreams*sizeof(ABT_xstream));
     for (i = 0; i < max_xstreams; i++) {
         rt1_data->xstreams[i] = xstreams[i];
     }
@@ -47,6 +61,7 @@ void rt1_init(int max_xstreams, ABT_xstream *xstreams)
     ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE,
                           &rt1_data->pool);
     ABT_mutex_create(&rt1_data->mutex);
+    ABT_barrier_create(rt1_data->num_xstreams, &rt1_data->bar);
 
     /* Add event callbacks */
     /* NOTE: Each runtime needs to register callbacks only once for each event.
@@ -60,6 +75,27 @@ void rt1_init(int max_xstreams, ABT_xstream *xstreams)
                            rt1_ask_add_xstream, rt1_data,
                            rt1_act_add_xstream, rt1_data,
                            &rt1_data->add_cb_id);
+
+    /* application data */
+    env = getenv("APP_NUM_COMPS");
+    if (env) {
+        rt1_data->num_comps = atoi(env);
+    } else {
+        rt1_data->num_comps = NUM_COMPS;
+    }
+
+    env = getenv("APP_NUM_ITERS");
+    if (env) {
+        rt1_data->num_iters = atoi(env);
+    } else {
+        rt1_data->num_iters = NUM_ITERS;
+    }
+
+    size_t num_elems = rt1_data->max_xstreams * rt1_data->num_comps * 2;
+    rt1_data->app_data = (double *)calloc(num_elems, sizeof(double));
+
+    printf("# of WUs created per ES: %d\n", rt1_data->num_comps);
+    printf("# of iterations per WU : %d\n", rt1_data->num_iters);
 }
 
 void rt1_finalize(void)
@@ -80,7 +116,9 @@ void rt1_finalize(void)
 
     ABT_mutex_lock(rt1_data->mutex);
     ABT_mutex_free(&rt1_data->mutex);
+    ABT_barrier_free(&rt1_data->bar);
     free(rt1_data->xstreams);
+    free(rt1_data->app_data);
     free(rt1_data);
     rt1_data = NULL;
 }
@@ -130,7 +168,7 @@ void rt1_launcher(void *arg)
 
     t_start = ABT_get_wtime();
     while (1) {
-        ABT_thread_yield();
+        rt1_app(idx);
 
         ABT_pool_get_total_size(cur_pool, &size);
         if (size == 0) {
@@ -150,6 +188,61 @@ void rt1_launcher(void *arg)
             ABT_sched_finish(sched);
         }
     }
+}
+
+static void rt1_app(int eid)
+{
+    int i, num_comps;
+    size_t size;
+    ABT_thread cur_thread;
+    ABT_pool cur_pool;
+
+    ABT_thread_self(&cur_thread);
+    ABT_thread_get_last_pool(cur_thread, &cur_pool);
+
+    if (eid == 0) ABT_event_prof_start();
+
+    num_comps = rt1_data->num_comps;
+    for (i = 0; i < num_comps * 2; i += 2) {
+        ABT_thread_create(rt1_data->pool, rt1_app_compute,
+                          (void *)(intptr_t)(eid * num_comps * 2 + i),
+                          ABT_THREAD_ATTR_NULL, NULL);
+        ABT_task_create(rt1_data->pool, rt1_app_compute,
+                        (void *)(intptr_t)(eid * num_comps * 2 + i + 1),
+                        NULL);
+    }
+
+    do {
+        ABT_thread_yield();
+
+        /* If the size of cur_pool is zero, it means the stacked scheduler has
+         * been terminated because of the shrinking event. */
+        ABT_pool_get_total_size(cur_pool, &size);
+        if (size == 0) break;
+
+        ABT_pool_get_total_size(rt1_data->pool, &size);
+    } while (size > 0);
+
+    if (eid == 0) {
+        ABT_event_prof_stop();
+
+        int cnt = __atomic_exchange_n(&rt1_data->cnt, 0, __ATOMIC_SEQ_CST);
+        double local_work = (double)(cnt * rt1_data->num_iters);
+        ABT_event_prof_publish("ops", local_work, local_work);
+    }
+}
+
+static void rt1_app_compute(void *arg)
+{
+    int pos = (int)(intptr_t)arg;
+    int i;
+
+    rt1_data->app_data[pos] = 0;
+    for (i = 0; i < rt1_data->num_iters; i++) {
+        rt1_data->app_data[pos] += sin((double)pos);
+    }
+
+    __atomic_fetch_add(&rt1_data->cnt, 1, __ATOMIC_SEQ_CST);
 }
 
 
