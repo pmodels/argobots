@@ -107,10 +107,23 @@ static inline void ABTD_thread_terminate(ABTI_thread *p_thread)
      * not switch to other fcontext when it finishes, we need to explicitly
      * switch to the scheduler. */
     ABTD_thread_context *p_sched_ctx;
-    p_sched_ctx = ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream);
-    ABTI_LOG_SET_SCHED((p_sched_ctx == p_fctx->p_link)
-                       ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
-                       : NULL);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+    if (p_thread->is_sched) {
+        /* If p_thread is a scheduler ULT, we have to context switch to
+         * the parent scheduler. */
+        ABTI_sched *p_par_sched;
+        p_par_sched = ABTI_xstream_get_parent_sched(p_thread->p_last_xstream);
+        p_sched_ctx = p_par_sched->p_ctx;
+        ABTI_LOG_SET_SCHED(p_par_sched);
+    } else {
+#endif
+        p_sched_ctx = ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream);
+        ABTI_LOG_SET_SCHED((p_sched_ctx == p_fctx->p_link)
+                           ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
+                           : NULL);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+    }
+#endif
     ABTD_thread_finish_context(p_fctx, p_sched_ctx);
 #else
 #error "Not implemented yet"
