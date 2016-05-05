@@ -318,14 +318,15 @@ ABT_bool ABTI_event_check_power(void)
             n = read(gp_einfo->pfd.fd, recv_buf, ABTI_MSG_BUF_LEN);
             ABTI_ASSERT(n > 0);
 
-            LOG_DEBUG("\nES%d: received request '%s'\n", rank, recv_buf);
-            switch (recv_buf[0]) {
+            char *cmd = ABTU_strtrim(recv_buf);
+            LOG_DEBUG("ES%d: received request '%s'\n", rank, cmd);
+            switch (cmd[0]) {
                 case 'd':
                     ABTI_event_decrease_xstream(ABT_XSTREAM_ANY_RANK);
                     break;
 
                 case 's':
-                    rank = atoi(&recv_buf[1]);
+                    rank = atoi(&cmd[1]);
                     ABTI_event_decrease_xstream(rank);
                     break;
 
@@ -334,7 +335,7 @@ ABT_bool ABTI_event_check_power(void)
                     break;
 
                 case 'c':
-                    rank = atoi(&recv_buf[1]);
+                    rank = atoi(&cmd[1]);
                     ABTI_event_increase_xstream(rank);
                     break;
 
@@ -347,7 +348,7 @@ ABT_bool ABTI_event_check_power(void)
                     break;
 
                 default:
-                    LOG_DEBUG("Unknown commend: %s\n", recv_buf);
+                    LOG_DEBUG("Unknown command: %s\n", cmd);
                     break;
             }
         }
