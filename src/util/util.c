@@ -5,6 +5,7 @@
 
 #include "abtu.h"
 #include <math.h>
+#include <ctype.h>
 
 
 /* \c ABTU_get_indent_str() returns a white-space string with the length of
@@ -23,3 +24,24 @@ int ABTU_get_int_len(size_t num)
 {
     return (num == 0) ? 1 : (int)(log10(num) + 1);
 }
+
+/* \c ABTU_strtrim trims leading and trailing white spaces from the given
+ * string \c str. */
+char *ABTU_strtrim(char *str)
+{
+    char *end;
+
+    /* Trim leading white spaces */
+    while (isspace(*str)) str++;
+
+    if (*str == 0) return str;
+
+    /* Trim trailing white spaces */
+    end = str + strlen(str) - 1;
+    while (end > str && isspace(*end)) end--;
+
+    *(end + 1) = 0;
+
+    return str;
+}
+
