@@ -76,13 +76,18 @@ int main(int argc, char *argv[])
                 }
             }
 
-            printf("d: decrease # of ESs\n");
-            printf("i: increase # of ESs\n");
-            printf("s [ES rank]: stop a specific ES\n");
-            printf("c [ES rank]: create a specific ES\n");
-            printf("n: ask # of ESs\n");
-            printf("q: quit\n");
-            printf("Please enter your command: ");
+            printf("-------------------------------------\n"
+                   "ESs management\n"
+                   "-------------------------------------\n"
+                   " n: ask # of ESs\n"
+                   " d: decrease # of ESs\n"
+                   " i: increase # of ESs\n"
+                   " s [ES rank]: stop a specific ES\n"
+                   " c [ES rank]: create a specific ES\n"
+                   "-------------------------------------\n"
+                   " q: quit\n"
+                   "-------------------------------------\n"
+                   "Please enter your command: ");
             bzero(send_buf, SEND_BUF_LEN);
             fgets(send_buf, SEND_BUF_LEN, stdin);
 
