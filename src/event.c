@@ -629,6 +629,27 @@ void ABTI_event_expand_xstreams(int num_xstreams)
     ABTI_ASSERT(n == strlen(send_buf));
 }
 
+void ABTI_event_set_num_xstreams(int num_xstreams)
+{
+    ABTI_global *p_global = gp_ABTI_global;
+    char send_buf[ABTI_MSG_BUF_LEN];
+    int diff;
+
+    if (p_global->num_xstreams > num_xstreams) {
+        diff = p_global->num_xstreams - num_xstreams;
+        ABTI_event_shrink_xstreams(diff);
+
+    } else if (p_global->num_xstreams < num_xstreams) {
+        diff = num_xstreams - p_global->num_xstreams;
+        ABTI_event_expand_xstreams(diff);
+
+    } else {
+        sprintf(send_buf, "done (%d)", p_global->num_xstreams);
+        int n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
+        ABTI_ASSERT(n == strlen(send_buf));
+    }
+}
+
 ABT_bool ABTI_event_check_power(void)
 {
     ABT_bool stop_xstream = ABT_FALSE;
@@ -683,6 +704,11 @@ ABT_bool ABTI_event_check_power(void)
                 case 'c':
                     rank = atoi(&cmd[1]);
                     ABTI_event_increase_xstream(rank);
+                    break;
+
+                case 'e':
+                    n = atoi(&cmd[1]);
+                    ABTI_event_set_num_xstreams(n);
                     break;
 
                 case 'n':
