@@ -351,7 +351,7 @@ static void ABTI_event_free_xstream(void *arg)
 
     if (gp_ABTI_global->pm_connected == ABT_TRUE) {
         LOG_DEBUG("# of ESs: %d\n", gp_ABTI_global->num_xstreams);
-        sprintf(send_buf, "done (%d)", gp_ABTI_global->num_xstreams);
+        sprintf(send_buf, "[S] killed 1 (%d)", gp_ABTI_global->num_xstreams);
         n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
         ABTI_ASSERT(n == strlen(send_buf));
     }
@@ -380,7 +380,7 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
 
     if (gp_ABTI_global->pm_connected == ABT_TRUE) {
         LOG_DEBUG("# of ESs: %d\n", gp_ABTI_global->num_xstreams);
-        sprintf(send_buf, "done %d (%d)", num_xstreams,
+        sprintf(send_buf, "[S] killed %d (%d)", num_xstreams,
                           gp_ABTI_global->num_xstreams);
         n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
         ABTI_ASSERT(n == strlen(send_buf));
@@ -438,7 +438,7 @@ void ABTI_event_decrease_xstream(int target_rank)
 
     if (p_global->num_xstreams == 1) {
         LOG_DEBUG("Cannot shrink: # of ESs (%d)\n", p_global->num_xstreams);
-        sprintf(send_buf, "min");
+        sprintf(send_buf, "[F] only one ES");
         n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
         ABTI_ASSERT(n == strlen(send_buf));
         return;
@@ -466,7 +466,7 @@ void ABTI_event_decrease_xstream(int target_rank)
 
     /* We couldn't stop an ES */
     if (can_stop == ABT_FALSE) {
-        sprintf(send_buf, "failed");
+        sprintf(send_buf, "[F] not possible");
         n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
         ABTI_ASSERT(n == strlen(send_buf));
     }
@@ -485,7 +485,7 @@ void ABTI_event_shrink_xstreams(int num_xstreams)
 
     if (p_global->num_xstreams == 1) {
         LOG_DEBUG("Cannot shrink: # of ESs (%d)\n", p_global->num_xstreams);
-        sprintf(send_buf, "min");
+        sprintf(send_buf, "[F] only one ES");
         n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
         ABTI_ASSERT(n == strlen(send_buf));
         return;
@@ -529,7 +529,7 @@ void ABTI_event_shrink_xstreams(int num_xstreams)
 
     if (n == 0) {
         /* We couldn't stop ESs */
-        sprintf(send_buf, "failed");
+        sprintf(send_buf, "[F] not possible");
         n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
         ABTI_ASSERT(n == strlen(send_buf));
         ABTU_free(p_xstreams);
@@ -571,14 +571,14 @@ void ABTI_event_increase_xstream(int target_rank)
             ret = cb_fn(gp_einfo->add_xstream_arg[i*2+1], abt_arg);
             if (ret == ABT_TRUE) {
                 LOG_DEBUG("# of ESs: %d\n", gp_ABTI_global->num_xstreams);
-                sprintf(send_buf, "done (%d)", gp_ABTI_global->num_xstreams);
+                sprintf(send_buf, "[S] created 1 (%d)", gp_ABTI_global->num_xstreams);
                 goto send_ack;
             }
         }
     }
 
     /* We couldn't create a new ES */
-    sprintf(send_buf, "failed");
+    sprintf(send_buf, "[F] not possible");
 
   send_ack:
     n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
@@ -619,10 +619,10 @@ void ABTI_event_expand_xstreams(int num_xstreams)
 
     if (n > 0) {
         LOG_DEBUG("Create %d ESs (# of ESs: %d)\n", n, gp_ABTI_global->num_xstreams);
-        sprintf(send_buf, "done %d (%d)", n, gp_ABTI_global->num_xstreams);
+        sprintf(send_buf, "[S] created %d (%d)", n, gp_ABTI_global->num_xstreams);
     } else {
         /* We couldn't create a new ES */
-        sprintf(send_buf, "failed");
+        sprintf(send_buf, "[F] not possible");
     }
 
     n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
@@ -644,7 +644,7 @@ void ABTI_event_set_num_xstreams(int num_xstreams)
         ABTI_event_expand_xstreams(diff);
 
     } else {
-        sprintf(send_buf, "done (%d)", p_global->num_xstreams);
+        sprintf(send_buf, "[S] no change (%d)", p_global->num_xstreams);
         int n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
         ABTI_ASSERT(n == strlen(send_buf));
     }
