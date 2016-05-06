@@ -76,23 +76,25 @@ int main(int argc, char *argv[])
                 }
             }
 
-            printf("-------------------------------------\n"
-                   "ESs management\n"
-                   "-------------------------------------\n"
+            printf("-------------------------------------------\n"
+                   "ES management commands\n"
+                   "-------------------------------------------\n"
                    " n: ask # of ESs\n"
-                   " d: decrease # of ESs\n"
-                   " i: increase # of ESs\n"
-                   " s [ES rank]: stop a specific ES\n"
-                   " c [ES rank]: create a specific ES\n"
-                   "-------------------------------------\n"
+                   " d [N]: decrease # of ESs by N (default: 1)\n"
+                   " i [N]: increase # of ESs by N (default: 1)\n"
+                   " s <ES rank>: stop a specific ES\n"
+                   " c <ES rank>: create a specific ES\n"
+                   " e <N>: set # of ESs to N\n"
+                   "-------------------------------------------\n"
                    " q: quit\n"
-                   "-------------------------------------\n"
+                   "-------------------------------------------\n"
                    "Please enter your command: ");
             bzero(send_buf, SEND_BUF_LEN);
             fgets(send_buf, SEND_BUF_LEN, stdin);
 
             if (send_buf[0] != 'd' && send_buf[0] != 'i' &&
                 send_buf[0] != 's' && send_buf[0] != 'c' &&
+                send_buf[0] != 'e' &&
                 send_buf[0] != 'n' && send_buf[0] != 'q') {
                 printf("Unknown command: %s\n", send_buf);
                 continue;
