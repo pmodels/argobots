@@ -357,6 +357,36 @@ static void ABTI_event_free_xstream(void *arg)
     }
 }
 
+static void ABTI_event_free_multiple_xstreams(void *arg)
+{
+    char send_buf[ABTI_MSG_BUF_LEN];
+    ABTI_xstream **p_xstreams = (ABTI_xstream **)arg;
+    int num_xstreams = (int)(intptr_t)p_xstreams[0];
+    int abt_errno, n;
+
+    for (n = 0; n < num_xstreams; n++) {
+        ABTI_xstream *p_xstream = p_xstreams[n+1];
+        while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
+            ABT_thread_yield();
+        }
+
+        ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
+        abt_errno = ABT_xstream_join(xstream);
+        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+        abt_errno = ABT_xstream_free(&xstream);
+        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+    }
+    ABTU_free(p_xstreams);
+
+    if (gp_ABTI_global->pm_connected == ABT_TRUE) {
+        LOG_DEBUG("# of ESs: %d\n", gp_ABTI_global->num_xstreams);
+        sprintf(send_buf, "done %d (%d)", num_xstreams,
+                          gp_ABTI_global->num_xstreams);
+        n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
+        ABTI_ASSERT(n == strlen(send_buf));
+    }
+}
+
 ABT_bool ABTI_event_stop_xstream(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -442,6 +472,82 @@ void ABTI_event_decrease_xstream(int target_rank)
     }
 }
 
+/* Shut down \c num_xstremas ESs. */
+void ABTI_event_shrink_xstreams(int num_xstreams)
+{
+    char send_buf[ABTI_MSG_BUF_LEN];
+    ABTI_xstream **p_xstreams;
+    ABTI_xstream *p_xstream;
+    ABT_xstream xstream;
+    int i, rank, n;
+    ABT_event_cb_fn cb_fn;
+    ABTI_global *p_global = gp_ABTI_global;
+
+    if (p_global->num_xstreams == 1) {
+        LOG_DEBUG("Cannot shrink: # of ESs (%d)\n", p_global->num_xstreams);
+        sprintf(send_buf, "min");
+        n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
+        ABTI_ASSERT(n == strlen(send_buf));
+        return;
+    }
+
+    size_t size = (num_xstreams + 1) * sizeof(ABTI_xstream *);
+    p_xstreams = (ABTI_xstream **)ABTU_malloc(size);
+    n = 0;
+
+    /* Determine ESs to shut down.  For now, we try to shut down from the most
+     * recently created ones. */
+    for (rank = p_global->num_xstreams - 1; rank > 0; rank--) {
+        p_xstream = p_global->p_xstreams[rank];
+        if (p_xstream) {
+            /* Ask whether the target ES can be stopped */
+            xstream = ABTI_xstream_get_handle(p_xstream);
+            ABT_bool can_stop = ABT_TRUE;
+            for (i = 0; i < gp_einfo->max_stop_xstream_fn; i++) {
+                cb_fn = gp_einfo->stop_xstream_fn[i*2];
+                if (cb_fn) {
+                    can_stop = cb_fn(gp_einfo->stop_xstream_arg[i*2], xstream);
+                    if (can_stop == ABT_FALSE) break;
+                }
+            }
+            if (can_stop == ABT_FALSE) continue;
+
+            ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_STOP);
+
+            /* Execute action callback functions */
+            for (i = 0; i < gp_einfo->max_stop_xstream_fn; i++) {
+                cb_fn = gp_einfo->stop_xstream_fn[i*2+1];
+                if (cb_fn) {
+                    cb_fn(gp_einfo->stop_xstream_arg[i*2+1], xstream);
+                }
+            }
+
+            p_xstreams[n+1] = p_xstream;
+            if (++n == num_xstreams) break;
+        }
+    }
+
+    if (n == 0) {
+        /* We couldn't stop ESs */
+        sprintf(send_buf, "failed");
+        n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
+        ABTI_ASSERT(n == strlen(send_buf));
+        ABTU_free(p_xstreams);
+        return;
+    }
+
+    /* Create a ULT on the primary ES to join the target ESs */
+    /* NOTE: p_xstreams will be freed by the ULT. */
+    ABT_pool pool;
+    xstream = ABTI_xstream_get_handle(gp_ABTI_global->p_xstreams[0]);
+    ABT_xstream_get_main_pools(xstream, 1, &pool);
+    p_xstreams[0] = (ABTI_xstream *)(intptr_t)n;
+    int abt_errno = ABT_thread_create(pool, ABTI_event_free_multiple_xstreams,
+                                      (void *)p_xstreams,
+                                      ABT_THREAD_ATTR_NULL, NULL);
+    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+}
+
 void ABTI_event_increase_xstream(int target_rank)
 {
     void *abt_arg = (void *)(intptr_t)target_rank;
@@ -479,6 +585,50 @@ void ABTI_event_increase_xstream(int target_rank)
     ABTI_ASSERT(n == strlen(send_buf));
 }
 
+void ABTI_event_expand_xstreams(int num_xstreams)
+{
+    void *abt_arg = (void *)(intptr_t)ABT_XSTREAM_ANY_RANK;
+    char send_buf[ABTI_MSG_BUF_LEN];
+    ABT_event_cb_fn cb_fn;
+    ABT_bool can_add;
+    int i, n;
+
+    for (n = 0; n < num_xstreams; n++) {
+        can_add = ABT_FALSE;
+        for (i = 0; i < gp_einfo->max_add_xstream_fn; i++) {
+            /* "ask" callback */
+            cb_fn = gp_einfo->add_xstream_fn[i*2];
+            if (!cb_fn) continue;
+
+            /* TODO: fairness */
+            can_add = cb_fn(gp_einfo->add_xstream_arg[i*2], abt_arg);
+            if (can_add == ABT_TRUE) {
+                /* "act" callback */
+                cb_fn = gp_einfo->add_xstream_fn[i*2+1];
+                if (!cb_fn) {
+                    can_add = ABT_FALSE;
+                    continue;
+                }
+
+                can_add = cb_fn(gp_einfo->add_xstream_arg[i*2+1], abt_arg);
+                if (can_add == ABT_TRUE) break;
+            }
+        }
+        if (can_add == ABT_FALSE) break;
+    }
+
+    if (n > 0) {
+        LOG_DEBUG("Create %d ESs (# of ESs: %d)\n", n, gp_ABTI_global->num_xstreams);
+        sprintf(send_buf, "done %d (%d)", n, gp_ABTI_global->num_xstreams);
+    } else {
+        /* We couldn't create a new ES */
+        sprintf(send_buf, "failed");
+    }
+
+    n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
+    ABTI_ASSERT(n == strlen(send_buf));
+}
+
 ABT_bool ABTI_event_check_power(void)
 {
     ABT_bool stop_xstream = ABT_FALSE;
@@ -508,7 +658,12 @@ ABT_bool ABTI_event_check_power(void)
             LOG_DEBUG("ES%d: received request '%s'\n", rank, cmd);
             switch (cmd[0]) {
                 case 'd':
-                    ABTI_event_decrease_xstream(ABT_XSTREAM_ANY_RANK);
+                    if (cmd[1] == '\0') {
+                        ABTI_event_decrease_xstream(ABT_XSTREAM_ANY_RANK);
+                    } else {
+                        n = atoi(&cmd[1]);
+                        ABTI_event_shrink_xstreams(n);
+                    }
                     break;
 
                 case 's':
@@ -517,7 +672,12 @@ ABT_bool ABTI_event_check_power(void)
                     break;
 
                 case 'i':
-                    ABTI_event_increase_xstream(ABT_XSTREAM_ANY_RANK);
+                    if (cmd[1] == '\0') {
+                        ABTI_event_increase_xstream(ABT_XSTREAM_ANY_RANK);
+                    } else {
+                        n = atoi(&cmd[1]);
+                        ABTI_event_expand_xstreams(n);
+                    }
                     break;
 
                 case 'c':
