@@ -21,7 +21,8 @@ abt_sources = \
 	task.c \
 	thread.c \
 	thread_attr.c \
-	timer.c
+	timer.c \
+	unit.c
 
 include $(top_srcdir)/src/arch/Makefile.mk
 include $(top_srcdir)/src/container/Makefile.mk

@@ -408,6 +408,9 @@ int ABT_pool_get_data(ABT_pool pool, void **data);
 int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched);
 int ABT_pool_get_id(ABT_pool pool, int *id);
 
+/* Work Unit */
+int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool);
+
 /* User-level Thread (ULT) */
 int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
                       ABT_thread_attr attr, ABT_thread *newthread);
