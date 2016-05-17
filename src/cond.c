@@ -441,6 +441,9 @@ int ABT_cond_broadcast(ABT_cond cond)
     while (1) {
         ABTI_unit *p_next = p_unit->p_next;
 
+        p_unit->p_prev = NULL;
+        p_unit->p_next = NULL;
+
         if (p_unit->type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->thread);
             ABTI_thread_set_ready(p_thread);
@@ -449,8 +452,6 @@ int ABT_cond_broadcast(ABT_cond cond)
             volatile int *p_ext_signal = (volatile int *)p_unit->pool;
             *p_ext_signal = 1;
         }
-        p_unit->p_prev = NULL;
-        p_unit->p_next = NULL;
 
         /* Next ULT */
         if (p_next != p_head) {
