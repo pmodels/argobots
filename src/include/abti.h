@@ -350,7 +350,8 @@ struct ABTI_eventual {
     ABT_bool ready;
     void *value;
     int nbytes;
-    ABTI_thread_list waiters;
+    ABTI_unit *p_head;          /* Head of waiters */
+    ABTI_unit *p_tail;          /* Tail of waiters */
 };
 
 struct ABTI_future {
@@ -502,9 +503,6 @@ uint64_t ABTI_task_get_id(ABTI_task *p_task);
 /* Key */
 ABTI_ktable *ABTI_ktable_alloc(int size);
 void ABTI_ktable_free(ABTI_ktable *p_ktable);
-
-/* Eventual */
-void ABTI_eventual_signal(ABTI_eventual *p_eventual);
 
 /* Future */
 void ABTI_future_signal(ABTI_future *p_future);

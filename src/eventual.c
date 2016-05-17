@@ -40,7 +40,9 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     p_eventual->ready = ABT_FALSE;
     p_eventual->nbytes = nbytes;
     p_eventual->value = (nbytes == 0) ? NULL : ABTU_malloc(nbytes);
-    p_eventual->waiters.head = p_eventual->waiters.tail = NULL;
+    p_eventual->p_head = NULL;
+    p_eventual->p_tail = NULL;
+
     *neweventual = ABTI_eventual_get_handle(p_eventual);
 
     return abt_errno;
@@ -105,44 +107,54 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-    ABTI_mutex_lock(&p_eventual->mutex);
+    ABTI_mutex_spinlock(&p_eventual->mutex);
     if (p_eventual->ready == ABT_FALSE) {
-        ABTI_thread_entry *cur;
         ABTI_thread *p_current;
+        ABTI_unit *p_unit;
         ABT_unit_type type;
         volatile int ext_signal = 0;
 
-        cur = (ABTI_thread_entry *)ABTU_malloc(sizeof(ABTI_thread_entry));
         if (lp_ABTI_local != NULL) {
             p_current = ABTI_local_get_thread();
             ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_FUTURE);
+
             type = ABT_UNIT_TYPE_THREAD;
+            p_unit = &p_current->unit_def;
+            p_unit->thread = ABTI_thread_get_handle(p_current);
+            p_unit->type = type;
         } else {
             /* external thread */
-            p_current = (ABTI_thread *)&ext_signal;
             type = ABT_UNIT_TYPE_EXT;
+            p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
+            p_unit->pool = (ABT_pool)&ext_signal;
+            p_unit->type = type;
         }
-        cur->current = p_current;
-        cur->next = NULL;
-        cur->type = type;
 
-        if (p_eventual->waiters.tail != NULL)
-            p_eventual->waiters.tail->next = cur;
-        p_eventual->waiters.tail = cur;
-        if (p_eventual->waiters.head == NULL)
-            p_eventual->waiters.head = cur;
+        p_unit->p_next = NULL;
+        if (p_eventual->p_head == NULL) {
+            p_eventual->p_head = p_unit;
+            p_eventual->p_tail = p_unit;
+        } else {
+            p_eventual->p_tail->p_next = p_unit;
+            p_eventual->p_tail = p_unit;
+        }
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread_set_blocked(p_current);
-        }
-        ABTI_mutex_unlock(&p_eventual->mutex);
 
-        if (type == ABT_UNIT_TYPE_THREAD) {
+            ABTI_mutex_unlock(&p_eventual->mutex);
+
+            /* Suspend the current ULT */
             ABTI_thread_suspend(p_current);
+
         } else {
+            ABTI_mutex_unlock(&p_eventual->mutex);
+
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
-            while (!ext_signal);
+            while (!ext_signal) {
+            }
+            ABTU_free(p_unit);
         }
     } else {
         ABTI_mutex_unlock(&p_eventual->mutex);
@@ -181,10 +193,45 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
     ABTI_CHECK_TRUE(nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);
 
-    ABTI_mutex_lock(&p_eventual->mutex);
+    ABTI_mutex_spinlock(&p_eventual->mutex);
+
     p_eventual->ready = ABT_TRUE;
     if (p_eventual->value) memcpy(p_eventual->value, value, nbytes);
-    ABTI_eventual_signal(p_eventual);
+
+    if (p_eventual->p_head == NULL) {
+        ABTI_mutex_unlock(&p_eventual->mutex);
+        goto fn_exit;
+    }
+
+    /* Wake up all waiting ULTs */
+    ABTI_unit *p_head = p_eventual->p_head;
+    ABTI_unit *p_unit = p_head;
+    while (1) {
+        ABTI_unit *p_next = p_unit->p_next;
+        ABT_unit_type type = p_unit->type;
+
+        p_unit->p_next = NULL;
+
+        if (type == ABT_UNIT_TYPE_THREAD) {
+            ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->thread);
+            ABTI_thread_set_ready(p_thread);
+        } else {
+            /* When the head is an external thread */
+            volatile int *p_ext_signal = (volatile int *)p_unit->pool;
+            *p_ext_signal = 1;
+        }
+
+        /* Next ULT */
+        if (p_next != NULL) {
+            p_unit = p_next;
+        } else {
+            break;
+        }
+    }
+
+    p_eventual->p_head = NULL;
+    p_eventual->p_tail = NULL;
+
     ABTI_mutex_unlock(&p_eventual->mutex);
 
   fn_exit:
@@ -193,41 +240,5 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
-}
-
-
-/*****************************************************************************/
-/* Private APIs                                                              */
-/*****************************************************************************/
-
-/** @defgroup EVENTUAL_PRIVATE Eventual (Private)
- * This group combines private APIs for eventual.
- */
-
-/**
- * @ingroup EVENTUAL_PRIVATE
- * @brief   Signal all ULTs blocking on an eventual once the result has been
- *          calculated.
- *
- * @param[in] p_eventual  pointer to internal eventual struct
- * @return No value returned
- */
-void ABTI_eventual_signal(ABTI_eventual *p_eventual)
-{
-    ABTI_thread_entry *cur = p_eventual->waiters.head;
-    while (cur != NULL)
-    {
-        if (cur->type == ABT_UNIT_TYPE_THREAD) {
-            ABTI_thread *p_thread = cur->current;
-            ABTI_thread_set_ready(p_thread);
-        } else {
-            /* When cur is an external thread */
-            volatile int *p_ext_signal = (volatile int *)cur->current;
-            *p_ext_signal = 1;
-        }
-        ABTI_thread_entry *tmp = cur;
-        cur=cur->next;
-        ABTU_free(tmp);
-    }
 }
 
