@@ -85,13 +85,13 @@ void eventual_test(void *arg)
     task_args = (arg_t *)malloc(num_tasks * sizeof(arg_t));
     thread_args = (arg_t *)malloc(num_threads * sizeof(arg_t));
 
-    for (i = 0; i < num_iter; i++) {
-        for (t = 0; t < num_tasks * 2; t++) {
-            nbytes = (t & 1) ? sizeof(int) : 0;
-            ret = ABT_eventual_create(nbytes, &evs[t]);
-            ABT_TEST_ERROR(ret, "ABT_eventual_create");
-        }
+    for (t = 0; t < num_tasks * 2; t++) {
+        nbytes = (t & 1) ? sizeof(int) : 0;
+        ret = ABT_eventual_create(nbytes, &evs[t]);
+        ABT_TEST_ERROR(ret, "ABT_eventual_create");
+    }
 
+    for (i = 0; i < num_iter; i++) {
         for (t = 0; t < num_threads - num_tasks; t += 2) {
             nbytes = ((t/2) & 1) ? sizeof(int) : 0;
 
@@ -144,9 +144,14 @@ void eventual_test(void *arg)
         }
 
         for (t = 0; t < num_tasks * 2; t++) {
-            ret = ABT_eventual_free(&evs[t]);
-            ABT_TEST_ERROR(ret, "ABT_eventual_free");
+            ret = ABT_eventual_reset(evs[t]);
+            ABT_TEST_ERROR(ret, "ABT_eventual_reset");
         }
+    }
+
+    for (t = 0; t < num_tasks * 2; t++) {
+        ret = ABT_eventual_free(&evs[t]);
+        ABT_TEST_ERROR(ret, "ABT_eventual_free");
     }
 
     free(threads);
