@@ -428,6 +428,7 @@ int ABT_thread_self_id(ABT_thread_id *id);
 int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
 int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool);
 int ABT_thread_get_last_pool_id(ABT_thread thread, int *id);
+int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool);
 int ABT_thread_yield_to(ABT_thread thread);
 int ABT_thread_yield(void);
 int ABT_thread_resume(ABT_thread thread);

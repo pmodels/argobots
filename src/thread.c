@@ -690,6 +690,42 @@ int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
 
 /**
  * @ingroup ULT
+ * @brief   Set the associated pool for the target ULT.
+ *
+ * \c ABT_thread_set_associated_pool() changes the associated pool of the target
+ * ULT \c thread to \c pool.  This routine must be called after \c thread is
+ * popped from its original associated pool (i.e., \c thread must not be inside
+ * any pool), which is the pool where \c thread was residing in.
+ *
+ * NOTE: \c ABT_thread_migrate_to_pool() can be used to change the associated
+ * pool of \c thread regardless of its location.
+ *
+ * @param[in] thread  handle to the target ULT
+ * @param[in] pool    handle to the pool
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    p_thread->p_pool = p_pool;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Yield the processor from the current running thread to the
  *          specific thread.
  *
