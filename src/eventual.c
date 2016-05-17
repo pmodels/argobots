@@ -242,3 +242,33 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     goto fn_exit;
 }
 
+/**
+ * @ingroup EVENTUAL
+ * @brief   Reset the readiness of the target eventual.
+ *
+ * \c ABT_eventual_reset() resets the readiness of the target eventual
+ * \c eventual so that it can be can be reused.  That is, it makes \c eventual
+ * unready irrespective of its readiness.
+ *
+ * @param[in] eventual  handle to the target eventual
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_eventual_reset(ABT_eventual eventual)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
+    ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
+
+    ABTI_mutex_lock(&p_eventual->mutex);
+    p_eventual->ready = ABT_FALSE;
+    ABTI_mutex_unlock(&p_eventual->mutex);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+

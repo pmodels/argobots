@@ -525,6 +525,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual);
 int ABT_eventual_free(ABT_eventual *eventual);
 int ABT_eventual_wait(ABT_eventual eventual, void **value);
 int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes);
+int ABT_eventual_reset(ABT_eventual eventual);
 
 /* Futures */
 int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
