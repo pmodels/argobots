@@ -361,7 +361,8 @@ struct ABTI_future {
     uint32_t compartments;
     void **array;
     void (*p_callback)(void **arg);
-    ABTI_thread_list waiters;
+    ABTI_unit *p_head;          /* Head of waiters */
+    ABTI_unit *p_tail;          /* Tail of waiters */
 };
 
 struct ABTI_barrier {
@@ -503,9 +504,6 @@ uint64_t ABTI_task_get_id(ABTI_task *p_task);
 /* Key */
 ABTI_ktable *ABTI_ktable_alloc(int size);
 void ABTI_ktable_free(ABTI_ktable *p_ktable);
-
-/* Future */
-void ABTI_future_signal(ABTI_future *p_future);
 
 /* Event */
 void ABTI_event_init(void);
