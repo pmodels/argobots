@@ -116,7 +116,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
         if (lp_ABTI_local != NULL) {
             p_current = ABTI_local_get_thread();
-            ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_FUTURE);
+            ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_EVENTUAL);
 
             type = ABT_UNIT_TYPE_THREAD;
             p_unit = &p_current->unit_def;
