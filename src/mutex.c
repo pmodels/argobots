@@ -251,6 +251,7 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
 
     /* FIXME: need a real implementation */
     ABTI_mutex_unlock(p_mutex);
+    ABT_thread_yield();
 
   fn_exit:
     return abt_errno;
