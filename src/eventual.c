@@ -247,7 +247,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
  * @brief   Reset the readiness of the target eventual.
  *
  * \c ABT_eventual_reset() resets the readiness of the target eventual
- * \c eventual so that it can be can be reused.  That is, it makes \c eventual
+ * \c eventual so that it can be reused.  That is, it makes \c eventual
  * unready irrespective of its readiness.
  *
  * @param[in] eventual  handle to the target eventual
