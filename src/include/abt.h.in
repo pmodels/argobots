@@ -534,6 +534,7 @@ int ABT_future_free(ABT_future *future);
 int ABT_future_wait(ABT_future future);
 int ABT_future_test(ABT_future future, ABT_bool *flag);
 int ABT_future_set(ABT_future future, void *value);
+int ABT_future_reset(ABT_future future);
 
 /* Barrier */
 int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier);

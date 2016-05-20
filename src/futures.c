@@ -305,3 +305,32 @@ int ABT_future_set(ABT_future future, void *value)
     goto fn_exit;
 }
 
+/**
+ * @ingroup FUTURE
+ * @brief   Reset the readiness of the target future.
+ *
+ * \c ABT_future_reset() resets the readiness of the target future \c future so
+ * that it can be reused.  That is, it makes \c future unready irrespective of
+ * its readiness.
+ *
+ * @param[in] future  handle to the target future
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_future_reset(ABT_future future)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_future *p_future = ABTI_future_get_ptr(future);
+    ABTI_CHECK_NULL_EVENTUAL_PTR(p_future);
+
+    ABTI_mutex_lock(&p_future->mutex);
+    p_future->ready = ABT_FALSE;
+    ABTI_mutex_unlock(&p_future->mutex);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
