@@ -391,10 +391,22 @@ ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local)
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#define PROTS       (PROT_READ | PROT_WRITE)
-#define FLAGS_HP    (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB)
-#define FLAGS_RP    (MAP_PRIVATE | MAP_ANONYMOUS)
 #define PAGESIZE    (2 * 1024 * 1024)
+#define PROTS       (PROT_READ | PROT_WRITE)
+#define FLAGS_RP    (MAP_PRIVATE | MAP_ANONYMOUS)
+
+#if defined(HAVE_MAP_HUGETLB)
+#define FLAGS_HP        (FLAGS_RP | MAP_HUGETLB)
+#define FD_HP           0
+#define MMAP_DBG_MSG    "mmap a hugepage"
+#else
+/* NOTE: On Mac OS, we tried VM_FLAGS_SUPERPAGE_SIZE_ANY that is defined in
+ * <mach/vm_statistics.h>, but mmap() failed with it and its execution was too
+ * slow.  By that reason, we do not support it for now. */
+#define FLAGS_HP        FLAGS_RP
+#define FD_HP           0
+#define MMAP_DBG_MSG    "mmap regular pages"
+#endif
 
 static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph)
 {
@@ -433,14 +445,15 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
 
     /* Allocate a stack page. We first try to mmap a huge page, and then if it
      * fails, we mmap a normal page. */
-    p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);
+    p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, FD_HP, 0);
     if ((void *)p_sp == MAP_FAILED) {
         /* Huge pages are run out of. Use a normal mmap. */
         p_sp = (char *)mmap(NULL, PAGESIZE, PROTS, FLAGS_RP, 0, 0);
         ABTI_ASSERT((void *)p_sp != MAP_FAILED);
-        LOG_DEBUG("mmap normal pages (2MB): %p\n", p_sp);
+        LOG_DEBUG("fall back to mmap regular pages (%d MB): %p\n",
+                  PAGESIZE/1024/1024, p_sp);
     } else {
-        LOG_DEBUG("mmap a hugepage (2MB):%p\n", p_sp);
+        LOG_DEBUG(MMAP_DBG_MSG" (%d MB):%p\n", PAGESIZE/1024/1024, p_sp);
     }
 
     /* Allocate a stack page header */

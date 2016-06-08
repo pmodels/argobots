@@ -120,6 +120,16 @@ fi
 
 # check math library
 AC_CHECK_LIB([m], [log10])
+
+# check if MAP_HUGETLB is supported in mmap
+AC_TRY_COMPILE([
+#include <stdio.h>
+#include <sys/mman.h>
+#define PROTS       (PROT_READ | PROT_WRITE)
+#define FLAGS_HP    (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB)
+#define PAGESIZE    (2 * 1024 * 1024)
+],[void *ptr = mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);],
+[AC_DEFINE(HAVE_MAP_HUGETLB, 1, [Define if MAP_HUGETLB is supported])],,)
 dnl ----------------------------------------------------------------------------
 
 dnl ----------------------------------------------------------------------------
