@@ -11,9 +11,13 @@
 #define ABTD_THREAD_DEFAULT_STACKSIZE   16384
 #define ABTD_SCHED_DEFAULT_STACKSIZE    (4*1024*1024)
 #define ABTD_SCHED_EVENT_FREQ           50
+
 #define ABTD_CACHE_LINE_SIZE            64
-#define ABTD_MAX_NUM_STACKS             65536
+#define ABTD_OS_PAGE_SIZE               (4*1024)
+#define ABTD_HUGE_PAGE_SIZE             (2*1024*1024)
 #define ABTD_MEM_PAGE_SIZE              (2*1024*1024)
+#define ABTD_MEM_STACK_PAGE_SIZE        (8*1024*1024)
+#define ABTD_MEM_MAX_NUM_STACKS         65536
 
 
 void ABTD_env_init(ABTI_global *p_global)
@@ -116,43 +120,67 @@ void ABTD_env_init(ABTI_global *p_global)
         p_global->cache_line_size = ABTD_CACHE_LINE_SIZE;
     }
 
-#ifdef ABT_CONFIG_USE_MEM_POOL
-    /* Maximum number of stacks that each ES can keep during execution */
-    env = getenv("ABT_ENV_MAX_NUM_STACKS");
+    /* OS page size */
+    env = getenv("ABT_ENV_OS_PAGE_SIZE");
     if (env != NULL) {
-        p_global->max_stacks = (uint32_t)atol(env);
+        p_global->os_page_size = (uint32_t)atol(env);
     } else {
-        p_global->max_stacks = ABTD_MAX_NUM_STACKS;
+        p_global->os_page_size = ABTD_OS_PAGE_SIZE;
     }
 
+    /* Huge page size */
+    env = getenv("ABT_ENV_HUGE_PAGE_SIZE");
+    if (env != NULL) {
+        p_global->huge_page_size = (uint32_t)atol(env);
+    } else {
+        p_global->huge_page_size = ABTD_HUGE_PAGE_SIZE;
+    }
+
+#ifdef ABT_CONFIG_USE_MEM_POOL
     /* Page size for memory allocation */
     env = getenv("ABT_ENV_MEM_PAGE_SIZE");
     if (env != NULL) {
-        p_global->page_size = (size_t)atol(env);
+        p_global->mem_page_size = (uint32_t)atol(env);
     } else {
-        p_global->page_size = ABTD_MEM_PAGE_SIZE;
+        p_global->mem_page_size = ABTD_MEM_PAGE_SIZE;
     }
 
-    /* How to allocate stack pages.  The default is to use mmap() for huge
+    /* Stack page size for memory allocation */
+    env = getenv("ABT_ENV_MEM_STACK_PAGE_SIZE");
+    if (env != NULL) {
+        p_global->mem_sp_size = (size_t)atol(env);
+    } else {
+        p_global->mem_sp_size = ABTD_MEM_STACK_PAGE_SIZE;
+    }
+
+    /* Maximum number of stacks that each ES can keep during execution */
+    env = getenv("ABT_ENV_MEM_MAX_NUM_STACKS");
+    if (env != NULL) {
+        p_global->mem_max_stacks = (uint32_t)atol(env);
+    } else {
+        p_global->mem_max_stacks = ABTD_MEM_MAX_NUM_STACKS;
+    }
+
+    /* How to allocate large pages.  The default is to use mmap() for huge
      * pages and then to fall back to allocate regular pages using mmap() when
      * huge pages are run out of. */
-    env = getenv("ABT_ENV_MEM_SP_ALLOC");
+    env = getenv("ABT_ENV_MEM_LP_ALLOC");
     if (env != NULL) {
         if (strcasecmp(env, "malloc") == 0) {
-            p_global->mem_sp_alloc = ABTI_MEM_SP_MALLOC;
+            p_global->mem_lp_alloc = ABTI_MEM_LP_MALLOC;
         } else if (strcasecmp(env, "mmap_rp") == 0) {
-            p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_RP;
+            p_global->mem_lp_alloc = ABTI_MEM_LP_MMAP_RP;
         } else if (strcasecmp(env, "mmap_hp_rp") == 0) {
-            p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_HP_RP;
+            p_global->mem_lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
         } else if (strcasecmp(env, "mmap_hp_thp") == 0) {
-            p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_HP_THP;
+            p_global->mem_lp_alloc = ABTI_MEM_LP_MMAP_HP_THP;
         } else if (strcasecmp(env, "thp") == 0) {
-            p_global->mem_sp_alloc = ABTI_MEM_SP_THP;
+            p_global->mem_lp_alloc = ABTI_MEM_LP_THP;
         } else {
-            p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_HP_RP;
+            p_global->mem_lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
         }
     } else {
-        p_global->mem_sp_alloc = ABTI_MEM_SP_MMAP_HP_RP;
+        p_global->mem_lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
     }
 #endif
 

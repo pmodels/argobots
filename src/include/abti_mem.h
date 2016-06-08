@@ -18,11 +18,11 @@
 typedef struct ABTI_blk_header  ABTI_blk_header;
 
 enum {
-    ABTI_MEM_SP_MALLOC = 0,
-    ABTI_MEM_SP_MMAP_RP,
-    ABTI_MEM_SP_MMAP_HP_RP,
-    ABTI_MEM_SP_MMAP_HP_THP,
-    ABTI_MEM_SP_THP
+    ABTI_MEM_LP_MALLOC = 0,
+    ABTI_MEM_LP_MMAP_RP,
+    ABTI_MEM_LP_MMAP_HP_RP,
+    ABTI_MEM_LP_MMAP_HP_THP,
+    ABTI_MEM_LP_THP
 };
 
 struct ABTI_sp_header {
@@ -100,7 +100,7 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize);
 static inline
 ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
 {
-    const size_t header_size = gp_ABTI_global->header_size;
+    const size_t header_size = gp_ABTI_global->mem_sh_size;
     size_t stacksize, actual_stacksize;
     char *p_blk;
     ABTI_thread *p_thread;
@@ -136,7 +136,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
      * ABTI_stack_header and ABTI_thread. So, the effective stack area is
      * reduced as much as the size of ABTI_stack_header and ABTI_thread. */
 
-    const size_t header_size = gp_ABTI_global->header_size;
+    const size_t header_size = gp_ABTI_global->mem_sh_size;
     size_t stacksize, def_stacksize, actual_stacksize;
     ABTI_local *p_local = lp_ABTI_local;
     char *p_blk = NULL;
@@ -278,7 +278,7 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
     }
 
     p_local = lp_ABTI_local;
-    if (p_local->num_stacks <= gp_ABTI_global->max_stacks) {
+    if (p_local->num_stacks <= gp_ABTI_global->mem_max_stacks) {
         p_sh->p_next = p_local->p_mem_stack;
         p_local->p_mem_stack = p_sh;
         p_local->num_stacks++;
