@@ -121,15 +121,40 @@ fi
 # check math library
 AC_CHECK_LIB([m], [log10])
 
+# check if MAP_ANONYMOUS or MAP_ANON is defined
+AC_TRY_COMPILE([
+#include <stdio.h>
+#include <sys/mman.h>
+#define FLAGS   (MAP_PRIVATE | MAP_ANONYMOUS)
+],[void *ptr = mmap(NULL, 4096, PROT_READ, FLAGS, 0, 0);],
+[have_map_anonymous=yes],[have_map_anonymous=no])
+if test "$have_map_anonymous" = "yes" ; then
+AC_DEFINE(HAVE_MAP_ANONYMOUS, 1, [Define if MAP_ANONYMOUS is defined])
+else
+AC_TRY_COMPILE([
+#include <stdio.h>
+#include <sys/mman.h>
+#define FLAGS   (MAP_PRIVATE | MAP_ANON)
+],[void *ptr = mmap(NULL, 4096, PROT_READ, FLAGS, 0, 0);],
+[have_map_anon=yes],[have_map_anon=no])
+AS_IF([test "$have_map_anon" = "yes"],
+    AC_DEFINE(HAVE_MAP_ANON, 1, [Define if MAP_ANON is defined])])
+fi
+
+if test "$have_map_anonymous" = "yes" -o "$have_map_anon" = "yes" ; then
 # check if MAP_HUGETLB is supported in mmap
 AC_TRY_COMPILE([
 #include <stdio.h>
 #include <sys/mman.h>
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS   MAP_ANON
+#endif
 #define PROTS       (PROT_READ | PROT_WRITE)
 #define FLAGS_HP    (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB)
 #define PAGESIZE    (2 * 1024 * 1024)
 ],[void *ptr = mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);],
 [AC_DEFINE(HAVE_MAP_HUGETLB, 1, [Define if MAP_HUGETLB is supported])],,)
+fi
 dnl ----------------------------------------------------------------------------
 
 dnl ----------------------------------------------------------------------------

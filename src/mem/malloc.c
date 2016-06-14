@@ -17,7 +17,15 @@
 #include <sys/mman.h>
 
 #define PROTS           (PROT_READ | PROT_WRITE)
+
+#if defined(HAVE_MAP_ANONYMOUS)
 #define FLAGS_RP        (MAP_PRIVATE | MAP_ANONYMOUS)
+#elif defined(HAVE_MAP_ANON)
+#define FLAGS_RP        (MAP_PRIVATE | MAP_ANON)
+#else
+/* In this case, we don't allow using mmap. We always use malloc. */
+#define FLAGS_RP        (MAP_PRIVATE)
+#endif
 
 #if defined(HAVE_MAP_HUGETLB)
 #define FLAGS_HP        (FLAGS_RP | MAP_HUGETLB)
