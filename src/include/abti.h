@@ -130,7 +130,7 @@ struct ABTI_global {
     ABTI_mutex mutex;           /* Mutex */
 
     int num_cores;              /* Number of CPU cores */
-    int set_affinity;           /* Whether CPU affinity is used */
+    ABT_bool set_affinity;      /* Whether CPU affinity is used */
     ABT_bool use_logging;       /* Whether logging is used */
     ABT_bool use_debug;         /* Whether debug output is used */
     int key_table_size;         /* Default key table size */
