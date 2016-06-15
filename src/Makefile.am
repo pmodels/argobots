@@ -11,6 +11,7 @@ abt_sources = \
 	eventual.c \
 	futures.c \
 	global.c \
+	info.c \
 	key.c \
 	local.c \
 	log.c \
