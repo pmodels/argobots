@@ -56,7 +56,8 @@ void ABTD_affinity_init(void)
         }
     }
 #else
-    /* Nothing to do */
+    /* In this case, we don't support the ES affinity. */
+    gp_ABTI_global->set_affinity = ABT_FALSE;
 #endif
 }
 
