@@ -86,6 +86,10 @@ int ABT_init(int argc, char **argv)
     abt_errno = ABTI_xstream_start_primary(p_newxstream, p_main_thread);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");
 
+    if (gp_ABTI_global->print_config == ABT_TRUE) {
+        ABT_info_print_config(stdout);
+    }
+
   fn_exit:
     return abt_errno;
 

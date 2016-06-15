@@ -224,6 +224,19 @@ void ABTD_env_init(ABTI_global *p_global)
     p_global->pub_interval = env ? atof(env) : 1.0;
 #endif
 
+    /* Whether to print the configuration on ABT_init() */
+    env = getenv("ABT_ENV_PRINT_CONFIG");
+    if (env != NULL) {
+        if (strcmp(env, "1") == 0 || strcasecmp(env, "yes") == 0 ||
+            strcasecmp(env, "y") == 0) {
+            p_global->print_config = ABT_TRUE;
+        } else {
+            p_global->print_config = ABT_FALSE;
+        }
+    } else {
+        p_global->print_config = ABT_FALSE;
+    }
+
     /* Init timer */
     ABTD_time_init();
 }

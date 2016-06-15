@@ -162,6 +162,8 @@ struct ABTI_global {
     char *pub_filename;         /* Filename for publishing */
     double pub_interval;        /* Time interval in seconds */
 #endif
+
+    ABT_bool print_config;      /* Whether to print config on ABT_init */
 };
 
 struct ABTI_local {
