@@ -44,7 +44,8 @@ TESTS = \
 	barrier \
 	self_type \
 	ext_thread \
-	timer
+	timer \
+	info_print
 
 XFAIL_TESTS =
 if ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK
@@ -97,6 +98,7 @@ barrier_SOURCES = barrier.c
 self_type_SOURCES = self_type.c
 ext_thread_SOURCES = ext_thread.c
 timer_SOURCES = timer.c
+info_print_SOURCES = info_print.c
 
 testing:
 	./init_finalize
@@ -140,3 +142,4 @@ testing:
 	./self_type
 	./ext_thread
 	./timer
+	./info_print

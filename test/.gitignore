@@ -42,6 +42,7 @@ basic/barrier
 basic/self_type
 basic/ext_thread
 basic/timer
+basic/info_print
 
 # code builds
 util/libutil.la
