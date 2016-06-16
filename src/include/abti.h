@@ -474,7 +474,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
 /* Scheduler */
 ABT_sched_def *ABTI_sched_get_basic_def(void);
 ABT_sched_def *ABTI_sched_get_prio_def(void);
-ABT_sched_def *ABTI_sched_get_worksteal_def(void);
+ABT_sched_def *ABTI_sched_get_randws_def(void);
 int ABTI_sched_free(ABTI_sched *p_sched);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
 ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);

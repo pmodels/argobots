@@ -24,7 +24,7 @@ basic/thread_task_arg
 basic/thread_task_num
 basic/sched_basic
 basic/sched_prio
-basic/sched_worksteal
+basic/sched_randws
 basic/sched_set_main
 basic/sched_stack
 basic/sched_config

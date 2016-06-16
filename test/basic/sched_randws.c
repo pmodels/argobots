@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
             my_pools[k] = pools[(i + k) % num_xstreams];
         }
 
-        ret = ABT_sched_create_basic(ABT_SCHED_WORKSTEAL, num_xstreams, my_pools,
+        ret = ABT_sched_create_basic(ABT_SCHED_RANDWS, num_xstreams, my_pools,
                                      ABT_SCHED_CONFIG_NULL, &scheds[i]);
         ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
     }

@@ -28,7 +28,7 @@ TESTS = \
 	thread_task_num \
 	sched_basic \
 	sched_prio \
-	sched_worksteal \
+	sched_randws \
 	sched_set_main \
 	sched_stack \
 	sched_config \
@@ -82,7 +82,7 @@ thread_task_arg_SOURCES = thread_task_arg.c
 thread_task_num_SOURCES = thread_task_num.c
 sched_basic_SOURCES = sched_basic.c
 sched_prio_SOURCES = sched_prio.c
-sched_worksteal_SOURCES = sched_worksteal.c
+sched_randws_SOURCES = sched_randws.c
 sched_set_main_SOURCES = sched_set_main.c
 sched_stack_SOURCES = sched_stack.c
 sched_config_SOURCES = sched_config.c
@@ -127,7 +127,7 @@ testing:
 	./thread_task_num
 	./sched_basic
 	./sched_prio
-	./sched_worksteal
+	./sched_randws
 	./sched_set_main
 	./sched_stack
 	./sched_config
