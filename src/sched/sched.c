@@ -839,7 +839,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
         default:                  type = "UNKNOWN"; break;
     }
 
-    size = sizeof(char) * (p_sched->num_pools * 12 + 1);
+    size = sizeof(char) * (p_sched->num_pools * 20 + 4);
     pools_str = (char *)ABTU_calloc(size, 1);
     pools_str[0] = '[';
     pools_str[1] = ' ';

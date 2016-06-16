@@ -1823,7 +1823,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
         default:                           state = "UNKNOWN"; break;
     }
 
-    size = sizeof(char) * (p_xstream->num_scheds * 12 + 1);
+    size = sizeof(char) * (p_xstream->num_scheds * 20 + 4);
     scheds_str = (char *)ABTU_calloc(size, 1);
     scheds_str[0] = '[';
     scheds_str[1] = ' ';
