@@ -1795,7 +1795,8 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     goto fn_exit;
 }
 
-void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
+void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
+                        ABT_bool print_sub)
 {
     char *prefix = ABTU_get_indent_str(indent);
 
@@ -1855,7 +1856,9 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent)
     );
     ABTU_free(scheds_str);
 
-    ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT);
+    if (print_sub == ABT_TRUE) {
+        ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT);
+    }
 
   fn_exit:
     fflush(p_os);

@@ -114,3 +114,72 @@ int ABT_info_print_config(FILE *fp)
     goto fn_exit;
 }
 
+
+/**
+ * @ingroup INFO
+ * @brief   Write the information of all created ESs to the output stream.
+ *
+ * \c ABT_info_print_all_xstreams() writes the information of all ESs to the
+ * given output stream \c fp.
+ *
+ * @param[in] fp  output stream
+ * @return Error code
+ * @retval ABT_SUCCESS            on success
+ * @retval ABT_ERR_UNINITIALIZED  Argobots has not been initialized
+ */
+int ABT_info_print_all_xstreams(FILE *fp)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_CHECK_INITIALIZED();
+
+    ABTI_global *p_global = gp_ABTI_global;
+    int i;
+
+    ABTI_mutex_spinlock(&p_global->mutex);
+
+    fprintf(fp, "# of created ESs: %d\n", p_global->num_xstreams);
+    for (i = 0; i < p_global->num_xstreams; i++) {
+        ABTI_xstream_print(p_global->p_xstreams[i], fp, 0, ABT_FALSE);
+    }
+
+    ABTI_mutex_unlock(&p_global->mutex);
+
+    fflush(fp);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+
+/**
+ * @ingroup INFO
+ * @brief   Write the information of the target ES to the output stream.
+ *
+ * \c ABT_info_print_xstream() writes the information of the target ES
+ * \c xstream to the given output stream \c fp.
+ *
+ * @param[in] fp       output stream
+ * @param[in] xstream  handle to the target ES
+ * @return Error code
+ * @retval ABT_SUCCESS  on success
+ */
+int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    ABTI_xstream_print(p_xstream, fp, 0, ABT_FALSE);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+

@@ -141,7 +141,8 @@ void ABTI_elem_print(ABTI_elem *p_elem, FILE *p_os, int indent, ABT_bool detail)
 
             case ABT_UNIT_TYPE_XSTREAM: {
                 ABTI_xstream *p_xstream = (ABTI_xstream *)p_elem->p_obj;
-                ABTI_xstream_print(p_xstream, p_os, indent + ABTI_INDENT);
+                ABTI_xstream_print(p_xstream, p_os, indent + ABTI_INDENT,
+                                   ABT_TRUE);
                 break;
             }
 
