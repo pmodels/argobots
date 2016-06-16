@@ -241,3 +241,32 @@ int ABT_info_print_pool(FILE* fp, ABT_pool pool)
     goto fn_exit;
 }
 
+
+/**
+ * @ingroup INFO
+ * @brief   Write the information of the target ULT to the output stream.
+ *
+ * \c ABT_info_print_thread() writes the information of the target ULT
+ * \c thread to the given output stream \c fp.
+ *
+ * @param[in] fp      output stream
+ * @param[in] thread  handle to the target ULT
+ * @return Error code
+ * @retval ABT_SUCCESS  on success
+ */
+int ABT_info_print_thread(FILE* fp, ABT_thread thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    ABTI_thread_print(p_thread, fp, 0);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+

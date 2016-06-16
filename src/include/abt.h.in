@@ -575,6 +575,7 @@ int ABT_info_print_all_xstreams(FILE *fp);
 int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream);
 int ABT_info_print_sched(FILE *fp, ABT_sched sched);
 int ABT_info_print_pool(FILE* fp, ABT_pool pool);
+int ABT_info_print_thread(FILE* fp, ABT_thread thread);
 
 #if defined(__cplusplus)
 }
