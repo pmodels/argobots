@@ -7,5 +7,6 @@ abt_sources += \
 	sched/basic.c \
 	sched/config.c \
 	sched/prio.c \
-	sched/sched.c
+	sched/sched.c \
+	sched/worksteal.c
 

@@ -176,6 +176,12 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
                 break;
+            case ABT_SCHED_WORKSTEAL:
+                abt_errno = ABT_sched_create(ABTI_sched_get_worksteal_def(),
+                                             num_pools, pool_list,
+                                             ABT_SCHED_CONFIG_NULL,
+                                             newsched);
+                break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
                 break;
@@ -194,6 +200,9 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 break;
             case ABT_SCHED_PRIO:
                 num_pools = ABTI_SCHED_NUM_PRIO;
+                break;
+            case ABT_SCHED_WORKSTEAL:
+                num_pools = 1;
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
@@ -221,6 +230,11 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 break;
             case ABT_SCHED_PRIO:
                 abt_errno = ABT_sched_create(ABTI_sched_get_prio_def(),
+                                             num_pools, pool_list,
+                                             config, newsched);
+                break;
+            case ABT_SCHED_WORKSTEAL:
+                abt_errno = ABT_sched_create(ABTI_sched_get_worksteal_def(),
                                              num_pools, pool_list,
                                              config, newsched);
                 break;
