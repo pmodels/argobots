@@ -781,7 +781,8 @@ ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
   return (ABTI_sched_kind)def;
 }
 
-void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent)
+void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
+                      ABT_bool print_sub)
 {
     char *prefix = ABTU_get_indent_str(indent);
 
@@ -870,9 +871,11 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent)
     );
     ABTU_free(pools_str);
 
-    for (i = 0; i < p_sched->num_pools; i++) {
-        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
-        ABTI_pool_print(p_pool, p_os, indent + 2);
+    if (print_sub == ABT_TRUE) {
+        for (i = 0; i < p_sched->num_pools; i++) {
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
+            ABTI_pool_print(p_pool, p_os, indent + 2);
+        }
     }
 
   fn_exit:

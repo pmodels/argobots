@@ -573,6 +573,7 @@ int ABT_event_prof_publish(const char *unit_name, double local_work,
 int ABT_info_print_config(FILE *fp);
 int ABT_info_print_all_xstreams(FILE *fp);
 int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream);
+int ABT_info_print_sched(FILE *fp, ABT_sched sched);
 
 #if defined(__cplusplus)
 }

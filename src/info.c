@@ -183,3 +183,32 @@ int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
     goto fn_exit;
 }
 
+
+/**
+ * @ingroup INFO
+ * @brief   Write the information of the target scheduler to the output stream.
+ *
+ * \c ABT_info_print_sched() writes the information of the target scheduler
+ * \c sched to the given output stream \c fp.
+ *
+ * @param[in] fp     output stream
+ * @param[in] sched  handle to the target scheduler
+ * @return Error code
+ * @retval ABT_SUCCESS  on success
+ */
+int ABT_info_print_sched(FILE *fp, ABT_sched sched)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
+    ABTI_sched_print(p_sched, fp, 0, ABT_FALSE);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+

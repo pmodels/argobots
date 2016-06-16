@@ -481,7 +481,8 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream);
 size_t ABTI_sched_get_size(ABTI_sched *p_sched);
 size_t ABTI_sched_get_total_size(ABTI_sched *p_sched);
 size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched);
-void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent);
+void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
+                      ABT_bool print_sub);
 void ABTI_sched_reset_id(void);
 
 /* Scheduler config */

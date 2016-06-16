@@ -1857,7 +1857,8 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
     ABTU_free(scheds_str);
 
     if (print_sub == ABT_TRUE) {
-        ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT);
+        ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT,
+                         ABT_TRUE);
     }
 
   fn_exit:
