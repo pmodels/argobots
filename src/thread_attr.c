@@ -330,12 +330,14 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
         "stack:%p "
         "stacksize:%zu "
         "userstack:%s "
+        "migratable:%s "
         "cb_func:%p "
         "cb_arg:%p"
         "]",
         p_attr->p_stack,
         p_attr->stacksize,
         (p_attr->userstack == ABT_TRUE ? "TRUE" : "FALSE"),
+        (p_attr->migratable == ABT_TRUE ? "TRUE" : "FALSE"),
         p_attr->f_cb,
         p_attr->p_cb_arg
     );

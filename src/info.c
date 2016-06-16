@@ -270,3 +270,33 @@ int ABT_info_print_thread(FILE* fp, ABT_thread thread)
     goto fn_exit;
 }
 
+
+/**
+ * @ingroup INFO
+ * @brief   Write the information of the target ULT attribute to the output
+ * stream.
+ *
+ * \c ABT_info_print_thread_attr() writes the information of the target ULT
+ * attribute \c attr to the given output stream \c fp.
+ *
+ * @param[in] fp    output stream
+ * @param[in] attr  handle to the target ULT attribute
+ * @return Error code
+ * @retval ABT_SUCCESS  on success
+ */
+int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
+
+    ABTI_thread_attr_print(p_attr, fp, 0);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
