@@ -300,3 +300,32 @@ int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr)
     goto fn_exit;
 }
 
+
+/**
+ * @ingroup INFO
+ * @brief   Write the information of the target tasklet to the output stream.
+ *
+ * \c ABT_info_print_task() writes the information of the target tasklet
+ * \c task to the given output stream \c fp.
+ *
+ * @param[in] fp    output stream
+ * @param[in] task  handle to the target tasklet
+ * @return Error code
+ * @retval ABT_SUCCESS  on success
+ */
+int ABT_info_print_task(FILE* fp, ABT_task task)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    ABTI_task_print(p_task, fp, 0);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
