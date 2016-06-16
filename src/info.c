@@ -212,3 +212,32 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
     goto fn_exit;
 }
 
+
+/**
+ * @ingroup INFO
+ * @brief   Write the information of the target pool to the output stream.
+ *
+ * \c ABT_info_print_pool() writes the information of the target pool
+ * \c pool to the given output stream \c fp.
+ *
+ * @param[in] fp    output stream
+ * @param[in] pool  handle to the target pool
+ * @return Error code
+ * @retval ABT_SUCCESS  on success
+ */
+int ABT_info_print_pool(FILE* fp, ABT_pool pool)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    ABTI_pool_print(p_pool, fp, 0);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
