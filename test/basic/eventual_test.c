@@ -164,7 +164,7 @@ void eventual_test(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream *xstreams;
-    ABT_xstream *masters;
+    ABT_thread *masters;
     int i, ret;
 
     /* Initialize */
