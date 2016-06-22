@@ -103,6 +103,7 @@ typedef struct ABTI_ktelem          ABTI_ktelem;
 typedef struct ABTI_ktable          ABTI_ktable;
 typedef struct ABTI_mutex           ABTI_mutex;
 typedef struct ABTI_cond            ABTI_cond;
+typedef struct ABTI_rwlock          ABTI_rwlock;
 typedef struct ABTI_eventual        ABTI_eventual;
 typedef struct ABTI_future          ABTI_future;
 typedef struct ABTI_barrier         ABTI_barrier;
@@ -382,6 +383,13 @@ struct ABTI_cond {
     ABTI_unit *p_tail;          /* Tail of waiters */
 };
 
+struct ABTI_rwlock {
+    ABTI_mutex mutex;
+    ABTI_cond  cond;
+    size_t reader_count;
+    int write_flag;
+};
+
 struct ABTI_eventual {
     ABTI_mutex mutex;
     ABT_bool ready;
@@ -572,6 +580,7 @@ void ABTI_event_publish_info(void);
 #include "abti_key.h"
 #include "abti_mutex.h"
 #include "abti_cond.h"
+#include "abti_rwlock.h"
 #include "abti_eventual.h"
 #include "abti_future.h"
 #include "abti_barrier.h"

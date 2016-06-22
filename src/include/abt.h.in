@@ -76,34 +76,36 @@ extern "C" {
 #define ABT_ERR_INV_KEY            19  /* Invalid key */
 #define ABT_ERR_INV_MUTEX          20  /* Invalid mutex */
 #define ABT_ERR_INV_COND           21  /* Invalid condition variable */
-#define ABT_ERR_INV_EVENTUAL       22  /* Invalid eventual */
-#define ABT_ERR_INV_FUTURE         23  /* Invalid future */
-#define ABT_ERR_INV_BARRIER        24  /* Invalid barrier */
-#define ABT_ERR_INV_TIMER          25  /* Invalid timer */
-#define ABT_ERR_INV_EVENT          26  /* Invalid event */
-#define ABT_ERR_XSTREAM            27  /* ES-related error */
-#define ABT_ERR_XSTREAM_STATE      28  /* ES state error */
-#define ABT_ERR_XSTREAM_BARRIER    29  /* ES barrier-related error */
-#define ABT_ERR_SCHED              30  /* Scheduler-related error */
-#define ABT_ERR_SCHED_CONFIG       31  /* Scheduler config error */
-#define ABT_ERR_POOL               32  /* Pool-related error */
-#define ABT_ERR_UNIT               33  /* Scheduling unit-related error */
-#define ABT_ERR_THREAD             34  /* ULT-related error */
-#define ABT_ERR_TASK               35  /* Task-related error */
-#define ABT_ERR_KEY                36  /* Key-related error */
-#define ABT_ERR_MUTEX              37  /* Mutex-related error */
-#define ABT_ERR_MUTEX_LOCKED       38  /* Return value when mutex is locked */
-#define ABT_ERR_COND               39  /* Condition-related error */
-#define ABT_ERR_COND_TIMEDOUT      40  /* Return value when cond is timed out */
-#define ABT_ERR_EVENTUAL           41  /* Eventual-related error */
-#define ABT_ERR_FUTURE             42  /* Future-related error */
-#define ABT_ERR_BARRIER            43  /* Barrier-related error */
-#define ABT_ERR_TIMER              44  /* Timer-related error */
-#define ABT_ERR_EVENT              45  /* Event-related error */
-#define ABT_ERR_MIGRATION_TARGET   46  /* Migration target error */
-#define ABT_ERR_MIGRATION_NA       47  /* Migration not available */
-#define ABT_ERR_MISSING_JOIN       48  /* An ES or more did not join */
-#define ABT_ERR_FEATURE_NA         49  /* Feature not available */
+#define ABT_ERR_INV_RWLOCK         22  /* Invalid rw lock */
+#define ABT_ERR_INV_EVENTUAL       23  /* Invalid eventual */
+#define ABT_ERR_INV_FUTURE         24  /* Invalid future */
+#define ABT_ERR_INV_BARRIER        25  /* Invalid barrier */
+#define ABT_ERR_INV_TIMER          26  /* Invalid timer */
+#define ABT_ERR_INV_EVENT          27  /* Invalid event */
+#define ABT_ERR_XSTREAM            28  /* ES-related error */
+#define ABT_ERR_XSTREAM_STATE      29  /* ES state error */
+#define ABT_ERR_XSTREAM_BARRIER    30  /* ES barrier-related error */
+#define ABT_ERR_SCHED              31  /* Scheduler-related error */
+#define ABT_ERR_SCHED_CONFIG       32  /* Scheduler config error */
+#define ABT_ERR_POOL               33  /* Pool-related error */
+#define ABT_ERR_UNIT               34  /* Scheduling unit-related error */
+#define ABT_ERR_THREAD             35  /* ULT-related error */
+#define ABT_ERR_TASK               36  /* Task-related error */
+#define ABT_ERR_KEY                37  /* Key-related error */
+#define ABT_ERR_MUTEX              38  /* Mutex-related error */
+#define ABT_ERR_MUTEX_LOCKED       39  /* Return value when mutex is locked */
+#define ABT_ERR_COND               40  /* Condition-related error */
+#define ABT_ERR_COND_TIMEDOUT      41  /* Return value when cond is timed out */
+#define ABT_ERR_RWLOCK             42  /* rwlock-related error */
+#define ABT_ERR_EVENTUAL           43  /* Eventual-related error */
+#define ABT_ERR_FUTURE             44  /* Future-related error */
+#define ABT_ERR_BARRIER            45  /* Barrier-related error */
+#define ABT_ERR_TIMER              46  /* Timer-related error */
+#define ABT_ERR_EVENT              47  /* Event-related error */
+#define ABT_ERR_MIGRATION_TARGET   48  /* Migration target error */
+#define ABT_ERR_MIGRATION_NA       49  /* Migration not available */
+#define ABT_ERR_MISSING_JOIN       50  /* An ES or more did not join */
+#define ABT_ERR_FEATURE_NA         51  /* Feature not available */
 
 
 /* Constants */
@@ -203,6 +205,7 @@ typedef enum ABT_task_state    ABT_task_state;      /* Tasklet state */
 typedef void *                 ABT_key;             /* WU-specific data key */
 typedef void *                 ABT_mutex;           /* Mutex */
 typedef void *                 ABT_cond;            /* Condition variable */
+typedef void *                 ABT_rwlock;          /* Readers writer lock */
 typedef void *                 ABT_eventual;        /* Eventual */
 typedef void *                 ABT_future;          /* Future */
 typedef void *                 ABT_barrier;         /* Barrier */
@@ -227,6 +230,7 @@ typedef enum ABT_event_kind    ABT_event_kind;      /* Event kind */
 #define ABT_KEY_NULL             ((ABT_key)            NULL)
 #define ABT_MUTEX_NULL           ((ABT_mutex)          NULL)
 #define ABT_COND_NULL            ((ABT_cond)           NULL)
+#define ABT_RWLOCK_NULL          ((ABT_rwlock)         NULL)
 #define ABT_EVENTUAL_NULL        ((ABT_eventual)       NULL)
 #define ABT_FUTURE_NULL          ((ABT_future)         NULL)
 #define ABT_BARRIER_NULL         ((ABT_barrier)        NULL)
@@ -245,10 +249,11 @@ typedef enum ABT_event_kind    ABT_event_kind;      /* Event kind */
 #define ABT_KEY_NULL             ((ABT_key)            (0x0b))
 #define ABT_MUTEX_NULL           ((ABT_mutex)          (0x0c))
 #define ABT_COND_NULL            ((ABT_cond)           (0x0d))
-#define ABT_EVENTUAL_NULL        ((ABT_eventual)       (0x0e))
-#define ABT_FUTURE_NULL          ((ABT_future)         (0x0f))
-#define ABT_BARRIER_NULL         ((ABT_barrier)        (0x10))
-#define ABT_TIMER_NULL           ((ABT_timer)          (0x11))
+#define ABT_RWLOCK_NULL          ((ABT_rwlock)         (0x0e))
+#define ABT_EVENTUAL_NULL        ((ABT_eventual)       (0x0f))
+#define ABT_FUTURE_NULL          ((ABT_future)         (0x10))
+#define ABT_BARRIER_NULL         ((ABT_barrier)        (0x11))
+#define ABT_TIMER_NULL           ((ABT_timer)          (0x12))
 #endif
 
 /* Scheduler config */
@@ -521,6 +526,13 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
                        const struct timespec *abstime);
 int ABT_cond_signal(ABT_cond cond);
 int ABT_cond_broadcast(ABT_cond cond);
+
+/* Readers writer lock */
+int ABT_rwlock_create(ABT_rwlock *newrwlock);
+int ABT_rwlock_free(ABT_rwlock *rwlock);
+int ABT_rwlock_rdlock(ABT_rwlock rwlock);
+int ABT_rwlock_wrlock(ABT_rwlock rwlock);
+int ABT_rwlock_unlock(ABT_rwlock rwlock);
 
 /* Eventual */
 int ABT_eventual_create(int nbytes, ABT_eventual *neweventual);

@@ -179,6 +179,23 @@
 #endif
 
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+#define ABTI_CHECK_NULL_RWLOCK_PTR(p)             \
+    do {                                        \
+        if (p == NULL) {                        \
+            abt_errno = ABT_ERR_INV_RWLOCK;       \
+            goto fn_fail;                       \
+        }                                       \
+    } while(0)
+#else
+#define ABTI_CHECK_NULL_RWLOCK_PTR(p) \
+    do {                              \
+        if (0) {                      \
+            goto fn_fail;             \
+        }                             \
+    } while(0)
+#endif
+
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_FUTURE_PTR(p)           \
     do {                                        \
         if (p == NULL) {                        \
