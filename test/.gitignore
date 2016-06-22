@@ -11,7 +11,6 @@ basic/thread_attr
 basic/thread_yield
 basic/thread_yield_to
 basic/thread_self_suspend_resume
-basic/thread_migrate_to
 basic/thread_migrate
 basic/thread_data
 basic/thread_id
@@ -30,7 +29,6 @@ basic/sched_stack
 basic/sched_config
 basic/sched_user_ws
 basic/pool_access
-basic/name
 basic/mutex
 basic/cond_test
 basic/cond_join
