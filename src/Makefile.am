@@ -16,6 +16,7 @@ abt_sources = \
 	local.c \
 	log.c \
 	mutex.c \
+	rwlock.c \
 	self.c \
 	stream.c \
 	stream_barrier.c \

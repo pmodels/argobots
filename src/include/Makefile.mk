@@ -25,6 +25,7 @@ noinst_HEADERS = \
 	include/abti_log.h \
 	include/abti_mem.h \
 	include/abti_mutex.h \
+	include/abti_rwlock.h \
 	include/abti_pool.h \
 	include/abti_sched.h \
 	include/abti_stream.h \

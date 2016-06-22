@@ -39,6 +39,9 @@ TESTS = \
 	cond_join \
 	cond_signal_in_main \
 	cond_timedwait \
+	rwlock_writer_excl \
+	rwlock_reader_writer_excl \
+	rwlock_reader_incl \
 	future_create \
 	eventual_create \
 	eventual_test \
@@ -93,6 +96,9 @@ cond_test_SOURCES = cond_test.c
 cond_join_SOURCES = cond_join.c
 cond_signal_in_main_SOURCES = cond_signal_in_main.c
 cond_timedwait_SOURCES = cond_timedwait.c
+rwlock_writer_excl_SOURCES = rwlock_writer_excl.c
+rwlock_reader_writer_excl_SOURCES = rwlock_reader_writer_excl.c
+rwlock_reader_incl_SOURCES = rwlock_reader_incl.c
 future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 eventual_test_SOURCES = eventual_test.c
@@ -138,6 +144,9 @@ testing:
 	./cond_join
 	./cond_signal_in_main
 	./cond_timedwait
+	./rwlock_writer_excl
+	./rwlock_reader_writer_excl
+	./rwlock_reader_incl
 	./future_create
 	./eventual_create
 	./eventual_test
