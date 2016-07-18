@@ -144,8 +144,6 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     /* Add this tasklet to the pool */
     ABTI_pool_push(p_pool, p_newtask->unit);
-
-    return abt_errno;
 #else
     /* Add this tasklet to the pool */
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
@@ -154,6 +152,7 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
         ABTI_task_free(p_newtask);
         goto fn_fail;
     }
+#endif
 
   fn_exit:
     return abt_errno;
@@ -161,7 +160,6 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
-#endif
 }
 
 /**
