@@ -1733,10 +1733,12 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
 
 void ABTI_thread_free(ABTI_thread *p_thread)
 {
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     /* Mutex of p_thread may have been locked somewhere. We free p_thread when
        mutex can be locked here. Since p_thread and its mutex will be freed,
        we don't need to unlock the mutex. */
     ABTI_mutex_spinlock(&p_thread->mutex);
+#endif
 
     LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] freed\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
