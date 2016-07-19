@@ -391,6 +391,15 @@ AC_ARG_ENABLE([stackable-sched],
 AS_IF([test "x$enable_stackable_sched" != "xyes"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_STACKABLE_SCHED, 1,
         [Define to disable stackable scheduler])])
+
+AC_ARG_ENABLE([ext-thread],
+    AS_HELP_STRING([--disable-ext-thread], [disable supporting external threads]),,
+    [enable_ext_thread=yes])
+AS_IF([test "x$enable_ext_thread" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_EXT_THREAD, 1,
+        [Define to disable supporting external threads])])
+AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
+    [test "x$enable_ext_thread" = "xno"])
 dnl ----------------------------------------------------------------------------
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])

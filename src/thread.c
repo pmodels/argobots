@@ -304,7 +304,6 @@ int ABT_thread_free(ABT_thread *thread)
 int ABT_thread_join(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_unit_type type;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -315,8 +314,11 @@ int ABT_thread_join(ABT_thread thread)
                         ABT_ERR_INV_THREAD,
                         "The main ULT cannot be joined.");
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    ABT_unit_type type;
     ABT_self_get_type(&type);
     if (type != ABT_UNIT_TYPE_THREAD) goto yield_based;
+#endif
 
     ABTI_CHECK_TRUE_MSG(p_thread != ABTI_local_get_thread(), ABT_ERR_INV_THREAD,
                         "The target ULT should be different.");
@@ -517,19 +519,21 @@ int ABT_thread_self(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
      * making the call fail. */
     if (gp_ABTI_global == NULL) {
         abt_errno = ABT_ERR_UNINITIALIZED;
         *thread = ABT_THREAD_NULL;
-        goto fn_exit;
+        return abt_errno;
     }
     if (lp_ABTI_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *thread = ABT_THREAD_NULL;
-        goto fn_exit;
+        return abt_errno;
     }
+#endif
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
     if (p_thread != NULL) {
@@ -539,7 +543,6 @@ int ABT_thread_self(ABT_thread *thread)
         *thread = ABT_THREAD_NULL;
     }
 
-  fn_exit:
     return abt_errno;
 }
 
@@ -560,17 +563,19 @@ int ABT_thread_self_id(ABT_thread_id *id)
 {
     int abt_errno = ABT_SUCCESS;
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
      * making the call fail. */
     if (gp_ABTI_global == NULL) {
         abt_errno = ABT_ERR_UNINITIALIZED;
-        goto fn_exit;
+        return abt_errno;
     }
     if (lp_ABTI_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_exit;
+        return abt_errno;
     }
+#endif
 
     ABTI_thread *p_thread = ABTI_local_get_thread();
     if (p_thread != NULL) {
@@ -579,7 +584,6 @@ int ABT_thread_self_id(ABT_thread_id *id)
         abt_errno = ABT_ERR_INV_THREAD;
     }
 
-  fn_exit:
     return abt_errno;
 }
 
@@ -725,11 +729,15 @@ int ABT_thread_yield_to(ABT_thread thread)
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_cur_thread = NULL;
 
+#ifdef ABT_CONFIG_DISABLE_EXT_THREAD
+    p_cur_thread = ABTI_local_get_thread();
+#else
     /* If this routine is called by non-ULT, just return. */
     if (lp_ABTI_local != NULL) {
         p_cur_thread = ABTI_local_get_thread();
     }
     if (p_cur_thread == NULL) goto fn_exit;
+#endif
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
@@ -816,11 +824,15 @@ int ABT_thread_yield(void)
     ABTI_thread *p_thread = NULL;
     ABTI_sched *p_sched;
 
+#ifdef ABT_CONFIG_DISABLE_EXT_THREAD
+    p_thread = ABTI_local_get_thread();
+#else
     /* If this routine is called by non-ULT, just return. */
     if (lp_ABTI_local != NULL) {
         p_thread = ABTI_local_get_thread();
     }
     if (p_thread == NULL) goto fn_exit;
+#endif
 
     ABTI_CHECK_TRUE(p_thread->p_last_xstream == ABTI_local_get_xstream(),
                     ABT_ERR_THREAD);

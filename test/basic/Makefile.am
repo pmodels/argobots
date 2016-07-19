@@ -55,6 +55,9 @@ XFAIL_TESTS =
 if ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK
 XFAIL_TESTS += pool_access
 endif
+if ABT_CONFIG_DISABLE_EXT_THREAD
+XFAIL_TESTS += self_type ext_thread
+endif
 
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)

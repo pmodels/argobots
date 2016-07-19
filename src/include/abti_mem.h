@@ -149,11 +149,13 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
     if (attr == ABT_THREAD_ATTR_NULL) {
         stacksize = def_stacksize;
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         /* If an external thread allocates a stack, we use ABTU_malloc. */
         if (p_local == NULL) {
             *p_stacksize = stacksize;
             return ABTI_mem_alloc_thread_with_stacksize(p_stacksize);
         }
+#endif
 
     } else {
         ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
@@ -294,6 +296,7 @@ ABTI_task *ABTI_mem_alloc_task(void)
     ABTI_local *p_local = lp_ABTI_local;
     const size_t blk_size = sizeof(ABTI_blk_header) + sizeof(ABTI_task);
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     if (p_local == NULL) {
         /* For external threads */
         char *p_blk = (char *)ABTU_CA_MALLOC(blk_size);
@@ -302,6 +305,7 @@ ABTI_task *ABTI_mem_alloc_task(void)
         p_task = (ABTI_task *)(p_blk + sizeof(ABTI_blk_header));
         return p_task;
     }
+#endif
 
     /* Find the page that has an empty block */
     ABTI_page_header *p_ph = p_local->p_mem_task_head;
@@ -352,11 +356,13 @@ void ABTI_mem_free_task(ABTI_task *p_task)
     p_head = (ABTI_blk_header *)((char *)p_task - sizeof(ABTI_blk_header));
     p_ph = p_head->p_ph;
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     if (p_ph == NULL) {
         /* This was allocated by an external thread. */
         ABTU_free(p_head);
         return;
     }
+#endif
 
     p_local = lp_ABTI_local;
     if (p_ph->p_owner == p_local->p_xstream) {

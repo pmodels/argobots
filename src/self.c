@@ -41,12 +41,14 @@ int ABT_self_get_type(ABT_unit_type *type)
         goto fn_exit;
     }
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (lp_ABTI_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *type = ABT_UNIT_TYPE_EXT;
         goto fn_exit;
     }
+#endif
 
     if (ABTI_local_get_task() != NULL) {
         *type = ABT_UNIT_TYPE_TASK;
@@ -90,12 +92,14 @@ int ABT_self_is_primary(ABT_bool *flag)
         goto fn_exit;
     }
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (lp_ABTI_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *flag = ABT_FALSE;
         goto fn_exit;
     }
+#endif
 
     p_thread = ABTI_local_get_thread();
     if (p_thread) {
@@ -137,12 +141,14 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
         goto fn_exit;
     }
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (lp_ABTI_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *flag = ABT_FALSE;
         goto fn_exit;
     }
+#endif
 
     p_xstream = ABTI_local_get_xstream();
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
@@ -190,12 +196,14 @@ int ABT_self_get_last_pool_id(int *pool_id)
         goto fn_exit;
     }
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (lp_ABTI_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *pool_id = -1;
         goto fn_exit;
     }
+#endif
 
     if ((p_thread = ABTI_local_get_thread())) {
         ABTI_ASSERT(p_thread->p_pool);
@@ -231,12 +239,16 @@ int ABT_self_get_last_pool_id(int *pool_id)
 int ABT_self_suspend(void)
 {
     int abt_errno = ABT_SUCCESS;
+#ifdef ABT_CONFIG_DISABLE_EXT_THREAD
+    ABTI_thread *p_thread = ABTI_local_get_thread();
+#else
     ABTI_thread *p_thread = NULL;
 
     /* If this routine is called by non-ULT, just return. */
     if (lp_ABTI_local != NULL) {
         p_thread = ABTI_local_get_thread();
     }
+#endif
     if (p_thread == NULL) {
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_fail;
@@ -283,12 +295,14 @@ int ABT_self_get_arg(void **arg)
         goto fn_exit;
     }
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* When an external thread called this routine */
     if (lp_ABTI_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *arg = NULL;
         goto fn_exit;
     }
+#endif
 
     if ((p_thread = ABTI_local_get_thread())) {
         if (p_thread->type != ABTI_THREAD_TYPE_USER) {
