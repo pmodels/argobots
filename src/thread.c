@@ -256,7 +256,6 @@ int ABT_thread_free(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABT_thread h_thread = *thread;
-    if (h_thread == ABT_THREAD_NULL) goto fn_exit;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(h_thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
