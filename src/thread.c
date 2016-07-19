@@ -740,9 +740,9 @@ int ABT_thread_yield_to(ABT_thread thread)
               p_cur_thread->p_last_xstream->rank,
               ABTI_thread_get_id(p_tar_thread));
 
-    /* If the target thread is the same as the running thread, just keep
-     * its execution. */
-    if (p_cur_thread == p_tar_thread) goto fn_exit;
+    /* The target ULT must be different from the caller ULT. */
+    ABTI_CHECK_TRUE_MSG(p_cur_thread == p_tar_thread, ABT_ERR_INV_THREAD,
+                        "The caller and target ULTs are the same.");
 
     ABTI_CHECK_TRUE_MSG(p_tar_thread->state != ABT_THREAD_STATE_TERMINATED,
                         ABT_ERR_INV_THREAD,
