@@ -5,7 +5,9 @@
 
 #include "abti.h"
 
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
 static inline uint64_t ABTI_sched_get_new_id(void);
+#endif
 
 
 /** @defgroup SCHED Scheduler
@@ -907,7 +909,9 @@ void ABTI_sched_reset_id(void)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
 static inline uint64_t ABTI_sched_get_new_id(void)
 {
     return (uint64_t)ABTD_atomic_fetch_add_uint64(&g_sched_id, 1);
 }
+#endif
