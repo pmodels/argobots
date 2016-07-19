@@ -309,7 +309,7 @@ int ABT_thread_join(ABT_thread thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) goto fn_exit;
+    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) return abt_errno;
 
     ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
                           p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
@@ -404,7 +404,7 @@ int ABT_thread_join(ABT_thread thread)
         LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume after join\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
         ABTI_local_set_thread(p_self);
-        goto fn_exit;
+        return abt_errno;
     }
 
   yield_based:
