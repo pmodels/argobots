@@ -5,6 +5,7 @@
 
 #include "abti.h"
 
+static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
 static inline ABT_thread_id ABTI_thread_get_new_id(void);
 
 
@@ -1861,7 +1862,7 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
     goto fn_exit;
 }
 
-ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread)
+static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread)
 {
     /* ULT can be regarded as 'ready' only if its state is READY and it has been
      * pushed into a pool. Since we set ULT's state to READY and then push it
