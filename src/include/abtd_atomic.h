@@ -181,4 +181,10 @@ void ABTD_atomic_mem_barrier(void)
     __sync_synchronize();
 }
 
+static inline
+void ABTD_compiler_barrier(void)
+{
+    __asm__ __volatile__ ( "" ::: "memory" );
+}
+
 #endif /* ABTD_ATOMIC_H_INCLUDED */
