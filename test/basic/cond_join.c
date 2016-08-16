@@ -68,25 +68,25 @@ void thread_wait(thread_arg_t *my_arg)
         barrier->generation++;
         barrier->curcount = 0;
 
-        ABT_test_printf(1, "<S%d:TH%d> T%d broadcast-1\n",
+        ABT_test_printf(3, "<S%d:TH%d> T%d broadcast-1\n",
                         my_arg->eid, my_arg->uid, my_arg->tid);
         ABT_cond_broadcast(barrier->cond);
         ABT_mutex_unlock(barrier->mutex);
-        ABT_test_printf(1, "<S%d:TH%d> T%d broadcast-2\n",
+        ABT_test_printf(3, "<S%d:TH%d> T%d broadcast-2\n",
                         my_arg->eid, my_arg->uid, my_arg->tid);
         return;
     }
     barrier->curcount++;
     generation = barrier->generation;
     do {
-        ABT_test_printf(1, "<S%d:TH%d> T%d wait-1\n",
+        ABT_test_printf(3, "<S%d:TH%d> T%d wait-1\n",
                         my_arg->eid, my_arg->uid, my_arg->tid);
         ABT_cond_wait(barrier->cond, barrier->mutex);
-        ABT_test_printf(1, "<S%d:TH%d> T%d wait-2\n",
+        ABT_test_printf(3, "<S%d:TH%d> T%d wait-2\n",
                         my_arg->eid, my_arg->uid, my_arg->tid);
     } while (generation == barrier->generation);
     ABT_mutex_unlock(barrier->mutex);
-    ABT_test_printf(1, "<S%d:TH%d> T%d wait-3\n",
+    ABT_test_printf(3, "<S%d:TH%d> T%d wait-3\n",
                     my_arg->eid, my_arg->uid, my_arg->tid);
 }
 
@@ -179,12 +179,12 @@ int main(int argc, char *argv[])
 
     if (argc > 1) iter = atoi(argv[1]);
 
-    ABT_test_printf(2, "# of ES   : %d\n", NUM_XSTREAMS);
-    ABT_test_printf(2, "# of ULT  : %d\n", NUM_THREADS);
-    ABT_test_printf(2, "iterations: %d\n", iter);
-
     /* Initialize */
     ABT_test_init(argc, argv);
+
+    ABT_test_printf(1, "# of ES   : %d\n", NUM_XSTREAMS);
+    ABT_test_printf(1, "# of ULT  : %d\n", NUM_THREADS);
+    ABT_test_printf(1, "iterations: %d\n", iter);
 
     ret = ABT_xstream_self(&xstream);
     ABT_TEST_ERROR(ret, "ABT_xstream_self");

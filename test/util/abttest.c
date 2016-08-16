@@ -78,7 +78,7 @@ void ABT_test_printf(int level, const char *format, ...)
 {
     va_list list;
 
-    if (g_verbose && level >= g_verbose) {
+    if (g_verbose && level <= g_verbose) {
         va_start(list, format);
         vprintf(format, list);
         va_end(list);
