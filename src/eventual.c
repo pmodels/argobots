@@ -260,7 +260,7 @@ int ABT_eventual_reset(ABT_eventual eventual)
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-    ABTI_mutex_lock(&p_eventual->mutex);
+    ABTI_mutex_spinlock(&p_eventual->mutex);
     p_eventual->ready = ABT_FALSE;
     ABTI_mutex_unlock(&p_eventual->mutex);
 
