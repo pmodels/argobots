@@ -35,6 +35,9 @@ basic/cond_join
 basic/cond_signal_in_main
 basic/cond_timedwait
 basic/future_create
+basic/rwlock_reader_incl
+basic/rwlock_reader_writer_excl
+basic/rwlock_writer_excl
 basic/eventual_create
 basic/eventual_test
 basic/barrier
