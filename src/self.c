@@ -319,10 +319,9 @@ int ABT_self_set_arg(void *arg)
  *
  * \c ABT_self_get_arg() returns the argument for the caller's work unit
  * function.  If the caller is a ULT, this routine returns the function argument
- * passed to \c ABT_thread_create() when the caller was created.  On the other
- * hand, if the caller is a tasklet, this routine returns the function argument
- * passed to \c ABT_task_create().  If the caller is the primary ULT or an
- * external thread, \c NULL will be returned to \c arg.
+ * passed to \c ABT_thread_create() when the caller was created or set by \c
+ * ABT_thread_set_arg().  On the other hand, if the caller is a tasklet, this
+ * routine returns the function argument passed to \c ABT_task_create().
  *
  * @param[out] arg  argument for the work unit function
  * @return Error code
@@ -351,11 +350,7 @@ int ABT_self_get_arg(void **arg)
 #endif
 
     if ((p_thread = ABTI_local_get_thread())) {
-        if (p_thread->type != ABTI_THREAD_TYPE_USER) {
-            *arg = NULL;
-        } else {
-            *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
-        }
+        *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
     } else if ((p_task = ABTI_local_get_task())) {
         *arg = p_task->p_arg;
     } else {
