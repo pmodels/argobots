@@ -1459,8 +1459,8 @@ int ABT_thread_set_arg(ABT_thread thread, void *arg)
  * @brief   Retrieve the argument for the ULT function
  *
  * \c ABT_thread_get_arg() returns the argument for the ULT function, which was
- * passed to \c ABT_thread_create() when the target ULT \c thread was created.
- * If \c thread is the primary ULT, \c NULL will be returned to \c arg.
+ * passed to \c ABT_thread_create() when the target ULT \c thread was created
+ * or was set by \c ABT_thread_set_arg().
  *
  * @param[in]  thread  handle to the target ULT
  * @param[out] arg     argument for the ULT function
@@ -1474,11 +1474,7 @@ int ABT_thread_get_arg(ABT_thread thread, void **arg)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (p_thread->type != ABTI_THREAD_TYPE_USER) {
-        *arg = NULL;
-    } else {
-        *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
-    }
+    *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
 
   fn_exit:
     return abt_errno;
