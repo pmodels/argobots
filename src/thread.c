@@ -1428,6 +1428,34 @@ int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id)
 
 /**
  * @ingroup ULT
+ * @brief   Set the argument for the ULT function
+ *
+ * \c ABT_thread_set_arg() sets the argument for the ULT function.
+ *
+ * @param[in] thread  handle to the target ULT
+ * @param[in] arg     argument for the ULT function
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_set_arg(ABT_thread thread, void *arg)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    ABTD_thread_context_set_arg(&p_thread->ctx, arg);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Retrieve the argument for the ULT function
  *
  * \c ABT_thread_get_arg() returns the argument for the ULT function, which was

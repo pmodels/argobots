@@ -453,6 +453,7 @@ int ABT_thread_retain(ABT_thread thread);
 int ABT_thread_release(ABT_thread thread);
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize);
 int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id);
+int ABT_thread_set_arg(ABT_thread thread, void *arg);
 int ABT_thread_get_arg(ABT_thread thread, void **arg);
 int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr);
 
