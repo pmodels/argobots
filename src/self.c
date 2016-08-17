@@ -269,6 +269,52 @@ int ABT_self_suspend(void)
 
 /**
  * @ingroup SELF
+ * @brief   Set the argument for the work unit function
+ *
+ * \c ABT_self_set_arg() sets the argument for the caller's work unit
+ * function.
+ *
+ * @param[in] arg  argument for the work unit function
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_self_set_arg(void *arg)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread;
+    ABTI_task *p_task;
+
+    /* When Argobots has not been initialized */
+    if (gp_ABTI_global == NULL) {
+        abt_errno = ABT_ERR_UNINITIALIZED;
+        goto fn_exit;
+    }
+
+    /* When an external thread called this routine */
+    if (lp_ABTI_local == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        goto fn_exit;
+    }
+
+    if ((p_thread = ABTI_local_get_thread())) {
+        ABTD_thread_context_set_arg(&p_thread->ctx, arg);
+    } else if ((p_task = ABTI_local_get_task())) {
+        p_task->p_arg = arg;
+    } else {
+        abt_errno = ABT_ERR_OTHER;
+        goto fn_fail;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Retrieve the argument for the work unit function
  *
  * \c ABT_self_get_arg() returns the argument for the caller's work unit

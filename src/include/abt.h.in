@@ -500,6 +500,7 @@ int ABT_self_is_primary(ABT_bool *flag);
 int ABT_self_on_primary_xstream(ABT_bool *flag);
 int ABT_self_get_last_pool_id(int *pool_id);
 int ABT_self_suspend(void);
+int ABT_self_set_arg(void *arg);
 int ABT_self_get_arg(void **arg);
 
 /* ULT-specific data */
