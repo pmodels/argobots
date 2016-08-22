@@ -40,8 +40,8 @@ void ABTD_env_init(ABTI_global *p_global)
         ABTD_affinity_init();
     }
 
-#ifdef ABT_CONFIG_USE_DEBUG_LOG
-    /* If the debug logging is set in configure, logging is turned on by
+#ifdef ABT_CONFIG_USE_DEBUG_LOG_PRINT
+    /* If the debug log printing is set in configure, logging is turned on by
      * default. */
     p_global->use_logging = ABT_TRUE;
     p_global->use_debug = ABT_TRUE;

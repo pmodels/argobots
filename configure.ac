@@ -170,7 +170,9 @@ AC_ARG_ENABLE([debug],
                            none - no debugging
                            yes  - add compiler flags, -g -O0 -Wall
                            log  - enable debug event logging
-                           all  - all of the above choices],,
+                           all  - all of the above choices
+                           most - same as "all" but not print logs by default
+                                  (set ABT_ENV_USE_LOG to 1 for logging)],,
 [enable_debug=none])
 
 # strip off multiple options, separated by commas
@@ -185,10 +187,17 @@ for option in $enable_debug ; do
         ;;
         log)
             debug_log=yes
+            debug_log_print=yes
         ;;
         all)
             debug_flags=yes
             debug_log=yes
+            debug_log_print=yes
+        ;;
+        most)
+            debug_flags=yes
+            debug_log=yes
+            debug_log_print=no
         ;;
         *)
             IFS=$save_IFS
@@ -202,6 +211,9 @@ IFS="$save_IFS"
 AS_IF([test "x$debug_flags" = "xyes"], [CFLAGS="$CFLAGS -g -O0 -Wall"])
 AS_IF([test "x$debug_log" = "xyes"],
     [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG, 1, [Define to enable debug logging])])
+AS_IF([test "x$debug_log_print" = "xyes"],
+    [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG_PRINT, 1,
+        [Define to enable printing debug log messages])])
 
 AC_ARG_ENABLE([affinity],
     AS_HELP_STRING([--enable-affinity],
