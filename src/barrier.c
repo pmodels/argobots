@@ -47,6 +47,51 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
 
 /**
  * @ingroup BARRIER
+ * @brief   Reinitialize the barrier.
+ *
+ * \c ABT_barrier_reinit() reinitializes the barrier \c barrier with a new
+ * number of waiters \c num_waiters.  \c num_waiters can be the same as or
+ * different from the one passed to \c ABT_barrier_create().
+ *
+ * @param[in] barrier      handle to the barrier
+ * @param[in] num_waiters  number of waiters
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
+    ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
+
+    ABTI_ASSERT(p_barrier->counter == 0);
+
+    /* Only when num_waiters is different from p_barrier->num_waiters, we
+     * change p_barrier. */
+    if (num_waiters < p_barrier->num_waiters) {
+        /* We can reuse waiters and waiter_type arrays */
+        p_barrier->num_waiters = num_waiters;
+    } else if (num_waiters > p_barrier->num_waiters) {
+        /* Free existing arrays and reallocate them */
+        p_barrier->num_waiters = num_waiters;
+        ABTU_free(p_barrier->waiters);
+        ABTU_free(p_barrier->waiter_type);
+        p_barrier->waiters =
+            (ABTI_thread **)ABTU_malloc(num_waiters * sizeof(ABTI_thread *));
+        p_barrier->waiter_type =
+            (ABT_unit_type *)ABTU_malloc(num_waiters * sizeof(ABT_unit_type));
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_barrier_reinit", abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup BARRIER
  * @brief   Free the barrier.
  *
  * \c ABT_barrier_free() deallocates the memory used for the barrier object
