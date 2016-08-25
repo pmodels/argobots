@@ -222,3 +222,32 @@ int ABT_barrier_wait(ABT_barrier barrier)
     goto fn_exit;
 }
 
+/**
+ * @ingroup BARRIER
+ * @brief   Get the number of waiters for the barrier.
+ *
+ * \c ABT_barrier_get_num_waiters() returns the number of waiters, which was
+ * passed to \c ABT_barrier_create() or \c ABT_barrier_reinit(), for the given
+ * barrier \c barrier.
+ *
+ * @param[in]  barrier      handle to the barrier
+ * @param[out] num_waiters  number of waiters
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_barrier_get_num_waiters(ABT_barrier barrier, uint32_t *num_waiters)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
+    ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
+
+    *num_waiters = p_barrier->num_waiters;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_WITH_CODE("ABT_barrier_get_num_waiters", abt_errno);
+    goto fn_exit;
+}
+
