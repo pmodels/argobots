@@ -748,7 +748,7 @@ int ABT_thread_yield_to(ABT_thread thread)
               ABTI_thread_get_id(p_tar_thread));
 
     /* The target ULT must be different from the caller ULT. */
-    ABTI_CHECK_TRUE_MSG(p_cur_thread == p_tar_thread, ABT_ERR_INV_THREAD,
+    ABTI_CHECK_TRUE_MSG(p_cur_thread != p_tar_thread, ABT_ERR_INV_THREAD,
                         "The caller and target ULTs are the same.");
 
     ABTI_CHECK_TRUE_MSG(p_tar_thread->state != ABT_THREAD_STATE_TERMINATED,
