@@ -71,6 +71,10 @@ enum ABTI_thread_type {
     ABTI_THREAD_TYPE_USER
 };
 
+enum ABTI_mutex_attr_val {
+    ABTI_MUTEX_ATTR_NONE = 0,
+    ABTI_MUTEX_ATTR_RECURSIVE = 1 << 0
+};
 
 /* Macro functions */
 #define ABTI_UNUSED(a)              (void)(a)
@@ -101,6 +105,7 @@ typedef struct ABTI_task            ABTI_task;
 typedef struct ABTI_key             ABTI_key;
 typedef struct ABTI_ktelem          ABTI_ktelem;
 typedef struct ABTI_ktable          ABTI_ktable;
+typedef struct ABTI_mutex_attr      ABTI_mutex_attr;
 typedef struct ABTI_mutex           ABTI_mutex;
 typedef struct ABTI_cond            ABTI_cond;
 typedef struct ABTI_rwlock          ABTI_rwlock;
@@ -120,6 +125,12 @@ typedef struct ABTI_sp_header       ABTI_sp_header;
 
 
 /* Definitions */
+struct ABTI_mutex_attr {
+    uint32_t attrs;             /* bit-or'ed attributes */
+    uint32_t nesting_cnt;       /* nesting count */
+    ABTI_unit *p_owner;         /* owner work unit */
+};
+
 struct ABTI_mutex {
     uint32_t val;
 };
@@ -552,6 +563,10 @@ uint64_t ABTI_task_get_id(ABTI_task *p_task);
 ABTI_ktable *ABTI_ktable_alloc(int size);
 void ABTI_ktable_free(ABTI_ktable *p_ktable);
 
+/* Mutex Attributes */
+void ABTI_mutex_attr_print(ABTI_mutex_attr *p_attr, FILE *p_os, int indent);
+void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf);
+
 /* Event */
 void ABTI_event_init(void);
 void ABTI_event_finalize(void);
@@ -578,6 +593,7 @@ void ABTI_event_publish_info(void);
 #include "abti_task.h"
 #include "abti_key.h"
 #include "abti_mutex.h"
+#include "abti_mutex_attr.h"
 #include "abti_cond.h"
 #include "abti_rwlock.h"
 #include "abti_eventual.h"

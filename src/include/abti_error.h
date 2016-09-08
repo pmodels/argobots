@@ -167,6 +167,18 @@
 #endif
 
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+#define ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p)       \
+    do {                                        \
+        if (p == NULL) {                        \
+            abt_errno = ABT_ERR_INV_MUTEX_ATTR; \
+            goto fn_fail;                       \
+        }                                       \
+    } while(0)
+#else
+#define ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p)
+#endif
+
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_CHECK_NULL_COND_PTR(p)             \
     do {                                        \
         if (p == NULL) {                        \
