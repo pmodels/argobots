@@ -140,7 +140,25 @@ int ABT_mutex_lock(ABT_mutex mutex)
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    ABTI_mutex_lock(p_mutex);
+    if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
+        /* default attributes */
+        ABTI_mutex_lock(p_mutex);
+
+    } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* recursive mutex */
+        ABTI_unit *p_self = ABTI_self_get_unit();
+        if (p_self != p_mutex->attr.p_owner) {
+            ABTI_mutex_lock(p_mutex);
+            p_mutex->attr.p_owner = p_self;
+            ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
+        } else {
+            p_mutex->attr.nesting_cnt++;
+        }
+
+    } else {
+        /* unknown attributes */
+        ABTI_mutex_lock(p_mutex);
+    }
 
   fn_exit:
     return abt_errno;
@@ -165,7 +183,25 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
     /* FIXME: need a real implementation */
-    ABTI_mutex_lock(p_mutex);
+    if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
+        /* default attributes */
+        ABTI_mutex_lock(p_mutex);
+
+    } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* recursive mutex */
+        ABTI_unit *p_self = ABTI_self_get_unit();
+        if (p_self != p_mutex->attr.p_owner) {
+            ABTI_mutex_lock(p_mutex);
+            p_mutex->attr.p_owner = p_self;
+            ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
+        } else {
+            p_mutex->attr.nesting_cnt++;
+        }
+
+    } else {
+        /* unknown attributes */
+        ABTI_mutex_lock(p_mutex);
+    }
 
   fn_exit:
     return abt_errno;
@@ -197,7 +233,28 @@ int ABT_mutex_trylock(ABT_mutex mutex)
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    abt_errno = ABTI_mutex_trylock(p_mutex);
+    if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
+        /* default attributes */
+        abt_errno = ABTI_mutex_trylock(p_mutex);
+
+    } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* recursive mutex */
+        ABTI_unit *p_self = ABTI_self_get_unit();
+        if (p_self != p_mutex->attr.p_owner) {
+            abt_errno = ABTI_mutex_trylock(p_mutex);
+            if (abt_errno == ABT_SUCCESS) {
+                p_mutex->attr.p_owner = p_self;
+                ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
+            }
+        } else {
+            p_mutex->attr.nesting_cnt++;
+            abt_errno = ABT_SUCCESS;
+        }
+
+    } else {
+        /* unknown attributes */
+        abt_errno = ABTI_mutex_trylock(p_mutex);
+    }
 
   fn_exit:
     return abt_errno;
@@ -227,7 +284,25 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    ABTI_mutex_spinlock(p_mutex);
+    if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
+        /* default attributes */
+        ABTI_mutex_spinlock(p_mutex);
+
+    } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* recursive mutex */
+        ABTI_unit *p_self = ABTI_self_get_unit();
+        if (p_self != p_mutex->attr.p_owner) {
+            ABTI_mutex_spinlock(p_mutex);
+            p_mutex->attr.p_owner = p_self;
+            ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
+        } else {
+            p_mutex->attr.nesting_cnt++;
+        }
+
+    } else {
+        /* unknown attributes */
+        ABTI_mutex_spinlock(p_mutex);
+    }
 
   fn_exit:
     return abt_errno;
@@ -256,7 +331,25 @@ int ABT_mutex_unlock(ABT_mutex mutex)
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    ABTI_mutex_unlock(p_mutex);
+    if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
+        /* default attributes */
+        ABTI_mutex_unlock(p_mutex);
+
+    } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* recursive mutex */
+        ABTI_unit *p_self = ABTI_self_get_unit();
+        ABTI_CHECK_TRUE(p_self == p_mutex->attr.p_owner, ABT_ERR_INV_THREAD);
+        if (p_mutex->attr.nesting_cnt == 0) {
+            p_mutex->attr.p_owner = NULL;
+            ABTI_mutex_unlock(p_mutex);
+        } else {
+            p_mutex->attr.nesting_cnt--;
+        }
+
+    } else {
+        /* unknown attributes */
+        ABTI_mutex_unlock(p_mutex);
+    }
 
   fn_exit:
     return abt_errno;
@@ -290,7 +383,26 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
     /* FIXME: need a real implementation */
-    ABTI_mutex_unlock(p_mutex);
+    if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
+        /* default attributes */
+        ABTI_mutex_unlock(p_mutex);
+
+    } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* recursive mutex */
+        ABTI_unit *p_self = ABTI_self_get_unit();
+        ABTI_CHECK_TRUE(p_self == p_mutex->attr.p_owner, ABT_ERR_INV_THREAD);
+        if (p_mutex->attr.nesting_cnt == 0) {
+            p_mutex->attr.p_owner = NULL;
+            ABTI_mutex_unlock(p_mutex);
+        } else {
+            p_mutex->attr.nesting_cnt--;
+        }
+
+    } else {
+        /* unknown attributes */
+        ABTI_mutex_unlock(p_mutex);
+    }
+
     ABT_thread_yield();
 
   fn_exit:
