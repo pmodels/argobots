@@ -589,6 +589,7 @@ void ABTI_event_publish_info(void);
 #include "abti_config.h"
 #include "abti_pool.h"
 #include "abti_stream.h"
+#include "abti_self.h"
 #include "abti_thread.h"
 #include "abti_thread_attr.h"
 #include "abti_task.h"
