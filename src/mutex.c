@@ -18,9 +18,11 @@
  * @ingroup MUTEX
  * @brief   Create a new mutex.
  *
- * \c ABT_mutex_create creates a new mutex object and returns its handle
- * through \c newmutex. If an error occurs in this routine, a non-zero error
- * code will be returned and \c newmutex will be set to \c ABT_MUTEX_NULL.
+ * \c ABT_mutex_create() creates a new mutex object with default attributes and
+ * returns its handle through \c newmutex.  To set different attributes, please
+ * use \c ABT_mutex_create_with_attr().  If an error occurs in this routine,
+ * a non-zero error code will be returned and \c newmutex will be set to
+ * \c ABT_MUTEX_NULL.
  *
  * Only ULTs can use the mutex, and tasklets must not use it.
  *
@@ -33,13 +35,51 @@ int ABT_mutex_create(ABT_mutex *newmutex)
     int abt_errno = ABT_SUCCESS;
     ABTI_mutex *p_newmutex;
 
-    p_newmutex = (ABTI_mutex *)ABTU_malloc(sizeof(ABTI_mutex));
+    p_newmutex = (ABTI_mutex *)ABTU_calloc(1, sizeof(ABTI_mutex));
     ABTI_mutex_init(p_newmutex);
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
 
     return abt_errno;
+}
+
+/**
+ * @ingroup MUTEX
+ * @brief   Create a new mutex with attributes.
+ *
+ * \c ABT_mutex_create_with_attr() creates a new mutex object having attributes
+ * passed by \c attr and returns its handle through \c newmutex.  Note that
+ * \c ABT_mutex_create() can be used to create a mutex with default attributes.
+ *
+ * If an error occurs in this routine, a non-zero error code will be returned
+ * and \c newmutex will be set to \c ABT_MUTEX_NULL.
+ *
+ * @param[in]  attr      handle to the mutex attribute object
+ * @param[out] newmutex  handle to a new mutex
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_mutex_attr *p_attr = ABTI_mutex_attr_get_ptr(attr);
+    ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p_attr);
+    ABTI_mutex *p_newmutex;
+
+    p_newmutex = (ABTI_mutex *)ABTU_malloc(sizeof(ABTI_mutex));
+    ABTI_mutex_init(p_newmutex);
+    ABTI_mutex_attr_copy(&p_newmutex->attr, p_attr);
+
+    /* Return value */
+    *newmutex = ABTI_mutex_get_handle(p_newmutex);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**

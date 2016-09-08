@@ -132,7 +132,8 @@ struct ABTI_mutex_attr {
 };
 
 struct ABTI_mutex {
-    uint32_t val;
+    uint32_t val;               /* 0: unlocked, 1: locked */
+    ABTI_mutex_attr attr;       /* attributes */
 };
 
 struct ABTI_global {

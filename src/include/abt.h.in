@@ -515,6 +515,7 @@ int ABT_key_get(ABT_key key, void **value);
 
 /* Mutex */
 int ABT_mutex_create(ABT_mutex *newmutex);
+int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex);
 int ABT_mutex_free(ABT_mutex *mutex);
 int ABT_mutex_lock(ABT_mutex mutex);
 int ABT_mutex_lock_low(ABT_mutex mutex);
