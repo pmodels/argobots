@@ -9,9 +9,13 @@
 /** @defgroup MUTEX Mutex
  * Mutex is a synchronization method to support mutual exclusion between ULTs.
  * When more than one ULT competes for locking the same mutex, only one ULT is
- * guaranteed to lock the mutex. Other ULTs are blocked and wait until the ULT
- * which locked the mutex unlocks it. When the mutex is unlocked, another ULT
+ * guaranteed to lock the mutex.  Other ULTs are blocked and wait until the ULT
+ * which locked the mutex unlocks it.  When the mutex is unlocked, another ULT
  * is able to lock the mutex again.
+ *
+ * The mutex is basically intended to be used by ULTs but it can also be used
+ * by tasklets or external threads.  In that case, the mutex will behave like
+ * a spinlock.
  */
 
 /**
@@ -23,8 +27,6 @@
  * use \c ABT_mutex_create_with_attr().  If an error occurs in this routine,
  * a non-zero error code will be returned and \c newmutex will be set to
  * \c ABT_MUTEX_NULL.
- *
- * Only ULTs can use the mutex, and tasklets must not use it.
  *
  * @param[out] newmutex  handle to a new mutex
  * @return Error code
@@ -86,11 +88,11 @@ int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
  * @ingroup MUTEX
  * @brief   Free the mutex object.
  *
- * \c ABT_mutex_free deallocates the memory used for the mutex object
- * associated with the handle \c mutex. If it is successfully processed,
+ * \c ABT_mutex_free() deallocates the memory used for the mutex object
+ * associated with the handle \c mutex.  If it is successfully processed,
  * \c mutex is set to \c ABT_MUTEX_NULL.
  *
- * Using the mutex handle after calling \c ABT_mutex_free may cause
+ * Using the mutex handle after calling \c ABT_mutex_free() may cause
  * undefined behavior.
  *
  * @param[in,out] mutex  handle to the mutex
@@ -121,14 +123,15 @@ int ABT_mutex_free(ABT_mutex *mutex)
  * @ingroup MUTEX
  * @brief   Lock the mutex.
  *
- * \c ABT_mutex_lock locks the mutex \c mutex. If this routine successfully
- * returns, the caller ULT acquires the mutex. If the mutex has already been
- * locked, the caller ULT will be blocked until the mutex becomes available.
- * When the caller ULT is blocked, the context is switched to the scheduler
- * of the associated ES to make progress of other work units.
+ * \c ABT_mutex_lock() locks the mutex \c mutex.  If this routine successfully
+ * returns, the caller work unit acquires the mutex.  If the mutex has already
+ * been locked, the caller will be blocked until the mutex becomes available.
+ * When the caller is a ULT and is blocked, the context is switched to the
+ * scheduler of the associated ES to make progress of other work units.
  *
- * The mutex can be used only by ULTs. Tasklets must not call any blocking
- * routines like \c ABT_mutex_lock.
+ * The mutex can be used by any work units, but tasklets are discouraged to use
+ * the mutex because any blocking calls like \c ABT_mutex_lock() may block the
+ * associated ES and prevent other work units from being scheduled on the ES.
  *
  * @param[in] mutex  handle to the mutex
  * @return Error code
@@ -171,6 +174,11 @@ int ABT_mutex_lock(ABT_mutex mutex)
 /**
  * @ingroup MUTEX
  * @brief   Lock the mutex with low priority.
+ *
+ * \c ABT_mutex_lock_low() locks the mutex with low priority, while
+ * \c ABT_mutex_lock() does with high priority.  Apart from the priority,
+ * other semantics of \c ABT_mutex_lock_low() are the same as those of
+ * \c ABT_mutex_lock().
  *
  * @param[in] mutex  handle to the mutex
  * @return Error code
@@ -215,12 +223,13 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
  * @ingroup MUTEX
  * @brief   Attempt to lock a mutex without blocking.
  *
- * \c ABT_mutex_trylock attempts to lock the mutex \c mutex without blocking
- * the caller ULT. If this routine successfully returns, the caller ULT
+ * \c ABT_mutex_trylock() attempts to lock the mutex \c mutex without blocking
+ * the caller work unit.  If this routine successfully returns, the caller
  * acquires the mutex.
+ *
  * If the mutex has already been locked and there happens no error,
  * \c ABT_ERR_MUTEX_LOCKED will be returned immediately without blocking
- * the caller ULT.
+ * the caller.
  *
  * @param[in] mutex  handle to the mutex
  * @return Error code
@@ -268,10 +277,10 @@ int ABT_mutex_trylock(ABT_mutex mutex)
  * @ingroup MUTEX
  * @brief   Lock the mutex without context switch.
  *
- * \c ABT_mutex_spinlock locks the mutex without context switch. If this
- * routine successfully returns, the caller ULT acquires the mutex.
- * If the mutex has already been locked, the caller ULT will be blocked until
- * the mutex becomes available. Unlike \c ABT_mutex_lock(), the ULT calling
+ * \c ABT_mutex_spinlock() locks the mutex without context switch.  If this
+ * routine successfully returns, the caller work unit acquires the mutex.
+ * If the mutex has already been locked, the caller will be blocked until
+ * the mutex becomes available.  Unlike \c ABT_mutex_lock(), the ULT calling
  * this routine continuously tries to lock the mutex without context switch.
  *
  * @param[in] mutex  handle to the mutex
@@ -316,10 +325,9 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
  * @ingroup MUTEX
  * @brief   Unlock the mutex.
  *
- * \c ABT_mutex_unlock unlocks the mutex \c mutex.
- * If the caller ULT locked the mutex, this routine unlocks the mutex. However,
- * if the caller ULT did not lock the mutex, this routine may result in
- * undefined behavior.
+ * \c ABT_mutex_unlock() unlocks the mutex \c mutex.  If the caller locked the
+ * mutex, this routine unlocks the mutex.  However, if the caller did not lock
+ * the mutex, this routine may result in undefined behavior.
  *
  * @param[in] mutex  handle to the mutex
  * @return Error code
@@ -364,13 +372,13 @@ int ABT_mutex_unlock(ABT_mutex mutex)
  * @brief   Hand off the mutex within the ES.
  *
  * \c ABT_mutex_unlock_se() fisrt tries to hand off the mutex to a ULT, which
- * is waiting for this mutex and is running on the same ES as the caller.
- * If no ULT on the same ES is waiting, it unlocks the mutex like \c
- * ABT_mutex_unlock().
+ * is waiting for this mutex and is running on the same ES as the caller.  If
+ * no ULT on the same ES is waiting, it unlocks the mutex like
+ * \c ABT_mutex_unlock().
  *
- * If the caller ULT locked the mutex, this routine unlocks the mutex. However,
- * if the caller ULT did not lock the mutex, this routine may result in
- * undefined behavior.
+ * If the caller ULT locked the mutex, this routine unlocks the mutex.
+ * However, if the caller ULT did not lock the mutex, this routine may result
+ * in undefined behavior.
  *
  * @param[in] mutex  handle to the mutex
  * @return Error code
@@ -417,9 +425,9 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
  * @ingroup MUTEX
  * @brief   Compare two mutex handles for equality.
  *
- * \c ABT_mutex_equal compares two mutex handles for equality. If two handles
- * are associated with the same mutex object, \c result will be set to
- * \c ABT_TRUE. Otherwise, \c result will be set to \c ABT_FALSE.
+ * \c ABT_mutex_equal() compares two mutex handles for equality.  If two
+ * handles are associated with the same mutex object, \c result will be set to
+ * \c ABT_TRUE.  Otherwise, \c result will be set to \c ABT_FALSE.
  *
  * @param[in]  mutex1  handle to the mutex 1
  * @param[in]  mutex2  handle to the mutex 2
