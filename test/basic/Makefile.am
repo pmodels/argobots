@@ -35,6 +35,7 @@ TESTS = \
 	sched_user_ws \
 	pool_access \
 	mutex \
+	mutex_recursive \
 	cond_test \
 	cond_join \
 	cond_signal_in_main \
@@ -95,6 +96,7 @@ sched_config_SOURCES = sched_config.c
 sched_user_ws_SOURCES = sched_user_ws.c
 pool_access_SOURCES = pool_access.c
 mutex_SOURCES = mutex.c
+mutex_recursive_SOURCES = mutex_recursive.c
 cond_test_SOURCES = cond_test.c
 cond_join_SOURCES = cond_join.c
 cond_signal_in_main_SOURCES = cond_signal_in_main.c
@@ -143,6 +145,7 @@ testing:
 	./sched_user_ws
 	./pool_access
 	./mutex
+	./mutex_recursive
 	./cond_test
 	./cond_join
 	./cond_signal_in_main
