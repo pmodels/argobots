@@ -239,6 +239,39 @@ if test "$enable_fast_ndebug" = "yes" ; then
     CCASFLAGS="$CFLAGS -DNDEBUG -DNVALGRIND"
 fi
 
+
+# --enable-tls-model
+AC_ARG_ENABLE(tls-model,
+[  --enable-tls-model@<:@=OPT@:>@  change the thread-local storage model used by
+                          the compiler. This affects the performance of ES's
+                          local storage. "OPT" can be one of values below.
+                          Please refer to the compiler documentation for
+                          details.
+        global-dynamic, local-dynamic, initial-exec, local-exec
+        yes      - same as "initial-exec"
+        none|no  - use the compiler's default model
+],,enable_tls_model=none)
+
+# compiler's tls-model flag
+case "$enable_tls_model" in
+    global-dynamic|local-dynamic|initial-exec|local-exec)
+        tls_model_flag=$enable_tls_model
+    ;;
+    yes)
+        tls_model_flag=initial-exec;
+    ;;
+    none|no)
+    ;;
+    *)
+        AC_MSG_WARN([Unknown value $option for --enable-tls-model])
+    ;;
+esac
+if test -n "$tls_model_flag" ; then
+    PAC_APPEND_FLAG([-ftls-model=$tls_model_flag], [CFLAGS])
+    PAC_APPEND_FLAG([-ftls-model=$tls_model_flag], [CXXFLAGS])
+    PAC_APPEND_FLAG([-ftls-model=$tls_model_flag], [CCASFLAGS])
+fi
+
 # debug options
 AC_ARG_ENABLE([debug],
 [  --enable-debug@<:@=OPTS@:>@   control the level of debugging. "OPTS" is a list of
