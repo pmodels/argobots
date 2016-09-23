@@ -160,12 +160,12 @@ fi
 
 echo_n "Updating the README... "
 . ./maint/Version
-if [ -f README.vin ] ; then
-    sed -e "s/%VERSION%/${ABT_VERSION}/g" README.vin > README
+if [ -f README.md ] ; then
+    sed -e "s/%VERSION%/${ABT_VERSION}/g" README.md > README
     echo "done"
 else
     echo "error"
-    error "README.vin file not present, unable to update README version number (perhaps we are running in a release tarball source tree?)"
+    error "README.md file not present, unable to update README version number (perhaps we are running in a release tarball source tree?)"
 fi
 
 
