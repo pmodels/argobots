@@ -62,6 +62,17 @@ AC_SUBST(ABT_NUMVERSION)
 
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_MACRO_DIR(m4)
+
+dnl ----------------------------------------------------------------------------
+dnl empty CFLAGS, CXXFLAGS, CCASFLAGS
+dnl ----------------------------------------------------------------------------
+: ${CFLAGS=""}
+: ${CXXFLAGS=""}
+: ${CCASFLAGS=""}
+
+dnl ----------------------------------------------------------------------------
+dnl check the compiler and standard headers
+dnl ----------------------------------------------------------------------------
 AC_PROG_CC
 AC_HEADER_STDC
 
@@ -163,6 +174,71 @@ dnl ----------------------------------------------------------------------------
 dnl ----------------------------------------------------------------------------
 dnl setup top-level argument handling
 dnl ----------------------------------------------------------------------------
+# compiler optimization flags
+AC_ARG_ENABLE(fast,
+[  --enable-fast@<:@=OPTS@:>@    control the level of fast execution in the Argobots
+                          implementation. "OPTS" is a list of comma separated
+                          names including
+        O<n>     - append default optimization flags, -O<n>, to CFLAGS
+                   (default is -O2)
+        ndebug   - append -DNDEBUG to CFLAGS
+        all|yes  - "O2" and "ndebug" are enabled
+        none     - none of above options, i.e., --disable-fast
+],,enable_fast=O2)
+
+# enable-fast
+# strip off multiple options, separated by commas
+save_IFS="$IFS"
+IFS=","
+for option in $enable_fast ; do
+    case "$option" in
+        O*)
+            enable_fast_opts=$option
+        ;;
+        ndebug)
+            enable_fast_ndebug=yes
+        ;;
+        all|yes)
+            enable_fast_ndebug=yes
+            enable_fast_opts=O2
+        ;;
+        none|no)
+            enable_fast_ndebug=no
+            enable_fast_opts=O0
+        ;;
+        *)
+            IFS="$save_IFS"
+            AC_MSG_WARN([Unknown value $option for --enable-fast])
+            IFS=","
+        ;;
+    esac
+done
+IFS="$save_IFS"
+
+if test -n "$enable_fast_opts" ; then
+    # Allows O<n> where <n> can be [0-9sz] or ' '.
+    opt_flags=`echo $enable_fast_opts | sed -e 's%\(O[0-9sz] \)%\1%g'`
+    if test -n "$opt_flags" ; then
+        ABT_DEFAULT_COPTS="-$enable_fast_opts"
+        ABT_DEFAULT_CXXOPTS="-$enable_fast_opts"
+        ABT_DEFAULT_CCASOPTS="-$enable_fast_opts"
+
+        PAC_C_CHECK_COMPILER_OPTION( [$ABT_DEFAULT_COPTS],
+            [CFLAGS="$CFLAGS $ABT_DEFAULT_COPTS"] )
+        PAC_CXX_CHECK_COMPILER_OPTION( [$ABT_DEFAULT_CXXOPTS],
+            [CXXFLAGS="$CXXFLAGS $ABT_DEFAULT_CXXOPTS"] )
+        CCASFLAGS="$CCASFLAGS $ABT_DEFAULT_COPTS"
+   else
+      AC_MSG_WARN([Unknown value $enable_fast_opts for --enable-fast])
+   fi
+fi
+
+if test "$enable_fast_ndebug" = "yes" ; then
+    CFLAGS="$CFLAGS -DNDEBUG -DNVALGRIND"
+    CXXFLAGS="$CXXFLAGS -DNDEBUG -DNVALGRIND"
+    CCASFLAGS="$CFLAGS -DNDEBUG -DNVALGRIND"
+fi
+
 # debug options
 AC_ARG_ENABLE([debug],
 [  --enable-debug@<:@=OPTS@:>@   control the level of debugging. "OPTS" is a list of
