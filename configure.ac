@@ -243,21 +243,19 @@ fi
 AC_ARG_ENABLE([debug],
 [  --enable-debug@<:@=OPTS@:>@   control the level of debugging. "OPTS" is a list of
                           comma separated names below. Default is "yes".
-                           none - no debugging
-                           yes  - add compiler flags, -g -O0 -Wall
-                           log  - enable debug event logging
-                           all  - all of the above choices
-                           most - same as "all" but not print logs by default
-                                  (set ABT_ENV_USE_LOG to 1 for logging)],,
-[enable_debug=none])
+        yes   - add compiler flags, -g -Wall
+        log   - enable debug event logging
+        all   - all of the above choices
+        most  - same as "all" but not print logs by default
+                (set ABT_ENV_USE_LOG to 1 for logging)
+        none  - no debugging, i.e., --disable-debug
+],,[enable_debug=none])
 
 # strip off multiple options, separated by commas
 save_IFS="$IFS"
 IFS=","
 for option in $enable_debug ; do
     case "$option" in
-        no|none)
-        ;;
         yes)
             debug_flags=yes
         ;;
@@ -275,16 +273,27 @@ for option in $enable_debug ; do
             debug_log=yes
             debug_log_print=no
         ;;
+        no|none)
+            debug_flags=no
+            debug_log=no
+        ;;
         *)
             IFS=$save_IFS
-            AC_MSG_WARN([Unknown value $option for enable-debug])
+            AC_MSG_WARN([Unknown value $option for --enable-debug])
             IFS=","
         ;;
     esac
 done
 IFS="$save_IFS"
 
-AS_IF([test "x$debug_flags" = "xyes"], [CFLAGS="$CFLAGS -g -O0 -Wall"])
+if test "x$debug_flags" = "xyes" ; then
+    PAC_APPEND_FLAG([-g], [CFLAGS])
+    PAC_APPEND_FLAG([-Wall], [CFLAGS])
+    PAC_APPEND_FLAG([-g], [CXXFLAGS])
+    PAC_APPEND_FLAG([-Wall], [CXXFLAGS])
+    PAC_APPEND_FLAG([-g], [CCASFLAGS])
+    PAC_APPEND_FLAG([-Wall], [CCASFLAGS])
+fi
 AS_IF([test "x$debug_log" = "xyes"],
     [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG, 1, [Define to enable debug logging])])
 AS_IF([test "x$debug_log_print" = "xyes"],
