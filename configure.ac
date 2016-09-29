@@ -63,18 +63,173 @@ AC_SUBST(ABT_NUMVERSION)
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_MACRO_DIR(m4)
 
+
 dnl ----------------------------------------------------------------------------
 dnl empty CFLAGS, CXXFLAGS, CCASFLAGS
 dnl ----------------------------------------------------------------------------
 : ${CFLAGS=""}
 : ${CXXFLAGS=""}
 : ${CCASFLAGS=""}
+dnl ----------------------------------------------------------------------------
+
+
+dnl ----------------------------------------------------------------------------
+dnl configure options
+dnl ----------------------------------------------------------------------------
+# --enable-affinity
+AC_ARG_ENABLE([affinity],
+    AS_HELP_STRING([--enable-affinity],
+        [enable ES affinity]),,
+        [enable_affinity=no])
+
+# --enable-debug
+AC_ARG_ENABLE([debug],
+[  --enable-debug@<:@=OPTS@:>@   control the level of debugging. "OPTS" is a list of
+                          comma separated names below. Default is "yes".
+        yes   - add compiler flags, -g -Wall
+        log   - enable debug event logging
+        all   - all of the above choices
+        most  - same as "all" but not print logs by default
+                (set ABT_ENV_USE_LOG to 1 for logging)
+        none  - no debugging, i.e., --disable-debug
+],,[enable_debug=none])
+
+# --enable-fast
+AC_ARG_ENABLE(fast,
+[  --enable-fast@<:@=OPTS@:>@    control the level of fast execution in the Argobots
+                          implementation. "OPTS" is a list of comma separated
+                          names including
+        O<n>     - append default optimization flags, -O<n>, to CFLAGS
+                   (default is -O2)
+        ndebug   - append -DNDEBUG to CFLAGS
+        all|yes  - "O2" and "ndebug" are enabled
+        none     - none of above options, i.e., --disable-fast
+],,enable_fast=O2)
+
+# --enable-tls-model
+AC_ARG_ENABLE(tls-model,
+[  --enable-tls-model@<:@=OPT@:>@  change the thread-local storage model used by
+                          the compiler. This affects the performance of ES's
+                          local storage. "OPT" can be one of values below.
+                          Please refer to the compiler documentation for
+                          details.
+        global-dynamic, local-dynamic, initial-exec, local-exec
+        yes      - same as "initial-exec"
+        none|no  - use the compiler's default model
+],,enable_tls_model=none)
+
+# --enable-perf-opt
+AC_ARG_ENABLE([perf-opt],
+    AS_HELP_STRING([--enable-perf-opt], [enable performance optimization]))
+
+# --enable-valgrind
+AC_ARG_ENABLE([valgrind],
+    AS_HELP_STRING([--enable-valgrind], [enable valgrind support]))
+
+# --disable-checks
+AC_ARG_ENABLE([checks],
+    AS_HELP_STRING([--disable-checks],
+        [disable error and pool access checks (unsafe mode)]))
+
+# --disable-error-check
+AC_ARG_ENABLE([error-check],
+    AS_HELP_STRING([--disable-error-check], [disable error checks]),,
+    [enable_error_check=yes])
+
+# --disable-pool-producer-check
+AC_ARG_ENABLE([pool-producer-check],
+    AS_HELP_STRING([--disable-pool-producer-check], [disable pool producer check]),,
+    [enable_pool_producer_check=yes])
+
+# --disable-pool-consumer-check
+AC_ARG_ENABLE([pool-consumer-check],
+    AS_HELP_STRING([--disable-pool-consumer-check], [disable pool consumer check]),,
+    [enable_pool_consumer_check=yes])
+
+# --disable-fcontext
+AC_ARG_ENABLE([fcontext],
+    AS_HELP_STRING([--disable-fcontext],
+        [do not use fcontext even though it is supported. If you disable
+         fcontext, ucontext in libc is used.]),,
+        [enable_fcontext=yes])
+
+# --disable-preserve-fpu
+AC_ARG_ENABLE([preserve-fpu],
+    AS_HELP_STRING([--disable-preserve-fpu],
+        [do not preserve fpu registers when fcontext is used]),,
+        [enable_preserve_fpu=yes])
+
+# --disable-mem-pool
+AC_ARG_ENABLE([mem-pool],
+    AS_HELP_STRING([--disable-mem-pool],
+        [do not use memory pools for ULT and tasklet creation]),,
+        [enable_mem_pool=yes])
+
+# --disable-aligned-alloc
+AC_ARG_ENABLE([aligned-alloc],
+    AS_HELP_STRING([--disable-aligned-alloc],
+        [do not use aligned memory allocation]),,
+        [enable_aligned_alloc=yes])
+
+# --disable-thread-cancel
+AC_ARG_ENABLE([thread-cancel],
+    AS_HELP_STRING([--disable-thread-cancel], [disable ULT cancellation]),,
+    [enable_thread_cancel=yes])
+
+# --disable-task-cancel
+AC_ARG_ENABLE([task-cancel],
+    AS_HELP_STRING([--disable-task-cancel], [disable tasklet cancellation]),,
+    [enable_task_cancel=yes])
+
+# --disable-migration
+AC_ARG_ENABLE([migration],
+    AS_HELP_STRING([--disable-migration], [disable ULT migration]),,
+    [enable_migration=yes])
+
+# --disable-stackable-sched
+AC_ARG_ENABLE([stackable-sched],
+    AS_HELP_STRING([--disable-stackable-sched], [disable stackable scheduler]),,
+    [enable_stackable_sched=yes])
+
+# --disable-ext-thread
+AC_ARG_ENABLE([ext-thread],
+    AS_HELP_STRING([--disable-ext-thread], [disable supporting external threads]),,
+    [enable_ext_thread=yes])
+
+# --with-hugetlbfs
+AC_ARG_WITH([hugetlbfs],
+    AS_HELP_STRING([--with-hugetlbfs=PATH],
+        [specify path where hugetlbfs include directory and lib directory can be found]))
+
+# --enable-power-event
+AC_ARG_ENABLE([power-event],
+    AS_HELP_STRING([--enable-power-event],
+        [enable handling power management events]))
+
+# --enable-publish-info
+AC_ARG_ENABLE([publish-info],
+    AS_HELP_STRING([--enable-publish-info],
+        [enable publishing execution information]))
+
+# --with-beacon
+AC_ARG_WITH([beacon],
+    AS_HELP_STRING([--with-beacon=PATH],
+        [specify path where beacon include directory and lib directory can be found]))
+
+# --with-intercoolr
+AC_ARG_WITH([intercoolr],
+    AS_HELP_STRING([--with-intercoolr=PATH],
+        [specify path where intercoolr include directory and lib directory can be found]))
+dnl ----------------------------------------------------------------------------
+
 
 dnl ----------------------------------------------------------------------------
 dnl check the compiler and standard headers
 dnl ----------------------------------------------------------------------------
-AC_PROG_CC
+PAC_PROG_CC
 AC_HEADER_STDC
+dnl ----------------------------------------------------------------------------
+
 
 dnl ----------------------------------------------------------------------------
 dnl check the environment and the function availability
@@ -102,7 +257,279 @@ AS_CASE([$host_cpu],
               [darwin*], [fctx_arch_bin="arm64_aapcs_macho_gas"])])
 AC_SUBST([fctx_arch_bin])
 AM_SUBST_NOTMAKE([fctx_arch_bin])
+dnl ----------------------------------------------------------------------------
 
+
+dnl ----------------------------------------------------------------------------
+dnl setup top-level argument handling
+dnl ----------------------------------------------------------------------------
+# --enable-affinity
+AS_IF([test "x$enable_affinity" != "xno"], [
+       AC_CHECK_LIB(pthread, pthread_setaffinity_np,
+                    [AC_DEFINE(HAVE_PTHREAD_SETAFFINITY_NP, 1,
+                     [Define if pthread_setaffinity_np is available])])
+       ])
+
+
+# --enable-debug: debug options
+# strip off multiple options, separated by commas
+save_IFS="$IFS"
+IFS=","
+for option in $enable_debug ; do
+    case "$option" in
+        yes)
+            debug_flags=yes
+        ;;
+        log)
+            debug_log=yes
+            debug_log_print=yes
+        ;;
+        all)
+            debug_flags=yes
+            debug_log=yes
+            debug_log_print=yes
+        ;;
+        most)
+            debug_flags=yes
+            debug_log=yes
+            debug_log_print=no
+        ;;
+        no|none)
+            debug_flags=no
+            debug_log=no
+        ;;
+        *)
+            IFS=$save_IFS
+            AC_MSG_WARN([Unknown value $option for --enable-debug])
+            IFS=","
+        ;;
+    esac
+done
+IFS="$save_IFS"
+
+if test "x$debug_flags" = "xyes" ; then
+    PAC_APPEND_FLAG([-g], [CFLAGS])
+    PAC_APPEND_FLAG([-Wall], [CFLAGS])
+    PAC_APPEND_FLAG([-g], [CXXFLAGS])
+    PAC_APPEND_FLAG([-Wall], [CXXFLAGS])
+    PAC_APPEND_FLAG([-g], [CCASFLAGS])
+    PAC_APPEND_FLAG([-Wall], [CCASFLAGS])
+fi
+AS_IF([test "x$debug_log" = "xyes"],
+    [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG, 1, [Define to enable debug logging])])
+AS_IF([test "x$debug_log_print" = "xyes"],
+    [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG_PRINT, 1,
+        [Define to enable printing debug log messages])])
+
+
+# --enable-fast: compiler optimization flags
+# strip off multiple options, separated by commas
+save_IFS="$IFS"
+IFS=","
+for option in $enable_fast ; do
+    case "$option" in
+        O*)
+            enable_fast_opts=$option
+        ;;
+        ndebug)
+            enable_fast_ndebug=yes
+        ;;
+        all|yes)
+            enable_fast_ndebug=yes
+            enable_fast_opts=O2
+        ;;
+        none|no)
+            enable_fast_ndebug=no
+            enable_fast_opts=O0
+        ;;
+        *)
+            IFS="$save_IFS"
+            AC_MSG_WARN([Unknown value $option for --enable-fast])
+            IFS=","
+        ;;
+    esac
+done
+IFS="$save_IFS"
+
+if test -n "$enable_fast_opts" ; then
+    # Allows O<n> where <n> can be [0-9sz] or ' '.
+    opt_flags=`echo $enable_fast_opts | sed -e 's%\(O[0-9sz] \)%\1%g'`
+    if test -n "$opt_flags" ; then
+        CXXFLAGS="$CXXFLAGS -$enable_fast_opts"
+        CCASFLAGS="$CCASFLAGS -$enable_fast_opts"
+        PAC_C_CHECK_COMPILER_OPTION( [$ABT_DEFAULT_COPTS],
+            [CFLAGS="$CFLAGS -$enable_fast_opts"] )
+    else
+        AC_MSG_WARN([Unknown value $enable_fast_opts for --enable-fast])
+    fi
+fi
+
+if test "$enable_fast_ndebug" = "yes" ; then
+    CFLAGS="$CFLAGS -DNDEBUG -DNVALGRIND"
+    CXXFLAGS="$CXXFLAGS -DNDEBUG -DNVALGRIND"
+    CCASFLAGS="$CFLAGS -DNDEBUG -DNVALGRIND"
+fi
+
+
+# --enable-tls-model: compiler's tls-model flag
+case "$enable_tls_model" in
+    global-dynamic|local-dynamic|initial-exec|local-exec)
+        tls_model_flag=$enable_tls_model
+    ;;
+    yes)
+        tls_model_flag=initial-exec;
+    ;;
+    none|no)
+    ;;
+    *)
+        AC_MSG_WARN([Unknown value $option for --enable-tls-model])
+    ;;
+esac
+if test -n "$tls_model_flag" ; then
+    PAC_APPEND_FLAG([-ftls-model=$tls_model_flag], [CFLAGS])
+    PAC_APPEND_FLAG([-ftls-model=$tls_model_flag], [CXXFLAGS])
+    PAC_APPEND_FLAG([-ftls-model=$tls_model_flag], [CCASFLAGS])
+fi
+
+
+# --enable-perf-opt: set CFLAGS for the performance optimization
+if test "x$enable_perf_opt" = "xyes"; then
+    CFLAGS="$CFLAGS -O3 -ftls-model=initial-exec"
+    CXXFLAGS="$CFLAGS -O3 -ftls-model=initial-exec"
+    CCASFLAGS="$CFLAGS -O3 -ftls-model=initial-exec"
+fi
+
+
+# --enable-valgrind: enable valgrind support if requested
+AS_IF([test "x$enable_valgrind" = "xyes"], [
+       AC_DEFINE(HAVE_VALGRIND_SUPPORT, 1, [Define valgrind support])
+       ])
+
+
+# --disable-checks
+# --disable-error-check
+# Disable checks if requested
+AS_IF([test "x$enable_error_check" != "xyes" -o "x$enable_checks" = "xno"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_ERROR_CHECK, 1,
+        [Define to disable error check])
+     ABT_NULL="1"],
+    [ABT_NULL="0"])
+AC_SUBST([ABT_NULL])
+
+# --disable-pool-producer-check
+AS_IF([test "x$enable_pool_producer_check" != "xyes" -o "x$enable_checks" = "xno"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK, 1,
+        [Define to disable pool producer check])])
+
+# --disable-pool-consumer-check
+AS_IF([test "x$enable_pool_consumer_check" != "xyes" -o "x$enable_checks" = "xno"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK, 1,
+        [Define to disable pool consumer check])])
+
+AM_CONDITIONAL([ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK],
+    [test "x$enable_checks" = "xno" -o "x$enable_pool_producer_check" != "xyes" -o "x$enable_pool_consumer_check" != "xyes"])
+
+
+# --disable-fcontext
+# if fcontext supports this platform and the user does not specify
+# --disable-fcontext, we use fcontext instead of ucontext.
+AM_CONDITIONAL([ABT_USE_FCONTEXT],
+               [test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"])
+AS_IF([test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"],
+      [AC_DEFINE(ABT_CONFIG_USE_FCONTEXT, 1, [Define to use fcontext])])
+
+# --disable-preserve-fpu
+AS_IF([test "x$enable_preserve_fpu" != "xno"],
+      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 1,
+                 [Define to 1 if we preserve fpu registers])],
+      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 0)])
+
+
+# --disable-mem-pool: Memory pool is enabled by default.
+AS_IF([test "x$enable_mem_pool" != "xno"],
+      [AC_DEFINE(ABT_CONFIG_USE_MEM_POOL, 1,
+          [Define to use memory pools for ULT and tasklet creation])])
+
+
+# --disable-aligned-alloc: Aligned memory allocation is enabled by default.
+AS_IF([test "x$enable_aligned_alloc" != "xno"],
+    [AC_DEFINE(ABT_CONFIG_USE_ALIGNED_ALLOC, 1,
+        [Define to allocate objects aligned to the cache line size])])
+
+
+# --disable-thread-cancel
+AS_IF([test "x$enable_thread_cancel" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_THREAD_CANCEL, 1,
+        [Define to disable ULT cancellation])])
+
+# --disable-task-cancel
+AS_IF([test "x$enable_task_cancel" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_TASK_CANCEL, 1,
+        [Define to disable tasklet cancellation])])
+
+# --disable-migration
+AS_IF([test "x$enable_migration" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_MIGRATION, 1,
+        [Define to disable ULT migration])])
+
+# --disable-stackable-sched
+AS_IF([test "x$enable_stackable_sched" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_STACKABLE_SCHED, 1,
+        [Define to disable stackable scheduler])])
+
+# --disable-ext-thread
+AS_IF([test "x$enable_ext_thread" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_EXT_THREAD, 1,
+        [Define to disable supporting external threads])])
+AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
+    [test "x$enable_ext_thread" = "xno"])
+
+
+# --with-hugetlbfs
+if test "x$with_hugetlbfs" != "x"; then
+    PAC_PREPEND_FLAG([-I${with_hugetlbfs}/include], [CFLAGS])
+    PAC_PREPEND_FLAG([-L${with_hugetlbfs}/lib64 -lhugetlbfs], [LDFLAGS])
+fi
+AC_CHECK_LIB(hugetlbfs, get_huge_pages)
+
+
+# --enable-power-event: power management events from outside
+AS_IF([test "x$enable_power_event" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_HANDLE_POWER_EVENT, 1,
+                 [Define to handle power management events])])
+
+
+# --enable-publish-info: publish execution information
+AS_IF([test "x$enable_publish_info" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_PUBLISH_INFO, 1,
+                 [Define to publish execution information])])
+
+
+# --with-beacon: BEACON path
+if test "x$with_beacon" != "x"; then
+    CFLAGS="-I$with_beacon/include $CFLAGS"
+    LDFLAGS="-L$with_beacon/lib -lbeacon $LDFLAGS"
+fi
+AC_CHECK_HEADERS(beacon.h)
+default_pub_filename="stdout"
+AC_CHECK_LIB(beacon, BEACON_Publish, [default_pub_filename="beacon"])
+AC_DEFINE_UNQUOTED(ABT_CONFIG_DEFAULT_PUB_FILENAME, ["$default_pub_filename"],
+                   [Default filename for publishing the performance data])
+
+
+# --with-intercoolr: INTERCOOLR path
+if test "x$with_intercoolr" != "x"; then
+    CFLAGS="-I$with_intercoolr/include $CFLAGS"
+    LDFLAGS="-L$with_intercoolr/lib -lintercoolr $LDFLAGS"
+fi
+AC_CHECK_HEADERS(raplreader.h)
+AC_CHECK_LIB(intercoolr, raplreader_init)
+dnl ----------------------------------------------------------------------------
+
+
+dnl ----------------------------------------------------------------------------
+dnl check the function availability
+dnl ----------------------------------------------------------------------------
 # check pthread
 AC_CHECK_HEADERS(pthread.h)
 AC_CHECK_LIB(pthread, pthread_join)
@@ -171,354 +598,6 @@ AC_TRY_COMPILE([
 fi
 dnl ----------------------------------------------------------------------------
 
-dnl ----------------------------------------------------------------------------
-dnl setup top-level argument handling
-dnl ----------------------------------------------------------------------------
-# compiler optimization flags
-AC_ARG_ENABLE(fast,
-[  --enable-fast@<:@=OPTS@:>@    control the level of fast execution in the Argobots
-                          implementation. "OPTS" is a list of comma separated
-                          names including
-        O<n>     - append default optimization flags, -O<n>, to CFLAGS
-                   (default is -O2)
-        ndebug   - append -DNDEBUG to CFLAGS
-        all|yes  - "O2" and "ndebug" are enabled
-        none     - none of above options, i.e., --disable-fast
-],,enable_fast=O2)
-
-# enable-fast
-# strip off multiple options, separated by commas
-save_IFS="$IFS"
-IFS=","
-for option in $enable_fast ; do
-    case "$option" in
-        O*)
-            enable_fast_opts=$option
-        ;;
-        ndebug)
-            enable_fast_ndebug=yes
-        ;;
-        all|yes)
-            enable_fast_ndebug=yes
-            enable_fast_opts=O2
-        ;;
-        none|no)
-            enable_fast_ndebug=no
-            enable_fast_opts=O0
-        ;;
-        *)
-            IFS="$save_IFS"
-            AC_MSG_WARN([Unknown value $option for --enable-fast])
-            IFS=","
-        ;;
-    esac
-done
-IFS="$save_IFS"
-
-if test -n "$enable_fast_opts" ; then
-    # Allows O<n> where <n> can be [0-9sz] or ' '.
-    opt_flags=`echo $enable_fast_opts | sed -e 's%\(O[0-9sz] \)%\1%g'`
-    if test -n "$opt_flags" ; then
-        ABT_DEFAULT_COPTS="-$enable_fast_opts"
-        ABT_DEFAULT_CXXOPTS="-$enable_fast_opts"
-        ABT_DEFAULT_CCASOPTS="-$enable_fast_opts"
-
-        PAC_C_CHECK_COMPILER_OPTION( [$ABT_DEFAULT_COPTS],
-            [CFLAGS="$CFLAGS $ABT_DEFAULT_COPTS"] )
-        PAC_CXX_CHECK_COMPILER_OPTION( [$ABT_DEFAULT_CXXOPTS],
-            [CXXFLAGS="$CXXFLAGS $ABT_DEFAULT_CXXOPTS"] )
-        CCASFLAGS="$CCASFLAGS $ABT_DEFAULT_COPTS"
-   else
-      AC_MSG_WARN([Unknown value $enable_fast_opts for --enable-fast])
-   fi
-fi
-
-if test "$enable_fast_ndebug" = "yes" ; then
-    CFLAGS="$CFLAGS -DNDEBUG -DNVALGRIND"
-    CXXFLAGS="$CXXFLAGS -DNDEBUG -DNVALGRIND"
-    CCASFLAGS="$CFLAGS -DNDEBUG -DNVALGRIND"
-fi
-
-
-# --enable-tls-model
-AC_ARG_ENABLE(tls-model,
-[  --enable-tls-model@<:@=OPT@:>@  change the thread-local storage model used by
-                          the compiler. This affects the performance of ES's
-                          local storage. "OPT" can be one of values below.
-                          Please refer to the compiler documentation for
-                          details.
-        global-dynamic, local-dynamic, initial-exec, local-exec
-        yes      - same as "initial-exec"
-        none|no  - use the compiler's default model
-],,enable_tls_model=none)
-
-# compiler's tls-model flag
-case "$enable_tls_model" in
-    global-dynamic|local-dynamic|initial-exec|local-exec)
-        tls_model_flag=$enable_tls_model
-    ;;
-    yes)
-        tls_model_flag=initial-exec;
-    ;;
-    none|no)
-    ;;
-    *)
-        AC_MSG_WARN([Unknown value $option for --enable-tls-model])
-    ;;
-esac
-if test -n "$tls_model_flag" ; then
-    PAC_APPEND_FLAG([-ftls-model=$tls_model_flag], [CFLAGS])
-    PAC_APPEND_FLAG([-ftls-model=$tls_model_flag], [CXXFLAGS])
-    PAC_APPEND_FLAG([-ftls-model=$tls_model_flag], [CCASFLAGS])
-fi
-
-# debug options
-AC_ARG_ENABLE([debug],
-[  --enable-debug@<:@=OPTS@:>@   control the level of debugging. "OPTS" is a list of
-                          comma separated names below. Default is "yes".
-        yes   - add compiler flags, -g -Wall
-        log   - enable debug event logging
-        all   - all of the above choices
-        most  - same as "all" but not print logs by default
-                (set ABT_ENV_USE_LOG to 1 for logging)
-        none  - no debugging, i.e., --disable-debug
-],,[enable_debug=none])
-
-# strip off multiple options, separated by commas
-save_IFS="$IFS"
-IFS=","
-for option in $enable_debug ; do
-    case "$option" in
-        yes)
-            debug_flags=yes
-        ;;
-        log)
-            debug_log=yes
-            debug_log_print=yes
-        ;;
-        all)
-            debug_flags=yes
-            debug_log=yes
-            debug_log_print=yes
-        ;;
-        most)
-            debug_flags=yes
-            debug_log=yes
-            debug_log_print=no
-        ;;
-        no|none)
-            debug_flags=no
-            debug_log=no
-        ;;
-        *)
-            IFS=$save_IFS
-            AC_MSG_WARN([Unknown value $option for --enable-debug])
-            IFS=","
-        ;;
-    esac
-done
-IFS="$save_IFS"
-
-if test "x$debug_flags" = "xyes" ; then
-    PAC_APPEND_FLAG([-g], [CFLAGS])
-    PAC_APPEND_FLAG([-Wall], [CFLAGS])
-    PAC_APPEND_FLAG([-g], [CXXFLAGS])
-    PAC_APPEND_FLAG([-Wall], [CXXFLAGS])
-    PAC_APPEND_FLAG([-g], [CCASFLAGS])
-    PAC_APPEND_FLAG([-Wall], [CCASFLAGS])
-fi
-AS_IF([test "x$debug_log" = "xyes"],
-    [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG, 1, [Define to enable debug logging])])
-AS_IF([test "x$debug_log_print" = "xyes"],
-    [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG_PRINT, 1,
-        [Define to enable printing debug log messages])])
-
-AC_ARG_ENABLE([affinity],
-    AS_HELP_STRING([--enable-affinity],
-        [enable ES affinity]),,
-        [enable_affinity=no])
-AS_IF([test "x$enable_affinity" != "xno"], [
-       AC_CHECK_LIB(pthread, pthread_setaffinity_np,
-                    [AC_DEFINE(HAVE_PTHREAD_SETAFFINITY_NP, 1,
-                     [Define if pthread_setaffinity_np is available])])
-       ])
-
-# set CFLAGS for the performance optimization
-AC_ARG_ENABLE([perf-opt],
-    AS_HELP_STRING([--enable-perf-opt], [enable performance optimization]))
-if test "x$enable_perf_opt" = "xyes"; then
-    if test "x$GCC" = "xyes"; then
-        CFLAGS="-O3 -ftls-model=initial-exec"
-    fi
-fi
-
-# enable valgrind support if requested
-AC_ARG_ENABLE([valgrind],
-    AS_HELP_STRING([--enable-valgrind], [enable valgrind support]))
-AS_IF([test "x$enable_valgrind" = "xyes"], [
-       AC_DEFINE(HAVE_VALGRIND_SUPPORT, 1, [Define valgrind support])
-       ])
-
-# Disable checks if requested
-AC_ARG_ENABLE([checks],
-    AS_HELP_STRING([--disable-checks],
-        [disable error and pool access checks (unsafe mode)]))
-
-AC_ARG_ENABLE([error-check],
-    AS_HELP_STRING([--disable-error-check], [disable error checks]),,
-    [enable_error_check=yes])
-AS_IF([test "x$enable_error_check" != "xyes" -o "x$enable_checks" = "xno"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_ERROR_CHECK, 1,
-        [Define to disable error check])
-     ABT_NULL="1"],
-    [ABT_NULL="0"])
-AC_SUBST([ABT_NULL])
-
-AC_ARG_ENABLE([pool-producer-check],
-    AS_HELP_STRING([--disable-pool-producer-check], [disable pool producer check]),,
-    [enable_pool_producer_check=yes])
-AS_IF([test "x$enable_pool_producer_check" != "xyes" -o "x$enable_checks" = "xno"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK, 1,
-        [Define to disable pool producer check])])
-
-AC_ARG_ENABLE([pool-consumer-check],
-    AS_HELP_STRING([--disable-pool-consumer-check], [disable pool consumer check]),,
-    [enable_pool_consumer_check=yes])
-AS_IF([test "x$enable_pool_consumer_check" != "xyes" -o "x$enable_checks" = "xno"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK, 1,
-        [Define to disable pool consumer check])])
-
-AM_CONDITIONAL([ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK],
-    [test "x$enable_checks" = "xno" -o "x$enable_pool_producer_check" != "xyes" -o "x$enable_pool_consumer_check" != "xyes"])
-
-AC_ARG_ENABLE([fcontext],
-    AS_HELP_STRING([--disable-fcontext],
-        [do not use fcontext even though it is supported. If you disable
-         fcontext, ucontext in libc is used.]),,
-        [enable_fcontext=yes])
-# if fcontext supports this platform and the user does not specify
-# --disable-fcontext, we use fcontext instead of ucontext.
-AM_CONDITIONAL([ABT_USE_FCONTEXT],
-               [test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"])
-AS_IF([test "x$fctx_arch_bin" != "x" -a "x$enable_fcontext" != "xno"],
-      [AC_DEFINE(ABT_CONFIG_USE_FCONTEXT, 1, [Define to use fcontext])])
-
-AC_ARG_ENABLE([preserve-fpu],
-    AS_HELP_STRING([--disable-preserve-fpu],
-        [do not preserve fpu registers when fcontext is used]),,
-        [enable_preserve_fpu=yes])
-AS_IF([test "x$enable_preserve_fpu" != "xno"],
-      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 1,
-                 [Define to 1 if we preserve fpu registers])],
-      [AC_DEFINE(ABTD_FCONTEXT_PRESERVE_FPU, 0)])
-
-# Memory pool is enabled by default.
-AC_ARG_ENABLE([mem-pool],
-    AS_HELP_STRING([--disable-mem-pool],
-        [do not use memory pools for ULT and tasklet creation]),,
-        [enable_mem_pool=yes])
-AS_IF([test "x$enable_mem_pool" != "xno"],
-      [AC_DEFINE(ABT_CONFIG_USE_MEM_POOL, 1,
-          [Define to use memory pools for ULT and tasklet creation])])
-
-# Aligned memory allocation is enabled by default.
-AC_ARG_ENABLE([aligned-alloc],
-    AS_HELP_STRING([--disable-aligned-alloc],
-        [do not use aligned memory allocation]),,
-        [enable_aligned_alloc=yes])
-AS_IF([test "x$enable_aligned_alloc" != "xno"],
-    [AC_DEFINE(ABT_CONFIG_USE_ALIGNED_ALLOC, 1,
-        [Define to allocate objects aligned to the cache line size])])
-
-# libhugetlbfs
-AC_ARG_WITH([hugetlbfs],
-    AS_HELP_STRING([--with-hugetlbfs=PATH],
-        [specify path where hugetlbfs include directory and lib directory can be found]))
-if test "x$with_hugetlbfs" != "x"; then
-    CFLAGS="-I$with_hugetlbfs/include $CFLAGS"
-    LDFLAGS="-L$with_hugetlbfs/lib64 -lhugetlbfs $LDFLAGS"
-fi
-AC_CHECK_LIB(hugetlbfs, get_huge_pages)
-
-# Power management events from outside
-AC_ARG_ENABLE([power-event],
-    AS_HELP_STRING([--enable-power-event],
-        [enable handling power management events]))
-AS_IF([test "x$enable_power_event" = "xyes"],
-      [AC_DEFINE(ABT_CONFIG_HANDLE_POWER_EVENT, 1,
-                 [Define to handle power management events])])
-
-# Publish execution information
-AC_ARG_ENABLE([publish-info],
-    AS_HELP_STRING([--enable-publish-info],
-        [enable publishing execution information]))
-AS_IF([test "x$enable_publish_info" = "xyes"],
-      [AC_DEFINE(ABT_CONFIG_PUBLISH_INFO, 1,
-                 [Define to publish execution information])])
-
-# BEACON path
-AC_ARG_WITH([beacon],
-    AS_HELP_STRING([--with-beacon=PATH],
-        [specify path where beacon include directory and lib directory can be found]))
-if test "x$with_beacon" != "x"; then
-    CFLAGS="-I$with_beacon/include $CFLAGS"
-    LDFLAGS="-L$with_beacon/lib -lbeacon $LDFLAGS"
-fi
-AC_CHECK_HEADERS(beacon.h)
-default_pub_filename="stdout"
-AC_CHECK_LIB(beacon, BEACON_Publish, [default_pub_filename="beacon"])
-AC_DEFINE_UNQUOTED(ABT_CONFIG_DEFAULT_PUB_FILENAME, ["$default_pub_filename"],
-                   [Default filename for publishing the performance data])
-
-# INTERCOOLR path
-AC_ARG_WITH([intercoolr],
-    AS_HELP_STRING([--with-intercoolr=PATH],
-        [specify path where intercoolr include directory and lib directory can be found]))
-if test "x$with_intercoolr" != "x"; then
-    CFLAGS="-I$with_intercoolr/include $CFLAGS"
-    LDFLAGS="-L$with_intercoolr/lib -lintercoolr $LDFLAGS"
-fi
-AC_CHECK_HEADERS(raplreader.h)
-AC_CHECK_LIB(intercoolr, raplreader_init)
-
-# Disable features
-AC_ARG_ENABLE([thread-cancel],
-    AS_HELP_STRING([--disable-thread-cancel], [disable ULT cancellation]),,
-    [enable_thread_cancel=yes])
-AS_IF([test "x$enable_thread_cancel" != "xyes"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_THREAD_CANCEL, 1,
-        [Define to disable ULT cancellation])])
-
-AC_ARG_ENABLE([task-cancel],
-    AS_HELP_STRING([--disable-task-cancel], [disable tasklet cancellation]),,
-    [enable_task_cancel=yes])
-AS_IF([test "x$enable_task_cancel" != "xyes"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_TASK_CANCEL, 1,
-        [Define to disable tasklet cancellation])])
-
-AC_ARG_ENABLE([migration],
-    AS_HELP_STRING([--disable-migration], [disable ULT migration]),,
-    [enable_migration=yes])
-AS_IF([test "x$enable_migration" != "xyes"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_MIGRATION, 1,
-        [Define to disable ULT migration])])
-
-AC_ARG_ENABLE([stackable-sched],
-    AS_HELP_STRING([--disable-stackable-sched], [disable stackable scheduler]),,
-    [enable_stackable_sched=yes])
-AS_IF([test "x$enable_stackable_sched" != "xyes"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_STACKABLE_SCHED, 1,
-        [Define to disable stackable scheduler])])
-
-AC_ARG_ENABLE([ext-thread],
-    AS_HELP_STRING([--disable-ext-thread], [disable supporting external threads]),,
-    [enable_ext_thread=yes])
-AS_IF([test "x$enable_ext_thread" != "xyes"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_EXT_THREAD, 1,
-        [Define to disable supporting external threads])])
-AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
-    [test "x$enable_ext_thread" = "xno"])
-dnl ----------------------------------------------------------------------------
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])
 AM_SILENT_RULES([yes])
@@ -528,6 +607,7 @@ AM_PROG_AR
 LT_INIT
 
 AC_PROG_INSTALL
+
 
 dnl ----------------------------------------------------------------------------
 dnl config headers
@@ -546,6 +626,7 @@ AH_BOTTOM([
 #endif /* ABT_CONFIG_H_INCLUDED */
 ])
 dnl ----------------------------------------------------------------------------
+
 
 AC_CONFIG_FILES([Makefile
                  Doxyfile
