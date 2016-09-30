@@ -2,10 +2,6 @@
 CODE
 ----
 
- * New scheduler and work-unit migration.  We have been working on
-   a new design of scheduler and work-unit migration.  This will
-   require significant code change from the current implementation.
-
  * Performance evaluation and improvement.
 
 
