@@ -49,7 +49,8 @@ void ABTD_affinity_init(void)
     gp_ABTI_global->num_cores = num_cores;
 
     /* affinity type */
-    char *env = getenv("ABT_ENV_AFFINITY_TYPE");
+    char *env = getenv("ABT_AFFINITY_TYPE");
+    if (env == NULL) env = getenv("ABT_ENV_AFFINITY_TYPE");
     if (env != NULL) {
         if (strcmp(env, "chameleon") == 0) {
             g_affinity_type = ABTI_ES_AFFINITY_CHAMELEON;

@@ -29,10 +29,11 @@ void ABTD_env_init(ABTI_global *p_global)
 
     /* By default, we use the CPU affinity */
     p_global->set_affinity = ABT_TRUE;
-    env = getenv("ABT_ENV_SET_AFFINITY");
+    env = getenv("ABT_SET_AFFINITY");
+    if (env == NULL) env = getenv("ABT_ENV_SET_AFFINITY");
     if (env != NULL) {
-        if (strcmp(env, "0") == 0 || strcmp(env, "NO") == 0 ||
-            strcmp(env, "no") == 0 || strcmp(env, "No") == 0) {
+        if (strcmp(env, "0") == 0 || strcasecmp(env, "n") == 0 ||
+            strcasecmp(env, "no") == 0) {
             p_global->set_affinity = ABT_FALSE;
         }
     }
@@ -50,19 +51,21 @@ void ABTD_env_init(ABTI_global *p_global)
     p_global->use_logging = ABT_FALSE;
     p_global->use_debug = ABT_FALSE;
 #endif
-    env = getenv("ABT_ENV_USE_LOG");
+    env = getenv("ABT_USE_LOG");
+    if (env == NULL) env = getenv("ABT_ENV_USE_LOG");
     if (env != NULL) {
-        if (strcmp(env, "0") == 0 || strcmp(env, "NO") == 0 ||
-            strcmp(env, "no") == 0 || strcmp(env, "No") == 0) {
+        if (strcmp(env, "0") == 0 || strcasecmp(env, "n") == 0 ||
+            strcasecmp(env, "no") == 0) {
             p_global->use_logging = ABT_FALSE;
         } else {
             p_global->use_logging = ABT_TRUE;
         }
     }
-    env = getenv("ABT_ENV_USE_DEBUG");
+    env = getenv("ABT_USE_DEBUG");
+    if (env == NULL) env = getenv("ABT_ENV_USE_DEBUG");
     if (env != NULL) {
-        if (strcmp(env, "0") == 0 || strcmp(env, "NO") == 0 ||
-            strcmp(env, "no") == 0 || strcmp(env, "No") == 0) {
+        if (strcmp(env, "0") == 0 || strcasecmp(env, "n") == 0 ||
+            strcasecmp(env, "no") == 0) {
             p_global->use_debug = ABT_FALSE;
         } else {
             p_global->use_debug = ABT_TRUE;
@@ -70,7 +73,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Maximum size of the internal ES array */
-    env = getenv("ABT_ENV_MAX_NUM_XSTREAMS");
+    env = getenv("ABT_MAX_NUM_XSTREAMS");
+    if (env == NULL) env = getenv("ABT_ENV_MAX_NUM_XSTREAMS");
     if (env != NULL) {
         p_global->max_xstreams = atoi(env);
     } else {
@@ -78,7 +82,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Default key table size */
-    env = getenv("ABT_ENV_KEY_TABLE_SIZE");
+    env = getenv("ABT_KEY_TABLE_SIZE");
+    if (env == NULL) env = getenv("ABT_ENV_KEY_TABLE_SIZE");
     if (env != NULL) {
         p_global->key_table_size = (int)atoi(env);
     } else {
@@ -86,7 +91,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Default stack size for ULT */
-    env = getenv("ABT_ENV_THREAD_STACKSIZE");
+    env = getenv("ABT_THREAD_STACKSIZE");
+    if (env == NULL) env = getenv("ABT_ENV_THREAD_STACKSIZE");
     if (env != NULL) {
         p_global->thread_stacksize = (size_t)atol(env);
         ABTI_ASSERT(p_global->thread_stacksize >= 512);
@@ -95,7 +101,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Default stack size for scheduler */
-    env = getenv("ABT_ENV_SCHED_STACKSIZE");
+    env = getenv("ABT_SCHED_STACKSIZE");
+    if (env == NULL) env = getenv("ABT_ENV_SCHED_STACKSIZE");
     if (env != NULL) {
         p_global->sched_stacksize = (size_t)atol(env);
         ABTI_ASSERT(p_global->sched_stacksize >= 512);
@@ -104,7 +111,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Default frequency for event checking by the scheduler */
-    env = getenv("ABT_ENV_SCHED_EVENT_FREQ");
+    env = getenv("ABT_SCHED_EVENT_FREQ");
+    if (env == NULL) env = getenv("ABT_ENV_SCHED_EVENT_FREQ");
     if (env != NULL) {
         p_global->sched_event_freq = (uint32_t)atol(env);
         ABTI_ASSERT(p_global->sched_event_freq >= 1);
@@ -113,7 +121,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Cache line size */
-    env = getenv("ABT_ENV_CACHE_LINE_SIZE");
+    env = getenv("ABT_CACHE_LINE_SIZE");
+    if (env == NULL) env = getenv("ABT_ENV_CACHE_LINE_SIZE");
     if (env != NULL) {
         p_global->cache_line_size = (uint32_t)atol(env);
     } else {
@@ -121,7 +130,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* OS page size */
-    env = getenv("ABT_ENV_OS_PAGE_SIZE");
+    env = getenv("ABT_OS_PAGE_SIZE");
+    if (env == NULL) env = getenv("ABT_ENV_OS_PAGE_SIZE");
     if (env != NULL) {
         p_global->os_page_size = (uint32_t)atol(env);
     } else {
@@ -129,7 +139,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Huge page size */
-    env = getenv("ABT_ENV_HUGE_PAGE_SIZE");
+    env = getenv("ABT_HUGE_PAGE_SIZE");
+    if (env == NULL) env = getenv("ABT_ENV_HUGE_PAGE_SIZE");
     if (env != NULL) {
         p_global->huge_page_size = (uint32_t)atol(env);
     } else {
@@ -138,7 +149,8 @@ void ABTD_env_init(ABTI_global *p_global)
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
     /* Page size for memory allocation */
-    env = getenv("ABT_ENV_MEM_PAGE_SIZE");
+    env = getenv("ABT_MEM_PAGE_SIZE");
+    if (env == NULL) env = getenv("ABT_ENV_MEM_PAGE_SIZE");
     if (env != NULL) {
         p_global->mem_page_size = (uint32_t)atol(env);
     } else {
@@ -146,7 +158,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Stack page size for memory allocation */
-    env = getenv("ABT_ENV_MEM_STACK_PAGE_SIZE");
+    env = getenv("ABT_MEM_STACK_PAGE_SIZE");
+    if (env == NULL) env = getenv("ABT_ENV_MEM_STACK_PAGE_SIZE");
     if (env != NULL) {
         p_global->mem_sp_size = (size_t)atol(env);
     } else {
@@ -154,7 +167,8 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Maximum number of stacks that each ES can keep during execution */
-    env = getenv("ABT_ENV_MEM_MAX_NUM_STACKS");
+    env = getenv("ABT_MEM_MAX_NUM_STACKS");
+    if (env == NULL) env = getenv("ABT_ENV_MEM_MAX_NUM_STACKS");
     if (env != NULL) {
         p_global->mem_max_stacks = (uint32_t)atol(env);
     } else {
@@ -164,7 +178,8 @@ void ABTD_env_init(ABTI_global *p_global)
     /* How to allocate large pages.  The default is to use mmap() for huge
      * pages and then to fall back to allocate regular pages using mmap() when
      * huge pages are run out of. */
-    env = getenv("ABT_ENV_MEM_LP_ALLOC");
+    env = getenv("ABT_MEM_LP_ALLOC");
+    if (env == NULL) env = getenv("ABT_ENV_MEM_LP_ALLOC");
 #if defined(HAVE_MAP_ANONYMOUS) || defined(HAVE_MAP_ANON)
     int default_lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
 #else
@@ -193,20 +208,23 @@ void ABTD_env_init(ABTI_global *p_global)
 
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
     /* Hostname for power management daemon */
-    env = getenv("ABT_ENV_POWER_EVENT_HOSTNAME");
+    env = getenv("ABT_POWER_EVENT_HOSTNAME");
+    if (env == NULL) env = getenv("ABT_ENV_POWER_EVENT_HOSTNAME");
     p_global->pm_host = (env != NULL) ? env : "localhost";
 
     /* Port number for power management daemon */
-    env = getenv("ABT_ENV_POWER_EVENT_PORT");
+    env = getenv("ABT_POWER_EVENT_PORT");
+    if (env == NULL) env = getenv("ABT_ENV_POWER_EVENT_PORT");
     p_global->pm_port = (env != NULL) ? atoi(env) : 60439;
 #endif
 
 #ifdef ABT_CONFIG_PUBLISH_INFO
     /* Do we need to publish exec. information? */
-    env = getenv("ABT_ENV_PUBLISH_INFO");
+    env = getenv("ABT_PUBLISH_INFO");
+    if (env == NULL) env = getenv("ABT_ENV_PUBLISH_INFO");
     if (env != NULL) {
-        if (strcmp(env, "0") == 0 || strcmp(env, "NO") == 0 ||
-            strcmp(env, "no") == 0 || strcmp(env, "No") == 0) {
+        if (strcmp(env, "0") == 0 || strcasecmp(env, "n") == 0 ||
+            strcasecmp(env, "no") == 0) {
             p_global->pub_needed = ABT_FALSE;
         } else {
             p_global->pub_needed = ABT_TRUE;
@@ -216,16 +234,19 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 
     /* Filename for exec. information publishing */
-    env = getenv("ABT_ENV_PUBLISH_FILENAME");
+    env = getenv("ABT_PUBLISH_FILENAME");
+    if (env == NULL) env = getenv("ABT_ENV_PUBLISH_FILENAME");
     p_global->pub_filename = env ? env : ABT_CONFIG_DEFAULT_PUB_FILENAME;
 
     /* Time interval for exec. information publishing */
-    env = getenv("ABT_ENV_PUBLISH_INTERVAL");
+    env = getenv("ABT_PUBLISH_INTERVAL");
+    if (env == NULL) env = getenv("ABT_ENV_PUBLISH_INTERVAL");
     p_global->pub_interval = env ? atof(env) : 1.0;
 #endif
 
     /* Whether to print the configuration on ABT_init() */
-    env = getenv("ABT_ENV_PRINT_CONFIG");
+    env = getenv("ABT_PRINT_CONFIG");
+    if (env == NULL) env = getenv("ABT_ENV_PRINT_CONFIG");
     if (env != NULL) {
         if (strcmp(env, "1") == 0 || strcasecmp(env, "yes") == 0 ||
             strcasecmp(env, "y") == 0) {

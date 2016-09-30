@@ -5,6 +5,7 @@
 
 #include "abti.h"
 #include <unistd.h>
+#include <strings.h>
 
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
 #include <sys/types.h>
@@ -135,10 +136,11 @@ void ABTI_event_init(void)
 
     gethostname(gp_einfo->hostname, 100);
 
-    env = getenv("ABT_ENV_USE_EVENT_DEBUG");
+    env = getenv("ABT_USE_EVENT_DEBUG");
+    if (env == NULL) env = getenv("ABT_ENV_USE_EVENT_DEBUG");
     if (env != NULL) {
-        if (strcmp(env, "0") == 0 || strcmp(env, "NO") == 0 ||
-            strcmp(env, "no") == 0 || strcmp(env, "No") == 0) {
+        if (strcmp(env, "0") == 0 || strcasecmp(env, "n") == 0 ||
+            strcasecmp(env, "no") == 0) {
             gp_einfo->use_debug = ABT_FALSE;
         } else {
             gp_einfo->use_debug = ABT_TRUE;
