@@ -289,26 +289,40 @@ static char *ABTI_mem_alloc_large_page(int pgsize, ABT_bool *p_is_mmapped)
             break;
 
         case ABTI_MEM_LP_MMAP_RP:
-            *p_is_mmapped = ABT_TRUE;
             p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_RP, 0, 0);
-            ABTI_ASSERT((void *)p_page != MAP_FAILED);
-            LOG_DEBUG("mmap a regular page (%d): %p\n", pgsize, p_page);
+            if ((void *)p_page != MAP_FAILED) {
+                *p_is_mmapped = ABT_TRUE;
+                LOG_DEBUG("mmap a regular page (%d): %p\n", pgsize, p_page);
+            } else {
+                /* mmap failed and thus we fall back to malloc. */
+                p_page = (char *)ABTU_malloc(pgsize);
+                *p_is_mmapped = ABT_FALSE;
+                LOG_DEBUG("fall back to malloc a regular page (%d): %p\n",
+                          pgsize, p_page);
+            }
             break;
 
         case ABTI_MEM_LP_MMAP_HP_RP:
-            *p_is_mmapped = ABT_TRUE;
-
             /* We first try to mmap a huge page, and then if it fails, we mmap
              * a regular page. */
             p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_HP, 0, 0);
             if ((void *)p_page != MAP_FAILED) {
+                *p_is_mmapped = ABT_TRUE;
                 LOG_DEBUG(MMAP_DBG_MSG" (%d): %p\n", pgsize, p_page);
             } else {
                 /* Huge pages are run out of. Use a normal mmap. */
                 p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_RP, 0, 0);
-                ABTI_ASSERT((void *)p_page != MAP_FAILED);
-                LOG_DEBUG("fall back to mmap regular pages (%d): %p\n",
-                          pgsize, p_page);
+                if ((void *)p_page != MAP_FAILED) {
+                    *p_is_mmapped = ABT_TRUE;
+                    LOG_DEBUG("fall back to mmap regular pages (%d): %p\n",
+                              pgsize, p_page);
+                } else {
+                    /* mmap failed and thus we fall back to malloc. */
+                    p_page = (char *)ABTU_malloc(pgsize);
+                    *p_is_mmapped = ABT_FALSE;
+                    LOG_DEBUG("fall back to malloc a regular page (%d): %p\n",
+                              pgsize, p_page);
+                }
             }
             break;
 
