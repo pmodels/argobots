@@ -24,49 +24,75 @@ typedef struct thread_arg {
     ABT_thread *threads;
 } thread_arg_t;
 
-ABT_thread pick_one(ABT_thread *threads, int num_threads, unsigned *seed)
+ABT_thread pick_one(ABT_thread *threads, int num_threads, unsigned *seed,
+                    ABT_thread caller)
 {
-    int i;
+    int k, i, ret;
+    ABT_bool is_same;
     ABT_thread next;
     ABT_thread_state state = ABT_THREAD_STATE_TERMINATED;
-    while (state == ABT_THREAD_STATE_TERMINATED) {
+
+    for (k = 0; k < num_threads; k++) {
         i = rand_r(seed) % num_threads;
         next = threads[i];
+        ret = ABT_thread_equal(next, caller, &is_same);
+        ABT_TEST_ERROR(ret, "ABT_thread_equal");
+        if (is_same == ABT_TRUE) continue;
+
         if (next != ABT_THREAD_NULL) {
-            ABT_thread_get_state(next, &state);
+            ret = ABT_thread_get_state(next, &state);
+            ABT_TEST_ERROR(ret, "ABT_thread_get_state");
+            if (state != ABT_THREAD_STATE_TERMINATED) {
+                return next;
+            }
         }
     }
-    return next;
+
+    return ABT_THREAD_NULL;
 }
 
 void thread_func(void *arg)
 {
-    ABT_thread my_handle;
+    ABT_thread my_handle, next;
     ABT_thread_state my_state;
-    ABT_thread_self(&my_handle);
-    ABT_thread_get_state(my_handle, &my_state);
+    int ret;
+
+    ret = ABT_thread_self(&my_handle);
+    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ret = ABT_thread_get_state(my_handle, &my_state);
+    ABT_TEST_ERROR(ret, "ABT_thread_get_state");
     if (my_state != ABT_THREAD_STATE_RUNNING) {
         fprintf(stderr, "ERROR: not in the RUNNUNG state\n");
+        exit(-1);
     }
 
     thread_arg_t *t_arg = (thread_arg_t *)arg;
-    ABT_thread next;
     unsigned seed = time(NULL);
 
     ABT_test_printf(1, "[TH%d]: before yield\n", t_arg->id);
-    next = pick_one(t_arg->threads, t_arg->num_threads, &seed);
-    ABT_thread_yield_to(next);
+
+    next = pick_one(t_arg->threads, t_arg->num_threads, &seed, my_handle);
+    if (next != ABT_THREAD_NULL) {
+        ret = ABT_thread_yield_to(next);
+        ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
+    }
 
     ABT_test_printf(1, "[TH%d]: doing something ...\n", t_arg->id);
-    next = pick_one(t_arg->threads, t_arg->num_threads, &seed);
-    ABT_thread_yield_to(next);
+
+    next = pick_one(t_arg->threads, t_arg->num_threads, &seed, my_handle);
+    if (next != ABT_THREAD_NULL) {
+        ret = ABT_thread_yield_to(next);
+        ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
+    }
 
     ABT_test_printf(1, "[TH%d]: after yield\n", t_arg->id);
 
     ABT_task task;
-    ABT_task_self(&task);
+    ret = ABT_task_self(&task);
+    assert(ret == ABT_ERR_INV_TASK);
     if (task != ABT_TASK_NULL) {
-        fprintf(stderr, "ERROR: should not be tasklet\n");
+        fprintf(stderr, "ERROR: should not be a tasklet\n");
+        exit(-1);
     }
 }
 
@@ -74,10 +100,15 @@ void task_func1(void *arg)
 {
     ABT_task my_handle;
     ABT_task_state my_state;
-    ABT_task_self(&my_handle);
-    ABT_task_get_state(my_handle, &my_state);
+    int ret;
+
+    ret = ABT_task_self(&my_handle);
+    ABT_TEST_ERROR(ret, "ABT_task_self");
+    ret = ABT_task_get_state(my_handle, &my_state);
+    ABT_TEST_ERROR(ret, "ABT_task_get_state");
     if (my_state != ABT_TASK_STATE_RUNNING) {
         fprintf(stderr, "ERROR: not in the RUNNUNG state\n");
+        exit(-1);
     }
 
     size_t i;
@@ -92,9 +123,13 @@ void task_func1(void *arg)
 void task_func2(void *arg)
 {
     ABT_thread thread;
-    ABT_thread_self(&thread);
+    int ret;
+
+    ret = ABT_thread_self(&thread);
+    assert(ret == ABT_ERR_INV_THREAD);
     if (thread != ABT_THREAD_NULL) {
-        fprintf(stderr, "ERROR: should not be ULT\n");
+        fprintf(stderr, "ERROR: should not be a ULT\n");
+        exit(-1);
     }
 
     size_t i;
