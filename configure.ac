@@ -126,25 +126,16 @@ AC_ARG_ENABLE([perf-opt],
 AC_ARG_ENABLE([valgrind],
     AS_HELP_STRING([--enable-valgrind], [enable valgrind support]))
 
-# --disable-checks
+# --enable-checks
 AC_ARG_ENABLE([checks],
-    AS_HELP_STRING([--disable-checks],
-        [disable error and pool access checks (unsafe mode)]))
-
-# --disable-error-check
-AC_ARG_ENABLE([error-check],
-    AS_HELP_STRING([--disable-error-check], [disable error checks]),,
-    [enable_error_check=yes])
-
-# --disable-pool-producer-check
-AC_ARG_ENABLE([pool-producer-check],
-    AS_HELP_STRING([--disable-pool-producer-check], [disable pool producer check]),,
-    [enable_pool_producer_check=yes])
-
-# --disable-pool-consumer-check
-AC_ARG_ENABLE([pool-consumer-check],
-    AS_HELP_STRING([--disable-pool-consumer-check], [disable pool consumer check]),,
-    [enable_pool_consumer_check=yes])
+[  --enable-checks@<:@=OPTS@:>@  control the amount of sanity checking.
+                          "OPTS" is a list of comma separated names including
+        all               - checking always enabled (default)
+        no-error          - disable error checks
+        no-pool-producer  - disable pool producer checks
+        no-pool-consumer  - disable pool consumer checks
+        none|no           - no checking
+],,[enable_checks=all])
 
 # --disable-fcontext
 AC_ARG_ENABLE([fcontext],
@@ -406,28 +397,57 @@ AS_IF([test "x$enable_valgrind" = "xyes"], [
        ])
 
 
-# --disable-checks
-# --disable-error-check
-# Disable checks if requested
-AS_IF([test "x$enable_error_check" != "xyes" -o "x$enable_checks" = "xno"],
+# --enable-checks
+# strip off multiple options, separated by commas
+save_IFS="$IFS"
+IFS=","
+for option in $enable_checks ; do
+    case "$option" in
+        all|yes)
+            enable_error_check=yes
+            enable_pool_producer_check=yes
+            enable_pool_consumer_check=yes
+        ;;
+        no-error)
+            enable_error_check=no
+        ;;
+        no-pool-producer)
+            enable_pool_producer_check=no
+        ;;
+        no-pool-consumer)
+            enable_pool_consumer_check=no
+        ;;
+        none|no)
+            enable_error_check=no
+            enable_pool_producer_check=no
+            enable_pool_consumer_check=no
+        ;;
+        *)
+            IFS="$save_IFS"
+            AC_MSG_WARN([Unknown value $option for --enable-checks])
+            IFS=","
+        ;;
+    esac
+done
+IFS="$save_IFS"
+
+AS_IF([test "x$enable_error_check" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_ERROR_CHECK, 1,
         [Define to disable error check])
      ABT_NULL="1"],
     [ABT_NULL="0"])
 AC_SUBST([ABT_NULL])
 
-# --disable-pool-producer-check
-AS_IF([test "x$enable_pool_producer_check" != "xyes" -o "x$enable_checks" = "xno"],
+AS_IF([test "x$enable_pool_producer_check" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK, 1,
         [Define to disable pool producer check])])
 
-# --disable-pool-consumer-check
-AS_IF([test "x$enable_pool_consumer_check" != "xyes" -o "x$enable_checks" = "xno"],
+AS_IF([test "x$enable_pool_consumer_check" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK, 1,
         [Define to disable pool consumer check])])
 
 AM_CONDITIONAL([ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK],
-    [test "x$enable_checks" = "xno" -o "x$enable_pool_producer_check" != "xyes" -o "x$enable_pool_consumer_check" != "xyes"])
+    [test "x$enable_pool_producer_check" = "xno" -o "x$enable_pool_consumer_check" = "xno"])
 
 
 # --disable-fcontext
