@@ -18,38 +18,58 @@ typedef struct thread_arg {
     ABT_thread *threads;
 } thread_arg_t;
 
-ABT_thread pick_one(ABT_thread *threads, int num_threads, unsigned *seed)
+ABT_thread pick_one(ABT_thread *threads, int num_threads, unsigned *seed,
+                    ABT_thread caller)
 {
-    int i, ret;
+    int k, i, ret;
+    ABT_bool is_same;
     ABT_thread next;
     ABT_thread_state state = ABT_THREAD_STATE_TERMINATED;
-    while (state == ABT_THREAD_STATE_TERMINATED) {
+
+    for (k = 0; k < num_threads; k++) {
         i = rand_r(seed) % num_threads;
         next = threads[i];
+        ret = ABT_thread_equal(next, caller, &is_same);
+        ABT_TEST_ERROR(ret, "ABT_thread_equal");
+        if (is_same == ABT_TRUE) continue;
+
         if (next != ABT_THREAD_NULL) {
             ret = ABT_thread_get_state(next, &state);
             ABT_TEST_ERROR(ret, "ABT_thread_get_state");
+            if (state != ABT_THREAD_STATE_TERMINATED) {
+                return next;
+            }
         }
     }
-    return next;
+
+    return ABT_THREAD_NULL;
 }
 
 void thread_func(void *arg)
 {
     thread_arg_t *t_arg = (thread_arg_t *)arg;
-    ABT_thread next;
+    ABT_thread self, next;
     unsigned seed = time(NULL);
     int ret;
 
+    ret = ABT_thread_self(&self);
+    ABT_TEST_ERROR(ret, "ABT_thread_self");
+
     ABT_test_printf(1, "[TH%d]: before yield\n", t_arg->id);
-    next = pick_one(t_arg->threads, t_arg->num_threads, &seed);
-    ret = ABT_thread_yield_to(next);
-    ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
+
+    next = pick_one(t_arg->threads, t_arg->num_threads, &seed, self);
+    if (next != ABT_THREAD_NULL) {
+        ret = ABT_thread_yield_to(next);
+        ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
+    }
 
     ABT_test_printf(1, "[TH%d]: doing something ...\n", t_arg->id);
-    next = pick_one(t_arg->threads, t_arg->num_threads, &seed);
-    ret = ABT_thread_yield_to(next);
-    ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
+
+    next = pick_one(t_arg->threads, t_arg->num_threads, &seed, self);
+    if (next != ABT_THREAD_NULL) {
+        ret = ABT_thread_yield_to(next);
+        ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
+    }
 
     ABT_test_printf(1, "[TH%d]: after yield\n", t_arg->id);
 }
