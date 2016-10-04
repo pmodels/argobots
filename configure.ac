@@ -162,30 +162,18 @@ AC_ARG_ENABLE([aligned-alloc],
         [do not use aligned memory allocation]),,
         [enable_aligned_alloc=yes])
 
-# --disable-thread-cancel
-AC_ARG_ENABLE([thread-cancel],
-    AS_HELP_STRING([--disable-thread-cancel], [disable ULT cancellation]),,
-    [enable_thread_cancel=yes])
-
-# --disable-task-cancel
-AC_ARG_ENABLE([task-cancel],
-    AS_HELP_STRING([--disable-task-cancel], [disable tasklet cancellation]),,
-    [enable_task_cancel=yes])
-
-# --disable-migration
-AC_ARG_ENABLE([migration],
-    AS_HELP_STRING([--disable-migration], [disable ULT migration]),,
-    [enable_migration=yes])
-
-# --disable-stackable-sched
-AC_ARG_ENABLE([stackable-sched],
-    AS_HELP_STRING([--disable-stackable-sched], [disable stackable scheduler]),,
-    [enable_stackable_sched=yes])
-
-# --disable-ext-thread
-AC_ARG_ENABLE([ext-thread],
-    AS_HELP_STRING([--disable-ext-thread], [disable supporting external threads]),,
-    [enable_ext_thread=yes])
+# --enable-feature
+AC_ARG_ENABLE([feature],
+[  --enable-feature@<:@=OPTS@:>@  enable/disable features.
+                          "OPTS" is a list of comma separated names including
+        all                 - all features always enabled (default)
+        no-thread-cancel    - disable ULT cancellation
+        no-task-cancel      - disable tasklet cancellation
+        no-migration        - disable ULT migrationtask
+        no-stackable-sched  - disable stackable scheduler
+        no-ext-thread       - disable supporting external threads
+        none|no             - disable all features above
+],,[enable_feature=all])
 
 # --with-hugetlbfs
 AC_ARG_WITH([hugetlbfs],
@@ -477,28 +465,66 @@ AS_IF([test "x$enable_aligned_alloc" != "xno"],
         [Define to allocate objects aligned to the cache line size])])
 
 
-# --disable-thread-cancel
-AS_IF([test "x$enable_thread_cancel" != "xyes"],
+# --enable-feature
+save_IFS="$IFS"
+IFS=","
+for option in $enable_feature ; do
+    case "$option" in
+        all|yes)
+            enable_thread_cancel=yes
+            enable_task_cancel=yes
+            enable_migration=yes
+            enable_stackable_sched=yes
+            enable_ext_thread=yes
+        ;;
+        no-thread-cancel)
+            enable_thread_cancel=no
+        ;;
+        no-task-cancel)
+            enable_task_cancel=no
+        ;;
+        no-migration)
+            enable_migration=no
+        ;;
+        no-stackable-sched)
+            enable_stackable_sched=no
+        ;;
+        no-ext-thread)
+            enable_ext_thread=no
+        ;;
+        none|no)
+            enable_thread_cancel=no
+            enable_task_cancel=no
+            enable_migration=no
+            enable_stackable_sched=no
+            enable_ext_thread=no
+        ;;
+        *)
+            IFS="$save_IFS"
+            AC_MSG_WARN([Unknown value $option for --enable-feature])
+            IFS=","
+        ;;
+    esac
+done
+IFS="$save_IFS"
+
+AS_IF([test "x$enable_thread_cancel" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_THREAD_CANCEL, 1,
         [Define to disable ULT cancellation])])
 
-# --disable-task-cancel
-AS_IF([test "x$enable_task_cancel" != "xyes"],
+AS_IF([test "x$enable_task_cancel" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_TASK_CANCEL, 1,
         [Define to disable tasklet cancellation])])
 
-# --disable-migration
-AS_IF([test "x$enable_migration" != "xyes"],
+AS_IF([test "x$enable_migration" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_MIGRATION, 1,
         [Define to disable ULT migration])])
 
-# --disable-stackable-sched
-AS_IF([test "x$enable_stackable_sched" != "xyes"],
+AS_IF([test "x$enable_stackable_sched" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_STACKABLE_SCHED, 1,
         [Define to disable stackable scheduler])])
 
-# --disable-ext-thread
-AS_IF([test "x$enable_ext_thread" != "xyes"],
+AS_IF([test "x$enable_ext_thread" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_EXT_THREAD, 1,
         [Define to disable supporting external threads])])
 AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
