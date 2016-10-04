@@ -20,14 +20,15 @@ typedef struct thread_arg {
 
 ABT_thread pick_one(ABT_thread *threads, int num_threads, unsigned *seed)
 {
-    int i;
+    int i, ret;
     ABT_thread next;
     ABT_thread_state state = ABT_THREAD_STATE_TERMINATED;
     while (state == ABT_THREAD_STATE_TERMINATED) {
         i = rand_r(seed) % num_threads;
         next = threads[i];
         if (next != ABT_THREAD_NULL) {
-            ABT_thread_get_state(next, &state);
+            ret = ABT_thread_get_state(next, &state);
+            ABT_TEST_ERROR(ret, "ABT_thread_get_state");
         }
     }
     return next;
@@ -38,14 +39,17 @@ void thread_func(void *arg)
     thread_arg_t *t_arg = (thread_arg_t *)arg;
     ABT_thread next;
     unsigned seed = time(NULL);
+    int ret;
 
     ABT_test_printf(1, "[TH%d]: before yield\n", t_arg->id);
     next = pick_one(t_arg->threads, t_arg->num_threads, &seed);
-    ABT_thread_yield_to(next);
+    ret = ABT_thread_yield_to(next);
+    ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
 
     ABT_test_printf(1, "[TH%d]: doing something ...\n", t_arg->id);
     next = pick_one(t_arg->threads, t_arg->num_threads, &seed);
-    ABT_thread_yield_to(next);
+    ret = ABT_thread_yield_to(next);
+    ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
 
     ABT_test_printf(1, "[TH%d]: after yield\n", t_arg->id);
 }
