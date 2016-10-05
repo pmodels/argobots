@@ -141,6 +141,72 @@ void ABTI_mem_finalize_local(ABTI_local *p_local)
     }
 }
 
+int ABTI_mem_check_lp_alloc(int lp_alloc)
+{
+    size_t sp_size = gp_ABTI_global->mem_sp_size;
+    size_t pg_size = gp_ABTI_global->mem_page_size;
+    size_t alignment;
+    void *p_page = NULL;
+
+    switch (lp_alloc) {
+        case ABTI_MEM_LP_MMAP_RP:
+            p_page = mmap(NULL, pg_size, PROTS, FLAGS_RP, 0, 0);
+            if (p_page != MAP_FAILED) {
+                munmap(p_page, pg_size);
+            } else {
+                lp_alloc = ABTI_MEM_LP_MALLOC;
+            }
+            break;
+
+        case ABTI_MEM_LP_MMAP_HP_RP:
+            p_page = mmap(NULL, sp_size, PROTS, FLAGS_HP, 0, 0);
+            if (p_page != MAP_FAILED) {
+                munmap(p_page, sp_size);
+            } else {
+                p_page = mmap(NULL, pg_size, PROTS, FLAGS_RP, 0, 0);
+                if (p_page != MAP_FAILED) {
+                    munmap(p_page, pg_size);
+                    lp_alloc = ABTI_MEM_LP_MMAP_RP;
+                } else {
+                    lp_alloc = ABTI_MEM_LP_MALLOC;
+                }
+            }
+            break;
+
+        case ABTI_MEM_LP_MMAP_HP_THP:
+            p_page = mmap(NULL, sp_size, PROTS, FLAGS_HP, 0, 0);
+            if (p_page != MAP_FAILED) {
+                munmap(p_page, sp_size);
+            } else {
+                alignment = gp_ABTI_global->huge_page_size;
+                p_page = ABTU_memalign(alignment, pg_size);
+                if (p_page) {
+                    ABTU_free(p_page);
+                    lp_alloc = ABTI_MEM_LP_THP;
+                } else {
+                    lp_alloc = ABTI_MEM_LP_MALLOC;
+                }
+            }
+            break;
+
+        case ABTI_MEM_LP_THP:
+            alignment = gp_ABTI_global->huge_page_size;
+            p_page = ABTU_memalign(alignment, pg_size);
+            if (p_page) {
+                ABTU_free(p_page);
+                lp_alloc = ABTI_MEM_LP_THP;
+            } else {
+                lp_alloc = ABTI_MEM_LP_MALLOC;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    return lp_alloc;
+}
+
 static inline void ABTI_mem_free_stack_list(ABTI_stack_header *p_stack)
 {
     ABTI_stack_header *p_cur, *p_tmp;

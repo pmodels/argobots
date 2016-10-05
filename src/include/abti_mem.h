@@ -63,6 +63,7 @@ void ABTI_mem_init(ABTI_global *p_global);
 void ABTI_mem_init_local(ABTI_local *p_local);
 void ABTI_mem_finalize(ABTI_global *p_global);
 void ABTI_mem_finalize_local(ABTI_local *p_local);
+int ABTI_mem_check_lp_alloc(int lp_alloc);
 
 char *ABTI_mem_take_global_stack(ABTI_local *p_local);
 void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh);

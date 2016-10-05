@@ -181,28 +181,31 @@ void ABTD_env_init(ABTI_global *p_global)
     env = getenv("ABT_MEM_LP_ALLOC");
     if (env == NULL) env = getenv("ABT_ENV_MEM_LP_ALLOC");
 #if defined(HAVE_MAP_ANONYMOUS) || defined(HAVE_MAP_ANON)
-    int default_lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
+    int lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
 #else
-    int default_lp_alloc = ABTI_MEM_LP_MALLOC;
+    int lp_alloc = ABTI_MEM_LP_MALLOC;
 #endif
     if (env != NULL) {
         if (strcasecmp(env, "malloc") == 0) {
-            p_global->mem_lp_alloc = ABTI_MEM_LP_MALLOC;
+            lp_alloc = ABTI_MEM_LP_MALLOC;
 #if defined(HAVE_MAP_ANONYMOUS) || defined(HAVE_MAP_ANON)
         } else if (strcasecmp(env, "mmap_rp") == 0) {
-            p_global->mem_lp_alloc = ABTI_MEM_LP_MMAP_RP;
+            lp_alloc = ABTI_MEM_LP_MMAP_RP;
         } else if (strcasecmp(env, "mmap_hp_rp") == 0) {
-            p_global->mem_lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
+            lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
         } else if (strcasecmp(env, "mmap_hp_thp") == 0) {
-            p_global->mem_lp_alloc = ABTI_MEM_LP_MMAP_HP_THP;
+            lp_alloc = ABTI_MEM_LP_MMAP_HP_THP;
 #endif
         } else if (strcasecmp(env, "thp") == 0) {
-            p_global->mem_lp_alloc = ABTI_MEM_LP_THP;
-        } else {
-            p_global->mem_lp_alloc = default_lp_alloc;
+            lp_alloc = ABTI_MEM_LP_THP;
         }
+    }
+
+    /* Check if the requested allocation method is really possible. */
+    if (lp_alloc != ABTI_MEM_LP_MALLOC) {
+        p_global->mem_lp_alloc = ABTI_mem_check_lp_alloc(lp_alloc);
     } else {
-        p_global->mem_lp_alloc = default_lp_alloc;
+        p_global->mem_lp_alloc = lp_alloc;
     }
 #endif
 
