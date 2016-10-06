@@ -7,6 +7,31 @@
 #include <unistd.h>
 
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
+#if defined(__FreeBSD__)
+#include <sys/param.h>
+#include <sys/cpuset.h>
+#include <pthread_np.h>
+
+typedef cpuset_t  cpu_set_t;
+
+static inline
+int ABTD_CPU_COUNT(cpu_set_t *p_cpuset)
+{
+    int i, num_cpus = 0;
+    for (i = 0; i < CPU_SETSIZE; i++) {
+        if (CPU_ISSET(i, p_cpuset)) {
+            num_cpus++;
+        }
+    }
+    return num_cpus;
+}
+
+#else
+#define _GNU_SOURCE
+#include <sched.h>
+#define ABTD_CPU_COUNT  CPU_COUNT
+#endif
+
 enum {
     ABTI_ES_AFFINITY_CHAMELEON,
     ABTI_ES_AFFINITY_DEFAULT
@@ -32,11 +57,18 @@ static inline cpu_set_t ABTD_affinity_get_cpuset_for_rank(int rank)
 void ABTD_affinity_init(void)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    cpu_set_t cpuset;
-    int i, ret;
+    int i;
     int num_cores = 0;
 
-    ret = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuset);
+#if defined(__FreeBSD__)
+    for (i = 0; i < CPU_SETSIZE; i++) {
+        CPU_ZERO(&g_cpusets[i]);
+        CPU_SET(i, &g_cpusets[i]);
+    }
+    num_cores = CPU_SETSIZE;
+#else
+    cpu_set_t cpuset;
+    int ret = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuset);
     ABTI_ASSERT(ret == 0);
 
     for (i = 0; i < CPU_SETSIZE; i++) {
@@ -46,6 +78,7 @@ void ABTD_affinity_init(void)
             num_cores++;
         }
     }
+#endif
     gp_ABTI_global->num_cores = num_cores;
 
     /* affinity type */
@@ -148,7 +181,7 @@ int ABTD_affinity_get_cpuset(ABTD_xstream_context ctx, int cpuset_size,
     }
 
     if (p_num_cpus != NULL) {
-        *p_num_cpus = CPU_COUNT(&cpuset);
+        *p_num_cpus = ABTD_CPU_COUNT(&cpuset);
     }
 
   fn_exit:
