@@ -838,7 +838,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
         case ABTI_SCHED_NOT_USED: used = "NOT_USED"; break;
         case ABTI_SCHED_MAIN:     used = "MAIN"; break;
         case ABTI_SCHED_IN_POOL:  used = "IN_POOL"; break;
-        default:                  type = "UNKNOWN"; break;
+        default:                  used = "UNKNOWN"; break;
     }
 
     size = sizeof(char) * (p_sched->num_pools * 20 + 4);
