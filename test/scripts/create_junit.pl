@@ -84,12 +84,12 @@ close(LOG);
 # JUnit output file
 open(JUNITOUT, ">$junit_filename") || die "cannot open $junit_filename";
 print JUNITOUT "<testsuites>\n";
-print JUNITOUT "  <testsuite name=\"$name\">\n";
+print JUNITOUT "  <testsuite name=\"$name\"\n";
 print JUNITOUT "             tests=\"$total_run\"\n";
 print JUNITOUT "             failures=\"$fail_count\"\n";
 print JUNITOUT "             errors=\"$err_count\"\n";
 print JUNITOUT "             skipped=\"$skip_count\"\n";
-print JUNITOUT "             timestamp=\"$date\"\n";
+print JUNITOUT "             timestamp=\"$date\">\n";
 
 # Check each test result and embed its log to the JUnit output file
 my $test_num = 1;
