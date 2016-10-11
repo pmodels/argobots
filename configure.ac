@@ -72,6 +72,12 @@ dnl ----------------------------------------------------------------------------
 : ${CCASFLAGS=""}
 dnl ----------------------------------------------------------------------------
 
+dnl ----------------------------------------------------------------------------
+dnl check the compiler and standard headers
+dnl ----------------------------------------------------------------------------
+PAC_PROG_CC
+AC_HEADER_STDC
+dnl ----------------------------------------------------------------------------
 
 dnl ----------------------------------------------------------------------------
 dnl configure options
@@ -199,14 +205,6 @@ AC_ARG_WITH([beacon],
 AC_ARG_WITH([intercoolr],
     AS_HELP_STRING([--with-intercoolr=PATH],
         [specify path where intercoolr include directory and lib directory can be found]))
-dnl ----------------------------------------------------------------------------
-
-
-dnl ----------------------------------------------------------------------------
-dnl check the compiler and standard headers
-dnl ----------------------------------------------------------------------------
-PAC_PROG_CC
-AC_HEADER_STDC
 dnl ----------------------------------------------------------------------------
 
 
@@ -645,7 +643,6 @@ AC_TRY_COMPILE([
 [AC_DEFINE(HAVE_MAP_HUGETLB, 1, [Define if MAP_HUGETLB is supported])],,)
 fi
 dnl ----------------------------------------------------------------------------
-
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])
 AM_SILENT_RULES([yes])
