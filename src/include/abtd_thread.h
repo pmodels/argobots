@@ -6,13 +6,20 @@
 #ifndef ABTD_THREAD_H_INCLUDED
 #define ABTD_THREAD_H_INCLUDED
 
+#if defined(ABT_C_HAVE_VISIBILITY)
+#define ABT_API_PRIVATE     __attribute__((visibility ("hidden")))
+#else
+#define ABT_API_PRIVATE
+#endif
+
 #if defined(ABT_CONFIG_USE_FCONTEXT)
 void ABTD_thread_func_wrapper(void *p_arg);
-fcontext_t make_fcontext(void *sp, size_t size, void (*thread_func)(void *));
+fcontext_t make_fcontext(void *sp, size_t size, void (*thread_func)(void *))
+                         ABT_API_PRIVATE;
 void *jump_fcontext(fcontext_t *old, fcontext_t new, void *arg,
-                    int preserve_fpu);
+                    int preserve_fpu) ABT_API_PRIVATE;
 void *take_fcontext(fcontext_t *old, fcontext_t new, void *arg,
-                    int preserve_fpu);
+                    int preserve_fpu) ABT_API_PRIVATE;
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
                               int arg_upper, int arg_lower);

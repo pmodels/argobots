@@ -82,6 +82,10 @@ dnl ----------------------------------------------------------------------------
 dnl ----------------------------------------------------------------------------
 dnl configure options
 dnl ----------------------------------------------------------------------------
+# --enable-visibility
+PAC_CHECK_VISIBILITY
+AC_SUBST(ABT_VISIBILITY_CFLAGS)
+
 # --enable-affinity
 AC_ARG_ENABLE([affinity],
     AS_HELP_STRING([--enable-affinity],

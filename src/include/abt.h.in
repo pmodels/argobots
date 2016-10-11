@@ -8,6 +8,12 @@
 
 /* user include file for ARGOBOTS programs */
 
+#if defined(ABT_C_HAVE_VISIBILITY)
+#define ABT_API_PUBLIC  __attribute__((visibility ("default")))
+#else
+#define ABT_API_PUBLIC
+#endif
+
 /* Keep C++ compilers from getting confused */
 #if defined(__cplusplus)
 extern "C" {
@@ -272,11 +278,11 @@ typedef struct {
   ABT_sched_config_type type;
 } ABT_sched_config_var;
 
-extern ABT_sched_config_var ABT_sched_config_var_end;
+extern ABT_sched_config_var ABT_sched_config_var_end ABT_API_PUBLIC;
   /* To mark the last parameter in ABT_sched_config_create */
-extern ABT_sched_config_var ABT_sched_basic_freq;
+extern ABT_sched_config_var ABT_sched_basic_freq ABT_API_PUBLIC;
   /* To configure the frequency for checking events of the basic scheduler */
-extern ABT_sched_config_var ABT_sched_config_access;
+extern ABT_sched_config_var ABT_sched_config_access ABT_API_PUBLIC;
   /* To configure the access type of the pools created automatically */
 
 /* Scheduler Functions */
@@ -334,277 +340,281 @@ typedef struct {
 
 
 /* Init & Finalize */
-int ABT_init(int argc, char **argv);
-int ABT_finalize(void);
-int ABT_initialized(void);
+int ABT_init(int argc, char **argv) ABT_API_PUBLIC;
+int ABT_finalize(void) ABT_API_PUBLIC;
+int ABT_initialized(void) ABT_API_PUBLIC;
 
 /* Execution Stream (ES) */
-int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream);
+int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream) ABT_API_PUBLIC;
 int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
                              ABT_pool *pools, ABT_sched_config config,
-                             ABT_xstream *newxstream);
+                             ABT_xstream *newxstream) ABT_API_PUBLIC;
 int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
-                                 ABT_xstream *newxstream);
-int ABT_xstream_start(ABT_xstream xstream);
-int ABT_xstream_free(ABT_xstream *xstream);
-int ABT_xstream_join(ABT_xstream xstream);
-int ABT_xstream_exit(void);
-int ABT_xstream_cancel(ABT_xstream xstream);
-int ABT_xstream_self(ABT_xstream *xstream);
-int ABT_xstream_self_rank(int *rank);
-int ABT_xstream_set_rank(ABT_xstream xstream, const int rank);
-int ABT_xstream_get_rank(ABT_xstream xstream, int *rank);
-int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched);
+                                 ABT_xstream *newxstream) ABT_API_PUBLIC;
+int ABT_xstream_start(ABT_xstream xstream) ABT_API_PUBLIC;
+int ABT_xstream_free(ABT_xstream *xstream) ABT_API_PUBLIC;
+int ABT_xstream_join(ABT_xstream xstream) ABT_API_PUBLIC;
+int ABT_xstream_exit(void) ABT_API_PUBLIC;
+int ABT_xstream_cancel(ABT_xstream xstream) ABT_API_PUBLIC;
+int ABT_xstream_self(ABT_xstream *xstream) ABT_API_PUBLIC;
+int ABT_xstream_self_rank(int *rank) ABT_API_PUBLIC;
+int ABT_xstream_set_rank(ABT_xstream xstream, const int rank) ABT_API_PUBLIC;
+int ABT_xstream_get_rank(ABT_xstream xstream, int *rank) ABT_API_PUBLIC;
+int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched) ABT_API_PUBLIC;
 int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
                                      ABT_sched_predef predef,
-                                     int num_pools, ABT_pool *pools);
-int ABT_xstream_get_main_sched(ABT_xstream xstream, ABT_sched *sched);
+                                     int num_pools, ABT_pool *pools) ABT_API_PUBLIC;
+int ABT_xstream_get_main_sched(ABT_xstream xstream, ABT_sched *sched) ABT_API_PUBLIC;
 int ABT_xstream_get_main_pools(ABT_xstream xstream, int max_pools,
-                               ABT_pool *pools);
-int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state);
+                               ABT_pool *pools) ABT_API_PUBLIC;
+int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state) ABT_API_PUBLIC;
 int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
-                      ABT_bool *result);
-int ABT_xstream_get_num(int *num_xstreams);
-int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag);
-int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool);
-int ABT_xstream_check_events(ABT_sched sched);
-int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid);
-int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid);
-int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset);
+                      ABT_bool *result) ABT_API_PUBLIC;
+int ABT_xstream_get_num(int *num_xstreams) ABT_API_PUBLIC;
+int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool) ABT_API_PUBLIC;
+int ABT_xstream_check_events(ABT_sched sched) ABT_API_PUBLIC;
+int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid) ABT_API_PUBLIC;
+int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid) ABT_API_PUBLIC;
+int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset)
+                             ABT_API_PUBLIC;
 int ABT_xstream_get_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset,
-                             int *num_cpus);
+                             int *num_cpus) ABT_API_PUBLIC;
 
 /* ES Barrier */
-int ABT_xstream_barrier_create(uint32_t num_waiters, ABT_xstream_barrier *newbarrier);
-int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier);
-int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier);
+int ABT_xstream_barrier_create(uint32_t num_waiters, ABT_xstream_barrier *newbarrier)
+                               ABT_API_PUBLIC;
+int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier) ABT_API_PUBLIC;
+int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier) ABT_API_PUBLIC;
 
 /* Scheduler */
 int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                     ABT_sched_config config, ABT_sched *newsched);
+                     ABT_sched_config config, ABT_sched *newsched) ABT_API_PUBLIC;
 int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                            ABT_pool *pools, ABT_sched_config config,
-                           ABT_sched *newsched);
-int ABT_sched_free(ABT_sched *sched);
-int ABT_sched_set_data(ABT_sched sched, void *data);
-int ABT_sched_get_data(ABT_sched sched, void **data);
-int ABT_sched_get_num_pools(ABT_sched sched, int *num_pools);
+                           ABT_sched *newsched) ABT_API_PUBLIC;
+int ABT_sched_free(ABT_sched *sched) ABT_API_PUBLIC;
+int ABT_sched_set_data(ABT_sched sched, void *data) ABT_API_PUBLIC;
+int ABT_sched_get_data(ABT_sched sched, void **data) ABT_API_PUBLIC;
+int ABT_sched_get_num_pools(ABT_sched sched, int *num_pools) ABT_API_PUBLIC;
 int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
-                        ABT_pool *pools);
-int ABT_sched_get_size(ABT_sched sched, size_t *size);
-int ABT_sched_get_total_size(ABT_sched sched, size_t *size);
-int ABT_sched_finish(ABT_sched sched);
-int ABT_sched_exit(ABT_sched sched);
-int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop);
+                        ABT_pool *pools) ABT_API_PUBLIC;
+int ABT_sched_get_size(ABT_sched sched, size_t *size) ABT_API_PUBLIC;
+int ABT_sched_get_total_size(ABT_sched sched, size_t *size) ABT_API_PUBLIC;
+int ABT_sched_finish(ABT_sched sched) ABT_API_PUBLIC;
+int ABT_sched_exit(ABT_sched sched) ABT_API_PUBLIC;
+int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop) ABT_API_PUBLIC;
 
 /* Scheduler config */
-int ABT_sched_config_create(ABT_sched_config *config, ...);
-int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...);
-int ABT_sched_config_free(ABT_sched_config *config);
+int ABT_sched_config_create(ABT_sched_config *config, ...) ABT_API_PUBLIC;
+int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...) ABT_API_PUBLIC;
+int ABT_sched_config_free(ABT_sched_config *config) ABT_API_PUBLIC;
 
 /* Pool */
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
-                    ABT_pool *newpool);
+                    ABT_pool *newpool) ABT_API_PUBLIC;
 int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
-                          ABT_bool automatic, ABT_pool *newpool);
-int ABT_pool_free(ABT_pool *pool);
-int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access);
-int ABT_pool_get_size(ABT_pool pool, size_t *size);
-int ABT_pool_get_total_size(ABT_pool pool, size_t *size);
-int ABT_pool_pop(ABT_pool pool, ABT_unit *unit);
-int ABT_pool_remove(ABT_pool pool, ABT_unit unit);
-int ABT_pool_push(ABT_pool pool, ABT_unit unit);
-int ABT_pool_set_data(ABT_pool pool, void *data);
-int ABT_pool_get_data(ABT_pool pool, void **data);
-int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched);
-int ABT_pool_get_id(ABT_pool pool, int *id);
+                          ABT_bool automatic, ABT_pool *newpool) ABT_API_PUBLIC;
+int ABT_pool_free(ABT_pool *pool) ABT_API_PUBLIC;
+int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access) ABT_API_PUBLIC;
+int ABT_pool_get_size(ABT_pool pool, size_t *size) ABT_API_PUBLIC;
+int ABT_pool_get_total_size(ABT_pool pool, size_t *size) ABT_API_PUBLIC;
+int ABT_pool_pop(ABT_pool pool, ABT_unit *unit) ABT_API_PUBLIC;
+int ABT_pool_remove(ABT_pool pool, ABT_unit unit) ABT_API_PUBLIC;
+int ABT_pool_push(ABT_pool pool, ABT_unit unit) ABT_API_PUBLIC;
+int ABT_pool_set_data(ABT_pool pool, void *data) ABT_API_PUBLIC;
+int ABT_pool_get_data(ABT_pool pool, void **data) ABT_API_PUBLIC;
+int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched) ABT_API_PUBLIC;
+int ABT_pool_get_id(ABT_pool pool, int *id) ABT_API_PUBLIC;
 
 /* Work Unit */
-int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool);
+int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool) ABT_API_PUBLIC;
 
 /* User-level Thread (ULT) */
 int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
-                      ABT_thread_attr attr, ABT_thread *newthread);
+                      ABT_thread_attr attr, ABT_thread *newthread) ABT_API_PUBLIC;
 int ABT_thread_create_on_xstream(ABT_xstream xstream,
                       void (*thread_func)(void *), void *arg,
-                      ABT_thread_attr attr, ABT_thread *newthread);
+                      ABT_thread_attr attr, ABT_thread *newthread) ABT_API_PUBLIC;
 int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
-                      ABT_thread *thread);
-int ABT_thread_free(ABT_thread *thread);
-int ABT_thread_join(ABT_thread thread);
-int ABT_thread_exit(void);
-int ABT_thread_cancel(ABT_thread thread);
-int ABT_thread_self(ABT_thread *thread);
-int ABT_thread_self_id(ABT_thread_id *id);
-int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state);
-int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool);
-int ABT_thread_get_last_pool_id(ABT_thread thread, int *id);
-int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool);
-int ABT_thread_yield_to(ABT_thread thread);
-int ABT_thread_yield(void);
-int ABT_thread_resume(ABT_thread thread);
-int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream);
-int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched);
-int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool);
-int ABT_thread_migrate(ABT_thread thread);
+                      ABT_thread *thread) ABT_API_PUBLIC;
+int ABT_thread_free(ABT_thread *thread) ABT_API_PUBLIC;
+int ABT_thread_join(ABT_thread thread) ABT_API_PUBLIC;
+int ABT_thread_exit(void) ABT_API_PUBLIC;
+int ABT_thread_cancel(ABT_thread thread) ABT_API_PUBLIC;
+int ABT_thread_self(ABT_thread *thread) ABT_API_PUBLIC;
+int ABT_thread_self_id(ABT_thread_id *id) ABT_API_PUBLIC;
+int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state) ABT_API_PUBLIC;
+int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool) ABT_API_PUBLIC;
+int ABT_thread_get_last_pool_id(ABT_thread thread, int *id) ABT_API_PUBLIC;
+int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool) ABT_API_PUBLIC;
+int ABT_thread_yield_to(ABT_thread thread) ABT_API_PUBLIC;
+int ABT_thread_yield(void) ABT_API_PUBLIC;
+int ABT_thread_resume(ABT_thread thread) ABT_API_PUBLIC;
+int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream) ABT_API_PUBLIC;
+int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched) ABT_API_PUBLIC;
+int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool) ABT_API_PUBLIC;
+int ABT_thread_migrate(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_thread_set_callback(ABT_thread thread,
-        void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg);
-int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag);
-int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag);
-int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag);
-int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result);
-int ABT_thread_retain(ABT_thread thread);
-int ABT_thread_release(ABT_thread thread);
-int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize);
-int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id);
-int ABT_thread_set_arg(ABT_thread thread, void *arg);
-int ABT_thread_get_arg(ABT_thread thread, void **arg);
-int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr);
+        void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg) ABT_API_PUBLIC;
+int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag) ABT_API_PUBLIC;
+int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
+                     ABT_API_PUBLIC;
+int ABT_thread_retain(ABT_thread thread) ABT_API_PUBLIC;
+int ABT_thread_release(ABT_thread thread) ABT_API_PUBLIC;
+int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize) ABT_API_PUBLIC;
+int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id) ABT_API_PUBLIC;
+int ABT_thread_set_arg(ABT_thread thread, void *arg) ABT_API_PUBLIC;
+int ABT_thread_get_arg(ABT_thread thread, void **arg) ABT_API_PUBLIC;
+int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr) ABT_API_PUBLIC;
 
 /* ULT Attributes */
-int ABT_thread_attr_create(ABT_thread_attr *newattr);
-int ABT_thread_attr_free(ABT_thread_attr *attr);
+int ABT_thread_attr_create(ABT_thread_attr *newattr) ABT_API_PUBLIC;
+int ABT_thread_attr_free(ABT_thread_attr *attr) ABT_API_PUBLIC;
 int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
-                              size_t stacksize);
+                              size_t stacksize) ABT_API_PUBLIC;
 int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
-                              size_t *stacksize);
-int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize);
-int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize);
+                              size_t *stacksize) ABT_API_PUBLIC;
+int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize) ABT_API_PUBLIC;
+int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize) ABT_API_PUBLIC;
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,
-        void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg);
-int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag);
+        void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg) ABT_API_PUBLIC;
+int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag) ABT_API_PUBLIC;
 
 /* Tasklet */
 int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
-                    ABT_task *newtask);
+                    ABT_task *newtask) ABT_API_PUBLIC;
 int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
-                    void *arg, ABT_task *newtask);
+                    void *arg, ABT_task *newtask) ABT_API_PUBLIC;
 int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
-                    ABT_task *task);
-int ABT_task_free(ABT_task *task);
-int ABT_task_join(ABT_task task);
-int ABT_task_cancel(ABT_task task);
-int ABT_task_self(ABT_task *task);
-int ABT_task_self_id(uint64_t *id);
-int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream);
-int ABT_task_get_state(ABT_task task, ABT_task_state *state);
-int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool);
-int ABT_task_get_last_pool_id(ABT_task task, int *id);
-int ABT_task_set_migratable(ABT_task task, ABT_bool flag);
-int ABT_task_is_migratable(ABT_task task, ABT_bool *flag);
-int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
-int ABT_task_retain(ABT_task task);
-int ABT_task_release(ABT_task task);
-int ABT_task_get_id(ABT_task task, uint64_t *task_id);
-int ABT_task_get_arg(ABT_task task, void **arg);
+                    ABT_task *task) ABT_API_PUBLIC;
+int ABT_task_free(ABT_task *task) ABT_API_PUBLIC;
+int ABT_task_join(ABT_task task) ABT_API_PUBLIC;
+int ABT_task_cancel(ABT_task task) ABT_API_PUBLIC;
+int ABT_task_self(ABT_task *task) ABT_API_PUBLIC;
+int ABT_task_self_id(uint64_t *id) ABT_API_PUBLIC;
+int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream) ABT_API_PUBLIC;
+int ABT_task_get_state(ABT_task task, ABT_task_state *state) ABT_API_PUBLIC;
+int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool) ABT_API_PUBLIC;
+int ABT_task_get_last_pool_id(ABT_task task, int *id) ABT_API_PUBLIC;
+int ABT_task_set_migratable(ABT_task task, ABT_bool flag) ABT_API_PUBLIC;
+int ABT_task_is_migratable(ABT_task task, ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result) ABT_API_PUBLIC;
+int ABT_task_retain(ABT_task task) ABT_API_PUBLIC;
+int ABT_task_release(ABT_task task) ABT_API_PUBLIC;
+int ABT_task_get_id(ABT_task task, uint64_t *task_id) ABT_API_PUBLIC;
+int ABT_task_get_arg(ABT_task task, void **arg) ABT_API_PUBLIC;
 
 /* Self */
-int ABT_self_get_type(ABT_unit_type *type);
-int ABT_self_is_primary(ABT_bool *flag);
-int ABT_self_on_primary_xstream(ABT_bool *flag);
-int ABT_self_get_last_pool_id(int *pool_id);
-int ABT_self_suspend(void);
-int ABT_self_set_arg(void *arg);
-int ABT_self_get_arg(void **arg);
+int ABT_self_get_type(ABT_unit_type *type) ABT_API_PUBLIC;
+int ABT_self_is_primary(ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_self_on_primary_xstream(ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_self_get_last_pool_id(int *pool_id) ABT_API_PUBLIC;
+int ABT_self_suspend(void) ABT_API_PUBLIC;
+int ABT_self_set_arg(void *arg) ABT_API_PUBLIC;
+int ABT_self_get_arg(void **arg) ABT_API_PUBLIC;
 
 /* ULT-specific data */
-int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey);
-int ABT_key_free(ABT_key *key);
-int ABT_key_set(ABT_key key, void *value);
-int ABT_key_get(ABT_key key, void **value);
+int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey) ABT_API_PUBLIC;
+int ABT_key_free(ABT_key *key) ABT_API_PUBLIC;
+int ABT_key_set(ABT_key key, void *value) ABT_API_PUBLIC;
+int ABT_key_get(ABT_key key, void **value) ABT_API_PUBLIC;
 
 /* Mutex */
-int ABT_mutex_create(ABT_mutex *newmutex);
-int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex);
-int ABT_mutex_free(ABT_mutex *mutex);
-int ABT_mutex_lock(ABT_mutex mutex);
-int ABT_mutex_lock_low(ABT_mutex mutex);
-int ABT_mutex_trylock(ABT_mutex mutex);
-int ABT_mutex_spinlock(ABT_mutex mutex);
-int ABT_mutex_unlock(ABT_mutex mutex);
-int ABT_mutex_unlock_se(ABT_mutex mutex);
-int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result);
+int ABT_mutex_create(ABT_mutex *newmutex) ABT_API_PUBLIC;
+int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex) ABT_API_PUBLIC;
+int ABT_mutex_free(ABT_mutex *mutex) ABT_API_PUBLIC;
+int ABT_mutex_lock(ABT_mutex mutex) ABT_API_PUBLIC;
+int ABT_mutex_lock_low(ABT_mutex mutex) ABT_API_PUBLIC;
+int ABT_mutex_trylock(ABT_mutex mutex) ABT_API_PUBLIC;
+int ABT_mutex_spinlock(ABT_mutex mutex) ABT_API_PUBLIC;
+int ABT_mutex_unlock(ABT_mutex mutex) ABT_API_PUBLIC;
+int ABT_mutex_unlock_se(ABT_mutex mutex) ABT_API_PUBLIC;
+int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result) ABT_API_PUBLIC;
 
 /* Mutex Attributes */
-int ABT_mutex_attr_create(ABT_mutex_attr *newattr);
-int ABT_mutex_attr_free(ABT_mutex_attr *attr);
-int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive);
+int ABT_mutex_attr_create(ABT_mutex_attr *newattr) ABT_API_PUBLIC;
+int ABT_mutex_attr_free(ABT_mutex_attr *attr) ABT_API_PUBLIC;
+int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive) ABT_API_PUBLIC;
 
 /* Condition variable */
-int ABT_cond_create(ABT_cond *newcond);
-int ABT_cond_free(ABT_cond *cond);
-int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex);
+int ABT_cond_create(ABT_cond *newcond) ABT_API_PUBLIC;
+int ABT_cond_free(ABT_cond *cond) ABT_API_PUBLIC;
+int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex) ABT_API_PUBLIC;
 int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
-                       const struct timespec *abstime);
-int ABT_cond_signal(ABT_cond cond);
-int ABT_cond_broadcast(ABT_cond cond);
+                       const struct timespec *abstime) ABT_API_PUBLIC;
+int ABT_cond_signal(ABT_cond cond) ABT_API_PUBLIC;
+int ABT_cond_broadcast(ABT_cond cond) ABT_API_PUBLIC;
 
 /* Readers writer lock */
-int ABT_rwlock_create(ABT_rwlock *newrwlock);
-int ABT_rwlock_free(ABT_rwlock *rwlock);
-int ABT_rwlock_rdlock(ABT_rwlock rwlock);
-int ABT_rwlock_wrlock(ABT_rwlock rwlock);
-int ABT_rwlock_unlock(ABT_rwlock rwlock);
+int ABT_rwlock_create(ABT_rwlock *newrwlock) ABT_API_PUBLIC;
+int ABT_rwlock_free(ABT_rwlock *rwlock) ABT_API_PUBLIC;
+int ABT_rwlock_rdlock(ABT_rwlock rwlock) ABT_API_PUBLIC;
+int ABT_rwlock_wrlock(ABT_rwlock rwlock) ABT_API_PUBLIC;
+int ABT_rwlock_unlock(ABT_rwlock rwlock) ABT_API_PUBLIC;
 
 /* Eventual */
-int ABT_eventual_create(int nbytes, ABT_eventual *neweventual);
-int ABT_eventual_free(ABT_eventual *eventual);
-int ABT_eventual_wait(ABT_eventual eventual, void **value);
-int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes);
-int ABT_eventual_reset(ABT_eventual eventual);
+int ABT_eventual_create(int nbytes, ABT_eventual *neweventual) ABT_API_PUBLIC;
+int ABT_eventual_free(ABT_eventual *eventual) ABT_API_PUBLIC;
+int ABT_eventual_wait(ABT_eventual eventual, void **value) ABT_API_PUBLIC;
+int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes) ABT_API_PUBLIC;
+int ABT_eventual_reset(ABT_eventual eventual) ABT_API_PUBLIC;
 
 /* Futures */
 int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
-                      ABT_future *newfuture);
-int ABT_future_free(ABT_future *future);
-int ABT_future_wait(ABT_future future);
-int ABT_future_test(ABT_future future, ABT_bool *flag);
-int ABT_future_set(ABT_future future, void *value);
-int ABT_future_reset(ABT_future future);
+                      ABT_future *newfuture) ABT_API_PUBLIC;
+int ABT_future_free(ABT_future *future) ABT_API_PUBLIC;
+int ABT_future_wait(ABT_future future) ABT_API_PUBLIC;
+int ABT_future_test(ABT_future future, ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_future_set(ABT_future future, void *value) ABT_API_PUBLIC;
+int ABT_future_reset(ABT_future future) ABT_API_PUBLIC;
 
 /* Barrier */
-int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier);
-int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters);
-int ABT_barrier_free(ABT_barrier *barrier);
-int ABT_barrier_wait(ABT_barrier barrier);
-int ABT_barrier_get_num_waiters(ABT_barrier barrier, uint32_t *num_waiters);
+int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier) ABT_API_PUBLIC;
+int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters) ABT_API_PUBLIC;
+int ABT_barrier_free(ABT_barrier *barrier) ABT_API_PUBLIC;
+int ABT_barrier_wait(ABT_barrier barrier) ABT_API_PUBLIC;
+int ABT_barrier_get_num_waiters(ABT_barrier barrier, uint32_t *num_waiters)
+                                ABT_API_PUBLIC;
 
 /* Error */
-int ABT_error_get_str(int err, char *str, size_t *len);
+int ABT_error_get_str(int err, char *str, size_t *len) ABT_API_PUBLIC;
 
 /* Timer */
-double ABT_get_wtime(void);
-int ABT_timer_create(ABT_timer *newtimer);
-int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer);
-int ABT_timer_free(ABT_timer *timer);
-int ABT_timer_start(ABT_timer timer);
-int ABT_timer_stop(ABT_timer timer);
-int ABT_timer_read(ABT_timer timer, double *secs);
-int ABT_timer_stop_and_read(ABT_timer timer, double *secs);
-int ABT_timer_stop_and_add(ABT_timer timer, double *secs);
-int ABT_timer_get_overhead(double *overhead);
+double ABT_get_wtime(void) ABT_API_PUBLIC;
+int ABT_timer_create(ABT_timer *newtimer) ABT_API_PUBLIC;
+int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer) ABT_API_PUBLIC;
+int ABT_timer_free(ABT_timer *timer) ABT_API_PUBLIC;
+int ABT_timer_start(ABT_timer timer) ABT_API_PUBLIC;
+int ABT_timer_stop(ABT_timer timer) ABT_API_PUBLIC;
+int ABT_timer_read(ABT_timer timer, double *secs) ABT_API_PUBLIC;
+int ABT_timer_stop_and_read(ABT_timer timer, double *secs) ABT_API_PUBLIC;
+int ABT_timer_stop_and_add(ABT_timer timer, double *secs) ABT_API_PUBLIC;
+int ABT_timer_get_overhead(double *overhead) ABT_API_PUBLIC;
 
 /* Event */
 typedef ABT_bool (*ABT_event_cb_fn)(void *user_arg, void *abt_arg);
 int ABT_event_add_callback(ABT_event_kind event,
                            ABT_event_cb_fn ask_cb, void *ask_user_arg,
                            ABT_event_cb_fn act_cb, void *act_user_arg,
-                           int *cb_id);
-int ABT_event_del_callback(ABT_event_kind event, int cb_id);
-int ABT_event_prof_start(void);
-int ABT_event_prof_stop(void);
+                           int *cb_id) ABT_API_PUBLIC;
+int ABT_event_del_callback(ABT_event_kind event, int cb_id) ABT_API_PUBLIC;
+int ABT_event_prof_start(void) ABT_API_PUBLIC;
+int ABT_event_prof_stop(void) ABT_API_PUBLIC;
 int ABT_event_prof_publish(const char *unit_name, double local_work,
-                           double global_work);
+                           double global_work) ABT_API_PUBLIC;
 
 /* Information */
-int ABT_info_print_config(FILE *fp);
-int ABT_info_print_all_xstreams(FILE *fp);
-int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream);
-int ABT_info_print_sched(FILE *fp, ABT_sched sched);
-int ABT_info_print_pool(FILE* fp, ABT_pool pool);
-int ABT_info_print_thread(FILE* fp, ABT_thread thread);
-int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr);
-int ABT_info_print_task(FILE* fp, ABT_task task);
+int ABT_info_print_config(FILE *fp) ABT_API_PUBLIC;
+int ABT_info_print_all_xstreams(FILE *fp) ABT_API_PUBLIC;
+int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream) ABT_API_PUBLIC;
+int ABT_info_print_sched(FILE *fp, ABT_sched sched) ABT_API_PUBLIC;
+int ABT_info_print_pool(FILE* fp, ABT_pool pool) ABT_API_PUBLIC;
+int ABT_info_print_thread(FILE* fp, ABT_thread thread) ABT_API_PUBLIC;
+int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr) ABT_API_PUBLIC;
+int ABT_info_print_task(FILE* fp, ABT_task task) ABT_API_PUBLIC;
 
 #if defined(__cplusplus)
 }
