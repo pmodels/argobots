@@ -539,8 +539,8 @@ AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
 if test "x$with_hugetlbfs" != "x"; then
     PAC_PREPEND_FLAG([-I${with_hugetlbfs}/include], [CFLAGS])
     PAC_PREPEND_FLAG([-L${with_hugetlbfs}/lib64 -lhugetlbfs], [LDFLAGS])
+    AC_CHECK_LIB(hugetlbfs, get_huge_pages)
 fi
-AC_CHECK_LIB(hugetlbfs, get_huge_pages)
 
 
 # --enable-power-event: power management events from outside
