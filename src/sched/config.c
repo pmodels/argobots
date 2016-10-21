@@ -115,7 +115,8 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
                 ptr = (void *)&p;
                 break;
             default:
-                ABTI_CHECK_TRUE(0, ABT_ERR_SCHED_CONFIG);
+                abt_errno = ABT_ERR_SCHED_CONFIG;
+                goto fn_fail;
         }
 
         memcpy(buffer+offset, ptr, size);
