@@ -35,6 +35,8 @@ int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
     p_newattr->attrs = ABTI_MUTEX_ATTR_NONE;
     p_newattr->nesting_cnt = 0;
     p_newattr->p_owner = NULL;
+    p_newattr->max_handovers = ABTI_global_get_mutex_max_handovers();
+    p_newattr->max_wakeups = ABTI_global_get_mutex_max_wakeups();
 
     /* Return value */
     *newattr = ABTI_mutex_attr_get_handle(p_newattr);
