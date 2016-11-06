@@ -100,6 +100,7 @@ static void sched_run(ABT_sched sched)
                 unit = p_pool->p_pop(pool);
                 LOG_EVENT_POOL_POP(p_pool, unit);
                 if (unit != ABT_UNIT_NULL) {
+                    ABT_unit_set_associated_pool(unit, pool);
                     ABTI_xstream_run_unit(p_xstream, unit, p_pool);
                     CNT_INC(run_cnt);
                 }
