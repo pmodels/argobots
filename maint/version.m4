@@ -1,7 +1,6 @@
 [#] start of __file__
-# 
-# (C) 2014 by Argonne National Laboratory.
-#     See COPYRIGHT in top-level directory.
+#
+# See COPYRIGHT in top-level directory.
 #
 
 m4_define([ABT_VERSION_m4],[0.1])dnl
