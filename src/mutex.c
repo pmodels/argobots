@@ -176,6 +176,19 @@ int ABT_mutex_lock(ABT_mutex mutex)
 static inline
 void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
 {
+#ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABT_unit_type type;
+    ABT_self_get_type(&type);
+    if (type == ABT_UNIT_TYPE_THREAD) {
+        LOG_EVENT("%p: lock_low - try\n", p_mutex);
+        while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+            ABT_thread_yield();
+        }
+        LOG_EVENT("%p: lock_low - acquired\n", p_mutex);
+    } else {
+        ABTI_mutex_spinlock(p_mutex);
+    }
+#else
     int abt_errno;
     ABT_unit_type type;
 
@@ -241,6 +254,7 @@ void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#endif
 }
 
 /**
@@ -449,6 +463,12 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
 {
     int abt_errno = ABT_SUCCESS;
 
+#ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABTD_atomic_mem_barrier();
+    *(volatile uint32_t *)&p_mutex->val = 0;
+    LOG_EVENT("%p: unlock_se\n", p_mutex);
+    ABTI_thread_yield(ABTI_local_get_thread());
+#else
     int i;
     ABTI_xstream *p_xstream;
     ABTI_thread *p_next = NULL;
@@ -530,6 +550,7 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
     ABTI_local_set_thread(p_next);
     p_next->state = ABT_THREAD_STATE_RUNNING;
     ABTD_thread_context_switch(&p_thread->ctx, &p_next->ctx);
+#endif
 
     return abt_errno;
 }

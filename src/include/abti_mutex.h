@@ -91,16 +91,22 @@ void ABTI_mutex_init(ABTI_mutex *p_mutex)
     p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
     p_mutex->attr.max_handovers = ABTI_global_get_mutex_max_handovers();
     p_mutex->attr.max_wakeups = ABTI_global_get_mutex_max_wakeups();
+#ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
     p_mutex->p_htable = ABTI_thread_htable_create(gp_ABTI_global->max_xstreams);
     p_mutex->p_handover = NULL;
     p_mutex->p_giver = NULL;
+#endif
 }
 
+#ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
+#define ABTI_mutex_fini(p_mutex)
+#else
 static inline
 void ABTI_mutex_fini(ABTI_mutex *p_mutex)
 {
     ABTI_thread_htable_free(p_mutex->p_htable);
 }
+#endif
 
 static inline
 void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
@@ -112,6 +118,19 @@ void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
 static inline
 void ABTI_mutex_lock(ABTI_mutex *p_mutex)
 {
+#ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABT_unit_type type;
+    ABT_self_get_type(&type);
+    if (type == ABT_UNIT_TYPE_THREAD) {
+        LOG_EVENT("%p: lock - try\n", p_mutex);
+        while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+            ABT_thread_yield();
+        }
+        LOG_EVENT("%p: lock - acquired\n", p_mutex);
+    } else {
+        ABTI_mutex_spinlock(p_mutex);
+    }
+#else
     int abt_errno;
     ABT_unit_type type;
 
@@ -160,6 +179,7 @@ void ABTI_mutex_lock(ABTI_mutex *p_mutex)
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#endif
 }
 
 static inline
@@ -174,6 +194,11 @@ int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
 static inline
 void ABTI_mutex_unlock(ABTI_mutex *p_mutex)
 {
+#ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABTD_atomic_mem_barrier();
+    *(volatile uint32_t *)&p_mutex->val = 0;
+    LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
+#else
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) != 1) {
         ABTI_PTR_UNLOCK(&p_mutex->val);
         LOG_EVENT("%p: unlock with wake\n", p_mutex);
@@ -181,6 +206,7 @@ void ABTI_mutex_unlock(ABTI_mutex *p_mutex)
     } else {
         LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
     }
+#endif
 }
 
 static inline

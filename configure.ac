@@ -189,6 +189,10 @@ AC_ARG_ENABLE([feature],
 AC_ARG_ENABLE([sched-sleep],
     AS_HELP_STRING([--enable-sched-sleep], [enable scheduler sleep]))
 
+# --enable-simple-mutex
+AC_ARG_ENABLE([simple-mutex],
+    AS_HELP_STRING([--enable-simple-mutex], [use a simple mutex implementation]))
+
 # --with-lts
 AC_ARG_WITH([lts],
     AS_HELP_STRING([--with-lts=PATH],
@@ -548,6 +552,12 @@ AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
 AS_IF([test "x$enable_sched_sleep" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SCHED_SLEEP, 1,
                  [Define to make the scheduler sleep when its pools are empty])])
+
+
+# --enable-simple-mutex
+AS_IF([test "x$enable_simple_mutex" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_USE_SIMPLE_MUTEX, 1,
+                 [Define to use a simple mutex implementation])])
 
 
 # --with-lts
