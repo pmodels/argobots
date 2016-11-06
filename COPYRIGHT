@@ -1,39 +1,45 @@
+                   Copyright © 2016, UChicago Argonne, LLC
 
-				  COPYRIGHT
+                             All Rights Reserved
 
-The following is a notice of limited availability of the code, and disclaimer
-which must be included in the prologue of the code and in all source listings
-of the code.
+   Argobots: A Lightweight Low-level Threading/Tasking Framework, SF-16-039
 
-Copyright Notice
- + 2014 University of Chicago
+                             OPEN SOURCE LICENSE
 
-Permission is hereby granted to use, reproduce, prepare derivative works, and
-to redistribute to others.  This software was authored by:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-Mathematics and Computer Science Division
-Argonne National Laboratory, Argonne IL 60439
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.  Software changes,
+   modifications, or derivative works, should be noted with comments and the
+   author and organization's name.
 
-(and)
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
 
-Department of Computer Science
-University of Illinois at Urbana-Champaign
+3. Neither the names of UChicago Argonne, LLC or the Department of Energy nor
+   the names of its contributors may be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+4. The software and the end-user documentation included with the
+   redistribution, if any, must include the following acknowledgment:
+
+   "This product includes software produced by UChicago Argonne, LLC under
+   Contract No. DE-AC02-06CH11357 with the Department of Energy."
 
 
-			      GOVERNMENT LICENSE
+********************************************************************************
+                                  DISCLAIMER
 
-Portions of this material resulted from work developed under a U.S.
-Government Contract and are subject to the following license: the Government
-is granted for itself and others acting on its behalf a paid-up, nonexclusive,
-irrevocable worldwide license in this computer software to reproduce, prepare
-derivative works, and perform publicly and display publicly.
+         THE SOFTWARE IS SUPPLIED "AS IS" WITHOUT WARRANTY OF ANY KIND.
 
-				  DISCLAIMER
+NEITHER THE UNITED STATES GOVERNMENT, NOR THE UNITED STATES DEPARTMENT OF
+ENERGY, NOR UCHICAGO ARGONNE, LLC, NOR ANY OF THEIR EMPLOYEES, MAKES ANY
+WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LEGAL LIABILITY OR RESPONSIBILITY
+FOR THE ACCURACY, COMPLETENESS, OR USEFULNESS OF ANY INFORMATION, DATA,
+APPARATUS, PRODUCT, OR PROCESS DISCLOSED, OR REPRESENTS THAT ITS USE WOULD NOT
+INFRINGE PRIVATELY OWNED RIGHTS.
 
-This computer code material was prepared, in part, as an account of work
-sponsored by an agency of the United States Government.  Neither the United
-States, nor the University of Chicago, nor any of their employees, makes any
-warranty express or implied, or assumes any legal liability or responsibility
-for the accuracy, completeness, or usefulness of any information, apparatus,
-product, or process disclosed, or represents that its use would not infringe
-privately owned rights.
+********************************************************************************
+
