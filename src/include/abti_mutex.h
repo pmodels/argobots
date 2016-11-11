@@ -142,7 +142,7 @@ void ABTI_mutex_lock(ABTI_mutex *p_mutex)
         int c;
         if ((c = ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1)) != 0) {
             if (c != 2) {
-                c = __atomic_exchange_n(&p_mutex->val, 2, __ATOMIC_SEQ_CST);
+                c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
             }
             while (c != 0) {
                 ABTI_mutex_wait(p_mutex, 2);
@@ -165,7 +165,7 @@ void ABTI_mutex_lock(ABTI_mutex *p_mutex)
                     }
                 }
 
-                c = __atomic_exchange_n(&p_mutex->val, 2, __ATOMIC_SEQ_CST);
+                c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
             }
         }
         LOG_EVENT("%p: lock - acquired\n", p_mutex);
