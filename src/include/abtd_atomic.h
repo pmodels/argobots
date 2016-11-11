@@ -175,6 +175,7 @@ uint64_t ABTD_atomic_fetch_xor_uint64(uint64_t *ptr, uint64_t v)
     return __sync_fetch_and_xor(ptr, v);
 }
 
+#ifdef ABT_CONFIG_HAVE_ATOMIC_EXCHANGE
 static inline
 int32_t ABTD_atomic_exchange_int32(int32_t *ptr, int32_t v)
 {
@@ -198,6 +199,7 @@ uint64_t ABTD_atomic_exchange_uint64(uint64_t *ptr, uint64_t v)
 {
     return __atomic_exchange_n(ptr, v, __ATOMIC_SEQ_CST);
 }
+#endif
 
 static inline
 void ABTD_atomic_mem_barrier(void)

@@ -554,6 +554,23 @@ AS_IF([test "x$enable_sched_sleep" = "xyes"],
                  [Define to make the scheduler sleep when its pools are empty])])
 
 
+# check if __atomic_exchange_n() is supported
+AC_TRY_COMPILE(
+[#include <stdint.h>],
+[uint32_t val = 0;
+ uint32_t old = __atomic_exchange_n(&val, 2, __ATOMIC_SEQ_CST);],
+[have_atomic_exchange=yes],
+[have_atomic_exchange=no]
+)
+if test "x$have_atomic_exchange" = "xyes" ; then
+    AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_EXCHANGE, 1,
+              [Define if __atomic_exchange_n is supported])
+else
+    # If __atomic_exchange_n is not supported, we have to use the simple mutex
+    # implementation.
+    enable_simple_mutex=yes
+fi
+
 # --enable-simple-mutex
 AS_IF([test "x$enable_simple_mutex" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SIMPLE_MUTEX, 1,
