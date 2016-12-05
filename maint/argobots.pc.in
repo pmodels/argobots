@@ -4,9 +4,9 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: Argobots
-Description: a low-level infrastructure that supports a lightweight thread and task model for massive concurrency
+Description: A Lightweight Low-level Threading/Tasking Framework
 Version: @ABT_VERSION@
-URL: https://collab.cels.anl.gov/display/ARGOBOTS/
+URL: http://www.argobots.org/
 Requires:
 Libs: -L${libdir} -labt
 Libs.private: @LIBS@
