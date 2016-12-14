@@ -40,7 +40,7 @@ ABT_USE_EVENT_DEBUG
              0  when configured with --enable-debug=most
 
 ABT_PRINT_CONFIG
-    Aliases: ABT_ENV_PUBLISH_INFO
+    Aliases: ABT_ENV_PRINT_CONFIG
     Description: Set whether to print the configuration on ABT_init().
     Values: { 1, Y, 0, N }
     Default: 0
