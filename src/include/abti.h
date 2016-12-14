@@ -225,6 +225,7 @@ struct ABTI_elem {
 struct ABTI_xstream {
     uint64_t rank;              /* Rank */
     ABTI_xstream_type type;     /* Type */
+    volatile
     ABT_xstream_state state;    /* State */
     ABTI_sched **scheds;        /* Stack of running schedulers */
     int max_scheds;             /* Allocation size of the array scheds */
