@@ -12,7 +12,7 @@ ABT_SET_AFFINITY
 ABT_AFFINITY_TYPE
     Aliases: ABT_ENV_AFFINITY_TYPE
     Description: Determine how to bind ESs to cores.
-    Values: { default, chameleon }
+    Values: { default, chameleon, knc }
     Default: default
 
 /* Logging and Debugging */

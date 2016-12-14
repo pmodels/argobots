@@ -34,6 +34,7 @@ int ABTD_CPU_COUNT(cpu_set_t *p_cpuset)
 
 enum {
     ABTI_ES_AFFINITY_CHAMELEON,
+    ABTI_ES_AFFINITY_KNC,
     ABTI_ES_AFFINITY_DEFAULT
 };
 static int g_affinity_type = ABTI_ES_AFFINITY_DEFAULT;
@@ -48,6 +49,28 @@ static inline cpu_set_t ABTD_affinity_get_cpuset_for_rank(int rank)
         int target = (rank - num_threads_per_socket * socket_id - rem + socket_id)
                    + num_threads_per_socket * rem;
         return g_cpusets[target % gp_ABTI_global->num_cores];
+
+    } else if (g_affinity_type == ABTI_ES_AFFINITY_KNC) {
+        /* NOTE: This is an experimental affinity mapping for Intel Xeon Phi
+         * (KNC).  It seems that the OS kernel on KNC numbers contiguous CPU
+         * IDs at a single physical core and then moves to the next physical
+         * core.  This numbering causes worse performance when we use a small
+         * number of physical cores.  So, we set the ES affinity in a
+         * round-robin manner from the view of physical cores, not logical
+         * cores. */
+        const int NUM_PHYSICAL_CORES = 61;
+        const int NUM_HTHREAD = 4;
+        if (rank < NUM_PHYSICAL_CORES) {
+            rank = NUM_HTHREAD * rank;
+        } else if (rank < NUM_PHYSICAL_CORES * 2) {
+            rank = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES) + 1;
+        } else if (rank < NUM_PHYSICAL_CORES * 3) {
+            rank = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES * 2) + 2;
+        } else {
+            rank = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES * 3) + 3;
+        }
+        return g_cpusets[rank % gp_ABTI_global->num_cores];
+
     } else {
         return g_cpusets[rank % gp_ABTI_global->num_cores];
     }
@@ -87,6 +110,8 @@ void ABTD_affinity_init(void)
     if (env != NULL) {
         if (strcmp(env, "chameleon") == 0) {
             g_affinity_type = ABTI_ES_AFFINITY_CHAMELEON;
+        } else if (strcmp(env, "knc") == 0) {
+            g_affinity_type = ABTI_ES_AFFINITY_KNC;
         }
     }
 #else
