@@ -454,6 +454,19 @@ AS_IF([test "x$enable_pool_consumer_check" = "xno"],
 AM_CONDITIONAL([ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK],
     [test "x$enable_pool_producer_check" = "xno" -o "x$enable_pool_consumer_check" = "xno"])
 
+if test "x$enable_error_check" = "xno" \
+     -o "x$enable_pool_producer_check" = "xno" \
+     -o "x$enable_pool_consumer_check" = "xno"; then
+    WFLAGS=""
+    case "$CC" in
+        clang) WFLAGS="-Wno-unused-label" ;;
+        gcc)   WFLAGS="-Wno-unused-label" ;;
+        icc)   WFLAGS="-wd177" ;;
+        *)     ;;
+    esac
+    CFLAGS="$CFLAGS $WFLAGS"
+fi
+
 
 # --disable-fcontext
 # if fcontext supports this platform and the user does not specify
