@@ -42,13 +42,15 @@ static cpu_set_t g_cpusets[CPU_SETSIZE];
 
 static inline cpu_set_t ABTD_affinity_get_cpuset_for_rank(int rank)
 {
+    int num_cores = gp_ABTI_global->num_cores;
+
     if (g_affinity_type == ABTI_ES_AFFINITY_CHAMELEON) {
-        int num_threads_per_socket = gp_ABTI_global->num_cores / 2;
+        int num_threads_per_socket = num_cores / 2;
         int rem = rank % 2;
         int socket_id = rank / num_threads_per_socket;
         int target = (rank - num_threads_per_socket * socket_id - rem + socket_id)
                    + num_threads_per_socket * rem;
-        return g_cpusets[target % gp_ABTI_global->num_cores];
+        return g_cpusets[target % num_cores];
 
     } else if (g_affinity_type == ABTI_ES_AFFINITY_KNC) {
         /* NOTE: This is an experimental affinity mapping for Intel Xeon Phi
@@ -58,21 +60,22 @@ static inline cpu_set_t ABTD_affinity_get_cpuset_for_rank(int rank)
          * number of physical cores.  So, we set the ES affinity in a
          * round-robin manner from the view of physical cores, not logical
          * cores. */
-        const int NUM_PHYSICAL_CORES = 61;
         const int NUM_HTHREAD = 4;
+        int NUM_PHYSICAL_CORES = num_cores / NUM_HTHREAD;
+        int target;
         if (rank < NUM_PHYSICAL_CORES) {
-            rank = NUM_HTHREAD * rank;
+            target = NUM_HTHREAD * rank;
         } else if (rank < NUM_PHYSICAL_CORES * 2) {
-            rank = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES) + 1;
+            target = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES) + 1;
         } else if (rank < NUM_PHYSICAL_CORES * 3) {
-            rank = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES * 2) + 2;
+            target = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES * 2) + 2;
         } else {
-            rank = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES * 3) + 3;
+            target = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES * 3) + 3;
         }
-        return g_cpusets[rank % gp_ABTI_global->num_cores];
+        return g_cpusets[target % num_cores];
 
     } else {
-        return g_cpusets[rank % gp_ABTI_global->num_cores];
+        return g_cpusets[rank % num_cores];
     }
 }
 #endif
