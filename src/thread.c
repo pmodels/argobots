@@ -409,7 +409,8 @@ int ABT_thread_join(ABT_thread thread)
     }
 
   yield_based:
-    while (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
+    while (*(volatile ABT_thread_state *)(&p_thread->state) !=
+           ABT_THREAD_STATE_TERMINATED) {
         ABT_thread_yield();
     }
 
