@@ -363,7 +363,7 @@ fi
 if test "$enable_fast_ndebug" = "yes" ; then
     CFLAGS="$CFLAGS -DNDEBUG -DNVALGRIND"
     CXXFLAGS="$CXXFLAGS -DNDEBUG -DNVALGRIND"
-    CCASFLAGS="$CFLAGS -DNDEBUG -DNVALGRIND"
+    CCASFLAGS="$CCASFLAGS -DNDEBUG -DNVALGRIND"
 fi
 
 
@@ -391,8 +391,8 @@ fi
 # --enable-perf-opt: set CFLAGS for the performance optimization
 if test "x$enable_perf_opt" = "xyes"; then
     CFLAGS="$CFLAGS -O3 -ftls-model=initial-exec"
-    CXXFLAGS="$CFLAGS -O3 -ftls-model=initial-exec"
-    CCASFLAGS="$CFLAGS -O3 -ftls-model=initial-exec"
+    CXXFLAGS="$CXXFLAGS -O3 -ftls-model=initial-exec"
+    CCASFLAGS="$CCASFLAGS -O3 -ftls-model=initial-exec"
 fi
 
 
