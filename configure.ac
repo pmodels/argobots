@@ -659,10 +659,14 @@ AC_CHECK_LIB(intercoolr, raplreader_init)
 
 
 # --with-papi
-PAPI_FLAGS=""
-AS_IF([test "x$with_papi" != "x"],
-    PAPI_FLAGS="-I$with_papi/include -L$with_papi/lib")
-AC_SUBST(PAPI_FLAGS)
+PAPI_CFLAGS=""
+PAPI_LDFLAGS=""
+if test "x$with_papi" != "x"; then
+    PAPI_CFLAGS="-I$with_papi/include"
+    PAPI_LDFLAGS="-Wl,-rpath,$with_papi/lib -L$with_papi/lib -lpapi"
+fi
+AC_SUBST(PAPI_CFLAGS)
+AC_SUBST(PAPI_LDFLAGS)
 
 # --enable-papi
 AM_CONDITIONAL([ABT_USE_PAPI], [test "x$enable_papi" = "xyes"])

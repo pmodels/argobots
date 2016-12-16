@@ -67,17 +67,27 @@ task_fork_join_papi_l1m_l2m_SOURCES = task_fork_join.c
 task_fork_join_priv_pool_papi_SOURCES = task_fork_join.c
 task_fork_join_priv_pool_papi_l1m_l2m_SOURCES = task_fork_join.c
 
-thread_fork_join_papi_CFLAGS = -DUSE_PAPI @PAPI_FLAGS@ -lpapi
-thread_fork_join_papi_l1m_l2m_CFLAGS = -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_FLAGS@ -lpapi
-thread_fork_join_many_papi_CFLAGS = -DUSE_JOIN_MANY -DUSE_PAPI @PAPI_FLAGS@ -lpapi
-thread_fork_join_many_papi_l1m_l2m_CFLAGS = -DUSE_JOIN_MANY -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_FLAGS@ -lpapi
-thread_fork_join_many_priv_pool_papi_CFLAGS = -DUSE_JOIN_MANY -DUSE_PRIV_POOL -DUSE_PAPI @PAPI_FLAGS@ -lpapi
-thread_fork_join_many_priv_pool_papi_l1m_l2m_CFLAGS = -DUSE_JOIN_MANY -DUSE_PRIV_POOL -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_FLAGS@ -lpapi
+thread_fork_join_papi_CFLAGS = -DUSE_PAPI @PAPI_CFLAGS@
+thread_fork_join_papi_LDFLAGS = @PAPI_LDFLAGS@
+thread_fork_join_papi_l1m_l2m_CFLAGS = -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_CFLAGS@
+thread_fork_join_papi_l1m_l2m_LDFLAGS = @PAPI_LDFLAGS@
+thread_fork_join_many_papi_CFLAGS = -DUSE_JOIN_MANY -DUSE_PAPI @PAPI_CFLAGS@
+thread_fork_join_many_papi_LDFLAGS = @PAPI_LDFLAGS@
+thread_fork_join_many_papi_l1m_l2m_CFLAGS = -DUSE_JOIN_MANY -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_CFLAGS@
+thread_fork_join_many_papi_l1m_l2m_LDFLAGS = @PAPI_LDFLAGS@
+thread_fork_join_many_priv_pool_papi_CFLAGS = -DUSE_JOIN_MANY -DUSE_PRIV_POOL -DUSE_PAPI @PAPI_CFLAGS@
+thread_fork_join_many_priv_pool_papi_LDFLAGS = @PAPI_LDFLAGS@
+thread_fork_join_many_priv_pool_papi_l1m_l2m_CFLAGS = -DUSE_JOIN_MANY -DUSE_PRIV_POOL -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_CFLAGS@
+thread_fork_join_many_priv_pool_papi_l1m_l2m_LDFLAGS = @PAPI_LDFLAGS@
 
-task_fork_join_papi_CFLAGS = -DUSE_PAPI @PAPI_FLAGS@ -lpapi
-task_fork_join_papi_l1m_l2m_CFLAGS = -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_FLAGS@ -lpapi
-task_fork_join_priv_pool_papi_CFLAGS = -DUSE_PRIV_POOL -DUSE_PAPI @PAPI_FLAGS@ -lpapi
-task_fork_join_priv_pool_papi_l1m_l2m_CFLAGS = -DUSE_PRIV_POOL -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_FLAGS@ -lpapi
+task_fork_join_papi_CFLAGS = -DUSE_PAPI @PAPI_CFLAGS@
+task_fork_join_papi_LDFLAGS = @PAPI_LDFLAGS@
+task_fork_join_papi_l1m_l2m_CFLAGS = -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_CFLAGS@
+task_fork_join_papi_l1m_l2m_LDFLAGS = @PAPI_LDFLAGS@
+task_fork_join_priv_pool_papi_CFLAGS = -DUSE_PRIV_POOL -DUSE_PAPI @PAPI_CFLAGS@
+task_fork_join_priv_pool_papi_LDFLAGS = @PAPI_LDFLAGS@
+task_fork_join_priv_pool_papi_l1m_l2m_CFLAGS = -DUSE_PRIV_POOL -DUSE_PAPI -DUSE_PAPI_L1M_L2M @PAPI_CFLAGS@
+task_fork_join_priv_pool_papi_l1m_l2m_LDFLAGS = @PAPI_LDFLAGS@
 endif
 
 testing:
