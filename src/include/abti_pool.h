@@ -239,5 +239,11 @@ int32_t ABTI_pool_release(ABTI_pool *p_pool)
     return ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1) - 1;
 }
 
+static inline
+void *ABTI_pool_get_data(ABTI_pool *p_pool)
+{
+    return p_pool->data;
+}
+
 #endif /* POOL_H_INCLUDED */
 

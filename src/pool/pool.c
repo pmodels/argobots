@@ -397,7 +397,7 @@ int ABT_pool_get_data(ABT_pool pool, void **data)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    *data = p_pool->data;
+    *data = ABTI_pool_get_data(p_pool);
 
   fn_exit:
     return abt_errno;

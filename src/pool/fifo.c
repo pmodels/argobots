@@ -137,9 +137,9 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
 static int pool_free(ABT_pool pool)
 {
     int abt_errno = ABT_SUCCESS;
-    void *data;
     ABT_pool_access access;
-    ABT_pool_get_data(pool, &data);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
 
     ABT_pool_get_access(pool, &access);
@@ -154,16 +154,16 @@ static int pool_free(ABT_pool pool)
 
 static size_t pool_get_size(ABT_pool pool)
 {
-    void *data;
-    ABT_pool_get_data(pool, &data);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
     return p_data->num_units;
 }
 
 static void pool_push_shared(ABT_pool pool, ABT_unit unit)
 {
-    void *data;
-    ABT_pool_get_data(pool, &data);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = (unit_t *)unit;
 
@@ -190,8 +190,8 @@ static void pool_push_shared(ABT_pool pool, ABT_unit unit)
 
 static void pool_push_private(ABT_pool pool, ABT_unit unit)
 {
-    void *data;
-    ABT_pool_get_data(pool, &data);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = (unit_t *)unit;
 
@@ -216,8 +216,8 @@ static void pool_push_private(ABT_pool pool, ABT_unit unit)
 
 static ABT_unit pool_pop_shared(ABT_pool pool)
 {
-    void *data;
-    ABT_pool_get_data(pool, &data);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = NULL;
     ABT_unit h_unit = ABT_UNIT_NULL;
@@ -248,8 +248,8 @@ static ABT_unit pool_pop_shared(ABT_pool pool)
 
 static ABT_unit pool_pop_private(ABT_pool pool)
 {
-    void *data;
-    ABT_pool_get_data(pool, &data);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = NULL;
     ABT_unit h_unit = ABT_UNIT_NULL;
@@ -278,8 +278,8 @@ static ABT_unit pool_pop_private(ABT_pool pool)
 
 static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
 {
-    void *data;
-    ABT_pool_get_data(pool, &data);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = (unit_t *)unit;
 
@@ -316,8 +316,8 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
 
 static int pool_remove_private(ABT_pool pool, ABT_unit unit)
 {
-    void *data;
-    ABT_pool_get_data(pool, &data);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = (unit_t *)unit;
 
@@ -352,8 +352,8 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
 #if 0
 int pool_print(ABT_pool pool)
 {
-    void *data;
-    ABT_pool_get_data(pool, &data);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
     printf("[");
     printf("num_units: %zu ", p_data->num_units);
