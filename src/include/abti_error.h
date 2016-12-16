@@ -53,8 +53,15 @@
             goto fn_fail;                       \
         }                                       \
     } while(0)
+#define ABTI_CHECK_TRUE_RET(cond,val)           \
+    do {                                        \
+        if (!(cond)) {                          \
+            return (val);                       \
+        }                                       \
+    } while(0)
 #else
 #define ABTI_CHECK_TRUE(cond,val)
+#define ABTI_CHECK_TRUE_RET(cond,val)
 #endif
 
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
@@ -66,8 +73,16 @@
             goto fn_fail;                       \
         }                                       \
     } while(0)
+#define ABTI_CHECK_TRUE_MSG_RET(cond,val,msg)   \
+    do {                                        \
+        if (!(cond)) {                          \
+            HANDLE_ERROR(msg);                  \
+            return (val);                       \
+        }                                       \
+    } while(0)
 #else
 #define ABTI_CHECK_TRUE_MSG(cond,val,msg)
+#define ABTI_CHECK_TRUE_MSG_RET(cond,val,msg)
 #endif
 
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
