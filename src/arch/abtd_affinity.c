@@ -94,8 +94,8 @@ void ABTD_affinity_init(void)
     num_cores = CPU_SETSIZE;
 #else
     cpu_set_t cpuset;
-    int ret = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuset);
-    ABTI_ASSERT(ret == 0);
+    i = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuset);
+    ABTI_ASSERT(i == 0);
 
     for (i = 0; i < CPU_SETSIZE; i++) {
         CPU_ZERO(&g_cpusets[i]);
@@ -126,15 +126,19 @@ void ABTD_affinity_init(void)
 int ABTD_affinity_set(ABTD_xstream_context ctx, int rank)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
 
     cpu_set_t cpuset = ABTD_affinity_get_cpuset_for_rank(rank);
-    int ret = pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
-    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
+    if (!pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &cpuset)) {
+        abt_errno = ABT_SUCCESS;
+    } else {
+        abt_errno = ABT_ERR_OTHER;
+        goto fn_fail;
+    }
 
 #if 0
     /* For debugging and verification */
-    ret = pthread_getaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
+    int ret = pthread_getaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
     ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
     int i;
     for (i = 0; i < CPU_SETSIZE; i++) {
@@ -160,7 +164,7 @@ int ABTD_affinity_set_cpuset(ABTD_xstream_context ctx, int cpuset_size,
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
     int abt_errno = ABT_SUCCESS;
-    int i, ret;
+    int i;
     cpu_set_t cpuset;
 
     CPU_ZERO(&cpuset);
@@ -169,8 +173,8 @@ int ABTD_affinity_set_cpuset(ABTD_xstream_context ctx, int cpuset_size,
         CPU_SET(p_cpuset[i], &cpuset);
     }
 
-    ret = pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
-    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
+    i = pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
+    ABTI_CHECK_TRUE(!i, ABT_ERR_OTHER);
 
   fn_exit:
     return abt_errno;
@@ -188,12 +192,12 @@ int ABTD_affinity_get_cpuset(ABTD_xstream_context ctx, int cpuset_size,
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
     int abt_errno = ABT_SUCCESS;
-    int i, ret;
+    int i;
     cpu_set_t cpuset;
     int num_cpus = 0;
 
-    ret = pthread_getaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
-    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
+    i = pthread_getaffinity_np(ctx, sizeof(cpu_set_t), &cpuset);
+    ABTI_CHECK_TRUE(!i, ABT_ERR_OTHER);
 
     if (p_cpuset != NULL) {
         for (i = 0; i < CPU_SETSIZE; i++) {
