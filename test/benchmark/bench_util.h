@@ -125,10 +125,10 @@ static inline void print_header(char *wu, int need_join)
 }
 
 #ifdef USE_PAPI
-static inline ABT_xstream ABTX_xstream_get_self(void) {
+static inline unsigned long ABTX_xstream_get_self(void) {
     ABT_xstream self;
     ABT_xstream_self(&self);
-    return self;
+    return (unsigned long)self;
 }
 #endif
 

@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "PAPI library init error!\n");
         exit(1);
     }
-    ABTX_papi_assert(PAPI_thread_init(ABTX_xstream_get_self()));
+    ABTX_papi_assert(PAPI_thread_init(ABTX_xstream_get_self));
 #endif
 
     int i;
