@@ -95,7 +95,7 @@ static void sched_run(ABT_sched sched)
         for (i = 0; i < num_pools; i++) {
             ABT_pool pool = p_pools[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-            size_t size = p_pool->p_get_size(pool);
+            size_t size = ABTI_pool_get_size(p_pool);
             if (size > 0) {
                 ABT_unit unit = ABTI_pool_pop(p_pool);
                 if (unit != ABT_UNIT_NULL) {

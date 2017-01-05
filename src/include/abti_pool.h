@@ -244,5 +244,11 @@ void *ABTI_pool_get_data(ABTI_pool *p_pool)
     return p_pool->data;
 }
 
+static inline
+size_t ABTI_pool_get_size(ABTI_pool *p_pool)
+{
+    return p_pool->p_get_size(ABTI_pool_get_handle(p_pool));
+}
+
 #endif /* POOL_H_INCLUDED */
 

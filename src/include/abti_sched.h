@@ -74,7 +74,7 @@ ABT_bool ABTI_sched_has_unit(ABTI_sched *p_sched)
     for (p = 0; p < p_sched->num_pools; p++) {
         ABT_pool pool = p_sched->pools[p];
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-        s = p_pool->p_get_size(pool);
+        s = ABTI_pool_get_size(p_pool);
         if (s > 0) return ABT_TRUE;
     }
 

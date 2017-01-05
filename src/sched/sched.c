@@ -668,7 +668,7 @@ size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched)
     for (p = 0; p < p_sched->num_pools; p++) {
         ABT_pool pool = p_sched->pools[p];
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-        pool_size += p_pool->p_get_size(pool);
+        pool_size += ABTI_pool_get_size(p_pool);
         pool_size += p_pool->num_migrations;
         switch (p_pool->access) {
             case ABT_POOL_ACCESS_PRIV:

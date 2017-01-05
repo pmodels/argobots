@@ -207,7 +207,7 @@ int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    total_size = p_pool->p_get_size(pool);
+    total_size = ABTI_pool_get_size(p_pool);
     total_size += p_pool->num_blocked;
     total_size += p_pool->num_migrations;
     *size = total_size;
@@ -240,7 +240,7 @@ int ABT_pool_get_size(ABT_pool pool, size_t *size)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    *size = p_pool->p_get_size(pool);
+    *size = ABTI_pool_get_size(p_pool);
 
   fn_exit:
     return abt_errno;
@@ -538,7 +538,6 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         goto fn_exit;
     }
 
-    ABT_pool pool = ABTI_pool_get_handle(p_pool);
     char *access;
 
     switch (p_pool->access) {
@@ -577,7 +576,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
         prefix, p_pool->producer, p_pool->producer ? p_pool->producer->rank : 0,
 #endif
-        prefix, p_pool->p_get_size(pool),
+        prefix, ABTI_pool_get_size(p_pool),
         prefix, p_pool->num_blocked,
         prefix, p_pool->num_migrations,
         prefix, p_pool->data
