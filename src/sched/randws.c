@@ -84,8 +84,7 @@ static void sched_run(ABT_sched sched)
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
         size_t size = p_pool->p_get_size(pool);
         if (size > 0) {
-            unit = p_pool->p_pop(pool);
-            LOG_EVENT_POOL_POP(p_pool, unit);
+            unit = ABTI_pool_pop(p_pool);
             if (unit != ABT_UNIT_NULL) {
                 ABTI_xstream_run_unit(p_xstream, unit, p_pool);
                 CNT_INC(run_cnt);
@@ -97,7 +96,7 @@ static void sched_run(ABT_sched sched)
             p_pool = ABTI_pool_get_ptr(pool);
             size = p_pool->p_get_size(pool);
             if (size > 0) {
-                unit = p_pool->p_pop(pool);
+                unit = ABTI_pool_pop(p_pool);
                 LOG_EVENT_POOL_POP(p_pool, unit);
                 if (unit != ABT_UNIT_NULL) {
                     ABT_unit_set_associated_pool(unit, pool);

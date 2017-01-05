@@ -270,9 +270,7 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    unit = p_pool->p_pop(pool);
-
-    LOG_EVENT_POOL_POP(p_pool, unit);
+    unit = ABTI_pool_pop(p_pool);
 
   fn_exit:
     *p_unit = unit;
