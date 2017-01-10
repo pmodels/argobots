@@ -5,8 +5,8 @@ This release is an experimental version of Argobots that contains
 features related to user-level threads, tasklets, and some schedulers.
 
 This README file should contain enough information to get you started
-with Argobots.  More information about Argobots can be found at the
-Argobots wiki, https://github.com/pmodels/argobots/wiki.
+with Argobots.  More information about Argobots can be found at
+http://www.argobots.org.
 
 
 1. Getting Started
@@ -47,7 +47,7 @@ the default configuration of Argobots up and running.
       cd argobots-%VERSION%
 
 (c) Choose an installation directory, say
-    /home/<USERNAME>/argobots-install, which is assumed to non-existent
+    /home/<USERNAME>/argobots-install, which is assumed to be non-existent
     or empty.
 
 (d) Configure Argobots specifying the installation directory:
@@ -142,14 +142,14 @@ https://github.com/pmodels/argobots/wiki/FAQ
 to see if the problem you are facing has a simple solution.
 
 (b) If you cannot find an answer on the FAQ page, look through previous
-email threads on the argobots@lists.mcs.anl.gov mailing list archive
-(https://lists.mcs.anl.gov/mailman/listinfo/argobots).  It is likely
+email threads on the discuss@argobots.org mailing list archive
+(https://lists.argobots.org/mailman/listinfo/discuss).  It is likely
 someone else had a similar problem, which has already been resolved
 before.
 
 (c) If neither of the above steps work, please send an email to
-argobots@lists.mcs.anl.gov.  You need to subscribe to this list
-(https://lists.mcs.anl.gov/mailman/listinfo/argobots) before sending
+discuss@argobots.org.  You need to subscribe to this list
+(https://lists.argobots.org/mailman/listinfo/discuss) before sending
 an email.
 
 Your email should contain the following files.  ONCE AGAIN, PLEASE
@@ -172,7 +172,7 @@ report.
 (d) If you have found a bug in Argobots, we request that you report it
 at our github issues page (https://github.com/pmodels/argobots/issues).
 Even if you believe you have found a bug, we recommend you sending an
-email to argobots@lists.mcs.anl.gov first.
+email to discuss@argobots.org first.
 
 -------------------------------------------------------------------------
 
@@ -184,7 +184,7 @@ Argobots as part of a development project, you might want to tweak the
 Argobots build with the following configure options.  A complete list
 of configuration options can be found using:
 
-   ./configure --help
+    ./configure --help
 
 -------------------------------------------------------------------------
 
@@ -198,22 +198,22 @@ This optimization level can be changed with the --enable-fast option
 passed to configure.  For example, to build Argobots with -O3, one can
 simply do:
 
-  ./configure --enable-fast=O3
+    ./configure --enable-fast=O3
 
 Or to disable all compiler optimizations, one can do:
 
-  ./configure --disable-fast
+    ./configure --disable-fast
 
 For more details of --enable-fast, see the output of "configure --help".
 
 For performance testing, we recommend the following flags:
 
-  ./configure --enable-fast=O3,ndebug --enable-tls-model=initial-exec \
-              --disable-error-check
+    ./configure --enable-fast=O3,ndebug --enable-tls-model=initial-exec \
+                --disable-error-check
 
-  OR
+    OR
 
-  ./configure --enable-perf-opt --disable-error-check
+    ./configure --enable-perf-opt --disable-error-check
 
 -------------------------------------------------------------------------
 
