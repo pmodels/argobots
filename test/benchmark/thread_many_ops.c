@@ -128,7 +128,8 @@ void thread_test(void *arg)
     ABT_pool *pool_list;
     void (**thread_func_list)(void *);
 
-    uint64_t t_all_start, t_start, t_time;
+    uint64_t t_all_start = 0;
+    uint64_t t_start, t_time;
     int i;
 
     ABT_test_printf(1, "[E%d] main ULT: start\n", eid);
