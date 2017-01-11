@@ -52,15 +52,15 @@ void ABTD_thread_cancel(ABTI_thread *p_thread);
 /* Atomic Functions */
 #include "abtd_atomic.h"
 
-#if defined(HAVE_CLOCK_GETTIME)
+#if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
 #include <time.h>
 typedef struct timespec ABTD_time;
 
-#elif defined(HAVE_MACH_ABSOLUTE_TIME)
+#elif defined(ABT_CONFIG_USE_MACH_ABSOLUTE_TIME)
 #include <mach/mach_time.h>
 typedef uint64_t ABTD_time;
 
-#elif defined(HAVE_GETTIMEOFDAY)
+#elif defined(ABT_CONFIG_USE_GETTIMEOFDAY)
 #include <sys/time.h>
 typedef struct timeval ABTD_time;
 

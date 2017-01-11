@@ -51,11 +51,11 @@ int ABT_info_print_config(FILE *fp)
                 p_global->sched_event_freq);
 
     fprintf(fp, " - timer function: "
-#if defined(HAVE_CLOCK_GETTIME)
+#if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
                 "clock_gettime"
-#elif defined(HAVE_MACH_ABSOLUTE_TIME)
+#elif defined(ABT_CONFIG_USE_MACH_ABSOLUTE_TIME)
                 "mach_absolute_time"
-#elif defined(HAVE_GETTIMEOFDAY)
+#elif defined(ABT_CONFIG_USE_GETTIMEOFDAY)
                 "gettimeofday"
 #endif
                 "\n");

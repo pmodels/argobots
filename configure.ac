@@ -684,26 +684,26 @@ AC_CHECK_LIB(pthread, pthread_join)
 AC_CHECK_FUNCS(pthread_barrier_init)
 
 # check timer functions
-# for clock_gettime and clock_getres, we need to search them from librt or
-# libposix4 because they may not be included in the standard library.
-AC_SEARCH_LIBS([clock_gettime], [rt posix4])
-AC_SEARCH_LIBS([clock_getres], [rt posix4])
-if test "$ac_cv_search_clock_gettime" != "no" -a \
-        "$ac_cv_search_clock_getres" != "no" ; then
-    AC_CHECK_FUNCS(clock_gettime clock_getres)
-fi
-AC_CHECK_FUNCS(mach_absolute_time gettimeofday)
-if test "x$ac_cv_func_clock_gettime" = "xyes" -a \
-        "x$ac_cv_func_clock_getres" = "xyes" ; then
+AC_CHECK_FUNCS(clock_gettime mach_absolute_time gettimeofday)
+if test "$ac_cv_func_clock_gettime" = "yes" ; then
     timer_type=clock_gettime
+    AC_DEFINE(ABT_CONFIG_USE_CLOCK_GETTIME, 1, [Define to use clock_gettime])
+
+    # We need to search clock_gettime from librt or libposix4 because they may
+    # not be included in the standard library.
+    AC_SEARCH_LIBS([clock_gettime], [rt posix4])
 elif test "$ac_cv_func_mach_absolute_time" = "yes" ; then
     timer_type=mach_absolute_time
+    AC_DEFINE(ABT_CONFIG_USE_MACH_ABSOLUTE_TIME, 1,
+              [Define to use mach_absolute_time])
 elif test "$ac_cv_func_gettimeofday" = "yes" ; then
     timer_type=gettimeofday
+    AC_DEFINE(ABT_CONFIG_USE_GETTIMEOFDAY, 1, [Define to use gettimeofday])
 fi
 if test -z "$timer_type" ; then
     AC_MSG_ERROR([No timer function found])
 fi
+AC_MSG_NOTICE([Timer type selected is $timer_type])
 
 # check math library
 AC_CHECK_LIB([m], [log10])
