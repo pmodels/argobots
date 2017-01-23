@@ -122,11 +122,11 @@ double convert_timespec_to_sec(const struct timespec *p_ts)
 static inline
 double get_cur_time(void)
 {
-#if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
+#if defined(HAVE_CLOCK_GETTIME)
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
     return convert_timespec_to_sec(&ts);
-#elif defined(ABT_CONFIG_USE_GETTIMEOFDAY)
+#elif defined(HAVE_GETTIMEOFDAY)
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return ((double)tv.tv_sec) + 1.0e-6 * ((double)tv.tv_usec);
