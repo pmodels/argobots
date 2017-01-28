@@ -139,7 +139,10 @@ int ABT_info_print_all_xstreams(FILE *fp)
 
     fprintf(fp, "# of created ESs: %d\n", p_global->num_xstreams);
     for (i = 0; i < p_global->num_xstreams; i++) {
-        ABTI_xstream_print(p_global->p_xstreams[i], fp, 0, ABT_FALSE);
+        ABTI_xstream *p_xstream = p_global->p_xstreams[i];
+        if (p_xstream) {
+            ABTI_xstream_print(p_xstream, fp, 0, ABT_FALSE);
+        }
     }
 
     ABTI_spinlock_release(&p_global->lock);

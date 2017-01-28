@@ -5,9 +5,9 @@
 
 #include "abti.h"
 
-static uint64_t ABTI_xstream_get_new_rank(void);
-static void ABTI_xstream_return_rank(uint64_t);
-static ABT_bool ABTI_xstream_take_rank(uint64_t);
+static void ABTI_xstream_set_new_rank(ABTI_xstream *);
+static ABT_bool ABTI_xstream_take_rank(ABTI_xstream *, int);
+static void ABTI_xstream_return_rank(ABTI_xstream *);
 
 
 /** @defgroup ES Execution Stream (ES)
@@ -65,20 +65,14 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_newxstream;
-    uint64_t rank;
-
-    rank = ABTI_xstream_get_new_rank();
-    if (rank >= gp_ABTI_global->max_xstreams) {
-        abt_errno = ABT_ERR_XSTREAM;
-        goto fn_fail;
-    }
 
     p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
+
+    ABTI_xstream_set_new_rank(p_newxstream);
 
     /* Create a wrapper unit */
     ABTI_elem_create_from_xstream(p_newxstream);
 
-    p_newxstream->rank         = rank;
     p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
     p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
     p_newxstream->scheds       = NULL;
@@ -96,10 +90,6 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     ABTI_CHECK_ERROR(abt_errno);
 
     LOG_EVENT("[E%" PRIu64 "] created\n", p_newxstream->rank);
-
-    /* Add this ES to the global ES array */
-    gp_ABTI_global->p_xstreams[rank] = p_newxstream;
-    ABTD_atomic_fetch_add_int32(&gp_ABTI_global->num_xstreams, 1);
 
     /* Return value */
     *pp_xstream = p_newxstream;
@@ -196,10 +186,15 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     ABTI_xstream *p_newxstream;
     ABTI_sched *p_sched;
 
-    if (gp_ABTI_global->p_xstreams[rank] ||
-        ABTI_xstream_take_rank(rank) == ABT_FALSE) {
+    ABTI_CHECK_TRUE(rank >= 0, ABT_ERR_INV_XSTREAM_RANK);
+
+    p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
+
+    if (ABTI_xstream_take_rank(p_newxstream, rank) == ABT_FALSE) {
+        ABTU_free(p_newxstream);
         abt_errno = ABT_ERR_INV_XSTREAM_RANK;
-        goto fn_fail;
+        *newxstream = ABT_XSTREAM_NULL;
+        return abt_errno;
     }
 
     if (sched == ABT_SCHED_NULL) {
@@ -213,12 +208,9 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
                         ABT_ERR_INV_SCHED);
     }
 
-    p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
-
     /* Create a wrapper unit */
     ABTI_elem_create_from_xstream(p_newxstream);
 
-    p_newxstream->rank         = rank;
     p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
     p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
     p_newxstream->scheds       = NULL;
@@ -236,10 +228,6 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     ABTI_CHECK_ERROR(abt_errno);
 
     LOG_EVENT("[E%" PRIu64 "] created\n", p_newxstream->rank);
-
-    /* Add this ES to the global ES array */
-    gp_ABTI_global->p_xstreams[rank] = p_newxstream;
-    ABTD_atomic_fetch_add_int32(&gp_ABTI_global->num_xstreams, 1);
 
     /* Start this ES */
     abt_errno = ABTI_xstream_start(p_newxstream);
@@ -418,10 +406,6 @@ int ABT_xstream_free(ABT_xstream *xstream)
         abt_errno = ABT_xstream_join(h_xstream);
         ABTI_CHECK_ERROR(abt_errno);
     }
-
-    /* Remove this xstream from the global ES array */
-    gp_ABTI_global->p_xstreams[p_xstream->rank] = NULL;
-    ABTD_atomic_fetch_sub_int32(&gp_ABTI_global->num_xstreams, 1);
 
     /* Free the xstream object */
     abt_errno = ABTI_xstream_free(p_xstream);
@@ -1340,7 +1324,7 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     LOG_EVENT("[E%" PRIu64 "] freed\n", p_xstream->rank);
 
     /* Return rank for reuse */
-    ABTI_xstream_return_rank(p_xstream->rank);
+    ABTI_xstream_return_rank(p_xstream);
 
     /* Free the spinlock */
     ABTI_spinlock_free(&p_xstream->sched_lock);
@@ -1904,72 +1888,73 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 }
 
 
-/* global rank variable for ES */
-static uint32_t *g_rank_list = NULL;
-
-/* Reset the ES rank value */
-void ABTI_xstream_reset_rank(void)
-{
-    g_rank_list = (uint32_t *)ABTU_calloc(gp_ABTI_global->max_xstreams,
-                                          sizeof(uint32_t));
-}
-
-void ABTI_xstream_free_ranks(void)
-{
-    ABTU_free(g_rank_list);
-    g_rank_list = NULL;
-}
-
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-/* Get a new ES rank */
-static uint64_t ABTI_xstream_get_new_rank(void)
+/* Set a new rank to ES */
+static void ABTI_xstream_set_new_rank(ABTI_xstream *p_xstream)
 {
-    uint64_t i;
-    int max_xstreams;
+    int i, rank;
+    ABT_bool found = ABT_FALSE;
 
-    if (gp_ABTI_global->num_xstreams >= gp_ABTI_global->max_xstreams) {
-        ABTI_spinlock_acquire(&gp_ABTI_global->lock);
+    while (found == ABT_FALSE) {
         if (gp_ABTI_global->num_xstreams >= gp_ABTI_global->max_xstreams) {
-            max_xstreams = gp_ABTI_global->max_xstreams * 2;
-            gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_realloc(
-                    gp_ABTI_global->p_xstreams,
-                    max_xstreams * sizeof(ABTI_xstream *));
-            g_rank_list = (uint32_t *)ABTU_realloc(g_rank_list,
-                    max_xstreams * sizeof(uint32_t));
-            for (i = gp_ABTI_global->num_xstreams; i < max_xstreams; i++) {
-                g_rank_list[i] = 0;
+            ABTI_global_update_max_xstreams(0);
+        }
+
+        ABTI_spinlock_acquire(&gp_ABTI_global->lock);
+        for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {
+            if (gp_ABTI_global->p_xstreams[i] == NULL) {
+                /* Add this ES to the global ES array */
+                gp_ABTI_global->p_xstreams[i] = p_xstream;
+                gp_ABTI_global->num_xstreams++;
+                rank = i;
+                found = ABT_TRUE;
+                break;
             }
-            gp_ABTI_global->max_xstreams = max_xstreams;
         }
         ABTI_spinlock_release(&gp_ABTI_global->lock);
     }
 
-    for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {
-        if (g_rank_list[i] == 0) {
-            if (ABTD_atomic_cas_uint32(&g_rank_list[i], 0, 1) == 0) {
-                return i;
-            }
-        }
-    }
-    return gp_ABTI_global->max_xstreams;
+    /* Set the rank */
+    p_xstream->rank = rank;
 }
 
-static ABT_bool ABTI_xstream_take_rank(uint64_t rank)
+static ABT_bool ABTI_xstream_take_rank(ABTI_xstream *p_xstream, int rank)
 {
-    if (ABTD_atomic_cas_uint32(&g_rank_list[rank], 0, 1) == 0) {
-        return ABT_TRUE;
+    ABT_bool ret;
+
+    if (rank >= gp_ABTI_global->max_xstreams) {
+        ABTI_global_update_max_xstreams(rank + 1);
+    }
+
+    ABTI_spinlock_acquire(&gp_ABTI_global->lock);
+    if (gp_ABTI_global->p_xstreams[rank] == NULL) {
+        /* Add this ES to the global ES array */
+        gp_ABTI_global->p_xstreams[rank] = p_xstream;
+        gp_ABTI_global->num_xstreams++;
+        ret = ABT_TRUE;
     } else {
-        return ABT_FALSE;
+        ret = ABT_FALSE;
     }
+    ABTI_spinlock_release(&gp_ABTI_global->lock);
+
+    if (ret == ABT_TRUE) {
+
+        /* Set the rank */
+        p_xstream->rank = rank;
+    }
+
+    return ret;
 }
 
-static void ABTI_xstream_return_rank(uint64_t rank)
+static void ABTI_xstream_return_rank(ABTI_xstream *p_xstream)
 {
-    if (rank < gp_ABTI_global->max_xstreams) {
-        g_rank_list[rank] = 0;
-    }
+    /* Remove this xstream from the global ES array */
+    ABTI_spinlock_acquire(&gp_ABTI_global->lock);
+    gp_ABTI_global->p_xstreams[p_xstream->rank] = NULL;
+    gp_ABTI_global->num_xstreams--;
+    ABTI_spinlock_release(&gp_ABTI_global->lock);
 }
 

@@ -52,8 +52,7 @@ int ABT_init(int argc, char **argv)
     /* Initialize the event environment */
     ABTI_event_init();
 
-    /* Initialize rank and IDs. */
-    ABTI_xstream_reset_rank();
+    /* Initialize IDs */
     ABTI_thread_reset_id();
     ABTI_task_reset_id();
     ABTI_sched_reset_id();
@@ -162,10 +161,6 @@ int ABT_finalize(void)
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
     }
 
-    /* Remove the primary ES from the global ES array */
-    gp_ABTI_global->p_xstreams[p_xstream->rank] = NULL;
-    gp_ABTI_global->num_xstreams--;
-
     /* Remove the primary ULT */
     ABTI_thread_free_main(p_thread);
 
@@ -192,9 +187,6 @@ int ABT_finalize(void)
     /* Free the ABTI_global structure */
     ABTU_free(gp_ABTI_global);
     gp_ABTI_global = NULL;
-
-    /* Free internal arrays */
-    ABTI_xstream_free_ranks();
 
   fn_exit:
     return abt_errno;
@@ -224,5 +216,28 @@ int ABT_initialized(void)
     }
 
     return abt_errno;
+}
+
+/* If new_size is equal to zero, we double max_xstreams.
+ * NOTE: This function currently cannot decrease max_xstreams.
+ */
+void ABTI_global_update_max_xstreams(int new_size)
+{
+    int i;
+
+    if (new_size != 0 && new_size < gp_ABTI_global->max_xstreams) return;
+
+    ABTI_spinlock_acquire(&gp_ABTI_global->lock);
+
+    new_size = (new_size > 0) ? new_size : gp_ABTI_global->max_xstreams * 2;
+    gp_ABTI_global->max_xstreams = new_size;
+    gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_realloc(
+            gp_ABTI_global->p_xstreams, new_size * sizeof(ABTI_xstream *));
+
+    for (i = gp_ABTI_global->num_xstreams; i < new_size; i++) {
+        gp_ABTI_global->p_xstreams[i] = NULL;
+    }
+
+    ABTI_spinlock_release(&gp_ABTI_global->lock);
 }
 
