@@ -12,18 +12,22 @@
 
 int main(int argc, char *argv[])
 {
+    ABT_xstream *xstreams;
+    int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int i;
     int ret, tmp;
-    int num_xstreams = DEFAULT_NUM_XSTREAMS;
-    if (argc > 1) num_xstreams = atoi(argv[1]);
-    assert(num_xstreams >= 0);
-
-    ABT_xstream *xstreams;
-    xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
-    assert(xstreams != NULL);
 
     /* Initialize */
     ABT_test_init(argc, argv);
+
+    if (argc > 1) {
+        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
+    }
+
+    ABT_test_printf(1, "# of ESs: %d\n", num_xstreams);
+
+    xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
+    assert(xstreams != NULL);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
