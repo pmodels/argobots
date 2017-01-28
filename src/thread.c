@@ -455,7 +455,7 @@ int ABT_thread_free_many(int num, ABT_thread *thread_list)
 
         ABTI_ASSERT(p_thread->state == ABT_THREAD_STATE_TERMINATED);
 
-        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] freed\n",
+        LOG_EVENT("[U%" PRIu64 ":E%d] freed\n",
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
         ABTI_thread_free_internal(p_thread);
@@ -539,10 +539,10 @@ int ABT_thread_join(ABT_thread thread)
         p_self->state = ABT_THREAD_STATE_BLOCKED;
         ABTI_pool_inc_num_blocked(p_self->p_pool);
 
-        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] blocked to join U%" PRIu64 "\n",
+        LOG_EVENT("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
                   ABTI_thread_get_id(p_thread));
-        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] start running\n",
+        LOG_EVENT("[U%" PRIu64 ":E%d] start running\n",
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
         /* Switch the context */
@@ -566,7 +566,7 @@ int ABT_thread_join(ABT_thread thread)
         if (req & ABTI_THREAD_REQ_JOIN) goto yield_based;
 
         ABTI_thread_set_blocked(p_self);
-        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] blocked to join U%" PRIu64 "\n",
+        LOG_EVENT("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
                   ABTI_thread_get_id(p_thread));
 
@@ -586,7 +586,7 @@ int ABT_thread_join(ABT_thread thread)
     if (p_self->state == ABT_THREAD_STATE_BLOCKED) {
         p_self->state = ABT_THREAD_STATE_RUNNING;
         ABTI_pool_dec_num_blocked(p_self->p_pool);
-        LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume after join\n",
+        LOG_EVENT("[U%" PRIu64 ":E%d] resume after join\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
         ABTI_local_set_thread(p_self);
         return abt_errno;
@@ -985,7 +985,7 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] yield_to -> U%" PRIu64 "\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] yield_to -> U%" PRIu64 "\n",
               ABTI_thread_get_id(p_cur_thread),
               p_cur_thread->p_last_xstream->rank,
               ABTI_thread_get_id(p_tar_thread));
@@ -1831,7 +1831,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     h_newthread = ABTI_thread_get_handle(p_newthread);
     p_newthread->unit = p_pool->u_create_from_thread(h_newthread);
 
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main ULT created\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] main ULT created\n",
               ABTI_thread_get_id(p_newthread),
               p_newthread->p_last_xstream->rank);
 
@@ -1906,7 +1906,7 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     /* Create a spinlock */
     ABTI_spinlock_create(&p_newthread->lock);
 
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main sched ULT created\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] main sched ULT created\n",
               ABTI_thread_get_id(p_newthread), p_xstream->rank);
 
     /* Return value */
@@ -2021,7 +2021,7 @@ void ABTI_thread_free(ABTI_thread *p_thread)
     ABTI_spinlock_acquire(&p_thread->lock);
 #endif
 
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] freed\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] freed\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     ABTI_thread_free_internal(p_thread);
@@ -2032,7 +2032,7 @@ void ABTI_thread_free(ABTI_thread *p_thread)
 
 void ABTI_thread_free_main(ABTI_thread *p_thread)
 {
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main ULT freed\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] main ULT freed\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     /* Free the key-value table */
@@ -2045,7 +2045,7 @@ void ABTI_thread_free_main(ABTI_thread *p_thread)
 
 void ABTI_thread_free_main_sched(ABTI_thread *p_thread)
 {
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] main sched ULT freed\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] main sched ULT freed\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     /* Free the context */
@@ -2077,7 +2077,7 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     ABTI_pool *p_pool = p_thread->p_pool;
     ABTI_pool_inc_num_blocked(p_pool);
 
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] blocked\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] blocked\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
   fn_exit:
@@ -2096,13 +2096,13 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] suspended\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] suspended\n",
               ABTI_thread_get_id(p_thread), p_xstream->rank);
     ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
     ABTD_thread_context_switch(&p_thread->ctx, ABTI_xstream_get_sched_ctx(p_xstream));
 
     /* The suspended ULT resumes its execution from here. */
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resumed\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] resumed\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 }
 
@@ -2119,7 +2119,7 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
     while (*(volatile uint32_t *)(&p_thread->request) & ABTI_THREAD_REQ_BLOCK) {
     }
 
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] set ready\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] set ready\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     /* Add the ULT to its associated pool */
@@ -2161,7 +2161,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     }
 
     ABTI_xstream *p_xstream = p_thread->p_last_xstream;
-    uint64_t xstream_rank = p_xstream ? p_xstream->rank : 0;
+    int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *type, *state;
     char attr[100];
 
@@ -2185,7 +2185,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         "%sid      : %" PRIu64 "\n"
         "%stype    : %s\n"
         "%sstate   : %s\n"
-        "%slast_ES : %p (%" PRIu64 ")\n"
+        "%slast_ES : %p (%d)\n"
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
         "%sis_sched: %p\n"
 #endif

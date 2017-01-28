@@ -808,7 +808,7 @@ void ABTI_mutex_wake_de(ABTI_mutex *p_mutex)
         ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
 
         /* Push p_thread to the scheduler's pool */
-        LOG_EVENT("%p: wake up U%" PRIu64 ":E%" PRIu64 "\n", p_mutex,
+        LOG_EVENT("%p: wake up U%" PRIu64 ":E%d\n", p_mutex,
                   ABTI_thread_get_id(p_thread),
                   ABTI_thread_get_xstream_rank(p_thread));
         ABTI_thread_set_ready(p_thread);

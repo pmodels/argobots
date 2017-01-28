@@ -225,7 +225,7 @@ struct ABTI_elem {
 };
 
 struct ABTI_xstream {
-    uint64_t rank;              /* Rank */
+    int rank;                   /* Rank */
     ABTI_xstream_type type;     /* Type */
     volatile
     ABT_xstream_state state;    /* State */

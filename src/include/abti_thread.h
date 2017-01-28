@@ -76,7 +76,7 @@ void ABTI_thread_yield(ABTI_thread *p_thread)
 {
     ABTI_sched *p_sched;
 
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] yield\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] yield\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     /* Change the state of current running thread */
@@ -88,7 +88,7 @@ void ABTI_thread_yield(ABTI_thread *p_thread)
     ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
 
     /* Back to the original thread */
-    LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] resume after yield\n",
+    LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 }
 

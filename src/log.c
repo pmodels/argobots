@@ -54,7 +54,7 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
             p_thread = ABTI_local_get_thread();
             if (p_thread == NULL) {
                 if (p_xstream && p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
-                    prefix_fmt = "<U%" PRIu64 ":E%" PRIu64 "> %s";
+                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
                     rank = p_xstream->rank;
                     tid = 0;
                 } else {
@@ -64,10 +64,10 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
             } else {
                 rank = p_xstream->rank;
                 if (lp_ABTI_log->p_sched) {
-                    prefix_fmt = "<S%" PRIu64 ":E%" PRIu64 "> %s";
+                    prefix_fmt = "<S%" PRIu64 ":E%d> %s";
                     tid = lp_ABTI_log->p_sched->id;
                 } else {
-                    prefix_fmt = "<U%" PRIu64 ":E%" PRIu64 "> %s";
+                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
                     tid = ABTI_thread_get_id(p_thread);
                 }
             }
@@ -78,10 +78,10 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
             rank = p_xstream->rank;
             p_task = ABTI_local_get_task();
             if (lp_ABTI_log->p_sched) {
-                prefix_fmt = "<S%" PRIu64 ":E%" PRIu64 "> %s";
+                prefix_fmt = "<S%" PRIu64 ":E%d> %s";
                 tid = lp_ABTI_log->p_sched->id;
             } else {
-                prefix_fmt = "<T%" PRIu64 ":E%" PRIu64 "> %s";
+                prefix_fmt = "<T%" PRIu64 ":E%d> %s";
                 tid = ABTI_task_get_id(p_task);
             }
             break;
@@ -151,15 +151,15 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
         case ABT_UNIT_TYPE_THREAD:
             p_thread = ABTI_thread_get_ptr(p_pool->u_get_thread(unit));
             if (p_thread->p_last_xstream) {
-                LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] pushed to P%" PRIu64 " "
-                          "(producer: E%" PRIu64 ")\n",
+                LOG_EVENT("[U%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
+                          "(producer: E%d)\n",
                           ABTI_thread_get_id(p_thread),
                           p_thread->p_last_xstream->rank,
                           p_pool->id,
                           p_producer->rank);
             } else {
                 LOG_EVENT("[U%" PRIu64 "] pushed to P%" PRIu64 " "
-                          "(producer: E%" PRIu64 ")\n",
+                          "(producer: E%d)\n",
                           ABTI_thread_get_id(p_thread),
                           p_pool->id,
                           p_producer->rank);
@@ -169,15 +169,15 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_xstream) {
-                LOG_EVENT("[T%" PRIu64 ":E%" PRIu64 "] pushed to P%" PRIu64 " "
-                          "(producer: E%" PRIu64 ")\n",
+                LOG_EVENT("[T%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
+                          "(producer: E%d)\n",
                           ABTI_task_get_id(p_task),
                           p_task->p_xstream->rank,
                           p_pool->id,
                           p_producer->rank);
             } else {
                 LOG_EVENT("[T%" PRIu64 "] pushed to P%" PRIu64 " "
-                          "(producer: E%" PRIu64 ")\n",
+                          "(producer: E%d)\n",
                           ABTI_task_get_id(p_task),
                           p_pool->id,
                           p_producer->rank);
@@ -201,15 +201,15 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
         case ABT_UNIT_TYPE_THREAD:
             p_thread = ABTI_thread_get_ptr(p_pool->u_get_thread(unit));
             if (p_thread->p_last_xstream) {
-                LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] removed from "
-                          "P%" PRIu64 " (consumer: E%" PRIu64 ")\n",
+                LOG_EVENT("[U%" PRIu64 ":E%d] removed from "
+                          "P%" PRIu64 " (consumer: E%d)\n",
                           ABTI_thread_get_id(p_thread),
                           p_thread->p_last_xstream->rank,
                           p_pool->id,
                           p_consumer->rank);
             } else {
                 LOG_EVENT("[U%" PRIu64 "] removed from P%" PRIu64 " "
-                          "(consumer: E%" PRIu64 ")\n",
+                          "(consumer: E%d)\n",
                           ABTI_thread_get_id(p_thread),
                           p_pool->id,
                           p_consumer->rank);
@@ -219,15 +219,15 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_xstream) {
-                LOG_EVENT("[T%" PRIu64 ":E%" PRIu64 "] removed from "
-                          "P%" PRIu64 " (consumer: E%" PRIu64 ")\n",
+                LOG_EVENT("[T%" PRIu64 ":E%d] removed from "
+                          "P%" PRIu64 " (consumer: E%d)\n",
                           ABTI_task_get_id(p_task),
                           p_task->p_xstream->rank,
                           p_pool->id,
                           p_consumer->rank);
             } else {
                 LOG_EVENT("[T%" PRIu64 "] removed from P%" PRIu64 " "
-                          "(consumer: E%" PRIu64 ")\n",
+                          "(consumer: E%d)\n",
                           ABTI_task_get_id(p_task),
                           p_pool->id,
                           p_consumer->rank);
@@ -251,7 +251,7 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
         case ABT_UNIT_TYPE_THREAD:
             p_thread = ABTI_thread_get_ptr(p_pool->u_get_thread(unit));
             if (p_thread->p_last_xstream) {
-                LOG_EVENT("[U%" PRIu64 ":E%" PRIu64 "] popped from "
+                LOG_EVENT("[U%" PRIu64 ":E%d] popped from "
                           "P%" PRIu64 "\n",
                           ABTI_thread_get_id(p_thread),
                           p_thread->p_last_xstream->rank,
@@ -266,7 +266,7 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_xstream) {
-                LOG_EVENT("[T%" PRIu64 ":E%" PRIu64 "] popped from "
+                LOG_EVENT("[T%" PRIu64 ":E%d] popped from "
                           "P%" PRIu64 "\n",
                           ABTI_task_get_id(p_task),
                           p_task->p_xstream->rank,

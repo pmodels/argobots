@@ -825,7 +825,7 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
     }
 
     ABTI_xstream *p_xstream = p_task->p_xstream;
-    uint64_t xstream_rank = p_xstream ? p_xstream->rank : 0;
+    int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *state;
     switch (p_task->state) {
         case ABT_TASK_STATE_CREATED:    state = "CREATED"; break;
@@ -839,7 +839,7 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
         "%s== TASKLET (%p) ==\n"
         "%sid        : %" PRIu64 "\n"
         "%sstate     : %s\n"
-        "%sES        : %p (%" PRIu64 ")\n"
+        "%sES        : %p (%d)\n"
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
         "%sis_sched  : %p\n"
 #endif

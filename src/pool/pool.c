@@ -556,10 +556,10 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         "%sautomatic     : %s\n"
         "%snum_scheds    : %d\n"
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-        "%sconsumer ES   : %p (%" PRIu64 ")\n"
+        "%sconsumer ES   : %p (%d)\n"
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-        "%sproducer ES   : %p (%" PRIu64 ")\n"
+        "%sproducer ES   : %p (%d)\n"
 #endif
         "%ssize          : %zu\n"
         "%snum_blocked   : %u\n"
