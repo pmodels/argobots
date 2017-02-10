@@ -24,8 +24,8 @@ static uint32_t g_ABTI_num_inits = 0;
  * It internally creates objects for the \a primary ES and the \a primary ULT.
  *
  * \c ABT_init() must be called by the primary ULT before using any other
- * Argobots APIs. \c ABT_init() can be called again after \c ABT_finalize() is
- * called.
+ * Argobots functions. \c ABT_init() can be called again after
+ * \c ABT_finalize() is called.
  *
  * @param[in] argc the number of arguments
  * @param[in] argv the argument vector
@@ -104,12 +104,13 @@ int ABT_init(int argc, char **argv)
  * @brief   Terminate the Argobots execution environment.
  *
  * \c ABT_finalize() terminates the Argobots execution environment and
- * deallocates memory internally used in Argobots. This routine also contains
+ * deallocates memory internally used in Argobots. This function also contains
  * deallocation of objects for the primary ES and the primary ULT.
  *
  * \c ABT_finalize() must be called by the primary ULT. Invoking the Argobots
- * APIs after \c ABT_finalize() is not allowed. To use the Argobots APIs after
- * calling \c ABT_finalize(), \c ABT_init() needs to be called again.
+ * functions after \c ABT_finalize() is not allowed. To use the Argobots
+ * functions after calling \c ABT_finalize(), \c ABT_init() needs to be called
+ * again.
  *
  * @return Error code
  * @retval ABT_SUCCESS on success
