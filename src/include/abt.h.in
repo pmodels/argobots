@@ -131,7 +131,6 @@ enum ABT_thread_state {
 };
 
 enum ABT_task_state {
-    ABT_TASK_STATE_CREATED,
     ABT_TASK_STATE_READY,
     ABT_TASK_STATE_RUNNING,
     ABT_TASK_STATE_TERMINATED
