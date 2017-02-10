@@ -78,7 +78,7 @@ extern "C" {
 #define ABT_ERR_INV_UNIT           15  /* Invalid scheduling unit */
 #define ABT_ERR_INV_THREAD         16  /* Invalid ULT */
 #define ABT_ERR_INV_THREAD_ATTR    17  /* Invalid ULT attribute */
-#define ABT_ERR_INV_TASK           18  /* Invalid task */
+#define ABT_ERR_INV_TASK           18  /* Invalid tasklet */
 #define ABT_ERR_INV_KEY            19  /* Invalid key */
 #define ABT_ERR_INV_MUTEX          20  /* Invalid mutex */
 #define ABT_ERR_INV_MUTEX_ATTR     21  /* Invalid mutex attribute */
@@ -185,7 +185,7 @@ enum ABT_event_kind {
 #define ABT_TRUE    1
 #define ABT_FALSE   0
 
-/* Rank for any ES */
+/* Rank representing any ES */
 #define ABT_XSTREAM_ANY_RANK    -1
 
 /* Data Types */
