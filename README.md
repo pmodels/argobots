@@ -201,11 +201,11 @@ For more details of --enable-fast, see the output of "./configure --help".
 For performance testing, we recommend the following flags:
 
     ./configure --enable-fast=O3,ndebug --enable-tls-model=initial-exec \
-                --disable-error-check
+                --enable-affinity --disable-checks
 
     OR
 
-    ./configure --enable-perf-opt --disable-error-check
+    ./configure --enable-perf-opt --enable-affinity --disable-checks
 
 -------------------------------------------------------------------------------
 
