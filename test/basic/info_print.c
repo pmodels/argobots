@@ -16,10 +16,10 @@ void thread_func(void *arg)
     int ret;
 
     ret = ABT_thread_self(&self);
-    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ATS_ERROR(ret, "ABT_thread_self");
 
     ret = ABT_info_print_thread(stdout, self);
-    ABT_TEST_ERROR(ret, "ABT_info_print_thread");
+    ATS_ERROR(ret, "ABT_info_print_thread");
     fprintf(stdout, "\n");
 }
 
@@ -29,10 +29,10 @@ void task_func(void *arg)
     int ret;
 
     ret = ABT_task_self(&self);
-    ABT_TEST_ERROR(ret, "ABT_task_self");
+    ATS_ERROR(ret, "ABT_task_self");
 
     ret = ABT_info_print_task(stdout, self);
-    ABT_TEST_ERROR(ret, "ABT_info_print_task");
+    ATS_ERROR(ret, "ABT_info_print_task");
     fprintf(stdout, "\n");
 }
 
@@ -47,18 +47,18 @@ int main(int argc, char *argv[])
     int i, ret;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
     } else {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
     }
 
     ret = ABT_info_print_config(stdout);
-    ABT_TEST_ERROR(ret, "ABT_info_print_config");
+    ATS_ERROR(ret, "ABT_info_print_config");
     fprintf(stdout, "\n");
 
-    ABT_test_printf(1, "# of ESs        : %d\n", num_xstreams);
+    ATS_printf(1, "# of ESs        : %d\n", num_xstreams);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     scheds   = (ABT_sched *)malloc(num_xstreams * sizeof(ABT_sched));
@@ -68,35 +68,35 @@ int main(int argc, char *argv[])
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     ret = ABT_info_print_all_xstreams(stdout);
-    ABT_TEST_ERROR(ret, "ABT_info_print_all_xstreams");
+    ATS_ERROR(ret, "ABT_info_print_all_xstreams");
     fprintf(stdout, "\n");
 
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_sched(xstreams[i], &scheds[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_sched");
+        ATS_ERROR(ret, "ABT_xstream_get_main_sched");
 
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_info_print_xstream(stdout, xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_info_print_xstream");
+        ATS_ERROR(ret, "ABT_info_print_xstream");
         fprintf(stdout, "\n");
 
         ret = ABT_info_print_sched(stdout, scheds[i]);
-        ABT_TEST_ERROR(ret, "ABT_info_print_sched");
+        ATS_ERROR(ret, "ABT_info_print_sched");
         fprintf(stdout, "\n");
 
         ret = ABT_info_print_pool(stdout, pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_info_print_pool");
+        ATS_ERROR(ret, "ABT_info_print_pool");
         fprintf(stdout, "\n");
     }
 
@@ -104,36 +104,36 @@ int main(int argc, char *argv[])
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_thread_create(pools[i], thread_func, NULL,
                                 ABT_THREAD_ATTR_NULL, &threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
         ret = ABT_info_print_thread(stdout, threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_info_print_thread");
+        ATS_ERROR(ret, "ABT_info_print_thread");
         fprintf(stdout, "\n");
 
         ret = ABT_task_create(pools[i], task_func, NULL, &tasks[i]);
-        ABT_TEST_ERROR(ret, "ABT_task_create");
+        ATS_ERROR(ret, "ABT_task_create");
         ret = ABT_info_print_task(stdout, tasks[i]);
-        ABT_TEST_ERROR(ret, "ABT_info_print_task");
+        ATS_ERROR(ret, "ABT_info_print_task");
         fprintf(stdout, "\n");
     }
 
     /* Join and free ULTs and tasklets */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_thread_free(&threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
         ret = ABT_task_free(&tasks[i]);
-        ABT_TEST_ERROR(ret, "ABT_task_free");
+        ATS_ERROR(ret, "ABT_task_free");
     }
 
     /* Join and free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     free(xstreams);
     free(scheds);

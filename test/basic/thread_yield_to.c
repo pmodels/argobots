@@ -30,12 +30,12 @@ ABT_thread pick_one(ABT_thread *threads, int num_threads, unsigned *seed,
         i = rand_r(seed) % num_threads;
         next = threads[i];
         ret = ABT_thread_equal(next, caller, &is_same);
-        ABT_TEST_ERROR(ret, "ABT_thread_equal");
+        ATS_ERROR(ret, "ABT_thread_equal");
         if (is_same == ABT_TRUE) continue;
 
         if (next != ABT_THREAD_NULL) {
             ret = ABT_thread_get_state(next, &state);
-            ABT_TEST_ERROR(ret, "ABT_thread_get_state");
+            ATS_ERROR(ret, "ABT_thread_get_state");
             if (state != ABT_THREAD_STATE_TERMINATED) {
                 return next;
             }
@@ -53,25 +53,25 @@ void thread_func(void *arg)
     int ret;
 
     ret = ABT_thread_self(&self);
-    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ATS_ERROR(ret, "ABT_thread_self");
 
-    ABT_test_printf(1, "[TH%d]: before yield\n", t_arg->id);
-
-    next = pick_one(t_arg->threads, t_arg->num_threads, &seed, self);
-    if (next != ABT_THREAD_NULL) {
-        ret = ABT_thread_yield_to(next);
-        ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
-    }
-
-    ABT_test_printf(1, "[TH%d]: doing something ...\n", t_arg->id);
+    ATS_printf(1, "[TH%d]: before yield\n", t_arg->id);
 
     next = pick_one(t_arg->threads, t_arg->num_threads, &seed, self);
     if (next != ABT_THREAD_NULL) {
         ret = ABT_thread_yield_to(next);
-        ABT_TEST_ERROR(ret, "ABT_thread_yield_to");
+        ATS_ERROR(ret, "ABT_thread_yield_to");
     }
 
-    ABT_test_printf(1, "[TH%d]: after yield\n", t_arg->id);
+    ATS_printf(1, "[TH%d]: doing something ...\n", t_arg->id);
+
+    next = pick_one(t_arg->threads, t_arg->num_threads, &seed, self);
+    if (next != ABT_THREAD_NULL) {
+        ret = ABT_thread_yield_to(next);
+        ATS_ERROR(ret, "ABT_thread_yield_to");
+    }
+
+    ATS_printf(1, "[TH%d]: after yield\n", t_arg->id);
 }
 
 int main(int argc, char *argv[])
@@ -100,14 +100,14 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the pools attached to an execution stream */
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create threads */
@@ -128,31 +128,31 @@ int main(int argc, char *argv[])
             ret = ABT_thread_create(pools[i],
                     thread_func, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
                     &threads[i][j]);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
         }
     }
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free threads and Execution Streams */
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             ret = ABT_thread_free(&threads[i][j]);
-            ABT_TEST_ERROR(ret, "ABT_thread_free");
+            ATS_ERROR(ret, "ABT_thread_free");
         }
 
         if (i == 0) continue;
 
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     for (i = 0; i < num_xstreams; i++) {
         free(args[i]);

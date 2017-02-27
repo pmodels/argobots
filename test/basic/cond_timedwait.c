@@ -27,9 +27,9 @@ void cond_test(void *arg)
     ABT_thread_id tid;
 
     ret = ABT_xstream_self_rank(&eid);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self_rank");
+    ATS_ERROR(ret, "ABT_xstream_self_rank");
     ret = ABT_thread_self_id(&tid);
-    ABT_TEST_ERROR(ret, "ABT_thread_self_id");
+    ATS_ERROR(ret, "ABT_thread_self_id");
 
     ret = gettimeofday(&tv, NULL);
     assert(!ret);
@@ -39,23 +39,23 @@ void cond_test(void *arg)
     ts.tv_sec += 1;
 
     ret = ABT_mutex_lock(mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_lock");
+    ATS_ERROR(ret, "ABT_mutex_lock");
 
-    ABT_test_printf(1, "[U%d:E%d] blocked\n", (int)tid, eid);
+    ATS_printf(1, "[U%d:E%d] blocked\n", (int)tid, eid);
     ret = ABT_cond_timedwait(cond, mutex, &ts);
     if (ret == ABT_ERR_COND_TIMEDOUT) {
         g_counter++;
-        ABT_test_printf(1, "[U%d:E%d] cond timed out\n", (int)tid, eid);
+        ATS_printf(1, "[U%d:E%d] cond timed out\n", (int)tid, eid);
         ret = ABT_mutex_unlock(mutex);
-        ABT_TEST_ERROR(ret, "ABT_mutex_unlock");
+        ATS_ERROR(ret, "ABT_mutex_unlock");
         ABT_thread_exit();
     }
-    ABT_TEST_ERROR(ret, "ABT_cond_timedwait");
-    ABT_test_printf(1, "[U%d:E%d] cond waken up\n", (int)tid, eid);
+    ATS_ERROR(ret, "ABT_cond_timedwait");
+    ATS_printf(1, "[U%d:E%d] cond waken up\n", (int)tid, eid);
 
     g_counter++;
     ret = ABT_mutex_unlock(mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_unlock");
+    ATS_ERROR(ret, "ABT_mutex_unlock");
 }
 
 int main(int argc, char *argv[])
@@ -70,22 +70,22 @@ int main(int argc, char *argv[])
     ABT_thread_id tid;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
         num_threads  = DEFAULT_NUM_THREADS;
     } else {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-        num_threads  = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
     }
 
-    ABT_test_printf(1, "# of ESs : %d\n", num_xstreams);
-    ABT_test_printf(1, "# of ULTs: %d\n", num_threads);
+    ATS_printf(1, "# of ESs : %d\n", num_xstreams);
+    ATS_printf(1, "# of ULTs: %d\n", num_threads);
 
     ret = ABT_xstream_self_rank(&eid);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self_rank");
+    ATS_ERROR(ret, "ABT_xstream_self_rank");
     ret = ABT_thread_self_id(&tid);
-    ABT_TEST_ERROR(ret, "ABT_thread_self_id");
+    ATS_ERROR(ret, "ABT_thread_self_id");
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -93,67 +93,67 @@ int main(int argc, char *argv[])
 
     /* Create a mutex */
     ret = ABT_mutex_create(&mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_create");
+    ATS_ERROR(ret, "ABT_mutex_create");
 
     /* Create a condition variable */
     ret = ABT_cond_create(&cond);
-    ABT_TEST_ERROR(ret, "ABT_cond_create");
+    ATS_ERROR(ret, "ABT_cond_create");
 
     /* Create ESs */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the pools */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create ULTs */
     for (i = 0; i < num_threads; i++) {
         ret = ABT_thread_create(pools[pidx], cond_test, NULL,
                 ABT_THREAD_ATTR_NULL, &threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
         pidx = (pidx + 1) % num_xstreams;
     }
 
     ABT_thread_yield();
 
     ret = ABT_mutex_lock(mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_lock");
+    ATS_ERROR(ret, "ABT_mutex_lock");
 
     ret = ABT_cond_broadcast(cond);
-    ABT_TEST_ERROR(ret, "ABT_cond_broadcast");
-    ABT_test_printf(1, "[U%d:E%d] cond_broadcast\n", (int)tid, eid);
+    ATS_ERROR(ret, "ABT_cond_broadcast");
+    ATS_printf(1, "[U%d:E%d] cond_broadcast\n", (int)tid, eid);
 
     ret = ABT_mutex_unlock(mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_unlock");
+    ATS_ERROR(ret, "ABT_mutex_unlock");
 
     /* Join and free ULTs */
     for (i = 0; i < num_threads; i++) {
         ret = ABT_thread_free(&threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
     }
 
     /* Join and free ESs */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Free the mutex */
     ret = ABT_mutex_free(&mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_free");
+    ATS_ERROR(ret, "ABT_mutex_free");
 
     /* Free the condition variables */
     ret = ABT_cond_free(&cond);
-    ABT_TEST_ERROR(ret, "ABT_cond_free");
+    ATS_ERROR(ret, "ABT_cond_free");
 
     /* Validation */
     int expected = num_threads;
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(g_counter != expected);
+    ret = ATS_finalize(g_counter != expected);
 
     free(threads);
     free(pools);

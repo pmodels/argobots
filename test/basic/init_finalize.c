@@ -19,17 +19,17 @@ static void *init_test(void *arg)
     int i, ret;
 
     ret = ABT_initialized();
-    ABT_TEST_ERROR(ret, "ABT_initialized");
+    ATS_ERROR(ret, "ABT_initialized");
 
     for (i = 0; i < num_iter; i++) {
         ret = ABT_init(0, NULL);
-        ABT_TEST_ERROR(ret, "ABT_init");
+        ATS_ERROR(ret, "ABT_init");
         ret = ABT_finalize();
-        ABT_TEST_ERROR(ret, "ABT_finalize");
+        ATS_ERROR(ret, "ABT_finalize");
     }
 
     ret = ABT_initialized();
-    ABT_TEST_ERROR(ret, "ABT_initialized");
+    ATS_ERROR(ret, "ABT_initialized");
 
     pthread_exit(NULL);
     return NULL;
@@ -45,11 +45,11 @@ int main(int argc, char *argv[])
     assert(initialized == ABT_ERR_UNINITIALIZED);
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     if (argc > 2) {
-        num_threads = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-        num_iter    = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+        num_threads = ATS_get_arg_val(ATS_ARG_N_ES);
+        num_iter    = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
 
     threads = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     initialized = ABT_initialized();
     assert(initialized == ABT_ERR_UNINITIALIZED);

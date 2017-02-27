@@ -33,13 +33,13 @@ void thread_test_suspend(void *arg)
     free(arg);
     int i, ret;
 
-    ABT_test_printf(1, "ULT[%d][%d] start\n", eid, tid);
+    ATS_printf(1, "ULT[%d][%d] start\n", eid, tid);
     for (i = 0; i < num_iter; i++) {
         ret = ABT_self_suspend();
-        ABT_TEST_ERROR(ret, "ABT_self_suspend");
+        ATS_ERROR(ret, "ABT_self_suspend");
         values[eid][tid]++;
     }
-    ABT_test_printf(1, "ULT[%d][%d] end\n", eid, tid);
+    ATS_printf(1, "ULT[%d][%d] end\n", eid, tid);
 }
 
 void thread_test_resume(void *arg)
@@ -50,7 +50,7 @@ void thread_test_resume(void *arg)
     ABT_thread_state state;
 
     /* Create ULTs */
-    ABT_test_printf(1, "ULT%d: create %d ULTs\n", eid, num_threads);
+    ATS_printf(1, "ULT%d: create %d ULTs\n", eid, num_threads);
     for (i = 0; i < num_threads; i++) {
         t_arg = (thread_arg_t *)malloc(sizeof(thread_arg_t));
         t_arg->eid = eid;
@@ -58,7 +58,7 @@ void thread_test_resume(void *arg)
 
         ret = ABT_thread_create(pools[eid], thread_test_suspend, (void *)t_arg,
                                 ABT_THREAD_ATTR_NULL, &threads[eid][i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     ABT_barrier_wait(barrier);
@@ -69,14 +69,14 @@ void thread_test_resume(void *arg)
         for (k = 0; k < num_threads; k++) {
             while (1) {
                 ret = ABT_thread_get_state(threads[tar][k], &state);
-                ABT_TEST_ERROR(ret, "ABT_thread_get_state");
+                ATS_ERROR(ret, "ABT_thread_get_state");
                 if (state == ABT_THREAD_STATE_BLOCKED) {
                     ret = ABT_thread_resume(threads[tar][k]);
-                    ABT_TEST_ERROR(ret, "ABT_thread_resume");
+                    ATS_ERROR(ret, "ABT_thread_resume");
                     break;
                 } else {
                     ret = ABT_thread_yield();
-                    ABT_TEST_ERROR(ret, "ABT_thread_yield");
+                    ATS_ERROR(ret, "ABT_thread_yield");
                 }
             }
         }
@@ -87,7 +87,7 @@ void thread_test_resume(void *arg)
     /* Join & free ULTs */
     for (i = 0; i < num_threads; i++) {
         ret = ABT_thread_free(&threads[eid][i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
     }
 }
 
@@ -99,20 +99,20 @@ int main(int argc, char *argv[])
     int ret;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
         num_threads  = DEFAULT_NUM_THREADS;
         num_iter     = DEFAULT_NUM_ITER;
     } else {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-        num_threads  = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
-        num_iter     = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+        num_iter     = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
 
-    ABT_test_printf(1, "# of ESs    : %d\n", num_xstreams);
-    ABT_test_printf(1, "# of ULTs/ES: %d\n", num_threads);
-    ABT_test_printf(1, "# of iter.  : %d\n", num_iter);
+    ATS_printf(1, "# of ESs    : %d\n", num_xstreams);
+    ATS_printf(1, "# of ULTs/ES: %d\n", num_threads);
+    ATS_printf(1, "# of iter.  : %d\n", num_iter);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -126,56 +126,56 @@ int main(int argc, char *argv[])
 
     /* Create a barrier */
     ret = ABT_barrier_create((size_t)num_xstreams, &barrier);
-    ABT_TEST_ERROR(ret, "ABT_barrier_create");
+    ATS_ERROR(ret, "ABT_barrier_create");
 
     /* Create ESs */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the pool associated with each ES */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create one ULT for each ES */
     ret = ABT_thread_self(&masters[0]);
-    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ATS_ERROR(ret, "ABT_thread_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_thread_create(pools[i], thread_test_resume, (void *)(size_t)i,
                                 ABT_THREAD_ATTR_NULL, &masters[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     thread_test_resume((void *)0);
 
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_thread_free(&masters[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
     }
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Free the barrier */
     ret = ABT_barrier_free(&barrier);
-    ABT_TEST_ERROR(ret, "ABT_barrier_free");
+    ATS_ERROR(ret, "ABT_barrier_free");
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     for (i = 0; i < num_xstreams; i++) {
         for (k = 0; k < num_threads; k++) {

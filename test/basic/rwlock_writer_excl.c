@@ -43,17 +43,17 @@ static void thread_func(void *arg)
         ABT_thread_yield();
         if (t_arg->id % 2) {
             ret = ABT_rwlock_rdlock(t_arg->targ->rwlock);
-            ABT_TEST_ERROR(ret, "ABT_rwlock_rdlock");
-            ABT_test_printf(1, "[TH%d] read\n", t_arg->id);
+            ATS_ERROR(ret, "ABT_rwlock_rdlock");
+            ATS_printf(1, "[TH%d] read\n", t_arg->id);
         }
         else {
             ret = ABT_rwlock_wrlock(t_arg->targ->rwlock);
-            ABT_TEST_ERROR(ret, "ABT_rwlock_wrlock");
+            ATS_ERROR(ret, "ABT_rwlock_wrlock");
             g_counter++;
-            ABT_test_printf(1, "[TH%d] increased\n", t_arg->id);
+            ATS_printf(1, "[TH%d] increased\n", t_arg->id);
         }
         ret = ABT_rwlock_unlock(t_arg->targ->rwlock);
-        ABT_TEST_ERROR(ret, "ABT_rwlock_unlock");
+        ATS_ERROR(ret, "ABT_rwlock_unlock");
     }
 }
 
@@ -75,7 +75,7 @@ int run_test(test_arg_t *targ)
             ret = ABT_thread_create(targ->pools[i],
                     thread_func, (void *)&targ->args[i][j],
                     ABT_THREAD_ATTR_NULL, &targ->threads[i][j]);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
         }
     }
 
@@ -83,7 +83,7 @@ int run_test(test_arg_t *targ)
     for (i = 0; i < targ->num_xstreams; i++) {
         for (j = 0; j < targ->num_threads; j++) {
             ret = ABT_thread_free(&targ->threads[i][j]);
-            ABT_TEST_ERROR(ret, "ABT_thread_free");
+            ATS_ERROR(ret, "ABT_thread_free");
         }
     }
 
@@ -134,26 +134,26 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < targ.num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the pools attached to an execution stream */
     targ.pools = (ABT_pool *)malloc(sizeof(ABT_pool) * targ.num_xstreams);
     for (i = 0; i < targ.num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, targ.pools+i);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create a rwlock */
     ret = ABT_rwlock_create(&targ.rwlock);
-    ABT_TEST_ERROR(ret, "ABT_rwlock_create");
+    ATS_ERROR(ret, "ABT_rwlock_create");
 
     /* Execute tests */
     test_ret = 0;
@@ -164,21 +164,21 @@ int main(int argc, char *argv[])
     /* Join Execution Streams */
     for (i = 1; i < targ.num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free the rwlock */
     ret = ABT_rwlock_free(&targ.rwlock);
-    ABT_TEST_ERROR(ret, "ABT_rwlock_free");
+    ATS_ERROR(ret, "ABT_rwlock_free");
 
     /* Free Execution Streams */
     for (i = 1; i < targ.num_xstreams; i++) {
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(test_ret);
+    ret = ATS_finalize(test_ret);
 
     for (i = 0; i < targ.num_xstreams; i++) {
         free(targ.threads[i]);

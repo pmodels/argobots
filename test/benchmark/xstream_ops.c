@@ -29,7 +29,7 @@ static double t_times[T_LAST];
 
 void thread_func(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
 }
 
 int main(int argc, char *argv[])
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     double t_overhead;
 
     /* initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* create a timer */
     ABT_timer_create(&timer);
@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
     for (i = 0; i < T_LAST; i++) t_times[i] = 0.0;
 
     /* read command-line arguments */
-    num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-    iter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+    num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -150,19 +150,19 @@ int main(int argc, char *argv[])
 
     /* finalize */
     ABT_timer_free(&timer);
-    ABT_test_finalize(0);
+    ATS_finalize(0);
 
     /* output */
     int line_size = 56;
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("# of ESs: %d\n", num_xstreams);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("Avg. execution time (in seconds, %d times)\n", iter);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     for (i = 0; i < T_LAST; i++) {
         printf("%-43s  %.9f\n", t_names[i], t_times[i]);
     }
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
 
     free(xstreams);
     free(pools);

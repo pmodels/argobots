@@ -18,13 +18,13 @@ void task_hello(void *arg)
     int ret;
 
     ret = ABT_xstream_self(&xstream);
-    ABT_TEST_ERROR(ret, "ABT_stream_self");
+    ATS_ERROR(ret, "ABT_stream_self");
 
     ret = ABT_thread_self(&thread);
     assert(ret == ABT_ERR_INV_THREAD && thread == ABT_THREAD_NULL);
 
     ret = ABT_task_self(&task);
-    ABT_TEST_ERROR(ret, "ABT_task_self");
+    ATS_ERROR(ret, "ABT_task_self");
 
     ret = ABT_self_get_type(&type);
     assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_TASK);
@@ -35,7 +35,7 @@ void task_hello(void *arg)
     ret = ABT_self_on_primary_xstream(&flag);
     assert(ret == ABT_SUCCESS);
 
-    ABT_test_printf(1, "TASK %d: running on the %s\n", (int)(size_t)arg,
+    ATS_printf(1, "TASK %d: running on the %s\n", (int)(size_t)arg,
                     (flag == ABT_TRUE ? "primary ES" : "secondary ES"));
 }
 
@@ -51,12 +51,12 @@ void thread_hello(void *arg)
     int ret;
 
     ret = ABT_xstream_self(&xstream);
-    ABT_TEST_ERROR(ret, "ABT_stream_self");
+    ATS_ERROR(ret, "ABT_stream_self");
 
     ret = ABT_thread_self(&thread);
-    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ATS_ERROR(ret, "ABT_thread_self");
     ret = ABT_thread_get_id(thread, &my_id);
-    ABT_TEST_ERROR(ret, "ABT_thread_get_id");
+    ATS_ERROR(ret, "ABT_thread_get_id");
 
     ret = ABT_task_self(&task);
     assert(ret == ABT_ERR_INV_TASK && task == ABT_TASK_NULL);
@@ -72,16 +72,16 @@ void thread_hello(void *arg)
 
     /* Get the first pool */
     ret = ABT_xstream_get_main_pools(xstream, 1, &pool);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
     /* Create a task */
     ret = ABT_task_create(pool, task_hello, (void *)my_id, NULL);
-    ABT_TEST_ERROR(ret, "ABT_task_create");
+    ATS_ERROR(ret, "ABT_task_create");
 
     ret = ABT_self_on_primary_xstream(&flag);
     assert(ret == ABT_SUCCESS);
 
-    ABT_test_printf(1, "ULT %lu running on the %s\n", my_id,
+    ATS_printf(1, "ULT %lu running on the %s\n", my_id,
                     (flag == ABT_TRUE ? "primary ES" : "secondary ES"));
 }
 
@@ -113,7 +113,7 @@ void *pthread_hello(void *arg)
     ret = ABT_self_on_primary_xstream(&flag);
     assert(ret == ABT_ERR_INV_XSTREAM && flag == ABT_FALSE);
 
-    ABT_test_printf(1, "pthread: external thread\n");
+    ATS_printf(1, "pthread: external thread\n");
 
     pthread_exit(NULL);
     return NULL;
@@ -152,20 +152,20 @@ int main(int argc, char *argv[])
     assert(ret == ABT_ERR_UNINITIALIZED && flag == ABT_FALSE);
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
 
     ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[1]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_create");
+    ATS_ERROR(ret, "ABT_xstream_create");
 
     /* Test self routines */
     ret = ABT_thread_self(&my_thread);
-    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ATS_ERROR(ret, "ABT_thread_self");
     ABT_thread_get_id(my_thread, &my_thread_id);
-    ABT_test_printf(1, "ID: %lu\n", my_thread_id);
+    ATS_printf(1, "ID: %lu\n", my_thread_id);
 
     ret = ABT_task_self(&my_task);
     assert(ret == ABT_ERR_INV_TASK && my_task == ABT_TASK_NULL);
@@ -185,11 +185,11 @@ int main(int argc, char *argv[])
     /* Create ULTs */
     for (i = 0; i < 2; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
         ret = ABT_thread_create(pools[i], thread_hello, NULL,
                                 ABT_THREAD_ATTR_NULL, &threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     /* Create a pthread */
@@ -199,18 +199,18 @@ int main(int argc, char *argv[])
     /* Join & Free */
     for (i = 0; i < 2; i++) {
         ret = ABT_thread_join(threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_join");
+        ATS_ERROR(ret, "ABT_thread_join");
         ret = ABT_thread_free(&threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
     }
     ret = ABT_xstream_join(xstreams[1]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_join");
+    ATS_ERROR(ret, "ABT_xstream_join");
     ret = ABT_xstream_free(&xstreams[1]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_free");
+    ATS_ERROR(ret, "ABT_xstream_free");
     ret = pthread_join(pthread, NULL);
     assert(ret == 0);
 
     /* Finalize */
-    return ABT_test_finalize(0);
+    return ATS_finalize(0);
 }
 

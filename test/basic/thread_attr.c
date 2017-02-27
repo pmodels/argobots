@@ -21,17 +21,17 @@ void thread_func(void *arg)
 
     ABT_thread_self(&thread);
     ret = ABT_thread_get_attr(thread, &attr);
-    ABT_TEST_ERROR(ret, "ABT_thread_get_attr");
+    ATS_ERROR(ret, "ABT_thread_get_attr");
 
     ret = ABT_thread_attr_get_stacksize(attr, &stacksize1);
-    ABT_TEST_ERROR(ret, "ABT_thread_attr_get_stacksize");
+    ATS_ERROR(ret, "ABT_thread_attr_get_stacksize");
     ret = ABT_thread_get_stacksize(thread, &stacksize2);
-    ABT_TEST_ERROR(ret, "ABT_thread_get_stacksize");
+    ATS_ERROR(ret, "ABT_thread_get_stacksize");
     assert(stacksize1 == stacksize2);
-    ABT_test_printf(1, "[TH%lu]: stacksize=%lu\n", my_id, stacksize1);
+    ATS_printf(1, "[TH%lu]: stacksize=%lu\n", my_id, stacksize1);
 
     ret = ABT_thread_attr_free(&attr);
-    ABT_TEST_ERROR(ret, "ABT_thread_attr_free");
+    ATS_ERROR(ret, "ABT_thread_attr_free");
 }
 
 int main(int argc, char *argv[])
@@ -50,14 +50,14 @@ int main(int argc, char *argv[])
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the pools attached to an execution stream */
@@ -65,12 +65,12 @@ int main(int argc, char *argv[])
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* ULT attribute */
     ret = ABT_thread_attr_create(&attr);
-    ABT_TEST_ERROR(ret, "ABT_thread_attr_create");
+    ATS_ERROR(ret, "ABT_thread_attr_create");
     ABT_thread_attr_set_stacksize(attr, 8192);
 
     /* Create threads */
@@ -81,30 +81,30 @@ int main(int argc, char *argv[])
                     thread_func, (void *)tid,
                     (tid % 2 ? attr : ABT_THREAD_ATTR_NULL),
                     NULL);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
         }
     }
 
     /* Free the attribute */
     ret = ABT_thread_attr_free(&attr);
-    ABT_TEST_ERROR(ret, "ABT_thread_attr_free");
+    ATS_ERROR(ret, "ABT_thread_attr_free");
 
     thread_func((void *)0);
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     free(pools);
     free(xstreams);

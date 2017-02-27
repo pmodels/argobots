@@ -18,7 +18,7 @@ static int num_tasks;
 /* tls[0] and tls[1] will be freed by the below destructor. */
 static void tls_destructor(void *value)
 {
-    ABT_test_printf(1, "tls_destructor: free(%p)\n", value);
+    ATS_printf(1, "tls_destructor: free(%p)\n", value);
     free(value);
 }
 
@@ -29,49 +29,49 @@ static void task_tls_test(void *arg)
     void *check;
     void *value[NUM_TLS];
 
-    ABT_test_printf(1, "[T%d] start\n", my_id);
+    ATS_printf(1, "[T%d] start\n", my_id);
 
     /* If we haven't set a value for a key, we should get NULL for the key. */
     for (i = 0; i < NUM_TLS; i++) {
         ret = ABT_key_get(tls[i], &check);
-        ABT_TEST_ERROR(ret, "ABT_key_get");
+        ATS_ERROR(ret, "ABT_key_get");
         assert(check == NULL);
     }
 
     for (i = 0; i < NUM_TLS; i++) {
         value[i] = malloc(16);
-        ABT_test_printf(1, "[T%d] malloc(%p)\n", my_id, value[i]);
+        ATS_printf(1, "[T%d] malloc(%p)\n", my_id, value[i]);
         ret = ABT_key_set(tls[i], value[i]);
-        ABT_TEST_ERROR(ret, "ABT_key_set");
+        ATS_ERROR(ret, "ABT_key_set");
     }
 
     for (i = 0; i < NUM_TLS; i++) {
         ret = ABT_key_get(tls[i], &check);
-        ABT_TEST_ERROR(ret, "ABT_key_get");
+        ATS_ERROR(ret, "ABT_key_get");
         assert(value[i] == check);
     }
-    ABT_test_printf(1, "[T%d] passed #1\n", my_id);
+    ATS_printf(1, "[T%d] passed #1\n", my_id);
 
     for (i = 0; i < NUM_TLS; i++) {
         ret = ABT_key_get(tls[i], &check);
-        ABT_TEST_ERROR(ret, "ABT_key_get");
+        ATS_ERROR(ret, "ABT_key_get");
         assert(value[i] == check);
     }
-    ABT_test_printf(1, "[T%d] passed #2\n", my_id);
+    ATS_printf(1, "[T%d] passed #2\n", my_id);
 
     for (i = 2; i < NUM_TLS; i++) {
-        ABT_test_printf(1, "[T%d] free(%p)\n", my_id, value[i]);
+        ATS_printf(1, "[T%d] free(%p)\n", my_id, value[i]);
         free(value[i]);
         ret = ABT_key_set(tls[i], NULL);
-        ABT_TEST_ERROR(ret, "ABT_key_set");
+        ATS_ERROR(ret, "ABT_key_set");
 
         ret = ABT_key_get(tls[i], &check);
-        ABT_TEST_ERROR(ret, "ABT_key_get");
+        ATS_ERROR(ret, "ABT_key_get");
         assert(check == NULL);
     }
-    ABT_test_printf(1, "[T%d] passed #3\n", my_id);
+    ATS_printf(1, "[T%d] passed #3\n", my_id);
 
-    ABT_test_printf(1, "[T%d] end\n", my_id);
+    ATS_printf(1, "[T%d] end\n", my_id);
 }
 
 static void task_create(void *arg)
@@ -83,23 +83,23 @@ static void task_create(void *arg)
     ABT_thread *tasks;
 
     ret = ABT_thread_self(&my_thread);
-    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ATS_ERROR(ret, "ABT_thread_self");
     ret = ABT_thread_get_last_pool(my_thread, &my_pool);
-    ABT_TEST_ERROR(ret, "ABT_thread_get_last_pool");
+    ATS_ERROR(ret, "ABT_thread_get_last_pool");
 
     /* Create tasklets */
     tasks = (ABT_task *)malloc(num_tasks * sizeof(ABT_task));
     for (i = 0; i < num_tasks; i++) {
         size_t tid = 100 * my_id + i;
         ret = ABT_task_create(my_pool, task_tls_test, (void *)tid, &tasks[i]);
-        ABT_TEST_ERROR(ret, "ABT_task_create");
+        ATS_ERROR(ret, "ABT_task_create");
     }
 
-    ABT_test_printf(1, "[U%d] created %d tasks\n", my_id, num_tasks);
+    ATS_printf(1, "[U%d] created %d tasks\n", my_id, num_tasks);
 
     for (i = 0; i < num_tasks; i++) {
         ret = ABT_task_free(&tasks[i]);
-        ABT_TEST_ERROR(ret, "ABT_task_free");
+        ATS_ERROR(ret, "ABT_task_free");
     }
 }
 
@@ -112,17 +112,17 @@ int main(int argc, char *argv[])
     int i, ret;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
         num_tasks  = DEFAULT_NUM_TASKS;
     } else {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-        num_tasks  = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+        num_tasks  = ATS_get_arg_val(ATS_ARG_N_ULT);
     }
 
-    ABT_test_printf(1, "# of ESs        : %d\n", num_xstreams);
-    ABT_test_printf(1, "# of tasklets/ES: %d\n", num_tasks);
+    ATS_printf(1, "# of ESs        : %d\n", num_xstreams);
+    ATS_printf(1, "# of tasklets/ES: %d\n", num_tasks);
     for (i = 0; i < NUM_TLS; i++) {
         tls[i] = ABT_KEY_NULL;
     }
@@ -135,25 +135,25 @@ int main(int argc, char *argv[])
     assert(NUM_TLS >= 4);
     for (i = 0; i < 3; i++) {
         ret = ABT_key_create(tls_destructor, &tls[i]);
-        ABT_TEST_ERROR(ret, "ABT_key_create");
+        ATS_ERROR(ret, "ABT_key_create");
     }
     for (i = 3; i < NUM_TLS; i++) {
         ret = ABT_key_create(NULL, &tls[i]);
-        ABT_TEST_ERROR(ret, "ABT_key_create");
+        ATS_ERROR(ret, "ABT_key_create");
     }
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the pools attached to each ES */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create one ULT for each ES */
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
         size_t tid = i + 1;
         ret = ABT_thread_create(pools[i], task_create, (void *)tid,
                                 ABT_THREAD_ATTR_NULL, &threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     task_create((void *)1);
@@ -169,28 +169,28 @@ int main(int argc, char *argv[])
     /* Join ULTs */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_thread_free(&threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
         assert(threads[i] == ABT_THREAD_NULL);
     }
 
     /* Join and free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
         assert(xstreams[i] == ABT_XSTREAM_NULL);
     }
 
     /* Detete keys */
     for (i = 0; i < NUM_TLS; i++) {
         ret = ABT_key_free(&tls[i]);
-        ABT_TEST_ERROR(ret, "ABT_key_free");
+        ATS_ERROR(ret, "ABT_key_free");
         assert(tls[i] == ABT_KEY_NULL);
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     free(xstreams);
     free(pools);

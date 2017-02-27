@@ -35,7 +35,7 @@ void thread_func(void *arg)
     int ret;
     arg_t *my_arg = (arg_t *)arg;
 
-    ABT_test_printf(3, "[U%d:E%d] %s\n", my_arg->tid, my_arg->eid,
+    ATS_printf(3, "[U%d:E%d] %s\n", my_arg->tid, my_arg->eid,
                        my_arg->op_type == OP_WAIT ? "wait" : "set");
 
     if (my_arg->op_type == OP_WAIT) {
@@ -46,7 +46,7 @@ void thread_func(void *arg)
             ret = ABT_eventual_wait(my_arg->ev, &val);
             assert(*(int *)val == 1);
         }
-        ABT_TEST_ERROR(ret, "ABT_eventual_wait");
+        ATS_ERROR(ret, "ABT_eventual_wait");
 
     } else if (my_arg->op_type == OP_SET) {
         if (my_arg->nbytes == 0) {
@@ -55,10 +55,10 @@ void thread_func(void *arg)
             int val = 1;
             ret = ABT_eventual_set(my_arg->ev, &val, sizeof(int));
         }
-        ABT_TEST_ERROR(ret, "ABT_eventual_set");
+        ATS_ERROR(ret, "ABT_eventual_set");
     }
 
-    ABT_test_printf(3, "[U%d:E%d] done\n", my_arg->tid, my_arg->eid);
+    ATS_printf(3, "[U%d:E%d] done\n", my_arg->tid, my_arg->eid);
 }
 
 void task_func(void *arg)
@@ -73,7 +73,7 @@ void task_func(void *arg)
         int val = 1;
         ret = ABT_eventual_set(my_arg->ev, &val, sizeof(int));
     }
-    ABT_TEST_ERROR(ret, "ABT_eventual_set");
+    ATS_ERROR(ret, "ABT_eventual_set");
 }
 
 void eventual_test(void *arg)
@@ -93,7 +93,7 @@ void eventual_test(void *arg)
     arg_t *task_args;
     ABT_eventual *evs2;
 
-    ABT_test_printf(1, "[M%u] start\n", (unsigned)(size_t)arg);
+    ATS_printf(1, "[M%u] start\n", (unsigned)(size_t)arg);
 
     assert(num_tasks * 2 == num_threads);
 
@@ -114,14 +114,14 @@ void eventual_test(void *arg)
         nbytes[t] = (t & 1) ? sizeof(int) : 0;
 
         ret = ABT_eventual_create(nbytes[t], &evs1[t]);
-        ABT_TEST_ERROR(ret, "ABT_eventual_create");
+        ATS_ERROR(ret, "ABT_eventual_create");
 
         ret = ABT_eventual_create(nbytes[t], &evs2[t]);
-        ABT_TEST_ERROR(ret, "ABT_eventual_create");
+        ATS_ERROR(ret, "ABT_eventual_create");
     }
 
     for (i = 0; i < num_iter; i++) {
-        ABT_test_printf(2, "[M%u] iter=%d\n", (unsigned)(size_t)arg, i);
+        ATS_printf(2, "[M%u] iter=%d\n", (unsigned)(size_t)arg, i);
 
         /* Use eventual between ULTs */
         for (t = 0; t < num_threads; t += 2) {
@@ -132,7 +132,7 @@ void eventual_test(void *arg)
             thread_args[t].op_type = OP_WAIT;
             ret = ABT_thread_create(pools[pid], thread_func, &thread_args[t],
                                     ABT_THREAD_ATTR_NULL, &threads[t]);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
             pid = (pid + 1) % num_xstreams;
 
             thread_args[t+1].eid = eid;
@@ -142,7 +142,7 @@ void eventual_test(void *arg)
             thread_args[t+1].op_type = OP_SET;
             ret = ABT_thread_create(pools[pid], thread_func, &thread_args[t+1],
                                     ABT_THREAD_ATTR_NULL, &threads[t+1]);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
             pid = (pid + 1) % num_xstreams;
         }
 
@@ -153,43 +153,43 @@ void eventual_test(void *arg)
             waiter_args[t].op_type = OP_WAIT;
             ret = ABT_thread_create(pools[pid], thread_func, &waiter_args[t],
                                     ABT_THREAD_ATTR_NULL, &waiters[t]);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
             pid = (pid + 1) % num_xstreams;
 
             task_args[t].ev = evs2[t];
             task_args[t].nbytes = nbytes[t];
             task_args[t].op_type = OP_SET;
             ret = ABT_task_create(pools[pid], task_func, &task_args[t], &tasks[t]);
-            ABT_TEST_ERROR(ret, "ABT_task_create");
+            ATS_ERROR(ret, "ABT_task_create");
             pid = (pid + 1) % num_xstreams;
         }
 
         for (t = 0; t < num_threads; t++) {
             ret = ABT_thread_free(&threads[t]);
-            ABT_TEST_ERROR(ret, "ABT_thread_free");
+            ATS_ERROR(ret, "ABT_thread_free");
         }
 
         for (t = 0; t < num_tasks; t++) {
             ret = ABT_thread_free(&waiters[t]);
-            ABT_TEST_ERROR(ret, "ABT_thread_free");
+            ATS_ERROR(ret, "ABT_thread_free");
             ret = ABT_task_free(&tasks[t]);
-            ABT_TEST_ERROR(ret, "ABT_task_free");
+            ATS_ERROR(ret, "ABT_task_free");
         }
 
         for (t = 0; t < num_tasks; t++) {
             ret = ABT_eventual_reset(evs1[t]);
-            ABT_TEST_ERROR(ret, "ABT_eventual_reset");
+            ATS_ERROR(ret, "ABT_eventual_reset");
             ret = ABT_eventual_reset(evs2[t]);
-            ABT_TEST_ERROR(ret, "ABT_eventual_reset");
+            ATS_ERROR(ret, "ABT_eventual_reset");
         }
 
     }
 
     for (t = 0; t < num_tasks; t++) {
         ret = ABT_eventual_free(&evs1[t]);
-        ABT_TEST_ERROR(ret, "ABT_eventual_free");
+        ATS_ERROR(ret, "ABT_eventual_free");
         ret = ABT_eventual_free(&evs2[t]);
-        ABT_TEST_ERROR(ret, "ABT_eventual_free");
+        ATS_ERROR(ret, "ABT_eventual_free");
     }
 
     free(threads);
@@ -203,7 +203,7 @@ void eventual_test(void *arg)
     free(task_args);
     free(evs2);
 
-    ABT_test_printf(1, "[M%u] end\n", (unsigned)(size_t)arg);
+    ATS_printf(1, "[M%u] end\n", (unsigned)(size_t)arg);
 }
 
 int main(int argc, char *argv[])
@@ -213,23 +213,23 @@ int main(int argc, char *argv[])
     int i, ret;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
         num_threads  = DEFAULT_NUM_THREADS;
         num_tasks    = DEFAULT_NUM_TASKS;
         num_iter     = DEFAULT_NUM_ITER;
     } else {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-        num_tasks    = ABT_test_get_arg_val(ABT_TEST_ARG_N_TASK);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+        num_tasks    = ATS_get_arg_val(ATS_ARG_N_TASK);
         num_threads  = num_tasks * 2;
-        num_iter     = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+        num_iter     = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
 
-    ABT_test_printf(1, "# of ESs        : %d\n", num_xstreams);
-    ABT_test_printf(1, "# of ULTs/ES    : %d\n", num_threads + num_tasks);
-    ABT_test_printf(1, "# of tasklets/ES: %d\n", num_tasks);
-    ABT_test_printf(1, "# of iter       : %d\n", num_iter);
+    ATS_printf(1, "# of ESs        : %d\n", num_xstreams);
+    ATS_printf(1, "# of ULTs/ES    : %d\n", num_threads + num_tasks);
+    ATS_printf(1, "# of tasklets/ES: %d\n", num_tasks);
+    ATS_printf(1, "# of iter       : %d\n", num_iter);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -237,23 +237,23 @@ int main(int argc, char *argv[])
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the main pool of each ES */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create a master ULT for each ES */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_thread_create(pools[i], eventual_test, (void *)(size_t)i,
                                 ABT_THREAD_ATTR_NULL, &masters[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     eventual_test((void *)0);
@@ -261,19 +261,19 @@ int main(int argc, char *argv[])
     /* Join master ULTs */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_thread_free(&masters[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
     }
 
     /* Join and free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     free(xstreams);
     free(pools);

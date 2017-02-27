@@ -32,7 +32,7 @@ static void print_cpuset(int rank, int cpuset_size, int *cpuset)
         len = strlen(&cpuset_str[pos]);
         pos += len;
     }
-    ABT_test_printf(1, "[E%d] CPU set (%d): {%s}\n",
+    ATS_printf(1, "[E%d] CPU set (%d): {%s}\n",
                     rank, cpuset_size, cpuset_str);
 
     free(cpuset_str);
@@ -47,28 +47,28 @@ static void test_affinity(void *arg)
     int *cpuset = NULL;
 
     ret = ABT_xstream_self(&xstream);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
 
     ret = ABT_xstream_get_rank(xstream, &rank);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_rank");
+    ATS_ERROR(ret, "ABT_xstream_get_rank");
 
     ret = ABT_xstream_get_cpubind(xstream, &cpuid);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_cpubind");
-    ABT_test_printf(1, "[E%d] CPU bind: %d\n", rank, cpuid);
+    ATS_ERROR(ret, "ABT_xstream_get_cpubind");
+    ATS_printf(1, "[E%d] CPU bind: %d\n", rank, cpuid);
 
     new_cpuid = (cpuid + 1) % num_xstreams;
-    ABT_test_printf(1, "[E%d] change binding: %d -> %d\n",
+    ATS_printf(1, "[E%d] change binding: %d -> %d\n",
                     rank, cpuid, new_cpuid);
     ret = ABT_xstream_set_cpubind(xstream, new_cpuid);
-    ABT_TEST_ERROR(ret, "ABT_xstream_set_cpubind");
+    ATS_ERROR(ret, "ABT_xstream_set_cpubind");
     ret = ABT_xstream_get_cpubind(xstream, &cpuid);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_cpubind");
+    ATS_ERROR(ret, "ABT_xstream_get_cpubind");
     assert(cpuid == new_cpuid);
-    ABT_test_printf(1, "[E%d] CPU bind: %d\n", rank, cpuid);
+    ATS_printf(1, "[E%d] CPU bind: %d\n", rank, cpuid);
 
     ret = ABT_xstream_get_affinity(xstream, 0, NULL, &num_cpus);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_affinity");
-    ABT_test_printf(1, "[E%d] num_cpus=%d\n", rank, num_cpus);
+    ATS_ERROR(ret, "ABT_xstream_get_affinity");
+    ATS_printf(1, "[E%d] num_cpus=%d\n", rank, num_cpus);
     if (num_cpus > 0) {
         cpuset_size = num_cpus;
         cpuset = (int *)malloc(cpuset_size * sizeof(int));
@@ -76,7 +76,7 @@ static void test_affinity(void *arg)
 
         num_cpus = 0;
         ret = ABT_xstream_get_affinity(xstream, cpuset_size, cpuset, &num_cpus);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_affinity");
+        ATS_ERROR(ret, "ABT_xstream_get_affinity");
         assert(num_cpus == cpuset_size);
         print_cpuset(rank, cpuset_size, cpuset);
 
@@ -89,9 +89,9 @@ static void test_affinity(void *arg)
         cpuset[i] = i;
     }
     ret = ABT_xstream_set_affinity(xstream, num_xstreams, cpuset);
-    ABT_TEST_ERROR(ret, "ABT_xstream_set_affinity");
+    ATS_ERROR(ret, "ABT_xstream_set_affinity");
     ret = ABT_xstream_get_affinity(xstream, num_xstreams, cpuset, &num_cpus);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_affinity");
+    ATS_ERROR(ret, "ABT_xstream_get_affinity");
     assert(num_cpus == num_xstreams);
     print_cpuset(rank, num_xstreams, cpuset);
 
@@ -108,23 +108,23 @@ int main(int argc, char *argv[])
     int cpuid = -1;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     if (argc >= 2) {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
     }
 
-    ABT_test_printf(1, "# of ESs: %d\n", num_xstreams);
+    ATS_printf(1, "# of ESs: %d\n", num_xstreams);
 
     /* Check the affinity of the primary ES */
     ret = ABT_xstream_self(&primary_es);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     ret = ABT_xstream_get_cpubind(primary_es, &cpuid);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_cpubind");
+    ATS_ERROR(ret, "ABT_xstream_get_cpubind");
 
     /* Create a barrier */
     ret = ABT_barrier_create(num_xstreams, &barrier);
-    ABT_TEST_ERROR(ret, "ABT_barrier_create");
+    ATS_ERROR(ret, "ABT_barrier_create");
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -134,20 +134,20 @@ int main(int argc, char *argv[])
     xstreams[0] = primary_es;
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the first pool of each ES */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create one ULT for each ES */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_thread_create(pools[i], test_affinity, (void *)(intptr_t)i,
                                 ABT_THREAD_ATTR_NULL, &threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     test_affinity((void *)0);
@@ -155,23 +155,23 @@ int main(int argc, char *argv[])
     /* Join and free ULTs */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_thread_free(&threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
     }
 
     /* Join and free ESs */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Free the barrier */
     ret = ABT_barrier_free(&barrier);
-    ABT_TEST_ERROR(ret, "ABT_barrier_free");
+    ATS_ERROR(ret, "ABT_barrier_free");
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     free(xstreams);
     free(pools);

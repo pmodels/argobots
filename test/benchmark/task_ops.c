@@ -57,7 +57,7 @@ static uint64_t t_all[T_ALL_LAST];
 
 void task_func(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
 }
 
 void task_test(void *arg)
@@ -69,29 +69,29 @@ void task_test(void *arg)
     uint64_t t_all_start, t_start, t_time;
     int i, t;
 
-    ABT_test_printf(1, "[E%d] main ULT: start\n", eid);
+    ATS_printf(1, "[E%d] main ULT: start\n", eid);
 
     /*************************************************************************/
     /* tasklet: create/join (cold) */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ABT_test_get_cycles();
+    if (eid == 0) t_all_start = ATS_get_cycles();
 
-    t_start = ABT_test_get_cycles();
+    t_start = ATS_get_cycles();
     for (i = 0; i < num_tasks; i++) {
         ABT_task_create(my_pool, task_func, NULL, &my_tasks[i]);
     }
-    my_times[T_CREATE_COLD] = ABT_test_get_cycles() - t_start;
+    my_times[T_CREATE_COLD] = ATS_get_cycles() - t_start;
 
-    t_start = ABT_test_get_cycles();
+    t_start = ATS_get_cycles();
     for (i = 0; i < num_tasks; i++) {
         ABT_task_free(&my_tasks[i]);
     }
-    my_times[T_FREE_COLD] = ABT_test_get_cycles() - t_start;
+    my_times[T_FREE_COLD] = ATS_get_cycles() - t_start;
 
     ABT_xstream_barrier_wait(g_xbarrier);
     if (eid == 0) {
         /* execution time for all ESs */
-        t_all[T_ALL_CREATE_FREE_COLD] = ABT_test_get_cycles() - t_all_start;
+        t_all[T_ALL_CREATE_FREE_COLD] = ATS_get_cycles() - t_all_start;
     }
     my_times[T_CREATE_COLD] /= num_tasks;
     my_times[T_FREE_COLD] /= num_tasks;
@@ -104,17 +104,17 @@ void task_test(void *arg)
     /* measure the time for individual operation */
     ABT_xstream_barrier_wait(g_xbarrier);
     for (i = 0; i < iter; i++) {
-        t_start = ABT_test_get_cycles();
+        t_start = ATS_get_cycles();
         for (t = 0; t < num_tasks; t++) {
             ABT_task_create(my_pool, task_func, NULL, &my_tasks[t]);
         }
-        my_times[T_CREATE] += (ABT_test_get_cycles() - t_start);
+        my_times[T_CREATE] += (ATS_get_cycles() - t_start);
 
-        t_start = ABT_test_get_cycles();
+        t_start = ATS_get_cycles();
         for (t = 0; t < num_tasks; t++) {
             ABT_task_free(&my_tasks[t]);
         }
-        my_times[T_FREE] += (ABT_test_get_cycles() - t_start);
+        my_times[T_FREE] += (ATS_get_cycles() - t_start);
     }
     my_times[T_CREATE] /= (iter * num_tasks);
     my_times[T_FREE] /= (iter * num_tasks);
@@ -122,8 +122,8 @@ void task_test(void *arg)
 
     /* measure tasklet create/free time */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ABT_test_get_cycles();
-    t_start = ABT_test_get_cycles();
+    if (eid == 0) t_all_start = ATS_get_cycles();
+    t_start = ATS_get_cycles();
     for (i = 0; i < iter; i++) {
         for (t = 0; t < num_tasks; t++) {
             ABT_task_create(my_pool, task_func, NULL, &my_tasks[t]);
@@ -133,19 +133,19 @@ void task_test(void *arg)
             ABT_task_free(&my_tasks[t]);
         }
     }
-    my_times[T_CREATE_FREE] = ABT_test_get_cycles() - t_start;
+    my_times[T_CREATE_FREE] = ATS_get_cycles() - t_start;
     ABT_xstream_barrier_wait(g_xbarrier);
     if (eid == 0) {
         /* execution time for all ESs */
-        t_time = ABT_test_get_cycles() - t_all_start;
+        t_time = ATS_get_cycles() - t_all_start;
         t_all[T_ALL_CREATE_FREE] = t_time / iter;
     }
     my_times[T_CREATE_FREE] /= (iter * num_tasks);
 
     /* measure tasklet create (unnamed) time */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ABT_test_get_cycles();
-    t_start = ABT_test_get_cycles();
+    if (eid == 0) t_all_start = ATS_get_cycles();
+    t_start = ATS_get_cycles();
     for (i = 0; i < iter; i++) {
         for (t = 0; t < num_tasks; t++) {
             ABT_task_create(my_pool, task_func, NULL, NULL);
@@ -157,11 +157,11 @@ void task_test(void *arg)
             if (size == 0) break;
         }
     }
-    my_times[T_CREATE_UNNAMED] = ABT_test_get_cycles() - t_start;
+    my_times[T_CREATE_UNNAMED] = ATS_get_cycles() - t_start;
     ABT_xstream_barrier_wait(g_xbarrier);
     if (eid == 0) {
         /* execution time for all ESs */
-        t_time = ABT_test_get_cycles() - t_all_start;
+        t_time = ATS_get_cycles() - t_all_start;
         t_all[T_ALL_CREATE_UNNAMED] = t_time / iter;
     }
     my_times[T_CREATE_UNNAMED] /= (iter * num_tasks);
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
     uint64_t t_max[T_LAST];
 
     /* initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     for (i = 0; i < T_LAST; i++) {
         t_avg[i] = 0;
@@ -188,9 +188,9 @@ int main(int argc, char *argv[])
     }
 
     /* read command-line arguments */
-    num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-    num_tasks    = ABT_test_get_arg_val(ABT_TEST_ARG_N_TASK);
-    iter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+    num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+    num_tasks    = ATS_get_arg_val(ATS_ARG_N_TASK);
+    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     g_xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     g_pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -248,27 +248,27 @@ int main(int argc, char *argv[])
     }
 
     /* finalize */
-    ABT_test_finalize(0);
+    ATS_finalize(0);
 
     /* output */
     int line_size = 59;
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("# of ESs            : %d\n", num_xstreams);
     printf("# of tasklets per ES: %d\n", num_tasks);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("Avg. execution time (in seconds, %d times)\n", iter);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("%-23s %11s %11s %11s\n", "operation", "avg", "min", "max");
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     for (i = 0; i < T_LAST; i++) {
         printf("%-22s  %11" PRIu64 " %11" PRIu64 " %11" PRIu64 "\n",
                t_names[i], t_avg[i], t_min[i], t_max[i]);
     }
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     for (i = 0; i < T_ALL_LAST; i++) {
         printf("%-22s  %11" PRIu64 "\n", t_all_names[i], t_all[i]);
     }
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
 
     free(g_xstreams);
     free(g_pools);

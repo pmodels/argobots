@@ -36,7 +36,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     /* Set the variables from the config */
     ret = ABT_sched_config_read(config, 1, &p_data->event_freq);
-    ABT_TEST_ERROR(ret, "ABT_sched_config_read");
+    ATS_ERROR(ret, "ABT_sched_config_read");
 
     ret = ABT_sched_set_data(sched, (void *)p_data);
 
@@ -63,11 +63,11 @@ static void sched_run(ABT_sched sched)
     event_freq = p_data->event_freq;
 
     ret = ABT_sched_get_num_pools(sched, &num_pools);
-    ABT_TEST_ERROR(ret, "ABT_sched_get_num_pools");
+    ATS_ERROR(ret, "ABT_sched_get_num_pools");
 
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_pools);
     ret = ABT_sched_get_pools(sched, num_pools, 0, pools);
-    ABT_TEST_ERROR(ret, "ABT_sched_get_pools");
+    ATS_ERROR(ret, "ABT_sched_get_pools");
     my_pool = pools[0];
 
     while (1) {
@@ -92,7 +92,7 @@ static void sched_run(ABT_sched sched)
         if (++work_count >= event_freq) {
             ABT_bool stop;
             ret = ABT_sched_has_to_stop(sched, &stop);
-            ABT_TEST_ERROR(ret, "ABT_sched_has_to_stop");
+            ATS_ERROR(ret, "ABT_sched_has_to_stop");
             if (stop == ABT_TRUE) break;
             work_count = 0;
             ABT_xstream_check_events(sched);
@@ -123,7 +123,7 @@ static ABT_pool *create_pools(int num)
     for (i = 0; i < num; i++) {
         ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC,
                                     ABT_TRUE, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
+        ATS_ERROR(ret, "ABT_pool_create_basic");
     }
 
     return pools;
@@ -154,7 +154,7 @@ static ABT_sched *create_scheds(int num, ABT_pool *pools)
     ret = ABT_sched_config_create(&config,
                                   cv_event_freq, 10,
                                   ABT_sched_config_var_end);
-    ABT_TEST_ERROR(ret, "ABT_sched_config_create");
+    ATS_ERROR(ret, "ABT_sched_config_create");
 
     my_pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num);
     scheds = (ABT_sched *)malloc(sizeof(ABT_sched) * num);
@@ -164,12 +164,12 @@ static ABT_sched *create_scheds(int num, ABT_pool *pools)
         }
 
         ret = ABT_sched_create(&sched_def, num, my_pools, config, &scheds[i]);
-        ABT_TEST_ERROR(ret, "ABT_sched_create");
+        ATS_ERROR(ret, "ABT_sched_create");
     }
     free(my_pools);
 
     ret = ABT_sched_config_free(&config);
-    ABT_TEST_ERROR(ret, "ABT_sched_config_free");
+    ATS_ERROR(ret, "ABT_sched_config_free");
 
     return scheds;
 }
@@ -184,7 +184,7 @@ static void free_scheds(int num, ABT_sched *scheds)
      * ABT_finalize(). */
     for (i = 1; i < num; i++) {
         ret = ABT_sched_free(&scheds[i]);
-        ABT_TEST_ERROR(ret, "ABT_sched_free");
+        ATS_ERROR(ret, "ABT_sched_free");
     }
 
     free(scheds);
@@ -192,7 +192,7 @@ static void free_scheds(int num, ABT_sched *scheds)
 
 static void thread_func(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
     int old_rank, cur_rank;
     ABT_thread self;
     ABT_thread_id id;
@@ -202,33 +202,33 @@ static void thread_func(void *arg)
     ABT_thread_self(&self);
     ABT_thread_get_id(self, &id);
 
-    ABT_test_printf(1, "[U%lu:E%d] Hello, world!\n", id, cur_rank);
+    ATS_printf(1, "[U%lu:E%d] Hello, world!\n", id, cur_rank);
 
     ABT_thread_yield();
 
     old_rank = cur_rank;
     ABT_xstream_self_rank(&cur_rank);
     msg = (cur_rank == old_rank) ? "" : " (stolen)";
-    ABT_test_printf(1, "[U%lu:E%d] Hello again #1.%s\n", id, cur_rank, msg);
+    ATS_printf(1, "[U%lu:E%d] Hello again #1.%s\n", id, cur_rank, msg);
 
     ABT_thread_yield();
 
     old_rank = cur_rank;
     ABT_xstream_self_rank(&cur_rank);
     msg = (cur_rank == old_rank) ? "" : " (stolen)";
-    ABT_test_printf(1, "[U%lu:E%d] Hello again #2.%s\n", id, cur_rank, msg);
+    ATS_printf(1, "[U%lu:E%d] Hello again #2.%s\n", id, cur_rank, msg);
 
     ABT_thread_yield();
 
     old_rank = cur_rank;
     ABT_xstream_self_rank(&cur_rank);
     msg = (cur_rank == old_rank) ? "" : " (stolen)";
-    ABT_test_printf(1, "[U%lu:E%d] Goodbye, world!%s\n", id, cur_rank, msg);
+    ATS_printf(1, "[U%lu:E%d] Goodbye, world!%s\n", id, cur_rank, msg);
 }
 
 static void create_threads(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
     int i, rank;
     int ret;
     ABT_xstream xstream;
@@ -238,27 +238,27 @@ static void create_threads(void *arg)
     ABT_thread_id id;
 
     ret = ABT_xstream_self(&xstream);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     ret = ABT_xstream_get_main_pools(xstream, 1, &pool);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
     ABT_xstream_get_rank(xstream, &rank);
     ABT_thread_self(&self);
     ABT_thread_get_id(self, &id);
 
-    ABT_test_printf(1, "[U%lu:E%d] creating ULTs\n", id, rank);
+    ATS_printf(1, "[U%lu:E%d] creating ULTs\n", id, rank);
     threads = (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);
     for (i = 0; i < num_threads; i++) {
         ret = ABT_thread_create(pool, thread_func, NULL,
                                 ABT_THREAD_ATTR_NULL, &threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     ABT_xstream_get_rank(xstream, &rank);
-    ABT_test_printf(1, "[U%lu:E%d] freeing ULTs\n", id, rank);
+    ATS_printf(1, "[U%lu:E%d] freeing ULTs\n", id, rank);
     for (i = 0; i < num_threads; i++) {
         ret = ABT_thread_free(&threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
     }
     free(threads);
 }
@@ -271,13 +271,13 @@ int main(int argc, char *argv[])
     ABT_pool *pools;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     if (argc > 1) {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-        num_threads  = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
     }
-    ABT_test_printf(1, "num_xstreams=%d num_threads=%d\n", num_xstreams,
+    ATS_printf(1, "num_xstreams=%d num_threads=%d\n", num_xstreams,
                     num_threads);
 
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
@@ -290,33 +290,33 @@ int main(int argc, char *argv[])
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     ret = ABT_xstream_set_main_sched(xstreams[0], scheds[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_set_main_sched");
+    ATS_ERROR(ret, "ABT_xstream_set_main_sched");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(scheds[i], &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create ULTs */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_thread_create(pools[i], create_threads, NULL,
                                 ABT_THREAD_ATTR_NULL, NULL);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     /* Join and free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     free_scheds(num_xstreams, scheds);
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     free(xstreams);
     free(pools);

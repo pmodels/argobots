@@ -20,51 +20,51 @@ int add_to_another_ES(int accessIdx, int result)
     int s;
     ABT_pool_access access = accesses[accessIdx];
 
-    ABT_test_printf(1, "add_to_another_ES: %d\n", accessIdx);
+    ATS_printf(1, "add_to_another_ES: %d\n", accessIdx);
 
     ABT_pool pool;
     ret = ABT_pool_create_basic(ABT_POOL_FIFO, access, ABT_TRUE, &pool);
-    ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
+    ATS_ERROR(ret, "ABT_pool_create_basic");
 
     ABT_sched scheds[3];
     for (s = 0; s < 3; s++) {
         ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool,
                                      ABT_SCHED_CONFIG_NULL, &scheds[s]);
-        ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
+        ATS_ERROR(ret, "ABT_sched_create_basic");
     }
 
     /* Creation of two ESs */
     ABT_xstream xstream1, xstream2;
     ret = ABT_xstream_create(ABT_SCHED_NULL, &xstream1);
-    ABT_TEST_ERROR(ret, "ABT_xstream_create");
+    ATS_ERROR(ret, "ABT_xstream_create");
     ret = ABT_xstream_create(ABT_SCHED_NULL, &xstream2);
-    ABT_TEST_ERROR(ret, "ABT_xstream_create");
+    ATS_ERROR(ret, "ABT_xstream_create");
     /* Get the pools */
     ABT_pool pool1, pool2;
     ret = ABT_xstream_get_main_pools(xstream1, 1, &pool1);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     ret = ABT_xstream_get_main_pools(xstream2, 1, &pool2);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
     /* Use the pool with two schedulers in the same ES */
     ret =  ABT_pool_add_sched(pool1, scheds[0]);
-    ABT_TEST_ERROR(ret, "ABT_pool_add_sched");
+    ATS_ERROR(ret, "ABT_pool_add_sched");
 
     ret =  ABT_pool_add_sched(pool1, scheds[1]);
-    ABT_TEST_ERROR(ret, "ABT_pool_add_sched");
+    ATS_ERROR(ret, "ABT_pool_add_sched");
 
     /* Use the pool with another scheduler in another ES */
     ret =  ABT_pool_add_sched(pool2, scheds[2]);
 
     /* Free scheds[2] if it was not added to pool2 */
     if (ret != ABT_SUCCESS) {
-        ABT_TEST_ERROR(ABT_sched_free(&scheds[2]), "ABT_sched_free");
+        ATS_ERROR(ABT_sched_free(&scheds[2]), "ABT_sched_free");
     }
 
-    ABT_TEST_ERROR(ABT_xstream_join(xstream1), "ABT_xstream_join");
-    ABT_TEST_ERROR(ABT_xstream_join(xstream2), "ABT_xstream_join");
-    ABT_TEST_ERROR(ABT_xstream_free(&xstream1), "ABT_xstream_free");
-    ABT_TEST_ERROR(ABT_xstream_free(&xstream2), "ABT_xstream_free");
+    ATS_ERROR(ABT_xstream_join(xstream1), "ABT_xstream_join");
+    ATS_ERROR(ABT_xstream_join(xstream2), "ABT_xstream_join");
+    ATS_ERROR(ABT_xstream_free(&xstream1), "ABT_xstream_free");
+    ATS_ERROR(ABT_xstream_free(&xstream2), "ABT_xstream_free");
 
     if ((ret != ABT_SUCCESS && result == ABT_SUCCESS) ||
         (ret == ABT_SUCCESS && result != ABT_SUCCESS))
@@ -84,11 +84,11 @@ void task_func1(void *arg)
     ABT_sched sched      = *(ABT_sched *)args[4];
 
     ret = ABT_pool_add_sched(pool_main, sched_dest);
-    ABT_TEST_ERROR(ret, "ABT_pool_add_sched");
+    ATS_ERROR(ret, "ABT_pool_add_sched");
 
     ret = ABT_pool_add_sched(pool_dest, sched);
     if (ret != ABT_SUCCESS) {
-        ABT_TEST_ERROR(ABT_sched_free(&sched), "ABT_sched_free");
+        ATS_ERROR(ABT_sched_free(&sched), "ABT_sched_free");
     }
 
     if ((ret != ABT_SUCCESS && result == ABT_SUCCESS) ||
@@ -97,7 +97,7 @@ void task_func1(void *arg)
     else
         ret = ABT_SUCCESS;
 
-    ABT_TEST_ERROR(ret, "ABT_task_create");
+    ATS_ERROR(ret, "ABT_task_create");
 }
 
 int add_to_another_access(int accessIdx, int *results)
@@ -107,45 +107,45 @@ int add_to_another_access(int accessIdx, int *results)
     ABT_pool_access access = accesses[accessIdx];
 
     for (p = 0; p < 5; p++) {
-        ABT_test_printf(1, "add_to_another_access: %d-%d\n", accessIdx, p);
+        ATS_printf(1, "add_to_another_access: %d-%d\n", accessIdx, p);
 
         /* Creation of the ES */
         ABT_xstream xstream;
         ret = ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
                                        ABT_SCHED_CONFIG_NULL, &xstream);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create_basic");
+        ATS_ERROR(ret, "ABT_xstream_create_basic");
         /* Get the pool */
         ABT_pool pool_main;
         ret = ABT_xstream_get_main_pools(xstream, 1, &pool_main);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
         /* Test */
         ABT_pool pool_dest;
         ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[p], ABT_TRUE, &pool_dest);
-        ABT_TEST_ERROR(ret, "ABT_pool_create_basic");
+        ATS_ERROR(ret, "ABT_pool_create_basic");
         ABT_sched sched_dest;
         ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool_dest,
                                      ABT_SCHED_CONFIG_NULL, &sched_dest);
-        ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
+        ATS_ERROR(ret, "ABT_sched_create_basic");
 
         ABT_sched_config config;
         ret = ABT_sched_config_create(&config,
                                       ABT_sched_config_access, access,
                                       ABT_sched_config_var_end);
-        ABT_TEST_ERROR(ret, "ABT_sched_config_create");
+        ATS_ERROR(ret, "ABT_sched_config_create");
         ABT_sched sched;
         ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config, &sched);
-        ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
+        ATS_ERROR(ret, "ABT_sched_create_basic");
         ret = ABT_sched_config_free(&config);
-        ABT_TEST_ERROR(ret, "ABT_sched_config_free");
+        ATS_ERROR(ret, "ABT_sched_config_free");
         /* We need to use a task for the test to be in the same ES */
         void *args[5] = { &results[p], &pool_main, &pool_dest, &sched_dest,
                           &sched };
         ret = ABT_task_create(pool_main, task_func1, args, NULL);
-        ABT_TEST_ERROR(ret, "ABT_task_create");
+        ATS_ERROR(ret, "ABT_task_create");
 
-        ABT_TEST_ERROR(ABT_xstream_join(xstream), "ABT_xstream_join");
-        ABT_TEST_ERROR(ABT_xstream_free(&xstream), "ABT_xstream_free");
+        ATS_ERROR(ABT_xstream_join(xstream), "ABT_xstream_join");
+        ATS_ERROR(ABT_xstream_free(&xstream), "ABT_xstream_free");
     }
     return ABT_SUCCESS;
 }
@@ -158,11 +158,11 @@ void task_func2(void *arg)
 
         ABT_xstream xstream;
         ret = ABT_xstream_self(&xstream);
-        ABT_TEST_ERROR(ret, "ABT_xstream_self");
+        ATS_ERROR(ret, "ABT_xstream_self");
         /* Get the pool */
         ABT_pool pool;
         ret = ABT_xstream_get_main_pools(xstream, 1, &pool);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
         ret = ABT_task_create(pool, task_func2, NULL, NULL);
         if ((ret != ABT_SUCCESS && result == ABT_SUCCESS) ||
@@ -170,7 +170,7 @@ void task_func2(void *arg)
             ret =  ABT_ERR_INV_POOL_ACCESS;
         else
             ret = ABT_SUCCESS;
-        ABT_TEST_ERROR(ret, "ABT_task_create");
+        ATS_ERROR(ret, "ABT_task_create");
     }
 }
 
@@ -179,26 +179,26 @@ int push_from_another_es(int accessIdx, int *results)
     int ret;
     ABT_pool_access access = accesses[accessIdx];
 
-    ABT_test_printf(1, "push_from_another_es: %d\n", accessIdx);
+    ATS_printf(1, "push_from_another_es: %d\n", accessIdx);
 
     /* Creation of the ES */
     ABT_sched_config config;
     ret = ABT_sched_config_create(&config,
                                   ABT_sched_config_access, access,
                                   ABT_sched_config_var_end);
-    ABT_TEST_ERROR(ret, "ABT_sched_config_create");
+    ATS_ERROR(ret, "ABT_sched_config_create");
     ABT_sched sched;
     ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config, &sched);
-    ABT_TEST_ERROR(ret, "ABT_sched_create_basic");
+    ATS_ERROR(ret, "ABT_sched_create_basic");
     ret = ABT_sched_config_free(&config);
-    ABT_TEST_ERROR(ret, "ABT_sched_config_free");
+    ATS_ERROR(ret, "ABT_sched_config_free");
     ABT_xstream xstream;
     ret = ABT_xstream_create(sched, &xstream);
-    ABT_TEST_ERROR(ret, "ABT_xstream_create");
+    ATS_ERROR(ret, "ABT_xstream_create");
     /* Get the pool */
     ABT_pool pool;
     ret = ABT_xstream_get_main_pools(xstream, 1, &pool);
-    ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+    ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
     /* Tests */
     ret = ABT_task_create(pool, task_func2, &results[1], NULL);
@@ -209,8 +209,8 @@ int push_from_another_es(int accessIdx, int *results)
     else
         ret = ABT_SUCCESS;
 
-    ABT_TEST_ERROR(ABT_xstream_join(xstream), "ABT_xstream_join");
-    ABT_TEST_ERROR(ABT_xstream_free(&xstream), "ABT_xstream_free");
+    ATS_ERROR(ABT_xstream_join(xstream), "ABT_xstream_join");
+    ATS_ERROR(ABT_xstream_free(&xstream), "ABT_xstream_free");
 
     return ret;
 }
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
     int *ret_push_from_another_pool[5];
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* ABT_POOL_ACCESS_PRIV */
     ret_add_to_another_ES[0] = error;
@@ -265,15 +265,15 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < 5; i++) {
         ret = add_to_another_ES(i, ret_add_to_another_ES[i]);
-        ABT_TEST_ERROR(ret, "add_to_another_ES");
+        ATS_ERROR(ret, "add_to_another_ES");
         ret = add_to_another_access(i, ret_add_to_another_access[i]);
-        ABT_TEST_ERROR(ret, "add_to_another_access");
+        ATS_ERROR(ret, "add_to_another_access");
         ret = push_from_another_es(i, ret_push_from_another_pool[i]);
-        ABT_TEST_ERROR(ret, "push_from_another_es");
+        ATS_ERROR(ret, "push_from_another_es");
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
     return ret;
 }
 

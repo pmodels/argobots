@@ -16,7 +16,7 @@ int num_threads = DEFAULT_NUM_THREADS;
 void thread_func(void *arg)
 {
     size_t my_id = (size_t)arg;
-    ABT_test_printf(1, "[TH%lu]: Hello, world!\n", my_id);
+    ATS_printf(1, "[TH%lu]: Hello, world!\n", my_id);
 }
 
 void thread_create(void *arg)
@@ -26,7 +26,7 @@ void thread_create(void *arg)
     ABT_xstream my_xstream;
 
     ret = ABT_xstream_self(&my_xstream);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
 
     /* Create ULTs */
     for (i = 0; i < num_threads; i++) {
@@ -34,10 +34,10 @@ void thread_create(void *arg)
         ret = ABT_thread_create_on_xstream(my_xstream,
                 thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
                 NULL);
-        ABT_TEST_ERROR(ret, "ABT_thread_create_on_xstream");
+        ATS_ERROR(ret, "ABT_thread_create_on_xstream");
     }
 
-    ABT_test_printf(1, "[TH%lu]: created %d ULTs\n", my_id, num_threads);
+    ATS_printf(1, "[TH%lu]: created %d ULTs\n", my_id, num_threads);
 }
 
 int main(int argc, char *argv[])
@@ -57,14 +57,14 @@ int main(int argc, char *argv[])
     threads = (ABT_thread *)malloc(sizeof(ABT_thread) * num_xstreams);
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create one ULT for each ES */
@@ -73,30 +73,30 @@ int main(int argc, char *argv[])
         ret = ABT_thread_create_on_xstream(xstreams[i],
                 thread_create, (void *)tid, ABT_THREAD_ATTR_NULL,
                 &threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create_on_xstream");
+        ATS_ERROR(ret, "ABT_thread_create_on_xstream");
     }
 
     /* Join and free ULTs */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_thread_join(threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_join");
+        ATS_ERROR(ret, "ABT_thread_join");
         ret = ABT_thread_free(&threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
     }
 
     /* Join and free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     free(xstreams);
     free(threads);
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     return ret;
 }

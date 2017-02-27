@@ -29,11 +29,11 @@ void task_func(void *arg)
     int my_id = (int)(size_t)arg;
 
     ret = ABT_xstream_self(&xstream);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     ret = ABT_xstream_self_rank(&rank);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self_rank");
+    ATS_ERROR(ret, "ABT_xstream_self_rank");
 
-    ABT_test_printf(1, "TASK %d: running on ES %d\n", my_id, rank);
+    ATS_printf(1, "TASK %d: running on ES %d\n", my_id, rank);
 }
 
 void thread_func(void *arg)
@@ -43,21 +43,21 @@ void thread_func(void *arg)
     int my_id = (int)(size_t)arg;
 
     ret = ABT_xstream_self(&xstream);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     ret = ABT_xstream_self_rank(&rank);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self_rank");
+    ATS_ERROR(ret, "ABT_xstream_self_rank");
 
     ABT_mutex_lock(g_mutex);
     g_counter++;
     ABT_mutex_unlock(g_mutex);
-    ABT_test_printf(1, "ULT %d: mutex passed\n", my_id);
+    ATS_printf(1, "ULT %d: mutex passed\n", my_id);
 
     /* ULT are waiting, and pthread will broadcast the signal. */
     ABT_mutex_lock(g_mutex);
     g_threads++;
     ABT_cond_wait(g_cond, g_mutex);
     ABT_mutex_unlock(g_mutex);
-    ABT_test_printf(1, "ULT %d: cond #1 passed\n", my_id);
+    ATS_printf(1, "ULT %d: cond #1 passed\n", my_id);
 
     /* ULT 1 and pthread are waiting, and ULT 0 broadcasts. */
     if (my_id == 0) {
@@ -71,19 +71,19 @@ void thread_func(void *arg)
         ABT_cond_wait(g_cond, g_mutex);
         ABT_mutex_unlock(g_mutex);
     }
-    ABT_test_printf(1, "ULT %d: cond #2 passed\n", my_id);
+    ATS_printf(1, "ULT %d: cond #2 passed\n", my_id);
 
     /* Test eventual */
     void *evt_result;
     char *buf_evt = (char *)malloc(BUF_SIZE);
     ABT_eventual_wait(g_eventual[0], &evt_result);
-    ABT_test_printf(1, "ULT %d: eventual #1 passed\n", my_id);
+    ATS_printf(1, "ULT %d: eventual #1 passed\n", my_id);
     if (my_id == 0) {
         ABT_eventual_wait(g_eventual[1], &evt_result);
     } else {
         ABT_eventual_set(g_eventual[1], buf_evt, BUF_SIZE);
     }
-    ABT_test_printf(1, "ULT %d: eventual #2 passed\n", my_id);
+    ATS_printf(1, "ULT %d: eventual #2 passed\n", my_id);
     free(buf_evt);
 
     /* Test future */
@@ -93,12 +93,12 @@ void thread_func(void *arg)
     } else {
         ABT_future_wait(g_future[0]);
     }
-    ABT_test_printf(1, "ULT %d: future #1 passed\n", my_id);
+    ATS_printf(1, "ULT %d: future #1 passed\n", my_id);
     ABT_future_wait(g_future[1]);
-    ABT_test_printf(1, "ULT %d: future #2 passed\n", my_id);
+    ATS_printf(1, "ULT %d: future #2 passed\n", my_id);
     free(buf_fut);
 
-    ABT_test_printf(1, "ULT %d running on ES %d\n", my_id, rank);
+    ATS_printf(1, "ULT %d running on ES %d\n", my_id, rank);
 }
 
 void *pthread_test(void *arg)
@@ -113,39 +113,39 @@ void *pthread_test(void *arg)
     /* Execution Streams */
     for (i = 0; i < 2; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Create synchronization objects */
     ret = ABT_mutex_create(&g_mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_create");
+    ATS_ERROR(ret, "ABT_mutex_create");
     ret = ABT_cond_create(&g_cond);
-    ABT_TEST_ERROR(ret, "ABT_cond_create");
+    ATS_ERROR(ret, "ABT_cond_create");
     for (i = 0; i < 2; i++) {
         ret = ABT_eventual_create(BUF_SIZE, &g_eventual[i]);
-        ABT_TEST_ERROR(ret, "ABT_eventual_create");
+        ATS_ERROR(ret, "ABT_eventual_create");
         ret = ABT_future_create(1, NULL, &g_future[i]);
-        ABT_TEST_ERROR(ret, "ABT_future_create");
+        ATS_ERROR(ret, "ABT_future_create");
     }
 
     /* Create ULTs and tasklets */
     for (i = 0; i < 2; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
         ret = ABT_thread_create(pools[i], thread_func, (void *)i,
                                 ABT_THREAD_ATTR_NULL, &threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
 
         ret = ABT_task_create(pools[i], task_func, (void *)i, &tasks[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     /* Test mutex */
     ABT_mutex_lock(g_mutex);
     g_counter++;
     ABT_mutex_unlock(g_mutex);
-    ABT_test_printf(1, "pthread: mutex passed\n");
+    ATS_printf(1, "pthread: mutex passed\n");
 
     /* Test condition variable */
     /* Wake up other ULTs that are waiting on the condition variable */
@@ -154,63 +154,63 @@ void *pthread_test(void *arg)
     g_threads = 0;
     ABT_cond_broadcast(g_cond);
     ABT_mutex_unlock(g_mutex);
-    ABT_test_printf(1, "pthread: cond #1 passed\n");
+    ATS_printf(1, "pthread: cond #1 passed\n");
 
     /* Wait on the condition variable */
     ABT_mutex_lock(g_mutex);
     g_threads++;
     ABT_cond_wait(g_cond, g_mutex);
     ABT_mutex_unlock(g_mutex);
-    ABT_test_printf(1, "pthread: cond #2 passed\n");
+    ATS_printf(1, "pthread: cond #2 passed\n");
 
     /* Test eventual */
     void *evt_result;
     char *buf_evt = (char *)malloc(BUF_SIZE);
     ABT_eventual_set(g_eventual[0], buf_evt, BUF_SIZE);
-    ABT_test_printf(1, "pthread: eventual #1 passed\n");
+    ATS_printf(1, "pthread: eventual #1 passed\n");
     ABT_eventual_wait(g_eventual[1], &evt_result);
-    ABT_test_printf(1, "pthread: eventual #2 passed\n");
+    ATS_printf(1, "pthread: eventual #2 passed\n");
     free(buf_evt);
 
     /* Test future */
     char *buf_fut = (char *)malloc(BUF_SIZE);
     ABT_future_wait(g_future[0]);
-    ABT_test_printf(1, "pthread: future #1 passed\n");
+    ATS_printf(1, "pthread: future #1 passed\n");
     ABT_future_set(g_future[1], (void *)buf_fut);
-    ABT_test_printf(1, "pthread: future #2 passed\n");
+    ATS_printf(1, "pthread: future #2 passed\n");
     free(buf_fut);
 
     /* Join */
     for (i = 0; i < 2; i++) {
         ret = ABT_thread_join(threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_join");
+        ATS_ERROR(ret, "ABT_thread_join");
     }
     for (i = 0; i < 2; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free */
     ret = ABT_mutex_free(&g_mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_free");
+    ATS_ERROR(ret, "ABT_mutex_free");
     ret = ABT_cond_free(&g_cond);
-    ABT_TEST_ERROR(ret, "ABT_cond_free");
+    ATS_ERROR(ret, "ABT_cond_free");
     for (i = 0; i < 2; i++) {
         ret = ABT_eventual_free(&g_eventual[i]);
-        ABT_TEST_ERROR(ret, "ABT_eventual_free");
+        ATS_ERROR(ret, "ABT_eventual_free");
         ret = ABT_future_free(&g_future[i]);
-        ABT_TEST_ERROR(ret, "ABT_future_free");
+        ATS_ERROR(ret, "ABT_future_free");
 
         ret = ABT_thread_free(&threads[i]);
-        ABT_TEST_ERROR(ret, "ABT_thread_free");
+        ATS_ERROR(ret, "ABT_thread_free");
         ret = ABT_task_free(&tasks[i]);
-        ABT_TEST_ERROR(ret, "ABT_task_free");
+        ATS_ERROR(ret, "ABT_task_free");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Validation */
-    ABT_test_printf(1, "g_counter=%d\n", g_counter);
+    ATS_printf(1, "g_counter=%d\n", g_counter);
     assert(g_counter == 3);
 
     pthread_exit(NULL);
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
     int ret;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* Create a pthread */
     ret = pthread_create(&pthread, NULL, pthread_test, NULL);
@@ -234,6 +234,6 @@ int main(int argc, char *argv[])
     assert(ret == 0);
 
     /* Finalize */
-    return ABT_test_finalize(0);
+    return ATS_finalize(0);
 }
 

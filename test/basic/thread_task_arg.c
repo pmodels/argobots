@@ -20,15 +20,15 @@ void thread_func(void *arg)
     void *ret_arg = NULL;
 
     ret = ABT_thread_self(&self);
-    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ATS_ERROR(ret, "ABT_thread_self");
 
     ret = ABT_thread_get_arg(self, &ret_arg);
-    ABT_TEST_ERROR(ret, "ABT_thread_get_arg");
+    ATS_ERROR(ret, "ABT_thread_get_arg");
     assert(ret_arg == arg);
 
     ret_arg = NULL;
     ret = ABT_self_get_arg(&ret_arg);
-    ABT_TEST_ERROR(ret, "ABT_self_get_arg");
+    ATS_ERROR(ret, "ABT_self_get_arg");
     assert(ret_arg == arg);
 }
 
@@ -39,15 +39,15 @@ void task_func(void *arg)
     void *ret_arg = NULL;
 
     ret = ABT_task_self(&self);
-    ABT_TEST_ERROR(ret, "ABT_task_self");
+    ATS_ERROR(ret, "ABT_task_self");
 
     ret = ABT_task_get_arg(self, &ret_arg);
-    ABT_TEST_ERROR(ret, "ABT_task_get_arg");
+    ATS_ERROR(ret, "ABT_task_get_arg");
     assert(ret_arg == arg);
 
     ret_arg = NULL;
     ret = ABT_self_get_arg(&ret_arg);
-    ABT_TEST_ERROR(ret, "ABT_self_get_arg");
+    ATS_ERROR(ret, "ABT_self_get_arg");
     assert(ret_arg == arg);
 }
 
@@ -61,36 +61,36 @@ int main(int argc, char *argv[])
     void *ret_arg;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
         num_threads  = DEFAULT_NUM_THREADS;
         num_tasks    = DEFAULT_NUM_TASKS;
     } else {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-        num_threads  = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
-        num_tasks    = ABT_test_get_arg_val(ABT_TEST_ARG_N_TASK);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+        num_tasks    = ATS_get_arg_val(ATS_ARG_N_TASK);
     }
 
-    ABT_test_printf(1, "# of ESs     : %d\n", num_xstreams);
-    ABT_test_printf(1, "# of ULTs/ES : %d\n", num_threads);
-    ABT_test_printf(1, "# of tasks/ES: %d\n", num_tasks);
+    ATS_printf(1, "# of ESs     : %d\n", num_xstreams);
+    ATS_printf(1, "# of ULTs/ES : %d\n", num_threads);
+    ATS_printf(1, "# of tasks/ES: %d\n", num_tasks);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
 
     /* Create ESs */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the pool associated with each ES */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create ULTs and tasklets for each ES */
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
             tid = i * num_threads + k;
             ret = ABT_thread_create(pools[i], thread_func, (void *)tid,
                                     ABT_THREAD_ATTR_NULL, NULL);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
         }
 
         for (k = 0; k < num_tasks; k++) {
@@ -109,19 +109,19 @@ int main(int argc, char *argv[])
     }
 
     ret = ABT_self_get_arg(&ret_arg);
-    ABT_TEST_ERROR(ret, "ABT_self_get_arg");
+    ATS_ERROR(ret, "ABT_self_get_arg");
     assert(ret_arg == NULL);
 
     /* Join and free ESs */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     free(xstreams);
     free(pools);

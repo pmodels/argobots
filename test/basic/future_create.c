@@ -24,16 +24,16 @@ int total_num_threads;
 void future_wait(void *args)
 {
     int th = (int)(intptr_t)args;
-    ABT_test_printf(1, "Thread %d is waiting for future\n", th);
+    ATS_printf(1, "Thread %d is waiting for future\n", th);
     ABT_future_wait(myfuture);
-    ABT_test_printf(1, "Thread %d returns from future_wait\n", th);
+    ATS_printf(1, "Thread %d returns from future_wait\n", th);
 }
 
 void future_set(void *args)
 {
     int th = (int)(intptr_t)args;
     ABT_future_set(myfuture, (void *)(intptr_t)th);
-    ABT_test_printf(1, "Thread %d signals future\n", th);
+    ATS_printf(1, "Thread %d signals future\n", th);
 }
 
 void future_cb(void **args)
@@ -44,11 +44,11 @@ void future_cb(void **args)
         total += (int)(intptr_t)args[i];
     }
     if (total_num_threads*(total_num_threads-1)/2 != total) {
-        ABT_TEST_ERROR(ABT_ERR_OTHER, "Wrong value!");
+        ATS_ERROR(ABT_ERR_OTHER, "Wrong value!");
     }
 
     ABT_future_set(myfuture2,  NULL);
-    ABT_test_printf(1, "Callback signals future\n");
+    ATS_printf(1, "Callback signals future\n");
 }
 
 int main(int argc, char *argv[])
@@ -62,29 +62,29 @@ int main(int argc, char *argv[])
     total_num_threads = num_threads*num_xstreams;
 
     /* init and thread creation */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* Create Execution Streams */
     ABT_xstream *xstreams =
       (ABT_xstream *)malloc(num_xstreams*sizeof(ABT_xstream));
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the pools attached to an execution stream */
     ABT_pool *pools = (ABT_pool *)malloc(num_xstreams*sizeof(ABT_pool));
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     ret = ABT_future_create(total_num_threads, future_cb, &myfuture);
-    ABT_TEST_ERROR(ret, "ABT_future_create");
+    ATS_ERROR(ret, "ABT_future_create");
     ret = ABT_future_create(1, NULL, &myfuture2);
-    ABT_TEST_ERROR(ret, "ABT_future_create");
+    ATS_ERROR(ret, "ABT_future_create");
 
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
@@ -92,37 +92,37 @@ int main(int argc, char *argv[])
             ret = ABT_thread_create(pools[i], future_wait,
                                     (void *)(intptr_t)(idx+total_num_threads),
                                     ABT_THREAD_ATTR_NULL, NULL);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
             ret = ABT_thread_create(pools[i], future_set, (void *)(intptr_t)idx,
                                     ABT_THREAD_ATTR_NULL, NULL);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
         }
     }
 
-    ABT_test_printf(1, "Thread main is waiting for future2\n");
+    ATS_printf(1, "Thread main is waiting for future2\n");
     ABT_future_wait(myfuture2);
-    ABT_test_printf(1, "Thread main returns from future2\n");
+    ATS_printf(1, "Thread main returns from future2\n");
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Release futures */
     ret = ABT_future_free(&myfuture);
-    ABT_TEST_ERROR(ret, "ABT_future_free");
+    ATS_ERROR(ret, "ABT_future_free");
     ret = ABT_future_free(&myfuture2);
-    ABT_TEST_ERROR(ret, "ABT_future_free");
+    ATS_ERROR(ret, "ABT_future_free");
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     free(xstreams);
     free(pools);

@@ -31,7 +31,7 @@ static double t_timers[T_LAST];
 
 void thread_func(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
 }
 
 int main(int argc, char *argv[])
@@ -42,8 +42,8 @@ int main(int argc, char *argv[])
     int i, iter;
     double t_overhead;
 
-    ABT_test_read_args(argc, argv);
-    iter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+    ATS_read_args(argc, argv);
+    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     ABT_timer_create(&timer);
     ABT_timer_start(timer);
@@ -96,13 +96,13 @@ int main(int argc, char *argv[])
 
     /* output */
     int line_size = 45;
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("Avg. execution time (in seconds, %d times)\n", iter);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     for (i = 0; i < T_LAST; i++) {
         printf("%-23s  %.9f\n", t_names[i], t_timers[i]);
     }
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
 
     ABT_timer_free(&timer);
 

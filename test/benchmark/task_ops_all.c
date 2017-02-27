@@ -32,7 +32,7 @@ static uint64_t t_times[T_LAST];
 
 void task_func(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
 }
 
 void test_create_join(void *arg)
@@ -76,16 +76,16 @@ int main(int argc, char *argv[])
     uint64_t t_start;
 
     /* initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     for (i = 0; i < T_LAST; i++) {
         t_times[i] = 0;
     }
 
     /* read command-line arguments */
-    num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-    num_tasks    = ABT_test_get_arg_val(ABT_TEST_ARG_N_TASK);
-    iter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+    num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+    num_tasks    = ATS_get_arg_val(ATS_ARG_N_TASK);
+    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     g_xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     g_pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
         }
 
         /* measurement */
-        t_start = ABT_test_get_cycles();
+        t_start = ATS_get_cycles();
         for (i = 0; i < num_xstreams; i++) {
             ABT_thread_create(all_pools[i][0], test_fn, (void *)i,
                               ABT_THREAD_ATTR_NULL, &top_threads[i]);
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
         for (i = 0; i < num_xstreams; i++) {
             ABT_thread_free(&top_threads[i]);
         }
-        t_times[t] = ABT_test_get_cycles() - t_start;
+        t_times[t] = ATS_get_cycles() - t_start;
     }
 
     /* join and free */
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
     }
 
     /* finalize */
-    ABT_test_finalize(0);
+    ATS_finalize(0);
 
     /* compute the execution time for one iteration */
     for (i = 0; i < T_LAST; i++) {
@@ -165,18 +165,18 @@ int main(int argc, char *argv[])
 
     /* output */
     int line_size = 59;
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("# of ESs            : %d\n", num_xstreams);
     printf("# of tasklets per ES: %d\n", num_tasks);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("Avg. execution time (in seconds, %d times)\n", iter);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("%-20s %-s\n", "operation", "time");
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     for (i = 0; i < T_LAST; i++) {
         printf("%-19s  %11" PRIu64 "\n", t_names[i], t_times[i]);
     }
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
 
     free(g_xstreams);
     free(g_pools);

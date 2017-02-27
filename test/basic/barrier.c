@@ -48,20 +48,20 @@ int main(int argc, char *argv[])
     int ret;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
     if (argc < 2) {
         num_xstreams = 4;
         N = 10;
         iter = 100;
     } else {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-        N = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
-        iter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+        N = ATS_get_arg_val(ATS_ARG_N_ULT);
+        iter = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
 
-    ABT_test_printf(1, "# of ESs : %d\n", num_xstreams);
-    ABT_test_printf(1, "# of ULTs: %d\n", N * N);
-    ABT_test_printf(1, "# of iter: %d\n", iter);
+    ATS_printf(1, "# of ESs : %d\n", num_xstreams);
+    ATS_printf(1, "# of ULTs: %d\n", N * N);
+    ATS_printf(1, "# of iter: %d\n", iter);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -74,29 +74,29 @@ int main(int argc, char *argv[])
     /* Create the values and barriers */
     for (i = 0; i < N; i++) {
         ret = ABT_barrier_create((size_t)N, &row_barrier[i]);
-        ABT_TEST_ERROR(ret, "ABT_barrier_create");
+        ATS_ERROR(ret, "ABT_barrier_create");
         ret = ABT_barrier_create((size_t)N, &col_barrier[i]);
-        ABT_TEST_ERROR(ret, "ABT_barrier_create");
+        ATS_ERROR(ret, "ABT_barrier_create");
     }
     ret = ABT_barrier_create((size_t)N * N, &global_barrier);
-    ABT_TEST_ERROR(ret, "ABT_barrier_create");
+    ATS_ERROR(ret, "ABT_barrier_create");
 
     args = (int *)malloc(2 * N * N * sizeof(int));
 
     /* Create ESs */
     for (t = 0; t < iter; t++) {
-        ABT_test_printf(1, "iter=%d\n", t);
+        ATS_printf(1, "iter=%d\n", t);
         ret = ABT_xstream_self(&xstreams[0]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_self");
+        ATS_ERROR(ret, "ABT_xstream_self");
         for (i = 1; i < num_xstreams; i++) {
             ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-            ABT_TEST_ERROR(ret, "ABT_xstream_create");
+            ATS_ERROR(ret, "ABT_xstream_create");
         }
 
         /* Get the first pool of each ES */
         for (i = 0; i < num_xstreams; i++) {
             ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-            ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+            ATS_ERROR(ret, "ABT_xstream_get_main_pools");
         }
 
         /* Create ULTs */
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
                 args[2*(i*N+j)+1] = j;
                 ret = ABT_thread_create(pools[es], run, (void *)&args[2*(i*N+j)],
                                         ABT_THREAD_ATTR_NULL, &threads[i*N+j]);
-                ABT_TEST_ERROR(ret, "ABT_thread_create");
+                ATS_ERROR(ret, "ABT_thread_create");
                 es = (es + 1) % num_xstreams;
             }
         }
@@ -118,35 +118,35 @@ int main(int argc, char *argv[])
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
                 ret = ABT_thread_free(&threads[i*N+j]);
-                ABT_TEST_ERROR(ret, "ABT_thread_free");
+                ATS_ERROR(ret, "ABT_thread_free");
             }
         }
 
         /* Join ESs */
         for (i = 1; i < num_xstreams; i++) {
             ret = ABT_xstream_join(xstreams[i]);
-            ABT_TEST_ERROR(ret, "ABT_xstream_join");
+            ATS_ERROR(ret, "ABT_xstream_join");
         }
 
         /* Free ESs */
         for (i = 1; i < num_xstreams; i++) {
             ret = ABT_xstream_free(&xstreams[i]);
-            ABT_TEST_ERROR(ret, "ABT_xstream_free");
+            ATS_ERROR(ret, "ABT_xstream_free");
         }
     }
 
     /* Free the barriers */
     for (i = 0; i < N; i++) {
         ret = ABT_barrier_free(&row_barrier[i]);
-        ABT_TEST_ERROR(ret, "ABT_barrier_create");
+        ATS_ERROR(ret, "ABT_barrier_create");
         ret = ABT_barrier_free(&col_barrier[i]);
-        ABT_TEST_ERROR(ret, "ABT_barrier_create");
+        ATS_ERROR(ret, "ABT_barrier_create");
     }
     ret = ABT_barrier_free(&global_barrier);
-    ABT_TEST_ERROR(ret, "ABT_barrier_free");
+    ATS_ERROR(ret, "ABT_barrier_free");
 
     /* Finalize */
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
 
     free(xstreams);
     free(pools);

@@ -35,13 +35,13 @@ void thread_func(void *arg)
 
     ABT_thread_yield();
 
-    ABT_test_printf(1, "[U%d:E%d] START\n", t_arg->id, rank);
+    ATS_printf(1, "[U%d:E%d] START\n", t_arg->id, rank);
     for (i = 0; i < g_iter; i++) {
         ABT_mutex_lock(t_arg->mutex);
         g_counter++;
         ABT_mutex_unlock(t_arg->mutex);
     }
-    ABT_test_printf(1, "[U%d:E%d] END\n", t_arg->id, rank);
+    ATS_printf(1, "[U%d:E%d] END\n", t_arg->id, rank);
 
     ABT_thread_yield();
 }
@@ -54,17 +54,17 @@ int main(int argc, char *argv[])
     int num_threads = DEFAULT_NUM_THREADS;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     if (argc >= 2) {
-        num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-        num_threads = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
-        g_iter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+        num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+        num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
+        g_iter = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
 
-    ABT_test_printf(2, "# of ESs : %d\n", num_xstreams);
-    ABT_test_printf(1, "# of ULTs: %d\n", num_threads);
-    ABT_test_printf(1, "# of iter: %d\n", g_iter);
+    ATS_printf(2, "# of ESs : %d\n", num_xstreams);
+    ATS_printf(1, "# of ULTs: %d\n", num_threads);
+    ATS_printf(1, "# of iter: %d\n", g_iter);
 
     ABT_mutex mutex;
     ABT_xstream *xstreams;
@@ -83,10 +83,10 @@ int main(int argc, char *argv[])
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the pools attached to an execution stream */
@@ -94,12 +94,12 @@ int main(int argc, char *argv[])
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create a mutex */
     ret = ABT_mutex_create(&mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_create");
+    ATS_ERROR(ret, "ABT_mutex_create");
 
     /* Create ULTs */
     for (i = 0; i < num_xstreams; i++) {
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
             ret = ABT_thread_create(pools[i],
                     thread_func, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
                     &threads[i][j]);
-            ABT_TEST_ERROR(ret, "ABT_thread_create");
+            ATS_ERROR(ret, "ABT_thread_create");
         }
     }
 
@@ -118,24 +118,24 @@ int main(int argc, char *argv[])
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             ret = ABT_thread_free(&threads[i][j]);
-            ABT_TEST_ERROR(ret, "ABT_thread_free");
+            ATS_ERROR(ret, "ABT_thread_free");
         }
     }
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
     }
 
     /* Free the mutex */
     ret = ABT_mutex_free(&mutex);
-    ABT_TEST_ERROR(ret, "ABT_mutex_free");
+    ATS_ERROR(ret, "ABT_mutex_free");
 
     /* Free Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     /* Validation */
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
     }
 
     /* Finalize */
-    ret = ABT_test_finalize(g_counter != expected);
+    ret = ATS_finalize(g_counter != expected);
 
     for (i = 0; i < num_xstreams; i++) {
         free(threads[i]);

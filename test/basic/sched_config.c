@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     double b2;
 
     /* Initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     ABT_sched_config_create(&config1, param_a, a, ABT_sched_config_var_end);
     a2 = 0; b2 = 0.0;
@@ -60,6 +60,6 @@ int main(int argc, char *argv[])
     assert(a2 == a && b2 == b);
 
     /* Finalize */
-    return ABT_test_finalize(0);
+    return ATS_finalize(0);
 }
 

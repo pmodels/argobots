@@ -72,7 +72,7 @@ static ABT_xstream_barrier g_xbarrier = ABT_XSTREAM_BARRIER_NULL;
 
 static void task_func(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
 }
 
 static void master_thread_func(void *arg)
@@ -161,10 +161,10 @@ int main(int argc, char *argv[])
 #endif
 
     int i;
-    ABT_test_read_args(argc, argv);
-    niter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
-    ness  = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-    max_tasks = ABT_test_get_arg_val(ABT_TEST_ARG_N_TASK);
+    ATS_read_args(argc, argv);
+    niter = ATS_get_arg_val(ATS_ARG_N_ITER);
+    ness  = ATS_get_arg_val(ATS_ARG_N_ES);
+    max_tasks = ATS_get_arg_val(ATS_ARG_N_TASK);
 
     xstreams = (ABT_xstream *)malloc(ness*sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(ness*sizeof(ABT_pool));

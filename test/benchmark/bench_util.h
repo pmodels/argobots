@@ -19,12 +19,12 @@ do {                                             \
 #ifndef USE_PAPI
 #define ABTX_start_prof(start_time, evset)       \
 do {                                             \
-    start_time = ABT_test_get_cycles();          \
+    start_time = ATS_get_cycles();               \
 } while (0)
 #else
 #define ABTX_start_prof(start_time, evset)       \
 do {                                             \
-    start_time = ABT_test_get_cycles();          \
+    start_time = ATS_get_cycles();               \
     ABTX_papi_assert(PAPI_start(evset));         \
 } while (0)
 #endif
@@ -33,7 +33,7 @@ do {                                             \
 #define ABTX_stop_prof(start_time, num, time_sum, time_sqrsum, evset, vals, \
                        llcm_sum, llcm_sqrsum, totm_sum, tlbm_sqrsum)        \
 do {                                                                        \
-    float elaps_time = (float)(ABT_test_get_cycles() - start_time)/num;     \
+    float elaps_time = (float)(ATS_get_cycles() - start_time)/num;          \
     time_sum += elaps_time;                                                 \
     time_sqrsum += elaps_time*elaps_time;                                   \
 } while (0)
@@ -45,7 +45,7 @@ do {                                                                        \
     float llcm = (float)vals[0]/num, tlbm = (float)vals[1]/num;             \
     llcm_sum += llcm; llcm_sqrsum += llcm*llcm;                             \
     totm_sum += tlbm; tlbm_sqrsum += tlbm*tlbm;                             \
-    float elaps_time = (float)(ABT_test_get_cycles() - start_time)/num;     \
+    float elaps_time = (float)(ATS_get_cycles() - start_time)/num;          \
     time_sum += elaps_time;                                                 \
     time_sqrsum += elaps_time*elaps_time;                                   \
 } while (0)
@@ -85,14 +85,14 @@ static inline void print_header(char *wu, int need_join)
 
 #ifndef USE_PAPI
     line_size = need_join ? 86 : 65;
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("%-3s %8s %8s %22s ", "ES#", wu, "#Iter", "Create: cycles [std]");
     if (need_join) printf("%20s ", "Join: cycles [std]");
     printf("%20s\n", "Free: cycles [std]");
 #else
 
     line_size = need_join ? 176 : 125;
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("%-3s %8s %8s ", "ES#", wu, "#Iter");
 #if (defined __MIC__) || (defined __KNC__)
 #ifdef USE_PAPI_L1M_L2M
@@ -121,7 +121,7 @@ static inline void print_header(char *wu, int need_join)
 #endif
 #endif /* USE_PAPI */
 
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
 }
 
 #ifdef USE_PAPI

@@ -16,7 +16,7 @@ int num_threads = DEFAULT_NUM_THREADS;
 
 void thread_func(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
     /* Do nothing */
 }
 
@@ -31,12 +31,12 @@ void thread_create(void *arg)
     double t_create = 0.0;
 
     ret = ABT_timer_dup(timer, &my_timer);
-    ABT_TEST_ERROR(ret, "ABT_timer_dup");
+    ATS_ERROR(ret, "ABT_timer_dup");
 
     ret = ABT_thread_self(&my_thread);
-    ABT_TEST_ERROR(ret, "ABT_thread_self");
+    ATS_ERROR(ret, "ABT_thread_self");
     ret = ABT_thread_get_last_pool(my_thread, &my_pool);
-    ABT_TEST_ERROR(ret, "ABT_thread_get_last_pool");
+    ATS_ERROR(ret, "ABT_thread_get_last_pool");
 
     ABT_timer_stop_and_read(my_timer, &t_start);
 
@@ -47,14 +47,14 @@ void thread_create(void *arg)
         ret = ABT_thread_create(my_pool,
                 thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
                 NULL);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
         ABT_timer_stop_and_add(my_timer, &t_create);
     }
 
-    ABT_test_printf(1, "[T%d] start: %.9f, %d ULTs creation time: %.9f\n",
+    ATS_printf(1, "[T%d] start: %.9f, %d ULTs creation time: %.9f\n",
                     (int)my_id, t_start, num_threads, t_create);
     ret = ABT_timer_free(&my_timer);
-    ABT_TEST_ERROR(ret, "ABT_timer_free");
+    ATS_ERROR(ret, "ABT_timer_free");
 }
 
 int main(int argc, char *argv[])
@@ -76,30 +76,30 @@ int main(int argc, char *argv[])
 
     /* ABT_timer can be created regardless of Argobots initialization */
     ret = ABT_timer_create(&timer);
-    ABT_TEST_ERROR(ret, "ABT_timer_create");
+    ATS_ERROR(ret, "ABT_timer_create");
 
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
 
     /* Initialize */
     t_init = ABT_get_wtime();
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
     t_init = (ABT_get_wtime() - t_init);
 
     ABT_timer_start(timer);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
-    ABT_TEST_ERROR(ret, "ABT_xstream_self");
+    ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_create");
+        ATS_ERROR(ret, "ABT_xstream_create");
     }
 
     /* Get the first pool attached to each ES */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
-        ABT_TEST_ERROR(ret, "ABT_xstream_get_main_pools");
+        ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create one ULT for each ES */
@@ -108,22 +108,22 @@ int main(int argc, char *argv[])
         ret = ABT_thread_create(pools[i],
                 thread_create, (void *)tid, ABT_THREAD_ATTR_NULL,
                 NULL);
-        ABT_TEST_ERROR(ret, "ABT_thread_create");
+        ATS_ERROR(ret, "ABT_thread_create");
     }
 
     /* Join and free ESs */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_xstream_join(xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_join");
+        ATS_ERROR(ret, "ABT_xstream_join");
         ret = ABT_xstream_free(&xstreams[i]);
-        ABT_TEST_ERROR(ret, "ABT_xstream_free");
+        ATS_ERROR(ret, "ABT_xstream_free");
     }
 
     ABT_timer_stop_and_read(timer, &t_exec);
 
     /* Finalize */
     ABT_timer_start(timer);
-    ret = ABT_test_finalize(0);
+    ret = ATS_finalize(0);
     ABT_timer_stop(timer);
     ABT_timer_read(timer, &t_fini);
 
@@ -134,13 +134,13 @@ int main(int argc, char *argv[])
     /* Get the timer overhead */
     ABT_timer_get_overhead(&t_overhead);
 
-    ABT_test_printf(1, "# of ESs      : %d\n", num_xstreams);
-    ABT_test_printf(1, "# of ULTs/ES  : %d\n", num_threads);
-    ABT_test_printf(1, "Timer overhead: %.9f sec\n", t_overhead);
-    ABT_test_printf(1, "Init. time    : %.9f sec\n", t_init);
-    ABT_test_printf(1, "Exec. time    : %.9f sec (w/o overhead: %.9f sec)\n",
+    ATS_printf(1, "# of ESs      : %d\n", num_xstreams);
+    ATS_printf(1, "# of ULTs/ES  : %d\n", num_threads);
+    ATS_printf(1, "Timer overhead: %.9f sec\n", t_overhead);
+    ATS_printf(1, "Init. time    : %.9f sec\n", t_init);
+    ATS_printf(1, "Exec. time    : %.9f sec (w/o overhead: %.9f sec)\n",
                     t_exec, t_exec - t_overhead);
-    ABT_test_printf(1, "Fini. time    : %.9f sec (w/o overhead: %.9f sec)\n",
+    ATS_printf(1, "Fini. time    : %.9f sec (w/o overhead: %.9f sec)\n",
                     t_fini, t_fini - t_overhead);
 
     return ret;

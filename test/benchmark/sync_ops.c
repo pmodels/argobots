@@ -102,7 +102,7 @@ void launch_test(void *arg)
     void (*test_fn)(void *);
     int i;
 
-    ABT_test_printf(1, "[E%d] main ULT: start\n", eid);
+    ATS_printf(1, "[E%d] main ULT: start\n", eid);
 
     switch (test_kind) {
         case T_MUTEX_LOCK_UNLOCK:
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     int i;
 
     /* initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     /* create a timer */
     ABT_timer_create(&timer);
@@ -157,9 +157,9 @@ int main(int argc, char *argv[])
     for (i = 0; i < T_LAST; i++) t_timers[i] = 0.0;
 
     /* read command-line arguments */
-    num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-    num_threads  = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
-    iter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+    num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -242,20 +242,20 @@ int main(int argc, char *argv[])
 
     /* finalize */
     ABT_timer_free(&timer);
-    ABT_test_finalize(0);
+    ATS_finalize(0);
 
     /* output */
     int line_size = 45;
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("# of ESs        : %d\n", num_xstreams);
     printf("# of ULTs per ES: %d\n", num_threads);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("Avg. execution time (in seconds, %d times)\n", iter);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     for (i = 0; i < T_LAST; i++) {
         printf("%-25s  %.9f\n", t_names[i], t_timers[i]);
     }
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
 
     free(xstreams);
     free(pools);

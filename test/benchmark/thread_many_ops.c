@@ -62,12 +62,12 @@ static uint64_t t_all[T_ALL_LAST];
 
 void thread_func(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
 }
 
 void thread_func_yield(void *arg)
 {
-    ABT_TEST_UNUSED(arg);
+    ATS_UNUSED(arg);
     int i;
     for (i = 0; i < iter; i++) {
         ABT_thread_yield();
@@ -132,7 +132,7 @@ void thread_test(void *arg)
     uint64_t t_start, t_time;
     int i;
 
-    ABT_test_printf(1, "[E%d] main ULT: start\n", eid);
+    ATS_printf(1, "[E%d] main ULT: start\n", eid);
 
     pool_list = (ABT_pool *)malloc(num_threads * sizeof(ABT_pool));
     thread_func_list = (void (**)(void *))
@@ -145,21 +145,21 @@ void thread_test(void *arg)
     /*************************************************************************/
     /* ULT: create_many/join_many (cold) */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ABT_test_get_cycles();
+    if (eid == 0) t_all_start = ATS_get_cycles();
 
-    t_start = ABT_test_get_cycles();
+    t_start = ATS_get_cycles();
     ABT_thread_create_many(num_threads, pool_list, thread_func_list, NULL,
                            ABT_THREAD_ATTR_NULL, my_threads);
-    my_times[T_CREATE_MANY_COLD] = ABT_test_get_cycles() - t_start;
+    my_times[T_CREATE_MANY_COLD] = ATS_get_cycles() - t_start;
 
-    t_start = ABT_test_get_cycles();
+    t_start = ATS_get_cycles();
     ABT_thread_free_many(num_threads, my_threads);
-    my_times[T_JOIN_MANY_COLD] = ABT_test_get_cycles() - t_start;
+    my_times[T_JOIN_MANY_COLD] = ATS_get_cycles() - t_start;
 
     ABT_xstream_barrier_wait(g_xbarrier);
     if (eid == 0) {
         /* execution time for all ESs */
-        t_all[T_ALL_CREATE_MANY_JOIN_MANY_COLD] = ABT_test_get_cycles() - t_all_start;
+        t_all[T_ALL_CREATE_MANY_JOIN_MANY_COLD] = ATS_get_cycles() - t_all_start;
     }
     my_times[T_CREATE_MANY_COLD] /= num_threads;
     my_times[T_JOIN_MANY_COLD] /= num_threads;
@@ -172,32 +172,32 @@ void thread_test(void *arg)
     /* measure the time for individual operation */
     ABT_xstream_barrier_wait(g_xbarrier);
     for (i = 0; i < iter; i++) {
-        t_start = ABT_test_get_cycles();
+        t_start = ATS_get_cycles();
         ABT_thread_create_many(num_threads, pool_list, thread_func_list, NULL,
                                ABT_THREAD_ATTR_NULL, my_threads);
-        my_times[T_CREATE_MANY] += (ABT_test_get_cycles() - t_start);
+        my_times[T_CREATE_MANY] += (ATS_get_cycles() - t_start);
 
-        t_start = ABT_test_get_cycles();
+        t_start = ATS_get_cycles();
         ABT_thread_free_many(num_threads, my_threads);
-        my_times[T_JOIN_MANY] += (ABT_test_get_cycles() - t_start);
+        my_times[T_JOIN_MANY] += (ATS_get_cycles() - t_start);
     }
     my_times[T_CREATE_MANY] /= (iter * num_threads);
     my_times[T_JOIN_MANY] /= (iter * num_threads);
 
     /* measure the time for create/join operations */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ABT_test_get_cycles();
-    t_start = ABT_test_get_cycles();
+    if (eid == 0) t_all_start = ATS_get_cycles();
+    t_start = ATS_get_cycles();
     for (i = 0; i < iter; i++) {
         ABT_thread_create_many(num_threads, pool_list, thread_func_list, NULL,
                                ABT_THREAD_ATTR_NULL, my_threads);
         ABT_thread_free_many(num_threads, my_threads);
     }
-    my_times[T_CREATE_MANY_JOIN_MANY] = ABT_test_get_cycles() - t_start;
+    my_times[T_CREATE_MANY_JOIN_MANY] = ATS_get_cycles() - t_start;
     ABT_xstream_barrier_wait(g_xbarrier);
     if (eid == 0) {
         /* execution time for all ESs */
-        t_time = ABT_test_get_cycles() - t_all_start;
+        t_time = ATS_get_cycles() - t_all_start;
         t_all[T_ALL_CREATE_MANY_JOIN_MANY] = t_time / iter;
     }
     my_times[T_CREATE_MANY_JOIN_MANY] /= (iter * num_threads);
@@ -215,16 +215,16 @@ void thread_test(void *arg)
 
     /* measure the time */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ABT_test_get_cycles();
-    t_start = ABT_test_get_cycles();
+    if (eid == 0) t_all_start = ATS_get_cycles();
+    t_start = ATS_get_cycles();
     ABT_thread_create_many(num_threads, pool_list, thread_func_list, NULL,
                            ABT_THREAD_ATTR_NULL, my_threads);
     ABT_thread_free_many(num_threads, my_threads);
-    my_times[T_YIELD] = ABT_test_get_cycles() - t_start;
+    my_times[T_YIELD] = ATS_get_cycles() - t_start;
     ABT_xstream_barrier_wait(g_xbarrier);
     if (eid == 0) {
         /* execution time for all ESs */
-        t_time = ABT_test_get_cycles() - t_all_start;
+        t_time = ATS_get_cycles() - t_all_start;
         t_all[T_ALL_YIELD] = t_time / iter;
     }
     if (my_times[T_YIELD] > my_times[T_CREATE_MANY_JOIN_MANY]) {
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
     uint64_t t_max[T_LAST];
 
     /* initialize */
-    ABT_test_init(argc, argv);
+    ATS_init(argc, argv);
 
     for (i = 0; i < T_LAST; i++) {
         t_avg[i] = 0;
@@ -259,9 +259,9 @@ int main(int argc, char *argv[])
     }
 
     /* read command-line arguments */
-    num_xstreams = ABT_test_get_arg_val(ABT_TEST_ARG_N_ES);
-    num_threads  = ABT_test_get_arg_val(ABT_TEST_ARG_N_ULT);
-    iter = ABT_test_get_arg_val(ABT_TEST_ARG_N_ITER);
+    num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     g_xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     g_pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -319,29 +319,29 @@ int main(int argc, char *argv[])
     }
 
     /* finalize */
-    ABT_test_finalize(0);
+    ATS_finalize(0);
 
     /* output */
     int line_size = 66;
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("%s\n", "Argobots");
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("# of ESs        : %d\n", num_xstreams);
     printf("# of ULTs per ES: %d\n", num_threads);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("Avg. execution time (in seconds, %d times)\n", iter);
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     printf("%-30s %11s %11s %11s\n", "operation", "avg", "min", "max");
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     for (i = 0; i < T_LAST; i++) {
         printf("%-29s  %11" PRIu64 " %11" PRIu64 " %11" PRIu64 "\n",
                t_names[i], t_avg[i], t_min[i], t_max[i]);
     }
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
     for (i = 0; i < T_ALL_LAST; i++) {
         printf("%-32s  %11" PRIu64 "\n", t_all_names[i], t_all[i]);
     }
-    ABT_test_print_line(stdout, '-', line_size);
+    ATS_print_line(stdout, '-', line_size);
 
     free(g_xstreams);
     free(g_pools);
