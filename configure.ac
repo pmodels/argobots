@@ -123,7 +123,7 @@ AC_ARG_ENABLE(tls-model,
                           local storage. "OPT" can be one of values below.
                           Please refer to the compiler documentation for
                           details.
-        global-dynamic, local-dynamic, initial-exec, local-exec
+        global-dynamic, local-dynamic, initial-exec
         yes      - same as "initial-exec"
         none|no  - use the compiler's default model
 ],,enable_tls_model=none)
@@ -378,7 +378,7 @@ fi
 
 # --enable-tls-model: compiler's tls-model flag
 case "$enable_tls_model" in
-    global-dynamic|local-dynamic|initial-exec|local-exec)
+    global-dynamic|local-dynamic|initial-exec)
         tls_model_flag=$enable_tls_model
     ;;
     yes)
