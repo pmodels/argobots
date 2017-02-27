@@ -471,7 +471,7 @@ AS_IF([test "x$enable_pool_consumer_check" = "xno"],
         [Define to disable pool consumer check])])
 
 AM_CONDITIONAL([ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK],
-    [test "x$enable_pool_producer_check" = "xno" -o "x$enable_pool_consumer_check" = "xno"])
+    [test "x$enable_error_check" = "xno" -o "x$enable_pool_producer_check" = "xno" -o "x$enable_pool_consumer_check" = "xno"])
 
 if test "x$enable_error_check" = "xno" \
      -o "x$enable_pool_producer_check" = "xno" \
