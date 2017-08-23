@@ -75,6 +75,7 @@ void ABTI_thread_htable_push(ABTI_thread_htable *p_htable, int idx,
         p_queue->head = p_thread;
         p_queue->tail = p_thread;
     } else {
+        p_thread->unit_def.thread = ABTI_thread_get_handle(p_thread);
         p_queue->tail->unit_def.p_next = &p_thread->unit_def;
         p_queue->tail = p_thread;
     }
@@ -101,6 +102,7 @@ ABT_bool ABTI_thread_htable_add(ABTI_thread_htable *p_htable, int idx,
         /* Change the ULT's state to BLOCKED */
         ABTI_thread_set_blocked(p_thread);
 
+        p_thread->unit_def.thread = ABTI_thread_get_handle(p_thread);
         p_queue->tail->unit_def.p_next = &p_thread->unit_def;
         p_queue->tail = p_thread;
     }
@@ -134,6 +136,7 @@ void ABTI_thread_htable_push_low(ABTI_thread_htable *p_htable, int idx,
         p_queue->low_head = p_thread;
         p_queue->low_tail = p_thread;
     } else {
+        p_thread->unit_def.thread = ABTI_thread_get_handle(p_thread);
         p_queue->low_tail->unit_def.p_next = &p_thread->unit_def;
         p_queue->low_tail = p_thread;
     }
@@ -160,6 +163,7 @@ ABT_bool ABTI_thread_htable_add_low(ABTI_thread_htable *p_htable, int idx,
         /* Change the ULT's state to BLOCKED */
         ABTI_thread_set_blocked(p_thread);
 
+        p_thread->unit_def.thread = ABTI_thread_get_handle(p_thread);
         p_queue->low_tail->unit_def.p_next = &p_thread->unit_def;
         p_queue->low_tail = p_thread;
     }
@@ -235,6 +239,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_thread_queue *p_queue,
         } else {
             ABT_thread next = p_target->unit_def.p_next->thread;
             p_queue->low_head = ABTI_thread_get_ptr(next);
+            p_thread->unit_def.thread = ABTI_thread_get_handle(p_thread);
             p_queue->low_tail->unit_def.p_next = &p_thread->unit_def;
             p_queue->low_tail = p_thread;
         }
