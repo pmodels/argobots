@@ -28,9 +28,14 @@ void fn1(void *args)
 void fn2(void *args)
 {
     ATS_UNUSED(args);
-    int i = 0;
+    int i = 0, is_ready = 0;
     void *data = malloc(EVENTUAL_SIZE);
     ATS_printf(1, "Thread 2 iteration %d waiting from eventual\n", i);
+    ABT_eventual_test(myeventual,&data, &is_ready);
+    while (!is_ready) {
+       ABT_thread_yield();
+       ABT_eventual_test(myeventual,&data, &is_ready);
+    }
     ABT_eventual_wait(myeventual,&data);
     ATS_printf(1, "Thread 2 continue iteration %d returning from "
             "eventual\n", i);
