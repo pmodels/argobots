@@ -172,6 +172,46 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
 /**
  * @ingroup EVENTUAL
+ * @brief   Test the readiness of an eventual.
+ *
+ * \c ABT_eventual_test does a nonblocking test on the eventual \c eventual
+ * if resolved. If the eventual is not ready, \c is_ready would equal FALSE.
+ * If the eventual is ready, the pointer pointed to by \c value will point to
+ * the memory buffer associated with the eventual.
+ *
+ * @param[in]  eventual handle to the eventual
+ * @param[out] value    pointer to the memory buffer of the eventual
+ * @param[out] is_ready pointer to the a user flag
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_eventual_test(ABT_eventual eventual, void **value, int *is_ready)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
+    ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
+    int flag = ABT_FALSE;
+
+    ABTI_spinlock_acquire(&p_eventual->lock);
+    if (p_eventual->ready != ABT_FALSE) {
+        if (value) *value = p_eventual->value;
+        flag = ABT_TRUE;
+    }
+    ABTI_spinlock_release(&p_eventual->lock);
+
+   *is_ready = flag;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+
+/**
+ * @ingroup EVENTUAL
  * @brief   Signal the eventual.
  *
  * \c ABT_eventual_set sets a value in the eventual's buffer and releases all
