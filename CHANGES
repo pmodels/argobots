@@ -1,5 +1,19 @@
 ===============================================================================
-                               Changes in 1.0
+                               Changes in 1.0b1
 ===============================================================================
 
-# The first release of Argobots.
+- Added new API routines for bulk ULT creation and destruction
+- Reduced the overhead of error checking
+- Fixed bugs in some thread synchronization routines
+- Fixed POWER8 support
+- CPU affinity improvements on Intel KNL
+- Improved the dynamic management of large numbers of execution streams
+- Removed the local-exec TLS option
+- Updated the documentation
+- Added performance benchmarks
+
+===============================================================================
+                               Changes in 1.0a1
+===============================================================================
+
+The first release of Argobots.
