@@ -175,6 +175,48 @@ uint64_t ABTD_atomic_fetch_xor_uint64(uint64_t *ptr, uint64_t v)
     return __sync_fetch_and_xor(ptr, v);
 }
 
+#ifdef ABT_CONFIG_HAVE_ATOMIC_LOCK
+
+static inline
+int ABTD_atomic_is_locked_uint32(uint32_t *lock)
+{
+    return (*(volatile char *)lock) == 1;
+}
+
+static inline
+uint32_t ABTD_atomic_lock_uint32(uint32_t *lock)
+{
+    return __atomic_test_and_set((char *)lock, __ATOMIC_ACQ_REL);
+}
+
+static inline
+void ABTD_atomic_unlock_uint32(uint32_t *lock)
+{
+    __atomic_clear((volatile char *)lock, __ATOMIC_RELEASE);
+}
+
+#else
+
+static inline
+int ABTD_atomic_is_locked_uint32(uint32_t *lock)
+{
+    return (*(uint32_t *)lock) == 1;
+}
+
+static inline
+uint32_t ABTD_atomic_lock_uint32(uint32_t *lock)
+{
+    return __sync_lock_test_and_set(lock, 1);
+}
+
+static inline
+void ABTD_atomic_unlock_uint32(uint32_t *lock)
+{
+    __sync_lock_release(lock);
+}
+
+#endif
+
 #ifdef ABT_CONFIG_HAVE_ATOMIC_EXCHANGE
 static inline
 int32_t ABTD_atomic_exchange_int32(int32_t *ptr, int32_t v)
