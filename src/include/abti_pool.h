@@ -78,6 +78,8 @@ void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 
     /* Push unit into pool */
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
+    if(p_pool->signal_scheds)
+        p_pool->signal_scheds[0]->signal(p_pool->scheds[0]);
 }
 
 static inline
@@ -111,6 +113,8 @@ int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_producer)
 
     /* Push unit into pool */
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
+    if(p_pool->signal_scheds)
+        p_pool->signal_scheds[0]->signal(p_pool->signal_scheds[0]);
 
   fn_exit:
     return abt_errno;
@@ -224,16 +228,40 @@ ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)
 /* Increase num_scheds to mark the pool as having another scheduler. If the
  * pool is not available, it returns ABT_ERR_INV_POOL_ACCESS.  */
 static inline
-void ABTI_pool_retain(ABTI_pool *p_pool)
+void ABTI_pool_retain(ABTI_pool *p_pool, ABTI_sched *p_sched)
 {
     ABTD_atomic_fetch_add_int32(&p_pool->num_scheds, 1);
+
+    /* TODO: serialize */
+    if(p_sched->signal) {
+        p_pool->signal_scheds = ABTU_realloc(p_pool->signal_scheds, (1+p_pool->num_signal_scheds)*sizeof(*p_pool->signal_scheds));
+        p_pool->signal_scheds[p_pool->num_signal_scheds] = p_sched;
+        p_pool->num_signal_scheds++;
+    }
 }
 
 /* Decrease the num_scheds to realease this pool from a scheduler. Call when
  * the pool is removed from a scheduler or when it stops. */
 static inline
-int32_t ABTI_pool_release(ABTI_pool *p_pool)
-{
+int32_t ABTI_pool_release(ABTI_pool *p_pool, ABTI_sched *p_sched)
+{ 
+    int i;
+    /* TODO: serialize */
+    if(p_sched->signal) { 
+        for(i=0; i<p_pool->num_signal_scheds; i++) {
+            if(p_pool->signal_scheds[i] == p_sched && i != (p_pool->num_signal_scheds - 1)) {
+                memmove(&p_pool->signal_scheds[i], &p_pool->signal_scheds[i+1], 
+                 ((p_pool->num_signal_scheds-i-1)*sizeof(*p_pool->signal_scheds)));
+            }
+            break;
+        }
+        if(p_pool->num_signal_scheds == 1) {
+            ABTU_free(p_pool->signal_scheds);
+            p_pool->signal_scheds = NULL;
+        }
+        p_pool->num_signal_scheds--;
+    }
+    
     ABTI_ASSERT(p_pool->num_scheds > 0);
     return ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1) - 1;
 }

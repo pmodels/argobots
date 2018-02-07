@@ -290,6 +290,7 @@ typedef void     (*ABT_sched_run_fn)(ABT_sched);
 typedef int      (*ABT_sched_free_fn)(ABT_sched);
 /* To get a pool ready for receiving a migration */
 typedef ABT_pool (*ABT_sched_get_migr_pool_fn)(ABT_sched);
+typedef void     (*ABT_sched_signal_fn)(ABT_sched);
 
 typedef struct {
     ABT_sched_type type; /* ULT or tasklet */
@@ -299,6 +300,7 @@ typedef struct {
     ABT_sched_run_fn           run;
     ABT_sched_free_fn          free;
     ABT_sched_get_migr_pool_fn get_migr_pool;
+    ABT_sched_signal_fn        signal;
 } ABT_sched_def;
 
 /* Pool Functions */
