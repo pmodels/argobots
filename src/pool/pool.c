@@ -151,7 +151,7 @@ int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
 
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    *newpool = ABT_SCHED_NULL;
+    *newpool = ABT_POOL_NULL;
     goto fn_exit;
 }
 
