@@ -59,11 +59,6 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
         }
     }
 
-    /* Check if the pools are available */
-    for (p = 0; p < num_pools; p++) {
-        ABTI_pool_retain(ABTI_pool_get_ptr(pool_list[p]));
-    }
-
     p_sched->used          = ABTI_SCHED_NOT_USED;
     p_sched->automatic     = ABT_FALSE;
     p_sched->kind          = ABTI_sched_get_kind(def);
@@ -80,10 +75,17 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->run           = def->run;
     p_sched->free          = def->free;
     p_sched->get_migr_pool = def->get_migr_pool;
+    p_sched->signal        = def->signal;
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     p_sched->id            = ABTI_sched_get_new_id();
 #endif
+
+    /* Check if the pools are available */
+    for (p = 0; p < num_pools; p++) {
+        ABTI_pool_retain(ABTI_pool_get_ptr(pool_list[p]), p_sched);
+    }
+
     LOG_EVENT("[S%" PRIu64 "] created\n", p_sched->id);
 
     /* Return value */
@@ -715,7 +717,7 @@ int ABTI_sched_free(ABTI_sched *p_sched)
      * Otherwise, freeing the pool is the user's reponsibility. */
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        int32_t num_scheds = ABTI_pool_release(p_pool);
+        int32_t num_scheds = ABTI_pool_release(p_pool, p_sched);
         if (p_pool->automatic == ABT_TRUE && num_scheds == 0) {
             abt_errno = ABT_pool_free(p_sched->pools+p);
             ABTI_CHECK_ERROR(abt_errno);

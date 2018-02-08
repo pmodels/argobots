@@ -267,6 +267,7 @@ struct ABTI_sched {
     ABT_sched_run_fn  run;
     ABT_sched_free_fn free;
     ABT_sched_get_migr_pool_fn get_migr_pool;
+    ABT_sched_signal_fn signal;
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     uint64_t id;                /* ID */
@@ -278,6 +279,10 @@ struct ABTI_pool {
     ABT_bool automatic;      /* To know if automatic data free */
     int32_t num_scheds;      /* Number of associated schedulers */
                              /* NOTE: int32_t to check if still positive */
+    int32_t num_signal_scheds; /* Number of associated schedulers that support
+                                * signalling 
+                                */
+    ABTI_sched** signal_scheds;/* Associated schedulers to signal on push */
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     ABTI_xstream *consumer;  /* Associated consumer ES */
 #endif
