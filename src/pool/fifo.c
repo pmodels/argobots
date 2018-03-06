@@ -307,7 +307,7 @@ static ABT_unit pool_pop_shared_blocking(ABT_pool pool)
 
     pthread_mutex_lock(&p_data->blocking_mutex);
     unit = pool_pop_shared(pool);
-    if(!unit) {
+    if(unit == ABT_UNIT_NULL) {
         /* timedwait with 100 ms timeout to give the scheduler a chance to
          * wake up and check for events even if no work units arrive.  We
          * intentionally do not loop here.
