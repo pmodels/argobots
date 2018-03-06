@@ -156,7 +156,8 @@ enum ABT_sched_type {
 };
 
 enum ABT_pool_kind {
-    ABT_POOL_FIFO
+    ABT_POOL_FIFO,
+    ABT_POOL_BLOCKING_FIFO /* pop() will block unless/until work available */
 };
 
 enum ABT_pool_access {

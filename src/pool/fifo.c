@@ -3,16 +3,21 @@
  * See COPYRIGHT in top-level directory.
  */
 
+#include <errno.h>
 #include "abti.h"
 
 /* FIFO pool implementation */
 
 static int      pool_init(ABT_pool pool, ABT_pool_config config);
+static int      pool_init_blocking(ABT_pool pool, ABT_pool_config config);
 static int      pool_free(ABT_pool pool);
+static int      pool_free_blocking(ABT_pool pool);
 static size_t   pool_get_size(ABT_pool pool);
 static void     pool_push_shared(ABT_pool pool, ABT_unit unit);
+static void     pool_push_shared_blocking(ABT_pool pool, ABT_unit unit);
 static void     pool_push_private(ABT_pool pool, ABT_unit unit);
 static ABT_unit pool_pop_shared(ABT_pool pool);
+static ABT_unit pool_pop_shared_blocking(ABT_pool pool);
 static ABT_unit pool_pop_private(ABT_pool pool);
 static int      pool_remove_shared(ABT_pool pool, ABT_unit unit);
 static int      pool_remove_private(ABT_pool pool, ABT_unit unit);
@@ -31,6 +36,8 @@ struct data {
     size_t num_units;
     unit_t *p_head;
     unit_t *p_tail;
+    pthread_mutex_t blocking_mutex;
+    pthread_cond_t blocking_cond;
 };
 typedef struct data data_t;
 
@@ -88,6 +95,25 @@ int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
     goto fn_exit;
 }
 
+int ABTI_pool_get_blocking_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
+{
+    int ret;
+
+    /* a blocking fifo pool is a normal fifo pool with some function
+     * pointers replaced to add additional blocking capability atop the normal
+     * functions.
+     */
+    ret = ABTI_pool_get_fifo_def(access, p_def);
+    if(ret == ABT_SUCCESS) {
+        p_def->p_remove = pool_remove_shared;
+        p_def->p_pop = pool_pop_shared_blocking;
+        p_def->p_push = pool_push_shared_blocking;
+        p_def->p_init = pool_init_blocking;
+        p_def->p_free = pool_free_blocking;
+    }
+
+    return ret;
+}
 
 /* Pool functions */
 
@@ -115,6 +141,22 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
     return abt_errno;
 }
 
+int pool_init_blocking(ABT_pool pool, ABT_pool_config config)
+{
+    int ret;
+
+    ret = pool_init(pool, config);
+    if(ret == ABT_SUCCESS) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+        void *data = ABTI_pool_get_data(p_pool);
+        data_t *p_data = pool_get_data_ptr(data);
+        pthread_mutex_init(&p_data->blocking_mutex, NULL);
+        pthread_cond_init(&p_data->blocking_cond, NULL);
+    }
+
+    return ret;
+}
+
 static int pool_free(ABT_pool pool)
 {
     int abt_errno = ABT_SUCCESS;
@@ -131,6 +173,18 @@ static int pool_free(ABT_pool pool)
     ABTU_free(p_data);
 
     return abt_errno;
+}
+
+static int pool_free_blocking(ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
+    data_t *p_data = pool_get_data_ptr(data);
+
+    pthread_mutex_destroy(&p_data->blocking_mutex);
+    pthread_cond_destroy(&p_data->blocking_cond);
+
+    return(pool_free(pool));
 }
 
 static size_t pool_get_size(ABT_pool pool)
@@ -167,6 +221,21 @@ static void pool_push_shared(ABT_pool pool, ABT_unit unit)
 
     p_unit->pool = pool;
     ABTI_spinlock_release(&p_data->mutex);
+}
+
+static void pool_push_shared_blocking(ABT_pool pool, ABT_unit unit)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
+    data_t *p_data = pool_get_data_ptr(data);
+
+    /* hold additional pthread mutex and signal anyone who might be blocking
+     * on pop()
+     */
+    pthread_mutex_lock(&p_data->blocking_mutex);
+    pool_push_shared(pool, unit);
+    pthread_cond_signal(&p_data->blocking_cond);
+    pthread_mutex_unlock(&p_data->blocking_mutex);
 }
 
 static void pool_push_private(ABT_pool pool, ABT_unit unit)
@@ -225,6 +294,38 @@ static ABT_unit pool_pop_shared(ABT_pool pool)
     ABTI_spinlock_release(&p_data->mutex);
 
     return h_unit;
+}
+
+static ABT_unit pool_pop_shared_blocking(ABT_pool pool)
+{
+    ABT_unit unit;
+    int ret;
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
+    data_t *p_data = pool_get_data_ptr(data);
+
+    pthread_mutex_lock(&p_data->blocking_mutex);
+    unit = pool_pop_shared(pool);
+    if(!unit) {
+        /* timedwait with 100 ms timeout to give the scheduler a chance to
+         * wake up and check for events even if no work units arrive.  We
+         * intentionally do not loop here.
+         */
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_nsec += 1e8;
+        if(ts.tv_nsec > 1e9) {
+            ts.tv_nsec -= 1e9;
+            ts.tv_sec++;
+        }
+        ret = pthread_cond_timedwait(&p_data->blocking_cond, &p_data->blocking_mutex, &ts);
+        if(ret != ETIMEDOUT)
+            unit = pool_pop_shared(pool);
+    }
+    pthread_mutex_unlock(&p_data->blocking_mutex);
+
+    return(unit);
 }
 
 static ABT_unit pool_pop_private(ABT_pool pool)
