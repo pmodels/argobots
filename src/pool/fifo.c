@@ -75,6 +75,7 @@ int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
     }
 
     /* Common definitions regardless of the access type */
+    p_def->kind                 = ABT_POOL_FIFO;
     p_def->access               = access;
     p_def->p_init               = pool_init;
     p_def->p_free               = pool_free;
@@ -105,6 +106,7 @@ int ABTI_pool_get_blocking_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
      */
     ret = ABTI_pool_get_fifo_def(access, p_def);
     if(ret == ABT_SUCCESS) {
+        p_def->kind = ABT_POOL_BLOCKING_FIFO;
         p_def->p_remove = pool_remove_shared;
         p_def->p_pop = pool_pop_shared_blocking;
         p_def->p_push = pool_push_shared_blocking;

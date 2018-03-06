@@ -36,6 +36,7 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
 
     p_pool = (ABTI_pool *)ABTU_malloc(sizeof(ABTI_pool));
     p_pool->access               = def->access;
+    p_pool->kind                 = def->kind;
     p_pool->automatic            = ABT_FALSE;
     p_pool->num_scheds           = 0;
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK

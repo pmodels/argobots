@@ -319,6 +319,7 @@ typedef int           (*ABT_pool_free_fn)(ABT_pool);
 
 typedef struct {
     ABT_pool_access access; /* Access type */
+    ABT_pool_kind kind;
 
     /* Functions to manage units */
     ABT_unit_get_type_fn           u_get_type;
