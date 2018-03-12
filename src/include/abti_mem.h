@@ -8,11 +8,17 @@
 
 /* Memory allocation */
 
-#ifdef ABT_CONFIG_USE_ALIGNED_ALLOC
-#define ABTU_CA_MALLOC(s)   ABTU_memalign(gp_ABTI_global->cache_line_size,s)
+#if defined(ABT_CONFIG_USE_ALIGNED_ALLOC)
+#define ABTU_CA_MALLOC(s)   ABTU_memalign(ABT_CONFIG_STATIC_CACHELINE_SIZE, s)
 #else
 #define ABTU_CA_MALLOC(s)   ABTU_malloc(s)
-#endif
+#endif /* defined(ABT_CONFIG_USE_ALIGNED_ALLOC) */
+
+/* Header size should be a multiple of cache line size. It is constant. */
+#define ABTI_MEM_SH_SIZE (((sizeof(ABTI_thread) + sizeof(ABTI_stack_header) \
+                            + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) \
+                           / ABT_CONFIG_STATIC_CACHELINE_SIZE) \
+                          * ABT_CONFIG_STATIC_CACHELINE_SIZE)
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
 typedef struct ABTI_blk_header  ABTI_blk_header;
@@ -101,7 +107,7 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize);
 static inline
 ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
 {
-    const size_t header_size = gp_ABTI_global->mem_sh_size;
+    const size_t header_size = ABTI_MEM_SH_SIZE;
     size_t stacksize, actual_stacksize;
     char *p_blk;
     ABTI_thread *p_thread;
@@ -137,7 +143,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
      * ABTI_stack_header and ABTI_thread. So, the effective stack area is
      * reduced as much as the size of ABTI_stack_header and ABTI_thread. */
 
-    const size_t header_size = gp_ABTI_global->mem_sh_size;
+    const size_t header_size = ABTI_MEM_SH_SIZE;
     size_t stacksize, def_stacksize, actual_stacksize;
     ABTI_local *p_local = lp_ABTI_local;
     char *p_blk = NULL;

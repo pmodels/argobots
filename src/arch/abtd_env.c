@@ -13,7 +13,6 @@
 #define ABTD_SCHED_EVENT_FREQ           50
 #define ABTD_SCHED_SLEEP_NSEC           100
 
-#define ABTD_CACHE_LINE_SIZE            64
 #define ABTD_OS_PAGE_SIZE               (4*1024)
 #define ABTD_HUGE_PAGE_SIZE             (2*1024*1024)
 #define ABTD_MEM_PAGE_SIZE              (2*1024*1024)
@@ -148,15 +147,6 @@ void ABTD_env_init(ABTI_global *p_global)
         ABTI_ASSERT(p_global->mutex_max_wakeups >= 1);
     } else {
         p_global->mutex_max_wakeups = 1;
-    }
-
-    /* Cache line size */
-    env = getenv("ABT_CACHE_LINE_SIZE");
-    if (env == NULL) env = getenv("ABT_ENV_CACHE_LINE_SIZE");
-    if (env != NULL) {
-        p_global->cache_line_size = (uint32_t)atol(env);
-    } else {
-        p_global->cache_line_size = ABTD_CACHE_LINE_SIZE;
     }
 
     /* OS page size */

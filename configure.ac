@@ -193,6 +193,13 @@ AC_ARG_ENABLE([sched-sleep],
 AC_ARG_ENABLE([simple-mutex],
     AS_HELP_STRING([--enable-simple-mutex], [use a simple mutex implementation]))
 
+# --enable-static-cacheline-size
+AC_ARG_ENABLE([static-cacheline-size],
+[  --enable-static-cacheline-size@<:@=OPTS@:>@ embed cache line size at compile-time.
+        auto                - automatically get size. Use 128 if detection fails
+        <value>             - assume [value] bytes (e.g., <value> = 64)
+],,[enable_static_cacheline_size=auto])
+
 # --with-lts
 AC_ARG_WITH([lts],
     AS_HELP_STRING([--with-lts=PATH],
@@ -607,6 +614,30 @@ fi
 AS_IF([test "x$enable_simple_mutex" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SIMPLE_MUTEX, 1,
                  [Define to use a simple mutex implementation])])
+
+
+# --enable-static-cacheline-size
+static_cacheline_size=0
+default_static_cacheline_size=128
+if test "x$enable_static_cacheline_size" = "xauto" ; then
+  # For Linux
+  static_cacheline_size=`cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size | grep -Po '^(\d+)$'`
+  if test "x$static_cacheline_size" = "x" ; then
+    # For Mac
+    static_cacheline_size=`sysctl -a | grep hw.cachelinesize | grep -Po '(\d+)$' | grep -Po '^(\d+)$'`
+    if test "x$static_cacheline_size" = "x" ; then
+      static_cacheline_size=$default_static_cacheline_size
+    fi
+  fi
+else
+  static_cacheline_size=`echo $enable_static_cacheline_size | grep -Po '^(\d+)$'`
+  if test "x$static_cacheline_size" = "x" ; then
+    static_cacheline_size=$default_static_cacheline_size
+  fi
+fi
+
+AC_DEFINE_UNQUOTED(ABT_CONFIG_STATIC_CACHELINE_SIZE, [$static_cacheline_size],
+                   [Define to use static cache-line size])
 
 
 # --with-lts

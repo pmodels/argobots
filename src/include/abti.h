@@ -169,8 +169,6 @@ struct ABTI_global {
 
     uint32_t mutex_max_handovers;      /* Default max. # of local handovers */
     uint32_t mutex_max_wakeups;        /* Default max. # of wakeups */
-
-    uint32_t cache_line_size;          /* Cache line size */
     uint32_t os_page_size;             /* OS page size */
     uint32_t huge_page_size;           /* Huge page size */
 #ifdef ABT_CONFIG_USE_MEM_POOL
@@ -178,8 +176,6 @@ struct ABTI_global {
     uint32_t mem_sp_size;              /* Stack page size */
     uint32_t mem_max_stacks;           /* Max. # of stacks kept in each ES */
     int mem_lp_alloc;                  /* How to allocate large pages */
-    uint32_t mem_sh_size;              /* Stack header (including ABTI_thread
-                                          ABTI_stack_header) size */
     ABTI_stack_header *p_mem_stack;    /* List of ULT stack */
     ABTI_page_header *p_mem_task;      /* List of task block pages */
     ABTI_sp_header *p_mem_sph;         /* List of stack pages */
