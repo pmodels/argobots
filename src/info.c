@@ -31,7 +31,7 @@ int ABT_info_print_config(FILE *fp)
 
     fprintf(fp, "Argobots Configuration:\n");
     fprintf(fp, " - # of cores: %d\n", p_global->num_cores);
-    fprintf(fp, " - cache line size: %u\n", p_global->cache_line_size);
+    fprintf(fp, " - cache line size: %u\n", ABT_CONFIG_STATIC_CACHELINE_SIZE);
     fprintf(fp, " - OS page size: %u\n", p_global->os_page_size);
     fprintf(fp, " - huge page size: %u\n", p_global->huge_page_size);
     fprintf(fp, " - max. # of ESs: %d\n", p_global->max_xstreams);

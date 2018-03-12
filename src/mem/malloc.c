@@ -56,14 +56,6 @@ void ABTI_mem_init(ABTI_global *p_global)
     p_global->p_mem_task = NULL;
     p_global->p_mem_sph = NULL;
 
-    /* Calculate the header size that should be a multiple of cache line size */
-    size_t header_size = sizeof(ABTI_thread) + sizeof(ABTI_stack_header);
-    uint32_t rem = header_size % p_global->cache_line_size;
-    if (rem > 0) {
-        header_size += (p_global->cache_line_size - rem);
-    }
-    p_global->mem_sh_size = header_size;
-
     g_sp_id = 0;
 }
 
@@ -428,7 +420,7 @@ ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
     ABTI_page_header *p_ph;
     ABTI_blk_header *p_cur;
     ABTI_global *p_global = gp_ABTI_global;
-    uint32_t clsize = p_global->cache_line_size;
+    const uint32_t clsize = ABT_CONFIG_STATIC_CACHELINE_SIZE;
     size_t pgsize = p_global->mem_page_size;
     ABT_bool is_mmapped;
 
@@ -612,7 +604,7 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     uint32_t num_stacks;
     int i;
 
-    uint32_t header_size = gp_ABTI_global->mem_sh_size;
+    uint32_t header_size = ABTI_MEM_SH_SIZE;
     uint32_t sp_size = gp_ABTI_global->mem_sp_size;
     size_t actual_stacksize = stacksize - header_size;
     void *p_stack = NULL;
