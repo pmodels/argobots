@@ -525,6 +525,10 @@ int ABT_thread_join(ABT_thread thread)
          * not, we need to wait until it is added. */
         while (p_thread->p_pool->u_is_in_pool(p_thread->unit) != ABT_TRUE) {}
 
+        /* Increase the number of blocked units.  Be sure to execute
+         * ABTI_pool_inc_num_blocked before ABTI_POOL_REMOVE in order not to
+         * underestimate the number of units in a pool. */
+        ABTI_pool_inc_num_blocked(p_self->p_pool);
         /* Remove the target ULT from the pool */
         ABTI_POOL_REMOVE(p_thread->p_pool, p_thread->unit, p_xstream);
 
@@ -537,7 +541,6 @@ int ABT_thread_join(ABT_thread thread)
 
         /* Make the current ULT BLOCKED */
         p_self->state = ABT_THREAD_STATE_BLOCKED;
-        ABTI_pool_inc_num_blocked(p_self->p_pool);
 
         LOG_EVENT("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
