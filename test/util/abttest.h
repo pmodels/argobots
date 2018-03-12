@@ -33,11 +33,11 @@
  *   This is used by ATS_error(). If not set, ATS_VERBOSE is the
  *   same as 0.
  *
- * @param[in] argc  the number of arguments
- * @param[in] argv  argument vector
+ * @param[in] argc         the number of arguments
+ * @param[in] argv         argument vector
+ * @param[in] num_xstreams the number of xstreams used in a prgoram
  */
-void ATS_init(int argc, char **argv);
-
+void ATS_init(int argc, char **argv, int num_xstreams);
 
 /**
  * @ingroup TESTUTIL

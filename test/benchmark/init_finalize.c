@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 
     /* measure init/finalize time (cold) */
     ABT_timer_start(timer);
-    ABT_init(argc, argv);
+    ATS_init(argc, argv, 2);
     ABT_finalize();
     ABT_timer_stop_and_read(timer, &t_timers[T_INIT_FINALIZE_COLD]);
     t_timers[T_INIT_FINALIZE_COLD] -= t_overhead;

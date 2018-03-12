@@ -50,7 +50,8 @@ int main(int argc, char *argv[])
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, num_xstreams);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);

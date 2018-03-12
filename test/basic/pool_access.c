@@ -226,7 +226,8 @@ int main(int argc, char *argv[])
     int *ret_push_from_another_pool[5];
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, 5);
 
     /* ABT_POOL_ACCESS_PRIV */
     ret_add_to_another_ES[0] = error;

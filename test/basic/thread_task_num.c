@@ -41,7 +41,8 @@ int main(int argc, char *argv[])
     int err = 0;
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, 1);
 
     /* Get the SELF Execution Stream */
     ret = ABT_xstream_self(&xstream);

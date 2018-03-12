@@ -180,7 +180,9 @@ int main(int argc, char *argv[])
     if (argc > 1) iter = atoi(argv[1]);
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+
+    ATS_init(argc, argv, NUM_XSTREAMS);
 
     ATS_printf(1, "# of ES   : %d\n", NUM_XSTREAMS);
     ATS_printf(1, "# of ULT  : %d\n", NUM_THREADS);

@@ -17,7 +17,6 @@ static int num_iter = DEFAULT_NUM_ITER;
 static void *init_test(void *arg)
 {
     int i, ret;
-
     ret = ABT_initialized();
     ATS_ERROR(ret, "ABT_initialized");
 
@@ -45,12 +44,13 @@ int main(int argc, char *argv[])
     assert(initialized == ABT_ERR_UNINITIALIZED);
 
     /* Initialize */
-    ATS_init(argc, argv);
-
+    ATS_read_args(argc, argv);
     if (argc > 2) {
         num_threads = ATS_get_arg_val(ATS_ARG_N_ES);
         num_iter    = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
+    ATS_init(argc, argv, num_threads);
+
 
     threads = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
     assert(threads);

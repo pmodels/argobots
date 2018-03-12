@@ -40,7 +40,8 @@ int main(int argc, char *argv[])
     ABT_sched mainsched, subsched1, subsched2;
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, 1);
 
     /* Creation of the main pool/sched */
     ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV,

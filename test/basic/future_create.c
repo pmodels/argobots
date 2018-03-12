@@ -62,7 +62,8 @@ int main(int argc, char *argv[])
     total_num_threads = num_threads*num_xstreams;
 
     /* init and thread creation */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, num_xstreams);
 
     /* Create Execution Streams */
     ABT_xstream *xstreams =

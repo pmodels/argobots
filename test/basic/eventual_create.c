@@ -57,7 +57,8 @@ int main(int argc, char *argv[])
     ABT_xstream xstream;
 
     /* init and thread creation */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, 1);
 
     ret = ABT_xstream_self(&xstream);
     ATS_ERROR(ret, "ABT_xstream_self");

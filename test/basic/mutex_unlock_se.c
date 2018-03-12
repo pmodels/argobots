@@ -54,13 +54,13 @@ int main(int argc, char *argv[])
     int num_threads = DEFAULT_NUM_THREADS;
 
     /* Initialize */
-    ATS_init(argc, argv);
-
+    ATS_read_args(argc, argv);
     if (argc >= 2) {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
         num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
         g_iter = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
+    ATS_init(argc, argv, num_xstreams);
 
     ATS_printf(2, "# of ESs : %d\n", num_xstreams);
     ATS_printf(1, "# of ULTs: %d\n", num_threads);

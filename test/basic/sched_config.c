@@ -31,7 +31,8 @@ int main(int argc, char *argv[])
     double b2;
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, 1);
 
     ABT_sched_config_create(&config1, param_a, a, ABT_sched_config_var_end);
     a2 = 0; b2 = 0.0;

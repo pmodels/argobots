@@ -47,12 +47,13 @@ int main(int argc, char *argv[])
     int i, ret;
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
     } else {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
     }
+    ATS_init(argc, argv, num_xstreams);
 
     ret = ABT_info_print_config(stdout);
     ATS_ERROR(ret, "ABT_info_print_config");
