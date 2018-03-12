@@ -30,6 +30,8 @@ typedef struct {
     ABT_xstream *xstreams;
 } g_data_t;
 
+const int num_scheds = sizeof(accesses) / sizeof(accesses[0]) + 1;
+
 static g_data_t g_data;
 
 
@@ -48,7 +50,8 @@ int main(int argc, char *argv[])
     assert(num_units >= 0);
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, num_scheds);
 
     /* Create schedulers and ESs */
     init_global_data();
@@ -74,8 +77,6 @@ int main(int argc, char *argv[])
 
 static void init_global_data(void)
 {
-    int num_scheds = sizeof(accesses)/sizeof(accesses[0])+1;
-
     g_data.num_scheds = num_scheds;
     g_data.num_pools = (int *)calloc(num_scheds, sizeof(int));
     g_data.pools = (ABT_pool **)calloc(num_scheds, sizeof(ABT_pool *));

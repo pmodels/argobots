@@ -146,8 +146,14 @@ int main(int argc, char *argv[])
     double t_time;
     int i;
 
+    /* read command-line arguments */
+    ATS_read_args(argc, argv);
+    num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
+
     /* initialize */
-    ATS_init(argc, argv);
+    ATS_init(argc, argv, num_xstreams);
 
     /* create a timer */
     ABT_timer_create(&timer);
@@ -155,11 +161,6 @@ int main(int argc, char *argv[])
     ABT_timer_stop(timer);
     ABT_timer_get_overhead(&t_overhead);
     for (i = 0; i < T_LAST; i++) t_timers[i] = 0.0;
-
-    /* read command-line arguments */
-    num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
-    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));

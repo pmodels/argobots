@@ -223,7 +223,8 @@ int main(int argc, char *argv[])
     int ret;
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, 1);
 
     /* Create a pthread */
     ret = pthread_create(&pthread, NULL, pthread_test, NULL);

@@ -18,11 +18,11 @@ int main(int argc, char *argv[])
     int ret, tmp;
 
     /* Initialize */
-    ATS_init(argc, argv);
-
+    ATS_read_args(argc, argv);
     if (argc > 1) {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
     }
+    ATS_init(argc, argv, num_xstreams);
 
     ATS_printf(1, "# of ESs: %d\n", num_xstreams);
 

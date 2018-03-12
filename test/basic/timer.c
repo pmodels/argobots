@@ -83,7 +83,8 @@ int main(int argc, char *argv[])
 
     /* Initialize */
     t_init = ABT_get_wtime();
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, num_xstreams);
     t_init = (ABT_get_wtime() - t_init);
 
     ABT_timer_start(timer);

@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     int num_xstreams, num_threads;
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
         num_threads  = DEFAULT_NUM_THREADS;
@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
         num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
     }
+    ATS_init(argc, argv, num_xstreams);
 
     ATS_printf(1, "# of ESs    : %d\n", num_xstreams);
     ATS_printf(1, "# of ULTs/ES: %d\n", num_threads);

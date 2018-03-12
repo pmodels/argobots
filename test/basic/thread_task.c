@@ -175,7 +175,8 @@ int main(int argc, char *argv[])
     task_args = (task_arg_t *)malloc(sizeof(task_arg_t) * num_tasks);
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, num_xstreams);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);

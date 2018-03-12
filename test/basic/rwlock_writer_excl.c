@@ -134,7 +134,8 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, targ.num_xstreams);
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);

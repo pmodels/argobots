@@ -246,8 +246,14 @@ int main(int argc, char *argv[])
     uint64_t t_min[T_LAST];
     uint64_t t_max[T_LAST];
 
+    /* read command-line arguments */
+    ATS_read_args(argc, argv);
+    num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
+    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
+
     /* initialize */
-    ATS_init(argc, argv);
+    ATS_init(argc, argv, num_xstreams);
 
     for (i = 0; i < T_LAST; i++) {
         t_avg[i] = 0;
@@ -257,11 +263,6 @@ int main(int argc, char *argv[])
     for (i = 0; i < T_ALL_LAST; i++) {
         t_all[i] = 0;
     }
-
-    /* read command-line arguments */
-    num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
-    iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     g_xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     g_pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));

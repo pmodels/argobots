@@ -38,7 +38,8 @@ int main(int argc, char *argv[])
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, num_xstreams);
 
     /* Create schedulers */
     ABT_sched_config config;

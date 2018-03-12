@@ -152,7 +152,8 @@ int main(int argc, char *argv[])
     assert(ret == ABT_ERR_UNINITIALIZED && flag == ABT_FALSE);
 
     /* Initialize */
-    ATS_init(argc, argv);
+    ATS_read_args(argc, argv);
+    ATS_init(argc, argv, 2);
 
     /* Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);

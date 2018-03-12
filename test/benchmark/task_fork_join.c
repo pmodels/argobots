@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
     xstreams = (ABT_xstream *)malloc(ness*sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(ness*sizeof(ABT_pool));
 
-    ABT_init(argc, argv);
+    ATS_init(argc, argv, ness);
 
     /* output beginning */
     print_header("#Tasks", 0);

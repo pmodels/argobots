@@ -18,13 +18,15 @@ static int g_num_errs = 0;
 #define NUM_ARG_KINDS   4
 static int g_arg_val[NUM_ARG_KINDS];
 
-void ATS_init(int argc, char **argv)
+void ATS_init(int argc, char **argv, int num_xstreams)
 {
     int ret;
     char *envval;
 
-    /* Read the command arguments */
-    ATS_read_args(argc, argv);
+    /* ABT_MAX_NUM_XSTREAMS determines the size of internal ES array */
+    char snprintf_buffer[128];
+    sprintf(snprintf_buffer, "ABT_MAX_NUM_XSTREAMS=%d", num_xstreams);
+    putenv(snprintf_buffer);
 
     /* Initialize Argobots */
     ret = ABT_init(argc, argv);
