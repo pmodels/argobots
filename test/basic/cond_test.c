@@ -59,6 +59,7 @@ void inc_counter(void *arg)
     ABT_mutex_lock(mutex);
     g_num_incthreads++;
     ABT_cond_wait(broadcast, mutex);
+    ABT_thread_yield();
     ABT_mutex_unlock(mutex);
 }
 
