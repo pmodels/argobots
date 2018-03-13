@@ -4,5 +4,6 @@
 #
 
 abt_sources += \
-	mem/malloc.c
+	mem/malloc.c \
+	mem/valgrind.c
 

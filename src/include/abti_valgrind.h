@@ -6,12 +6,23 @@
 #ifndef ABTI_VALGRIND_H_INCLUDED
 #define ABTI_VALGRIND_H_INCLUDED
 
+/* Valgrind support */
 #ifdef HAVE_VALGRIND_SUPPORT
+
 #include <valgrind/valgrind.h>
-#define ABTI_VALGRIND_STACK_REGISTER(p,s)             \
-    VALGRIND_STACK_REGISTER(p, ((char *)p)+s)
+
+void ABTI_valgrind_register_stack(const void *p_stack, size_t size);
+void ABTI_valgrind_unregister_stack(const void *p_stack);
+#define ABTI_VALGRIND_REGISTER_STACK(p_stack, size) \
+            ABTI_valgrind_register_stack  (p_stack, size)
+#define ABTI_VALGRIND_UNREGISTER_STACK(p_stack) \
+            ABTI_valgrind_unregister_stack(p_stack)
+
 #else
-#define ABTI_VALGRIND_STACK_REGISTER(p,s)
-#endif
+
+#define ABTI_VALGRIND_REGISTER_STACK(p_stack, size)   do { } while(0)
+#define ABTI_VALGRIND_UNREGISTER_STACK(p_stack)       do { } while(0)
+
+#endif /* HAVE_VALGRIND_SUPPORT */
 
 #endif /* ABTI_VALGRIND_H_INCLUDED */

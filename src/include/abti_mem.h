@@ -133,6 +133,7 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
     ABTI_thread_attr_init(p_myattr, p_stack, actual_stacksize, ABT_TRUE);
 
     *p_stacksize = actual_stacksize;
+    ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
     return p_thread;
 }
 
@@ -179,6 +180,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
             ABTI_thread_attr_copy(&p_thread->attr, p_attr);
 
             *p_stacksize = p_attr->stacksize;
+            ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
             return p_thread;
         }
 
@@ -198,6 +200,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
             p_thread->attr.p_stack = (void *)(p_blk + header_size);
 
             *p_stacksize = actual_stacksize;
+            ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
             return p_thread;
         }
     }
@@ -247,6 +250,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
     }
 
     *p_stacksize = actual_stacksize;
+    ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
     return p_thread;
 }
 
@@ -278,6 +282,7 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
 {
     ABTI_local *p_local;
     ABTI_stack_header *p_sh;
+    ABTI_VALGRIND_UNREGISTER_STACK(p_thread->attr.p_stack);
 
     p_sh = (ABTI_stack_header *)((char *)p_thread + sizeof(ABTI_thread));
 
@@ -414,6 +419,7 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
     ABTI_thread_attr_init(p_myattr, p_stack, actual_stacksize, ABT_TRUE);
 
     *p_stacksize = actual_stacksize;
+    ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
     return p_thread;
 }
 
@@ -469,6 +475,7 @@ ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
 static inline
 void ABTI_mem_free_thread(ABTI_thread *p_thread)
 {
+    ABTI_VALGRIND_UNREGISTER_STACK(p_thread->attr.p_stack);
     ABTU_free(p_thread);
 }
 
