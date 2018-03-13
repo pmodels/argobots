@@ -290,6 +290,14 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
         ABTU_free((void *)p_thread);
         return;
     }
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    if (!lp_ABTI_local) {
+        /* This thread has been allocated internally,
+         * but now is being freed by an external thread. */
+        ABTI_mem_add_stack_to_global(p_sh);
+        return;
+    }
+#endif
 
     p_local = lp_ABTI_local;
     if (p_local->num_stacks <= gp_ABTI_global->mem_max_stacks) {
@@ -372,6 +380,11 @@ void ABTI_mem_free_task(ABTI_task *p_task)
     if (p_ph == NULL) {
         /* This was allocated by an external thread. */
         ABTU_free(p_head);
+        return;
+    } else if (!lp_ABTI_local) {
+        /* This task has been allocated internally,
+         * but now is being freed by an external thread. */
+        ABTI_mem_free_remote(p_ph, p_head);
         return;
     }
 #endif
