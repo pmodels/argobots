@@ -255,7 +255,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     ABTU_free(p_unit);
 
     /* Lock the mutex again */
-    ABTI_mutex_spinlock(p_mutex);
+    ABTI_mutex_lock(p_mutex);
 
   fn_exit:
     return abt_errno;

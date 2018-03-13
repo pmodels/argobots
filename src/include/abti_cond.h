@@ -142,7 +142,7 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
     }
 
     /* Lock the mutex again */
-    ABTI_mutex_spinlock(p_mutex);
+    ABTI_mutex_lock(p_mutex);
 
   fn_exit:
     return abt_errno;
