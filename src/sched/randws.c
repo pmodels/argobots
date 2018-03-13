@@ -82,8 +82,7 @@ static void sched_run(ABT_sched sched)
         /* Execute one work unit from the scheduler's pool */
         ABT_pool pool = p_pools[0];
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-        size_t size = ABTI_pool_get_size(p_pool);
-        if (size > 0) {
+        if (num_pools == 1 || ABTI_pool_get_size(p_pool) > 0) {
             unit = ABTI_pool_pop(p_pool);
             if (unit != ABT_UNIT_NULL) {
                 ABTI_xstream_run_unit(p_xstream, unit, p_pool);
@@ -94,7 +93,7 @@ static void sched_run(ABT_sched sched)
             target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
             pool = p_pools[target];
             p_pool = ABTI_pool_get_ptr(pool);
-            size = ABTI_pool_get_size(p_pool);
+            size_t size = ABTI_pool_get_size(p_pool);
             if (size > 0) {
                 unit = ABTI_pool_pop(p_pool);
                 LOG_EVENT_POOL_POP(p_pool, unit);

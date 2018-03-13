@@ -156,7 +156,8 @@ enum ABT_sched_type {
 };
 
 enum ABT_pool_kind {
-    ABT_POOL_FIFO
+    ABT_POOL_FIFO,
+    ABT_POOL_BLOCKING_FIFO /* pop() will block unless/until work available */
 };
 
 enum ABT_pool_access {
@@ -318,6 +319,7 @@ typedef int           (*ABT_pool_free_fn)(ABT_pool);
 
 typedef struct {
     ABT_pool_access access; /* Access type */
+    ABT_pool_kind kind;
 
     /* Functions to manage units */
     ABT_unit_get_type_fn           u_get_type;

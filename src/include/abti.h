@@ -271,6 +271,7 @@ struct ABTI_sched {
 
 struct ABTI_pool {
     ABT_pool_access access;  /* Access mode */
+    ABT_pool_kind kind;      /* Kind of pool */
     ABT_bool automatic;      /* To know if automatic data free */
     int32_t num_scheds;      /* Number of associated schedulers */
                              /* NOTE: int32_t to check if still positive */
@@ -536,6 +537,7 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
 
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
+int ABTI_pool_get_blocking_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
 int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 #endif
@@ -545,6 +547,7 @@ int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
+ABT_pool_kind ABTI_pool_get_kind(ABT_pool_def *def);
 
 /* User-level Thread (ULT)  */
 int   ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool);

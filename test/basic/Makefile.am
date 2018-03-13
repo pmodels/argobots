@@ -31,6 +31,7 @@ TESTS = \
 	sched_prio \
 	sched_randws \
 	sched_set_main \
+	pool_blocking_fifo \
 	sched_stack \
 	sched_config \
 	sched_user_ws \
@@ -96,6 +97,7 @@ sched_basic_SOURCES = sched_basic.c
 sched_prio_SOURCES = sched_prio.c
 sched_randws_SOURCES = sched_randws.c
 sched_set_main_SOURCES = sched_set_main.c
+pool_blocking_fifo_SOURCES = pool_blocking_fifo.c
 sched_stack_SOURCES = sched_stack.c
 sched_config_SOURCES = sched_config.c
 sched_user_ws_SOURCES = sched_user_ws.c
@@ -149,6 +151,7 @@ testing:
 	./sched_prio
 	./sched_randws
 	./sched_set_main
+	./pool_blocking_fifo
 	./sched_stack
 	./sched_config
 	./sched_user_ws

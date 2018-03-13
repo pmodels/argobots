@@ -95,6 +95,8 @@ static void sched_run(ABT_sched sched)
     ABT_pool *pools;
     int i;
     CNT_DECL(run_cnt);
+    int n_blocking_pools = 0;
+    ABTI_pool *p_pool;
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
@@ -105,15 +107,42 @@ static void sched_run(ABT_sched sched)
     num_pools  = p_data->num_pools;
     pools      = p_data->pools;
 
+    /* check for the presence of blocking pools */
+    for(i=0; i < num_pools; i++) {
+        ABT_pool pool = pools[i];
+        p_pool = ABTI_pool_get_ptr(pool);
+        if(p_pool->kind == ABT_POOL_BLOCKING_FIFO)
+            n_blocking_pools++;
+    }
+    /* check configuration; if a blocking pools is in use then
+     * this scheduler can only be associated with one pool.  Otherwise other
+     * pools could be starved.
+     */
+    ABTI_ASSERT(!n_blocking_pools || num_pools < 2);
+    if(n_blocking_pools) {
+        /* set event_freq to 1 to avoid long delays in event processing if
+         * the pop() function blocks (note that it uses a timer to avoid
+         * indefinite sleeps; events will eventually be processed).
+         */
+        p_data->event_freq = 1;
+        event_freq = 1;
+#ifdef ABT_CONFIG_USE_SCHED_SLEEP
+        /* set sleep_time to 0 to prevent superflous sleeps; the pool will
+         * handle that if idle.
+         */
+        p_data->sleep_time.tv_sec = 0;
+        p_data->sleep_time.tv_nsec = 0;
+#endif
+    }
+
     while (1) {
         CNT_INIT(run_cnt, 0);
 
         /* Execute one work unit from the scheduler's pool */
         for (i = 0; i < num_pools; i++) {
             ABT_pool pool = pools[i];
-            ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-            size_t size = ABTI_pool_get_size(p_pool);
-            if (size > 0) {
+            p_pool = ABTI_pool_get_ptr(pool);
+            if (num_pools == 1 || ABTI_pool_get_size(p_pool) > 0 ) {
                 /* Pop one work unit */
                 ABT_unit unit = ABTI_pool_pop(p_pool);
                 if (unit != ABT_UNIT_NULL) {
