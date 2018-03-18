@@ -109,6 +109,9 @@ int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
         case ABT_POOL_FIFO:
             abt_errno = ABTI_pool_get_fifo_def(access, &def);
             break;
+        case ABT_POOL_FIFO_WAIT:
+            abt_errno = ABTI_pool_get_fifo_wait_def(access, &def);
+            break;
         default:
             abt_errno = ABT_ERR_INV_POOL_KIND;
             break;
