@@ -314,6 +314,7 @@ typedef size_t        (*ABT_pool_get_size_fn)(ABT_pool);
 typedef void          (*ABT_pool_push_fn)(ABT_pool, ABT_unit);
 typedef ABT_unit      (*ABT_pool_pop_fn)(ABT_pool);
 typedef ABT_unit      (*ABT_pool_pop_wait_fn)(ABT_pool);
+typedef ABT_unit      (*ABT_pool_pop_timedwait_fn)(ABT_pool, const struct timespec*);
 typedef int           (*ABT_pool_remove_fn)(ABT_pool, ABT_unit);
 typedef int           (*ABT_pool_free_fn)(ABT_pool);
 
@@ -335,6 +336,7 @@ typedef struct {
     ABT_pool_push_fn     p_push;
     ABT_pool_pop_fn      p_pop;
     ABT_pool_pop_wait_fn p_pop_wait;
+    ABT_pool_pop_timedwait_fn p_pop_timedwait;
     ABT_pool_remove_fn   p_remove;
     ABT_pool_free_fn     p_free;
 } ABT_pool_def;
