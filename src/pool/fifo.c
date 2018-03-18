@@ -26,25 +26,6 @@ static ABT_unit unit_create_from_thread(ABT_thread thread);
 static ABT_unit unit_create_from_task(ABT_task task);
 static void unit_free(ABT_unit *unit);
 
-
-/* FIXME: do we need this? */
-ABT_pool_def ABTI_pool_fifo = {
-    .access               = ABT_POOL_ACCESS_MPSC,
-    .p_init               = pool_init,
-    .p_free               = pool_free,
-    .p_get_size           = pool_get_size,
-    .p_push               = pool_push_shared,
-    .p_pop                = pool_pop_shared,
-    .p_remove             = pool_remove_shared,
-    .u_get_type           = unit_get_type,
-    .u_get_thread         = unit_get_thread,
-    .u_get_task           = unit_get_task,
-    .u_is_in_pool         = unit_is_in_pool,
-    .u_create_from_thread = unit_create_from_thread,
-    .u_create_from_task   = unit_create_from_task,
-    .u_free               = unit_free,
-};
-
 struct data {
     ABTI_spinlock mutex;
     size_t num_units;
@@ -57,7 +38,6 @@ static inline data_t *pool_get_data_ptr(void *p_data)
 {
     return (data_t *)p_data;
 }
-
 
 /* Obtain the FIFO pool definition according to the access type */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
