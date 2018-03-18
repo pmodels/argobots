@@ -14,6 +14,7 @@ static void     pool_push_shared(ABT_pool pool, ABT_unit unit);
 static void     pool_push_private(ABT_pool pool, ABT_unit unit);
 static ABT_unit pool_pop_shared(ABT_pool pool);
 static ABT_unit pool_pop_private(ABT_pool pool);
+static ABT_unit pool_pop_wait(ABT_pool pool);
 static int      pool_remove_shared(ABT_pool pool, ABT_unit unit);
 static int      pool_remove_private(ABT_pool pool, ABT_unit unit);
 
@@ -71,6 +72,7 @@ int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
     p_def->p_init               = pool_init;
     p_def->p_free               = pool_free;
     p_def->p_get_size           = pool_get_size;
+    p_def->p_pop_wait           = pool_pop_wait;
     p_def->u_get_type           = unit_get_type;
     p_def->u_get_thread         = unit_get_thread;
     p_def->u_get_task           = unit_get_task;
@@ -192,6 +194,12 @@ static void pool_push_private(ABT_pool pool, ABT_unit unit)
     p_data->num_units++;
 
     p_unit->pool = pool;
+}
+
+static ABT_unit pool_pop_wait(ABT_pool pool)
+{
+    HANDLE_ERROR("ABT_POOL_FIFO does not support pop_wait operation");
+    ABTI_ASSERT(0);
 }
 
 static ABT_unit pool_pop_shared(ABT_pool pool)
