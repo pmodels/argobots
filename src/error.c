@@ -49,6 +49,7 @@ int ABT_error_get_str(int err, char *str, size_t *len)
         "ABT_ERR_INV_TASK",
         "ABT_ERR_INV_KEY",
         "ABT_ERR_INV_MUTEX",
+        "ABT_ERR_INV_MUTEX_ATTR",
         "ABT_ERR_INV_COND",
         "ABT_ERR_INV_RWLOCK",
         "ABT_ERR_INV_EVENTUAL",
