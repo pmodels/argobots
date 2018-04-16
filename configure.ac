@@ -610,6 +610,23 @@ else
     enable_simple_mutex=yes
 fi
 
+
+# check if __atomic_test_and_set() and __atomic_clear() are supported
+AC_TRY_COMPILE(
+[#include <stdint.h>],
+[int *lock = 0, val;
+ __atomic_test_and_set((char *)lock, __ATOMIC_ACQ_REL);
+ __atomic_clear((volatile char *)lock, __ATOMIC_RELEASE);
+ val = __atomic_load_n(lock, __ATOMIC_ACQUIRE);],
+[have_atomic_lock=yes],
+[have_atomic_lock=no]
+)
+if test "x$have_atomic_lock" = "xyes" ; then
+    AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_LOCK, 1,
+              [Define if __atomic_test_and_set and _clear are supported])
+fi
+
+
 # --enable-simple-mutex
 AS_IF([test "x$enable_simple_mutex" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SIMPLE_MUTEX, 1,

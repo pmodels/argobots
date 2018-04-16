@@ -22,16 +22,16 @@ static inline void ABTI_spinlock_free(ABTI_spinlock *p_lock)
 
 static inline void ABTI_spinlock_acquire(ABTI_spinlock *p_lock)
 {
-    while (ABTD_atomic_cas_uint32(&p_lock->val, 0, 1) != 0) {
-        while (*(volatile uint32_t *)(&p_lock->val) != 0) {
+    while (ABTD_atomic_lock_uint32(&p_lock->val)) {
+        while (ABTD_atomic_is_locked_uint32(&p_lock->val)) {
+            ;
         }
     }
 }
 
 static inline void ABTI_spinlock_release(ABTI_spinlock *p_lock)
 {
-    *(volatile uint32_t *)&p_lock->val = 0;
-    ABTD_atomic_mem_barrier();
+    ABTD_atomic_unlock_uint32(&p_lock->val);
 }
 
 #endif /* SPINLOCK_H_INCLUDED */
