@@ -13,7 +13,7 @@ static size_t   pool_get_size(ABT_pool pool);
 static void     pool_push(ABT_pool pool, ABT_unit unit);
 static ABT_unit pool_pop(ABT_pool pool);
 static ABT_unit pool_pop_wait(ABT_pool pool);
-static ABT_unit pool_pop_timedwait(ABT_pool pool, const struct timespec *abstime);
+static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs);
 static int      pool_remove(ABT_pool pool, ABT_unit unit);
 
 typedef ABTI_unit unit_t;
@@ -168,7 +168,14 @@ static ABT_unit pool_pop_wait(ABT_pool pool)
     return h_unit;
 }
 
-static ABT_unit pool_pop_timedwait(ABT_pool pool, const struct timespec *abstime)
+static inline void convert_double_sec_to_timespec(struct timespec *ts_out,
+    double seconds)
+{
+    ts_out->tv_sec = (time_t)seconds;
+    ts_out->tv_nsec = (long)((seconds-ts_out->tv_sec) * 1000000000.0);
+}
+
+static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     void *data = ABTI_pool_get_data(p_pool);
@@ -179,7 +186,11 @@ static ABT_unit pool_pop_timedwait(ABT_pool pool, const struct timespec *abstime
     pthread_mutex_lock(&p_data->mutex);
 
     if(!p_data->num_units)
-        pthread_cond_timedwait(&p_data->cond, &p_data->mutex, abstime);
+    {
+        struct timespec ts;
+        convert_double_sec_to_timespec(&ts, abstime_secs);
+        pthread_cond_timedwait(&p_data->cond, &p_data->mutex, &ts);
+    }
     
     if (p_data->num_units > 0) {
         p_unit = p_data->p_head;

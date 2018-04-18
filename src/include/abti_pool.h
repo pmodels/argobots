@@ -211,11 +211,11 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
 #endif /* ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK */
 
 static inline
-ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool, const struct timespec *abstime)
+ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool, double abstime_secs)
 {
     ABT_unit unit;
 
-    unit = p_pool->p_pop_timedwait(ABTI_pool_get_handle(p_pool), abstime);
+    unit = p_pool->p_pop_timedwait(ABTI_pool_get_handle(p_pool), abstime_secs);
     LOG_EVENT_POOL_POP(p_pool, unit);
 
     return unit;

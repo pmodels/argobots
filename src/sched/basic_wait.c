@@ -118,15 +118,10 @@ static void sched_run(ABT_sched sched)
          * main loop above.
          */
         if(!run_cnt_nowait) {
-            struct timespec ts;
-            clock_gettime(CLOCK_REALTIME, &ts);
-            ts.tv_nsec += 1e8;
-            if(ts.tv_nsec > 1e9) {
-                ts.tv_nsec -= 1e9;
-                ts.tv_sec++;
-            }
+            double abstime = ABT_get_wtime();
+            abstime += 0.1;
             ABT_unit unit = ABTI_pool_pop_timedwait(
-                ABTI_pool_get_ptr(pools[0]), &ts);
+                ABTI_pool_get_ptr(pools[0]), abstime);
             if (unit != ABT_UNIT_NULL) {
                 ABTI_xstream_run_unit(p_xstream, unit, 
                     ABTI_pool_get_ptr(pools[0]));

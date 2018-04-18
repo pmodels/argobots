@@ -15,7 +15,7 @@ static void     pool_push_private(ABT_pool pool, ABT_unit unit);
 static ABT_unit pool_pop_shared(ABT_pool pool);
 static ABT_unit pool_pop_private(ABT_pool pool);
 static ABT_unit pool_pop_wait(ABT_pool pool);
-static ABT_unit pool_pop_timedwait(ABT_pool pool, const struct timespec *abstime);
+static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs);
 static int      pool_remove_shared(ABT_pool pool, ABT_unit unit);
 static int      pool_remove_private(ABT_pool pool, ABT_unit unit);
 
@@ -204,7 +204,7 @@ static ABT_unit pool_pop_wait(ABT_pool pool)
     ABTI_ASSERT(0);
 }
 
-static ABT_unit pool_pop_timedwait(ABT_pool pool, const struct timespec *abstime)
+static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
 {
     HANDLE_ERROR("ABT_POOL_FIFO does not support pop_timedwait operation");
     ABTI_ASSERT(0);
