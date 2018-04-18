@@ -299,6 +299,8 @@ struct ABTI_pool {
     ABT_pool_get_size_fn           p_get_size;
     ABT_pool_push_fn               p_push;
     ABT_pool_pop_fn                p_pop;
+    ABT_pool_pop_wait_fn           p_pop_wait;
+    ABT_pool_pop_timedwait_fn      p_pop_timedwait;
     ABT_pool_remove_fn             p_remove;
     ABT_pool_free_fn               p_free;
 };
@@ -514,6 +516,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
 
 /* Scheduler */
 ABT_sched_def *ABTI_sched_get_basic_def(void);
+ABT_sched_def *ABTI_sched_get_basic_wait_def(void);
 ABT_sched_def *ABTI_sched_get_prio_def(void);
 ABT_sched_def *ABTI_sched_get_randws_def(void);
 int ABTI_sched_free(ABTI_sched *p_sched);
@@ -536,6 +539,7 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
 
 /* Pool */
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
+int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def);
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
 int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
 #endif

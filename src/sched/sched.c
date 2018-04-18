@@ -138,6 +138,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
 {
     int abt_errno = ABT_SUCCESS;
     ABT_pool_access access;
+    ABT_pool_kind kind = ABT_POOL_FIFO;
     ABT_bool automatic;
     int p;
 
@@ -172,6 +173,12 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                                              ABT_SCHED_CONFIG_NULL,
                                              newsched);
                 break;
+            case ABT_SCHED_BASIC_WAIT:
+                abt_errno = ABT_sched_create(ABTI_sched_get_basic_wait_def(),
+                                             num_pools, pool_list,
+                                             ABT_SCHED_CONFIG_NULL,
+                                             newsched);
+                break;
             case ABT_SCHED_PRIO:
                 abt_errno = ABT_sched_create(ABTI_sched_get_prio_def(),
                                              num_pools, pool_list,
@@ -200,6 +207,11 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
             case ABT_SCHED_BASIC:
                 num_pools = 1;
                 break;
+            case ABT_SCHED_BASIC_WAIT:
+                /* FIFO_WAIT is default pool for use with BASIC_WAIT sched */
+                kind = ABT_POOL_FIFO_WAIT;
+                num_pools = 1;
+                break;
             case ABT_SCHED_PRIO:
                 num_pools = ABTI_SCHED_NUM_PRIO;
                 break;
@@ -217,7 +229,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         ABT_pool pool_list[ABTI_SCHED_NUM_PRIO];
         int p;
         for (p = 0; p < num_pools; p++) {
-            abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access, ABT_TRUE,
+            abt_errno = ABT_pool_create_basic(kind, access, ABT_TRUE,
                                               pool_list+p);
             ABTI_CHECK_ERROR(abt_errno);
         }
@@ -227,6 +239,11 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
             case ABT_SCHED_DEFAULT:
             case ABT_SCHED_BASIC:
                 abt_errno = ABT_sched_create(ABTI_sched_get_basic_def(),
+                                             num_pools, pool_list,
+                                             config, newsched);
+                break;
+            case ABT_SCHED_BASIC_WAIT:
+                abt_errno = ABT_sched_create(ABTI_sched_get_basic_wait_def(),
                                              num_pools, pool_list,
                                              config, newsched);
                 break;
@@ -816,6 +833,8 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
     kind = p_sched->kind;
     if (kind == ABTI_sched_get_kind(ABTI_sched_get_basic_def())) {
         kind_str = "BASIC";
+    } else if (kind == ABTI_sched_get_kind(ABTI_sched_get_basic_wait_def())) {
+        kind_str = "BASIC_WAIT";
     } else if (kind == ABTI_sched_get_kind(ABTI_sched_get_prio_def())) {
         kind_str = "PRIO";
     } else {

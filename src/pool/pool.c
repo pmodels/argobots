@@ -60,6 +60,8 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->p_get_size           = def->p_get_size;
     p_pool->p_push               = def->p_push;
     p_pool->p_pop                = def->p_pop;
+    p_pool->p_pop_wait           = def->p_pop_wait;
+    p_pool->p_pop_timedwait      = def->p_pop_timedwait;
     p_pool->p_remove             = def->p_remove;
     p_pool->p_free               = def->p_free;
     p_pool->id                   = ABTI_pool_get_new_id();
@@ -108,6 +110,9 @@ int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
     switch (kind) {
         case ABT_POOL_FIFO:
             abt_errno = ABTI_pool_get_fifo_def(access, &def);
+            break;
+        case ABT_POOL_FIFO_WAIT:
+            abt_errno = ABTI_pool_get_fifo_wait_def(access, &def);
             break;
         default:
             abt_errno = ABT_ERR_INV_POOL_KIND;
