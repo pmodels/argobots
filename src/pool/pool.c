@@ -87,6 +87,32 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
 
 /**
  * @ingroup POOL
+ * @brief   Retrieve pool definition for predefined pools
+ *
+ * @param[in]  kind      name of the predefined pool
+ * @param[in]  access    access type of the predefined pool
+ * @param[out] def       definition of default pool
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_pool_get_def_basic(ABT_pool_kind kind, 
+                           ABT_pool_access access, ABT_pool_def *p_def) 
+{
+    int abt_errno = ABT_SUCCESS;
+
+    switch (kind) {
+        case ABT_POOL_FIFO:
+            abt_errno = ABTI_pool_get_fifo_def(access, p_def);
+            break;
+        default:
+            abt_errno = ABT_ERR_INV_POOL_KIND;
+            break;
+    }
+    return abt_errno;
+}
+
+/**
+ * @ingroup POOL
  * @brief   Create a new pool from a predefined type and return its handle
  *          through \c newpool.
  *

@@ -414,6 +414,8 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
                     ABT_pool *newpool) ABT_API_PUBLIC;
 int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                           ABT_bool automatic, ABT_pool *newpool) ABT_API_PUBLIC;
+int ABT_pool_get_def_basic(ABT_pool_kind kind, ABT_pool_access access, 
+                           ABT_pool_def *p_def) ABT_API_PUBLIC;
 int ABT_pool_free(ABT_pool *pool) ABT_API_PUBLIC;
 int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access) ABT_API_PUBLIC;
 int ABT_pool_get_size(ABT_pool pool, size_t *size) ABT_API_PUBLIC;
