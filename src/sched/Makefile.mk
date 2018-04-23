@@ -5,6 +5,7 @@
 
 abt_sources += \
 	sched/basic.c \
+	sched/basic_wait.c \
 	sched/config.c \
 	sched/prio.c \
 	sched/sched.c \
