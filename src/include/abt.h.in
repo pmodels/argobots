@@ -147,7 +147,8 @@ enum ABT_sched_predef {
     ABT_SCHED_DEFAULT,   /* Default scheduler */
     ABT_SCHED_BASIC,     /* Basic scheduler */
     ABT_SCHED_PRIO,      /* Priority scheduler */
-    ABT_SCHED_RANDWS     /* Random work-stealing scheduler */
+    ABT_SCHED_RANDWS,    /* Random work-stealing scheduler */
+    ABT_SCHED_BASIC_WAIT /* Basic scheduler with ability to wait for units */
 };
 
 enum ABT_sched_type {

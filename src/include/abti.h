@@ -516,6 +516,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
 
 /* Scheduler */
 ABT_sched_def *ABTI_sched_get_basic_def(void);
+ABT_sched_def *ABTI_sched_get_basic_wait_def(void);
 ABT_sched_def *ABTI_sched_get_prio_def(void);
 ABT_sched_def *ABTI_sched_get_randws_def(void);
 int ABTI_sched_free(ABTI_sched *p_sched);
