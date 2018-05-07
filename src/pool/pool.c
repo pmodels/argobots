@@ -287,6 +287,52 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     goto fn_exit;
 }
 
+int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_unit unit;
+
+    /* If called by an external thread, return an error. */
+    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    unit = ABTI_pool_pop_wait(p_pool);
+
+  fn_exit:
+    *p_unit = unit;
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    unit = ABT_UNIT_NULL;
+    goto fn_exit;
+}
+
+int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_unit unit;
+
+    /* If called by an external thread, return an error. */
+    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    unit = ABTI_pool_pop_timedwait(p_pool, abstime_secs);
+
+  fn_exit:
+    *p_unit = unit;
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    unit = ABT_UNIT_NULL;
+    goto fn_exit;
+}
+
 /**
  * @ingroup POOL
  * @brief   Push a unit to the target pool
@@ -434,7 +480,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     return ABT_ERR_FEATURE_NA;
 #else
     int abt_errno = ABT_SUCCESS;
-    
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
