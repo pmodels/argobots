@@ -425,6 +425,8 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access) ABT_API_PUBLIC;
 int ABT_pool_get_size(ABT_pool pool, size_t *size) ABT_API_PUBLIC;
 int ABT_pool_get_total_size(ABT_pool pool, size_t *size) ABT_API_PUBLIC;
 int ABT_pool_pop(ABT_pool pool, ABT_unit *unit) ABT_API_PUBLIC;
+int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *unit) ABT_API_PUBLIC;
+int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *unit, double abstime_secs) ABT_API_PUBLIC;
 int ABT_pool_remove(ABT_pool pool, ABT_unit unit) ABT_API_PUBLIC;
 int ABT_pool_push(ABT_pool pool, ABT_unit unit) ABT_API_PUBLIC;
 int ABT_pool_set_data(ABT_pool pool, void *data) ABT_API_PUBLIC;
