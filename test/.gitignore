@@ -23,6 +23,7 @@ basic/thread_task
 basic/thread_task_arg
 basic/thread_task_num
 basic/sched_basic
+basic/sched_basic_wait
 basic/sched_prio
 basic/sched_randws
 basic/sched_set_main
