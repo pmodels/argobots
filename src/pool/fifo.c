@@ -4,6 +4,24 @@
  */
 
 #include "abti.h"
+#include <time.h>
+
+static inline
+double get_cur_time(void)
+{
+#if defined(HAVE_CLOCK_GETTIME)
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return ((double)ts.tv_sec); + 1.0e-9 * ((double)ts.tv_nsec);
+#elif defined(HAVE_GETTIMEOFDAY)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return ((double)tv.tv_sec) + 1.0e-6 * ((double)tv.tv_usec);
+#else
+#error "No timer function available"
+    return 0.0;
+#endif
+}
 
 /* FIFO pool implementation */
 
@@ -201,14 +219,89 @@ static void pool_push_private(ABT_pool pool, ABT_unit unit)
 
 static ABT_unit pool_pop_wait(ABT_pool pool)
 {
-    HANDLE_ERROR("ABT_POOL_FIFO does not support pop_wait operation");
-    ABTI_ASSERT(0);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
+    data_t *p_data = pool_get_data_ptr(data);
+    unit_t *p_unit = NULL;
+    ABT_unit h_unit = ABT_UNIT_NULL;
+
+    do {
+        ABTI_spinlock_acquire(&p_data->mutex);
+        if (p_data->num_units > 0) {
+            p_unit = p_data->p_head;
+            if (p_data->num_units == 1) {
+                p_data->p_head = NULL;
+                p_data->p_tail = NULL;
+            } else {
+                p_unit->p_prev->p_next = p_unit->p_next;
+                p_unit->p_next->p_prev = p_unit->p_prev;
+                p_data->p_head = p_unit->p_next;
+            }
+            p_data->num_units--;
+
+            p_unit->p_prev = NULL;
+            p_unit->p_next = NULL;
+            p_unit->pool = ABT_POOL_NULL;
+
+            h_unit = (ABT_unit)p_unit;
+            ABTI_spinlock_release(&p_data->mutex);
+        } else {
+            ABTI_spinlock_release(&p_data->mutex);
+            /* Sleep and check again. */
+            const int sleep_nsecs = 100;
+            struct timespec ts = {0, sleep_nsecs};
+            nanosleep(&ts, NULL);
+        }
+    } while(h_unit == ABT_UNIT_NULL);
+
+    return h_unit;
 }
 
 static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
 {
-    HANDLE_ERROR("ABT_POOL_FIFO does not support pop_timedwait operation");
-    ABTI_ASSERT(0);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    void *data = ABTI_pool_get_data(p_pool);
+    data_t *p_data = pool_get_data_ptr(data);
+    unit_t *p_unit = NULL;
+    ABT_unit h_unit = ABT_UNIT_NULL;
+
+    double time_start = get_cur_time();
+
+    do {
+        ABTI_spinlock_acquire(&p_data->mutex);
+        if (p_data->num_units > 0) {
+            p_unit = p_data->p_head;
+            if (p_data->num_units == 1) {
+                p_data->p_head = NULL;
+                p_data->p_tail = NULL;
+            } else {
+                p_unit->p_prev->p_next = p_unit->p_next;
+                p_unit->p_next->p_prev = p_unit->p_prev;
+                p_data->p_head = p_unit->p_next;
+            }
+            p_data->num_units--;
+
+            p_unit->p_prev = NULL;
+            p_unit->p_next = NULL;
+            p_unit->pool = ABT_POOL_NULL;
+
+            h_unit = (ABT_unit)p_unit;
+            ABTI_spinlock_release(&p_data->mutex);
+        } else {
+            ABTI_spinlock_release(&p_data->mutex);
+            /* Sleep. */
+            const int sleep_nsecs = 100;
+            struct timespec ts = {0, sleep_nsecs};
+            nanosleep(&ts, NULL);
+
+            struct timespec ts_end;
+            double elapsed = get_cur_time() - time_start;
+            if (elapsed > abstime_secs)
+                break;
+        }
+    } while(h_unit == ABT_UNIT_NULL);
+
+    return h_unit;
 }
 
 static ABT_unit pool_pop_shared(ABT_pool pool)
