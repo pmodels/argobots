@@ -299,7 +299,6 @@ struct ABTI_pool {
     ABT_pool_get_size_fn           p_get_size;
     ABT_pool_push_fn               p_push;
     ABT_pool_pop_fn                p_pop;
-    ABT_pool_pop_wait_fn           p_pop_wait;
     ABT_pool_pop_timedwait_fn      p_pop_timedwait;
     ABT_pool_remove_fn             p_remove;
     ABT_pool_free_fn               p_free;

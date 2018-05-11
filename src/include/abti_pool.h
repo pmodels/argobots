@@ -222,17 +222,6 @@ ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool, double abstime_secs)
 }
 
 static inline
-ABT_unit ABTI_pool_pop_wait(ABTI_pool *p_pool)
-{
-    ABT_unit unit;
-
-    unit = p_pool->p_pop_wait(ABTI_pool_get_handle(p_pool));
-    LOG_EVENT_POOL_POP(p_pool, unit);
-
-    return unit;
-}
-
-static inline
 ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)
 {
     ABT_unit unit;

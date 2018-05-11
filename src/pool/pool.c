@@ -60,7 +60,6 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->p_get_size           = def->p_get_size;
     p_pool->p_push               = def->p_push;
     p_pool->p_pop                = def->p_pop;
-    p_pool->p_pop_wait           = def->p_pop_wait;
     p_pool->p_pop_timedwait      = def->p_pop_timedwait;
     p_pool->p_remove             = def->p_remove;
     p_pool->p_free               = def->p_free;
@@ -276,29 +275,6 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     unit = ABTI_pool_pop(p_pool);
-
-  fn_exit:
-    *p_unit = unit;
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    unit = ABT_UNIT_NULL;
-    goto fn_exit;
-}
-
-int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABT_unit unit;
-
-    /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
-
-    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-    ABTI_CHECK_NULL_POOL_PTR(p_pool);
-
-    unit = ABTI_pool_pop_wait(p_pool);
 
   fn_exit:
     *p_unit = unit;
