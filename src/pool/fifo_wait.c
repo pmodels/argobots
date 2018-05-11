@@ -12,7 +12,6 @@ static int      pool_free(ABT_pool pool);
 static size_t   pool_get_size(ABT_pool pool);
 static void     pool_push(ABT_pool pool, ABT_unit unit);
 static ABT_unit pool_pop(ABT_pool pool);
-static ABT_unit pool_pop_wait(ABT_pool pool);
 static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs);
 static int      pool_remove(ABT_pool pool, ABT_unit unit);
 
@@ -47,7 +46,6 @@ int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def)
     p_def->p_get_size           = pool_get_size;
     p_def->p_push               = pool_push;
     p_def->p_pop                = pool_pop;
-    p_def->p_pop_wait           = pool_pop_wait;
     p_def->p_pop_timedwait      = pool_pop_timedwait;
     p_def->p_remove             = pool_remove;
     p_def->u_get_type           = unit_get_type;
@@ -132,40 +130,6 @@ static void pool_push(ABT_pool pool, ABT_unit unit)
     p_unit->pool = pool;
     pthread_cond_signal(&p_data->cond);
     pthread_mutex_unlock(&p_data->mutex);
-}
-
-static ABT_unit pool_pop_wait(ABT_pool pool)
-{
-    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-    void *data = ABTI_pool_get_data(p_pool);
-    data_t *p_data = pool_get_data_ptr(data);
-    unit_t *p_unit = NULL;
-    ABT_unit h_unit = ABT_UNIT_NULL;
-
-    pthread_mutex_lock(&p_data->mutex);
-    while(!p_data->num_units)
-        pthread_cond_wait(&p_data->cond, &p_data->mutex);
-
-    p_unit = p_data->p_head;
-    if (p_data->num_units == 1) {
-        p_data->p_head = NULL;
-        p_data->p_tail = NULL;
-    } else {
-        p_unit->p_prev->p_next = p_unit->p_next;
-        p_unit->p_next->p_prev = p_unit->p_prev;
-        p_data->p_head = p_unit->p_next;
-    }
-    p_data->num_units--;
-
-    p_unit->p_prev = NULL;
-    p_unit->p_next = NULL;
-    p_unit->pool = ABT_POOL_NULL;
-
-    h_unit = (ABT_unit)p_unit;
-
-    pthread_mutex_unlock(&p_data->mutex);
-
-    return h_unit;
 }
 
 static inline void convert_double_sec_to_timespec(struct timespec *ts_out,
