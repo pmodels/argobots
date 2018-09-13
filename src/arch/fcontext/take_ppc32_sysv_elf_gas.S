@@ -66,6 +66,8 @@
  *                                                     *
  *******************************************************/
 
+#include "abt_config.h"
+
 .text
 .globl take_fcontext
 .align 2
@@ -103,10 +105,7 @@ take_fcontext:
     # save LR as PC
     stw  %r0, 236(%r1)
 
-    # test if fpu env should be preserved
-    cmpwi  cr7, %r6, 0
-    beq  cr7, 1f
-
+#if ABTD_FCONTEXT_PRESERVE_FPU
     stfd  %f14, 0(%r1)  # save F14
     stfd  %f15, 8(%r1)  # save F15
     stfd  %f16, 16(%r1)  # save F16
@@ -127,18 +126,15 @@ take_fcontext:
     stfd  %f31, 136(%r1)  # save F31
     mffs  %f0  # load FPSCR
     stfd  %f0, 144(%r1)  # save FPSCR
+#endif
 
-1:
     # store RSP (pointing to context-data) in R3
     stw  %r1, 0(%r3)
 
     # restore RSP (pointing to context-data) from R4
     mr  %r1, %r4
 
-    # test if fpu env should be preserved
-    cmpwi  cr7, %r6, 0
-    beq  cr7, 2f
-
+#if ABTD_FCONTEXT_PRESERVE_FPU
     lfd  %f14, 0(%r1)  # restore F14
     lfd  %f15, 8(%r1)  # restore F15
     lfd  %f16, 16(%r1)  # restore F16
@@ -159,8 +155,8 @@ take_fcontext:
     lfd  %f31, 136(%r1)  # restore F31
     lfd  %f0,  144(%r1)  # load FPSCR
     mtfsf  0xff, %f0  # restore FPSCR
+#endif
 
-2:
     lwz  %r13, 152(%r1)  # restore R13
     lwz  %r14, 156(%r1)  # restore R14
     lwz  %r15, 160(%r1)  # restore R15

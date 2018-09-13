@@ -51,6 +51,8 @@
  *                                                     *
  *******************************************************/
 
+#include "abt_config.h"
+
 .cpu    generic+fp+simd
 .text
 .align  2
@@ -60,17 +62,14 @@ take_fcontext:
     # restore RSP (pointing to context-data) from A2 (x1)
     mov  sp, x1
 
-#    # test if fpu env should be preserved
-#    cmp  w3, #0
-#    b.eq  2f
-
+#if ABTD_FCONTEXT_PRESERVE_FPU
     # load d8 - d15
     ldp  d8,  d9,  [sp, #0x00]
     ldp  d10, d11, [sp, #0x10]
     ldp  d12, d13, [sp, #0x20]
     ldp  d14, d15, [sp, #0x30]
+#endif
 
-2:
     # load x19-x30
     ldp  x19, x20, [sp, #0x40]
     ldp  x21, x22, [sp, #0x50]

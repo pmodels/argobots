@@ -31,6 +31,8 @@
  *                                                                                      *
  ****************************************************************************************/
 
+#include "abt_config.h"
+
 .text
 .globl _jump_fcontext
 .align 8
@@ -45,32 +47,26 @@ _jump_fcontext:
     /* prepare stack for FPU */
     leaq  -0x8(%rsp), %rsp
 
-    /* test for flag preserve_fpu */
-    cmp  $0, %rcx
-    je  1f
-
+#if ABTD_FCONTEXT_PRESERVE_FPU
     /* save MMX control- and status-word */
     stmxcsr  (%rsp)
     /* save x87 control-word */
     fnstcw   0x4(%rsp)
+#endif
 
-1:
     /* store RSP (pointing to context-data) in RDI */
     movq  %rsp, (%rdi)
 
     /* restore RSP (pointing to context-data) from RSI */
     movq  %rsi, %rsp
 
-    /* test for flag preserve_fpu */
-    cmp  $0, %rcx
-    je  2f
-
+#if ABTD_FCONTEXT_PRESERVE_FPU
     /* restore MMX control- and status-word */
     ldmxcsr  (%rsp)
     /* restore x87 control-word */
     fldcw  0x4(%rsp)
+#endif
 
-2:
     /* prepare stack for FPU */
     leaq  0x8(%rsp), %rsp
 

@@ -16,10 +16,8 @@
 void ABTD_thread_func_wrapper(void *p_arg);
 fcontext_t make_fcontext(void *sp, size_t size, void (*thread_func)(void *))
                          ABT_API_PRIVATE;
-void *jump_fcontext(fcontext_t *old, fcontext_t new, void *arg,
-                    int preserve_fpu) ABT_API_PRIVATE;
-void *take_fcontext(fcontext_t *old, fcontext_t new, void *arg,
-                    int preserve_fpu) ABT_API_PRIVATE;
+void *jump_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
+void *take_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
                               int arg_upper, int arg_lower);
@@ -103,8 +101,7 @@ void ABTD_thread_context_switch(ABTD_thread_context *p_old,
                                 ABTD_thread_context *p_new)
 {
 #if defined(ABT_CONFIG_USE_FCONTEXT)
-    jump_fcontext(&p_old->fctx, p_new->fctx, p_new,
-                  ABTD_FCONTEXT_PRESERVE_FPU);
+    jump_fcontext(&p_old->fctx, p_new->fctx, p_new);
 
 #else
     int ret = swapcontext(p_old, p_new);
@@ -117,8 +114,7 @@ void ABTD_thread_finish_context(ABTD_thread_context *p_old,
                                 ABTD_thread_context *p_new)
 {
 #if defined(ABT_CONFIG_USE_FCONTEXT)
-    take_fcontext(&p_old->fctx, p_new->fctx, p_new,
-                  ABTD_FCONTEXT_PRESERVE_FPU);
+    take_fcontext(&p_old->fctx, p_new->fctx, p_new);
 #else
     int ret = swapcontext(p_old, p_new);
     ABTI_ASSERT(ret == 0);
