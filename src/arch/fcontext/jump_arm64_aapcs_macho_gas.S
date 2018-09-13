@@ -45,6 +45,8 @@
  *                                                     *
  *******************************************************/
 
+#include "abt_config.h"
+
 .text
 .globl _jump_fcontext
 .balign 16
@@ -52,18 +54,12 @@ _jump_fcontext:
     ; prepare stack for GP + FPU
     sub  sp, sp, #0xb0
 
-#if (defined(__VFP_FP__) && !defined(__SOFTFP__))
-    ; test if fpu env should be preserved
-    cmp  w3, #0
-    b.eq  1f
-
+#if (defined(__VFP_FP__) && !defined(__SOFTFP__)) && ABTD_FCONTEXT_PRESERVE_FPU
     ; save d8 - d15
     stp  d8,  d9,  [sp, #0x00]
     stp  d10, d11, [sp, #0x10]
     stp  d12, d13, [sp, #0x20]
     stp  d14, d15, [sp, #0x30]
-
-1:
 #endif
 
     ; save x19-x30
@@ -85,18 +81,12 @@ _jump_fcontext:
     ; restore RSP (pointing to context-data) from A2 (x1)
     mov  sp, x1
 
-#if (defined(__VFP_FP__) && !defined(__SOFTFP__))
-    ; test if fpu env should be preserved
-    cmp  w3, #0
-    b.eq  2f
-
+#if (defined(__VFP_FP__) && !defined(__SOFTFP__)) && ABTD_FCONTEXT_PRESERVE_FPU
     ; load d8 - d15
     ldp  d8,  d9,  [sp, #0x00]
     ldp  d10, d11, [sp, #0x10]
     ldp  d12, d13, [sp, #0x20]
     ldp  d14, d15, [sp, #0x30]
-
-2:
 #endif
 
     ; load x19-x30

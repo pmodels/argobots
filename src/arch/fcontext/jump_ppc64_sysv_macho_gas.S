@@ -88,6 +88,8 @@
  *                                                     *
  *******************************************************/
 
+#include "abt_config.h"
+
 .text
 .align 2
 .globl jump_fcontext
@@ -125,10 +127,7 @@ _jump_fcontext:
     ; save LR as PC
     std  r0, 320(r1)
 
-    ; test if fpu env should be preserved
-    cmpwi  cr7, r6, 0
-    beq  cr7, l1
-
+#if ABTD_FCONTEXT_PRESERVE_FPU
     stfd  f14, 0(r1)  ; save F14
     stfd  f15, 8(r1)  ; save F15
     stfd  f16, 16(r1)  ; save F16
@@ -149,18 +148,15 @@ _jump_fcontext:
     stfd  f31, 136(r1)  ; save F31
     mffs  f0  ; load FPSCR
     stfd  f0, 144(r1)  ; save FPSCR
+#endif
 
-l1:
     ; store RSP (pointing to context-data) in R3
     stw  r1, 0(r3)
 
     ; restore RSP (pointing to context-data) from R4
     mr  r1, r4
 
-    ; test if fpu env should be preserved
-    cmpwi  cr7, r6, 0
-    beq  cr7, l2
-
+#if ABTD_FCONTEXT_PRESERVE_FPU
     lfd  f14, 0(r1)  ; restore F14
     lfd  f15, 8(r1)  ; restore F15
     lfd  f16, 16(r1)  ; restore F16
@@ -181,8 +177,8 @@ l1:
     lfd  f31, 136(r1)  ; restore F31
     lfd  f0,  144(r1)  ; load FPSCR
     mtfsf  0xff, f0  ; restore FPSCR
+#endif
 
-2:
     ld  r13, 152(r1)  ; restore R13
     ld  r14, 160(r1)  ; restore R14
     ld  r15, 168(r1)  ; restore R15

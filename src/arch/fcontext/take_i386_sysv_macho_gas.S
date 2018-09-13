@@ -17,6 +17,8 @@
  *                                                                                      *
  ****************************************************************************************/
 
+#include "abt_config.h"
+
 .text
 .globl _take_fcontext
 .align 2
@@ -33,15 +35,13 @@ _take_fcontext:
     /* restore ESP (pointing to context-data) from EDX */
     movl  %edx, %esp
 
-    /* test for flag preserve_fpu */
-    test  %ecx, %ecx
-    je  2f
-
+#if ABTD_FCONTEXT_PRESERVE_FPU
     /* restore MMX control- and status-word */
     ldmxcsr  (%esp)
     /* restore x87 control-word */
     fldcw  0x4(%esp)
-2:
+#endif
+
     /* prepare stack for FPU */
     leal  0x8(%esp), %esp
 
