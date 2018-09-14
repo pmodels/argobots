@@ -345,7 +345,7 @@ int ABT_thread_free_many(int num, ABT_thread *thread_list)
     int i;
 
     for (i = 0; i < num; i++) {
-        ABTI_thread *p_thread = ABTI_thread_get_ptr(&thread_list[i]);
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(thread_list[i]);
         ABTI_thread_free(p_local, p_thread);
     }
     return ABT_SUCCESS;
@@ -1720,7 +1720,8 @@ int ABTI_thread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
     /* If p_sched is reused, ABTI_thread_revive() can be used. */
     if (p_sched->p_thread) {
         ABT_sched h_sched = ABTI_sched_get_handle(p_sched);
-        abt_errno = ABTI_thread_revive(p_local, p_pool, p_sched->run,
+        abt_errno = ABTI_thread_revive(p_local, p_pool,
+                                       (void (*)(void *))p_sched->run,
                                        (void *)h_sched, p_sched->p_thread);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
@@ -1729,9 +1730,9 @@ int ABTI_thread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
     /* Allocate a ULT object and its stack */
     ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
                           ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
-    abt_errno = ABTI_thread_create_internal(p_local, p_pool, p_sched->run,
-        (void *)ABTI_sched_get_handle(p_sched), &attr, ABTI_THREAD_TYPE_USER,
-        p_sched, 1, NULL, ABT_TRUE, &p_newthread);
+    abt_errno = ABTI_thread_create_internal(p_local, p_pool,
+        (void (*)(void *))p_sched->run, (void *)ABTI_sched_get_handle(p_sched),
+        &attr, ABTI_THREAD_TYPE_USER, p_sched, 1, NULL, ABT_TRUE, &p_newthread);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:

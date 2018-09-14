@@ -103,7 +103,7 @@ int ABT_xstream_barrier_create(uint32_t num_waiters, ABT_xstream_barrier *newbar
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_barrier_free(ABT_barrier *barrier)
+int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier)
 {
 #ifdef HAVE_PTHREAD_BARRIER_INIT
     int abt_errno = ABT_SUCCESS;
