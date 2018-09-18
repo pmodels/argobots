@@ -146,7 +146,6 @@ void ABTI_mutex_lock(ABTI_mutex *p_mutex)
             }
             while (c != 0) {
                 ABTI_mutex_wait(p_mutex, 2);
-
                 /* If the mutex has been handed over to the current ULT from
                  * other ULT on the same ES, we don't need to change the mutex
                  * state. */
@@ -161,6 +160,8 @@ void ABTI_mutex_lock(ABTI_mutex *p_mutex)
                         p_giver->state = ABT_THREAD_STATE_READY;
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
                                        p_self->p_last_xstream);
+                        /* When handover succeeds, p_mutex->val is still locked,
+                         * and owned by this thread. */
                         break;
                     }
                 }
@@ -200,9 +201,10 @@ void ABTI_mutex_unlock(ABTI_mutex *p_mutex)
     LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
 #else
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) != 1) {
-        ABTI_PTR_UNLOCK(&p_mutex->val);
         LOG_EVENT("%p: unlock with wake\n", p_mutex);
         ABTI_mutex_wake_de(p_mutex);
+        /* p_mutex is unlocked after waking up threads. */
+        ABTI_PTR_UNLOCK(&p_mutex->val);
     } else {
         LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
     }

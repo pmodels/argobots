@@ -236,6 +236,8 @@ void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
                         p_giver->state = ABT_THREAD_STATE_READY;
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
                                        p_self->p_last_xstream);
+                        /* When handover succeeds, p_mutex->val is still locked,
+                         * and owned by this thread. */
                         break;
                     }
                 }
@@ -479,6 +481,7 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
     /* If p_mutex->val is 1 before decreasing it, it means there is no any
      * waiter in the mutex queue.  We can just return. */
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) == 1) {
+        /* p_mutex->val is 0 (unlocked) */
         LOG_EVENT("%p: unlock_se\n", p_mutex);
         ABTI_thread_yield(ABTI_local_get_thread());
         return abt_errno;
@@ -496,10 +499,11 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
  check_cond:
     /* Check whether the mutex handover is possible */
     if (p_queue->num_handovers >= p_mutex->attr.max_handovers) {
-        ABTI_PTR_UNLOCK(&p_mutex->val);
         LOG_EVENT("%p: unlock_se\n", p_mutex);
         ABTI_mutex_wake_de(p_mutex);
         p_queue->num_handovers = 0;
+        /* Unlock p_mutex. */
+        ABTI_PTR_UNLOCK(&p_mutex->val);
         ABTI_thread_yield(p_thread);
         return abt_errno;
     }
@@ -507,9 +511,10 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
     /* Hand over the mutex to high-priority ULTs */
     if (p_queue->num_threads <= 1) {
         if(p_htable->h_list != NULL) {
-            ABTI_PTR_UNLOCK(&p_mutex->val);
             LOG_EVENT("%p: unlock_se\n", p_mutex);
             ABTI_mutex_wake_de(p_mutex);
+            /* Unlock p_mutex. */
+            ABTI_PTR_UNLOCK(&p_mutex->val);
             ABTI_thread_yield(p_thread);
             return abt_errno;
         }
@@ -522,9 +527,10 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
     /* When we don't have high-priority ULTs and other ESs don't either,
      * we hand over the mutex to low-priority ULTs. */
     if (p_queue->low_num_threads <= 1) {
-        ABTI_PTR_UNLOCK(&p_mutex->val);
         LOG_EVENT("%p: unlock_se\n", p_mutex);
         ABTI_mutex_wake_de(p_mutex);
+        /* Unlock p_mutex. */
+        ABTI_PTR_UNLOCK(&p_mutex->val);
         ABTI_thread_yield(p_thread);
         return abt_errno;
     } else {
@@ -534,7 +540,9 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
 
   handover:
     /* We don't push p_thread to the pool. Instead, we will yield_to p_thread
-     * directly at the end of this function. */
+     * directly at the end of this function.
+     * We note handover is performed with mutex->val locked and
+     * p_mutex->p_htable->mutex unlocked */
     p_queue->num_handovers++;
 
     /* We are handing over the mutex */

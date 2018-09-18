@@ -429,7 +429,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     return ABT_ERR_FEATURE_NA;
 #else
     int abt_errno = ABT_SUCCESS;
-    
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
