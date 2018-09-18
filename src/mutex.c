@@ -181,7 +181,8 @@ void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
     ABT_self_get_type(&type);
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock_low - try\n", p_mutex);
-        while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+        while (ABTD_atomic_cas_uint32(&p_mutex->val, ABTI_MUTEX_UNLOCKED,
+               ABTI_MUTEX_LOCKED_NO_WAITING_THREADS) != ABTI_MUTEX_UNLOCKED) {
             ABT_thread_yield();
         }
         LOG_EVENT("%p: lock_low - acquired\n", p_mutex);
@@ -197,7 +198,6 @@ void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
     ABT_self_get_type(&type);
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock_low - try\n", p_mutex);
-        int c;
 
         /* If other ULTs associated with the same ES are waiting on the
          * low-mutex queue, we give the header ULT a chance to try to get
@@ -208,42 +208,61 @@ void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
         int rank = (int)p_xstream->rank;
         ABTI_thread_queue *p_queue = &p_htable->queue[rank];
         if (p_queue->low_num_threads > 0) {
-            ABT_bool ret = ABTI_thread_htable_switch_low(p_queue, p_self, p_htable);
+            ABT_bool ret = ABTI_thread_htable_switch_low(p_queue, p_self,
+                                                         p_htable);
             if (ret == ABT_TRUE) {
                 /* This ULT became a waiter in the mutex queue */
                 goto check_handover;
             }
         }
 
-        if ((c = ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1)) != 0) {
-            if (c != 2) {
-                c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
+        int c = ABTD_atomic_cas_uint32(&p_mutex->val, ABTI_MUTEX_UNLOCKED,
+                                       ABTI_MUTEX_LOCKED_NO_WAITING_THREADS);
+        while (c != ABTI_MUTEX_UNLOCKED) {
+            if (c == ABTI_MUTEX_LOCKED_NO_WAITING_THREADS) {
+                /* If p_mutex->val is ABTI_MUTEX_LOCKED_NO_WAITING_THREADS,
+                 * update it to ABTI_MUTEX_LOCKED_WAITING_THREADS, because
+                 * this thread becomes waiting. */
+                c = ABTD_atomic_cas_uint32(&p_mutex->val,
+                        ABTI_MUTEX_LOCKED_NO_WAITING_THREADS,
+                        ABTI_MUTEX_LOCKED_WAITING_THREADS);
             }
-            while (c != 0) {
-                ABTI_mutex_wait_low(p_mutex, 2);
+            /* It waits for p_mutex using p_htable only if p_mutex->val
+             * is ABTI_MUTEX_LOCKED_WAITING_THREADS. Otherwise, no one might
+             * wake up this thread. */
+            ABTI_mutex_wait_low(p_mutex, ABTI_MUTEX_LOCKED_WAITING_THREADS);
+            /* If the mutex has been handed over to the current ULT from
+             * other ULT on the same ES, we don't need to change the mutex
+             * state. */
 
   check_handover:
-                /* If the mutex has been handed over to the current ULT from
-                 * other ULT on the same ES, we don't need to change the mutex
-                 * state. */
-                if (p_mutex->p_handover) {
-                    if (p_self == p_mutex->p_handover) {
-                        p_mutex->p_handover = NULL;
-                        p_mutex->val = 2;
-
-                        /* Push the previous ULT to its pool */
-                        ABTI_thread *p_giver = p_mutex->p_giver;
-                        p_giver->state = ABT_THREAD_STATE_READY;
-                        ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
-                                       p_self->p_last_xstream);
-                        /* When handover succeeds, p_mutex->val is still locked,
-                         * and owned by this thread. */
-                        break;
-                    }
-                }
-
-                c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
+            if (p_self == p_mutex->p_handover) {
+                /* If it is handed over, p_mutex is still locked,
+                 * but p_mutex->p_htable->mutex is unlocked. */
+                p_mutex->p_handover = NULL;
+                ABTI_ASSERT(p_mutex->val == ABTI_MUTEX_LOCKED_NEVER_WAIT);
+                /* Update p_mutex->val to ABTI_MUTEX_LOCKED_WAITING_THREADS
+                 * because, though this thread is not waiting now, other threads
+                 * might be still waiting. We do not need atomic operations
+                 * since ABTI_MUTEX_LOCKED_NEVER_WAIT state is only modified
+                 * by the owner of the lock. */
+                p_mutex->val = ABTI_MUTEX_LOCKED_WAITING_THREADS;
+                /* Push the previous ULT to its pool */
+                ABTI_thread *p_giver = p_mutex->p_giver;
+                p_giver->state = ABT_THREAD_STATE_READY;
+                ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
+                               p_self->p_last_xstream);
+                /* When handover succeeds, p_mutex->val is still locked,
+                 * and owned by this thread. */
+                break;
             }
+            /* If p_mutex->val is unlocked, take the lock. This time, it is
+             * updated to ABTI_MUTEX_LOCKED_WAITING_THREADS because the thread
+             * that woke up this thread might not have woken up all the sleeping
+             * threads (because of max_wakeups, for instance.)
+             */
+            c = ABTD_atomic_cas_uint32(&p_mutex->val, ABTI_MUTEX_UNLOCKED,
+                                       ABTI_MUTEX_LOCKED_WAITING_THREADS);
         }
         LOG_EVENT("%p: lock_low - acquired\n", p_mutex);
     } else {
@@ -467,7 +486,7 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
 
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTD_atomic_mem_barrier();
-    *(volatile uint32_t *)&p_mutex->val = 0;
+    *(volatile uint32_t *)&p_mutex->val = ABTI_MUTEX_UNLOCKED;
     LOG_EVENT("%p: unlock_se\n", p_mutex);
     ABTI_thread_yield(ABTI_local_get_thread());
 #else
@@ -479,13 +498,18 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
 
     /* Unlock the mutex */
     /* If p_mutex->val is 1 before decreasing it, it means there is no any
-     * waiter in the mutex queue.  We can just return. */
-    if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) == 1) {
+     * waiter in the mutex queue.  We can just return.
+     * Note ABTI_MUTEX_LOCKED_NO_WAITING_THREADS is 1, so we can release a lock
+     * by decrementing p_mutex->val. */
+    if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1)
+        == ABTI_MUTEX_LOCKED_NO_WAITING_THREADS) {
         /* p_mutex->val is 0 (unlocked) */
         LOG_EVENT("%p: unlock_se\n", p_mutex);
         ABTI_thread_yield(ABTI_local_get_thread());
         return abt_errno;
     }
+    /* p_mutex->val was ABTI_MUTEX_LOCKED_WAITING_THREADS (=3),
+     * so p_mutex->val becomes ABTI_MUTEX_LOCKED_NEVER_WAIT. */
 
     /* There are ULTs waiting in the mutex queue */
     ABTI_thread_htable *p_htable = p_mutex->p_htable;
@@ -539,6 +563,8 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
     }
 
   handover:
+
+    ABTI_ASSERT(p_mutex->val == ABTI_MUTEX_LOCKED_NEVER_WAIT);
     /* We don't push p_thread to the pool. Instead, we will yield_to p_thread
      * directly at the end of this function.
      * We note handover is performed with mutex->val locked and
@@ -768,14 +794,18 @@ void ABTI_mutex_wake_de(ABTI_mutex *p_mutex)
     int num = p_mutex->attr.max_wakeups;
     ABTI_thread_queue *p_start, *p_curr;
 
+    ABTI_ASSERT(p_mutex->val == ABTI_MUTEX_LOCKED_NEVER_WAIT);
+    /* p_mutex->val must be ABTI_MUTEX_LOCKED_NEVER_WAIT to prevent other
+     * threads from waiting this mutex by adding them to p_htable in
+     * ABTI_mutex_wait and ABTI_mutex_wait_low.
+     * See ABTI_mutex_wait and ABTI_mutex_wait_low for details, */
+
+    ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
     /* Wake up num ULTs in a round-robin manner */
     for (n = 0; n < num; n++) {
         p_thread = NULL;
 
-        ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
-
         if (p_htable->num_elems == 0) {
-            ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
             break;
         }
 
@@ -808,12 +838,10 @@ void ABTI_mutex_wake_de(ABTI_mutex *p_mutex)
         }
 
         /* Nothing to wake up */
-        ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
         LOG_EVENT("%p: nothing to wake up\n", p_mutex);
         break;
 
   done:
-        ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
 
         /* Push p_thread to the scheduler's pool */
         LOG_EVENT("%p: wake up U%" PRIu64 ":E%d\n", p_mutex,
@@ -821,5 +849,7 @@ void ABTI_mutex_wake_de(ABTI_mutex *p_mutex)
                   ABTI_thread_get_xstream_rank(p_thread));
         ABTI_thread_set_ready(p_thread);
     }
+    ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
+    // We just wake up waiting threads.
 }
 
