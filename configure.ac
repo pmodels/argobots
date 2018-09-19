@@ -714,6 +714,22 @@ AC_CHECK_LIB(pthread, pthread_join)
 # check pthread_barrier
 AC_CHECK_FUNCS(pthread_barrier_init)
 
+# check builtin functions
+AC_TRY_COMPILE(
+[#include <string.h>], [__builtin_memcpy(NULL, NULL, 1);],
+[have_builtin_memcpy=yes], [have_builtin_memcpy=no]
+)
+AS_IF([test "x$have_builtin_memcpy" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_HAVE___BUILTIN_MEMCPY, 1,
+                 [Define to 1 if you have the `__builtin_memcpy' function.])])
+AC_TRY_COMPILE(
+[#include <string.h>], [__builtin_memset(NULL, 0, 1);],
+[have_builtin_memset=yes], [have_builtin_memset=no]
+)
+AS_IF([test "x$have_builtin_memset" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_HAVE___BUILTIN_MEMSET, 1,
+                 [Define to 1 if you have the `__builtin_memset' function.])])
+
 # check timer functions
 AC_CHECK_FUNCS(clock_gettime mach_absolute_time gettimeofday)
 if test "$ac_cv_func_clock_gettime" = "yes" ; then

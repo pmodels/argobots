@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "abt_config.h"
 
 /* Utility Functions */
 #define ABTU_malloc(a)          malloc((size_t)(a))
@@ -24,6 +25,18 @@ void *ABTU_memalign(size_t alignment, size_t size)
     assert(ret == 0);
     return p_ptr;
 }
+
+#ifdef ABT_CONFIG_HAVE___BUILTIN_MEMCPY
+#define ABTU_memcpy(d,s,n)      __builtin_memcpy(d,s,n)
+#else
+#define ABTU_memcpy(d,s,n)      memcpy(d,s,n)
+#endif
+
+#ifdef ABT_CONFIG_HAVE___BUILTIN_MEMSET
+#define ABTU_memset(p,v,n)      __builtin_memset(p,v,n)
+#else
+#define ABTU_memset(p,v,n)      memset(p,v,n)
+#endif
 
 #define ABTU_strcpy(d,s)        strcpy(d,s)
 #define ABTU_strncpy(d,s,n)     strncpy(d,s,n)
