@@ -89,11 +89,11 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
             buffer = ABTU_realloc(buffer, buffer_size);
         }
         /* Copy the parameter index */
-        memcpy(buffer+offset, (void *)&param, sizeof(param));
+        ABTU_memcpy(buffer+offset, (void *)&param, sizeof(param));
         offset += sizeof(param);
 
         /* Copy the size of the argument */
-        memcpy(buffer+offset, (void *)&size, sizeof(size));
+        ABTU_memcpy(buffer+offset, (void *)&size, sizeof(size));
         offset += sizeof(size);
 
         /* Copy the argument */
@@ -119,13 +119,13 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
                 goto fn_fail;
         }
 
-        memcpy(buffer+offset, ptr, size);
+        ABTU_memcpy(buffer+offset, ptr, size);
         offset += size;
     }
     va_end(varg_list);
 
     if (num_params) {
-        memcpy(buffer, (int *)&num_params, sizeof(num_params));
+        ABTU_memcpy(buffer, (int *)&num_params, sizeof(num_params));
     } else {
         ABTU_free(buffer);
         buffer = NULL;
@@ -261,7 +261,7 @@ int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
     char *buffer = (char *)p_config;
 
     /* Number of parameters in buffer */
-    memcpy(&num_params, buffer, sizeof(num_params));
+    ABTU_memcpy(&num_params, buffer, sizeof(num_params));
     offset += sizeof(num_params);
 
     /* Copy the data from buffer to the right variables */
@@ -272,10 +272,10 @@ int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
         size_t size;
 
         /* Get the variable index of the next parameter */
-        memcpy(&var_idx, buffer+offset, sizeof(var_idx));
+        ABTU_memcpy(&var_idx, buffer+offset, sizeof(var_idx));
         offset += sizeof(var_idx);
         /* Get the size of the next parameter */
-        memcpy(&size, buffer+offset, sizeof(size));
+        ABTU_memcpy(&size, buffer+offset, sizeof(size));
         offset += sizeof(size);
         /* Get the next argument */
         /* We save it only if
@@ -286,12 +286,12 @@ int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
             if (var_idx < 0) {
                 var_idx = (var_idx+2)*-1;
                 if (var_idx >= num_vars) return ABT_ERR_INV_SCHED_CONFIG;
-                memcpy(variables[var_idx], buffer+offset, size);
+                ABTU_memcpy(variables[var_idx], buffer+offset, size);
             }
         } else {
             if (var_idx >= 0) {
                 if (var_idx >= num_vars) return ABT_ERR_INV_SCHED_CONFIG;
-                memcpy(variables[var_idx], buffer+offset, size);
+                ABTU_memcpy(variables[var_idx], buffer+offset, size);
             }
         }
         offset += size;

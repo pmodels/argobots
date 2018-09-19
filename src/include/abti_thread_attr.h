@@ -82,7 +82,7 @@ ABT_thread_attr ABTI_thread_attr_get_handle(ABTI_thread_attr *p_attr)
     }
 
 #define ABTI_thread_attr_copy(p_dest,p_src)             \
-    memcpy(p_dest, p_src, sizeof(ABTI_thread_attr))
+    ABTU_memcpy(p_dest, p_src, sizeof(ABTI_thread_attr))
 
 
 #endif /* THREAD_ATTR_H_INCLUDED */

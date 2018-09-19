@@ -41,7 +41,7 @@ ABT_mutex_attr ABTI_mutex_attr_get_handle(ABTI_mutex_attr *p_attr)
 }
 
 #define ABTI_mutex_attr_copy(p_dest,p_src)              \
-    memcpy(p_dest, p_src, sizeof(ABTI_mutex_attr))
+    ABTU_memcpy(p_dest, p_src, sizeof(ABTI_mutex_attr))
 
 #endif /* MUTEX_ATTR_H_INCLUDED */
 
