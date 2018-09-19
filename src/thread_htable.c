@@ -28,7 +28,7 @@ ABTI_thread_htable *ABTI_thread_htable_create(uint32_t num_rows)
     p_htable->num_elems = 0;
     p_htable->num_rows = num_rows;
     p_htable->queue = (ABTI_thread_queue *)ABTU_memalign(64, q_size);
-    memset(p_htable->queue, 0, q_size);
+    ABTU_memset(p_htable->queue, 0, q_size);
     p_htable->h_list = NULL;
     p_htable->l_list = NULL;
 
@@ -63,8 +63,9 @@ void ABTI_thread_htable_push(ABTI_thread_htable *p_htable, int idx,
         new_size = (idx / p_htable->num_rows + 1) * p_htable->num_rows;
         p_htable->queue = (ABTI_thread_queue *)ABTU_realloc(
                 p_htable->queue, new_size * sizeof(ABTI_thread_queue));
-        memset(&p_htable->queue[p_htable->num_rows], 0,
-               (new_size - p_htable->num_rows) * sizeof(ABTI_thread_queue));
+        ABTU_memset(&p_htable->queue[p_htable->num_rows], 0,
+                    (new_size - p_htable->num_rows)
+                    * sizeof(ABTI_thread_queue));
         p_htable->num_rows = new_size;
     }
 
@@ -122,8 +123,9 @@ void ABTI_thread_htable_push_low(ABTI_thread_htable *p_htable, int idx,
         new_size = (idx / p_htable->num_rows + 1) * p_htable->num_rows;
         p_htable->queue = (ABTI_thread_queue *)ABTU_realloc(
                 p_htable->queue, new_size * sizeof(ABTI_thread_queue));
-        memset(&p_htable->queue[p_htable->num_rows], 0,
-               (new_size - p_htable->num_rows) * sizeof(ABTI_thread_queue));
+        ABTU_memset(&p_htable->queue[p_htable->num_rows], 0,
+                    (new_size - p_htable->num_rows)
+                    * sizeof(ABTI_thread_queue));
         p_htable->num_rows = new_size;
     }
 

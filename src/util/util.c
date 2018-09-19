@@ -14,7 +14,7 @@ char *ABTU_get_indent_str(int indent)
 {
     char *space;
     space = (char *)ABTU_malloc(sizeof(char) * (indent + 1));
-    if (indent > 0) memset(space, ' ', indent);
+    if (indent > 0) ABTU_memset(space, ' ', indent);
     space[indent] = '\0';
     return space;
 }

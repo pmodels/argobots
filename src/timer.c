@@ -91,7 +91,7 @@ int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer)
     ABTI_CHECK_ERROR(abt_errno);
     p_newtimer = ABTI_timer_get_ptr(h_newtimer);
 
-    memcpy(p_newtimer, p_timer, sizeof(ABTI_timer));
+    ABTU_memcpy(p_newtimer, p_timer, sizeof(ABTI_timer));
 
     *newtimer = h_newtimer;
 

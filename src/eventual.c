@@ -237,7 +237,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_spinlock_acquire(&p_eventual->lock);
 
     p_eventual->ready = ABT_TRUE;
-    if (p_eventual->value) memcpy(p_eventual->value, value, nbytes);
+    if (p_eventual->value) ABTU_memcpy(p_eventual->value, value, nbytes);
 
     if (p_eventual->p_head == NULL) {
         ABTI_spinlock_release(&p_eventual->lock);
