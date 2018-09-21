@@ -49,6 +49,7 @@ basic/eventual_test
 basic/barrier
 basic/self_type
 basic/ext_thread
+basic/ext_thread2
 basic/timer
 basic/info_print
 

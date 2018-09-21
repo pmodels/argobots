@@ -54,6 +54,7 @@ TESTS = \
 	barrier \
 	self_type \
 	ext_thread \
+	ext_thread2 \
 	timer \
 	info_print
 
@@ -62,7 +63,7 @@ if ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK
 XFAIL_TESTS += pool_access
 endif
 if ABT_CONFIG_DISABLE_EXT_THREAD
-XFAIL_TESTS += self_type ext_thread
+XFAIL_TESTS += self_type ext_thread ext_thread2
 endif
 
 check_PROGRAMS = $(TESTS)
@@ -120,6 +121,7 @@ eventual_test_SOURCES = eventual_test.c
 barrier_SOURCES = barrier.c
 self_type_SOURCES = self_type.c
 ext_thread_SOURCES = ext_thread.c
+ext_thread2_SOURCES = ext_thread2.c
 timer_SOURCES = timer.c
 info_print_SOURCES = info_print.c
 
@@ -174,5 +176,6 @@ testing:
 	./barrier
 	./self_type
 	./ext_thread
+	./ext_thread2
 	./timer
 	./info_print
