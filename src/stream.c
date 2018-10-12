@@ -1307,6 +1307,13 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
 
+    LOG_EVENT("[E%d] freed\n", p_xstream->rank);
+
+    /* Return rank for reuse. rank must be returned prior to other free
+     * functions so that other xstreams cannot refer to this xstream via
+     * global->p_xstreams. */
+    ABTI_xstream_return_rank(p_xstream);
+
     /* Free the scheduler */
     ABTI_sched *p_cursched = p_xstream->p_main_sched;
     if (p_cursched != NULL) {
@@ -1320,11 +1327,6 @@ int ABTI_xstream_free(ABTI_xstream *p_xstream)
     /* Free the context */
     abt_errno = ABTD_xstream_context_free(&p_xstream->ctx);
     ABTI_CHECK_ERROR(abt_errno);
-
-    LOG_EVENT("[E%d] freed\n", p_xstream->rank);
-
-    /* Return rank for reuse */
-    ABTI_xstream_return_rank(p_xstream);
 
     /* Free the spinlock */
     ABTI_spinlock_free(&p_xstream->sched_lock);
