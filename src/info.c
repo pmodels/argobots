@@ -135,7 +135,7 @@ int ABT_info_print_all_xstreams(FILE *fp)
     ABTI_global *p_global = gp_ABTI_global;
     int i;
 
-    ABTI_spinlock_acquire(&p_global->lock);
+    ABTI_spinlock_acquire(&p_global->xstreams_lock);
 
     fprintf(fp, "# of created ESs: %d\n", p_global->num_xstreams);
     for (i = 0; i < p_global->num_xstreams; i++) {
@@ -145,7 +145,7 @@ int ABT_info_print_all_xstreams(FILE *fp)
         }
     }
 
-    ABTI_spinlock_release(&p_global->lock);
+    ABTI_spinlock_release(&p_global->xstreams_lock);
 
     fflush(fp);
 

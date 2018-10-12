@@ -1903,7 +1903,7 @@ static void ABTI_xstream_set_new_rank(ABTI_xstream *p_xstream)
             ABTI_global_update_max_xstreams(0);
         }
 
-        ABTI_spinlock_acquire(&gp_ABTI_global->lock);
+        ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
         for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {
             if (gp_ABTI_global->p_xstreams[i] == NULL) {
                 /* Add this ES to the global ES array */
@@ -1914,7 +1914,7 @@ static void ABTI_xstream_set_new_rank(ABTI_xstream *p_xstream)
                 break;
             }
         }
-        ABTI_spinlock_release(&gp_ABTI_global->lock);
+        ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
     }
 
     /* Set the rank */
@@ -1929,7 +1929,7 @@ static ABT_bool ABTI_xstream_take_rank(ABTI_xstream *p_xstream, int rank)
         ABTI_global_update_max_xstreams(rank + 1);
     }
 
-    ABTI_spinlock_acquire(&gp_ABTI_global->lock);
+    ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
     if (gp_ABTI_global->p_xstreams[rank] == NULL) {
         /* Add this ES to the global ES array */
         gp_ABTI_global->p_xstreams[rank] = p_xstream;
@@ -1938,7 +1938,7 @@ static ABT_bool ABTI_xstream_take_rank(ABTI_xstream *p_xstream, int rank)
     } else {
         ret = ABT_FALSE;
     }
-    ABTI_spinlock_release(&gp_ABTI_global->lock);
+    ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
 
     if (ret == ABT_TRUE) {
 
@@ -1952,9 +1952,9 @@ static ABT_bool ABTI_xstream_take_rank(ABTI_xstream *p_xstream, int rank)
 static void ABTI_xstream_return_rank(ABTI_xstream *p_xstream)
 {
     /* Remove this xstream from the global ES array */
-    ABTI_spinlock_acquire(&gp_ABTI_global->lock);
+    ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
     gp_ABTI_global->p_xstreams[p_xstream->rank] = NULL;
     gp_ABTI_global->num_xstreams--;
-    ABTI_spinlock_release(&gp_ABTI_global->lock);
+    ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
 }
 

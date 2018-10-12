@@ -64,7 +64,7 @@ int ABT_init(int argc, char **argv)
     gp_ABTI_global->num_xstreams = 0;
 
     /* Create a spinlock */
-    ABTI_spinlock_create(&gp_ABTI_global->lock);
+    ABTI_spinlock_create(&gp_ABTI_global->xstreams_lock);
 
     /* Init the ES local data */
     abt_errno = ABTI_local_init();
@@ -183,7 +183,7 @@ int ABT_finalize(void)
     ABTI_mem_finalize(gp_ABTI_global);
 
     /* Free the spinlock */
-    ABTI_spinlock_free(&gp_ABTI_global->lock);
+    ABTI_spinlock_free(&gp_ABTI_global->xstreams_lock);
 
     /* Free the ABTI_global structure */
     ABTU_free(gp_ABTI_global);
@@ -228,7 +228,7 @@ void ABTI_global_update_max_xstreams(int new_size)
 
     if (new_size != 0 && new_size < gp_ABTI_global->max_xstreams) return;
 
-    ABTI_spinlock_acquire(&gp_ABTI_global->lock);
+    ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
 
     new_size = (new_size > 0) ? new_size : gp_ABTI_global->max_xstreams * 2;
     gp_ABTI_global->max_xstreams = new_size;
@@ -239,6 +239,6 @@ void ABTI_global_update_max_xstreams(int new_size)
         gp_ABTI_global->p_xstreams[i] = NULL;
     }
 
-    ABTI_spinlock_release(&gp_ABTI_global->lock);
+    ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
 }
 
