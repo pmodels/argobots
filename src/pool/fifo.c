@@ -12,7 +12,7 @@ double get_cur_time(void)
 #if defined(HAVE_CLOCK_GETTIME)
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    return ((double)ts.tv_sec); + 1.0e-9 * ((double)ts.tv_nsec);
+    return ((double)ts.tv_sec) + 1.0e-9 * ((double)ts.tv_nsec);
 #elif defined(HAVE_GETTIMEOFDAY)
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -252,7 +252,6 @@ static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
             struct timespec ts = {0, sleep_nsecs};
             nanosleep(&ts, NULL);
 
-            struct timespec ts_end;
             double elapsed = get_cur_time() - time_start;
             if (elapsed > abstime_secs)
                 break;
