@@ -736,6 +736,15 @@ if test -z "$timer_type" ; then
 fi
 AC_MSG_NOTICE([Timer type selected is $timer_type])
 
+# check __builtin_expect
+AC_TRY_COMPILE(
+[], [int cond = 0; if (__builtin_expect(cond, 1)) cond = 2;],
+[have_builtin_expect=yes], [have_builtin_expect=no]
+)
+AS_IF([test "x$have_builtin_expect" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_HAVE___BUILTIN_EXPECT, 1,
+                 [Define to 1 if you have the `__builtin_expect' function.])])
+
 # check math library
 AC_CHECK_LIB([m], [log10])
 

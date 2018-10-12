@@ -9,6 +9,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "abt_config.h"
+
+/* Utility feature */
+#ifdef ABT_CONFIG_HAVE___BUILTIN_EXPECT
+#define ABTU_likely(cond)       __builtin_expect(!!(cond), 1)
+#define ABTU_unlikely(cond)     __builtin_expect(!!(cond), 0)
+#else
+#define ABTU_likely(cond)       (cond)
+#define ABTU_unlikely(cond)     (cond)
+#endif
 
 /* Utility Functions */
 #define ABTU_malloc(a)          malloc((size_t)(a))
