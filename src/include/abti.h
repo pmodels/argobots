@@ -170,6 +170,7 @@ struct ABTI_global {
     uint32_t os_page_size;             /* OS page size */
     uint32_t huge_page_size;           /* Huge page size */
 #ifdef ABT_CONFIG_USE_MEM_POOL
+    ABTI_spinlock mem_task_lock;       /* Spinlock protecting p_mem_task */
     uint32_t mem_page_size;            /* Page size for memory allocation */
     uint32_t mem_sp_size;              /* Stack page size */
     uint32_t mem_max_stacks;           /* Max. # of stacks kept in each ES */

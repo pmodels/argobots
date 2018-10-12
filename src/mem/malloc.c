@@ -53,6 +53,7 @@ static uint64_t g_sp_id = 0;
 void ABTI_mem_init(ABTI_global *p_global)
 {
     p_global->p_mem_stack = NULL;
+    ABTI_spinlock_create(&p_global->mem_task_lock);
     p_global->p_mem_task = NULL;
     p_global->p_mem_sph = NULL;
 
@@ -77,6 +78,7 @@ void ABTI_mem_finalize(ABTI_global *p_global)
     p_global->p_mem_stack = NULL;
 
     /* Free all task blocks */
+    ABTI_spinlock_free(&p_global->mem_task_lock);
     ABTI_mem_free_page_list(p_global->p_mem_task);
     p_global->p_mem_task = NULL;
 
@@ -253,10 +255,10 @@ static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
     ABTI_global *p_global = gp_ABTI_global;
 
     /* Add the page list to the global list */
-    ABTI_spinlock_acquire(&p_global->lock);
+    ABTI_spinlock_acquire(&p_global->mem_task_lock);
     p_tail->p_next = p_global->p_mem_task;
     p_global->p_mem_task = p_head;
-    ABTI_spinlock_release(&p_global->lock);
+    ABTI_spinlock_release(&p_global->mem_task_lock);
 }
 
 char *ABTI_mem_take_global_stack(ABTI_local *p_local)
@@ -553,12 +555,12 @@ ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local)
     ABTI_page_header *p_ph = NULL;
 
     /* Take the first page out */
-    ABTI_spinlock_acquire(&p_global->lock);
+    ABTI_spinlock_acquire(&p_global->mem_task_lock);
     if (p_global->p_mem_task) {
         p_ph = p_global->p_mem_task;
         p_global->p_mem_task = p_ph->p_next;
     }
-    ABTI_spinlock_release(&p_global->lock);
+    ABTI_spinlock_release(&p_global->mem_task_lock);
 
     if (p_ph) {
         ABTI_mem_add_page(p_local, p_ph);
