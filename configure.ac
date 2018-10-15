@@ -618,6 +618,7 @@ if test "x$have_atomic_builtin" = "xyes" ; then
               [Define if __atomic builtins are supported])
 fi
 
+
 # --enable-simple-mutex
 AS_IF([test "x$enable_simple_mutex" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SIMPLE_MUTEX, 1,

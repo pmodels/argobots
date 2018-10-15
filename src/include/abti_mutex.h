@@ -8,10 +8,10 @@
 
 /* Inlined functions for Mutex */
 
-#define ABTI_PTR_SPINLOCK(ptr)                          \
+#define ABTI_PTR_SPINLOCK(ptr)                             \
     while (!ABTD_atomic_bool_cas_weak_uint32(ptr, 0, 1)) { \
-        while (*(volatile uint32_t *)(ptr) != 0) {      \
-        }                                               \
+        while (*(volatile uint32_t *)(ptr) != 0) {         \
+        }                                                  \
     }
 
 #define ABTI_PTR_UNLOCK(ptr)                            \
@@ -19,36 +19,36 @@
         *(volatile uint32_t *)(ptr) = 0;                \
     } while (0)
 
-#define ABTI_PTR_SPINLOCK_HIGH(ptr)                                 \
-{                                                                   \
-    uint64_t old_v = (uint64_t)1 << 32;                             \
-    uint64_t new_v = ((uint64_t)1 << 32) | 1;                       \
-    ptr[1] = 1;                                                     \
-    uint64_t *v_ptr = (uint64_t *)ptr;                              \
+#define ABTI_PTR_SPINLOCK_HIGH(ptr)                                  \
+{                                                                    \
+    uint64_t old_v = (uint64_t)1 << 32;                              \
+    uint64_t new_v = ((uint64_t)1 << 32) | 1;                        \
+    ptr[1] = 1;                                                      \
+    uint64_t *v_ptr = (uint64_t *)ptr;                               \
     while (!ABTD_atomic_bool_cas_weak_uint64(v_ptr, old_v, new_v)) { \
-        while (*(volatile uint32_t *)(&ptr[0]) != 0 ) {             \
-        }                                                           \
-        ptr[1] = 1;                                                 \
-    }                                                               \
+        while (*(volatile uint32_t *)(&ptr[0]) != 0 ) {              \
+        }                                                            \
+        ptr[1] = 1;                                                  \
+    }                                                                \
 }
 
-#define ABTI_PTR_UNLOCK_HIGH(ptr)                       \
-    do {                                                \
-        *(volatile uint64_t *)(ptr) = 0;                \
+#define ABTI_PTR_UNLOCK_HIGH(ptr)                             \
+    do {                                                      \
+        *(volatile uint64_t *)(ptr) = 0;                      \
     } while (0)
 
-#define ABTI_PTR_SPINLOCK_LOW(ptr)                      \
-{                                                       \
-    uint64_t *v_ptr = (uint64_t *)ptr;                  \
+#define ABTI_PTR_SPINLOCK_LOW(ptr)                            \
+{                                                             \
+    uint64_t *v_ptr = (uint64_t *)ptr;                        \
     while (!ABTD_atomic_bool_cas_weak_uint64(v_ptr, 0, 1)) {  \
-        while (*(volatile uint32_t *)(&ptr[0]) != 0) {  \
-        }                                               \
-    }                                                   \
+        while (*(volatile uint32_t *)(&ptr[0]) != 0) {        \
+        }                                                     \
+    }                                                         \
 }
 
-#define ABTI_PTR_UNLOCK_LOW(ptr)                        \
-    do {                                                \
-        ptr[0] = 0;                                     \
+#define ABTI_PTR_UNLOCK_LOW(ptr)                              \
+    do {                                                      \
+        ptr[0] = 0;                                           \
     } while (0)
 
 

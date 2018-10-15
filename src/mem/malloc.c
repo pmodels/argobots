@@ -461,6 +461,7 @@ void ABTI_mem_take_free(ABTI_page_header *p_ph)
     uint32_t num_remote_free = p_ph->num_remote_free;
     void **ptr;
     void *old;
+
     ABTD_atomic_fetch_sub_uint32(&p_ph->num_remote_free, num_remote_free);
     p_ph->num_empty_blks += num_remote_free;
 
