@@ -113,7 +113,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         ABTI_thread *p_current;
         ABTI_unit *p_unit;
         ABT_unit_type type;
-        volatile int ext_signal = 0;
+        int32_t ext_signal = 0;
 
         if (lp_ABTI_local != NULL) {
             p_current = ABTI_local_get_thread();
@@ -153,8 +153,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
-            while (!ext_signal) {
-            }
+            while (!ABTD_atomic_load_int32(&ext_signal));
             ABTU_free(p_unit);
         }
     } else {
@@ -258,8 +257,8 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
             ABTI_thread_set_ready(p_thread);
         } else {
             /* When the head is an external thread */
-            volatile int *p_ext_signal = (volatile int *)p_unit->pool;
-            *p_ext_signal = 1;
+            int32_t *p_ext_signal = (int32_t *)p_unit->pool;
+            ABTD_atomic_store_int32(p_ext_signal, 1);
         }
 
         /* Next ULT */

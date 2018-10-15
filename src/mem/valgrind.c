@@ -23,9 +23,21 @@ typedef struct ABTI_valgrind_id_list_t {
 } ABTI_valgrind_id_list;
 
 /* The list is protected by a global lock. */
-uint32_t g_valgrind_id_list_lock = 0;
+uint8_t g_valgrind_id_list_lock = 0;
 ABTI_valgrind_id_list *gp_valgrind_id_list_head = NULL;
 ABTI_valgrind_id_list *gp_valgrind_id_list_tail = NULL;
+
+static inline
+void ABTI_valgrind_lock_acquire() {
+    while (ABTD_atomic_test_and_set_uint8(&g_valgrind_id_list_lock)) {
+        while (ABTD_atomic_load_uint8(&g_valgrind_id_list_lock) != 0);
+    }
+}
+
+static inline
+void ABTI_valgrind_lock_release() {
+    ABTD_atomic_clear_uint8(&g_valgrind_id_list_lock);
+}
 
 #include <valgrind/valgrind.h>
 
@@ -36,7 +48,7 @@ void ABTI_valgrind_register_stack(const void *p_stack, size_t size) {
     const void *p_start = (char *)(p_stack);
     const void *p_end   = (char *)(p_stack) + size;
 
-    ABTI_PTR_SPINLOCK(&g_valgrind_id_list_lock);
+    ABTI_valgrind_lock_acquire();
     ABTI_valgrind_id valgrind_id = VALGRIND_STACK_REGISTER(p_start, p_end);
     ABTI_valgrind_id_list *p_valgrind_id_list =
                  (ABTI_valgrind_id_list *)malloc(sizeof(ABTI_valgrind_id_list));
@@ -52,14 +64,14 @@ void ABTI_valgrind_register_stack(const void *p_stack, size_t size) {
     }
     LOG_DEBUG("valgrind : register stack %p (id = %d)\n",
               p_stack, (int) valgrind_id);
-    ABTI_PTR_UNLOCK(&g_valgrind_id_list_lock);
+    ABTI_valgrind_lock_release();
 }
 
 void ABTI_valgrind_unregister_stack(const void *p_stack) {
     if (p_stack == 0)
         return;
 
-    ABTI_PTR_SPINLOCK(&g_valgrind_id_list_lock);
+    ABTI_valgrind_lock_acquire();
     if (gp_valgrind_id_list_head->p_stack == p_stack) {
         VALGRIND_STACK_DEREGISTER(gp_valgrind_id_list_head->valgrind_id);
         ABTI_valgrind_id_list *p_next = gp_valgrind_id_list_head->p_next;
@@ -89,7 +101,7 @@ void ABTI_valgrind_unregister_stack(const void *p_stack) {
         }
         ABTI_ASSERT(deregister_flag);
     }
-    ABTI_PTR_UNLOCK(&g_valgrind_id_list_lock);
+    ABTI_valgrind_lock_release();
 }
 
 #endif

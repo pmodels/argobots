@@ -6,52 +6,6 @@
 #ifndef MUTEX_H_INCLUDED
 #define MUTEX_H_INCLUDED
 
-/* Inlined functions for Mutex */
-
-#define ABTI_PTR_SPINLOCK(ptr)                             \
-    while (!ABTD_atomic_bool_cas_weak_uint32(ptr, 0, 1)) { \
-        while (*(volatile uint32_t *)(ptr) != 0) {         \
-        }                                                  \
-    }
-
-#define ABTI_PTR_UNLOCK(ptr)                            \
-    do {                                                \
-        *(volatile uint32_t *)(ptr) = 0;                \
-    } while (0)
-
-#define ABTI_PTR_SPINLOCK_HIGH(ptr)                                  \
-{                                                                    \
-    uint64_t old_v = (uint64_t)1 << 32;                              \
-    uint64_t new_v = ((uint64_t)1 << 32) | 1;                        \
-    ptr[1] = 1;                                                      \
-    uint64_t *v_ptr = (uint64_t *)ptr;                               \
-    while (!ABTD_atomic_bool_cas_weak_uint64(v_ptr, old_v, new_v)) { \
-        while (*(volatile uint32_t *)(&ptr[0]) != 0 ) {              \
-        }                                                            \
-        ptr[1] = 1;                                                  \
-    }                                                                \
-}
-
-#define ABTI_PTR_UNLOCK_HIGH(ptr)                             \
-    do {                                                      \
-        *(volatile uint64_t *)(ptr) = 0;                      \
-    } while (0)
-
-#define ABTI_PTR_SPINLOCK_LOW(ptr)                            \
-{                                                             \
-    uint64_t *v_ptr = (uint64_t *)ptr;                        \
-    while (!ABTD_atomic_bool_cas_weak_uint64(v_ptr, 0, 1)) {  \
-        while (*(volatile uint32_t *)(&ptr[0]) != 0) {        \
-        }                                                     \
-    }                                                         \
-}
-
-#define ABTI_PTR_UNLOCK_LOW(ptr)                              \
-    do {                                                      \
-        ptr[0] = 0;                                           \
-    } while (0)
-
-
 static inline
 ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
 {
@@ -111,7 +65,11 @@ void ABTI_mutex_fini(ABTI_mutex *p_mutex)
 static inline
 void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
 {
-    ABTI_PTR_SPINLOCK(&p_mutex->val);
+    /* ABTI_spinlock_ functions cannot be used since p_mutex->val can take
+     * other values (i.e., not UNLOCKED nor LOCKED.) */
+    while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
+        while (ABTD_atomic_load_uint32(&p_mutex->val) != 0);
+    }
     LOG_EVENT("%p: spinlock\n", p_mutex);
 }
 
@@ -200,7 +158,7 @@ void ABTI_mutex_unlock(ABTI_mutex *p_mutex)
     LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
 #else
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) != 1) {
-        ABTI_PTR_UNLOCK(&p_mutex->val);
+        ABTD_atomic_store_uint32(&p_mutex->val, 0);
         LOG_EVENT("%p: unlock with wake\n", p_mutex);
         ABTI_mutex_wake_de(p_mutex);
     } else {

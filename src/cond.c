@@ -204,7 +204,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     double tar_time = convert_timespec_to_sec(abstime);
 
     ABTI_unit *p_unit;
-    volatile int ext_signal = 0;
+    int32_t ext_signal = 0;
 
     p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
     p_unit->pool = (ABT_pool)&ext_signal;
@@ -243,7 +243,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     /* Unlock the mutex that the calling ULT is holding */
     ABTI_mutex_unlock(p_mutex);
 
-    while (!ext_signal) {
+    while (!ABTD_atomic_load_int32(&ext_signal)) {
         double cur_time = get_cur_time();
         if (cur_time >= tar_time) {
             remove_unit(p_cond, p_unit);
@@ -314,8 +314,8 @@ int ABT_cond_signal(ABT_cond cond)
         ABTI_thread_set_ready(p_thread);
     } else {
         /* When the head is an external thread */
-        volatile int *p_ext_signal = (volatile int *)p_unit->pool;
-        *p_ext_signal = 1;
+        int32_t *p_ext_signal = (int32_t *)p_unit->pool;
+        ABTD_atomic_store_int32(p_ext_signal, 1);
     }
 
     ABTI_spinlock_release(&p_cond->lock);

@@ -343,7 +343,8 @@ static void ABTI_event_free_xstream(void *arg)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     int abt_errno, n;
 
-    while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
+    while (ABTD_atomic_load_uint32((uint32_t *)p_xstream->state)
+           != ABT_XSTREAM_STATE_TERMINATED) {
         ABT_thread_yield();
     }
 
@@ -369,7 +370,8 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
 
     for (n = 0; n < num_xstreams; n++) {
         ABTI_xstream *p_xstream = p_xstreams[n+1];
-        while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
+        while (ABTD_atomic_load_uint32((uint32_t *)p_xstream->state)
+               != ABT_XSTREAM_STATE_TERMINATED) {
             ABT_thread_yield();
         }
 

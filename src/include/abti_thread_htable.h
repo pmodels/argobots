@@ -17,7 +17,7 @@
 #endif
 
 struct ABTI_thread_queue {
-    uint32_t mutex;
+    uint32_t mutex; /* can be initialized by just assigning 0*/
     uint32_t num_handovers;
     uint32_t num_threads;
     uint32_t pad0;
@@ -26,7 +26,7 @@ struct ABTI_thread_queue {
     char pad1[64-8*4];
 
     /* low priority queue */
-    uint32_t low_mutex;
+    uint32_t low_mutex; /* can be initialized by just assigning 0*/
     uint32_t low_num_threads;
     ABTI_thread *low_head;
     ABTI_thread *low_tail;
@@ -48,7 +48,7 @@ struct ABTI_thread_htable {
 #elif defined(USE_PTHREAD_MUTEX)
     pthread_mutex_t mutex;
 #else
-    uint32_t mutex[2];          /* To protect table */
+    ABTI_spinlock mutex;          /* To protect table */
 #endif
     uint32_t num_elems;
     uint32_t num_rows;
@@ -68,9 +68,33 @@ struct ABTI_thread_htable {
 #define ABTI_THREAD_HTABLE_LOCK(m)      pthread_mutex_lock(&m)
 #define ABTI_THREAD_HTABLE_UNLOCK(m)    pthread_mutex_unlock(&m)
 #else
-#define ABTI_THREAD_HTABLE_LOCK(m)      ABTI_PTR_SPINLOCK_LOW(m)
-#define ABTI_THREAD_HTABLE_UNLOCK(m)    ABTI_PTR_UNLOCK_LOW(m)
+#define ABTI_THREAD_HTABLE_LOCK(m)      ABTI_spinlock_acquire(&m)
+#define ABTI_THREAD_HTABLE_UNLOCK(m)    ABTI_spinlock_release(&m)
 #endif
+
+static inline
+void ABTI_thread_queue_acquire_mutex(ABTI_thread_queue *p_queue) {
+    while (ABTD_atomic_test_and_set_uint8((uint8_t *)&p_queue->mutex)) {
+        while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->mutex) != 0);
+    }
+}
+
+static inline
+void ABTI_thread_queue_release_mutex(ABTI_thread_queue *p_queue) {
+    ABTD_atomic_clear_uint8((uint8_t *)&p_queue->mutex);
+}
+
+static inline
+void ABTI_thread_queue_acquire_low_mutex(ABTI_thread_queue *p_queue) {
+    while (ABTD_atomic_test_and_set_uint8((uint8_t *)&p_queue->low_mutex)) {
+        while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->low_mutex) != 0);
+    }
+}
+
+static inline
+void ABTI_thread_queue_release_low_mutex(ABTI_thread_queue *p_queue) {
+    ABTD_atomic_clear_uint8((uint8_t *)&p_queue->low_mutex);
+}
 
 static inline
 void ABTI_thread_htable_add_h_node(ABTI_thread_htable *p_htable,

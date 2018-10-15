@@ -22,8 +22,7 @@ ABTI_thread_htable *ABTI_thread_htable_create(uint32_t num_rows)
     int ret = pthread_mutex_init(&p_htable->mutex, NULL);
     assert(!ret);
 #else
-    p_htable->mutex[0] = 0;
-    p_htable->mutex[1] = 0;
+    ABTI_spinlock_create(&p_htable->mutex);
 #endif
     p_htable->num_elems = 0;
     p_htable->num_rows = num_rows;
@@ -46,6 +45,8 @@ void ABTI_thread_htable_free(ABTI_thread_htable *p_htable)
 #elif defined(USE_PTHREAD_MUTEX)
     int ret = pthread_mutex_destroy(&p_htable->mutex);
     assert(!ret);
+#else
+    ABTI_spinlock_free(&p_htable->mutex);
 #endif
     ABTU_free(p_htable->queue);
     ABTU_free(p_htable);
@@ -70,7 +71,7 @@ void ABTI_thread_htable_push(ABTI_thread_htable *p_htable, int idx,
 
     /* Add p_thread to the end of the idx-th row */
     p_queue = &p_htable->queue[idx];
-    ABTI_PTR_SPINLOCK(&p_queue->mutex);
+    ABTI_thread_queue_acquire_mutex(p_queue);
     if (p_queue->head == NULL) {
         p_queue->head = p_thread;
         p_queue->tail = p_thread;
@@ -79,7 +80,7 @@ void ABTI_thread_htable_push(ABTI_thread_htable *p_htable, int idx,
         p_queue->tail = p_thread;
     }
     p_queue->num_threads++;
-    ABTI_PTR_UNLOCK(&p_queue->mutex);
+    ABTI_thread_queue_release_mutex(p_queue);
     ABTD_atomic_fetch_add_uint32(&p_htable->num_elems, 1);
 }
 
@@ -92,10 +93,10 @@ ABT_bool ABTI_thread_htable_add(ABTI_thread_htable *p_htable, int idx,
 
     p_queue = &p_htable->queue[idx];
 
-    ABTI_PTR_SPINLOCK(&p_queue->mutex);
+    ABTI_thread_queue_acquire_mutex(p_queue);
     if (p_queue->head == NULL) {
         ABTI_ASSERT(p_queue->num_threads == 0);
-        ABTI_PTR_UNLOCK(&p_queue->mutex);
+        ABTI_thread_queue_release_mutex(p_queue);
         return ABT_FALSE;
     } else {
         /* Change the ULT's state to BLOCKED */
@@ -105,7 +106,7 @@ ABT_bool ABTI_thread_htable_add(ABTI_thread_htable *p_htable, int idx,
         p_queue->tail = p_thread;
     }
     p_queue->num_threads++;
-    ABTI_PTR_UNLOCK(&p_queue->mutex);
+    ABTI_thread_queue_release_mutex(p_queue);
     ABTD_atomic_fetch_add_uint32(&p_htable->num_elems, 1);
     return ABT_TRUE;
 }
@@ -129,7 +130,7 @@ void ABTI_thread_htable_push_low(ABTI_thread_htable *p_htable, int idx,
 
     /* Add p_thread to the end of the idx-th row */
     p_queue = &p_htable->queue[idx];
-    ABTI_PTR_SPINLOCK(&p_queue->low_mutex);
+    ABTI_thread_queue_acquire_low_mutex(p_queue);
     if (p_queue->low_head == NULL) {
         p_queue->low_head = p_thread;
         p_queue->low_tail = p_thread;
@@ -138,7 +139,7 @@ void ABTI_thread_htable_push_low(ABTI_thread_htable *p_htable, int idx,
         p_queue->low_tail = p_thread;
     }
     p_queue->low_num_threads++;
-    ABTI_PTR_UNLOCK(&p_queue->low_mutex);
+    ABTI_thread_queue_release_low_mutex(p_queue);
     ABTD_atomic_fetch_add_uint32(&p_htable->num_elems, 1);
 }
 
@@ -151,10 +152,10 @@ ABT_bool ABTI_thread_htable_add_low(ABTI_thread_htable *p_htable, int idx,
 
     p_queue = &p_htable->queue[idx];
 
-    ABTI_PTR_SPINLOCK(&p_queue->low_mutex);
+    ABTI_thread_queue_acquire_low_mutex(p_queue);
     if (p_queue->low_head == NULL) {
         ABTI_ASSERT(p_queue->low_num_threads == 0);
-        ABTI_PTR_UNLOCK(&p_queue->low_mutex);
+        ABTI_thread_queue_release_low_mutex(p_queue);
         return ABT_FALSE;
     } else {
         /* Change the ULT's state to BLOCKED */
@@ -164,7 +165,7 @@ ABT_bool ABTI_thread_htable_add_low(ABTI_thread_htable *p_htable, int idx,
         p_queue->low_tail = p_thread;
     }
     p_queue->low_num_threads++;
-    ABTI_PTR_UNLOCK(&p_queue->low_mutex);
+    ABTI_thread_queue_release_low_mutex(p_queue);
     ABTD_atomic_fetch_add_uint32(&p_htable->num_elems, 1);
     return ABT_TRUE;
 }
@@ -174,7 +175,7 @@ ABTI_thread *ABTI_thread_htable_pop(ABTI_thread_htable *p_htable,
 {
     ABTI_thread *p_thread = NULL;
 
-    ABTI_PTR_SPINLOCK(&p_queue->mutex);
+    ABTI_thread_queue_acquire_mutex(p_queue);
     if (p_queue->head) {
         ABTD_atomic_fetch_sub_uint32(&p_htable->num_elems, 1);
         p_thread = p_queue->head;
@@ -188,7 +189,7 @@ ABTI_thread *ABTI_thread_htable_pop(ABTI_thread_htable *p_htable,
 
         p_queue->num_threads--;
     }
-    ABTI_PTR_UNLOCK(&p_queue->mutex);
+    ABTI_thread_queue_release_mutex(p_queue);
 
     return p_thread;
 }
@@ -198,7 +199,7 @@ ABTI_thread *ABTI_thread_htable_pop_low(ABTI_thread_htable *p_htable,
 {
     ABTI_thread *p_thread = NULL;
 
-    ABTI_PTR_SPINLOCK(&p_queue->low_mutex);
+    ABTI_thread_queue_acquire_low_mutex(p_queue);
     if (p_queue->low_head) {
         ABTD_atomic_fetch_sub_uint32(&p_htable->num_elems, 1);
         p_thread = p_queue->low_head;
@@ -212,7 +213,7 @@ ABTI_thread *ABTI_thread_htable_pop_low(ABTI_thread_htable *p_htable,
 
         p_queue->low_num_threads--;
     }
-    ABTI_PTR_UNLOCK(&p_queue->low_mutex);
+    ABTI_thread_queue_release_low_mutex(p_queue);
 
     return p_thread;
 }
@@ -223,7 +224,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_thread_queue *p_queue,
 {
     ABTI_thread *p_target = NULL;
 
-    ABTI_PTR_SPINLOCK(&p_queue->low_mutex);
+    ABTI_thread_queue_acquire_low_mutex(p_queue);
     if (p_queue->low_head) {
         p_target = p_queue->low_head;
 
@@ -239,7 +240,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_thread_queue *p_queue,
             p_queue->low_tail = p_thread;
         }
     }
-    ABTI_PTR_UNLOCK(&p_queue->low_mutex);
+    ABTI_thread_queue_release_low_mutex(p_queue);
 
     if (p_target) {
         LOG_EVENT("switch -> U%" PRIu64 "\n", ABTI_thread_get_id(p_target));
