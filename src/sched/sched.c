@@ -41,7 +41,10 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     ABTI_sched *p_sched;
 
     ABTI_CHECK_TRUE(newsched != NULL, ABT_ERR_SCHED);
-    abt_errno = ABTI_sched_create(def, num_pools, pools, config, ABT_FALSE,
+    /* TODO: the default value of automatic is different from
+     * ABT_sched_create_basic(). Make it consistent. */
+    const ABT_bool def_automatic = ABT_FALSE;
+    abt_errno = ABTI_sched_create(def, num_pools, pools, config, def_automatic,
                                   &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -637,7 +640,9 @@ int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
 
     /* We set the access to the default one */
     access = ABT_POOL_ACCESS_MPSC;
-    automatic = ABT_TRUE;;
+    /* TODO: the default value is different from ABT_sched_create().
+     * Make it consistent. */
+    automatic = ABT_TRUE;
     /* We read the config and set the configured parameters */
     abt_errno = ABTI_sched_config_read_global(config, &access, &automatic);
     ABTI_CHECK_ERROR(abt_errno);
