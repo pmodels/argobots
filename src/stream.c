@@ -280,10 +280,11 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
     int abt_errno = ABT_SUCCESS;
 
     /* Set the ES's state as READY */
-    ABT_xstream_state old_state;
-    old_state = ABTD_atomic_cas_int32((int32_t *)&p_xstream->state,
-            ABT_XSTREAM_STATE_CREATED, ABT_XSTREAM_STATE_READY);
-    if (old_state != ABT_XSTREAM_STATE_CREATED) goto fn_exit;
+    if (!ABTD_atomic_bool_cas_strong_int32((int32_t *)&p_xstream->state,
+                                           ABT_XSTREAM_STATE_CREATED,
+                                           ABT_XSTREAM_STATE_READY)) {
+        goto fn_exit;
+    }
 
     /* Add the main scheduler to the stack of schedulers */
     ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
@@ -447,10 +448,9 @@ int ABT_xstream_join(ABT_xstream xstream)
 
     if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
         /* If xstream's state was changed, we cannot terminate it here */
-        if (ABTD_atomic_cas_int32((int32_t *)&p_xstream->state,
-                                  ABT_XSTREAM_STATE_CREATED,
-                                  ABT_XSTREAM_STATE_TERMINATED)
-            != ABT_XSTREAM_STATE_CREATED) {
+        if (!ABTD_atomic_bool_cas_strong_int32((int32_t *)&p_xstream->state,
+                                               ABT_XSTREAM_STATE_CREATED,
+                                               ABT_XSTREAM_STATE_TERMINATED)) {
             goto fn_body;
         }
         goto fn_exit;

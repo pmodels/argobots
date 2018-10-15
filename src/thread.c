@@ -2205,8 +2205,8 @@ void ABTI_thread_release(ABTI_thread *p_thread)
 {
     uint32_t refcount;
     while ((refcount = p_thread->refcount) > 0) {
-        if (ABTD_atomic_cas_uint32(&p_thread->refcount, refcount,
-            refcount - 1) == refcount) {
+        if (ABTD_atomic_bool_cas_weak_uint32(&p_thread->refcount, refcount,
+                                             refcount - 1)) {
             break;
         }
     }

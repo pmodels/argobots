@@ -22,7 +22,7 @@ static inline void ABTI_spinlock_free(ABTI_spinlock *p_lock)
 
 static inline void ABTI_spinlock_acquire(ABTI_spinlock *p_lock)
 {
-    while (ABTD_atomic_cas_uint32(&p_lock->val, 0, 1) != 0) {
+    while (!ABTD_atomic_bool_cas_weak_uint32(&p_lock->val, 0, 1)) {
         while (*(volatile uint32_t *)(&p_lock->val) != 0) {
         }
     }

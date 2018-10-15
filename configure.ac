@@ -593,21 +593,29 @@ AS_IF([test "x$enable_sched_sleep" = "xyes"],
                  [Define to make the scheduler sleep when its pools are empty])])
 
 
-# check if __atomic_exchange_n() is supported
+# check if __atomic builtins are supported
 AC_TRY_COMPILE(
 [#include <stdint.h>],
-[uint32_t val = 0;
- uint32_t old = __atomic_exchange_n(&val, 2, __ATOMIC_SEQ_CST);],
-[have_atomic_exchange=yes],
-[have_atomic_exchange=no]
+[int *lock = 0, new = 0, old = 0, val = 0, weak;
+ __atomic_test_and_set((char *)lock, __ATOMIC_ACQ_REL);
+ __atomic_clear((volatile char *)lock, __ATOMIC_RELEASE);
+ __atomic_exchange(&val, &new, &old, __ATOMIC_ACQ_REL);
+ old = __atomic_exchange_n(&val, new, __ATOMIC_ACQ_REL);
+ val = __atomic_compare_exchange(&val, &old, &new, weak = 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+ val = __atomic_compare_exchange_n(&val, &old, new, weak = 1, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+ __atomic_load(lock, &val, __ATOMIC_ACQUIRE);
+ val = __atomic_load_n(lock, __ATOMIC_ACQUIRE);
+ __atomic_store(lock, &val, __ATOMIC_RELEASE);
+ __atomic_store_n(lock, val, __ATOMIC_RELEASE);
+ __atomic_add_fetch(lock, 1, __ATOMIC_ACQ_REL);
+ __atomic_fetch_add(lock, 1, __ATOMIC_ACQ_REL);
+ __atomic_thread_fence(__ATOMIC_ACQ_REL);],
+[have_atomic_builtin=yes],
+[have_atomic_builtin=no]
 )
-if test "x$have_atomic_exchange" = "xyes" ; then
-    AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_EXCHANGE, 1,
-              [Define if __atomic_exchange_n is supported])
-else
-    # If __atomic_exchange_n is not supported, we have to use the simple mutex
-    # implementation.
-    enable_simple_mutex=yes
+if test "x$have_atomic_builtin" = "xyes" ; then
+    AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_BUILTIN, 1,
+              [Define if __atomic builtins are supported])
 fi
 
 # --enable-simple-mutex

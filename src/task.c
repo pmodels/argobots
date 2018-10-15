@@ -880,8 +880,8 @@ void ABTI_task_release(ABTI_task *p_task)
 {
     uint32_t refcount;
     while ((refcount = p_task->refcount) > 0) {
-        if (ABTD_atomic_cas_uint32(&p_task->refcount, refcount,
-            refcount - 1) == refcount) {
+        if (ABTD_atomic_bool_cas_weak_uint32(&p_task->refcount, refcount,
+                                             refcount - 1)) {
             break;
         }
     }
