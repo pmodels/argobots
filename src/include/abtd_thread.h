@@ -126,7 +126,7 @@ void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
                                      ABTD_thread_context *p_link)
 {
 #if defined(ABT_CONFIG_USE_FCONTEXT)
-    p_ctx->p_link = p_link;
+    ABTD_atomic_store_ptr((void **)&p_ctx->p_link, (void *)p_link);
 
 #else
 #ifdef __GLIBC__

@@ -229,7 +229,7 @@ void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
                 if (p_mutex->p_handover) {
                     if (p_self == p_mutex->p_handover) {
                         p_mutex->p_handover = NULL;
-                        p_mutex->val = 2;
+                        ABTD_atomic_store_uint32(&p_mutex->val, 2);
 
                         /* Push the previous ULT to its pool */
                         ABTI_thread *p_giver = p_mutex->p_giver;
@@ -464,8 +464,7 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
     int abt_errno = ABT_SUCCESS;
 
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
-    ABTD_atomic_mem_barrier();
-    *(volatile uint32_t *)&p_mutex->val = 0;
+    ABTD_atomic_store_uint32(&p_mutex->val, 0);
     LOG_EVENT("%p: unlock_se\n", p_mutex);
     ABTI_thread_yield(ABTI_local_get_thread());
 #else
@@ -496,7 +495,7 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
  check_cond:
     /* Check whether the mutex handover is possible */
     if (p_queue->num_handovers >= p_mutex->attr.max_handovers) {
-        ABTI_PTR_UNLOCK(&p_mutex->val);
+        ABTD_atomic_store_uint32(&p_mutex->val, 0); /* Unlock */
         LOG_EVENT("%p: unlock_se\n", p_mutex);
         ABTI_mutex_wake_de(p_mutex);
         p_queue->num_handovers = 0;
@@ -507,7 +506,7 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
     /* Hand over the mutex to high-priority ULTs */
     if (p_queue->num_threads <= 1) {
         if(p_htable->h_list != NULL) {
-            ABTI_PTR_UNLOCK(&p_mutex->val);
+            ABTD_atomic_store_uint32(&p_mutex->val, 0); /* Unlock */
             LOG_EVENT("%p: unlock_se\n", p_mutex);
             ABTI_mutex_wake_de(p_mutex);
             ABTI_thread_yield(p_thread);
@@ -522,7 +521,7 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
     /* When we don't have high-priority ULTs and other ESs don't either,
      * we hand over the mutex to low-priority ULTs. */
     if (p_queue->low_num_threads <= 1) {
-        ABTI_PTR_UNLOCK(&p_mutex->val);
+        ABTD_atomic_store_uint32(&p_mutex->val, 0); /* Unlock */
         LOG_EVENT("%p: unlock_se\n", p_mutex);
         ABTI_mutex_wake_de(p_mutex);
         ABTI_thread_yield(p_thread);
@@ -545,7 +544,7 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
               p_mutex, ABTI_thread_get_id(p_next));
 
     /* yield_to the next ULT */
-    while (*(volatile uint32_t *)(&p_next->request) & ABTI_THREAD_REQ_BLOCK) {}
+    while (ABTD_atomic_load_uint32(&p_next->request) & ABTI_THREAD_REQ_BLOCK);
     ABTI_pool_dec_num_blocked(p_next->p_pool);
     ABTI_local_set_thread(p_next);
     p_next->state = ABT_THREAD_STATE_RUNNING;
@@ -677,7 +676,7 @@ void ABTI_mutex_wait(ABTI_mutex *p_mutex, int val)
 
     ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
 
-    if (p_mutex->val != val) {
+    if (ABTD_atomic_load_uint32(&p_mutex->val) != val) {
         ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
         return;
     }
@@ -730,7 +729,7 @@ void ABTI_mutex_wait_low(ABTI_mutex *p_mutex, int val)
 
     ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
 
-    if (p_mutex->val != val) {
+    if (ABTD_atomic_load_uint32(&p_mutex->val) != val) {
         ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
         return;
     }

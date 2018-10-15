@@ -10,6 +10,9 @@
 #include <pthread.h>
 #include "abtd_ucontext.h"
 
+/* Atomic Functions */
+#include "abtd_atomic.h"
+
 /* Data Types */
 typedef pthread_t           ABTD_xstream_context;
 typedef pthread_mutex_t     ABTD_xstream_mutex;
@@ -48,9 +51,6 @@ int ABTD_affinity_get_cpuset(ABTD_xstream_context ctx, int cpuset_size,
 #include "abtd_thread.h"
 void ABTD_thread_exit(ABTI_thread *p_thread);
 void ABTD_thread_cancel(ABTI_thread *p_thread);
-
-/* Atomic Functions */
-#include "abtd_atomic.h"
 
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
 #include <time.h>

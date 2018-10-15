@@ -402,8 +402,8 @@ int ABT_xstream_free(ABT_xstream *xstream)
                         ABT_ERR_INV_XSTREAM,
                         "The primary xstream cannot be freed explicitly.");
 
-    /* If the xstream is running, wait until it terminates */
-    if (p_xstream->state == ABT_XSTREAM_STATE_RUNNING) {
+    /* Wait until xstream terminates */
+    if (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
         abt_errno = ABT_xstream_join(h_xstream);
         ABTI_CHECK_ERROR(abt_errno);
     }
@@ -477,7 +477,8 @@ int ABT_xstream_join(ABT_xstream xstream)
         }
     }
 
-    if (p_xstream->state == ABT_XSTREAM_STATE_TERMINATED) {
+    if (ABTD_atomic_load_uint32((uint32_t *)&p_xstream->state)
+        == ABT_XSTREAM_STATE_TERMINATED) {
         goto fn_join;
     }
 
@@ -490,15 +491,16 @@ int ABT_xstream_join(ABT_xstream xstream)
         ABTI_thread_set_blocked(p_thread);
 
         /* Set the join request */
-        ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_JOIN);
+        ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
 
         /* If the caller is a ULT, it is blocked here */
         ABTI_thread_suspend(p_thread);
     } else {
         /* Set the join request */
-        ABTD_atomic_fetch_or_uint32(&p_xstream->request, ABTI_XSTREAM_REQ_JOIN);
+        ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
 
-        while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
+        while (ABTD_atomic_load_uint32((uint32_t *)&p_xstream->state)
+               != ABT_XSTREAM_STATE_TERMINATED) {
             ABT_thread_yield();
         }
     }
@@ -552,7 +554,8 @@ int ABT_xstream_exit(void)
     /* Wait until the ES terminates */
     do {
         ABT_thread_yield();
-    } while (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED);
+    } while (ABTD_atomic_load_uint32((uint32_t *)&p_xstream->state)
+             != ABT_XSTREAM_STATE_TERMINATED);
 
   fn_exit:
     return abt_errno;
@@ -773,6 +776,9 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 
     /* For now, if the target ES is running, we allow to change the main
      * scheduler of the ES only when the caller is running on the same ES. */
+    /* TODO: a new state representing that the scheduler is changed is needed
+     * to avoid running xstreams while the scheduler is changed in this
+     * function. */
     if (p_xstream->state == ABT_XSTREAM_STATE_RUNNING) {
         if (p_thread->p_last_xstream != p_xstream) {
             abt_errno = ABT_ERR_XSTREAM_STATE;
@@ -1347,7 +1353,10 @@ void ABTI_xstream_schedule(void *p_arg)
     ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
 
     while (1) {
-        p_xstream->state = ABT_XSTREAM_STATE_RUNNING;
+        uint32_t request;
+
+        ABTD_atomic_store_uint32((uint32_t *)&p_xstream->state,
+                                 ABT_XSTREAM_STATE_RUNNING);
 
         /* Execute the run function of scheduler */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
@@ -1358,23 +1367,25 @@ void ABTI_xstream_schedule(void *p_arg)
         LOG_EVENT("[S%" PRIu64 "] end\n", p_sched->id);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
 
-        p_xstream->state = ABT_XSTREAM_STATE_READY;
+        ABTD_atomic_store_uint32((uint32_t *)&p_xstream->state,
+                                 ABT_XSTREAM_STATE_READY);
         ABTI_spinlock_release(&p_xstream->sched_lock);
 
+        request = ABTD_atomic_load_uint32(&p_xstream->request);
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
         /* If there is a stop request, the ES has to be terminated/ */
-        if (p_xstream->request & ABTI_XSTREAM_REQ_STOP) break;
+        if (request & ABTI_XSTREAM_REQ_STOP) break;
 #endif
 
         /* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */
-        if ((p_xstream->request & ABTI_XSTREAM_REQ_EXIT) ||
-            (p_xstream->request & ABTI_XSTREAM_REQ_CANCEL))
+        if ((request & ABTI_XSTREAM_REQ_EXIT) ||
+            (request & ABTI_XSTREAM_REQ_CANCEL))
             break;
 
         /* When join is requested, the ES terminates after finishing
          * execution of all work units. */
-        if (p_xstream->request & ABTI_XSTREAM_REQ_JOIN) {
+        if (request & ABTI_XSTREAM_REQ_JOIN) {
             if (ABTI_sched_get_effective_size(p_xstream->p_main_sched) == 0) {
                 /* If a ULT has been blocked on the join call, we make it ready */
                 if (p_xstream->p_req_arg) {
@@ -1387,7 +1398,8 @@ void ABTI_xstream_schedule(void *p_arg)
     }
 
     /* Set the ES's state as TERMINATED */
-    p_xstream->state = ABT_XSTREAM_STATE_TERMINATED;
+    ABTD_atomic_store_uint32((uint32_t *)&p_xstream->state,
+                             ABT_XSTREAM_STATE_TERMINATED);
     LOG_EVENT("[E%d] terminated\n", p_xstream->rank);
 }
 
@@ -1464,7 +1476,10 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     }
 #endif
 
-    /* Request handling */
+    /* Request handling. */
+    /* We do not need to acquire-load request since all critical requests
+     * (BLOCK, ORPHAN, STOP, and NOPUSH) are written by p_thread. CANCEL might
+     * be delayed. */
     if (p_thread->request & ABTI_THREAD_REQ_STOP) {
         /* The ULT has completed its execution or it called the exit request. */
         LOG_EVENT("[U%" PRIu64 ":E%d] %s\n",

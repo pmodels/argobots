@@ -509,8 +509,8 @@ int ABT_thread_join(ABT_thread thread)
     }
 
   yield_based:
-    while (*(volatile ABT_thread_state *)(&p_thread->state) !=
-           ABT_THREAD_STATE_TERMINATED) {
+    while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state)
+           != ABT_THREAD_STATE_TERMINATED) {
         ABT_thread_yield();
     }
 
@@ -2001,8 +2001,8 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
     /* We should wait until the scheduler of the blocked ULT resets the BLOCK
      * request. Otherwise, the ULT can be pushed to a pool here and be
      * scheduled by another scheduler if it is pushed to a shared pool. */
-    while (*(volatile uint32_t *)(&p_thread->request) & ABTI_THREAD_REQ_BLOCK) {
-    }
+    while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->request)
+           & ABTI_THREAD_REQ_BLOCK);
 
     LOG_EVENT("[U%" PRIu64 ":E%d] set ready\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);

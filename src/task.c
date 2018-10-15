@@ -302,7 +302,8 @@ int ABT_task_free(ABT_task *task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Wait until the task terminates */
-    while (p_task->state != ABT_TASK_STATE_TERMINATED) {
+    while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state)
+           != ABT_TASK_STATE_TERMINATED) {
         ABT_thread_yield();
     }
 
@@ -340,7 +341,8 @@ int ABT_task_join(ABT_task task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* TODO: better implementation */
-    while (p_task->state != ABT_TASK_STATE_TERMINATED) {
+    while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state)
+           != ABT_TASK_STATE_TERMINATED) {
         ABT_thread_yield();
     }
 
