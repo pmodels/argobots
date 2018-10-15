@@ -264,29 +264,16 @@ static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
 char *ABTI_mem_take_global_stack(ABTI_local *p_local)
 {
     ABTI_global *p_global = gp_ABTI_global;
-    const size_t ptr_size = sizeof(void *);
     ABTI_stack_header *p_sh, *p_cur;
     uint32_t cnt_stacks = 0;
 
-    if (ptr_size == 8) {
-        uint64_t *ptr;
-        uint64_t old, ret;
-        do {
-            p_sh = p_global->p_mem_stack;
-            ptr = (uint64_t *)&p_global->p_mem_stack;
-            old = (uint64_t)p_sh;
-            ret = ABTD_atomic_cas_uint64(ptr, old, (uint64_t)NULL);
-        } while (old != ret);
-    } else if (ptr_size == 4) {
-        uint32_t *ptr;
-        uint32_t old, ret;
-        do {
-            p_sh = p_global->p_mem_stack;
-            ptr = (uint32_t *)&p_global->p_mem_stack;
-            old = (uint32_t)(uintptr_t)p_sh;
-            ret = ABTD_atomic_cas_uint32(ptr, old, (uint64_t)NULL);
-        } while (old != ret);
-    }
+    void **ptr;
+    void *old;
+    do {
+        p_sh = p_global->p_mem_stack;
+        ptr = (void **)&p_global->p_mem_stack;
+        old = (void *)p_sh;
+    } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, NULL));
 
     if (p_sh == NULL) return NULL;
 
@@ -310,31 +297,15 @@ char *ABTI_mem_take_global_stack(ABTI_local *p_local)
 void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh)
 {
     ABTI_global *p_global = gp_ABTI_global;
-    const size_t ptr_size = sizeof(void *);
+    void **ptr;
+    void *old, *new;
 
-    if (ptr_size == 8) {
-        uint64_t *ptr;
-        uint64_t old, new, ret;
-        do {
-            p_sh->p_next = p_global->p_mem_stack;
-            ptr = (uint64_t *)&p_global->p_mem_stack;
-            old = (uint64_t)p_sh->p_next;
-            new = (uint64_t)p_sh;
-            ret = ABTD_atomic_cas_uint64(ptr, old, new);
-        } while (old != ret);
-    } else if (ptr_size == 4) {
-        uint32_t *ptr;
-        uint32_t old, new, ret;
-        do {
-            p_sh->p_next = p_global->p_mem_stack;
-            ptr = (uint32_t *)&p_global->p_mem_stack;
-            old = (uint32_t)(uintptr_t)p_sh->p_next;
-            new = (uint32_t)(uintptr_t)p_sh;
-            ret = ABTD_atomic_cas_uint32(ptr, old, new);
-        } while (old != ret);
-    } else {
-        ABTI_ASSERT(0);
-    }
+    do {
+        p_sh->p_next = p_global->p_mem_stack;
+        ptr = (void **)&p_global->p_mem_stack;
+        old = (void *)p_sh->p_next;
+        new = (void *)p_sh;
+    } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, new));
 }
 
 static char *ABTI_mem_alloc_large_page(int pgsize, ABT_bool *p_is_mmapped)
@@ -482,68 +453,35 @@ void ABTI_mem_free_page(ABTI_local *p_local, ABTI_page_header *p_ph)
 
 void ABTI_mem_take_free(ABTI_page_header *p_ph)
 {
-    const size_t ptr_size = sizeof(void *);
-
     /* Decrease the number of remote free blocks. */
     /* NOTE: p_ph->num_empty_blks p_ph->num_remote_free do not need to be
      * accurate as long as their sum is the same as the actual number of free
      * blocks. We keep these variables to avoid chasing the linked list to count
      * the number of free blocks. */
     uint32_t num_remote_free = p_ph->num_remote_free;
+    void **ptr;
+    void *old;
     ABTD_atomic_fetch_sub_uint32(&p_ph->num_remote_free, num_remote_free);
     p_ph->num_empty_blks += num_remote_free;
 
     /* Take the remote free pointer */
-    if (ptr_size == 8) {
-        uint64_t *ptr;
-        uint64_t old, ret;
-        do {
-            p_ph->p_head = p_ph->p_free;
-            ptr = (uint64_t *)&p_ph->p_free;
-            old = (uint64_t)p_ph->p_head;
-            ret = ABTD_atomic_cas_uint64(ptr, old, (uint64_t)NULL);
-        } while (old != ret);
-    } else if (ptr_size == 4) {
-        uint32_t *ptr;
-        uint32_t old, ret;
-        do {
-            p_ph->p_head = p_ph->p_free;
-            ptr = (uint32_t *)&p_ph->p_free;
-            old = (uint32_t)(uintptr_t)p_ph->p_head;
-            ret = ABTD_atomic_cas_uint32(ptr, old, (uint32_t)(uintptr_t)NULL);
-        } while (old != ret);
-    } else {
-        ABTI_ASSERT(0);
-    }
+    do {
+        p_ph->p_head = p_ph->p_free;
+        ptr = (void **)&p_ph->p_free;
+        old = (void *)p_ph->p_head;
+    } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, NULL));
 }
 
 void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh)
 {
-    const size_t ptr_size = sizeof(void *);
-
-    if (ptr_size == 8) {
-        uint64_t *ptr;
-        uint64_t old, new, ret;
-        do {
-            p_bh->p_next = p_ph->p_free;
-            ptr = (uint64_t *)&p_ph->p_free;
-            old = (uint64_t)p_bh->p_next;
-            new = (uint64_t)p_bh;
-            ret = ABTD_atomic_cas_uint64(ptr, old, new);
-        } while (old != ret);
-    } else if (ptr_size == 4) {
-        uint32_t *ptr;
-        uint32_t old, new, ret;
-        do {
-            p_bh->p_next = p_ph->p_free;
-            ptr = (uint32_t *)&p_ph->p_free;
-            old = (uint32_t)(uintptr_t)p_bh->p_next;
-            new = (uint32_t)(uintptr_t)p_bh;
-            ret = ABTD_atomic_cas_uint32(ptr, old, new);
-        } while (old != ret);
-    } else {
-        ABTI_ASSERT(0);
-    }
+    void **ptr;
+    void *old, *new;
+    do {
+        p_bh->p_next = p_ph->p_free;
+        ptr = (void **)&p_ph->p_free;
+        old = (void *)p_bh->p_next;
+        new = (void *)p_bh;
+    } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, new));
 
     /* Increase the number of remote free blocks */
     ABTD_atomic_fetch_add_uint32(&p_ph->num_remote_free, 1);
@@ -663,13 +601,12 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     }
 
     /* Add this stack page to the global stack page list */
-    uint64_t *ptr = (uint64_t *)&gp_ABTI_global->p_mem_sph;
-    uint64_t old, ret;
+    void **ptr = (void **)&gp_ABTI_global->p_mem_sph;
+    void *old;
     do {
         p_sph->p_next = gp_ABTI_global->p_mem_sph;
-        old = (uint64_t)p_sph->p_next;
-        ret = ABTD_atomic_cas_uint64(ptr, old, (uint64_t)p_sph);
-    } while (old != ret);
+        old = (void *)p_sph->p_next;
+    } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, (void *)p_sph));
 
     return p_first;
 }

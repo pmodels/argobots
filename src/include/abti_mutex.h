@@ -9,7 +9,7 @@
 /* Inlined functions for Mutex */
 
 #define ABTI_PTR_SPINLOCK(ptr)                          \
-    while (ABTD_atomic_cas_uint32(ptr, 0, 1) != 0) {    \
+    while (!ABTD_atomic_bool_cas_weak_uint32(ptr, 0, 1)) { \
         while (*(volatile uint32_t *)(ptr) != 0) {      \
         }                                               \
     }
@@ -25,7 +25,7 @@
     uint64_t new_v = ((uint64_t)1 << 32) | 1;                       \
     ptr[1] = 1;                                                     \
     uint64_t *v_ptr = (uint64_t *)ptr;                              \
-    while (ABTD_atomic_cas_uint64(v_ptr, old_v, new_v) != old_v) {  \
+    while (!ABTD_atomic_bool_cas_weak_uint64(v_ptr, old_v, new_v)) { \
         while (*(volatile uint32_t *)(&ptr[0]) != 0 ) {             \
         }                                                           \
         ptr[1] = 1;                                                 \
@@ -40,7 +40,7 @@
 #define ABTI_PTR_SPINLOCK_LOW(ptr)                      \
 {                                                       \
     uint64_t *v_ptr = (uint64_t *)ptr;                  \
-    while (ABTD_atomic_cas_uint64(v_ptr, 0, 1) != 0) {  \
+    while (!ABTD_atomic_bool_cas_weak_uint64(v_ptr, 0, 1)) {  \
         while (*(volatile uint32_t *)(&ptr[0]) != 0) {  \
         }                                               \
     }                                                   \
@@ -123,7 +123,7 @@ void ABTI_mutex_lock(ABTI_mutex *p_mutex)
     ABT_self_get_type(&type);
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock - try\n", p_mutex);
-        while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+        while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
             ABT_thread_yield();
         }
         LOG_EVENT("%p: lock - acquired\n", p_mutex);
@@ -140,7 +140,7 @@ void ABTI_mutex_lock(ABTI_mutex *p_mutex)
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock - try\n", p_mutex);
         int c;
-        if ((c = ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1)) != 0) {
+        if ((c = ABTD_atomic_val_cas_strong_uint32(&p_mutex->val, 0, 1)) != 0) {
             if (c != 2) {
                 c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
             }
@@ -185,7 +185,7 @@ void ABTI_mutex_lock(ABTI_mutex *p_mutex)
 static inline
 int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
 {
-    if (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+    if (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
         return ABT_ERR_MUTEX_LOCKED;
     }
     return ABT_SUCCESS;

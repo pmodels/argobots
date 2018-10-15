@@ -181,7 +181,7 @@ void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
     ABT_self_get_type(&type);
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock_low - try\n", p_mutex);
-        while (ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1) != 0) {
+        while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
             ABT_thread_yield();
         }
         LOG_EVENT("%p: lock_low - acquired\n", p_mutex);
@@ -215,7 +215,7 @@ void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
             }
         }
 
-        if ((c = ABTD_atomic_cas_uint32(&p_mutex->val, 0, 1)) != 0) {
+        if ((c = ABTD_atomic_val_cas_strong_uint32(&p_mutex->val, 0, 1)) != 0) {
             if (c != 2) {
                 c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
             }
