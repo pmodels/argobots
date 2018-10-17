@@ -33,7 +33,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
 
     /* Default values */
     ABTI_thread_attr_init(p_newattr, NULL, ABTI_global_get_thread_stacksize(),
-                          ABT_TRUE);
+                          ABTI_STACK_TYPE_MEMPOOL, ABT_TRUE);
 
     /* Return value */
     *newattr = ABTI_thread_attr_get_handle(p_newattr);
@@ -108,7 +108,9 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
             goto fn_fail;
         }
         p_attr->p_stack   = stackaddr;
-        p_attr->userstack = ABT_TRUE;
+        p_attr->stacktype = ABTI_STACK_TYPE_USER;
+    } else {
+        p_attr->stacktype = ABTI_STACK_TYPE_MALLOC;
     }
     p_attr->stacksize = stacksize;
 
@@ -324,19 +326,28 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
         return;
     }
 
+    char *stacktype;
+    switch (p_attr->stacktype) {
+        case ABTI_STACK_TYPE_MEMPOOL: stacktype = "MEMPOOL"; break;
+        case ABTI_STACK_TYPE_MALLOC:  stacktype = "MALLOC"; break;
+        case ABTI_STACK_TYPE_USER:    stacktype = "USER"; break;
+        case ABTI_STACK_TYPE_MAIN:    stacktype = "MAIN"; break;
+        default:                      stacktype = "UNKNOWN"; break;
+    }
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     sprintf(p_buf,
         "["
         "stack:%p "
         "stacksize:%zu "
-        "userstack:%s "
+        "stacktype:%s "
         "migratable:%s "
         "cb_func:%p "
         "cb_arg:%p"
         "]",
         p_attr->p_stack,
         p_attr->stacksize,
-        (p_attr->userstack == ABT_TRUE ? "TRUE" : "FALSE"),
+        stacktype,
         (p_attr->migratable == ABT_TRUE ? "TRUE" : "FALSE"),
         p_attr->f_cb,
         p_attr->p_cb_arg
@@ -346,11 +357,11 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
         "["
         "stack:%p "
         "stacksize:%zu "
-        "userstack:%s "
+        "stacktype:%s "
         "]",
         p_attr->p_stack,
         p_attr->stacksize,
-        (p_attr->userstack == ABT_TRUE ? "TRUE" : "FALSE")
+        stacktype
     );
 #endif
 }

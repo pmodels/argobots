@@ -135,10 +135,11 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize,
         ABTI_thread_attr_copy(&p_thread->attr, p_attr);
         p_thread->attr.stacksize = actual_stacksize;
         p_thread->attr.p_stack = (void *)(p_blk + header_size);
+        p_thread->attr.stacktype = ABTI_STACK_TYPE_MALLOC;
     } else {
         /* Initialize p_attr. */
         ABTI_thread_attr_init(&p_thread->attr, p_stack, actual_stacksize,
-                              ABT_TRUE);
+                              ABTI_STACK_TYPE_MALLOC, ABT_TRUE);
     }
 
     *p_stacksize = actual_stacksize;
@@ -178,6 +179,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
 
         if (p_attr->p_stack != NULL) {
+            ABTI_ASSERT(p_attr->stacktype == ABTI_STACK_TYPE_USER);
             /* Since the stack is given by the user, we create ABTI_thread and
              * ABTI_stack_header explicitly with a single ABTU_malloc call. */
             p_blk = (char *)ABTU_CA_MALLOC(header_size);
@@ -238,7 +240,8 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
     /* Set attributes */
     if (attr == ABT_THREAD_ATTR_NULL) {
         ABTI_thread_attr *p_myattr = &p_thread->attr;
-        ABTI_thread_attr_init(p_myattr, p_stack, actual_stacksize, ABT_TRUE);
+        ABTI_thread_attr_init(p_myattr, p_stack, actual_stacksize,
+                              ABTI_STACK_TYPE_MEMPOOL, ABT_TRUE);
     } else {
         ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
         ABTI_thread_attr_copy(&p_thread->attr, p_attr);
@@ -269,7 +272,7 @@ ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
     /* Set attributes */
     /* TODO: Need to set the actual stack address and size for the main ULT */
     ABTI_thread_attr *p_attr = &p_thread->attr;
-    ABTI_thread_attr_init(p_attr, NULL, 0, ABT_FALSE);
+    ABTI_thread_attr_init(p_attr, NULL, 0, ABTI_STACK_TYPE_MAIN, ABT_FALSE);
 
     return p_thread;
 }
@@ -426,7 +429,8 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
 
     /* Set attributes */
     ABTI_thread_attr *p_myattr = &p_thread->attr;
-    ABTI_thread_attr_init(p_myattr, p_stack, actual_stacksize, ABT_TRUE);
+    ABTI_thread_attr_init(p_myattr, p_stack, actual_stacksize,
+                          ABTI_STACK_TYPE_MALLOC, ABT_TRUE);
 
     *p_stacksize = actual_stacksize;
     ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
@@ -477,7 +481,7 @@ ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
     /* Set attributes */
     /* TODO: Need to set the actual stack address and size for the main ULT */
     ABTI_thread_attr *p_attr = &p_thread->attr;
-    ABTI_thread_attr_init(p_attr, NULL, 0, ABT_FALSE);
+    ABTI_thread_attr_init(p_attr, NULL, 0, ABTI_STACK_TYPE_MAIN, ABT_FALSE);
 
     return p_thread;
 }

@@ -196,7 +196,7 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
     int i;
 
     if (attr != ABT_THREAD_ATTR_NULL) {
-        if (ABTI_thread_attr_get_ptr(attr)->userstack) {
+        if (ABTI_thread_attr_get_ptr(attr)->stacktype == ABTI_STACK_TYPE_USER) {
             abt_errno = ABT_ERR_INV_THREAD_ATTR;
             goto fn_fail;
         }

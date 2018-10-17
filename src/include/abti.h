@@ -76,6 +76,13 @@ enum ABTI_mutex_attr_val {
     ABTI_MUTEX_ATTR_RECURSIVE = 1 << 0
 };
 
+enum ABTI_stack_type {
+    ABTI_STACK_TYPE_MEMPOOL = 0, /* Stack taken from the memory pool */
+    ABTI_STACK_TYPE_MALLOC,      /* Stack allocated by malloc in Argobots */
+    ABTI_STACK_TYPE_USER,        /* Stack given by a user */
+    ABTI_STACK_TYPE_MAIN,        /* Stack of a main ULT. */
+};
+
 /* Macro functions */
 #define ABTI_UNUSED(a)              (void)(a)
 
@@ -98,6 +105,7 @@ typedef struct ABTI_unit            ABTI_unit;
 typedef struct ABTI_thread_attr     ABTI_thread_attr;
 typedef struct ABTI_thread          ABTI_thread;
 typedef enum ABTI_thread_type       ABTI_thread_type;
+typedef enum ABTI_stack_type        ABTI_stack_type;
 typedef struct ABTI_thread_req_arg  ABTI_thread_req_arg;
 typedef struct ABTI_thread_list     ABTI_thread_list;
 typedef struct ABTI_thread_entry    ABTI_thread_entry;
@@ -319,7 +327,7 @@ struct ABTI_unit {
 struct ABTI_thread_attr {
     void *p_stack;                      /* Stack address */
     size_t stacksize;                   /* Stack size (in bytes) */
-    ABT_bool userstack;                 /* User-provided stack? */
+    ABTI_stack_type stacktype;          /* Stack type */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABT_bool migratable;                /* Migratability */
     void (*f_cb)(ABT_thread, void *);   /* Callback function */
