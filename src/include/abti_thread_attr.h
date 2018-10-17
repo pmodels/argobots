@@ -75,11 +75,12 @@ void ABTI_thread_attr_init_migration(ABTI_thread_attr *p_attr,
 
 static inline
 void ABTI_thread_attr_init(ABTI_thread_attr *p_attr, void *p_stack,
-                           size_t stacksize, ABT_bool migratable)
+                           size_t stacksize, ABTI_stack_type stacktype,
+                           ABT_bool migratable)
 {
     p_attr->p_stack    = p_stack;
     p_attr->stacksize  = stacksize;
-    p_attr->userstack  = ABT_FALSE;
+    p_attr->stacktype  = stacktype;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread_attr_init_migration(p_attr, migratable);
 #endif
