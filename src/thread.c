@@ -1757,7 +1757,7 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         /* Create a ULT object and its stack */
         size_t stacksize = ABTI_global_get_sched_stacksize();
-        p_newthread = ABTI_mem_alloc_thread_with_stacksize(&stacksize);
+        p_newthread = ABTI_mem_alloc_thread_with_stacksize(&stacksize, NULL);
         /* When the main scheduler is terminated, the control will jump to the
          * primary ULT. */
         ABTI_thread *p_main_thread = ABTI_global_get_main();
@@ -1827,7 +1827,7 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
 
     /* Allocate a ULT object and its stack */
     stacksize = ABTI_global_get_sched_stacksize();
-    p_newthread = ABTI_mem_alloc_thread_with_stacksize(&stacksize);
+    p_newthread = ABTI_mem_alloc_thread_with_stacksize(&stacksize, NULL);
 
     /* Create a ULT context */
     abt_errno = ABTD_thread_context_create(NULL,
