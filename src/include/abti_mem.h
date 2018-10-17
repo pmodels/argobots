@@ -105,7 +105,8 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize);
 
 /* Inline functions */
 static inline
-ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
+ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize,
+                                                  ABTI_thread_attr *p_attr)
 {
     const size_t header_size = ABTI_MEM_SH_SIZE;
     size_t stacksize, actual_stacksize;
@@ -129,8 +130,16 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
     p_stack = (void *)(p_blk + header_size);
 
     /* Set attributes */
-    ABTI_thread_attr *p_myattr = &p_thread->attr;
-    ABTI_thread_attr_init(p_myattr, p_stack, actual_stacksize, ABT_TRUE);
+    if (p_attr) {
+        /* Copy p_attr. */
+        ABTI_thread_attr_copy(&p_thread->attr, p_attr);
+        p_thread->attr.stacksize = actual_stacksize;
+        p_thread->attr.p_stack = (void *)(p_blk + header_size);
+    } else {
+        /* Initialize p_attr. */
+        ABTI_thread_attr_init(&p_thread->attr, p_stack, actual_stacksize,
+                              ABT_TRUE);
+    }
 
     *p_stacksize = actual_stacksize;
     ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
@@ -161,7 +170,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         /* If an external thread allocates a stack, we use ABTU_malloc. */
         if (p_local == NULL) {
             *p_stacksize = stacksize;
-            return ABTI_mem_alloc_thread_with_stacksize(p_stacksize);
+            return ABTI_mem_alloc_thread_with_stacksize(p_stacksize, NULL);
         }
 #endif
 
@@ -188,20 +197,8 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         if (stacksize != def_stacksize) {
             /* Since the stack size requested is not the same as default one,
              * we use ABTU_malloc. */
-            p_blk = (char *)ABTU_CA_MALLOC(stacksize);
-
-            p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
-            p_sh->p_next = ABTI_EXT_STACK;
-
-            actual_stacksize = stacksize - header_size;
-            p_thread = (ABTI_thread *)p_blk;
-            ABTI_thread_attr_copy(&p_thread->attr, p_attr);
-            p_thread->attr.stacksize = actual_stacksize;
-            p_thread->attr.p_stack = (void *)(p_blk + header_size);
-
-            *p_stacksize = actual_stacksize;
-            ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
-            return p_thread;
+            *p_stacksize = stacksize;
+            return ABTI_mem_alloc_thread_with_stacksize(p_stacksize, p_attr);
         }
     }
 
