@@ -134,7 +134,7 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize,
         /* Copy p_attr. */
         ABTI_thread_attr_copy(&p_thread->attr, p_attr);
         p_thread->attr.stacksize = actual_stacksize;
-        p_thread->attr.p_stack = (void *)(p_blk + header_size);
+        p_thread->attr.p_stack = p_stack;
         p_thread->attr.stacktype = ABTI_STACK_TYPE_MALLOC;
     } else {
         /* Initialize p_attr. */
