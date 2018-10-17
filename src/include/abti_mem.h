@@ -81,10 +81,6 @@ ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local);
 
 char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize);
 
-/* ABTI_EXT_STACK means that the block will not be managed by ES's stack pool
- * and it needs to be freed with ABTU_free. */
-#define ABTI_EXT_STACK      (ABTI_stack_header *)(UINTPTR_MAX)
-
 
 /******************************************************************************
  * Unless the stack is given by the user, we allocate a stack first and then
@@ -108,16 +104,14 @@ static inline
 ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize,
                                                   ABTI_thread_attr *p_attr)
 {
-    const size_t header_size = ABTI_MEM_SH_SIZE;
     size_t stacksize, actual_stacksize;
     char *p_blk;
     ABTI_thread *p_thread;
-    ABTI_stack_header *p_sh;
     void *p_stack;
 
     /* Get the stack size */
     stacksize = *p_stacksize;
-    actual_stacksize = stacksize - header_size;
+    actual_stacksize = stacksize - sizeof(ABTI_thread);
 
     /* Allocate a stack */
     p_blk = (char *)ABTU_CA_MALLOC(stacksize);
@@ -125,9 +119,7 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize,
     /* Allocate ABTI_thread, ABTI_stack_header, and the actual stack area in
      * the allocated stack memory */
     p_thread = (ABTI_thread *)p_blk;
-    p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
-    p_sh->p_next = ABTI_EXT_STACK;
-    p_stack = (void *)(p_blk + header_size);
+    p_stack = (void *)(p_blk + sizeof(ABTI_thread));
 
     /* Set attributes */
     if (p_attr) {
@@ -154,7 +146,6 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
      * ABTI_stack_header and ABTI_thread. So, the effective stack area is
      * reduced as much as the size of ABTI_stack_header and ABTI_thread. */
 
-    const size_t header_size = ABTI_MEM_SH_SIZE;
     size_t stacksize, def_stacksize, actual_stacksize;
     ABTI_local *p_local = lp_ABTI_local;
     char *p_blk = NULL;
@@ -182,12 +173,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
             ABTI_ASSERT(p_attr->stacktype == ABTI_STACK_TYPE_USER);
             /* Since the stack is given by the user, we create ABTI_thread and
              * ABTI_stack_header explicitly with a single ABTU_malloc call. */
-            p_blk = (char *)ABTU_CA_MALLOC(header_size);
-
-            p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
-            p_sh->p_next = ABTI_EXT_STACK;
-
-            p_thread = (ABTI_thread *)p_blk;
+            p_thread = (ABTI_thread *)ABTU_CA_MALLOC(sizeof(ABTI_thread));
             ABTI_thread_attr_copy(&p_thread->attr, p_attr);
 
             *p_stacksize = p_attr->stacksize;
@@ -231,7 +217,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
     }
 
     /* Actual stack size */
-    actual_stacksize = stacksize - header_size;
+    actual_stacksize = stacksize - ABTI_MEM_SH_SIZE;
 
     /* Get the ABTI_thread pointer and stack pointer */
     p_thread = (ABTI_thread *)p_blk;
@@ -257,17 +243,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
 static inline
 ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
 {
-    const size_t header_size = sizeof(ABTI_stack_header) + sizeof(ABTI_thread);
-    char *p_blk;
-    ABTI_stack_header *p_sh;
-    ABTI_thread *p_thread;
-
-    p_blk = (char *)ABTU_CA_MALLOC(header_size);
-
-    p_sh = (ABTI_stack_header *)(p_blk + sizeof(ABTI_thread));
-    p_sh->p_next = ABTI_EXT_STACK;
-
-    p_thread = (ABTI_thread *)p_blk;
+    ABTI_thread *p_thread = (ABTI_thread *)ABTU_CA_MALLOC(sizeof(ABTI_thread));
 
     /* Set attributes */
     /* TODO: Need to set the actual stack address and size for the main ULT */
@@ -286,7 +262,7 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
 
     p_sh = (ABTI_stack_header *)((char *)p_thread + sizeof(ABTI_thread));
 
-    if (p_sh->p_next == ABTI_EXT_STACK) {
+    if (p_thread->attr.stacktype != ABTI_STACK_TYPE_MEMPOOL) {
         ABTU_free((void *)p_thread);
         return;
     }
