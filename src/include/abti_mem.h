@@ -260,14 +260,15 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
     ABTI_stack_header *p_sh;
     ABTI_VALGRIND_UNREGISTER_STACK(p_thread->attr.p_stack);
 
-    p_sh = (ABTI_stack_header *)((char *)p_thread + sizeof(ABTI_thread));
-
     if (p_thread->attr.stacktype != ABTI_STACK_TYPE_MEMPOOL) {
         ABTU_free((void *)p_thread);
         return;
     }
+    p_local = lp_ABTI_local;
+    p_sh = (ABTI_stack_header *)((char *)p_thread + sizeof(ABTI_thread));
+
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    if (!lp_ABTI_local) {
+    if (!p_local) {
         /* This thread has been allocated internally,
          * but now is being freed by an external thread. */
         ABTI_mem_add_stack_to_global(p_sh);
@@ -275,7 +276,6 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
     }
 #endif
 
-    p_local = lp_ABTI_local;
     if (p_local->num_stacks <= gp_ABTI_global->mem_max_stacks) {
         p_sh->p_next = p_local->p_mem_stack;
         p_local->p_mem_stack = p_sh;
