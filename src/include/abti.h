@@ -661,5 +661,7 @@ void ABTI_event_publish_info(void);
 #include "abti_barrier.h"
 #include "abti_timer.h"
 #include "abti_mem.h"
+#include "abti_mem_task.h"
+#include "abti_mem_thread.h"
 
 #endif /* ABTI_H_INCLUDED */
