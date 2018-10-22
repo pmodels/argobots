@@ -2123,11 +2123,17 @@ int ABTI_thread_set_ready(ABTI_thread *p_thread)
     LOG_EVENT("[U%" PRIu64 ":E%d] set ready\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
+    /* p_thread->p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
+     * num_blocked consistent. Otherwise, other threads might pop p_thread
+     * that has been pushed in ABTI_POOL_ADD_THREAD and change p_thread->p_pool
+     * by ABT_unit_set_associated_pool. */
+    ABTI_pool *p_pool = p_thread->p_pool;
+
     /* Add the ULT to its associated pool */
     ABTI_POOL_ADD_THREAD(p_thread, ABTI_xstream_self());
 
     /* Decrease the number of blocked threads */
-    ABTI_pool_dec_num_blocked(p_thread->p_pool);
+    ABTI_pool_dec_num_blocked(p_pool);
 
   fn_exit:
     return abt_errno;
