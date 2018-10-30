@@ -43,17 +43,16 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
     ABT_thread h_newthread;
-    size_t stacksize;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     /* Allocate a ULT object and its stack */
-    p_newthread = ABTI_mem_alloc_thread(attr, &stacksize);
+    p_newthread = ABTI_mem_alloc_thread(attr);
 
     /* Create a thread context */
     abt_errno = ABTD_thread_context_create(NULL,
-            thread_func, arg, stacksize, p_newthread->attr.p_stack,
+            thread_func, arg, p_newthread->attr.stacksize, p_newthread->attr.p_stack,
             &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -1756,14 +1755,13 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     /* Create a ULT context */
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         /* Create a ULT object and its stack */
-        size_t stacksize = ABTI_global_get_sched_stacksize();
-        p_newthread = ABTI_mem_alloc_thread_with_stacksize(&stacksize, NULL);
+        p_newthread = ABTI_mem_alloc_thread_with_stacksize(ABTI_global_get_sched_stacksize(), NULL);
         /* When the main scheduler is terminated, the control will jump to the
          * primary ULT. */
         ABTI_thread *p_main_thread = ABTI_global_get_main();
         abt_errno = ABTD_thread_context_create(&p_main_thread->ctx,
                 ABTI_xstream_schedule, (void *)p_xstream,
-                stacksize, p_newthread->attr.p_stack, &p_newthread->ctx);
+                p_newthread->attr.stacksize, p_newthread->attr.p_stack, &p_newthread->ctx);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
         /* For secondary ESs, the stack of OS thread is used for the main
@@ -1812,7 +1810,6 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
     ABT_thread h_newthread;
-    size_t stacksize;
 
     /* If p_sched is reused, ABT_thread_revive() can be used. */
     if (p_sched->p_thread) {
@@ -1826,13 +1823,12 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     }
 
     /* Allocate a ULT object and its stack */
-    stacksize = ABTI_global_get_sched_stacksize();
-    p_newthread = ABTI_mem_alloc_thread_with_stacksize(&stacksize, NULL);
+    p_newthread = ABTI_mem_alloc_thread_with_stacksize(ABTI_global_get_sched_stacksize(), NULL);
 
     /* Create a ULT context */
     abt_errno = ABTD_thread_context_create(NULL,
             p_sched->run, (void *)ABTI_sched_get_handle(p_sched),
-            stacksize, p_newthread->attr.p_stack, &p_newthread->ctx);
+            p_newthread->attr.stacksize, p_newthread->attr.p_stack, &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
     p_newthread->state          = ABT_THREAD_STATE_READY;
