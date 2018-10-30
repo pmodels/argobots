@@ -138,7 +138,7 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t stacksize,
 }
 
 static inline
-ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr)
+ABTI_thread *ABTI_mem_alloc_thread(ABTI_thread_attr *p_attr)
 {
     /* Basic idea: allocate a memory for stack and use the first some memory as
      * ABTI_stack_header and ABTI_thread. So, the effective stack area is
@@ -153,7 +153,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr)
 
     /* Get the stack size */
     def_stacksize = ABTI_global_get_thread_stacksize();
-    if (attr == ABT_THREAD_ATTR_NULL) {
+    if (p_attr == NULL) {
         stacksize = def_stacksize;
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
@@ -164,8 +164,6 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr)
 #endif
 
     } else {
-        ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-
         if (p_attr->stacktype == ABTI_STACK_TYPE_USER ||
             p_attr->stacktype == ABTI_STACK_TYPE_MAIN) {
             /* Since the stack is given by the user, we create ABTI_thread and
@@ -222,12 +220,11 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr)
     p_stack  = p_sh->p_stack;
 
     /* Set attributes */
-    if (attr == ABT_THREAD_ATTR_NULL) {
+    if (p_attr == NULL) {
         ABTI_thread_attr *p_myattr = &p_thread->attr;
         ABTI_thread_attr_init(p_myattr, p_stack, actual_stacksize,
                               ABTI_STACK_TYPE_MEMPOOL, ABT_TRUE);
     } else {
-        ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
         ABTI_thread_attr_copy(&p_thread->attr, p_attr);
         p_thread->attr.stacksize = actual_stacksize;
         p_thread->attr.p_stack = p_stack;
