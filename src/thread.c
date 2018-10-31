@@ -1970,7 +1970,6 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
     LOG_EVENT("[U%" PRIu64 ":E%d] suspended\n",
               ABTI_thread_get_id(p_thread), p_xstream->rank);
-    ABTI_LOG_SET_SCHED(p_sched);
     ABTI_thread_context_switch_thread_to_sched(p_thread, p_sched);
 
     /* The suspended ULT resumes its execution from here. */
