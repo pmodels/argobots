@@ -5,10 +5,11 @@
 
 #include "abti.h"
 
-static inline void ABTD_thread_terminate(ABTI_thread *p_thread);
+static inline void ABTD_thread_terminate_thread(ABTI_thread *p_thread);
+static inline void ABTD_thread_terminate_sched(ABTI_thread *p_thread);
 
 #if defined(ABT_CONFIG_USE_FCONTEXT)
-void ABTD_thread_func_wrapper(void *p_arg)
+void ABTD_thread_func_wrapper_thread(void *p_arg)
 {
     ABTD_thread_context *p_fctx = (ABTD_thread_context *)p_arg;
     void (*thread_func)(void *) = p_fctx->f_thread;
@@ -17,8 +18,23 @@ void ABTD_thread_func_wrapper(void *p_arg)
 
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_fctx;
+    ABTI_ASSERT(p_thread->is_sched == NULL);
 
-    ABTD_thread_terminate(p_thread);
+    ABTD_thread_terminate_thread(p_thread);
+}
+
+void ABTD_thread_func_wrapper_sched(void *p_arg)
+{
+    ABTD_thread_context *p_fctx = (ABTD_thread_context *)p_arg;
+    void (*thread_func)(void *) = p_fctx->f_thread;
+
+    thread_func(p_fctx->p_arg);
+
+    /* NOTE: ctx is located in the beginning of ABTI_thread */
+    ABTI_thread *p_thread = (ABTI_thread *)p_fctx;
+    ABTI_ASSERT(p_thread->is_sched != NULL);
+
+    ABTD_thread_terminate_sched(p_thread);
 }
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
@@ -58,10 +74,15 @@ void ABTD_thread_func_wrapper(int func_upper, int func_lower,
 
 void ABTD_thread_exit(ABTI_thread *p_thread)
 {
-    ABTD_thread_terminate(p_thread);
+    if (p_thread->is_sched) {
+        ABTD_thread_terminate_sched(p_thread);
+    } else {
+        ABTD_thread_terminate_thread(p_thread);
+    }
 }
 
-static inline void ABTD_thread_terminate(ABTI_thread *p_thread)
+static inline void ABTDI_thread_terminate(ABTI_thread *p_thread,
+                                          ABT_bool is_sched)
 {
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     ABTD_thread_context *p_fctx = &p_thread->ctx;
@@ -131,6 +152,16 @@ static inline void ABTD_thread_terminate(ABTI_thread *p_thread)
 #else
 #error "Not implemented yet"
 #endif
+}
+
+static inline void ABTD_thread_terminate_thread(ABTI_thread *p_thread)
+{
+    ABTDI_thread_terminate(p_thread, ABT_FALSE);
+}
+
+static inline void ABTD_thread_terminate_sched(ABTI_thread *p_thread)
+{
+    ABTDI_thread_terminate(p_thread, ABT_TRUE);
 }
 
 void ABTD_thread_cancel(ABTI_thread *p_thread)

@@ -235,9 +235,15 @@ int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
 
     /* Create a ULT context */
     stacksize = p_thread->attr.stacksize;
-    abt_errno = ABTD_thread_context_create(NULL, thread_func, arg,
+    if (p_thread->is_sched) {
+        abt_errno = ABTD_thread_context_create_sched(NULL, thread_func, arg,
                                            stacksize, p_thread->attr.p_stack,
                                            &p_thread->ctx);
+    } else {
+        abt_errno = ABTD_thread_context_create_thread(NULL, thread_func, arg,
+                                           stacksize, p_thread->attr.p_stack,
+                                           &p_thread->ctx);
+    }
     ABTI_CHECK_ERROR(abt_errno);
 
     p_thread->state          = ABT_THREAD_STATE_READY;
@@ -1622,10 +1628,17 @@ int ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
 
     /* Allocate a ULT object and its stack, then create a thread context. */
     p_newthread = ABTI_mem_alloc_thread(p_attr);
-    abt_errno = ABTD_thread_context_create(NULL, thread_func, arg,
+    if (p_sched == NULL) {
+        abt_errno = ABTD_thread_context_create_thread(NULL, thread_func, arg,
                                            p_newthread->attr.stacksize,
                                            p_newthread->attr.p_stack,
                                            &p_newthread->ctx);
+    } else {
+        abt_errno = ABTD_thread_context_create_sched(NULL, thread_func, arg,
+                                           p_newthread->attr.stacksize,
+                                           p_newthread->attr.p_stack,
+                                           &p_newthread->ctx);
+    }
     ABTI_CHECK_ERROR(abt_errno);
 
     p_newthread->state          = ABT_THREAD_STATE_READY;
