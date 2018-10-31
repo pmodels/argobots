@@ -1626,15 +1626,17 @@ int ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
     /* Allocate a ULT object and its stack, then create a thread context. */
     p_newthread = ABTI_mem_alloc_thread(p_attr);
     if (p_sched == NULL) {
+        size_t stack_size = p_newthread->attr.stacksize;
+        void *p_stack = p_newthread->attr.p_stack;
         abt_errno = ABTD_thread_context_create_thread(NULL, thread_func, arg,
-                                           p_newthread->attr.stacksize,
-                                           p_newthread->attr.p_stack,
-                                           &p_newthread->ctx);
+                                                      stack_size, p_stack,
+                                                      &p_newthread->ctx);
     } else {
+        size_t stack_size = p_newthread->attr.stacksize;
+        void *p_stack = p_newthread->attr.p_stack;
         abt_errno = ABTD_thread_context_create_sched(NULL, thread_func, arg,
-                                           p_newthread->attr.stacksize,
-                                           p_newthread->attr.p_stack,
-                                           &p_newthread->ctx);
+                                                     stack_size, p_stack,
+                                                     &p_newthread->ctx);
     }
     ABTI_CHECK_ERROR(abt_errno);
 
