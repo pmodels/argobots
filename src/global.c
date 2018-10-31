@@ -158,7 +158,7 @@ int ABT_finalize(void)
         /* Switch to the top scheduler */
         ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
         ABTI_LOG_SET_SCHED(p_sched);
-        ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
+        ABTI_thread_context_switch_thread_to_sched(p_thread, p_sched);
 
         /* Back to the original thread */
         LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",

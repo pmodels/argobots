@@ -513,7 +513,7 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
                 ABTI_ASSERT(p_sched->type == ABT_SCHED_TYPE_ULT);
                 ABTI_sched *p_par_sched;
                 p_par_sched = ABTI_xstream_get_parent_sched(p_xstream);
-                ABTD_thread_context_switch(p_sched->p_ctx, p_par_sched->p_ctx);
+                ABTI_thread_context_switch_sched_to_sched(p_sched, p_par_sched);
             }
         }
     }

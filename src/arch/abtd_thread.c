@@ -100,7 +100,16 @@ static inline void ABTDI_thread_terminate(ABTI_thread *p_thread,
                       ABTI_thread_get_id(p_thread),
                       p_thread->p_last_xstream->rank);
 
-            ABTD_thread_finish_context(p_fctx, p_link);
+            /* Note that a scheduler-type ULT cannot be a joiner. If a scheduler
+             * type ULT would be a joiner (=suspend), no scheduler is available
+             * when a running ULT needs suspension. Hence, it always jumps to a
+             * non-scheduler-type ULT. */
+            if (is_sched) {
+                ABTI_thread_finish_context_sched_to_thread(p_thread->is_sched,
+                                                           p_joiner);
+            } else {
+                ABTI_thread_finish_context_thread_to_thread(p_thread, p_joiner);
+            }
             return;
         } else {
             /* If the current ULT's associated ES is different from p_joiner's,
@@ -130,25 +139,27 @@ static inline void ABTDI_thread_terminate(ABTI_thread *p_thread,
     /* No other ULT is waiting or blocked for this ULT. Since fcontext does
      * not switch to other fcontext when it finishes, we need to explicitly
      * switch to the scheduler. */
-    ABTD_thread_context *p_sched_ctx;
+    ABTI_sched *p_sched;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->is_sched) {
         /* If p_thread is a scheduler ULT, we have to context switch to
          * the parent scheduler. */
-        ABTI_sched *p_par_sched;
-        p_par_sched = ABTI_xstream_get_parent_sched(p_thread->p_last_xstream);
-        p_sched_ctx = p_par_sched->p_ctx;
-        ABTI_LOG_SET_SCHED(p_par_sched);
+        p_sched = ABTI_xstream_get_parent_sched(p_thread->p_last_xstream);
+        ABTI_LOG_SET_SCHED(p_sched);
     } else {
 #endif
-        p_sched_ctx = ABTI_xstream_get_sched_ctx(p_thread->p_last_xstream);
-        ABTI_LOG_SET_SCHED((p_sched_ctx == p_link)
+        p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
+        ABTI_LOG_SET_SCHED((p_sched->p_ctx == p_link)
                            ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
                            : NULL);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
 #endif
-    ABTD_thread_finish_context(p_fctx, p_sched_ctx);
+    if (is_sched) {
+        ABTI_thread_finish_context_sched_to_sched(p_thread->is_sched, p_sched);
+    } else {
+        ABTI_thread_finish_context_thread_to_sched(p_thread, p_sched);
+    }
 #else
 #error "Not implemented yet"
 #endif

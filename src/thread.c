@@ -439,7 +439,7 @@ int ABT_thread_join(ABT_thread thread)
 
         /* Switch the context */
         ABTI_local_set_thread(p_thread);
-        ABTD_thread_context_switch(&p_self->ctx, &p_thread->ctx);
+        ABTI_thread_context_switch_thread_to_thread(p_self, p_thread);
 
     } else if ((p_self->p_pool != p_thread->p_pool) &&
                (access == ABT_POOL_ACCESS_PRIV ||
@@ -903,7 +903,7 @@ int ABT_thread_yield_to(ABT_thread thread)
     /* Switch the context */
     ABTI_local_set_thread(p_tar_thread);
     p_tar_thread->state = ABT_THREAD_STATE_RUNNING;
-    ABTD_thread_context_switch(&p_cur_thread->ctx, &p_tar_thread->ctx);
+    ABTI_thread_context_switch_thread_to_thread(p_cur_thread, p_tar_thread);
 
   fn_exit:
     return abt_errno;
@@ -1967,10 +1967,11 @@ void ABTI_thread_suspend(ABTI_thread *p_thread)
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
     LOG_EVENT("[U%" PRIu64 ":E%d] suspended\n",
               ABTI_thread_get_id(p_thread), p_xstream->rank);
-    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
-    ABTD_thread_context_switch(&p_thread->ctx, ABTI_xstream_get_sched_ctx(p_xstream));
+    ABTI_LOG_SET_SCHED(p_sched);
+    ABTI_thread_context_switch_thread_to_sched(p_thread, p_sched);
 
     /* The suspended ULT resumes its execution from here. */
     LOG_EVENT("[U%" PRIu64 ":E%d] resumed\n",
