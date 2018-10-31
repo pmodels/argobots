@@ -438,7 +438,6 @@ int ABT_thread_join(ABT_thread thread)
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
         /* Switch the context */
-        ABTI_local_set_thread(p_thread);
         ABTI_thread_context_switch_thread_to_thread(p_self, p_thread);
 
     } else if ((p_self->p_pool != p_thread->p_pool) &&
@@ -474,13 +473,12 @@ int ABT_thread_join(ABT_thread thread)
      * ES as p_self's ES and the control has come from the target ULT.
      * Otherwise, the target ULT had been migrated to a different ES, p_self
      * has been resumed by p_self's scheduler.  In the latter case, we don't
-     * need to change p_self's state and the local ULT information. */
+     * need to change p_self's state. */
     if (p_self->state == ABT_THREAD_STATE_BLOCKED) {
         p_self->state = ABT_THREAD_STATE_RUNNING;
         ABTI_pool_dec_num_blocked(p_self->p_pool);
         LOG_EVENT("[U%" PRIu64 ":E%d] resume after join\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
-        ABTI_local_set_thread(p_self);
         return abt_errno;
     }
 
@@ -901,7 +899,6 @@ int ABT_thread_yield_to(ABT_thread thread)
     p_tar_thread->p_last_xstream = p_xstream;
 
     /* Switch the context */
-    ABTI_local_set_thread(p_tar_thread);
     p_tar_thread->state = ABT_THREAD_STATE_RUNNING;
     ABTI_thread_context_switch_thread_to_thread(p_cur_thread, p_tar_thread);
 
