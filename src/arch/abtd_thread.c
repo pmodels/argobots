@@ -149,9 +149,7 @@ static inline void ABTDI_thread_terminate(ABTI_thread *p_thread,
     } else {
 #endif
         p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
-        ABTI_LOG_SET_SCHED((p_sched->p_ctx == p_link)
-                           ? ABTI_xstream_get_top_sched(p_thread->p_last_xstream)
-                           : NULL);
+        ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_thread->p_last_xstream));
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
 #endif
