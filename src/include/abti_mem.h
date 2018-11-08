@@ -101,16 +101,15 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize);
 
 /* Inline functions */
 static inline
-ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize,
+ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t stacksize,
                                                   ABTI_thread_attr *p_attr)
 {
-    size_t stacksize, actual_stacksize;
+    size_t actual_stacksize;
     char *p_blk;
     ABTI_thread *p_thread;
     void *p_stack;
 
     /* Get the stack size */
-    stacksize = *p_stacksize;
     actual_stacksize = stacksize - sizeof(ABTI_thread);
 
     /* Allocate a stack */
@@ -134,13 +133,12 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize,
                               ABTI_STACK_TYPE_MALLOC, ABT_TRUE);
     }
 
-    *p_stacksize = actual_stacksize;
-    ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
+    ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, actual_stacksize);
     return p_thread;
 }
 
 static inline
-ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
+ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr)
 {
     /* Basic idea: allocate a memory for stack and use the first some memory as
      * ABTI_stack_header and ABTI_thread. So, the effective stack area is
@@ -161,8 +159,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         /* If an external thread allocates a stack, we use ABTU_malloc. */
         if (p_local == NULL) {
-            *p_stacksize = stacksize;
-            return ABTI_mem_alloc_thread_with_stacksize(p_stacksize, NULL);
+            return ABTI_mem_alloc_thread_with_stacksize(stacksize, NULL);
         }
 #endif
 
@@ -176,8 +173,8 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
             p_thread = (ABTI_thread *)ABTU_CA_MALLOC(sizeof(ABTI_thread));
             ABTI_thread_attr_copy(&p_thread->attr, p_attr);
 
-            *p_stacksize = p_attr->stacksize;
-            ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
+            ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack,
+                                         p_attr->stacksize);
             return p_thread;
         }
 
@@ -185,8 +182,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         if (stacksize != def_stacksize) {
             /* Since the stack size requested is not the same as default one,
              * we use ABTU_malloc. */
-            *p_stacksize = stacksize;
-            return ABTI_mem_alloc_thread_with_stacksize(p_stacksize, p_attr);
+            return ABTI_mem_alloc_thread_with_stacksize(stacksize, p_attr);
         }
     }
 
@@ -235,8 +231,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
         p_thread->attr.p_stack = p_stack;
     }
 
-    *p_stacksize = actual_stacksize;
-    ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, *p_stacksize);
+    ABTI_VALGRIND_REGISTER_STACK(p_thread->attr.p_stack, actual_stacksize);
     return p_thread;
 }
 
