@@ -79,6 +79,9 @@ int ABT_init(int argc, char **argv)
     /* Create the primary ULT, i.e., the main thread */
     ABTI_thread *p_main_thread;
     abt_errno = ABTI_thread_create_main(p_newxstream, &p_main_thread);
+    /* Set as if p_newxstream is currently running the main thread. */
+    p_main_thread->state = ABT_THREAD_STATE_RUNNING;
+    p_main_thread->p_last_xstream = p_newxstream;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
     gp_ABTI_global->p_thread_main = p_main_thread;
     ABTI_local_set_thread(p_main_thread);
