@@ -1,4 +1,18 @@
 ===============================================================================
+                               Changes in 1.0rc1
+===============================================================================
+
+- Added support for dynamically promoted threads, which offer
+better trade-offs than the existing ULT and tasklet methods
+- Reduced the overhead of context switching
+- Fixed the Valgrind support
+- Extended the API with new blocking pool operations
+- Leverage the more efficient GCC `__atomic` builtins when available
+- Fixed a bug in the condition variable implementation
+- Fixed bugs in memory pool
+- Fixed bugs in pool operation
+
+===============================================================================
                                Changes in 1.0b1
 ===============================================================================
 
