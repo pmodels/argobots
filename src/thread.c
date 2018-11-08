@@ -1701,9 +1701,9 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
                                            &p_newthread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
-    p_newthread->state           = ABT_THREAD_STATE_RUNNING;
+    p_newthread->state           = ABT_THREAD_STATE_READY;
     p_newthread->request         = 0;
-    p_newthread->p_last_xstream  = p_xstream;
+    p_newthread->p_last_xstream  = NULL;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched        = NULL;
 #endif
@@ -1723,7 +1723,7 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
 
     LOG_EVENT("[U%" PRIu64 ":E%d] main ULT created\n",
               ABTI_thread_get_id(p_newthread),
-              p_newthread->p_last_xstream->rank);
+              p_xstream->rank);
 
     /* Although this main ULT is running now, we add this main ULT to the pool
      * so that the scheduler can schedule the main ULT when the main ULT is
@@ -1782,7 +1782,7 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 
     p_newthread->state          = ABT_THREAD_STATE_READY;
     p_newthread->request        = 0;
-    p_newthread->p_last_xstream = p_xstream;
+    p_newthread->p_last_xstream = NULL;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->is_sched       = p_sched;
 #endif

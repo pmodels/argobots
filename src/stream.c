@@ -299,6 +299,7 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
         ABTI_sched *p_sched = p_xstream->p_main_sched;
         abt_errno = ABTI_thread_create_main_sched(p_xstream, p_sched);
         ABTI_CHECK_ERROR(abt_errno);
+        p_sched->p_thread->p_last_xstream = p_xstream;
 
     } else {
         /* Start the main scheduler on a different ES */
@@ -350,6 +351,7 @@ int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     ABTI_sched *p_sched = p_xstream->p_main_sched;
     abt_errno = ABTI_thread_create_main_sched(p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
+    p_sched->p_thread->p_last_xstream = p_xstream;
 
     /* Start the scheduler by context switching to it */
     LOG_EVENT("[U%" PRIu64 ":E%d] yield\n",
@@ -1879,6 +1881,7 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     ABTI_sched *p_sched = p_xstream->p_main_sched;
     abt_errno = ABTI_thread_create_main_sched(p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
+    p_sched->p_thread->p_last_xstream = p_xstream;
 
     /* Set the sched ULT as the current ULT */
     ABTI_local_set_thread(p_sched->p_thread);
