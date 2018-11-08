@@ -1782,7 +1782,8 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         /* Create a ULT object and its stack */
         ABTI_thread_attr attr;
-        ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(), ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
+        ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
+                              ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
         ABTI_thread *p_main_thread = ABTI_global_get_main();
         abt_errno = ABTI_thread_create(NULL, ABTI_xstream_schedule,
                                        (void *)p_xstream, &attr,
@@ -1835,7 +1836,8 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     }
 
     /* Allocate a ULT object and its stack */
-    ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(), ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
+    ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
+                          ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
     abt_errno = ABTI_thread_create(p_pool, p_sched->run,
                                    (void *)ABTI_sched_get_handle(p_sched),
                                    &attr, ABTI_THREAD_TYPE_USER, p_sched, 1,
