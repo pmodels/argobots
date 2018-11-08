@@ -1621,7 +1621,7 @@ int ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
     ABT_thread h_newthread;
 
     /* Allocate a ULT object and its stack, then create a thread context. */
-    p_newthread = ABTI_mem_alloc_thread(ABTI_thread_attr_get_handle(p_attr));
+    p_newthread = ABTI_mem_alloc_thread(p_attr);
     abt_errno = ABTD_thread_context_create(NULL, thread_func, arg,
                                            p_newthread->attr.stacksize,
                                            p_newthread->attr.p_stack,
