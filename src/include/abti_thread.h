@@ -129,6 +129,8 @@ ABT_bool ABTI_thread_is_dynamic_promoted(ABTI_thread *p_thread)
 static inline
 void ABTI_thread_dynamic_promote_thread(ABTI_thread *p_thread)
 {
+    LOG_EVENT("[U%" PRIu64 "] dynamic-promote ULT\n",
+              ABTI_thread_get_id(p_thread));
     void *p_stack = p_thread->attr.p_stack;
     size_t stacksize = p_thread->attr.stacksize;
     void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
@@ -173,6 +175,8 @@ void ABTI_thread_context_switch_thread_to_sched_internal(ABTI_thread *p_old,
     if (!is_finish && !ABTI_thread_is_dynamic_promoted(p_old))
         ABTI_thread_dynamic_promote_thread(p_old);
     /* Schedulers' contexts must be eagerly initialized. */
+    ABTI_ASSERT(!p_new->p_thread
+                || ABTI_thread_is_dynamic_promoted(p_new->p_thread));
 #endif
     if (is_finish) {
         ABTD_thread_finish_context(&p_old->ctx, p_new->p_ctx);
@@ -192,9 +196,13 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
     ABTI_local_set_task(NULL); /* A tasklet scheduler can invoke ULT. */
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     /* Schedulers' contexts must be eagerly initialized. */
+    ABTI_ASSERT(!p_old->p_thread
+                || ABTI_thread_is_dynamic_promoted(p_old->p_thread));
     if (!ABTI_thread_is_dynamic_promoted(p_new)) {
         void *p_stacktop = ((char *)p_new->attr.p_stack) +
                             p_new->attr.stacksize;
+        LOG_EVENT("[U%" PRIu64 "] run ULT (dynamic promotion)\n",
+                  ABTI_thread_get_id(p_new));
         ABTD_thread_context_make_and_call(p_old->p_ctx, p_new->ctx.f_thread,
                                           p_new->ctx.p_arg, p_stacktop);
         /* The scheduler continues from here. If the previous thread has not
@@ -203,6 +211,7 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
          * so it must be done here. */
         ABTI_thread *p_prev = ABTI_local_get_thread();
         if (!ABTI_thread_is_dynamic_promoted(p_prev)) {
+            ABTI_ASSERT(p_prev == p_new);
 #if defined(ABT_CONFIG_USE_FCONTEXT)
             /* See ABTDI_thread_terminate for details.
              * TODO: avoid making a copy of the code. */
@@ -255,6 +264,13 @@ void ABTI_thread_context_switch_sched_to_sched_internal(ABTI_sched *p_old,
                                                         ABT_bool is_finish)
 {
     ABTI_LOG_SET_SCHED(p_new);
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+    /* Schedulers' contexts must be initialized eagerly. */
+    ABTI_ASSERT(!p_old->p_thread
+                || ABTI_thread_is_dynamic_promoted(p_old->p_thread));
+    ABTI_ASSERT(!p_new->p_thread
+                || ABTI_thread_is_dynamic_promoted(p_new->p_thread));
+#endif
     if (is_finish) {
         ABTD_thread_finish_context(p_old->p_ctx, p_new->p_ctx);
     } else {
