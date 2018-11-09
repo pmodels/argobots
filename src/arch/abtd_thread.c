@@ -171,6 +171,16 @@ static inline void ABTD_thread_terminate_sched(ABTI_thread *p_thread)
     ABTDI_thread_terminate(p_thread, ABT_TRUE);
 }
 
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+void ABTD_thread_terminate_thread_no_arg()
+{
+    /* This function is called by `return` in ABTD_thread_context_make_and_call,
+     * so it cannot take the argument. We get the thread descriptor from TLS. */
+    ABTI_thread *p_thread = ABTI_local_get_thread();
+    ABTD_thread_terminate_thread(p_thread);
+}
+#endif
+
 void ABTD_thread_cancel(ABTI_thread *p_thread)
 {
     /* When we cancel a ULT, if other ULT is blocked to join the canceled ULT,
