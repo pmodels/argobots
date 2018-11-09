@@ -37,9 +37,6 @@ int ABTDI_thread_context_create(ABTD_thread_context *p_link,
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     void *p_stacktop;
 
-    /* If stack is NULL, we don't need to make a new context */
-    if (p_stack == NULL) goto fn_exit;
-
     /* fcontext uses the top address of stack.
        Note that the parameter, p_stack, points to the bottom of stack. */
     p_stacktop = (void *)(((char *)p_stack) + stacksize);
@@ -49,7 +46,6 @@ int ABTDI_thread_context_create(ABTD_thread_context *p_link,
     p_newctx->p_arg = p_arg;
     p_newctx->p_link = p_link;
 
-  fn_exit:
     return abt_errno;
 
 #else
