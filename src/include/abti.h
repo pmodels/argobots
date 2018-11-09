@@ -54,6 +54,9 @@
 
 #define ABTI_INDENT                 4
 
+#define ABT_THREAD_TYPE_FULLY_FLEDGED      0
+#define ABT_THREAD_TYPE_DYNAMIC_PROMOTION  1
+
 enum ABTI_xstream_type {
     ABTI_XSTREAM_TYPE_PRIMARY,
     ABTI_XSTREAM_TYPE_SECONDARY

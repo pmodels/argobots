@@ -189,6 +189,12 @@ AC_ARG_ENABLE([feature],
 AC_ARG_ENABLE([sched-sleep],
     AS_HELP_STRING([--enable-sched-sleep], [enable scheduler sleep]))
 
+# --enable-dynamic-promotion
+AC_ARG_ENABLE([dynamic-promotion],
+    AS_HELP_STRING([--enable-dynamic-promotion],
+                   [use the dynamic promotion threading technique that performs
+                    better if a ULT does not yield.]))
+
 # --enable-simple-mutex
 AC_ARG_ENABLE([simple-mutex],
     AS_HELP_STRING([--enable-simple-mutex], [use a simple mutex implementation]))
@@ -591,6 +597,12 @@ AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
 AS_IF([test "x$enable_sched_sleep" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SCHED_SLEEP, 1,
                  [Define to make the scheduler sleep when its pools are empty])])
+
+# --enable-dynamic-promotion
+AS_IF([test "x$enable_dynamic_promotion" = "xyes" -a "x$enable_fcontext" != "xno" -a "x$fctx_arch_bin" = "xx86_64_sysv_elf_gas"],
+      [AC_DEFINE(ABT_CONFIG_THREAD_TYPE, ABT_THREAD_TYPE_DYNAMIC_PROMOTION,
+                 [Define to use the dynamic promotion technique for ULT])],
+      [AC_DEFINE(ABT_CONFIG_THREAD_TYPE, ABT_THREAD_TYPE_FULLY_FLEDGED)])
 
 
 # check if __atomic builtins are supported
