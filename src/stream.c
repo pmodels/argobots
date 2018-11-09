@@ -356,7 +356,6 @@ int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     /* Start the scheduler by context switching to it */
     LOG_EVENT("[U%" PRIu64 ":E%d] yield\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
-    ABTI_LOG_SET_SCHED(p_sched);
     ABTI_thread_context_switch_thread_to_sched(p_thread, p_sched);
 
     /* Back to the main ULT */
@@ -1070,8 +1069,6 @@ int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
-
     ABT_unit_type type = p_pool->u_get_type(unit);
 
     if (type == ABT_UNIT_TYPE_THREAD) {
@@ -1362,6 +1359,9 @@ void ABTI_xstream_schedule(void *p_arg)
 
         /* Execute the run function of scheduler */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
+        /* This function can be invoked without user-level context switches
+         * (e.g., directly called on top of Pthreads), so ABTI_LOG_SET_SCHED
+         * must be called manually here. */
         ABTI_LOG_SET_SCHED(p_sched);
         p_sched->state = ABT_SCHED_STATE_RUNNING;
         LOG_EVENT("[S%" PRIu64 "] start\n", p_sched->id);
@@ -1455,7 +1455,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     /* Switch the context */
     LOG_EVENT("[U%" PRIu64 ":E%d] start running\n",
               ABTI_thread_get_id(p_thread), p_xstream->rank);
-    ABTI_LOG_SET_SCHED(NULL);
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->is_sched != NULL) {
@@ -1788,7 +1787,6 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 
         /* Switch to the current main scheduler */
         ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
-        ABTI_LOG_SET_SCHED(p_main_sched);
         ABTI_thread_context_switch_thread_to_sched(p_thread, p_main_sched);
 
         /* Now, we free the current main scheduler */
@@ -1893,9 +1891,6 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 
     /* Set the sched ULT as the current ULT */
     ABTI_local_set_thread(p_sched->p_thread);
-
-    /* Set the current scheduler for logging */
-    ABTI_LOG_SET_SCHED(p_sched);
 
     /* Execute the main scheduler of this ES */
     LOG_EVENT("[E%d] start\n", p_xstream->rank);

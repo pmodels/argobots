@@ -59,6 +59,7 @@ void ABTI_thread_context_switch_thread_to_sched_internal(ABTI_thread *p_old,
                                                          ABT_bool is_finish)
 {
     ABTI_ASSERT(!p_old->is_sched);
+    ABTI_LOG_SET_SCHED(p_new);
     if (is_finish) {
         ABTD_thread_finish_context(&p_old->ctx, p_new->p_ctx);
     } else {
@@ -72,6 +73,7 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
                                                          ABT_bool is_finish)
 {
     ABTI_ASSERT(!p_new->is_sched);
+    ABTI_LOG_SET_SCHED(NULL);
     if (is_finish) {
         ABTD_thread_finish_context(p_old->p_ctx, &p_new->ctx);
     } else {
@@ -84,6 +86,7 @@ void ABTI_thread_context_switch_sched_to_sched_internal(ABTI_sched *p_old,
                                                         ABTI_sched *p_new,
                                                         ABT_bool is_finish)
 {
+    ABTI_LOG_SET_SCHED(p_new);
     if (is_finish) {
         ABTD_thread_finish_context(p_old->p_ctx, p_new->p_ctx);
     } else {
@@ -195,7 +198,6 @@ void ABTI_thread_yield(ABTI_thread *p_thread)
 
     /* Switch to the top scheduler */
     p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
-    ABTI_LOG_SET_SCHED(p_sched);
     ABTI_thread_context_switch_thread_to_sched(p_thread, p_sched);
 
     /* Back to the original thread */
