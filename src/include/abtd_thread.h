@@ -19,6 +19,10 @@ fcontext_t make_fcontext(void *sp, size_t size, void (*thread_func)(void *))
                          ABT_API_PRIVATE;
 void *jump_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
 void *take_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+void init_and_call_fcontext(void *p_arg, void (*f_thread)(void *),
+                            void *p_stacktop, fcontext_t *old);
+#endif
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
                               int arg_upper, int arg_lower);
@@ -154,6 +158,16 @@ void ABTD_thread_finish_context(ABTD_thread_context *p_old,
     ABTI_ASSERT(ret == 0);
 #endif
 }
+
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+static inline
+void ABTD_thread_context_make_and_call(ABTD_thread_context *p_old,
+                                       void (*f_thread)(void *), void *p_arg,
+                                       void *p_stacktop)
+{
+    init_and_call_fcontext(p_arg, f_thread, p_stacktop, &p_old->fctx);
+}
+#endif
 
 static inline
 void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
