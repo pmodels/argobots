@@ -246,7 +246,6 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_thread_queue *p_queue,
         LOG_EVENT("switch -> U%" PRIu64 "\n", ABTI_thread_get_id(p_target));
 
         /* Context-switch to p_target */
-        ABTI_local_set_thread(p_target);
         p_target->state = ABT_THREAD_STATE_RUNNING;
         ABTI_thread_context_switch_thread_to_thread(p_thread, p_target);
         return ABT_TRUE;

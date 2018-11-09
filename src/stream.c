@@ -1428,16 +1428,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 #endif
 
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    /* Unset the current running ULT/tasklet */
-    ABTI_thread *last_thread = ABTI_local_get_thread();
-    ABTI_task *last_task = ABTI_local_get_task();
-#endif
-
-    /* Set the current running ULT */
-    ABTI_local_set_thread(p_thread);
-    ABTI_local_set_task(NULL);
-
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Add the new scheduler if the ULT is a scheduler */
     if (p_thread->is_sched != NULL) {
         p_thread->is_sched->p_ctx = &p_thread->ctx;
@@ -1459,17 +1449,20 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->is_sched != NULL) {
         ABTI_thread_context_switch_sched_to_sched(p_sched, p_thread->is_sched);
+        /* The scheduler continues from here. */
+        /* Because of the stackable scheduler concept, the previous ULT must
+         * be the same as one to which the context has been switched. */
     } else {
 #endif
         ABTI_thread_context_switch_sched_to_thread(p_sched, p_thread);
+        /* The scheduler continues from here. */
+        /* The previous ULT may not be the same as one to which the
+         * context has been switched. */
+        p_thread = ABTI_local_get_thread();
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
 #endif
 
-    /* The scheduler continues from here. */
-    /* The previous ULT may not be the same as one to which the
-     * context has been switched. */
-    p_thread = ABTI_local_get_thread();
     p_xstream = p_thread->p_last_xstream;
     LOG_EVENT("[U%" PRIu64 ":E%d] stopped\n",
               ABTI_thread_get_id(p_thread), p_xstream->rank);
@@ -1537,12 +1530,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         goto fn_fail;
     }
 
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    /* Set the current running ULT/tasklet */
-    ABTI_local_set_thread(last_thread);
-    ABTI_local_set_task(last_task);
-#endif
-
   fn_exit:
     return abt_errno;
 
@@ -1558,12 +1545,6 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
         ABTI_xstream_terminate_task(p_task);
         return;
     }
-#endif
-
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    /* Unset the current running ULT/tasklet */
-    ABTI_thread *last_thread = ABTI_local_get_thread();
-    ABTI_task *last_task = ABTI_local_get_task();
 #endif
 
     /* Set the current running tasklet */
@@ -1621,12 +1602,6 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_xstream, ABTI_task *p_task)
 
     /* Terminate the tasklet */
     ABTI_xstream_terminate_task(p_task);
-
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    /* Set the current running ULT/tasklet */
-    ABTI_local_set_thread(last_thread);
-    ABTI_local_set_task(last_task);
-#endif
 }
 
 int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)

@@ -46,6 +46,7 @@ void ABTI_thread_context_switch_thread_to_thread_internal(ABTI_thread *p_old,
                                                           ABT_bool is_finish)
 {
     ABTI_ASSERT(!p_old->is_sched && !p_new->is_sched);
+    ABTI_local_set_thread(p_new);
     if (is_finish) {
         ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
     } else {
@@ -74,6 +75,8 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
 {
     ABTI_ASSERT(!p_new->is_sched);
     ABTI_LOG_SET_SCHED(NULL);
+    ABTI_local_set_thread(p_new);
+    ABTI_local_set_task(NULL); /* A tasklet scheduler can invoke ULT. */
     if (is_finish) {
         ABTD_thread_finish_context(p_old->p_ctx, &p_new->ctx);
     } else {
