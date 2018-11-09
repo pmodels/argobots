@@ -13,7 +13,8 @@
 #endif
 
 #if defined(ABT_CONFIG_USE_FCONTEXT)
-void ABTD_thread_func_wrapper(void *p_arg);
+void ABTD_thread_func_wrapper_thread(void *p_arg);
+void ABTD_thread_func_wrapper_sched(void *p_arg);
 fcontext_t make_fcontext(void *sp, size_t size, void (*thread_func)(void *))
                          ABT_API_PRIVATE;
 void *jump_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
@@ -21,10 +22,13 @@ void *take_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
                               int arg_upper, int arg_lower);
+#define ABTD_thread_func_wrapper_thread ABTD_thread_func_wrapper
+#define ABTD_thread_func_wrapper_sched  ABTD_thread_func_wrapper
 #endif
 
 static inline
-int ABTD_thread_context_create(ABTD_thread_context *p_link,
+int ABTDI_thread_context_create(ABTD_thread_context *p_link,
+                               void (*f_wrapper)(void *),
                                void (*f_thread)(void *), void *p_arg,
                                size_t stacksize, void *p_stack,
                                ABTD_thread_context *p_newctx)
@@ -41,7 +45,7 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
     p_stacktop = (void *)(((char *)p_stack) + stacksize);
 
     p_newctx->fctx = make_fcontext(p_stacktop, stacksize,
-                                   ABTD_thread_func_wrapper);
+                                   f_wrapper);
     p_newctx->f_thread = f_thread;
     p_newctx->p_arg = p_arg;
     p_newctx->p_link = p_link;
@@ -81,7 +85,7 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
         ABTI_ASSERT(0);
     }
 
-    makecontext(p_newctx, (void (*)())ABTD_thread_func_wrapper,
+    makecontext(p_newctx, (void (*)())f_wrapper,
                 4, func_upper, func_lower, arg_upper, arg_lower);
 
   fn_exit:
@@ -91,6 +95,28 @@ int ABTD_thread_context_create(ABTD_thread_context *p_link,
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #endif
+}
+
+static inline
+int ABTD_thread_context_create_thread(ABTD_thread_context *p_link,
+                                      void (*f_thread)(void *), void *p_arg,
+                                      size_t stacksize, void *p_stack,
+                                      ABTD_thread_context *p_newctx)
+{
+    return ABTDI_thread_context_create(p_link, ABTD_thread_func_wrapper_thread,
+                                       f_thread, p_arg, stacksize, p_stack,
+                                       p_newctx);
+}
+
+static inline
+int ABTD_thread_context_create_sched(ABTD_thread_context *p_link,
+                                     void (*f_thread)(void *), void *p_arg,
+                                     size_t stacksize, void *p_stack,
+                                     ABTD_thread_context *p_newctx)
+{
+    return ABTDI_thread_context_create(p_link, ABTD_thread_func_wrapper_sched,
+                                       f_thread, p_arg, stacksize, p_stack,
+                                       p_newctx);
 }
 
 /* Currently, nothing to do */

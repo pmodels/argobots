@@ -548,7 +548,7 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
     ABTI_pool_dec_num_blocked(p_next->p_pool);
     ABTI_local_set_thread(p_next);
     p_next->state = ABT_THREAD_STATE_RUNNING;
-    ABTD_thread_context_switch(&p_thread->ctx, &p_next->ctx);
+    ABTI_thread_context_switch_thread_to_thread(p_thread, p_next);
 #endif
 
     return abt_errno;
