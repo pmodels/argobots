@@ -22,6 +22,7 @@ void *take_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
 void init_and_call_fcontext(void *p_arg, void (*f_thread)(void *),
                             void *p_stacktop, fcontext_t *old);
+void ABTD_thread_terminate_thread_no_arg();
 #endif
 #else
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
@@ -123,13 +124,59 @@ int ABTD_thread_context_invalidate(ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
 #if defined(ABT_CONFIG_USE_FCONTEXT)
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+    /* fctx is used to check whether the context requires dynamic promotion is
+     * necessary or not, so this value must not be NULL. */
+    p_newctx->fctx = (void *)((intptr_t)0x1);
+#else
     p_newctx->fctx = NULL;
+#endif
     p_newctx->f_thread = NULL;
     p_newctx->p_arg = NULL;
     p_newctx->p_link = NULL;
     return abt_errno;
 #endif
 }
+
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+static inline
+int ABTD_thread_context_init(ABTD_thread_context *p_link,
+                             void (*f_thread)(void *), void *p_arg,
+                             ABTD_thread_context *p_newctx)
+{
+    int abt_errno = ABT_SUCCESS;
+#if defined(ABT_CONFIG_USE_FCONTEXT)
+    p_newctx->fctx = NULL;
+    p_newctx->f_thread = f_thread;
+    p_newctx->p_arg = p_arg;
+    p_newctx->p_link = p_link;
+    return abt_errno;
+#else
+#error "Not implemented yet"
+#endif
+}
+
+static inline
+int ABTD_thread_context_arm_thread(size_t stacksize, void *p_stack,
+                                   ABTD_thread_context *p_newctx)
+{
+    /* This function *arms* the dynamic promotion thread (initialized by
+     * ABTD_thread_context_init) as if it were created by
+     * ABTD_thread_context_create; this function fully creates the context
+     * so that the thread can be run by jump_fcontext. */
+    int abt_errno = ABT_SUCCESS;
+#if defined(ABT_CONFIG_USE_FCONTEXT)
+    /* fcontext uses the top address of stack.
+       Note that the parameter, p_stack, points to the bottom of stack. */
+    void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
+    p_newctx->fctx = make_fcontext(p_stacktop, stacksize,
+                                   ABTD_thread_func_wrapper_thread);
+    return abt_errno;
+#else
+#error "Not implemented yet"
+#endif
+}
+#endif
 
 /* Currently, nothing to do */
 #define ABTD_thread_context_free(p_ctx)
@@ -166,6 +213,31 @@ void ABTD_thread_context_make_and_call(ABTD_thread_context *p_old,
                                        void *p_stacktop)
 {
     init_and_call_fcontext(p_arg, f_thread, p_stacktop, &p_old->fctx);
+}
+
+static inline
+ABT_bool ABTD_thread_context_is_dynamic_promoted(ABTD_thread_context *p_ctx)
+{
+    /* Check if the ULT has been dynamically promoted; internally, it checks if
+     * the context is NULL. */
+    return p_ctx->fctx ? ABT_TRUE : ABT_FALSE;
+}
+
+static inline
+void ABTDI_thread_context_dynamic_promote(void *p_stacktop, void *jump_f)
+{
+    /* Perform dynamic promotion */
+    void **p_return_address = (void **)(((char *) p_stacktop) - 0x10);
+    void ***p_stack_pointer = (void ***)(((char *) p_stacktop) - 0x08);
+    *p_stack_pointer = p_return_address;
+    *p_return_address = jump_f;
+}
+
+static inline
+void ABTD_thread_context_dynamic_promote_thread(void *p_stacktop)
+{
+    void *jump_f = (void *)ABTD_thread_terminate_thread_no_arg;
+    ABTDI_thread_context_dynamic_promote(p_stacktop, jump_f);
 }
 #endif
 

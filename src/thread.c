@@ -1633,11 +1633,17 @@ int ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
          * (p_stack == NULL). Invalidate the context here. */
         abt_errno = ABTD_thread_context_invalidate(&p_newthread->ctx);
     } else if (p_sched == NULL) {
+#if ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION
         size_t stack_size = p_newthread->attr.stacksize;
         void *p_stack = p_newthread->attr.p_stack;
         abt_errno = ABTD_thread_context_create_thread(NULL, thread_func, arg,
                                                       stack_size, p_stack,
                                                       &p_newthread->ctx);
+#else
+        /* The context is not fully created now. */
+        abt_errno = ABTD_thread_context_init(NULL, thread_func, arg,
+                                             &p_newthread->ctx);
+#endif
     } else {
         size_t stack_size = p_newthread->attr.stacksize;
         void *p_stack = p_newthread->attr.p_stack;
