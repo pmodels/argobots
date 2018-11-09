@@ -44,8 +44,7 @@ int ABTDI_thread_context_create(ABTD_thread_context *p_link,
        Note that the parameter, p_stack, points to the bottom of stack. */
     p_stacktop = (void *)(((char *)p_stack) + stacksize);
 
-    p_newctx->fctx = make_fcontext(p_stacktop, stacksize,
-                                   f_wrapper);
+    p_newctx->fctx = make_fcontext(p_stacktop, stacksize, f_wrapper);
     p_newctx->f_thread = f_thread;
     p_newctx->p_arg = p_arg;
     p_newctx->p_link = p_link;
@@ -85,8 +84,8 @@ int ABTDI_thread_context_create(ABTD_thread_context *p_link,
         ABTI_ASSERT(0);
     }
 
-    makecontext(p_newctx, (void (*)())f_wrapper,
-                4, func_upper, func_lower, arg_upper, arg_lower);
+    makecontext(p_newctx, (void (*)())f_wrapper, 4, func_upper, func_lower,
+                arg_upper, arg_lower);
 
   fn_exit:
     return abt_errno;
