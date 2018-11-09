@@ -248,7 +248,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_thread_queue *p_queue,
         /* Context-switch to p_target */
         ABTI_local_set_thread(p_target);
         p_target->state = ABT_THREAD_STATE_RUNNING;
-        ABTD_thread_context_switch(&p_thread->ctx, &p_target->ctx);
+        ABTI_thread_context_switch_thread_to_thread(p_thread, p_target);
         return ABT_TRUE;
     } else {
         return ABT_FALSE;

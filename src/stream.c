@@ -357,7 +357,7 @@ int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     LOG_EVENT("[U%" PRIu64 ":E%d] yield\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
     ABTI_LOG_SET_SCHED(p_sched);
-    ABTD_thread_context_switch(&p_thread->ctx, p_sched->p_ctx);
+    ABTI_thread_context_switch_thread_to_sched(p_thread, p_sched);
 
     /* Back to the main ULT */
     LOG_EVENT("[U%" PRIu64 ":E%d] resume\n",
@@ -1456,8 +1456,16 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     LOG_EVENT("[U%" PRIu64 ":E%d] start running\n",
               ABTI_thread_get_id(p_thread), p_xstream->rank);
     ABTI_LOG_SET_SCHED(NULL);
-    ABTD_thread_context *p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
-    ABTD_thread_context_switch(p_ctx, &p_thread->ctx);
+    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+    if (p_thread->is_sched != NULL) {
+        ABTI_thread_context_switch_sched_to_sched(p_sched, p_thread->is_sched);
+    } else {
+#endif
+        ABTI_thread_context_switch_sched_to_thread(p_sched, p_thread);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+    }
+#endif
 
     /* The scheduler continues from here. */
     /* The previous ULT may not be the same as one to which the
@@ -1781,7 +1789,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
         /* Switch to the current main scheduler */
         ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
         ABTI_LOG_SET_SCHED(p_main_sched);
-        ABTD_thread_context_switch(&p_thread->ctx, p_main_sched->p_ctx);
+        ABTI_thread_context_switch_thread_to_sched(p_thread, p_main_sched);
 
         /* Now, we free the current main scheduler */
         abt_errno = ABTI_sched_discard_and_free(p_main_sched);
