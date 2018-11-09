@@ -1625,7 +1625,13 @@ int ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
 
     /* Allocate a ULT object and its stack, then create a thread context. */
     p_newthread = ABTI_mem_alloc_thread(p_attr);
-    if (p_sched == NULL) {
+    if ((thread_type == ABTI_THREAD_TYPE_MAIN ||
+         thread_type == ABTI_THREAD_TYPE_MAIN_SCHED)
+         && p_newthread->attr.p_stack == NULL) {
+        /* We don't need to initialize the context of 1. the main thread, and
+         * 2. the main scheduler thread which runs on OS-level threads
+         * (p_stack == NULL). */
+    } else if (p_sched == NULL) {
         size_t stack_size = p_newthread->attr.stacksize;
         void *p_stack = p_newthread->attr.p_stack;
         abt_errno = ABTD_thread_context_create_thread(NULL, thread_func, arg,
