@@ -1630,7 +1630,8 @@ int ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
          && p_newthread->attr.p_stack == NULL) {
         /* We don't need to initialize the context of 1. the main thread, and
          * 2. the main scheduler thread which runs on OS-level threads
-         * (p_stack == NULL). */
+         * (p_stack == NULL). Invalidate the context here. */
+        abt_errno = ABTD_thread_context_invalidate(&p_newthread->ctx);
     } else if (p_sched == NULL) {
         size_t stack_size = p_newthread->attr.stacksize;
         void *p_stack = p_newthread->attr.p_stack;

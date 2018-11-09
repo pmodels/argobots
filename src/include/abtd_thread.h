@@ -114,6 +114,19 @@ int ABTD_thread_context_create_sched(ABTD_thread_context *p_link,
                                        p_newctx);
 }
 
+static inline
+int ABTD_thread_context_invalidate(ABTD_thread_context *p_newctx)
+{
+    int abt_errno = ABT_SUCCESS;
+#if defined(ABT_CONFIG_USE_FCONTEXT)
+    p_newctx->fctx = NULL;
+    p_newctx->f_thread = NULL;
+    p_newctx->p_arg = NULL;
+    p_newctx->p_link = NULL;
+    return abt_errno;
+#endif
+}
+
 /* Currently, nothing to do */
 #define ABTD_thread_context_free(p_ctx)
 
