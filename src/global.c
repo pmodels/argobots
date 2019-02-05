@@ -17,6 +17,8 @@ ABTI_global *gp_ABTI_global = NULL;
 static uint32_t g_ABTI_num_inits = 0;
 /* A global lock protecting the initialization/finalization process */
 static uint8_t g_ABTI_init_lock = 0;
+/* A flag whether Argobots has been initialized or not */
+static uint32_t g_ABTI_initialized = 0;
 
 static inline void ABTI_init_lock_acquire() {
     while (ABTD_atomic_test_and_set_uint8(&g_ABTI_init_lock)) {
@@ -117,6 +119,7 @@ int ABT_init(int argc, char **argv)
     if (gp_ABTI_global->print_config == ABT_TRUE) {
         ABT_info_print_config(stdout);
     }
+    ABTD_atomic_store_uint32(&g_ABTI_initialized, 1);
 
   fn_exit:
     /* Unlock a global lock */
@@ -220,6 +223,7 @@ int ABT_finalize(void)
     /* Free the ABTI_global structure */
     ABTU_free(gp_ABTI_global);
     gp_ABTI_global = NULL;
+    ABTD_atomic_store_uint32(&g_ABTI_initialized, 0);
 
   fn_exit:
     /* Unlock a global lock */
@@ -247,7 +251,7 @@ int ABT_initialized(void)
 {
     int abt_errno = ABT_SUCCESS;
 
-    if (gp_ABTI_global == NULL) {
+    if (ABTD_atomic_load_uint32(&g_ABTI_initialized) == 0) {
         abt_errno = ABT_ERR_UNINITIALIZED;
     }
 
