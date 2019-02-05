@@ -235,15 +235,19 @@ int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
 
     /* Create a ULT context */
     stacksize = p_thread->attr.stacksize;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->is_sched) {
         abt_errno = ABTD_thread_context_create_sched(NULL, thread_func, arg,
                                            stacksize, p_thread->attr.p_stack,
                                            &p_thread->ctx);
     } else {
+#endif
         abt_errno = ABTD_thread_context_create_thread(NULL, thread_func, arg,
                                            stacksize, p_thread->attr.p_stack,
                                            &p_thread->ctx);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
+#endif
     ABTI_CHECK_ERROR(abt_errno);
 
     p_thread->state          = ABT_THREAD_STATE_READY;

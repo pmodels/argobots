@@ -74,11 +74,15 @@ void ABTD_thread_func_wrapper(int func_upper, int func_lower,
 
 void ABTD_thread_exit(ABTI_thread *p_thread)
 {
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->is_sched) {
         ABTD_thread_terminate_sched(p_thread);
     } else {
+#endif
         ABTD_thread_terminate_thread(p_thread);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
+#endif
 }
 
 static inline void ABTDI_thread_terminate(ABTI_thread *p_thread,
@@ -104,12 +108,16 @@ static inline void ABTDI_thread_terminate(ABTI_thread *p_thread,
              * type ULT would be a joiner (=suspend), no scheduler is available
              * when a running ULT needs suspension. Hence, it always jumps to a
              * non-scheduler-type ULT. */
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             if (is_sched) {
                 ABTI_thread_finish_context_sched_to_thread(p_thread->is_sched,
                                                            p_joiner);
             } else {
+#endif
                 ABTI_thread_finish_context_thread_to_thread(p_thread, p_joiner);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             }
+#endif
             return;
         } else {
             /* If the current ULT's associated ES is different from p_joiner's,
@@ -151,11 +159,15 @@ static inline void ABTDI_thread_terminate(ABTI_thread *p_thread,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
 #endif
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (is_sched) {
         ABTI_thread_finish_context_sched_to_sched(p_thread->is_sched, p_sched);
     } else {
+#endif
         ABTI_thread_finish_context_thread_to_sched(p_thread, p_sched);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
+#endif
 #else
 #error "Not implemented yet"
 #endif
