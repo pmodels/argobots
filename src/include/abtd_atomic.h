@@ -739,7 +739,9 @@ void ABTD_compiler_barrier(void)
 static inline
 void ABTD_atomic_pause(void)
 {
+#ifdef __x86_64__
     __asm__ __volatile__ ( "pause" ::: "memory" );
+#endif
 }
 
 #endif /* ABTD_ATOMIC_H_INCLUDED */
