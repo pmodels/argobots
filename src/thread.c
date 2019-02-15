@@ -416,7 +416,9 @@ int ABT_thread_join(ABT_thread thread)
          * changes the state first followed by pushing p_thread to the pool.
          * Therefore, we have to check whether p_thread is in the pool, and if
          * not, we need to wait until it is added. */
-        while (p_thread->p_pool->u_is_in_pool(p_thread->unit) != ABT_TRUE) {}
+        while (p_thread->p_pool->u_is_in_pool(p_thread->unit) != ABT_TRUE) {
+            ABTD_atomic_mem_barrier();
+        }
 
         /* Increase the number of blocked units.  Be sure to execute
          * ABTI_pool_inc_num_blocked before ABTI_POOL_REMOVE in order not to
