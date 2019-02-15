@@ -29,10 +29,6 @@ static inline void ABTI_init_lock_acquire() {
     }
 }
 
-static inline int ABTI_init_lock_is_locked() {
-    return ABTD_atomic_load_uint8(&g_ABTI_init_lock) != 0;
-}
-
 static inline void ABTI_init_lock_release() {
     ABTD_atomic_clear_uint8(&g_ABTI_init_lock);
 }
