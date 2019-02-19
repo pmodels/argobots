@@ -608,7 +608,7 @@ AS_IF([test "x$enable_sched_sleep" = "xyes"],
 
 # --enable-dynamic-promotion
 case "x$fctx_arch_bin" in
-    xx86_64_sysv_elf_gas|xarm64_aapcs_elf_gas)
+    xx86_64_sysv_elf_gas|xarm64_aapcs_elf_gas|xppc64_sysv_elf_gas)
         support_dynamic_promotion="yes"
     ;;
     *)
