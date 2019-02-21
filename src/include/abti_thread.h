@@ -143,7 +143,9 @@ void ABTI_thread_context_switch_thread_to_thread_internal(ABTI_thread *p_old,
                                                           ABTI_thread *p_new,
                                                           ABT_bool is_finish)
 {
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(!p_old->is_sched && !p_new->is_sched);
+#endif
     ABTI_local_set_thread(p_new);
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     /* Dynamic promotion is unnecessary if p_old is discarded. */
@@ -168,7 +170,9 @@ void ABTI_thread_context_switch_thread_to_sched_internal(ABTI_thread *p_old,
                                                          ABTI_sched *p_new,
                                                          ABT_bool is_finish)
 {
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(!p_old->is_sched);
+#endif
     ABTI_LOG_SET_SCHED(p_new);
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     /* Dynamic promotion is unnecessary if p_old is discarded. */
@@ -190,7 +194,9 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
                                                          ABTI_thread *p_new,
                                                          ABT_bool is_finish)
 {
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(!p_new->is_sched);
+#endif
     ABTI_LOG_SET_SCHED(NULL);
     ABTI_local_set_thread(p_new);
     ABTI_local_set_task(NULL); /* A tasklet scheduler can invoke ULT. */

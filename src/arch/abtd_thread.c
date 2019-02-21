@@ -18,7 +18,9 @@ void ABTD_thread_func_wrapper_thread(void *p_arg)
 
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_fctx;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(p_thread->is_sched == NULL);
+#endif
 
     ABTD_thread_terminate_thread(p_thread);
 }
@@ -32,7 +34,9 @@ void ABTD_thread_func_wrapper_sched(void *p_arg)
 
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_fctx;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(p_thread->is_sched != NULL);
+#endif
 
     ABTD_thread_terminate_sched(p_thread);
 }
