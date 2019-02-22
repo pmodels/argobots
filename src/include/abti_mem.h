@@ -179,7 +179,8 @@ ABTI_thread *ABTI_mem_alloc_thread(ABTI_thread_attr *p_attr)
         }
 
         stacksize = p_attr->stacksize;
-        if (stacksize != def_stacksize) {
+        if (stacksize != def_stacksize ||
+            p_attr->stacktype == ABTI_STACK_TYPE_MALLOC) {
             /* Since the stack size requested is not the same as default one,
              * we use ABTU_malloc. */
             return ABTI_mem_alloc_thread_with_stacksize(stacksize, p_attr);
