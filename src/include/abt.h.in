@@ -334,14 +334,14 @@ typedef struct {
     ABT_unit_free_fn               u_free;
 
     /* Functions to manage the pool */
-    ABT_pool_init_fn     p_init;
-    ABT_pool_get_size_fn p_get_size;
-    ABT_pool_push_fn     p_push;
-    ABT_pool_pop_fn      p_pop;
+    ABT_pool_init_fn          p_init;
+    ABT_pool_get_size_fn      p_get_size;
+    ABT_pool_push_fn          p_push;
+    ABT_pool_pop_fn           p_pop;
     ABT_pool_pop_timedwait_fn p_pop_timedwait;
-    ABT_pool_remove_fn   p_remove;
-    ABT_pool_free_fn     p_free;
-    ABT_pool_print_all_fn p_print_all;
+    ABT_pool_remove_fn        p_remove;
+    ABT_pool_free_fn          p_free;
+    ABT_pool_print_all_fn     p_print_all;
 } ABT_pool_def;
 
 
