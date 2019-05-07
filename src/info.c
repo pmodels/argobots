@@ -436,3 +436,186 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
+
+struct ABTI_info_pool_set_t {
+    ABT_pool *pools;
+    size_t num;
+    size_t len;
+};
+
+static inline
+void ABTI_info_initialize_pool_set(struct ABTI_info_pool_set_t *p_set)
+{
+    size_t default_len = 16;
+    p_set->pools = (ABT_pool *)ABTU_malloc(sizeof(ABT_pool) * default_len);
+    p_set->num = 0;
+    p_set->len = default_len;
+}
+
+static inline
+void ABTI_info_finalize_pool_set(struct ABTI_info_pool_set_t *p_set)
+{
+    ABTU_free(p_set->pools);
+}
+
+static inline
+void ABTI_info_add_pool_set(ABT_pool pool, struct ABTI_info_pool_set_t *p_set)
+{
+    size_t i;
+    for (i = 0; i < p_set->num; i++) {
+        if (p_set->pools[i] == pool)
+            return;
+    }
+    /* Add pool to p_set. */
+    if (p_set->num == p_set->len) {
+        size_t new_len = p_set->len * 2;
+        p_set->pools = (ABT_pool *)ABTU_realloc(p_set->pools,
+                                                sizeof(ABT_pool) * new_len);
+        p_set->len = new_len;
+    }
+    p_set->pools[p_set->num++] = pool;
+}
+
+#define PRINT_STACK_FLAG_UNSET      0
+#define PRINT_STACK_FLAG_INITIALIZE 1
+#define PRINT_STACK_FLAG_WAIT       2
+#define PRINT_STACK_FLAG_FINALIZE   3
+
+static uint32_t print_stack_flag = PRINT_STACK_FLAG_UNSET;
+static FILE *print_stack_fp = NULL;
+static double print_stack_timeout = 0.0;
+static void (*print_cb_func)(ABT_bool, void *) = NULL;
+static void *print_arg = NULL;
+static uint32_t print_stack_barrier = 0;
+
+/**
+ * @ingroup INFO
+ * @brief   Dump stacks of threads in pools existing in Argobots.
+ *
+ * \c ABT_info_trigger_print_all_thread_stacks() tries to dump call stacks of
+ * all threads stored in pools in the Argobots runtime. This function itself does
+ * not print stacks; it immediately returns after updating a flag. Stacks are
+ * printed when all execution streams stop in \c ABT_xstream_check_events().
+ *
+ * If some execution streams do not stop within a certain time period, one of
+ * the stopped execution streams starts to print stack information. In this
+ * case, this function might not work correctly and at worst causes a crash.
+ * This function does not work at all if no execution stream executes
+ * \c ABT_xstream_check_events().
+ *
+ * \c cb_func is called after completing stack dump unless it is NULL. The first
+ * argument is set to \c ABT_TRUE if not all the execution streams stop within
+ * \c timeout. Otherwise, \c ABT_FALSE is set. The second argument is user-defined
+ * data \c arg. Since \c cb_func is not called by a thread or an execution
+ * stream, \c ABT_self_...() functions in \c cb_func return undefined values.
+ * Neither signal-safety nor thread-safety is required for \c cb_func.
+ *
+ * In Argobots, \c ABT_info_trigger_print_all_thread_stacks is exceptionally
+ * signal-safe; it can be safely called in a signal handler.
+ *
+ * The following threads are not captured in this function:
+ * - threads that are suspending (e.g., by \c ABT_thread_suspend())
+ * - threads in pools that are not associated with main schedulers
+ *
+ * @param[in] fp       output stream
+ * @param[in] timeout  timeout (second). Disabled if the value is negative.
+ * @param[in] cb_func  call-back function
+ * @param[in] arg      an argument passed to \c cb_func
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
+                                             void (*cb_func)(ABT_bool, void *),
+                                             void *arg)
+{
+    /* This function is signal-safe, so it may not call other functions unless
+     * you really know what the called functions do. */
+    if (ABTD_atomic_load_uint32(&print_stack_flag) == PRINT_STACK_FLAG_UNSET) {
+        if (ABTD_atomic_bool_cas_strong_uint32(&print_stack_flag,
+                                               PRINT_STACK_FLAG_UNSET,
+                                               PRINT_STACK_FLAG_INITIALIZE)) {
+            /* Save fp and timeout. */
+            print_stack_fp = fp;
+            print_stack_timeout = timeout;
+            print_cb_func = cb_func;
+            print_arg = arg;
+            /* Here print_stack_barrier must be 0. */
+            ABTI_ASSERT(ABTD_atomic_load_uint32(&print_stack_barrier) == 0);
+            ABTD_atomic_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_WAIT);
+        }
+    }
+    return ABT_SUCCESS;
+}
+
+void ABTI_info_check_print_all_thread_stacks(void)
+{
+    if (ABTD_atomic_load_uint32(&print_stack_flag) != PRINT_STACK_FLAG_WAIT)
+        return;
+
+    /* Wait for the other execution streams using a barrier mechanism. */
+    uint32_t self_value = ABTD_atomic_fetch_add_uint32(&print_stack_barrier, 1);
+    if (self_value == 0) {
+        /* This ES becomes a master. */
+        double start_time = ABT_get_wtime();
+        ABT_bool force_print = ABT_FALSE;
+        while (ABTD_atomic_load_uint32(&print_stack_barrier)
+               < ABTD_atomic_load_int32(&gp_ABTI_global->num_xstreams)) {
+            ABTD_atomic_pause();
+            if (print_stack_timeout >= 0.0
+                && (ABT_get_wtime() - start_time) >= print_stack_timeout) {
+                force_print = ABT_TRUE;
+                break;
+            }
+        }
+        /* All the available ESs are (supposed to be) stopped. We *assume* that
+         * no ES is calling and will call Argobots functions except this
+         * function while printing stack information. */
+        int i, j;
+        struct ABTI_info_pool_set_t pool_set;
+        ABTI_info_initialize_pool_set(&pool_set);
+        FILE *fp = print_stack_fp;
+        if (force_print) {
+            fprintf(fp, "ABT_info_trigger_print_all_thread_stacks: "
+                        "timeout (only %d ESs stop)\n",
+                        (int)print_stack_barrier);
+        }
+        for (i = 0; i < gp_ABTI_global->num_xstreams; i++) {
+            ABTI_xstream *p_xstream = gp_ABTI_global->p_xstreams[i];
+            ABTI_sched *p_main_sched = p_xstream->p_main_sched;
+            fprintf(fp, "= xstream[%d] (%p) =\n", i, p_xstream);
+            fprintf(fp, "main_sched : %p\n", p_main_sched);
+            if (!p_main_sched)
+                continue;
+            for (j = 0; j < p_main_sched->num_pools; j++) {
+                ABT_pool pool = p_main_sched->pools[j];
+                ABTI_ASSERT(pool != ABT_POOL_NULL);
+                fprintf(fp, "  pools[%d] : %p\n", j, pool);
+                ABTI_info_add_pool_set(pool, &pool_set);
+            }
+        }
+        for (i = 0; i < pool_set.num; i++) {
+            ABT_pool pool = pool_set.pools[i];
+            int abt_errno = ABT_info_print_thread_stacks_in_pool(fp, pool);
+            if (abt_errno != ABT_SUCCESS)
+                fprintf(fp, "  Failed to print (errno = %d).\n", abt_errno);
+        }
+        if (print_cb_func)
+            print_cb_func(force_print, print_arg);
+        /* Update print_stack_flag to 3. */
+        ABTD_atomic_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_FINALIZE);
+    } else {
+        /* Wait for the master's work. */
+        while (ABTD_atomic_load_uint32(&print_stack_flag)
+               != PRINT_STACK_FLAG_FINALIZE)
+            ABTD_atomic_pause();
+    }
+    ABTI_ASSERT(ABTD_atomic_load_uint32(&print_stack_flag)
+                == PRINT_STACK_FLAG_FINALIZE);
+
+    /* Decrement the barrier value. */
+    uint32_t dec_value = ABTD_atomic_fetch_sub_uint32(&print_stack_barrier, 1);
+    if (dec_value == 0) {
+        /* The last execution stream resets the flag. */
+        ABTD_atomic_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_UNSET);
+    }
+}

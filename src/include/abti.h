@@ -644,6 +644,9 @@ void ABTI_event_inc_unit_cnt(ABTI_xstream *p_xstream, ABT_unit_type type);
 void ABTI_event_publish_info(void);
 #endif
 
+/* Information */
+void ABTI_info_check_print_all_thread_stacks(void);
+
 #include "abti_log.h"
 #include "abti_event.h"
 #include "abti_local.h"
