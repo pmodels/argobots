@@ -332,3 +332,30 @@ int ABT_info_print_task(FILE* fp, ABT_task task)
     goto fn_exit;
 }
 
+/**
+ * @ingroup INFO
+ * @brief   Dump the stack of the target thread to the output stream.
+ *
+ * \c ABT_info_print_thread_stack() dumps the call stack of \c thread
+ * to the given output stream \c fp.
+ *
+ * @param[in] fp      output stream
+ * @param[in] thread  handle to the target thread
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    abt_errno = ABTI_thread_print_stack(p_thread, fp);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
