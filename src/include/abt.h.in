@@ -635,6 +635,9 @@ int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr) ABT_API_PUBLIC;
 int ABT_info_print_task(FILE* fp, ABT_task task) ABT_API_PUBLIC;
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread) ABT_API_PUBLIC;
 int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool) ABT_API_PUBLIC;
+int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
+                                             void (*cb_func)(ABT_bool, void *),
+                                             void *arg) ABT_API_PUBLIC;
 
 #if defined(__cplusplus)
 }
