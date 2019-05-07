@@ -52,6 +52,8 @@ basic/ext_thread
 basic/ext_thread2
 basic/timer
 basic/info_print
+basic/info_stackdump
+basic/info_stackdump2
 
 # benchmark
 benchmark/init_finalize

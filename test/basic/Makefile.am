@@ -56,7 +56,9 @@ TESTS = \
 	ext_thread \
 	ext_thread2 \
 	timer \
-	info_print
+	info_print \
+	info_stackdump \
+	info_stackdump2
 
 XFAIL_TESTS =
 if ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK
@@ -124,6 +126,8 @@ ext_thread_SOURCES = ext_thread.c
 ext_thread2_SOURCES = ext_thread2.c
 timer_SOURCES = timer.c
 info_print_SOURCES = info_print.c
+info_stackdump_SOURCES = info_stackdump.c
+info_stackdump2_SOURCES = info_stackdump2.c
 
 testing:
 	./init_finalize
@@ -179,3 +183,5 @@ testing:
 	./ext_thread2
 	./timer
 	./info_print
+	./info_stackdump
+	./info_stackdump2
