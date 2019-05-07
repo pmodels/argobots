@@ -25,4 +25,6 @@ typedef ucontext_t  abt_ucontext_t;
 
 #endif
 
+void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent);
+
 #endif /* ABTD_UCONTEXT_H_INCLUDED */
