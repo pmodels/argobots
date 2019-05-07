@@ -314,6 +314,7 @@ struct ABTI_pool {
     ABT_pool_pop_timedwait_fn      p_pop_timedwait;
     ABT_pool_remove_fn             p_remove;
     ABT_pool_free_fn               p_free;
+    ABT_pool_print_all_fn          p_print_all;
 };
 
 struct ABTI_unit {
