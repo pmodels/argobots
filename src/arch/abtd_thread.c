@@ -228,3 +228,37 @@ void ABTD_thread_cancel(ABTI_thread *p_thread)
 #endif
 }
 
+static inline
+void print_bytes(size_t size, void *p_val, FILE *p_os) {
+    size_t i;
+    for (i = 0; i < size; i++) {
+        uint8_t val = ((uint8_t *)p_val)[i];
+        fprintf(p_os, "%02" PRIx8, val);
+    }
+}
+
+void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent)
+{
+    char *prefix = ABTU_get_indent_str(indent);
+    ABTD_thread_context *p_ctx = &p_thread->ctx;
+#if defined(ABT_CONFIG_USE_FCONTEXT)
+    fprintf(p_os, "%sfctx     : %p\n", prefix, p_ctx->fctx);
+    fprintf(p_os, "%sf_thread : %p\n", prefix, p_ctx->f_thread);
+    fprintf(p_os, "%sp_arg    : %p\n", prefix, p_ctx->p_arg);
+    fprintf(p_os, "%sp_link   : %p\n", prefix, p_ctx->p_link);
+#else
+    /* TODO: print information in more detail. */
+    fprintf(p_os, "%suc_link     : %p\n", prefix, p_ctx->uc_link);
+    fprintf(p_os, "%suc_sigmask  : ", prefix);
+    print_bytes(sizeof(sigset_t), &p_ctx->uc_sigmask, p_os);
+    fprintf(p_os, "\n");
+    fprintf(p_os, "%suc_stack    : ", prefix);
+    print_bytes(sizeof(stack_t), &p_ctx->uc_stack, p_os);
+    fprintf(p_os, "\n");
+    fprintf(p_os, "%suc_mcontext : ", prefix);
+    print_bytes(sizeof(mcontext_t), &p_ctx->uc_mcontext, p_os);
+    fprintf(p_os, "\n");
+#endif
+    fflush(p_os);
+    ABTU_free(prefix);
+}

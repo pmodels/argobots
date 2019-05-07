@@ -63,6 +63,7 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->p_pop_timedwait      = def->p_pop_timedwait;
     p_pool->p_remove             = def->p_remove;
     p_pool->p_free               = def->p_free;
+    p_pool->p_print_all          = def->p_print_all;
     p_pool->id                   = ABTI_pool_get_new_id();
     LOG_EVENT("[P%" PRIu64 "] created\n", p_pool->id);
 
@@ -370,6 +371,45 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     return abt_errno;
 
   fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Apply a print function to every unit in a pool using a user-defined
+ *          function.
+ *
+ * This function applies \c print_fn to every unit in \c pool. As the name of
+ * the argument implies, \c print_fn may not have any side effect;
+ * \c ABT_pool_print_all() is for the purpose of debugging and profiling.  For
+ * example, changing the state of \c ABT_unit in \c print_fn is forbidden.
+ *
+ * When \c pool does not support the print-all feature, ABT_ERR_POOL is
+ * returned.
+ *
+ * @param[in] pool     handle to the pool
+ * @param[in] arg      argument passed to \c print_fn
+ * @param[in] print_fn user-defined print function
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_pool_print_all(ABT_pool pool, void *arg,
+                       void (*print_fn)(void *, ABT_unit)) {
+    int abt_errno = ABT_SUCCESS;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    if (!p_pool->p_print_all) {
+        abt_errno = ABT_ERR_POOL;
+        goto fn_fail;
+    }
+
+    p_pool->p_print_all(pool, arg, print_fn);
+
+fn_exit:
+    return abt_errno;
+
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

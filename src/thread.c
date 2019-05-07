@@ -2109,6 +2109,55 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     ABTU_free(prefix);
 }
 
+int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os)
+{
+    void *p_stack = p_thread->attr.p_stack;
+    size_t i, j, stacksize = p_thread->attr.stacksize;
+    if (stacksize == 0 || p_stack == NULL) {
+        /* Some threads do not have p_stack (e.g., the main thread) */
+        return ABT_ERR_THREAD;
+    }
+
+    const size_t value_width = 8;
+    const int num_bytes = 32;
+    char *buffer = (char *)alloca(num_bytes);
+    for (i = 0; i < stacksize; i += num_bytes) {
+        if (stacksize >= i + num_bytes) {
+            memcpy(buffer, &((uint8_t *)p_stack)[i], num_bytes);
+        } else {
+            memset(buffer, 0, num_bytes);
+            memcpy(buffer, &((uint8_t *)p_stack)[i], stacksize - i);
+        }
+        /* Print the stack address */
+        if (sizeof(void *) == 8) {
+            fprintf(p_os, "%016" PRIxPTR ":",
+                    (uintptr_t)(&((uint8_t *)p_stack)[i]));
+        } else {
+            fprintf(p_os, "%08" PRIxPTR ":",
+                    (uintptr_t)(&((uint8_t *)p_stack)[i]));
+        }
+        /* Print the raw stack data */
+        for (j = 0; j < num_bytes / value_width; j++) {
+            if (value_width == 8) {
+                uint64_t val = ((uint64_t *)buffer)[j];
+                fprintf(p_os, " %016" PRIx64, val);
+            } else if (value_width == 4) {
+                uint32_t val = ((uint32_t *)buffer)[j];
+                fprintf(p_os, " %08" PRIx32, val);
+            } else if (value_width == 2) {
+                uint16_t val = ((uint16_t *)buffer)[j];
+                fprintf(p_os, " %04" PRIx16, val);
+            } else {
+                uint8_t val = ((uint8_t *)buffer)[j];
+                fprintf(p_os, " %02" PRIx8, val);
+            }
+            if (j == (num_bytes / value_width) - 1)
+                fprintf(p_os, "\n");
+        }
+    }
+    return ABT_SUCCESS;
+}
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg)
 {

@@ -314,6 +314,7 @@ struct ABTI_pool {
     ABT_pool_pop_timedwait_fn      p_pop_timedwait;
     ABT_pool_remove_fn             p_remove;
     ABT_pool_free_fn               p_free;
+    ABT_pool_print_all_fn          p_print_all;
 };
 
 struct ABTI_unit {
@@ -566,6 +567,7 @@ int   ABTI_thread_set_blocked(ABTI_thread *p_thread);
 void  ABTI_thread_suspend(ABTI_thread *p_thread);
 int   ABTI_thread_set_ready(ABTI_thread *p_thread);
 void  ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
+int   ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 void  ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);

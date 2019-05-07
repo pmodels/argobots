@@ -35,6 +35,8 @@ static ABT_unit pool_pop_private(ABT_pool pool);
 static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs);
 static int      pool_remove_shared(ABT_pool pool, ABT_unit unit);
 static int      pool_remove_private(ABT_pool pool, ABT_unit unit);
+static int      pool_print_all(ABT_pool pool, void *arg,
+                               void (*print_fn)(void *, ABT_unit));
 
 typedef ABTI_unit unit_t;
 static ABT_unit_type unit_get_type(ABT_unit unit);
@@ -92,6 +94,7 @@ int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
     p_def->p_free               = pool_free;
     p_def->p_get_size           = pool_get_size;
     p_def->p_pop_timedwait      = pool_pop_timedwait;
+    p_def->p_print_all          = pool_print_all;
     p_def->u_get_type           = unit_get_type;
     p_def->u_get_thread         = unit_get_thread;
     p_def->u_get_task           = unit_get_task;
@@ -390,21 +393,34 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
     return ABT_SUCCESS;
 }
 
-#if 0
-int pool_print(ABT_pool pool)
-{
+
+static int pool_print_all(ABT_pool pool, void *arg,
+                          void (*print_fn)(void *, ABT_unit)) {
+    ABT_pool_access access;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     void *data = ABTI_pool_get_data(p_pool);
     data_t *p_data = pool_get_data_ptr(data);
-    printf("[");
-    printf("num_units: %zu ", p_data->num_units);
-    printf("head: %p ", p_data->p_head);
-    printf("tail: %p", p_data->p_tail);
-    printf("]");
+
+    ABT_pool_get_access(pool, &access);
+    if (access != ABT_POOL_ACCESS_PRIV) {
+        ABTI_spinlock_acquire(&p_data->mutex);
+    }
+
+    size_t num_units = p_data->num_units;
+    unit_t *p_unit = p_data->p_head;
+    while (num_units--) {
+        ABTI_ASSERT(p_unit);
+        ABT_unit unit = (ABT_unit)p_unit;
+        print_fn(arg, unit);
+        p_unit = p_unit->p_next;
+    }
+
+    if (access != ABT_POOL_ACCESS_PRIV) {
+        ABTI_spinlock_release(&p_data->mutex);
+    }
 
     return ABT_SUCCESS;
 }
-#endif
 
 
 /* Unit functions */

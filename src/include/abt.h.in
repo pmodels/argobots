@@ -318,6 +318,8 @@ typedef ABT_unit      (*ABT_pool_pop_fn)(ABT_pool);
 typedef ABT_unit      (*ABT_pool_pop_timedwait_fn)(ABT_pool, double);
 typedef int           (*ABT_pool_remove_fn)(ABT_pool, ABT_unit);
 typedef int           (*ABT_pool_free_fn)(ABT_pool);
+typedef int           (*ABT_pool_print_all_fn)(ABT_pool, void *arg,
+                                               void (*)(void*, ABT_unit));
 
 typedef struct {
     ABT_pool_access access; /* Access type */
@@ -332,13 +334,14 @@ typedef struct {
     ABT_unit_free_fn               u_free;
 
     /* Functions to manage the pool */
-    ABT_pool_init_fn     p_init;
-    ABT_pool_get_size_fn p_get_size;
-    ABT_pool_push_fn     p_push;
-    ABT_pool_pop_fn      p_pop;
+    ABT_pool_init_fn          p_init;
+    ABT_pool_get_size_fn      p_get_size;
+    ABT_pool_push_fn          p_push;
+    ABT_pool_pop_fn           p_pop;
     ABT_pool_pop_timedwait_fn p_pop_timedwait;
-    ABT_pool_remove_fn   p_remove;
-    ABT_pool_free_fn     p_free;
+    ABT_pool_remove_fn        p_remove;
+    ABT_pool_free_fn          p_free;
+    ABT_pool_print_all_fn     p_print_all;
 } ABT_pool_def;
 
 
@@ -426,6 +429,8 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *unit) ABT_API_PUBLIC;
 int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *unit, double abstime_secs) ABT_API_PUBLIC;
 int ABT_pool_remove(ABT_pool pool, ABT_unit unit) ABT_API_PUBLIC;
 int ABT_pool_push(ABT_pool pool, ABT_unit unit) ABT_API_PUBLIC;
+int ABT_pool_print_all(ABT_pool pool, void *arg,
+                       void (*print_fn)(void *arg, ABT_unit)) ABT_API_PUBLIC;
 int ABT_pool_set_data(ABT_pool pool, void *data) ABT_API_PUBLIC;
 int ABT_pool_get_data(ABT_pool pool, void **data) ABT_API_PUBLIC;
 int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched) ABT_API_PUBLIC;
@@ -628,6 +633,8 @@ int ABT_info_print_pool(FILE* fp, ABT_pool pool) ABT_API_PUBLIC;
 int ABT_info_print_thread(FILE* fp, ABT_thread thread) ABT_API_PUBLIC;
 int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr) ABT_API_PUBLIC;
 int ABT_info_print_task(FILE* fp, ABT_task task) ABT_API_PUBLIC;
+int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread) ABT_API_PUBLIC;
+int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool) ABT_API_PUBLIC;
 
 #if defined(__cplusplus)
 }

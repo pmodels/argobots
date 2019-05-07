@@ -332,3 +332,107 @@ int ABT_info_print_task(FILE* fp, ABT_task task)
     goto fn_exit;
 }
 
+/**
+ * @ingroup INFO
+ * @brief   Dump the stack of the target thread to the output stream.
+ *
+ * \c ABT_info_print_thread_stack() dumps the call stack of \c thread
+ * to the given output stream \c fp.
+ *
+ * @param[in] fp      output stream
+ * @param[in] thread  handle to the target thread
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    abt_errno = ABTI_thread_print_stack(p_thread, fp);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+struct ABTI_info_print_unit_arg_t {
+    FILE *fp;
+    ABT_pool pool;
+};
+
+static void ABTI_info_print_unit(void *arg, ABT_unit unit)
+{
+    /* This function may not have any side effect on unit because it is passed
+     * to p_print_all. */
+    struct ABTI_info_print_unit_arg_t *p_arg;
+    p_arg = (struct ABTI_info_print_unit_arg_t *)arg;
+    FILE *fp = p_arg->fp;
+    ABT_pool pool = p_arg->pool;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABT_unit_type type = p_pool->u_get_type(unit);
+
+    if (type == ABT_UNIT_TYPE_THREAD) {
+        fprintf(fp, "=== ULT (%p) ===\n", (void *)unit);
+        ABT_thread thread = p_pool->u_get_thread(unit);
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+        ABT_thread_id thread_id = ABTI_thread_get_id(p_thread);
+        fprintf(fp, "id        : %" PRIu64 "\n"
+                    "ctx       : %p\n",
+                    (uint64_t)thread_id,
+                    &p_thread->ctx);
+        ABTD_thread_print_context(p_thread, fp, 2);
+        fprintf(fp, "stack     : %p\n"
+                    "stacksize : %" PRIu64 "\n",
+                    p_thread->attr.p_stack,
+                    (uint64_t)p_thread->attr.stacksize);
+        int abt_errno = ABT_info_print_thread_stack(fp, thread);
+        if (abt_errno != ABT_SUCCESS)
+            fprintf(fp, "Failed to print stack.\n");
+    } else if (type == ABT_UNIT_TYPE_TASK) {
+        fprintf(fp, "=== tasklet (%p) ===\n", (void *)unit);
+    } else {
+        fprintf(fp, "=== unknown (%p) ===\n", (void *)unit);
+    }
+}
+
+/**
+ * @ingroup INFO
+ * @brief   Dump stack information of all the threads in the target pool.
+ *
+ * \c ABT_info_print_thread_stacks_in_pool() dumps call stacks of all threads
+ * stored in \c pool.  This function returns \c ABT_ERR_POOL if \c pool does not
+ * support \c p_print_all.
+ *
+ * @param[in] fp    output stream
+ * @param[in] pool  handle to the target pool
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    if (!p_pool->p_print_all) {
+        abt_errno = ABT_ERR_POOL;
+        goto fn_fail;
+    }
+    fprintf(fp, "== pool (%p) ==\n", p_pool);
+    struct ABTI_info_print_unit_arg_t arg;
+    arg.fp = fp;
+    arg.pool = pool;
+    p_pool->p_print_all(pool, &arg, ABTI_info_print_unit);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
