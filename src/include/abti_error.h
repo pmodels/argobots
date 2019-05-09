@@ -272,6 +272,8 @@
 #endif
 
 #ifdef ABT_CONFIG_PRINT_ABT_ERRNO
+#define HANDLE_WARNING(msg) \
+    fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
 
 #define HANDLE_ERROR(msg) \
     fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
@@ -287,6 +289,7 @@
 
 #else
 
+#define HANDLE_WARNING(msg)            do { } while (0)
 #define HANDLE_ERROR(msg)              do { } while (0)
 #define HANDLE_ERROR_WITH_CODE(msg,n)  do { } while (0)
 #define HANDLE_ERROR_FUNC_WITH_CODE(n) do { } while (0)
