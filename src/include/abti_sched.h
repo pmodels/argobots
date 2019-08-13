@@ -48,7 +48,7 @@ int ABTI_sched_discard_and_free(ABTI_sched *p_sched)
     int abt_errno = ABT_SUCCESS;
     p_sched->used = ABTI_SCHED_NOT_USED;
     if (p_sched->automatic == ABT_TRUE) {
-        abt_errno = ABTI_sched_free(p_sched);
+	abt_errno = ABTI_sched_free(p_sched);
     }
     return abt_errno;
 }

@@ -56,10 +56,12 @@
 
 #define ABT_THREAD_TYPE_FULLY_FLEDGED      0
 #define ABT_THREAD_TYPE_DYNAMIC_PROMOTION  1
+#define ABT_XSTREAM_USE_VIRTUAL            1
 
 enum ABTI_xstream_type {
     ABTI_XSTREAM_TYPE_PRIMARY,
-    ABTI_XSTREAM_TYPE_SECONDARY
+    ABTI_XSTREAM_TYPE_SECONDARY,
+    ABTI_XSTREAM_TYPE_VIRTUAL
 };
 
 enum ABTI_sched_used {
@@ -99,6 +101,10 @@ typedef struct ABTI_xstream         ABTI_xstream;
 typedef enum ABTI_xstream_type      ABTI_xstream_type;
 typedef struct ABTI_xstream_contn   ABTI_xstream_contn;
 typedef struct ABTI_sched           ABTI_sched;
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+typedef struct ABTI_ksched	    ABTI_ksched;
+typedef struct ABTI_kthread	    ABTI_kthread;
+#endif
 typedef char *                      ABTI_sched_config;
 typedef enum ABTI_sched_used        ABTI_sched_used;
 typedef void *                      ABTI_sched_id;      /* Scheduler id */
@@ -162,6 +168,9 @@ struct ABTI_mutex {
 struct ABTI_global {
     int max_xstreams;            /* Max. size of p_xstreams */
     int num_xstreams;            /* Current # of ESs */
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+    int max_vxstreams;
+#endif
     ABTI_xstream **p_xstreams;   /* ES array */
     ABTI_spinlock xstreams_lock; /* Spinlock protecting p_xstreams. Any write
                                   * to p_xstreams and p_xstreams[*] requires a
@@ -249,6 +258,38 @@ struct ABTI_xstream {
     ABTD_xstream_context ctx;   /* ES context */
 };
 
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+struct ABTI_ksched {
+    ABTI_sched_used used;       /* To know if it is used and how */
+    ABT_bool automatic;         /* To know if automatic data free */
+    ABTI_sched_kind kind;       /* Kind of the scheduler  */
+    ABT_sched_type type;        /* Can yield or not (ULT or task) */
+    ABT_sched_state state;      /* State */
+    uint32_t request;           /* Request */
+    ABT_xstream *v_xstreams;            /* Work unit pools */
+    int num_vxstreams;              /* Number of work unit pools */
+    ABTI_thread *p_thread;      /* Associated ULT */
+    ABTD_thread_context *p_ctx; /* Context */
+    void *data;                 /* Data for a specific scheduler */
+
+    /* Scheduler functions */
+    ABT_sched_init_fn init;
+    ABT_sched_run_fn  run;
+    ABT_sched_free_fn free;
+    ABT_sched_get_migr_pool_fn get_migr_pool;
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+    uint64_t id;                /* ID */
+#endif
+};
+
+struct ABTI_kthread {
+    ABTI_ksched *k_main_sched;          /* Main scheduler of this kernel thread, schedules virtual ESs */
+    ABTD_thread_context *k_ctx; /* Context */
+    void *k_req_arg;            /* Request argument */
+    uint32_t request;           /* Request */
+};
+#endif
+
 struct ABTI_xstream_contn {
     ABTI_contn *created; /* ESes in CREATED state */
     ABTI_contn *active;  /* ESes in READY or RUNNING state */
@@ -278,6 +319,12 @@ struct ABTI_sched {
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     uint64_t id;                /* ID */
+#endif
+
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+    ABT_bool is_master_sched;  /* Set to true if this is a master scheduler that schedules shedulers of virtual execution streams */
+    int num_vxstreams;         /* Number of virtual execution streams in the v_xstreams array  */
+    ABTI_xstream **v_xstreams; /* A master scheduler will be looking at the array of virtual execution streams to schedule them. */
 #endif
 };
 
@@ -503,6 +550,9 @@ void          ABTI_elem_print(ABTI_elem *p_elem, FILE *p_os, int indent,
 /* Execution Stream (ES) */
 int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream);
 int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+int ABTI_xstream_create_virtual_basic(ABTI_xstream **v_xstream, ABTI_xstream *p_xstream);
+#endif
 int ABTI_xstream_start(ABTI_xstream *p_xstream);
 int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread);
 int ABTI_xstream_free(ABTI_xstream *p_xstream);
@@ -563,6 +613,7 @@ int   ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched);
 void  ABTI_thread_free(ABTI_thread *p_thread);
 void  ABTI_thread_free_main(ABTI_thread *p_thread);
 void  ABTI_thread_free_main_sched(ABTI_thread *p_thread);
+int ABTI_thread_create_main_sched_virtual(ABTI_xstream *p_xstream, ABTI_xstream *v_xstream, ABTI_sched *v_sched);
 int   ABTI_thread_set_blocked(ABTI_thread *p_thread);
 void  ABTI_thread_suspend(ABTI_thread *p_thread);
 int   ABTI_thread_set_ready(ABTI_thread *p_thread);

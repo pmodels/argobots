@@ -112,6 +112,10 @@ int ABT_init(int argc, char **argv)
     gp_ABTI_global->p_thread_main = p_main_thread;
     ABTI_local_set_thread(p_main_thread);
 
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+    ABTI_xstream *v_newxstream;
+    abt_errno = ABTI_xstream_create_virtual_basic(&v_newxstream, p_newxstream);
+#endif
     /* Start the primary ES */
     abt_errno = ABTI_xstream_start_primary(p_newxstream, p_main_thread);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");

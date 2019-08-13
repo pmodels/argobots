@@ -45,6 +45,11 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     abt_errno = ABTI_xstream_create(p_sched, &p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+        ABTI_xstream *v_newxstream;
+	abt_errno = ABTI_xstream_create_virtual_basic(&v_newxstream, p_newxstream);
+#endif
+
     /* Start this ES */
     abt_errno = ABTI_xstream_start(p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
@@ -60,6 +65,7 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
+
 
 int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
 {
@@ -88,6 +94,14 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     /* Set the main scheduler */
     abt_errno = ABTI_xstream_set_main_sched(p_newxstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
+
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+    p_sched->is_master_sched = ABT_TRUE;
+
+    /*  Initialize virtual xstreams count to 0 and allocate memory  */
+    p_sched->num_vxstreams = 0;
+    p_sched->v_xstreams = (ABTI_xstream **) ABTU_malloc(sizeof(ABTI_xstream*) * gp_ABTI_global->max_vxstreams);
+#endif
 
     LOG_EVENT("[E%d] created\n", p_newxstream->rank);
 
@@ -127,6 +141,43 @@ int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
+
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+int ABTI_xstream_create_virtual_basic(ABTI_xstream **v_xstream, ABTI_xstream *p_xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *v_newxstream;
+    ABT_sched sched;
+    
+    abt_errno = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
+		                                       ABT_SCHED_CONFIG_NULL, &sched);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    abt_errno = ABTI_xstream_create(ABTI_sched_get_ptr(sched), &v_newxstream);
+    ABTI_CHECK_ERROR(abt_errno);
+    
+    v_newxstream->type = ABTI_XSTREAM_TYPE_VIRTUAL;
+    *v_xstream = v_newxstream;
+
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(p_xstream->p_main_sched);
+    v_newxstream->rank = p_sched->num_vxstreams;
+    p_sched->v_xstreams[(p_sched->num_vxstreams)++] = v_newxstream;
+
+    //TODO: Push this to the scheduler pool
+    ABTI_sched *v_sched = v_newxstream->p_main_sched;
+    abt_errno = ABTI_thread_create_main_sched_virtual(p_xstream, v_newxstream, v_sched);
+    ABTI_CHECK_ERROR(abt_errno);
+    v_sched->p_thread->p_last_xstream = p_xstream;
+
+    LOG_EVENT("[vE%d] created\n", v_newxstream->rank);
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+#endif
 
 /**
  * @ingroup ES
@@ -283,7 +334,7 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
     if (!ABTD_atomic_bool_cas_strong_int32((int32_t *)&p_xstream->state,
                                            ABT_XSTREAM_STATE_CREATED,
                                            ABT_XSTREAM_STATE_READY)) {
-        goto fn_exit;
+	goto fn_exit;
     }
 
     /* Add the main scheduler to the stack of schedulers */
@@ -628,8 +679,14 @@ int ABT_xstream_self(ABT_xstream *xstream)
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+    ABTI_sched* p_sched = ABTI_sched_get_ptr(p_xstream->p_main_sched);
+    //TODO: Determine which virtual xstream to self for better load balancing.
+    *xstream = p_sched->v_xstreams[0];
+#else
     /* Return value */
     *xstream = ABTI_xstream_get_handle(p_xstream);
+#endif
 
   fn_exit:
     return abt_errno;
@@ -1366,14 +1423,29 @@ void ABTI_xstream_schedule(void *p_arg)
          * must be called manually here. */
         ABTI_LOG_SET_SCHED(p_sched);
         p_sched->state = ABT_SCHED_STATE_RUNNING;
-        LOG_EVENT("[S%" PRIu64 "] start\n", p_sched->id);
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+	if(p_xstream->type == ABTI_XSTREAM_TYPE_VIRTUAL)
+    	    LOG_EVENT("[vS%" PRIu64 "] start\n", p_sched->id);
+	else
+#endif
+	LOG_EVENT("[S%" PRIu64 "] start\n", p_sched->id);
         p_sched->run(ABTI_sched_get_handle(p_sched));
-        LOG_EVENT("[S%" PRIu64 "] end\n", p_sched->id);
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+	if(p_xstream->type == ABTI_XSTREAM_TYPE_VIRTUAL)
+	    LOG_EVENT("[vS%" PRIu64 "] end\n", p_sched->id);
+	else
+#endif
+	LOG_EVENT("[S%" PRIu64 "] end\n", p_sched->id);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
 
         ABTD_atomic_store_uint32((uint32_t *)&p_xstream->state,
                                  ABT_XSTREAM_STATE_READY);
         ABTI_spinlock_release(&p_xstream->sched_lock);
+
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+	//Need to join here so we can switch to another scheduler
+	ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
+#endif
 
         request = ABTD_atomic_load_uint32(&p_xstream->request);
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
@@ -1381,7 +1453,7 @@ void ABTI_xstream_schedule(void *p_arg)
         if (request & ABTI_XSTREAM_REQ_STOP) break;
 #endif
 
-        /* If there is an exit or a cancel request, the ES terminates
+	/* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */
         if ((request & ABTI_XSTREAM_REQ_EXIT) ||
             (request & ABTI_XSTREAM_REQ_CANCEL))
@@ -1399,6 +1471,7 @@ void ABTI_xstream_schedule(void *p_arg)
                 break;
             }
         }
+
     }
 
     /* Set the ES's state as TERMINATED */
@@ -1438,6 +1511,14 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
     }
 #endif
 
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+    if (p_thread->is_sched != NULL)
+    {
+	if (p_thread->is_sched->used == ABTI_SCHED_NOT_USED)
+	    return abt_errno;
+    }
+
+#endif
     /* Change the last ES */
     p_thread->p_last_xstream = p_xstream;
 
@@ -1673,6 +1754,13 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     ABTI_pool *p_tar_pool = NULL;
     int p;
 
+    if (p_xstream->p_main_sched) {
+	if (ABTI_sched_get_effective_size(p_xstream->p_main_sched) > 0) {
+		abt_errno = ABT_ERR_XSTREAM;
+		return abt_errno;
+	}
+    }
+
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     /* We check that from the pool set of the scheduler we do not find a pool
      * with another associated pool, and set the right value if it is okay  */
@@ -1696,7 +1784,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 
         goto fn_exit;
     }
-
+    
     /* If the ES has a main scheduler, we have to free it */
     p_thread = ABTI_local_get_thread();
     ABTI_ASSERT(p_thread != NULL);
@@ -1717,7 +1805,7 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     }
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        ABTI_CHECK_TRUE(p_thread->type == ABTI_THREAD_TYPE_MAIN, ABT_ERR_THREAD);
+	ABTI_CHECK_TRUE(p_thread->type == ABTI_THREAD_TYPE_MAIN, ABT_ERR_THREAD);
 
         /* Free the current main scheduler */
         abt_errno = ABTI_sched_discard_and_free(p_main_sched);
@@ -1740,7 +1828,34 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
          * the new scheduler */
         abt_errno = ABTI_xstream_start_primary(p_xstream, p_thread);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start");
-    } else {
+    }
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+    else if (p_xstream->type == ABTI_XSTREAM_TYPE_VIRTUAL) {
+	
+	ABTI_sched_set_request(p_main_sched, ABTI_SCHED_REQ_FINISH);	
+	p_sched->p_thread = p_main_sched->p_thread;
+	
+	ABTI_xstream *parent_xstream = p_thread->p_last_xstream;
+	ABTI_CHECK_ERROR(abt_errno);
+
+	p_sched->p_ctx = parent_xstream->p_main_sched->p_ctx;
+	p_main_sched->p_thread = NULL;
+
+	p_xstream->p_main_sched = p_sched;
+
+	ABTI_sched* parent_sched = parent_xstream->p_main_sched;
+	if(parent_sched == ABT_SCHED_NULL)  {
+	    abt_errno = ABT_ERR_INV_SCHED;
+	    goto fn_exit;
+	}
+
+	abt_errno = ABTI_thread_create_main_sched_virtual(parent_xstream, p_xstream, p_sched);
+	ABTI_CHECK_ERROR(abt_errno);
+	p_sched->p_thread->p_last_xstream = parent_xstream;
+	//Do not context switch here, let the scheduler run and pop the next scheduler.
+    }
+#endif
+    else {
         /* Finish the current main scheduler */
         ABTI_sched_set_request(p_main_sched, ABTI_SCHED_REQ_FINISH);
 

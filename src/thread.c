@@ -1630,8 +1630,9 @@ int ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
     /* Allocate a ULT object and its stack, then create a thread context. */
     p_newthread = ABTI_mem_alloc_thread(p_attr);
     if ((thread_type == ABTI_THREAD_TYPE_MAIN ||
-         thread_type == ABTI_THREAD_TYPE_MAIN_SCHED)
+         thread_type == ABTI_THREAD_TYPE_MAIN_SCHED) && p_parent_xstream->type != ABTI_XSTREAM_TYPE_VIRTUAL
          && p_newthread->attr.p_stack == NULL) {
+
         /* We don't need to initialize the context of 1. the main thread, and
          * 2. the main scheduler thread which runs on OS-level threads
          * (p_stack == NULL). Invalidate the context here. */
@@ -1800,6 +1801,41 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
+
+#ifdef ABT_XSTREAM_USE_VIRTUAL
+int ABTI_thread_create_main_sched_virtual(ABTI_xstream *p_xstream, ABTI_xstream *v_xstream, ABTI_sched *v_sched)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *v_newthread;
+
+    if(v_xstream->type != ABTI_XSTREAM_TYPE_VIRTUAL)
+    {
+	abt_errno = ABT_ERR_INV_XSTREAM;
+	return abt_errno;
+    }
+
+    ABTI_pool *p_tar_pool = ABTI_pool_get_ptr(p_xstream->p_main_sched->pools[0]);
+
+    ABTI_thread_attr attr;
+    ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
+		                                  ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
+    //ABTI_thread_attr_init(&attr, NULL, 0, ABTI_STACK_TYPE_MAIN, ABT_FALSE);
+
+    abt_errno = ABTI_thread_create(p_tar_pool, ABTI_xstream_schedule, (void *)v_xstream, &attr,
+		    ABTI_THREAD_TYPE_MAIN_SCHED, v_sched, 0, v_xstream, ABT_TRUE, &v_newthread);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    v_sched->p_thread = v_newthread;
+    v_sched->p_ctx = &v_newthread->ctx;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+#endif
 
 /* This routine is to create a ULT for the main scheduler of ES. */
 int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)

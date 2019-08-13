@@ -87,7 +87,7 @@ static void sched_run(ABT_sched sched)
             ABTI_xstream_run_unit(p_xstream, unit, p_pool);
             CNT_INC(run_cnt);
         } else if (num_pools > 1) {
-            /* Steal a work unit from other pools */
+	    /* Steal a work unit from other pools */
             target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
             pool = p_pools[target];
             p_pool = ABTI_pool_get_ptr(pool);
