@@ -6,8 +6,7 @@
 #ifndef SELF_H_INCLUDED
 #define SELF_H_INCLUDED
 
-static inline
-ABTI_unit *ABTI_self_get_unit(void)
+static inline ABTI_unit *ABTI_self_get_unit(void)
 {
     ABTI_ASSERT(gp_ABTI_global);
 
@@ -39,4 +38,3 @@ ABTI_unit *ABTI_self_get_unit(void)
 }
 
 #endif /* SELF_H_INCLUDED */
-

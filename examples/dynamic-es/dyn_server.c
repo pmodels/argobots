@@ -42,14 +42,16 @@ int main(int argc, char *argv[])
     printf("Port: %d\n", port);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) handle_error("ERROR: socket");
+    if (sockfd < 0)
+        handle_error("ERROR: socket");
 
     bzero((char *)&my_addr, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
     my_addr.sin_addr.s_addr = INADDR_ANY;
     my_addr.sin_port = htons(port);
     ret = bind(sockfd, (struct sockaddr *)&my_addr, sizeof(my_addr));
-    if (ret < 0) handle_error("ERROR: bind");
+    if (ret < 0)
+        handle_error("ERROR: bind");
 
     while (!quit) {
         printf("Waiting for connection...\n");
@@ -57,7 +59,8 @@ int main(int argc, char *argv[])
         listen(sockfd, 5);
         addrlen = sizeof(abt_addr);
         abt_pfd.fd = accept(sockfd, (struct sockaddr *)&abt_addr, &addrlen);
-        if (abt_pfd.fd < 0) handle_error("ERROR: accept");
+        if (abt_pfd.fd < 0)
+            handle_error("ERROR: accept");
         abt_pfd.events = POLLIN | POLLHUP;
         abt_alive = 1;
 
@@ -114,7 +117,8 @@ int main(int argc, char *argv[])
                 } else if (ret != 0) {
                     if (abt_pfd.revents & POLLIN) {
                         n = read(abt_pfd.fd, recv_buf, RECV_BUF_LEN);
-                        if (n < 0) handle_error("ERROR: read");
+                        if (n < 0)
+                            handle_error("ERROR: read");
 
                         printf("Response: %s\n\n", recv_buf);
                     }
@@ -146,4 +150,3 @@ static void handle_error(const char *msg)
     perror(msg);
     exit(EXIT_FAILURE);
 }
-

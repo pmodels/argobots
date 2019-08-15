@@ -19,8 +19,7 @@
  * @param[in] attr  handle to the ULT attribute
  * @return ABTI_thread_attr pointer
  */
-static inline
-ABTI_thread_attr *ABTI_thread_attr_get_ptr(ABT_thread_attr attr)
+static inline ABTI_thread_attr *ABTI_thread_attr_get_ptr(ABT_thread_attr attr)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_thread_attr *p_attr;
@@ -47,7 +46,7 @@ ABTI_thread_attr *ABTI_thread_attr_get_ptr(ABT_thread_attr attr)
  * @return ABT_thread_attr handle
  */
 static inline
-ABT_thread_attr ABTI_thread_attr_get_handle(ABTI_thread_attr *p_attr)
+    ABT_thread_attr ABTI_thread_attr_get_handle(ABTI_thread_attr *p_attr)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_thread_attr h_attr;
@@ -63,34 +62,32 @@ ABT_thread_attr ABTI_thread_attr_get_handle(ABTI_thread_attr *p_attr)
 }
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-static inline
-void ABTI_thread_attr_init_migration(ABTI_thread_attr *p_attr,
-                                     ABT_bool migratable)
+static inline void ABTI_thread_attr_init_migration(ABTI_thread_attr *p_attr,
+                                                   ABT_bool migratable)
 {
     p_attr->migratable = migratable;
-    p_attr->f_cb       = NULL;
-    p_attr->p_cb_arg   = NULL;
+    p_attr->f_cb = NULL;
+    p_attr->p_cb_arg = NULL;
 }
 #endif
 
-static inline
-void ABTI_thread_attr_init(ABTI_thread_attr *p_attr, void *p_stack,
-                           size_t stacksize, ABTI_stack_type stacktype,
-                           ABT_bool migratable)
+static inline void ABTI_thread_attr_init(ABTI_thread_attr *p_attr,
+                                         void *p_stack, size_t stacksize,
+                                         ABTI_stack_type stacktype,
+                                         ABT_bool migratable)
 {
-    p_attr->p_stack    = p_stack;
-    p_attr->stacksize  = stacksize;
-    p_attr->stacktype  = stacktype;
+    p_attr->p_stack = p_stack;
+    p_attr->stacksize = stacksize;
+    p_attr->stacktype = stacktype;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread_attr_init_migration(p_attr, migratable);
 #endif
 }
 
-static inline
-void ABTI_thread_attr_copy(ABTI_thread_attr *p_dest, ABTI_thread_attr *p_src)
+static inline void ABTI_thread_attr_copy(ABTI_thread_attr *p_dest,
+                                         ABTI_thread_attr *p_src)
 {
     memcpy(p_dest, p_src, sizeof(ABTI_thread_attr));
 }
 
 #endif /* THREAD_ATTR_H_INCLUDED */
-

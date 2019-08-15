@@ -54,7 +54,7 @@
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
+int ABT_future_create(uint32_t compartments, void (*cb_func) (void **arg),
                       ABT_future *newfuture)
 {
     int abt_errno = ABT_SUCCESS;
@@ -254,7 +254,7 @@ int ABT_future_set(ABT_future future, void *value)
     if (p_future->counter == p_future->compartments) {
         p_future->ready = ABT_TRUE;
         if (p_future->p_callback != NULL)
-            (*p_future->p_callback)(p_future->array);
+            (*p_future->p_callback) (p_future->array);
 
         if (p_future->p_head == NULL) {
             ABTI_spinlock_release(&p_future->lock);

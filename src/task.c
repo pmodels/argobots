@@ -35,8 +35,7 @@ static inline uint64_t ABTI_task_get_new_id(void);
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_create(ABT_pool pool,
-                    void (*task_func)(void *), void *arg,
+int ABT_task_create(ABT_pool pool, void (*task_func) (void *), void *arg,
                     ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
@@ -48,21 +47,21 @@ int ABT_task_create(ABT_pool pool,
     /* Allocate a task object */
     p_newtask = ABTI_mem_alloc_task();
 
-    p_newtask->p_xstream  = NULL;
-    p_newtask->state      = ABT_TASK_STATE_READY;
-    p_newtask->request    = 0;
-    p_newtask->f_task     = task_func;
-    p_newtask->p_arg      = arg;
+    p_newtask->p_xstream = NULL;
+    p_newtask->state = ABT_TASK_STATE_READY;
+    p_newtask->request = 0;
+    p_newtask->f_task = task_func;
+    p_newtask->p_arg = arg;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    p_newtask->is_sched   = NULL;
+    p_newtask->is_sched = NULL;
 #endif
-    p_newtask->p_pool     = p_pool;
-    p_newtask->refcount   = (newtask != NULL) ? 1 : 0;
+    p_newtask->p_pool = p_pool;
+    p_newtask->refcount = (newtask != NULL) ? 1 : 0;
     p_newtask->p_keytable = NULL;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newtask->migratable = ABT_TRUE;
 #endif
-    p_newtask->id         = ABTI_TASK_INIT_ID;
+    p_newtask->id = ABTI_TASK_INIT_ID;
 
     /* Create a wrapper work unit */
     h_newtask = ABTI_task_get_handle(p_newtask);
@@ -82,13 +81,15 @@ int ABT_task_create(ABT_pool pool,
 #endif
 
     /* Return value */
-    if (newtask) *newtask = h_newtask;
+    if (newtask)
+        *newtask = h_newtask;
 
   fn_exit:
     return abt_errno;
 
   fn_fail:
-    if (newtask) *newtask = ABT_TASK_NULL;
+    if (newtask)
+        *newtask = ABT_TASK_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -114,21 +115,21 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     /* Allocate a task object */
     p_newtask = ABTI_mem_alloc_task();
 
-    p_newtask->p_xstream  = NULL;
-    p_newtask->state      = ABT_TASK_STATE_READY;
-    p_newtask->request    = 0;
-    p_newtask->f_task     = p_sched->run;
-    p_newtask->p_arg      = (void *)ABTI_sched_get_handle(p_sched);
+    p_newtask->p_xstream = NULL;
+    p_newtask->state = ABT_TASK_STATE_READY;
+    p_newtask->request = 0;
+    p_newtask->f_task = p_sched->run;
+    p_newtask->p_arg = (void *)ABTI_sched_get_handle(p_sched);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    p_newtask->is_sched   = p_sched;
+    p_newtask->is_sched = p_sched;
 #endif
-    p_newtask->p_pool     = p_pool;
-    p_newtask->refcount   = 1;
+    p_newtask->p_pool = p_pool;
+    p_newtask->refcount = 1;
     p_newtask->p_keytable = NULL;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newtask->migratable = ABT_TRUE;
 #endif
-    p_newtask->id         = ABTI_TASK_INIT_ID;
+    p_newtask->id = ABTI_TASK_INIT_ID;
 
     /* Create a wrapper unit */
     h_newtask = ABTI_task_get_handle(p_newtask);
@@ -191,7 +192,7 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
+int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func) (void *),
                                void *arg, ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
@@ -208,7 +209,8 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
     return abt_errno;
 
   fn_fail:
-    if (newtask) *newtask = ABT_TASK_NULL;
+    if (newtask)
+        *newtask = ABT_TASK_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -231,7 +233,7 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
+int ABT_task_revive(ABT_pool pool, void (*task_func) (void *), void *arg,
                     ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
@@ -244,12 +246,12 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    p_task->p_xstream  = NULL;
-    p_task->state      = ABT_TASK_STATE_READY;
-    p_task->request    = 0;
-    p_task->f_task     = task_func;
-    p_task->p_arg      = arg;
-    p_task->refcount   = 1;
+    p_task->p_xstream = NULL;
+    p_task->state = ABT_TASK_STATE_READY;
+    p_task->request = 0;
+    p_task->f_task = task_func;
+    p_task->p_arg = arg;
+    p_task->refcount = 1;
     p_task->p_keytable = NULL;
 
     if (p_task->p_pool != p_pool) {
@@ -827,46 +829,49 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *state;
     switch (p_task->state) {
-        case ABT_TASK_STATE_READY:      state = "READY"; break;
-        case ABT_TASK_STATE_RUNNING:    state = "RUNNING"; break;
-        case ABT_TASK_STATE_TERMINATED: state = "TERMINATED"; break;
-        default:                        state = "UNKNOWN";
+        case ABT_TASK_STATE_READY:
+            state = "READY";
+            break;
+        case ABT_TASK_STATE_RUNNING:
+            state = "RUNNING";
+            break;
+        case ABT_TASK_STATE_TERMINATED:
+            state = "TERMINATED";
+            break;
+        default:
+            state = "UNKNOWN";
     }
 
     fprintf(p_os,
-        "%s== TASKLET (%p) ==\n"
-        "%sid        : %" PRIu64 "\n"
-        "%sstate     : %s\n"
-        "%sES        : %p (%d)\n"
+            "%s== TASKLET (%p) ==\n"
+            "%sid        : %" PRIu64 "\n"
+            "%sstate     : %s\n" "%sES        : %p (%d)\n"
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-        "%sis_sched  : %p\n"
+            "%sis_sched  : %p\n"
 #endif
-        "%spool      : %p\n"
+            "%spool      : %p\n"
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-        "%smigratable: %s\n"
+            "%smigratable: %s\n"
 #endif
-        "%srefcount  : %u\n"
-        "%srequest   : 0x%x\n"
-        "%sf_task    : %p\n"
-        "%sp_arg     : %p\n"
-        "%skeytable  : %p\n",
-        prefix, p_task,
-        prefix, ABTI_task_get_id(p_task),
-        prefix, state,
-        prefix, p_task->p_xstream, xstream_rank,
+            "%srefcount  : %u\n"
+            "%srequest   : 0x%x\n"
+            "%sf_task    : %p\n"
+            "%sp_arg     : %p\n"
+            "%skeytable  : %p\n",
+            prefix, p_task,
+            prefix, ABTI_task_get_id(p_task),
+            prefix, state, prefix, p_task->p_xstream, xstream_rank,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-        prefix, p_task->is_sched,
+            prefix, p_task->is_sched,
 #endif
-        prefix, p_task->p_pool,
+            prefix, p_task->p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-        prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
+            prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
 #endif
-        prefix, p_task->refcount,
-        prefix, p_task->request,
-        prefix, p_task->f_task,
-        prefix, p_task->p_arg,
-        prefix, p_task->p_keytable
-    );
+            prefix, p_task->refcount,
+            prefix, p_task->request,
+            prefix, p_task->f_task,
+            prefix, p_task->p_arg, prefix, p_task->p_keytable);
 
   fn_exit:
     fflush(p_os);
@@ -911,4 +916,3 @@ static inline uint64_t ABTI_task_get_new_id(void)
 {
     return ABTD_atomic_fetch_add_uint64(&g_task_id, 1);
 }
-

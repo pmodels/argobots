@@ -8,8 +8,7 @@
 
 /* Inlined functions for Execution Stream (ES) */
 
-static inline
-ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream)
+static inline ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_xstream *p_xstream;
@@ -24,8 +23,7 @@ ABTI_xstream *ABTI_xstream_get_ptr(ABT_xstream xstream)
 #endif
 }
 
-static inline
-ABT_xstream ABTI_xstream_get_handle(ABTI_xstream *p_xstream)
+static inline ABT_xstream ABTI_xstream_get_handle(ABTI_xstream *p_xstream)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_xstream h_xstream;
@@ -40,20 +38,19 @@ ABT_xstream ABTI_xstream_get_handle(ABTI_xstream *p_xstream)
 #endif
 }
 
-static inline
-void ABTI_xstream_set_request(ABTI_xstream *p_xstream, uint32_t req)
+static inline void ABTI_xstream_set_request(ABTI_xstream *p_xstream,
+                                            uint32_t req)
 {
     ABTD_atomic_fetch_or_uint32(&p_xstream->request, req);
 }
 
-static inline
-void ABTI_xstream_unset_request(ABTI_xstream *p_xstream, uint32_t req)
+static inline void ABTI_xstream_unset_request(ABTI_xstream *p_xstream,
+                                              uint32_t req)
 {
     ABTD_atomic_fetch_and_uint32(&p_xstream->request, ~req);
 }
 
-static inline
-ABTI_xstream *ABTI_xstream_self(void)
+static inline ABTI_xstream *ABTI_xstream_self(void)
 {
     ABTI_xstream *p_xstream;
     if (lp_ABTI_local != NULL) {
@@ -70,31 +67,28 @@ ABTI_xstream *ABTI_xstream_self(void)
 }
 
 /* Get the top scheduler from the sched stack (field scheds) */
-static inline
-ABTI_sched *ABTI_xstream_get_top_sched(ABTI_xstream *p_xstream)
+static inline ABTI_sched *ABTI_xstream_get_top_sched(ABTI_xstream *p_xstream)
 {
-    return p_xstream->scheds[p_xstream->num_scheds-1];
+    return p_xstream->scheds[p_xstream->num_scheds - 1];
 }
 
 /* Get the parent scheduler of the current scheduler */
-static inline
-ABTI_sched *ABTI_xstream_get_parent_sched(ABTI_xstream *p_xstream)
+static inline ABTI_sched *ABTI_xstream_get_parent_sched(ABTI_xstream *p_xstream)
 {
     ABTI_ASSERT(p_xstream->num_scheds >= 2);
-    return p_xstream->scheds[p_xstream->num_scheds-2];
+    return p_xstream->scheds[p_xstream->num_scheds - 2];
 }
 
 /* Get the scheduling context */
 static inline
-ABTD_thread_context *ABTI_xstream_get_sched_ctx(ABTI_xstream *p_xstream)
+    ABTD_thread_context *ABTI_xstream_get_sched_ctx(ABTI_xstream *p_xstream)
 {
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
     return p_sched->p_ctx;
 }
 
 /* Remove the top scheduler from the sched stack (field scheds) */
-static inline
-void ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
+static inline void ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
 {
     p_xstream->num_scheds--;
     ABTI_ASSERT(p_xstream->num_scheds >= 0);
@@ -102,20 +96,20 @@ void ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
 
 /* Replace the top scheduler of the sched stack (field scheds) with the target
  * scheduler */
-static inline
-void ABTI_xstream_replace_top_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
+static inline void ABTI_xstream_replace_top_sched(ABTI_xstream *p_xstream,
+                                                  ABTI_sched *p_sched)
 {
-    p_xstream->scheds[p_xstream->num_scheds-1] = p_sched;
+    p_xstream->scheds[p_xstream->num_scheds - 1] = p_sched;
 }
 
 /* Add the specified scheduler to the sched stack (field scheds) */
-static inline
-void ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
+static inline void ABTI_xstream_push_sched(ABTI_xstream *p_xstream,
+                                           ABTI_sched *p_sched)
 {
     if (p_xstream->num_scheds == p_xstream->max_scheds) {
-        int max_size = p_xstream->max_scheds+10;
+        int max_size = p_xstream->max_scheds + 10;
         void *temp;
-        temp = ABTU_realloc(p_xstream->scheds, max_size*sizeof(ABTI_sched *));
+        temp = ABTU_realloc(p_xstream->scheds, max_size * sizeof(ABTI_sched *));
         p_xstream->scheds = (ABTI_sched **)temp;
         p_xstream->max_scheds = max_size;
     }
@@ -123,8 +117,7 @@ void ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     p_xstream->scheds[p_xstream->num_scheds++] = p_sched;
 }
 
-static inline
-void ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
+static inline void ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
 {
     LOG_EVENT("[U%" PRIu64 ":E%d] terminated\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
@@ -150,8 +143,7 @@ void ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
     }
 }
 
-static inline
-void ABTI_xstream_terminate_task(ABTI_task *p_task)
+static inline void ABTI_xstream_terminate_task(ABTI_task *p_task)
 {
     LOG_EVENT("[T%" PRIu64 ":E%d] terminated\n",
               ABTI_task_get_id(p_task), p_task->p_xstream->rank);

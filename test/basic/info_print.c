@@ -62,10 +62,10 @@ int main(int argc, char *argv[])
     ATS_printf(1, "# of ESs        : %d\n", num_xstreams);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    scheds   = (ABT_sched *)malloc(num_xstreams * sizeof(ABT_sched));
-    pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    threads  = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
-    tasks    = (ABT_task *)malloc(num_xstreams * sizeof(ABT_task));
+    scheds = (ABT_sched *)malloc(num_xstreams * sizeof(ABT_sched));
+    pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    threads = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
+    tasks = (ABT_task *)malloc(num_xstreams * sizeof(ABT_task));
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
@@ -144,5 +144,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-
-

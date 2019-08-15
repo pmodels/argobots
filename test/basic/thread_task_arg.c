@@ -64,12 +64,12 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
-        num_threads  = DEFAULT_NUM_THREADS;
-        num_tasks    = DEFAULT_NUM_TASKS;
+        num_threads = DEFAULT_NUM_THREADS;
+        num_tasks = DEFAULT_NUM_TASKS;
     } else {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
-        num_tasks    = ATS_get_arg_val(ATS_ARG_N_TASK);
+        num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
+        num_tasks = ATS_get_arg_val(ATS_ARG_N_TASK);
     }
     ATS_init(argc, argv, num_xstreams);
 
@@ -129,4 +129,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

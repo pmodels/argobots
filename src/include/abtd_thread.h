@@ -15,12 +15,12 @@
 #if defined(ABT_CONFIG_USE_FCONTEXT)
 void ABTD_thread_func_wrapper_thread(void *p_arg);
 void ABTD_thread_func_wrapper_sched(void *p_arg);
-fcontext_t make_fcontext(void *sp, size_t size, void (*thread_func)(void *))
-                         ABT_API_PRIVATE;
+fcontext_t make_fcontext(void *sp, size_t size, void (*thread_func) (void *))
+    ABT_API_PRIVATE;
 void *jump_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
 void *take_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-void init_and_call_fcontext(void *p_arg, void (*f_thread)(void *),
+void init_and_call_fcontext(void *p_arg, void (*f_thread) (void *),
                             void *p_stacktop, fcontext_t *old);
 void ABTD_thread_terminate_thread_no_arg();
 #endif
@@ -31,19 +31,19 @@ void ABTD_thread_func_wrapper(int func_upper, int func_lower,
 #define ABTD_thread_func_wrapper_sched  ABTD_thread_func_wrapper
 #endif
 
-static inline
-int ABTDI_thread_context_create(ABTD_thread_context *p_link,
-                               void (*f_wrapper)(void *),
-                               void (*f_thread)(void *), void *p_arg,
-                               size_t stacksize, void *p_stack,
-                               ABTD_thread_context *p_newctx)
+static inline int ABTDI_thread_context_create(ABTD_thread_context *p_link,
+                                              void (*f_wrapper) (void *),
+                                              void (*f_thread) (void *),
+                                              void *p_arg, size_t stacksize,
+                                              void *p_stack,
+                                              ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     void *p_stacktop;
 
     /* fcontext uses the top address of stack.
-       Note that the parameter, p_stack, points to the bottom of stack. */
+     * Note that the parameter, p_stack, points to the bottom of stack. */
     p_stacktop = (void *)(((char *)p_stack) + stacksize);
 
     p_newctx->fctx = make_fcontext(p_stacktop, stacksize, f_wrapper);
@@ -59,7 +59,8 @@ int ABTDI_thread_context_create(ABTD_thread_context *p_link,
     size_t ptr_size, int_size;
 
     /* If stack is NULL, we don't need to make a new context */
-    if (p_stack == NULL) goto fn_exit;
+    if (p_stack == NULL)
+        goto fn_exit;
 
     abt_errno = getcontext(p_newctx);
     ABTI_CHECK_TRUE(!abt_errno, ABT_ERR_THREAD);
@@ -97,11 +98,13 @@ int ABTDI_thread_context_create(ABTD_thread_context *p_link,
 #endif
 }
 
-static inline
-int ABTD_thread_context_create_thread(ABTD_thread_context *p_link,
-                                      void (*f_thread)(void *), void *p_arg,
-                                      size_t stacksize, void *p_stack,
-                                      ABTD_thread_context *p_newctx)
+static inline int ABTD_thread_context_create_thread(ABTD_thread_context *p_link,
+                                                    void (*f_thread) (void *),
+                                                    void *p_arg,
+                                                    size_t stacksize,
+                                                    void *p_stack,
+                                                    ABTD_thread_context
+                                                    *p_newctx)
 {
     return ABTDI_thread_context_create(p_link, ABTD_thread_func_wrapper_thread,
                                        f_thread, p_arg, stacksize, p_stack,
@@ -109,18 +112,19 @@ int ABTD_thread_context_create_thread(ABTD_thread_context *p_link,
 }
 
 static inline
-int ABTD_thread_context_create_sched(ABTD_thread_context *p_link,
-                                     void (*f_thread)(void *), void *p_arg,
-                                     size_t stacksize, void *p_stack,
-                                     ABTD_thread_context *p_newctx)
+    int ABTD_thread_context_create_sched(ABTD_thread_context *p_link,
+                                         void (*f_thread) (void *),
+                                         void *p_arg,
+                                         size_t stacksize,
+                                         void *p_stack,
+                                         ABTD_thread_context *p_newctx)
 {
     return ABTDI_thread_context_create(p_link, ABTD_thread_func_wrapper_sched,
                                        f_thread, p_arg, stacksize, p_stack,
                                        p_newctx);
 }
 
-static inline
-int ABTD_thread_context_invalidate(ABTD_thread_context *p_newctx)
+static inline int ABTD_thread_context_invalidate(ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
 #if defined(ABT_CONFIG_USE_FCONTEXT)
@@ -139,10 +143,10 @@ int ABTD_thread_context_invalidate(ABTD_thread_context *p_newctx)
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-static inline
-int ABTD_thread_context_init(ABTD_thread_context *p_link,
-                             void (*f_thread)(void *), void *p_arg,
-                             ABTD_thread_context *p_newctx)
+static inline int ABTD_thread_context_init(ABTD_thread_context *p_link,
+                                           void (*f_thread) (void *),
+                                           void *p_arg,
+                                           ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
 #if defined(ABT_CONFIG_USE_FCONTEXT)
@@ -156,9 +160,9 @@ int ABTD_thread_context_init(ABTD_thread_context *p_link,
 #endif
 }
 
-static inline
-int ABTD_thread_context_arm_thread(size_t stacksize, void *p_stack,
-                                   ABTD_thread_context *p_newctx)
+static inline int ABTD_thread_context_arm_thread(size_t stacksize,
+                                                 void *p_stack,
+                                                 ABTD_thread_context *p_newctx)
 {
     /* This function *arms* the dynamic promotion thread (initialized by
      * ABTD_thread_context_init) as if it were created by
@@ -167,7 +171,7 @@ int ABTD_thread_context_arm_thread(size_t stacksize, void *p_stack,
     int abt_errno = ABT_SUCCESS;
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     /* fcontext uses the top address of stack.
-       Note that the parameter, p_stack, points to the bottom of stack. */
+     * Note that the parameter, p_stack, points to the bottom of stack. */
     void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
     p_newctx->fctx = make_fcontext(p_stacktop, stacksize,
                                    ABTD_thread_func_wrapper_thread);
@@ -181,9 +185,8 @@ int ABTD_thread_context_arm_thread(size_t stacksize, void *p_stack,
 /* Currently, nothing to do */
 #define ABTD_thread_context_free(p_ctx)
 
-static inline
-void ABTD_thread_context_switch(ABTD_thread_context *p_old,
-                                ABTD_thread_context *p_new)
+static inline void ABTD_thread_context_switch(ABTD_thread_context *p_old,
+                                              ABTD_thread_context *p_new)
 {
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     jump_fcontext(&p_old->fctx, p_new->fctx, p_new);
@@ -194,9 +197,8 @@ void ABTD_thread_context_switch(ABTD_thread_context *p_old,
 #endif
 }
 
-static inline
-void ABTD_thread_finish_context(ABTD_thread_context *p_old,
-                                ABTD_thread_context *p_new)
+static inline void ABTD_thread_finish_context(ABTD_thread_context *p_old,
+                                              ABTD_thread_context *p_new)
 {
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     take_fcontext(&p_old->fctx, p_new->fctx, p_new);
@@ -207,43 +209,41 @@ void ABTD_thread_finish_context(ABTD_thread_context *p_old,
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-static inline
-void ABTD_thread_context_make_and_call(ABTD_thread_context *p_old,
-                                       void (*f_thread)(void *), void *p_arg,
-                                       void *p_stacktop)
+static inline void ABTD_thread_context_make_and_call(ABTD_thread_context *p_old,
+                                                     void (*f_thread) (void *),
+                                                     void *p_arg,
+                                                     void *p_stacktop)
 {
     init_and_call_fcontext(p_arg, f_thread, p_stacktop, &p_old->fctx);
 }
 
 static inline
-ABT_bool ABTD_thread_context_is_dynamic_promoted(ABTD_thread_context *p_ctx)
+    ABT_bool ABTD_thread_context_is_dynamic_promoted(ABTD_thread_context *p_ctx)
 {
     /* Check if the ULT has been dynamically promoted; internally, it checks if
      * the context is NULL. */
     return p_ctx->fctx ? ABT_TRUE : ABT_FALSE;
 }
 
-static inline
-void ABTDI_thread_context_dynamic_promote(void *p_stacktop, void *jump_f)
+static inline void ABTDI_thread_context_dynamic_promote(void *p_stacktop,
+                                                        void *jump_f)
 {
     /* Perform dynamic promotion */
-    void **p_return_address = (void **)(((char *) p_stacktop) - 0x10);
-    void ***p_stack_pointer = (void ***)(((char *) p_stacktop) - 0x08);
+    void **p_return_address = (void **)(((char *)p_stacktop) - 0x10);
+    void ***p_stack_pointer = (void ***)(((char *)p_stacktop) - 0x08);
     *p_stack_pointer = p_return_address;
     *p_return_address = jump_f;
 }
 
-static inline
-void ABTD_thread_context_dynamic_promote_thread(void *p_stacktop)
+static inline void ABTD_thread_context_dynamic_promote_thread(void *p_stacktop)
 {
     void *jump_f = (void *)ABTD_thread_terminate_thread_no_arg;
     ABTDI_thread_context_dynamic_promote(p_stacktop, jump_f);
 }
 #endif
 
-static inline
-void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
-                                     ABTD_thread_context *p_link)
+static inline void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
+                                                   ABTD_thread_context *p_link)
 {
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     ABTD_atomic_store_ptr((void **)&p_ctx->p_link, (void *)p_link);
@@ -256,7 +256,7 @@ void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
 
     /* Calulate the position where uc_link is saved. */
     sp = (unsigned long int *)
-         ((uintptr_t)p_ctx->uc_stack.ss_sp + p_ctx->uc_stack.ss_size);
+        ((uintptr_t)p_ctx->uc_stack.ss_sp + p_ctx->uc_stack.ss_size);
     sp -= 1;
     sp = (unsigned long int *)((((uintptr_t)sp) & -16L) - 8);
 
@@ -269,8 +269,8 @@ void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
 #endif
 }
 
-static inline
-void ABTD_thread_context_set_arg(ABTD_thread_context *p_ctx, void *arg)
+static inline void ABTD_thread_context_set_arg(ABTD_thread_context *p_ctx,
+                                               void *arg)
 {
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     p_ctx->p_arg = arg;
@@ -279,8 +279,7 @@ void ABTD_thread_context_set_arg(ABTD_thread_context *p_ctx, void *arg)
 #endif
 }
 
-static inline
-void *ABTD_thread_context_get_arg(ABTD_thread_context *p_ctx)
+static inline void *ABTD_thread_context_get_arg(ABTD_thread_context *p_ctx)
 {
 #if defined(ABT_CONFIG_USE_FCONTEXT)
     return p_ctx->p_arg;

@@ -24,8 +24,8 @@ struct test_arg {
     int iters;
     ABT_rwlock rwlock;
     ABT_pool *pools;
-    ABT_thread **threads; /* malloc'd by caller, set by test */
-    thread_arg_t **args;  /* malloc'd by caller, set by test */
+    ABT_thread **threads;       /* malloc'd by caller, set by test */
+    thread_arg_t **args;        /* malloc'd by caller, set by test */
 };
 
 struct thread_arg {
@@ -48,12 +48,10 @@ void thread_func(void *arg)
             if (t_arg->id == 1) {
                 g_counter++;
                 ATS_printf(1, "[TH%d] read+increased\n", t_arg->id);
-            }
-            else {
+            } else {
                 ATS_printf(1, "[TH%d] read\n", t_arg->id);
             }
-        }
-        else {
+        } else {
             ret = ABT_rwlock_wrlock(t_arg->targ->rwlock);
             ATS_ERROR(ret, "ABT_rwlock_wrlock");
             g_counter++;
@@ -79,9 +77,9 @@ int run_test(test_arg_t *targ)
             int tid = i * targ->num_threads + j + 1;
             targ->args[i][j].id = tid;
             targ->args[i][j].targ = targ;
-            ret = ABT_thread_create(targ->pools[i],
-                    thread_func, (void *)&targ->args[i][j],
-                    ABT_THREAD_ATTR_NULL, &targ->threads[i][j]);
+            ret = ABT_thread_create(targ->pools[i], thread_func,
+                                    (void *)&targ->args[i][j],
+                                    ABT_THREAD_ATTR_NULL, &targ->threads[i][j]);
             ATS_ERROR(ret, "ABT_thread_create");
         }
     }
@@ -100,8 +98,7 @@ int run_test(test_arg_t *targ)
                 "g_counter = %d, expected = %d (%d xstreams, %d threads)\n",
                 g_counter, expected, targ->num_xstreams, targ->num_threads);
         return 1;
-    }
-    else {
+    } else {
         return 0;
     }
 }
@@ -115,13 +112,17 @@ int main(int argc, char *argv[])
     targ.num_xstreams = DEFAULT_NUM_XSTREAMS;
     targ.num_threads = DEFAULT_NUM_THREADS;
     targ.iters = DEFAULT_NUM_TEST_ITERS;
-    if (argc > 1) targ.num_xstreams = atoi(argv[1]);
+    if (argc > 1)
+        targ.num_xstreams = atoi(argv[1]);
     assert(targ.num_xstreams >= 0);
-    if (argc > 2) targ.num_threads = atoi(argv[2]);
+    if (argc > 2)
+        targ.num_threads = atoi(argv[2]);
     assert(targ.num_threads >= 0);
-    if (argc > 3) num_tests = atoi(argv[3]);
+    if (argc > 3)
+        num_tests = atoi(argv[3]);
     assert(num_tests > 0);
-    if (argc > 4) targ.iters = atoi(argv[4]);
+    if (argc > 4)
+        targ.iters = atoi(argv[4]);
     assert(targ.iters > 0);
 
     ABT_xstream *xstreams;
@@ -155,7 +156,7 @@ int main(int argc, char *argv[])
     /* Get the pools attached to an execution stream */
     targ.pools = (ABT_pool *)malloc(sizeof(ABT_pool) * targ.num_xstreams);
     for (i = 0; i < targ.num_xstreams; i++) {
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, targ.pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, targ.pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
@@ -199,4 +200,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

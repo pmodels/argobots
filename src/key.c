@@ -43,7 +43,7 @@ static uint32_t g_key_id = 0;
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
+int ABT_key_create(void (*destructor) (void *value), ABT_key *newkey)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_key *p_newkey;
@@ -219,7 +219,8 @@ ABTI_ktable *ABTI_ktable_alloc(int size)
     p_ktable = (ABTI_ktable *)ABTU_malloc(sizeof(ABTI_ktable));
     p_ktable->size = size;
     p_ktable->num = 0;
-    p_ktable->p_elems = (ABTI_ktelem **)ABTU_calloc(size, sizeof(ABTI_ktelem *));
+    p_ktable->p_elems =
+        (ABTI_ktelem **)ABTU_calloc(size, sizeof(ABTI_ktelem *));
 
     return p_ktable;
 }
@@ -329,4 +330,3 @@ void ABTI_ktable_delete(ABTI_ktable *p_ktable, ABTI_key *p_key)
         p_elem = p_elem->p_next;
     }
 }
-

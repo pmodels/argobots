@@ -95,7 +95,8 @@ void fibonacci_task(void *arguments)
         while (flag && parent != NULL) {
             ABT_mutex_lock(parent->mutex);
             parent->result += result;
-            if (result == parent->result) flag = 0;
+            if (result == parent->result)
+                flag = 0;
             ABT_mutex_unlock(parent->mutex);
             result = parent->result;
             temp = parent->parent;
@@ -135,7 +136,8 @@ int verify(int n)
     int i;
     int old[2], val;
 
-    if (n <= 2) return 1;
+    if (n <= 2)
+        return 1;
 
     old[0] = old[1] = 1;
     for (i = 3; i <= n; i++) {
@@ -191,7 +193,8 @@ int main(int argc, char *argv[])
     /* creating thread */
     args_thread.n = n - 1;
     args_thread.eventual = ABT_EVENTUAL_NULL;
-    ABT_thread_create(g_pool, fibonacci_thread, &args_thread, ABT_THREAD_ATTR_NULL, &thread);
+    ABT_thread_create(g_pool, fibonacci_thread, &args_thread,
+                      ABT_THREAD_ATTR_NULL, &thread);
 
     /* creating task */
     args_task = (task_args *)malloc(sizeof(task_args));

@@ -104,7 +104,8 @@ static void sched_run(ABT_sched sched)
             ABT_xstream_run_unit(unit, my_pool);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
-            target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
+            target =
+                (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
             ABT_pool tar_pool = pools[target];
             ABT_pool_get_size(tar_pool, &size);
             if (size > 0) {
@@ -121,7 +122,8 @@ static void sched_run(ABT_sched sched)
 
             ABT_bool stop;
             ABT_sched_has_to_stop(sched, &stop);
-            if (stop == ABT_TRUE) break;
+            if (stop == ABT_TRUE)
+                break;
             work_count = 0;
             ABT_xstream_check_events(sched);
         }
@@ -176,7 +178,8 @@ int main(int argc, char *argv[])
 
     abt_disconnect();
 
-    printf("Done.\n"); fflush(stdout);
+    printf("Done.\n");
+    fflush(stdout);
 
     return EXIT_SUCCESS;
 }
@@ -196,12 +199,13 @@ static void abt_connect(char *host_str, char *port_str)
 
     server = gethostbyname(host_str);
     if (server == NULL) {
-        fprintf(stderr,"ERROR: no such host (%s)\n", host_str);
+        fprintf(stderr, "ERROR: no such host (%s)\n", host_str);
         exit(0);
     }
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) handle_error("ERROR: socket");
+    if (sockfd < 0)
+        handle_error("ERROR: socket");
 
     bzero((char *)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -225,7 +229,8 @@ static void abt_disconnect(void)
 {
     static int called = 0;
 
-    if (called || !abt_alive) return;
+    if (called || !abt_alive)
+        return;
     called = 1;
 
     close(abt_pfd.fd);
@@ -239,10 +244,12 @@ static void abt_check_events(int idx)
     int n, ret;
     char recv_buf[RECV_BUF_LEN];
 
-    if (!abt_alive) return;
+    if (!abt_alive)
+        return;
 
     ret = ABT_mutex_trylock(g_mutex);
-    if (ret == ABT_ERR_MUTEX_LOCKED) return;
+    if (ret == ABT_ERR_MUTEX_LOCKED)
+        return;
     assert(ret == ABT_SUCCESS);
 
     ret = poll(&abt_pfd, 1, 1);
@@ -252,14 +259,23 @@ static void abt_check_events(int idx)
         if (abt_pfd.revents & POLLIN) {
             bzero(recv_buf, RECV_BUF_LEN);
             n = read(abt_pfd.fd, recv_buf, RECV_BUF_LEN);
-            if (n < 0) handle_error("ERROR: read");
+            if (n < 0)
+                handle_error("ERROR: read");
 
             printf("\nES%d: received request '%c'\n", idx, recv_buf[0]);
             switch (recv_buf[0]) {
-                case 'd': decrease_xstream(); break;
-                case 'i': increase_xstream(); break;
-                case 'n': send_num_xstream(); break;
-                case 'q': abt_disconnect(); break;
+                case 'd':
+                    decrease_xstream();
+                    break;
+                case 'i':
+                    increase_xstream();
+                    break;
+                case 'n':
+                    send_num_xstream();
+                    break;
+                case 'q':
+                    abt_disconnect();
+                    break;
                 default:
                     printf("Unknown commend: %s\n", recv_buf);
                     break;
@@ -321,7 +337,8 @@ static void thread_join_xstream(void *arg)
     g_signal[idx] = 1;
     while (1) {
         ABT_xstream_get_state(g_xstreams[idx], &state);
-        if (state == ABT_XSTREAM_STATE_TERMINATED) break;
+        if (state == ABT_XSTREAM_STATE_TERMINATED)
+            break;
         ABT_thread_yield();
     }
     ABT_xstream_free(&g_xstreams[idx]);
@@ -436,8 +453,7 @@ static void thread_add_sched(void *arg)
     /* Create a scheduler */
     ABT_sched_config_create(&config,
                             cv_event_freq, 10,
-                            cv_idx, idx,
-                            ABT_sched_config_var_end);
+                            cv_idx, idx, ABT_sched_config_var_end);
     my_pools = (ABT_pool *)malloc(sizeof(ABT_pool) * max_xstreams);
     for (i = 0; i < max_xstreams; i++) {
         my_pools[i] = g_pools[(idx + i) % max_xstreams];
@@ -559,4 +575,3 @@ static void thread_hello(void *arg)
     msg = (cur_rank == old_rank) ? "" : " (stolen)";
     test_printf("[U%lu:E%d] Goodbye, world!%s\n", id, cur_rank, msg);
 }
-

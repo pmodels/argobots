@@ -18,7 +18,8 @@ typedef struct {
 
 #ifdef HAVE_PTHREAD_BARRIER_INIT
 static inline
-ABTI_xstream_barrier *ABTI_xstream_barrier_get_ptr(ABT_xstream_barrier barrier)
+    ABTI_xstream_barrier *ABTI_xstream_barrier_get_ptr(ABT_xstream_barrier
+                                                       barrier)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_xstream_barrier *p_barrier;
@@ -33,8 +34,8 @@ ABTI_xstream_barrier *ABTI_xstream_barrier_get_ptr(ABT_xstream_barrier barrier)
 #endif
 }
 
-static inline
-ABT_xstream_barrier ABTI_xstream_barrier_get_handle(ABTI_xstream_barrier *p_barrier)
+static inline ABT_xstream_barrier
+ABTI_xstream_barrier_get_handle(ABTI_xstream_barrier *p_barrier)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_xstream_barrier h_barrier;
@@ -65,13 +66,15 @@ ABT_xstream_barrier ABTI_xstream_barrier_get_handle(ABTI_xstream_barrier *p_barr
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_barrier_create(uint32_t num_waiters, ABT_xstream_barrier *newbarrier)
+int ABT_xstream_barrier_create(uint32_t num_waiters,
+                               ABT_xstream_barrier *newbarrier)
 {
 #ifdef HAVE_PTHREAD_BARRIER_INIT
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream_barrier *p_newbarrier;
 
-    p_newbarrier = (ABTI_xstream_barrier *)ABTU_malloc(sizeof(ABTI_xstream_barrier));
+    p_newbarrier =
+        (ABTI_xstream_barrier *)ABTU_malloc(sizeof(ABTI_xstream_barrier));
 
     p_newbarrier->num_waiters = num_waiters;
     abt_errno = ABTD_xstream_barrier_init(num_waiters, &p_newbarrier->bar);
@@ -162,4 +165,3 @@ int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier)
     return ABT_ERR_FEATURE_NA;
 #endif
 }
-

@@ -28,11 +28,11 @@ typedef struct {
 /* Callback function passed to future */
 void callback(void **args)
 {
-	int n1, n2;
+    int n1, n2;
 
-	n1 = *(int *)args[1];
-	n2 = *(int *)args[2];
-	*(int *)args[0] = n1 + n2;
+    n1 = *(int *)args[1];
+    n2 = *(int *)args[2];
+    *(int *)args[0] = n1 + n2;
 }
 
 /* Function to compute Fibonacci numbers */
@@ -77,7 +77,8 @@ int verify(int n)
     int i;
     int old[2], val;
 
-    if (n <= 2) return 1;
+    if (n <= 2)
+        return 1;
 
     old[0] = old[1] = 1;
     for (i = 3; i <= n; i++) {

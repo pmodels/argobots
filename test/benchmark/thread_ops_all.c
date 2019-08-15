@@ -150,14 +150,14 @@ void thread_func_migrate_to_xstream(void *arg)
 void test_create_join(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool    my_pool    = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_thread *my_threads = g_threads[eid];
     int i, t;
 
     for (i = 0; i < iter; i++) {
         for (t = 0; t < num_threads; t++) {
-            ABT_thread_create(my_pool, thread_func, NULL,
-                              ABT_THREAD_ATTR_NULL, &my_threads[t]);
+            ABT_thread_create(my_pool, thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                              &my_threads[t]);
         }
 
         ABT_THREAD_JOIN_MANY(num_threads, my_threads);
@@ -175,8 +175,8 @@ void test_create_unnamed(void *arg)
 
     for (i = 0; i < iter; i++) {
         for (t = 0; t < num_threads; t++) {
-            ABT_thread_create(my_pool, thread_func, NULL,
-                              ABT_THREAD_ATTR_NULL, NULL);
+            ABT_thread_create(my_pool, thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                              NULL);
         }
         ABT_thread_yield();
     }
@@ -185,7 +185,7 @@ void test_create_unnamed(void *arg)
 void test_yield_overhead(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool    my_pool    = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_thread *my_threads = g_threads[eid];
     int i;
 
@@ -202,7 +202,7 @@ void test_yield_overhead(void *arg)
 void test_yield(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool    my_pool    = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_thread *my_threads = g_threads[eid];
     int i;
 
@@ -219,7 +219,7 @@ void test_yield(void *arg)
 void test_yield_to_overhead(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool    my_pool    = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_thread *my_threads = g_threads[eid];
     int i;
 
@@ -241,7 +241,7 @@ void test_yield_to_overhead(void *arg)
 void test_yield_to(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool    my_pool    = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_thread *my_threads = g_threads[eid];
     int i;
 
@@ -263,7 +263,7 @@ void test_yield_to(void *arg)
 void test_migrate_to_xstream(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool    my_pool    = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_thread *my_threads = g_threads[eid];
     int i;
 
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
     /* read command-line arguments */
     ATS_read_args(argc, argv);
     num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+    num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
     iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     /* initialize */
@@ -306,8 +306,8 @@ int main(int argc, char *argv[])
     }
 
     g_xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    g_pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    g_threads  = (ABT_thread **)malloc(num_xstreams * sizeof(ABT_thread *));
+    g_pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    g_threads = (ABT_thread **)malloc(num_xstreams * sizeof(ABT_thread *));
     for (i = 0; i < num_xstreams; i++) {
         g_threads[i] = (ABT_thread *)malloc(num_threads * sizeof(ABT_thread));
     }
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
 
     /* benchmarking */
     for (t = 0; t < T_LAST; t++) {
-        void (*test_fn)(void *);
+        void (*test_fn) (void *);
 
         if (t == T_YIELD) {
             if (t_times[T_YIELD_ALL] > t_times[T_YIELD_OVERHEAD]) {
@@ -347,7 +347,8 @@ int main(int argc, char *argv[])
             continue;
         } else if (t == T_YIELD_TO) {
             if (t_times[T_YIELD_TO_ALL] > t_times[T_YIELD_TO_OVERHEAD]) {
-                t_times[t] = t_times[T_YIELD_TO_ALL] - t_times[T_YIELD_TO_OVERHEAD];
+                t_times[t] =
+                    t_times[T_YIELD_TO_ALL] - t_times[T_YIELD_TO_OVERHEAD];
             } else {
                 t_times[t] = 0;
             }
@@ -355,23 +356,31 @@ int main(int argc, char *argv[])
         }
 
         switch (t) {
-            case T_CREATE_JOIN:        test_fn = test_create_join;
-                                       break;
-            case T_CREATE_UNNAMED:     test_fn = test_create_unnamed;
-                                       break;
-            case T_YIELD_OVERHEAD:     test_fn = test_yield_overhead;
-                                       break;
-            case T_YIELD_ALL:          test_fn = test_yield;
-                                       break;
-            case T_YIELD_TO_OVERHEAD:  test_fn = test_yield_to_overhead;
-                                       break;
-            case T_YIELD_TO_ALL:       test_fn = test_yield_to;
-                                       break;
+            case T_CREATE_JOIN:
+                test_fn = test_create_join;
+                break;
+            case T_CREATE_UNNAMED:
+                test_fn = test_create_unnamed;
+                break;
+            case T_YIELD_OVERHEAD:
+                test_fn = test_yield_overhead;
+                break;
+            case T_YIELD_ALL:
+                test_fn = test_yield;
+                break;
+            case T_YIELD_TO_OVERHEAD:
+                test_fn = test_yield_to_overhead;
+                break;
+            case T_YIELD_TO_ALL:
+                test_fn = test_yield_to;
+                break;
 #ifdef TEST_MIGRATE_TO
-            case T_MIGRATE_TO_XSTREAM: test_fn = test_migrate_to_xstream;
-                                       break;
+            case T_MIGRATE_TO_XSTREAM:
+                test_fn = test_migrate_to_xstream;
+                break;
 #endif
-            default: assert(0);
+            default:
+                assert(0);
         }
 
         /* warm-up */
@@ -450,4 +459,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

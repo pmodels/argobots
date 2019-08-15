@@ -50,10 +50,11 @@ static void compute(void *args)
     int firstX = intargs[0];
     int firstY = intargs[1];
 
-    for (x = firstX; x < firstX+blockSize; x++) {
-        for (y = firstY; y < firstY+blockSize; y++) {
-            results[x*totalSize+y] = (values[left(x,y)]+values[right(x,y)]
-                                     +values[up(x,y)]+values[down(x,y)])/4.0;
+    for (x = firstX; x < firstX + blockSize; x++) {
+        for (y = firstY; y < firstY + blockSize; y++) {
+            results[x * totalSize + y] =
+                (values[left(x, y)] + values[right(x, y)]
+                 + values[up(x, y)] + values[down(x, y)]) / 4.0;
         }
     }
 }
@@ -65,17 +66,17 @@ static void update(void *args)
     int firstX = intargs[0];
     int firstY = intargs[1];
 
-    for (x = firstX; x < firstX+blockSize; x++) {
-        for (y = firstY; y < firstY+blockSize; y++) {
-            values[here(x,y)] = results[here(x,y)];
+    for (x = firstX; x < firstX + blockSize; x++) {
+        for (y = firstY; y < firstY + blockSize; y++) {
+            values[here(x, y)] = results[here(x, y)];
         }
     }
 }
 
 static void run(void)
 {
-    ABT_thread *threads = malloc(nBlocks*nBlocks*sizeof(ABT_thread));
-    int *args = (int *)malloc(nBlocks*nBlocks*2*sizeof(int));
+    ABT_thread *threads = malloc(nBlocks * nBlocks * sizeof(ABT_thread));
+    int *args = (int *)malloc(nBlocks * nBlocks * 2 * sizeof(int));
     int threadIdx, argsIdx;
 
     int s = 0;
@@ -84,11 +85,11 @@ static void run(void)
 
     for (i = 0; i < niterations; i++) {
         threadIdx = 0;
-        for (x = 1; x < ncells+1; x += blockSize) {
-            for (y = 1; y < ncells+1; y += blockSize) {
+        for (x = 1; x < ncells + 1; x += blockSize) {
+            for (y = 1; y < ncells + 1; y += blockSize) {
                 argsIdx = threadIdx * 2;
-                args[argsIdx+0] = x;
-                args[argsIdx+1] = y;
+                args[argsIdx + 0] = x;
+                args[argsIdx + 1] = y;
                 ret = ABT_thread_create(pools[s], compute,
                                         (void *)&args[argsIdx],
                                         ABT_THREAD_ATTR_NULL,
@@ -99,16 +100,16 @@ static void run(void)
             }
         }
 
-        for (t = 0; t < nBlocks*nBlocks; t++) {
+        for (t = 0; t < nBlocks * nBlocks; t++) {
             ABT_thread_free(&threads[t]);
         }
 
         threadIdx = 0;
-        for (x = 1; x < ncells+1; x += blockSize) {
-            for (y = 1; y < ncells+1; y += blockSize) {
+        for (x = 1; x < ncells + 1; x += blockSize) {
+            for (y = 1; y < ncells + 1; y += blockSize) {
                 argsIdx = threadIdx * 2;
-                args[argsIdx+0] = x;
-                args[argsIdx+1] = y;
+                args[argsIdx + 0] = x;
+                args[argsIdx + 1] = y;
                 ret = ABT_thread_create(pools[s], update,
                                         (void *)&args[argsIdx],
                                         ABT_THREAD_ATTR_NULL,
@@ -119,7 +120,7 @@ static void run(void)
             }
         }
 
-        for (t = 0; t < nBlocks*nBlocks; t++)
+        for (t = 0; t < nBlocks * nBlocks; t++)
             ABT_thread_free(&threads[t]);
     }
 
@@ -131,19 +132,19 @@ static int eq(double a, double b)
 {
     double e = 0.00001;
     if (a < b)
-        return (b-a < e);
+        return (b - a < e);
     else
-        return (a-b < e);
+        return (a - b < e);
 }
 
 static int check(double *results, int n)
 {
     int i, j;
-    for (i = 0; i < n/2; i++) {
-        for (j = 0; j < n/2; j++) {
-            if (!eq(results[i*n+j], results[i*n+(n-1-j)]) ||
-                !eq(results[i*n+j], results[(n-1-i)*n+j]) ||
-                !eq(results[i*n+j], results[(n-1-i)*n+(n-1-j)]))
+    for (i = 0; i < n / 2; i++) {
+        for (j = 0; j < n / 2; j++) {
+            if (!eq(results[i * n + j], results[i * n + (n - 1 - j)]) ||
+                !eq(results[i * n + j], results[(n - 1 - i) * n + j]) ||
+                !eq(results[i * n + j], results[(n - 1 - i) * n + (n - 1 - j)]))
                 return 0;
         }
     }
@@ -158,15 +159,15 @@ int main(int argc, char *argv[])
 
     ABT_init(argc, argv);
 
-    blockSize    = (argc > 1) ? atoi(argv[1]) : N;
-    nBlocks      = (argc > 2) ? atoi(argv[2]) : NBLOCKS;
-    niterations  = (argc > 3) ? atoi(argv[3]) : NITER;
+    blockSize = (argc > 1) ? atoi(argv[1]) : N;
+    nBlocks = (argc > 2) ? atoi(argv[2]) : NBLOCKS;
+    niterations = (argc > 3) ? atoi(argv[3]) : NITER;
     num_xstreams = (argc > 4) ? atoi(argv[4]) : DEFAULT_NUM_XSTREAMS;
-    print        = (argc > 5) ? atoi(argv[5]) : PRINT;
+    print = (argc > 5) ? atoi(argv[5]) : PRINT;
 
     assert(blockSize > 0);
 
-    ncells = blockSize*nBlocks;
+    ncells = blockSize * nBlocks;
 
     /* ES creation */
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
@@ -182,26 +183,26 @@ int main(int argc, char *argv[])
         ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
     }
 
-    results = (double *)calloc((ncells+2)*(ncells+2), sizeof(double));
-    values = (double *)calloc((ncells+2)*(ncells+2), sizeof(double));
-    for (y = 1; y < ncells+1; y++) {
+    results = (double *)calloc((ncells + 2) * (ncells + 2), sizeof(double));
+    values = (double *)calloc((ncells + 2) * (ncells + 2), sizeof(double));
+    for (y = 1; y < ncells + 1; y++) {
         values[here(0, y)] = 1;
-        values[here(ncells+1, y)] = 1;
+        values[here(ncells + 1, y)] = 1;
     }
 
     run();
 
     /* Show results */
     if (print) {
-        for (x = 1; x < ncells+1; x++) {
-            for (y = 1; y < ncells+1; y++) {
-                printf("%5f ", results[here(x,y)]);
+        for (x = 1; x < ncells + 1; x++) {
+            for (y = 1; y < ncells + 1; y++) {
+                printf("%5f ", results[here(x, y)]);
             }
             printf("\n");
         }
     }
 
-    if (!check(results, ncells+2)) {
+    if (!check(results, ncells + 2)) {
         printf("Wrong result !!!!\n");
         return -1;
     } else {
@@ -230,4 +231,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

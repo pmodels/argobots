@@ -11,8 +11,7 @@
 
 /* Inlined functions for RWLock */
 
-static inline
-ABTI_rwlock *ABTI_rwlock_get_ptr(ABT_rwlock rwlock)
+static inline ABTI_rwlock *ABTI_rwlock_get_ptr(ABT_rwlock rwlock)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_rwlock *p_rwlock;
@@ -27,8 +26,7 @@ ABTI_rwlock *ABTI_rwlock_get_ptr(ABT_rwlock rwlock)
 #endif
 }
 
-static inline
-ABT_rwlock ABTI_rwlock_get_handle(ABTI_rwlock *p_rwlock)
+static inline ABT_rwlock ABTI_rwlock_get_handle(ABTI_rwlock *p_rwlock)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_rwlock h_rwlock;
@@ -43,8 +41,7 @@ ABT_rwlock ABTI_rwlock_get_handle(ABTI_rwlock *p_rwlock)
 #endif
 }
 
-static inline
-void ABTI_rwlock_init(ABTI_rwlock *p_rwlock)
+static inline void ABTI_rwlock_init(ABTI_rwlock *p_rwlock)
 {
     ABTI_mutex_init(&p_rwlock->mutex);
     ABTI_cond_init(&p_rwlock->cond);
@@ -52,15 +49,13 @@ void ABTI_rwlock_init(ABTI_rwlock *p_rwlock)
     p_rwlock->write_flag = 0;
 }
 
-static inline
-void ABTI_rwlock_fini(ABTI_rwlock *p_rwlock)
+static inline void ABTI_rwlock_fini(ABTI_rwlock *p_rwlock)
 {
     ABTI_mutex_fini(&p_rwlock->mutex);
     ABTI_cond_fini(&p_rwlock->cond);
 }
 
-static inline
-int ABTI_rwlock_rdlock(ABTI_rwlock *p_rwlock)
+static inline int ABTI_rwlock_rdlock(ABTI_rwlock *p_rwlock)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -78,14 +73,13 @@ int ABTI_rwlock_rdlock(ABTI_rwlock *p_rwlock)
     return abt_errno;
 }
 
-static inline
-int ABTI_rwlock_wrlock(ABTI_rwlock *p_rwlock)
+static inline int ABTI_rwlock_wrlock(ABTI_rwlock *p_rwlock)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_mutex_lock(&p_rwlock->mutex);
 
     while ((p_rwlock->write_flag || p_rwlock->reader_count)
-            && abt_errno == ABT_SUCCESS) {
+           && abt_errno == ABT_SUCCESS) {
         abt_errno = ABTI_cond_wait(&p_rwlock->cond, &p_rwlock->mutex);
     }
 
@@ -97,15 +91,13 @@ int ABTI_rwlock_wrlock(ABTI_rwlock *p_rwlock)
     return abt_errno;
 }
 
-static inline
-void ABTI_rwlock_unlock(ABTI_rwlock *p_rwlock)
+static inline void ABTI_rwlock_unlock(ABTI_rwlock *p_rwlock)
 {
     ABTI_mutex_lock(&p_rwlock->mutex);
 
     if (p_rwlock->write_flag) {
         p_rwlock->write_flag = 0;
-    }
-    else {
+    } else {
         p_rwlock->reader_count--;
     }
 
@@ -116,4 +108,3 @@ void ABTI_rwlock_unlock(ABTI_rwlock *p_rwlock)
 }
 
 #endif /* RWLOCK_H_INCLUDED */
-

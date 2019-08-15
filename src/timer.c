@@ -217,7 +217,7 @@ int ABT_timer_read(ABT_timer timer, double *secs)
     double start, end;
 
     start = ABTD_time_read_sec(&p_timer->start);
-    end   = ABTD_time_read_sec(&p_timer->end);
+    end = ABTD_time_read_sec(&p_timer->end);
 
     *secs = end - start;
 
@@ -254,7 +254,7 @@ int ABT_timer_stop_and_read(ABT_timer timer, double *secs)
 
     ABTD_time_get(&p_timer->end);
     start = ABTD_time_read_sec(&p_timer->start);
-    end   = ABTD_time_read_sec(&p_timer->end);
+    end = ABTD_time_read_sec(&p_timer->end);
 
     *secs = end - start;
 
@@ -291,7 +291,7 @@ int ABT_timer_stop_and_add(ABT_timer timer, double *secs)
 
     ABTD_time_get(&p_timer->end);
     start = ABTD_time_read_sec(&p_timer->start);
-    end   = ABTD_time_read_sec(&p_timer->end);
+    end = ABTD_time_read_sec(&p_timer->end);
 
     *secs += (end - start);
 
@@ -346,4 +346,3 @@ int ABT_timer_get_overhead(double *overhead)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-

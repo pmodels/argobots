@@ -38,7 +38,7 @@ void task_func(void *arg)
 void test_create_join(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool  my_pool  = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_task *my_tasks = g_tasks[eid];
     int i, t;
 
@@ -56,7 +56,7 @@ void test_create_join(void *arg)
 void test_create_unnamed(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool  my_pool  = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     int i, t;
 
     for (i = 0; i < iter; i++) {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     /* read command-line arguments */
     ATS_read_args(argc, argv);
     num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-    num_tasks    = ATS_get_arg_val(ATS_ARG_N_TASK);
+    num_tasks = ATS_get_arg_val(ATS_ARG_N_TASK);
     iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     /* initialize */
@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
 
 
     g_xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    g_pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    g_tasks    = (ABT_task **)malloc(num_xstreams * sizeof(ABT_task *));
+    g_pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    g_tasks = (ABT_task **)malloc(num_xstreams * sizeof(ABT_task *));
     for (i = 0; i < num_xstreams; i++) {
         g_tasks[i] = (ABT_task *)malloc(num_tasks * sizeof(ABT_task));
     }
@@ -120,14 +120,17 @@ int main(int argc, char *argv[])
 
     /* benchmarking */
     for (t = 0; t < T_LAST; t++) {
-        void (*test_fn)(void *);
+        void (*test_fn) (void *);
 
         switch (t) {
-            case T_CREATE_JOIN:    test_fn = test_create_join;
-                                   break;
-            case T_CREATE_UNNAMED: test_fn = test_create_unnamed;
-                                   break;
-            default: assert(0);
+            case T_CREATE_JOIN:
+                test_fn = test_create_join;
+                break;
+            case T_CREATE_UNNAMED:
+                test_fn = test_create_unnamed;
+                break;
+            default:
+                assert(0);
         }
 
         /* warm-up */
@@ -192,4 +195,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

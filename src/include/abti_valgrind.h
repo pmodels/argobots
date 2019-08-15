@@ -20,8 +20,8 @@ void ABTI_valgrind_unregister_stack(const void *p_stack);
 
 #else
 
-#define ABTI_VALGRIND_REGISTER_STACK(p_stack, size)   do { } while(0)
-#define ABTI_VALGRIND_UNREGISTER_STACK(p_stack)       do { } while(0)
+#define ABTI_VALGRIND_REGISTER_STACK(p_stack, size)   do { } while (0)
+#define ABTI_VALGRIND_UNREGISTER_STACK(p_stack)       do { } while (0)
 
 #endif /* HAVE_VALGRIND_SUPPORT */
 

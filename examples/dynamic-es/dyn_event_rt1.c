@@ -53,7 +53,8 @@ void rt1_init(int max_xstreams, ABT_xstream *xstreams)
     rt1_data = (rt1_data_t *)calloc(1, sizeof(rt1_data_t));
     rt1_data->max_xstreams = max_xstreams;
     rt1_data->num_xstreams = max_xstreams;
-    rt1_data->xstreams = (ABT_xstream *)malloc(max_xstreams*sizeof(ABT_xstream));
+    rt1_data->xstreams =
+        (ABT_xstream *)malloc(max_xstreams * sizeof(ABT_xstream));
     for (i = 0; i < max_xstreams; i++) {
         rt1_data->xstreams[i] = xstreams[i];
     }
@@ -73,8 +74,7 @@ void rt1_init(int max_xstreams, ABT_xstream *xstreams)
                            &rt1_data->stop_cb_id);
     ABT_event_add_callback(ABT_EVENT_ADD_XSTREAM,
                            rt1_ask_add_xstream, rt1_data,
-                           rt1_act_add_xstream, rt1_data,
-                           &rt1_data->add_cb_id);
+                           rt1_act_add_xstream, rt1_data, &rt1_data->add_cb_id);
 
     /* application data */
     env = getenv("APP_NUM_COMPS");
@@ -154,8 +154,7 @@ void rt1_launcher(void *arg)
     /* Create a scheduler */
     ABT_sched_config_create(&config,
                             cv_event_freq, 10,
-                            cv_idx, idx,
-                            ABT_sched_config_var_end);
+                            cv_idx, idx, ABT_sched_config_var_end);
     ABT_sched_create(&sched_def, 1, &rt1_data->pool, config, &sched);
 
     /* Push the scheduler to the current pool */
@@ -200,7 +199,8 @@ static void rt1_app(int eid)
     ABT_thread_self(&cur_thread);
     ABT_thread_get_last_pool(cur_thread, &cur_pool);
 
-    if (eid == 0) ABT_event_prof_start();
+    if (eid == 0)
+        ABT_event_prof_start();
 
     num_comps = rt1_data->num_comps;
     for (i = 0; i < num_comps * 2; i += 2) {
@@ -208,8 +208,7 @@ static void rt1_app(int eid)
                           (void *)(intptr_t)(eid * num_comps * 2 + i),
                           ABT_THREAD_ATTR_NULL, NULL);
         ABT_task_create(rt1_data->pool, rt1_app_compute,
-                        (void *)(intptr_t)(eid * num_comps * 2 + i + 1),
-                        NULL);
+                        (void *)(intptr_t)(eid * num_comps * 2 + i + 1), NULL);
     }
 
     do {
@@ -218,7 +217,8 @@ static void rt1_app(int eid)
         /* If the size of cur_pool is zero, it means the stacked scheduler has
          * been terminated because of the shrinking event. */
         ABT_pool_get_total_size(cur_pool, &size);
-        if (size == 0) break;
+        if (size == 0)
+            break;
 
         ABT_pool_get_total_size(rt1_data->pool, &size);
     } while (size > 0);
@@ -443,7 +443,8 @@ static void sched_run(ABT_sched sched)
             ABT_xstream_run_unit(unit, my_pool);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
-            target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
+            target =
+                (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
             ABT_pool_pop(pools[target], &unit);
             if (unit != ABT_UNIT_NULL) {
                 ABT_xstream_run_unit(unit, pools[target]);
@@ -473,4 +474,3 @@ static int sched_free(ABT_sched sched)
 
     return ABT_SUCCESS;
 }
-

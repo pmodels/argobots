@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc >= 2) {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_tasks    = ATS_get_arg_val(ATS_ARG_N_TASK);
+        num_tasks = ATS_get_arg_val(ATS_ARG_N_TASK);
     }
     ATS_init(argc, argv, num_xstreams);
 
@@ -170,4 +170,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
+int ABTD_xstream_context_create(void *(*f_xstream) (void *), void *p_arg,
                                 ABTD_xstream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
@@ -48,4 +48,3 @@ int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx)
     *p_ctx = pthread_self();
     return abt_errno;
 }
-

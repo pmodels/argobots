@@ -100,7 +100,8 @@ int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive)
     if (recursive == ABT_TRUE) {
         ABTD_atomic_fetch_or_uint32(&p_attr->attrs, ABTI_MUTEX_ATTR_RECURSIVE);
     } else {
-        ABTD_atomic_fetch_and_uint32(&p_attr->attrs, ~ABTI_MUTEX_ATTR_RECURSIVE);
+        ABTD_atomic_fetch_and_uint32(&p_attr->attrs,
+                                     ~ABTI_MUTEX_ATTR_RECURSIVE);
     }
 
   fn_exit:
@@ -134,16 +135,6 @@ void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf)
         return;
     }
 
-    sprintf(p_buf,
-        "["
-        "attrs:%x "
-        "nesting_cnt:%u "
-        "p_owner:%p "
-        "]",
-        p_attr->attrs,
-        p_attr->nesting_cnt,
-        p_attr->p_owner
-    );
+    sprintf(p_buf, "[attrs:%x nesting_cnt:%u p_owner:%p ]",
+            p_attr->attrs, p_attr->nesting_cnt, p_attr->p_owner);
 }
-
-

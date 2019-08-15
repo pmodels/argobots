@@ -46,7 +46,8 @@ int main(int argc, char *argv[])
 {
     int i, ret;
 
-    if (argc > 1) num_units = atoi(argv[1]);
+    if (argc > 1)
+        num_units = atoi(argv[1]);
     assert(num_units >= 0);
 
     /* Initialize */
@@ -89,7 +90,8 @@ static void fini_global_data(void)
     int i;
 
     for (i = 0; i < g_data.num_scheds; i++) {
-        if (g_data.pools[i]) free(g_data.pools[i]);
+        if (g_data.pools[i])
+            free(g_data.pools[i]);
     }
 
     free(g_data.num_pools);
@@ -108,7 +110,7 @@ static void create_scheds_and_xstreams(void)
     ABT_xstream *xstreams = g_data.xstreams;
 
     for (i = 0; i < num_scheds; i++) {
-        if (i == num_scheds-1) {
+        if (i == num_scheds - 1) {
             /* Create pools and then create a scheduler */
             num_pools[i] = 2;
             pools[i] = (ABT_pool *)malloc(num_pools[i] * sizeof(ABT_pool));
@@ -120,14 +122,13 @@ static void create_scheds_and_xstreams(void)
             }
 
             ret = ABT_sched_create_basic(ABT_SCHED_PRIO, num_pools[i], pools[i],
-                                         ABT_SCHED_CONFIG_NULL,
-                                         &scheds[i]);
+                                         ABT_SCHED_CONFIG_NULL, &scheds[i]);
             ATS_ERROR(ret, "ABT_sched_create_basic");
         } else {
             /* Create a scheduler and then get the list of pools */
             ABT_sched_config config;
-            ret = ABT_sched_config_create(&config,
-                                          ABT_sched_config_access, accesses[i],
+            ret = ABT_sched_config_create(&config, ABT_sched_config_access,
+                                          accesses[i],
                                           ABT_sched_config_var_end);
             ATS_ERROR(ret, "ABT_sched_config_create");
             ret = ABT_sched_create_basic(ABT_SCHED_PRIO, 0, NULL, config,
@@ -151,8 +152,8 @@ static void create_scheds_and_xstreams(void)
             ATS_ERROR(ret, "ABT_xstream_set_main_sched");
         } else {
             /* If the predefined scheduler is associated with PW pools,
-               we will stack it so that the primary ULT can add the initial
-               work unit. */
+             * we will stack it so that the primary ULT can add the initial
+             * work unit. */
             if (accesses[i] == ABT_POOL_ACCESS_PRIV ||
                 accesses[i] == ABT_POOL_ACCESS_SPSC ||
                 accesses[i] == ABT_POOL_ACCESS_SPMC) {
@@ -189,7 +190,8 @@ typedef struct {
 
 static ABT_bool verify_exec_order(int es_id, int my_prio)
 {
-    if (my_prio == 0) return ABT_TRUE;
+    if (my_prio == 0)
+        return ABT_TRUE;
 
     ABT_pool *my_pools = g_data.pools[es_id];
     size_t pool_size;
@@ -198,7 +200,8 @@ static ABT_bool verify_exec_order(int es_id, int my_prio)
     for (i = 0; i < my_prio; i++) {
         ret = ABT_pool_get_size(my_pools[i], &pool_size);
         ATS_ERROR(ret, "ABT_pool_get_size");
-        if (pool_size > 0) return ABT_FALSE;
+        if (pool_size > 0)
+            return ABT_FALSE;
     }
     return ABT_TRUE;
 }
@@ -211,14 +214,14 @@ static void thread_func(void *arg)
     valid = verify_exec_order(my_arg->es_id, my_arg->prio);
     assert(valid == ABT_TRUE);
     ATS_printf(1, "[E%d:U%d:P%d] before yield\n",
-                    my_arg->es_id, my_arg->my_id, my_arg->prio);
+               my_arg->es_id, my_arg->my_id, my_arg->prio);
 
     ABT_thread_yield();
 
     valid = verify_exec_order(my_arg->es_id, my_arg->prio);
     assert(valid == ABT_TRUE);
     ATS_printf(1, "[E%d:U%d:P%d] after yield\n",
-                    my_arg->es_id, my_arg->my_id, my_arg->prio);
+               my_arg->es_id, my_arg->my_id, my_arg->prio);
 
     free(my_arg);
 }
@@ -231,7 +234,7 @@ static void task_func(void *arg)
     valid = verify_exec_order(my_arg->es_id, my_arg->prio);
     assert(valid == ABT_TRUE);
     ATS_printf(1, "[E%d:T%d:P%d] running\n",
-                    my_arg->es_id, my_arg->my_id, my_arg->prio);
+               my_arg->es_id, my_arg->my_id, my_arg->prio);
 
     free(my_arg);
 }
@@ -256,14 +259,12 @@ static void gen_work(void *arg)
         my_arg->prio = rand_r(&seed) % num_pools;
 
         if (i & 1) {
-            ret = ABT_thread_create(my_pools[my_arg->prio],
-                                    thread_func, (void *)my_arg,
-                                    ABT_THREAD_ATTR_NULL, NULL);
+            ret = ABT_thread_create(my_pools[my_arg->prio], thread_func,
+                                    (void *)my_arg, ABT_THREAD_ATTR_NULL, NULL);
             ATS_ERROR(ret, "ABT_thread_create");
         } else {
-            ret = ABT_task_create(my_pools[my_arg->prio],
-                                  task_func, (void *)my_arg,
-                                  NULL);
+            ret = ABT_task_create(my_pools[my_arg->prio], task_func,
+                                  (void *)my_arg, NULL);
             ATS_ERROR(ret, "ABT_task_create");
         }
     }
@@ -275,12 +276,12 @@ static void gen_work(void *arg)
         if (accesses[idx] == ABT_POOL_ACCESS_PRIV ||
             accesses[idx] == ABT_POOL_ACCESS_SPSC ||
             accesses[idx] == ABT_POOL_ACCESS_SPMC) {
-                ABT_pool main_pool;
-                ret = ABT_xstream_get_main_pools(g_data.xstreams[idx],
-                                                 1, &main_pool);
-                ATS_ERROR(ret, "ABT_xstream_get_main_pools");
-                ret = ABT_pool_add_sched(main_pool, g_data.scheds[idx]);
-                ATS_ERROR(ret, "ABT_pool_add_sched");
+            ABT_pool main_pool;
+            ret = ABT_xstream_get_main_pools(g_data.xstreams[idx], 1,
+                                             &main_pool);
+            ATS_ERROR(ret, "ABT_xstream_get_main_pools");
+            ret = ABT_pool_add_sched(main_pool, g_data.scheds[idx]);
+            ATS_ERROR(ret, "ABT_pool_add_sched");
         }
     }
 }
@@ -301,4 +302,3 @@ static void create_work_units(void)
         ATS_ERROR(ret, "ABT_thread_create");
     }
 }
-

@@ -14,7 +14,8 @@ char *ABTU_get_indent_str(int indent)
 {
     char *space;
     space = (char *)ABTU_malloc(sizeof(char) * (indent + 1));
-    if (indent > 0) memset(space, ' ', indent);
+    if (indent > 0)
+        memset(space, ' ', indent);
     space[indent] = '\0';
     return space;
 }
@@ -32,16 +33,18 @@ char *ABTU_strtrim(char *str)
     char *end;
 
     /* Trim leading white spaces */
-    while (isspace(*str)) str++;
+    while (isspace(*str))
+        str++;
 
-    if (*str == 0) return str;
+    if (*str == 0)
+        return str;
 
     /* Trim trailing white spaces */
     end = str + strlen(str) - 1;
-    while (end > str && isspace(*end)) end--;
+    while (end > str && isspace(*end))
+        end--;
 
     *(end + 1) = 0;
 
     return str;
 }
-

@@ -110,7 +110,8 @@ void aggregate_fibonacci(void *arguments)
         ABT_mutex_lock(parent->mutex);
         parent->result += result;
         flag = parent->flag;
-        if (!flag) parent->flag = 1;
+        if (!flag)
+            parent->flag = 1;
         ABT_mutex_unlock(parent->mutex);
         if (flag) {
             /* creating an aggregate task */
@@ -162,7 +163,8 @@ int verify(int n)
     int i;
     int old[2], val;
 
-    if (n <= 2) return 1;
+    if (n <= 2)
+        return 1;
 
     old[0] = old[1] = 1;
     for (i = 3; i <= n; i++) {

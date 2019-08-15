@@ -32,8 +32,7 @@ static void print_cpuset(int rank, int cpuset_size, int *cpuset)
         len = strlen(&cpuset_str[pos]);
         pos += len;
     }
-    ATS_printf(1, "[E%d] CPU set (%d): {%s}\n",
-                    rank, cpuset_size, cpuset_str);
+    ATS_printf(1, "[E%d] CPU set (%d): {%s}\n", rank, cpuset_size, cpuset_str);
 
     free(cpuset_str);
 }
@@ -57,8 +56,7 @@ static void test_affinity(void *arg)
     ATS_printf(1, "[E%d] CPU bind: %d\n", rank, cpuid);
 
     new_cpuid = (cpuid + 1) % num_xstreams;
-    ATS_printf(1, "[E%d] change binding: %d -> %d\n",
-                    rank, cpuid, new_cpuid);
+    ATS_printf(1, "[E%d] change binding: %d -> %d\n", rank, cpuid, new_cpuid);
     ret = ABT_xstream_set_cpubind(xstream, new_cpuid);
     ATS_ERROR(ret, "ABT_xstream_set_cpubind");
     ret = ABT_xstream_get_cpubind(xstream, &cpuid);
@@ -179,4 +177,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

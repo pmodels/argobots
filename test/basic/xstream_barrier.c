@@ -21,7 +21,8 @@ void test_xstream_barrier(void *arg)
     int i, ret;
 
     for (i = 0; i < num_iter; i++) {
-        if (rank == 0) value = i;
+        if (rank == 0)
+            value = i;
         ret = ABT_xstream_barrier_wait(barrier);
         ATS_ERROR(ret, "ABT_xstream_barrier_wait");
 
@@ -43,7 +44,7 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc >= 2) {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_iter     = ATS_get_arg_val(ATS_ARG_N_ITER);
+        num_iter = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
     ATS_init(argc, argv, num_xstreams);
 
@@ -109,4 +110,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

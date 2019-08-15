@@ -111,16 +111,14 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 }
 
 
-static inline
-double convert_timespec_to_sec(const struct timespec *p_ts)
+static inline double convert_timespec_to_sec(const struct timespec *p_ts)
 {
     double secs;
     secs = ((double)p_ts->tv_sec) + 1.0e-9 * ((double)p_ts->tv_nsec);
     return secs;
 }
 
-static inline
-double get_cur_time(void)
+static inline double get_cur_time(void)
 {
 #if defined(HAVE_CLOCK_GETTIME)
     struct timespec ts;
@@ -136,16 +134,16 @@ double get_cur_time(void)
 #endif
 }
 
-static inline
-void remove_unit(ABTI_cond *p_cond, ABTI_unit *p_unit)
+static inline void remove_unit(ABTI_cond *p_cond, ABTI_unit *p_unit)
 {
-    if (p_unit->p_next == NULL) return;
+    if (p_unit->p_next == NULL)
+        return;
 
     ABTI_spinlock_acquire(&p_cond->lock);
 
     if (p_unit->p_next == NULL) {
         ABTI_spinlock_release(&p_cond->lock);
-        return ;
+        return;
     }
 
     /* If p_unit is still in the queue, we have to remove it. */
@@ -356,4 +354,3 @@ int ABT_cond_broadcast(ABT_cond cond)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-

@@ -8,9 +8,9 @@
 #include "abt.h"
 #include "dyn_event.h"
 
-static int g_max_xstreams;          /* maximum # of ESs */
-static int g_num_xstreams;          /* current # of ESs */
-double g_timeout = 2.0;             /* timeout value in secs. */
+static int g_max_xstreams;      /* maximum # of ESs */
+static int g_num_xstreams;      /* current # of ESs */
+double g_timeout = 2.0;         /* timeout value in secs. */
 
 ABT_xstream *g_xstreams = NULL;
 
@@ -96,4 +96,3 @@ static void run_app(void)
 
     rt1_finalize();
 }
-

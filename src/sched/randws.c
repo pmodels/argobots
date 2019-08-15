@@ -7,9 +7,9 @@
 
 /* Random Work-stealing Scheduler Implementation */
 
-static int  sched_init(ABT_sched sched, ABT_sched_config config);
+static int sched_init(ABT_sched sched, ABT_sched_config config);
 static void sched_run(ABT_sched sched);
-static int  sched_free(ABT_sched);
+static int sched_free(ABT_sched);
 
 static ABT_sched_def sched_randws_def = {
     .type = ABT_SCHED_TYPE_TASK,
@@ -88,7 +88,8 @@ static void sched_run(ABT_sched sched)
             CNT_INC(run_cnt);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
-            target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
+            target =
+                (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
             pool = p_pools[target];
             p_pool = ABTI_pool_get_ptr(pool);
             unit = ABTI_pool_pop(p_pool);
@@ -102,7 +103,8 @@ static void sched_run(ABT_sched sched)
 
         if (++work_count >= p_data->event_freq) {
             ABT_bool stop = ABTI_sched_has_to_stop(p_sched, p_xstream);
-            if (stop == ABT_TRUE) break;
+            if (stop == ABT_TRUE)
+                break;
             work_count = 0;
             ABTI_xstream_check_events(p_xstream, sched);
             SCHED_SLEEP(run_cnt, p_data->sleep_time);
@@ -121,4 +123,3 @@ static int sched_free(ABT_sched sched)
 
     return ABT_SUCCESS;
 }
-

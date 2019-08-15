@@ -51,10 +51,10 @@ ABTI_elem *ABTI_elem_create_from_xstream(ABTI_xstream *p_xstream)
 
     p_elem = (ABTI_elem *)ABTU_malloc(sizeof(ABTI_elem));
     p_elem->p_contn = NULL;
-    p_elem->type    = ABT_UNIT_TYPE_XSTREAM;
-    p_elem->p_obj   = (void *)p_xstream;
-    p_elem->p_prev  = NULL;
-    p_elem->p_next  = NULL;
+    p_elem->type = ABT_UNIT_TYPE_XSTREAM;
+    p_elem->p_obj = (void *)p_xstream;
+    p_elem->p_prev = NULL;
+    p_elem->p_next = NULL;
 
     return p_elem;
 }
@@ -65,10 +65,10 @@ ABTI_elem *ABTI_elem_create_from_thread(ABTI_thread *p_thread)
 
     p_elem = (ABTI_elem *)ABTU_malloc(sizeof(ABTI_elem));
     p_elem->p_contn = NULL;
-    p_elem->type    = ABT_UNIT_TYPE_THREAD;
-    p_elem->p_obj   = (void *)p_thread;
-    p_elem->p_prev  = NULL;
-    p_elem->p_next  = NULL;
+    p_elem->type = ABT_UNIT_TYPE_THREAD;
+    p_elem->p_obj = (void *)p_thread;
+    p_elem->p_prev = NULL;
+    p_elem->p_next = NULL;
 
     return p_elem;
 }
@@ -79,10 +79,10 @@ ABTI_elem *ABTI_elem_create_from_task(ABTI_task *p_task)
 
     p_elem = (ABTI_elem *)ABTU_malloc(sizeof(ABTI_elem));
     p_elem->p_contn = NULL;
-    p_elem->type    = ABT_UNIT_TYPE_TASK;
-    p_elem->p_obj   = (void *)p_task;
-    p_elem->p_prev  = NULL;
-    p_elem->p_next  = NULL;
+    p_elem->type = ABT_UNIT_TYPE_TASK;
+    p_elem->p_obj = (void *)p_task;
+    p_elem->p_prev = NULL;
+    p_elem->p_next = NULL;
 
     return p_elem;
 }
@@ -104,47 +104,51 @@ void ABTI_elem_print(ABTI_elem *p_elem, FILE *p_os, int indent, ABT_bool detail)
 
     char *type;
     switch (p_elem->type) {
-        case ABT_UNIT_TYPE_THREAD : type = "ULT"; break;
-        case ABT_UNIT_TYPE_TASK   : type = "TASKLET"; break;
-        case ABT_UNIT_TYPE_XSTREAM: type = "ES"; break;
-        default:                    type = "UNKNOWN"; break;
+        case ABT_UNIT_TYPE_THREAD:
+            type = "ULT";
+            break;
+        case ABT_UNIT_TYPE_TASK:
+            type = "TASKLET";
+            break;
+        case ABT_UNIT_TYPE_XSTREAM:
+            type = "ES";
+            break;
+        default:
+            type = "UNKNOWN";
+            break;
     }
 
     fprintf(p_os,
-        "%s== ELEM (%p) ==\n"
-        "%scontn: %p\n"
-        "%stype : %s\n"
-        "%sobj  : %p\n"
-        "%sprev : %p\n"
-        "%snext : %p\n",
-        prefix, p_elem,
-        prefix, p_elem->p_contn,
-        prefix, type,
-        prefix, p_elem->p_obj,
-        prefix, p_elem->p_prev,
-        prefix, p_elem->p_next
-    );
+            "%s== ELEM (%p) ==\n"
+            "%scontn: %p\n"
+            "%stype : %s\n"
+            "%sobj  : %p\n"
+            "%sprev : %p\n"
+            "%snext : %p\n",
+            prefix, p_elem, prefix, p_elem->p_contn, prefix, type, prefix,
+            p_elem->p_obj, prefix, p_elem->p_prev, prefix, p_elem->p_next);
 
     if (detail == ABT_TRUE) {
         switch (p_elem->type) {
-            case ABT_UNIT_TYPE_THREAD: {
-                ABTI_thread *p_thread = (ABTI_thread *)p_elem->p_obj;
-                ABTI_thread_print(p_thread, p_os, indent + ABTI_INDENT);
-                break;
-            }
-
-            case ABT_UNIT_TYPE_TASK: {
-                ABTI_task *p_task = (ABTI_task *)p_elem->p_obj;
-                ABTI_task_print(p_task, p_os, indent + ABTI_INDENT);
-                break;
-            }
-
-            case ABT_UNIT_TYPE_XSTREAM: {
-                ABTI_xstream *p_xstream = (ABTI_xstream *)p_elem->p_obj;
-                ABTI_xstream_print(p_xstream, p_os, indent + ABTI_INDENT,
-                                   ABT_TRUE);
-                break;
-            }
+            case ABT_UNIT_TYPE_THREAD:
+                {
+                    ABTI_thread *p_thread = (ABTI_thread *)p_elem->p_obj;
+                    ABTI_thread_print(p_thread, p_os, indent + ABTI_INDENT);
+                    break;
+                }
+            case ABT_UNIT_TYPE_TASK:
+                {
+                    ABTI_task *p_task = (ABTI_task *)p_elem->p_obj;
+                    ABTI_task_print(p_task, p_os, indent + ABTI_INDENT);
+                    break;
+                }
+            case ABT_UNIT_TYPE_XSTREAM:
+                {
+                    ABTI_xstream *p_xstream = (ABTI_xstream *)p_elem->p_obj;
+                    ABTI_xstream_print(p_xstream, p_os, indent + ABTI_INDENT,
+                                       ABT_TRUE);
+                    break;
+                }
 
             default:
                 break;
@@ -155,4 +159,3 @@ void ABTI_elem_print(ABTI_elem *p_elem, FILE *p_os, int indent, ABT_bool detail)
     fflush(p_os);
     ABTU_free(prefix);
 }
-

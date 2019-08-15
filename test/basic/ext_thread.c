@@ -16,9 +16,10 @@
 #define BUF_SIZE 10
 
 ABT_mutex g_mutex = ABT_MUTEX_NULL;
-ABT_cond  g_cond  = ABT_COND_NULL;
-ABT_eventual g_eventual[2] = {ABT_EVENTUAL_NULL, ABT_EVENTUAL_NULL};
-ABT_future   g_future[2]   = {ABT_FUTURE_NULL, ABT_FUTURE_NULL};
+ABT_cond g_cond = ABT_COND_NULL;
+ABT_eventual g_eventual[2] = { ABT_EVENTUAL_NULL, ABT_EVENTUAL_NULL };
+ABT_future g_future[2] = { ABT_FUTURE_NULL, ABT_FUTURE_NULL };
+
 int g_counter = 0;
 volatile int g_threads = 0;
 
@@ -61,7 +62,8 @@ void thread_func(void *arg)
 
     /* ULT 1 and pthread are waiting, and ULT 0 broadcasts. */
     if (my_id == 0) {
-        while (g_threads < 2) ABT_thread_yield();
+        while (g_threads < 2)
+            ABT_thread_yield();
         ABT_mutex_lock(g_mutex);
         ABT_cond_broadcast(g_cond);
         ABT_mutex_unlock(g_mutex);
@@ -237,4 +239,3 @@ int main(int argc, char *argv[])
     /* Finalize */
     return ATS_finalize(0);
 }
-

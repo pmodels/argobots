@@ -21,7 +21,7 @@
             abt_errno = ABT_ERR_UNINITIALIZED;  \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_INITIALIZED()
 #endif
@@ -40,7 +40,7 @@
             HANDLE_ERROR(msg);                  \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_ERROR_MSG(abt_errno,msg)
 #endif
@@ -52,13 +52,13 @@
             abt_errno = (val);                  \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #define ABTI_CHECK_TRUE_RET(cond,val)           \
     do {                                        \
         if (!(cond)) {                          \
             return (val);                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_TRUE(cond,val)
 #define ABTI_CHECK_TRUE_RET(cond,val)
@@ -72,14 +72,14 @@
             HANDLE_ERROR(msg);                  \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #define ABTI_CHECK_TRUE_MSG_RET(cond,val,msg)   \
     do {                                        \
         if (!(cond)) {                          \
             HANDLE_ERROR(msg);                  \
             return (val);                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_TRUE_MSG(cond,val,msg)
 #define ABTI_CHECK_TRUE_MSG_RET(cond,val,msg)
@@ -92,7 +92,7 @@
             abt_errno = ABT_ERR_INV_XSTREAM;    \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_XSTREAM_PTR(p)
 #endif
@@ -104,7 +104,7 @@
             abt_errno = ABT_ERR_INV_POOL;       \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_POOL_PTR(p)
 #endif
@@ -116,7 +116,7 @@
             abt_errno = ABT_ERR_INV_SCHED;      \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_SCHED_PTR(p)
 #endif
@@ -128,7 +128,7 @@
             abt_errno = ABT_ERR_INV_THREAD;     \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_THREAD_PTR(p)
 #endif
@@ -140,7 +140,7 @@
             abt_errno = ABT_ERR_INV_THREAD_ATTR;    \
             goto fn_fail;                           \
         }                                           \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_THREAD_ATTR_PTR(p)
 #endif
@@ -152,7 +152,7 @@
             abt_errno = ABT_ERR_INV_TASK;       \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_TASK_PTR(p)
 #endif
@@ -164,7 +164,7 @@
             abt_errno = ABT_ERR_INV_KEY;        \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_KEY_PTR(p)
 #endif
@@ -176,7 +176,7 @@
             abt_errno = ABT_ERR_INV_MUTEX;      \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_MUTEX_PTR(p)
 #endif
@@ -188,7 +188,7 @@
             abt_errno = ABT_ERR_INV_MUTEX_ATTR; \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p)
 #endif
@@ -200,7 +200,7 @@
             abt_errno = ABT_ERR_INV_COND;       \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_COND_PTR(p)
 #endif
@@ -212,14 +212,14 @@
             abt_errno = ABT_ERR_INV_RWLOCK;       \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_RWLOCK_PTR(p) \
     do {                              \
         if (0) {                      \
             goto fn_fail;             \
         }                             \
-    } while(0)
+    } while (0)
 #endif
 
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
@@ -229,7 +229,7 @@
             abt_errno = ABT_ERR_INV_FUTURE;     \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_FUTURE_PTR(p)
 #endif
@@ -241,7 +241,7 @@
             abt_errno = ABT_ERR_INV_EVENTUAL;   \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_EVENTUAL_PTR(p)
 #endif
@@ -265,21 +265,18 @@
             abt_errno = ABT_ERR_INV_TIMER;      \
             goto fn_fail;                       \
         }                                       \
-    } while(0)
+    } while (0)
 #else
 #define ABTI_CHECK_NULL_TIMER_PTR(p)
 #endif
 
 #define HANDLE_ERROR(msg) \
     fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
-    //fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); exit(-1)
 
 #define HANDLE_ERROR_WITH_CODE(msg,n) \
     fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n)
-    //fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n); exit(-1)
 
 #define HANDLE_ERROR_FUNC_WITH_CODE(n) \
     fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, __func__, n)
-    //fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, __func__, n); exit(-1)
 
 #endif /* ABTI_ERROR_H_INCLUDED */

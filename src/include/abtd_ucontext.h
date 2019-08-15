@@ -9,19 +9,19 @@
 #include "abt_config.h"
 
 #if defined(ABT_CONFIG_USE_FCONTEXT)
-typedef void *  fcontext_t;
+typedef void *fcontext_t;
 
 typedef struct abt_ucontext_t {
-    fcontext_t             fctx;    /* actual context */
-    void (*f_thread)(void *);       /* ULT function */
-    void *                 p_arg;   /* ULT function argument */
-    struct abt_ucontext_t *p_link;  /* pointer to scheduler context */
+    fcontext_t fctx;            /* actual context */
+    void (*f_thread) (void *);  /* ULT function */
+    void *p_arg;                /* ULT function argument */
+    struct abt_ucontext_t *p_link;      /* pointer to scheduler context */
 } abt_ucontext_t;
 
 #else
 #define _XOPEN_SOURCE
 #include <ucontext.h>
-typedef ucontext_t  abt_ucontext_t;
+typedef ucontext_t abt_ucontext_t;
 
 #endif
 

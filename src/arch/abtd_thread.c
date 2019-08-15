@@ -12,7 +12,7 @@ static inline void ABTD_thread_terminate_sched(ABTI_thread *p_thread);
 void ABTD_thread_func_wrapper_thread(void *p_arg)
 {
     ABTD_thread_context *p_fctx = (ABTD_thread_context *)p_arg;
-    void (*thread_func)(void *) = p_fctx->f_thread;
+    void (*thread_func) (void *) = p_fctx->f_thread;
 
     thread_func(p_fctx->p_arg);
 
@@ -28,7 +28,7 @@ void ABTD_thread_func_wrapper_thread(void *p_arg)
 void ABTD_thread_func_wrapper_sched(void *p_arg)
 {
     ABTD_thread_context *p_fctx = (ABTD_thread_context *)p_arg;
-    void (*thread_func)(void *) = p_fctx->f_thread;
+    void (*thread_func) (void *) = p_fctx->f_thread;
 
     thread_func(p_fctx->p_arg);
 
@@ -44,7 +44,7 @@ void ABTD_thread_func_wrapper_sched(void *p_arg)
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
                               int arg_upper, int arg_lower)
 {
-    void (*thread_func)(void *);
+    void (*thread_func) (void *);
     void *p_arg;
     size_t ptr_size, int_size;
 
@@ -56,12 +56,10 @@ void ABTD_thread_func_wrapper(int func_upper, int func_lower,
     } else if (ptr_size == int_size * 2) {
         uintptr_t shift_bits = CHAR_BIT * int_size;
         uintptr_t mask = ((uintptr_t)1 << shift_bits) - 1;
-        thread_func = (void (*)(void *))(
-                ((uintptr_t)func_upper << shift_bits) |
-                ((uintptr_t)func_lower & mask));
-        p_arg = (void *)(
-                ((uintptr_t)arg_upper << shift_bits) |
-                ((uintptr_t)arg_lower & mask));
+        thread_func = (void (*)(void *))(((uintptr_t)func_upper << shift_bits) |
+                                         ((uintptr_t)func_lower & mask));
+        p_arg = (void *)(((uintptr_t)arg_upper << shift_bits) |
+                         ((uintptr_t)arg_lower & mask));
     } else {
         ABTI_ASSERT(0);
     }
@@ -136,7 +134,8 @@ static inline void ABTDI_thread_terminate(ABTI_thread *p_thread,
         }
     } else {
         uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
-                ABTI_THREAD_REQ_JOIN | ABTI_THREAD_REQ_TERMINATE);
+                                                   ABTI_THREAD_REQ_JOIN |
+                                                   ABTI_THREAD_REQ_TERMINATE);
         if (req & ABTI_THREAD_REQ_JOIN) {
             /* This case means there has been a join request and the joiner has
              * blocked.  We have to wake up the joiner ULT. */
@@ -214,7 +213,8 @@ void ABTD_thread_cancel(ABTI_thread *p_thread)
         ABTI_thread_set_ready(p_joiner);
     } else {
         uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
-                ABTI_THREAD_REQ_JOIN | ABTI_THREAD_REQ_TERMINATE);
+                                                   ABTI_THREAD_REQ_JOIN |
+                                                   ABTI_THREAD_REQ_TERMINATE);
         if (req & ABTI_THREAD_REQ_JOIN) {
             /* This case means there has been a join request and the joiner has
              * blocked.  We have to wake up the joiner ULT. */
@@ -228,8 +228,8 @@ void ABTD_thread_cancel(ABTI_thread *p_thread)
 #endif
 }
 
-static inline
-void print_bytes(size_t size, void *p_val, FILE *p_os) {
+static inline void print_bytes(size_t size, void *p_val, FILE *p_os)
+{
     size_t i;
     for (i = 0; i < size; i++) {
         uint8_t val = ((uint8_t *)p_val)[i];

@@ -66,7 +66,7 @@ do {                                                                \
 #define START_NTASKS    64
 
 static ABT_xstream *xstreams;
-static ABT_pool    *pools;
+static ABT_pool *pools;
 static int niter, max_tasks, ness;
 static ABT_xstream_barrier g_xbarrier = ABT_XSTREAM_BARRIER_NULL;
 
@@ -93,7 +93,7 @@ static void master_thread_func(void *arg)
     ABTX_papi_add_event(event_set);
 #endif /* USE_PAPI */
 
-    ABT_task *my_tasks = (ABT_task *)malloc(max_tasks*sizeof(ABT_task));
+    ABT_task *my_tasks = (ABT_task *)malloc(max_tasks * sizeof(ABT_task));
 
     /* warm-up */
     for (t = 0; t < max_tasks; t++)
@@ -102,7 +102,7 @@ static void master_thread_func(void *arg)
         ABT_task_free(&my_tasks[t]);
 
     seq_state_t state;
-    seq_init(&state, 2, START_NTASKS/2, START_NTASKS/2, 1);
+    seq_init(&state, 2, START_NTASKS / 2, START_NTASKS / 2, 1);
     while ((ntasks = seq_get_next_term(&state)) <= max_tasks) {
         ABT_xstream_barrier_wait(g_xbarrier);
         float crea_time = 0.0, crea_timestd = 0.0;
@@ -115,8 +115,9 @@ static void master_thread_func(void *arg)
 #endif
         int i;
 
-        /* The following line tries to keep the total number of iterations constant */
-        int iter = niter/(ntasks/START_NTASKS);
+        /* The following line tries to keep the total number of iterations
+         * constant */
+        int iter = niter / (ntasks / START_NTASKS);
         for (i = 0; i < iter; i++) {
             unsigned long long start_time;
 
@@ -163,11 +164,11 @@ int main(int argc, char *argv[])
     int i;
     ATS_read_args(argc, argv);
     niter = ATS_get_arg_val(ATS_ARG_N_ITER);
-    ness  = ATS_get_arg_val(ATS_ARG_N_ES);
+    ness = ATS_get_arg_val(ATS_ARG_N_ES);
     max_tasks = ATS_get_arg_val(ATS_ARG_N_TASK);
 
-    xstreams = (ABT_xstream *)malloc(ness*sizeof(ABT_xstream));
-    pools = (ABT_pool *)malloc(ness*sizeof(ABT_pool));
+    xstreams = (ABT_xstream *)malloc(ness * sizeof(ABT_xstream));
+    pools = (ABT_pool *)malloc(ness * sizeof(ABT_pool));
 
     ATS_init(argc, argv, ness);
 
@@ -204,9 +205,10 @@ int main(int argc, char *argv[])
                           ABT_THREAD_ATTR_NULL, NULL);
     }
 
-    /* Create ESs*/
+    /* Create ESs */
     ABT_xstream_self(&xstreams[0]);
-    ABT_xstream_set_main_sched_basic(xstreams[0], ABT_SCHED_DEFAULT, 1, &pools[0]);
+    ABT_xstream_set_main_sched_basic(xstreams[0], ABT_SCHED_DEFAULT, 1,
+                                     &pools[0]);
     for (i = 1; i < ness; i++) {
         ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 1, &pools[i],
                                  ABT_SCHED_CONFIG_NULL, &xstreams[i]);
@@ -228,4 +230,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

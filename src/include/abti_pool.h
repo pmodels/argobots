@@ -10,8 +10,7 @@
 
 static inline ABTI_xstream *ABTI_xstream_self(void);
 
-static inline
-ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool)
+static inline ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_pool *p_pool;
@@ -26,8 +25,7 @@ ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool)
 #endif
 }
 
-static inline
-ABT_pool ABTI_pool_get_handle(ABTI_pool *p_pool)
+static inline ABT_pool ABTI_pool_get_handle(ABTI_pool *p_pool)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_pool h_pool;
@@ -43,36 +41,31 @@ ABT_pool ABTI_pool_get_handle(ABTI_pool *p_pool)
 }
 
 /* A ULT is blocked and is waiting for going back to this pool */
-static inline
-void ABTI_pool_inc_num_blocked(ABTI_pool *p_pool)
+static inline void ABTI_pool_inc_num_blocked(ABTI_pool *p_pool)
 {
     ABTD_atomic_fetch_add_uint32(&p_pool->num_blocked, 1);
 }
 
 /* A blocked ULT is back in the pool */
-static inline
-void ABTI_pool_dec_num_blocked(ABTI_pool *p_pool)
+static inline void ABTI_pool_dec_num_blocked(ABTI_pool *p_pool)
 {
     ABTD_atomic_fetch_sub_uint32(&p_pool->num_blocked, 1);
 }
 
 /* The pool will receive a migrated ULT */
-static inline
-void ABTI_pool_inc_num_migrations(ABTI_pool *p_pool)
+static inline void ABTI_pool_inc_num_migrations(ABTI_pool *p_pool)
 {
     ABTD_atomic_fetch_add_int32(&p_pool->num_migrations, 1);
 }
 
 /* The pool has received a migrated ULT */
-static inline
-void ABTI_pool_dec_num_migrations(ABTI_pool *p_pool)
+static inline void ABTI_pool_dec_num_migrations(ABTI_pool *p_pool)
 {
     ABTD_atomic_fetch_sub_int32(&p_pool->num_migrations, 1);
 }
 
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-static inline
-void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
+static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 {
     LOG_EVENT_POOL_PUSH(p_pool, unit, ABTI_xstream_self());
 
@@ -80,8 +73,7 @@ void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
 }
 
-static inline
-void ABTI_pool_add_thread(ABTI_thread *p_thread)
+static inline void ABTI_pool_add_thread(ABTI_thread *p_thread)
 {
     /* Set the ULT's state as READY */
     p_thread->state = ABT_THREAD_STATE_READY;
@@ -98,8 +90,8 @@ void ABTI_pool_add_thread(ABTI_thread *p_thread)
 
 #else /* ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK */
 
-static inline
-int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_producer)
+static inline int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit,
+                                 ABTI_xstream *p_producer)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -120,8 +112,8 @@ int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_producer)
     goto fn_exit;
 }
 
-static inline
-int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
+static inline int ABTI_pool_add_thread(ABTI_thread *p_thread,
+                                       ABTI_xstream *p_producer)
 {
     int abt_errno;
 
@@ -144,19 +136,18 @@ int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
     do {                                                        \
         abt_errno = ABTI_pool_push(p_pool, unit, p_producer);   \
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_pool_push");      \
-    } while(0)
+    } while (0)
 
 #define ABTI_POOL_ADD_THREAD(p_thread,p_producer)               \
     do {                                                        \
         abt_errno = ABTI_pool_add_thread(p_thread, p_producer); \
         ABTI_CHECK_ERROR(abt_errno);                            \
-    } while(0)
+    } while (0)
 
 #endif /* ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK */
 
 #ifdef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-static inline
-int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
+static inline int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -179,8 +170,8 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
 
 #else /* ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK */
 
-static inline
-int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
+static inline int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
+                                   ABTI_xstream *p_consumer)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -206,12 +197,12 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
     do {                                                        \
         abt_errno = ABTI_pool_set_consumer(p_pool, p_consumer); \
         ABTI_CHECK_ERROR(abt_errno);                            \
-    } while(0)
+    } while (0)
 
 #endif /* ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK */
 
-static inline
-ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool, double abstime_secs)
+static inline ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool,
+                                               double abstime_secs)
 {
     ABT_unit unit;
 
@@ -221,8 +212,7 @@ ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool, double abstime_secs)
     return unit;
 }
 
-static inline
-ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)
+static inline ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)
 {
     ABT_unit unit;
 
@@ -234,32 +224,27 @@ ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)
 
 /* Increase num_scheds to mark the pool as having another scheduler. If the
  * pool is not available, it returns ABT_ERR_INV_POOL_ACCESS.  */
-static inline
-void ABTI_pool_retain(ABTI_pool *p_pool)
+static inline void ABTI_pool_retain(ABTI_pool *p_pool)
 {
     ABTD_atomic_fetch_add_int32(&p_pool->num_scheds, 1);
 }
 
 /* Decrease the num_scheds to realease this pool from a scheduler. Call when
  * the pool is removed from a scheduler or when it stops. */
-static inline
-int32_t ABTI_pool_release(ABTI_pool *p_pool)
+static inline int32_t ABTI_pool_release(ABTI_pool *p_pool)
 {
     ABTI_ASSERT(p_pool->num_scheds > 0);
     return ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1) - 1;
 }
 
-static inline
-void *ABTI_pool_get_data(ABTI_pool *p_pool)
+static inline void *ABTI_pool_get_data(ABTI_pool *p_pool)
 {
     return p_pool->data;
 }
 
-static inline
-size_t ABTI_pool_get_size(ABTI_pool *p_pool)
+static inline size_t ABTI_pool_get_size(ABTI_pool *p_pool)
 {
     return p_pool->p_get_size(ABTI_pool_get_handle(p_pool));
 }
 
 #endif /* POOL_H_INCLUDED */
-

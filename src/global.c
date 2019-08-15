@@ -20,7 +20,8 @@ static uint8_t g_ABTI_init_lock = 0;
 /* A flag whether Argobots has been initialized or not */
 static uint32_t g_ABTI_initialized = 0;
 
-static inline void ABTI_init_lock_acquire() {
+static inline void ABTI_init_lock_acquire()
+{
     while (ABTD_atomic_test_and_set_uint8(&g_ABTI_init_lock)) {
         /* Busy-wait is allowed since this function may not be run in
          * ULT context. */
@@ -29,11 +30,13 @@ static inline void ABTI_init_lock_acquire() {
     }
 }
 
-static inline int ABTI_init_lock_is_locked() {
+static inline int ABTI_init_lock_is_locked()
+{
     return ABTD_atomic_load_uint8(&g_ABTI_init_lock) != 0;
 }
 
-static inline void ABTI_init_lock_release() {
+static inline void ABTI_init_lock_release()
+{
     ABTD_atomic_clear_uint8(&g_ABTI_init_lock);
 }
 
@@ -56,7 +59,8 @@ static inline void ABTI_init_lock_release() {
  */
 int ABT_init(int argc, char **argv)
 {
-    ABTI_UNUSED(argc); ABTI_UNUSED(argv);
+    ABTI_UNUSED(argc);
+    ABTI_UNUSED(argv);
     int abt_errno = ABT_SUCCESS;
 
     /* First, take a global lock protecting the initialization/finalization
@@ -85,8 +89,9 @@ int ABT_init(int argc, char **argv)
     ABTI_pool_reset_id();
 
     /* Initialize the ES array */
-    gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_calloc(
-            gp_ABTI_global->max_xstreams, sizeof(ABTI_xstream *));
+    gp_ABTI_global->p_xstreams =
+        (ABTI_xstream **)ABTU_calloc(gp_ABTI_global->max_xstreams,
+                                     sizeof(ABTI_xstream *));
     gp_ABTI_global->num_xstreams = 0;
 
     /* Create a spinlock */
@@ -189,7 +194,8 @@ int ABT_finalize(void)
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
         /* Switch to the top scheduler */
-        ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
+        ABTI_sched *p_sched =
+            ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
         ABTI_thread_context_switch_thread_to_sched(p_thread, p_sched);
 
         /* Back to the original thread */
@@ -265,14 +271,16 @@ void ABTI_global_update_max_xstreams(int new_size)
 {
     int i;
 
-    if (new_size != 0 && new_size < gp_ABTI_global->max_xstreams) return;
+    if (new_size != 0 && new_size < gp_ABTI_global->max_xstreams)
+        return;
 
     ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
 
     new_size = (new_size > 0) ? new_size : gp_ABTI_global->max_xstreams * 2;
     gp_ABTI_global->max_xstreams = new_size;
-    gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_realloc(
-            gp_ABTI_global->p_xstreams, new_size * sizeof(ABTI_xstream *));
+    gp_ABTI_global->p_xstreams =
+        (ABTI_xstream **)ABTU_realloc(gp_ABTI_global->p_xstreams,
+                                      new_size * sizeof(ABTI_xstream *));
 
     for (i = gp_ABTI_global->num_xstreams; i < new_size; i++) {
         gp_ABTI_global->p_xstreams[i] = NULL;
@@ -280,4 +288,3 @@ void ABTI_global_update_max_xstreams(int new_size)
 
     ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
 }
-

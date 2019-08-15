@@ -107,7 +107,7 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
             abt_errno = ABT_ERR_OTHER;
             goto fn_fail;
         }
-        p_attr->p_stack   = stackaddr;
+        p_attr->p_stack = stackaddr;
         p_attr->stacktype = ABTI_STACK_TYPE_USER;
     } else {
         p_attr->stacktype = ABTI_STACK_TYPE_MALLOC;
@@ -227,7 +227,8 @@ int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
  * @retval ABT_SUCCESS on success
  */
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,
-        void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg)
+                                 void (*cb_func) (ABT_thread th, void *cb_arg),
+                                 void *cb_arg)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
@@ -235,7 +236,7 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     /* Set the value */
-    p_attr->f_cb     = cb_func;
+    p_attr->f_cb = cb_func;
     p_attr->p_cb_arg = cb_arg;
 
   fn_exit:
@@ -328,41 +329,42 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
 
     char *stacktype;
     switch (p_attr->stacktype) {
-        case ABTI_STACK_TYPE_MEMPOOL: stacktype = "MEMPOOL"; break;
-        case ABTI_STACK_TYPE_MALLOC:  stacktype = "MALLOC"; break;
-        case ABTI_STACK_TYPE_USER:    stacktype = "USER"; break;
-        case ABTI_STACK_TYPE_MAIN:    stacktype = "MAIN"; break;
-        default:                      stacktype = "UNKNOWN"; break;
+        case ABTI_STACK_TYPE_MEMPOOL:
+            stacktype = "MEMPOOL";
+            break;
+        case ABTI_STACK_TYPE_MALLOC:
+            stacktype = "MALLOC";
+            break;
+        case ABTI_STACK_TYPE_USER:
+            stacktype = "USER";
+            break;
+        case ABTI_STACK_TYPE_MAIN:
+            stacktype = "MAIN";
+            break;
+        default:
+            stacktype = "UNKNOWN";
+            break;
     }
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     sprintf(p_buf,
-        "["
-        "stack:%p "
-        "stacksize:%zu "
-        "stacktype:%s "
-        "migratable:%s "
-        "cb_func:%p "
-        "cb_arg:%p"
-        "]",
-        p_attr->p_stack,
-        p_attr->stacksize,
-        stacktype,
-        (p_attr->migratable == ABT_TRUE ? "TRUE" : "FALSE"),
-        p_attr->f_cb,
-        p_attr->p_cb_arg
-    );
+            "["
+            "stack:%p "
+            "stacksize:%zu "
+            "stacktype:%s "
+            "migratable:%s "
+            "cb_func:%p "
+            "cb_arg:%p"
+            "]",
+            p_attr->p_stack, p_attr->stacksize, stacktype,
+            (p_attr->migratable == ABT_TRUE ? "TRUE" : "FALSE"),
+            p_attr->f_cb, p_attr->p_cb_arg);
 #else
     sprintf(p_buf,
-        "["
-        "stack:%p "
-        "stacksize:%zu "
-        "stacktype:%s "
-        "]",
-        p_attr->p_stack,
-        p_attr->stacksize,
-        stacktype
-    );
+            "["
+            "stack:%p "
+            "stacksize:%zu "
+            "stacktype:%s " "]", p_attr->p_stack, p_attr->stacksize, stacktype);
 #endif
 }
 
@@ -375,4 +377,3 @@ ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr)
 
     return p_dupattr;
 }
-

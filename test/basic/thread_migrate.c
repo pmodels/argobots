@@ -38,9 +38,11 @@ int main(int argc, char *argv[])
     int ret;
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
-    if (argc > 1) num_xstreams = atoi(argv[1]);
+    if (argc > 1)
+        num_xstreams = atoi(argv[1]);
     assert(num_xstreams >= 0);
-    if (argc > 2) num_threads = atoi(argv[2]);
+    if (argc > 2)
+        num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
 
     ABT_xstream *xstreams;
@@ -67,7 +69,7 @@ int main(int argc, char *argv[])
     ABT_pool *pools;
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
@@ -75,9 +77,8 @@ int main(int argc, char *argv[])
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             size_t tid = i * num_threads + j + 1;
-            ret = ABT_thread_create(pools[i],
-                    thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
-                    &threads[i][j]);
+            ret = ABT_thread_create(pools[i], thread_func, (void *)tid,
+                                    ABT_THREAD_ATTR_NULL, &threads[i][j]);
             ATS_ERROR(ret, "ABT_thread_create");
         }
     }
@@ -102,7 +103,7 @@ int main(int argc, char *argv[])
         ATS_ERROR(ret, "ABT_xstream_free");
     }
 
-    if (value != num_xstreams*num_threads)
+    if (value != num_xstreams * num_threads)
         ATS_ERROR(ABT_ERR_OTHER, "wrong value");
 
     /* Finalize */
@@ -117,4 +118,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

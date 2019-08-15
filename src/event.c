@@ -63,7 +63,7 @@ typedef enum {
 } ABTI_pub_type;
 #endif
 
-typedef struct ABTI_event_info  ABTI_event_info;
+typedef struct ABTI_event_info ABTI_event_info;
 
 struct ABTI_event_info {
     ABTI_mutex mutex;
@@ -137,7 +137,8 @@ void ABTI_event_init(void)
     gethostname(gp_einfo->hostname, 100);
 
     env = getenv("ABT_USE_EVENT_DEBUG");
-    if (env == NULL) env = getenv("ABT_ENV_USE_EVENT_DEBUG");
+    if (env == NULL)
+        env = getenv("ABT_ENV_USE_EVENT_DEBUG");
     if (env != NULL) {
         if (strcmp(env, "0") == 0 || strcasecmp(env, "n") == 0 ||
             strcasecmp(env, "no") == 0) {
@@ -182,12 +183,12 @@ void ABTI_event_init(void)
             }
 
             gp_einfo->topic_info = (BEACON_topic_info_t *)
-                              ABTU_malloc(sizeof(BEACON_topic_info_t));
+                ABTU_malloc(sizeof(BEACON_topic_info_t));
             ABTU_strcpy(gp_einfo->topic_info->topic_name, "NODE_POWER");
             sprintf(gp_einfo->topic_info->severity, "INFO");
 
             gp_einfo->eprop = (BEACON_topic_properties_t *)
-                              ABTU_malloc(sizeof(BEACON_topic_properties_t));
+                ABTU_malloc(sizeof(BEACON_topic_properties_t));
             ABTU_strcpy(gp_einfo->eprop->topic_scope, "global");
 #else /* HAVE_BEACON_H */
             fprintf(stderr, "BEACON is unavailable. stdout is used instead.\n");
@@ -211,16 +212,19 @@ void ABTI_event_init(void)
         }
 
         gp_einfo->max_xstream_rank = gp_ABTI_global->max_xstreams * 2;
-        gp_einfo->num_threads = (uint32_t *)ABTU_calloc(
-                gp_einfo->max_xstream_rank, sizeof(uint32_t));
-        gp_einfo->num_tasks = (uint32_t *)ABTU_calloc(
-                gp_einfo->max_xstream_rank, sizeof(uint32_t));
-        gp_einfo->idle_time = (double *)ABTU_calloc(
-                gp_einfo->max_xstream_rank, sizeof(double));
-        gp_einfo->old_num_units = (uint32_t *)ABTU_calloc(
-                gp_einfo->max_xstream_rank, sizeof(uint32_t));
-        gp_einfo->old_timestamp = (double *)ABTU_calloc(
-                gp_einfo->max_xstream_rank, sizeof(double));
+        gp_einfo->num_threads =
+            (uint32_t *)ABTU_calloc(gp_einfo->max_xstream_rank,
+                                    sizeof(uint32_t));
+        gp_einfo->num_tasks =
+            (uint32_t *)ABTU_calloc(gp_einfo->max_xstream_rank,
+                                    sizeof(uint32_t));
+        gp_einfo->idle_time =
+            (double *)ABTU_calloc(gp_einfo->max_xstream_rank, sizeof(double));
+        gp_einfo->old_num_units =
+            (uint32_t *)ABTU_calloc(gp_einfo->max_xstream_rank,
+                                    sizeof(uint32_t));
+        gp_einfo->old_timestamp =
+            (double *)ABTU_calloc(gp_einfo->max_xstream_rank, sizeof(double));
         gp_einfo->timestamp = ABT_get_wtime();
 
         int ret = RAPLREADER_INIT(&gp_einfo->rr);
@@ -315,7 +319,8 @@ void ABTI_event_connect_power(char *p_host, int port)
 
 void ABTI_event_disconnect_power(void)
 {
-    if (gp_ABTI_global->pm_connected == ABT_FALSE) return;
+    if (gp_ABTI_global->pm_connected == ABT_FALSE)
+        return;
 
     close(gp_einfo->pfd.fd);
     gp_ABTI_global->pm_connected = ABT_FALSE;
@@ -369,7 +374,7 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
     int abt_errno, n;
 
     for (n = 0; n < num_xstreams; n++) {
-        ABTI_xstream *p_xstream = p_xstreams[n+1];
+        ABTI_xstream *p_xstream = p_xstreams[n + 1];
         while (ABTD_atomic_load_uint32((uint32_t *)p_xstream->state)
                != ABT_XSTREAM_STATE_TERMINATED) {
             ABT_thread_yield();
@@ -386,7 +391,7 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
     if (gp_ABTI_global->pm_connected == ABT_TRUE) {
         LOG_DEBUG("# of ESs: %d\n", gp_ABTI_global->num_xstreams);
         sprintf(send_buf, "[S] killed %d (%d)", num_xstreams,
-                          gp_ABTI_global->num_xstreams);
+                gp_ABTI_global->num_xstreams);
         n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
         ABTI_ASSERT(n == strlen(send_buf));
     }
@@ -404,10 +409,11 @@ ABT_bool ABTI_event_stop_xstream(ABTI_xstream *p_xstream)
 
     /* Ask whether the target ES can be stopped */
     for (i = 0; i < gp_einfo->max_stop_xstream_fn; i++) {
-        cb_fn = gp_einfo->stop_xstream_fn[i*2];
+        cb_fn = gp_einfo->stop_xstream_fn[i * 2];
         if (cb_fn) {
-            can_stop = cb_fn(gp_einfo->stop_xstream_arg[i*2], xstream);
-            if (can_stop == ABT_FALSE) break;
+            can_stop = cb_fn(gp_einfo->stop_xstream_arg[i * 2], xstream);
+            if (can_stop == ABT_FALSE)
+                break;
         }
     }
 
@@ -416,9 +422,9 @@ ABT_bool ABTI_event_stop_xstream(ABTI_xstream *p_xstream)
 
         /* Execute action callback functions */
         for (i = 0; i < gp_einfo->max_stop_xstream_fn; i++) {
-            cb_fn = gp_einfo->stop_xstream_fn[i*2+1];
+            cb_fn = gp_einfo->stop_xstream_fn[i * 2 + 1];
             if (cb_fn) {
-                cb_fn(gp_einfo->stop_xstream_arg[i*2+1], xstream);
+                cb_fn(gp_einfo->stop_xstream_arg[i * 2 + 1], xstream);
             }
         }
 
@@ -456,7 +462,8 @@ void ABTI_event_decrease_xstream(int target_rank)
             p_xstream = p_global->p_xstreams[rank];
             if (p_xstream) {
                 can_stop = ABTI_event_stop_xstream(p_xstream);
-                if (can_stop == ABT_TRUE) break;
+                if (can_stop == ABT_TRUE)
+                    break;
             }
         }
     } else {
@@ -509,26 +516,30 @@ void ABTI_event_shrink_xstreams(int num_xstreams)
             xstream = ABTI_xstream_get_handle(p_xstream);
             ABT_bool can_stop = ABT_TRUE;
             for (i = 0; i < gp_einfo->max_stop_xstream_fn; i++) {
-                cb_fn = gp_einfo->stop_xstream_fn[i*2];
+                cb_fn = gp_einfo->stop_xstream_fn[i * 2];
                 if (cb_fn) {
-                    can_stop = cb_fn(gp_einfo->stop_xstream_arg[i*2], xstream);
-                    if (can_stop == ABT_FALSE) break;
+                    can_stop =
+                        cb_fn(gp_einfo->stop_xstream_arg[i * 2], xstream);
+                    if (can_stop == ABT_FALSE)
+                        break;
                 }
             }
-            if (can_stop == ABT_FALSE) continue;
+            if (can_stop == ABT_FALSE)
+                continue;
 
             ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_STOP);
 
             /* Execute action callback functions */
             for (i = 0; i < gp_einfo->max_stop_xstream_fn; i++) {
-                cb_fn = gp_einfo->stop_xstream_fn[i*2+1];
+                cb_fn = gp_einfo->stop_xstream_fn[i * 2 + 1];
                 if (cb_fn) {
-                    cb_fn(gp_einfo->stop_xstream_arg[i*2+1], xstream);
+                    cb_fn(gp_einfo->stop_xstream_arg[i * 2 + 1], xstream);
                 }
             }
 
-            p_xstreams[n+1] = p_xstream;
-            if (++n == num_xstreams) break;
+            p_xstreams[n + 1] = p_xstream;
+            if (++n == num_xstreams)
+                break;
         }
     }
 
@@ -563,20 +574,23 @@ void ABTI_event_increase_xstream(int target_rank)
 
     for (i = 0; i < gp_einfo->max_add_xstream_fn; i++) {
         /* "ask" callback */
-        cb_fn = gp_einfo->add_xstream_fn[i*2];
-        if (!cb_fn) continue;
+        cb_fn = gp_einfo->add_xstream_fn[i * 2];
+        if (!cb_fn)
+            continue;
 
         /* TODO: fairness */
-        ret = cb_fn(gp_einfo->add_xstream_arg[i*2], abt_arg);
+        ret = cb_fn(gp_einfo->add_xstream_arg[i * 2], abt_arg);
         if (ret == ABT_TRUE) {
             /* "act" callback */
-            cb_fn = gp_einfo->add_xstream_fn[i*2+1];
-            if (!cb_fn) continue;
+            cb_fn = gp_einfo->add_xstream_fn[i * 2 + 1];
+            if (!cb_fn)
+                continue;
 
-            ret = cb_fn(gp_einfo->add_xstream_arg[i*2+1], abt_arg);
+            ret = cb_fn(gp_einfo->add_xstream_arg[i * 2 + 1], abt_arg);
             if (ret == ABT_TRUE) {
                 LOG_DEBUG("# of ESs: %d\n", gp_ABTI_global->num_xstreams);
-                sprintf(send_buf, "[S] created 1 (%d)", gp_ABTI_global->num_xstreams);
+                sprintf(send_buf, "[S] created 1 (%d)",
+                        gp_ABTI_global->num_xstreams);
                 goto send_ack;
             }
         }
@@ -602,29 +616,34 @@ void ABTI_event_expand_xstreams(int num_xstreams)
         can_add = ABT_FALSE;
         for (i = 0; i < gp_einfo->max_add_xstream_fn; i++) {
             /* "ask" callback */
-            cb_fn = gp_einfo->add_xstream_fn[i*2];
-            if (!cb_fn) continue;
+            cb_fn = gp_einfo->add_xstream_fn[i * 2];
+            if (!cb_fn)
+                continue;
 
             /* TODO: fairness */
-            can_add = cb_fn(gp_einfo->add_xstream_arg[i*2], abt_arg);
+            can_add = cb_fn(gp_einfo->add_xstream_arg[i * 2], abt_arg);
             if (can_add == ABT_TRUE) {
                 /* "act" callback */
-                cb_fn = gp_einfo->add_xstream_fn[i*2+1];
+                cb_fn = gp_einfo->add_xstream_fn[i * 2 + 1];
                 if (!cb_fn) {
                     can_add = ABT_FALSE;
                     continue;
                 }
 
-                can_add = cb_fn(gp_einfo->add_xstream_arg[i*2+1], abt_arg);
-                if (can_add == ABT_TRUE) break;
+                can_add = cb_fn(gp_einfo->add_xstream_arg[i * 2 + 1], abt_arg);
+                if (can_add == ABT_TRUE)
+                    break;
             }
         }
-        if (can_add == ABT_FALSE) break;
+        if (can_add == ABT_FALSE)
+            break;
     }
 
     if (n > 0) {
-        LOG_DEBUG("Create %d ESs (# of ESs: %d)\n", n, gp_ABTI_global->num_xstreams);
-        sprintf(send_buf, "[S] created %d (%d)", n, gp_ABTI_global->num_xstreams);
+        LOG_DEBUG("Create %d ESs (# of ESs: %d)\n", n,
+                  gp_ABTI_global->num_xstreams);
+        sprintf(send_buf, "[S] created %d (%d)", n,
+                gp_ABTI_global->num_xstreams);
     } else {
         /* We couldn't create a new ES */
         sprintf(send_buf, "[F] not possible");
@@ -662,12 +681,14 @@ ABT_bool ABTI_event_check_power(void)
     char recv_buf[ABTI_MSG_BUF_LEN];
     ABTI_xstream *p_xstream;
 
-    if (gp_ABTI_global->pm_connected == ABT_FALSE) goto fn_exit;
+    if (gp_ABTI_global->pm_connected == ABT_FALSE)
+        goto fn_exit;
 
     ABT_xstream_self_rank(&rank);
 
     ret = ABTI_mutex_trylock(&gp_einfo->mutex);
-    if (ret == ABT_ERR_MUTEX_LOCKED) goto fn_exit;
+    if (ret == ABT_ERR_MUTEX_LOCKED)
+        goto fn_exit;
     ABTI_ASSERT(ret == ABT_SUCCESS);
 
     ret = poll(&gp_einfo->pfd, 1, 1);
@@ -744,7 +765,7 @@ ABT_bool ABTI_event_check_power(void)
         stop_xstream = ABT_TRUE;
     }
 
- fn_exit:
+  fn_exit:
     return stop_xstream;
 }
 #endif /* ABT_CONFIG_HANDLE_POWER_EVENT */
@@ -797,19 +818,19 @@ int ABT_event_add_callback(ABT_event_kind event,
             }
             ABTI_ASSERT(cur_num < max_num);
 
-            if (gp_einfo->stop_xstream_fn[cur_num*2] == NULL) {
-                gp_einfo->stop_xstream_fn[cur_num*2] = ask_cb;
-                gp_einfo->stop_xstream_arg[cur_num*2] = ask_user_arg;
-                gp_einfo->stop_xstream_fn[cur_num*2+1] = act_cb;
-                gp_einfo->stop_xstream_arg[cur_num*2+1] = act_user_arg;
+            if (gp_einfo->stop_xstream_fn[cur_num * 2] == NULL) {
+                gp_einfo->stop_xstream_fn[cur_num * 2] = ask_cb;
+                gp_einfo->stop_xstream_arg[cur_num * 2] = ask_user_arg;
+                gp_einfo->stop_xstream_fn[cur_num * 2 + 1] = act_cb;
+                gp_einfo->stop_xstream_arg[cur_num * 2 + 1] = act_user_arg;
                 cid = cur_num;
             } else {
                 for (i = 0; i < max_num; i++) {
-                    if (gp_einfo->stop_xstream_fn[i*2] == NULL) {
-                        gp_einfo->stop_xstream_fn[i*2] = ask_cb;
-                        gp_einfo->stop_xstream_arg[i*2] = ask_user_arg;
-                        gp_einfo->stop_xstream_fn[i*2+1] = act_cb;
-                        gp_einfo->stop_xstream_arg[i*2+1] = act_user_arg;
+                    if (gp_einfo->stop_xstream_fn[i * 2] == NULL) {
+                        gp_einfo->stop_xstream_fn[i * 2] = ask_cb;
+                        gp_einfo->stop_xstream_arg[i * 2] = ask_user_arg;
+                        gp_einfo->stop_xstream_fn[i * 2 + 1] = act_cb;
+                        gp_einfo->stop_xstream_arg[i * 2 + 1] = act_user_arg;
                         cid = i;
                         break;
                     }
@@ -835,19 +856,19 @@ int ABT_event_add_callback(ABT_event_kind event,
             }
             ABTI_ASSERT(cur_num < max_num);
 
-            if (gp_einfo->add_xstream_fn[cur_num*2] == NULL) {
-                gp_einfo->add_xstream_fn[cur_num*2] = ask_cb;
-                gp_einfo->add_xstream_arg[cur_num*2] = ask_user_arg;
-                gp_einfo->add_xstream_fn[cur_num*2+1] = act_cb;
-                gp_einfo->add_xstream_arg[cur_num*2+1] = act_user_arg;
+            if (gp_einfo->add_xstream_fn[cur_num * 2] == NULL) {
+                gp_einfo->add_xstream_fn[cur_num * 2] = ask_cb;
+                gp_einfo->add_xstream_arg[cur_num * 2] = ask_user_arg;
+                gp_einfo->add_xstream_fn[cur_num * 2 + 1] = act_cb;
+                gp_einfo->add_xstream_arg[cur_num * 2 + 1] = act_user_arg;
                 cid = cur_num;
             } else {
                 for (i = 0; i < max_num; i++) {
-                    if (gp_einfo->add_xstream_fn[i*2] == NULL) {
-                        gp_einfo->add_xstream_fn[i*2] = ask_cb;
-                        gp_einfo->add_xstream_arg[i*2] = ask_user_arg;
-                        gp_einfo->add_xstream_fn[i*2+1] = act_cb;
-                        gp_einfo->add_xstream_arg[i*2+1] = act_user_arg;
+                    if (gp_einfo->add_xstream_fn[i * 2] == NULL) {
+                        gp_einfo->add_xstream_fn[i * 2] = ask_cb;
+                        gp_einfo->add_xstream_arg[i * 2] = ask_user_arg;
+                        gp_einfo->add_xstream_fn[i * 2 + 1] = act_cb;
+                        gp_einfo->add_xstream_arg[i * 2 + 1] = act_user_arg;
                         cid = i;
                         break;
                     }
@@ -895,18 +916,18 @@ int ABT_event_del_callback(ABT_event_kind event, int cb_id)
     ABTI_mutex_spinlock(&gp_einfo->mutex);
     switch (event) {
         case ABT_EVENT_STOP_XSTREAM:
-            gp_einfo->stop_xstream_fn[cb_id*2] = NULL;
-            gp_einfo->stop_xstream_fn[cb_id*2+1] = NULL;
-            gp_einfo->stop_xstream_arg[cb_id*2] = NULL;
-            gp_einfo->stop_xstream_arg[cb_id*2+1] = NULL;
+            gp_einfo->stop_xstream_fn[cb_id * 2] = NULL;
+            gp_einfo->stop_xstream_fn[cb_id * 2 + 1] = NULL;
+            gp_einfo->stop_xstream_arg[cb_id * 2] = NULL;
+            gp_einfo->stop_xstream_arg[cb_id * 2 + 1] = NULL;
             gp_einfo->num_stop_xstream_fn++;
             break;
 
         case ABT_EVENT_ADD_XSTREAM:
-            gp_einfo->add_xstream_fn[cb_id*2] = NULL;
-            gp_einfo->add_xstream_fn[cb_id*2+1] = NULL;
-            gp_einfo->add_xstream_arg[cb_id*2] = NULL;
-            gp_einfo->add_xstream_arg[cb_id*2+1] = NULL;
+            gp_einfo->add_xstream_fn[cb_id * 2] = NULL;
+            gp_einfo->add_xstream_fn[cb_id * 2 + 1] = NULL;
+            gp_einfo->add_xstream_arg[cb_id * 2] = NULL;
+            gp_einfo->add_xstream_arg[cb_id * 2 + 1] = NULL;
             gp_einfo->num_add_xstream_fn++;
             break;
 
@@ -936,7 +957,8 @@ void ABTI_event_realloc_pub_arrays(int size)
 
 void ABTI_event_inc_unit_cnt(ABTI_xstream *p_xstream, ABT_unit_type type)
 {
-    if (gp_ABTI_global->pub_needed == ABT_FALSE) return;
+    if (gp_ABTI_global->pub_needed == ABT_FALSE)
+        return;
 
     int rank = (int)p_xstream->rank;
 
@@ -962,7 +984,8 @@ void ABTI_event_publish_info(void)
     char *info, *info_ptr;
     ABT_bool is_first;
 
-    if (gp_ABTI_global->pub_needed == ABT_FALSE) return;
+    if (gp_ABTI_global->pub_needed == ABT_FALSE)
+        return;
 
     p_xstream = ABTI_local_get_xstream();
     rank = (int)p_xstream->rank;
@@ -975,7 +998,7 @@ void ABTI_event_publish_info(void)
 
     /* Update the idle time of the current ES */
     cur_num_units = gp_einfo->num_threads[rank]
-                  + gp_einfo->num_tasks[rank];
+        + gp_einfo->num_tasks[rank];
     if (gp_einfo->old_timestamp[rank] > 0.0) {
         if (cur_num_units == gp_einfo->old_num_units[rank]) {
             idle_time = cur_time - gp_einfo->old_timestamp[rank];
@@ -985,11 +1008,13 @@ void ABTI_event_publish_info(void)
     gp_einfo->old_num_units[rank] = cur_num_units;
     gp_einfo->old_timestamp[rank] = cur_time;
 
-    if (elapsed_time < gp_ABTI_global->pub_interval) return;
+    if (elapsed_time < gp_ABTI_global->pub_interval)
+        return;
 
     /* Only one scheduler has to write to the output file. */
     ret = ABTI_mutex_trylock(&gp_einfo->mutex);
-    if (ret == ABT_ERR_MUTEX_LOCKED) return;
+    if (ret == ABT_ERR_MUTEX_LOCKED)
+        return;
     ABTI_ASSERT(ret == ABT_SUCCESS);
 
     /* Update timestamp */
@@ -1000,7 +1025,7 @@ void ABTI_event_publish_info(void)
     info_ptr = info;
 
     sprintf(info_ptr, "{\"node\":\"%s\",\"sample\":\"argobots\","
-                      "\"time\":%.3f,\"num_es\":%d,",
+            "\"time\":%.3f,\"num_es\":%d,",
             gp_einfo->hostname, cur_time, gp_ABTI_global->num_xstreams);
     info_ptr += strlen(info_ptr);
 
@@ -1010,7 +1035,8 @@ void ABTI_event_publish_info(void)
     for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {
         num_threads = gp_einfo->num_threads[i];
         if (num_threads > 0) {
-            ABTD_atomic_fetch_sub_uint32(&gp_einfo->num_threads[i], num_threads);
+            ABTD_atomic_fetch_sub_uint32(&gp_einfo->num_threads[i],
+                                         num_threads);
         }
         if (gp_ABTI_global->p_xstreams[i]) {
             if (is_first == ABT_TRUE) {
@@ -1108,7 +1134,8 @@ void ABTI_event_publish_info(void)
 int ABT_event_prof_start(void)
 {
 #ifdef ABT_CONFIG_PUBLISH_INFO
-    if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
+    if (gp_ABTI_global->pub_needed == ABT_FALSE)
+        return ABT_SUCCESS;
 
     gp_einfo->prof_start_time = ABT_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
@@ -1131,7 +1158,8 @@ int ABT_event_prof_start(void)
 int ABT_event_prof_stop(void)
 {
 #ifdef ABT_CONFIG_PUBLISH_INFO
-    if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
+    if (gp_ABTI_global->pub_needed == ABT_FALSE)
+        return ABT_SUCCESS;
 
     gp_einfo->prof_stop_time = ABT_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
@@ -1162,7 +1190,8 @@ int ABT_event_prof_publish(const char *unit_name, double local_work,
                            double global_work)
 {
 #ifdef ABT_CONFIG_PUBLISH_INFO
-    if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
+    if (gp_ABTI_global->pub_needed == ABT_FALSE)
+        return ABT_SUCCESS;
 
     const char *sample_name = "application";
     double elapsed_time = gp_einfo->prof_stop_time - gp_einfo->prof_start_time;
@@ -1175,24 +1204,36 @@ int ABT_event_prof_publish(const char *unit_name, double local_work,
     char *info = (char *)ABTU_calloc(1024, sizeof(char));
 #if defined(HAVE_RAPLREADER_H) && defined(HAVE_LIBINTERCOOLR)
     sprintf(info,
-            "{\"node\":\"%s\",\"sample\":\"%s\",\"time\":%lf,\"%s_per_sec_per_node\":%lf,"
-            "\"%s_per_watt_per_node\":%lf,\"%s_per_sec\":%lf}\n",
-            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name, local_rate,
-            unit_name, local_work/power, unit_name, global_rate);
+            "{"
+            "\"node\":\"%s\","
+            "\"sample\":\"%s\","
+            "\"time\":%lf,"
+            "\"%s_per_sec_per_node\":%lf,"
+            "\"%s_per_watt_per_node\":%lf,"
+            "\"%s_per_sec\":%lf"
+            "}\n",
+            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name,
+            local_rate, unit_name, local_work / power, unit_name, global_rate);
 #else
     sprintf(info,
-            "{\"node\":\"%s\",\"sample\":\"%s\",\"time\":%lf,\"%s_per_sec_per_node\":%lf,"
-            "\"%s_per_sec\":%lf}\n",
-            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name, local_rate,
-            unit_name, global_rate);
+            "{"
+            "\"node\":\"%s\","
+            "\"sample\":\"%s\","
+            "\"time\":%lf,"
+            "\"%s_per_sec_per_node\":%lf,"
+            "\"%s_per_sec\":%lf"
+            "}\n",
+            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name,
+            local_rate, unit_name, global_rate);
 #endif
 
     if (gp_einfo->pub_type == ABTI_PUB_TYPE_BEACON) {
 #ifdef HAVE_BEACON_H
         EVT_DEBUG("%s", info);
         ABTU_strcpy(gp_einfo->eprop->topic_payload, info);
-        int ret = BEACON_Publish(gp_einfo->handle, gp_einfo->topic_info->topic_name,
-                                 gp_einfo->eprop);
+        int ret =
+            BEACON_Publish(gp_einfo->handle, gp_einfo->topic_info->topic_name,
+                           gp_einfo->eprop);
         if (ret != BEACON_SUCCESS) {
             printf("BEACON_Publish failed with ret=%d\n", ret);
             exit(-1);
@@ -1207,4 +1248,3 @@ int ABT_event_prof_publish(const char *unit_name, double local_work,
 
     return ABT_SUCCESS;
 }
-

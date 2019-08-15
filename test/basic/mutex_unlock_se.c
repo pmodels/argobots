@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     ABT_pool *pools;
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
@@ -107,9 +107,8 @@ int main(int argc, char *argv[])
             int tid = i * num_threads + j + 1;
             args[i][j].id = tid;
             args[i][j].mutex = mutex;
-            ret = ABT_thread_create(pools[i],
-                    thread_func, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
-                    &threads[i][j]);
+            ret = ABT_thread_create(pools[i], thread_func, (void *)&args[i][j],
+                                    ABT_THREAD_ATTR_NULL, &threads[i][j]);
             ATS_ERROR(ret, "ABT_thread_create");
         }
     }
@@ -158,4 +157,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

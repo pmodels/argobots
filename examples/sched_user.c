@@ -18,9 +18,9 @@ static void thread_hello(void *arg);
 int main(int argc, char *argv[])
 {
     ABT_xstream xstreams[NUM_XSTREAMS];
-    ABT_sched   scheds[NUM_XSTREAMS];
-    ABT_pool    pools[NUM_XSTREAMS];
-    ABT_thread  threads[NUM_XSTREAMS];
+    ABT_sched scheds[NUM_XSTREAMS];
+    ABT_pool pools[NUM_XSTREAMS];
+    ABT_thread threads[NUM_XSTREAMS];
     int i;
 
     ABT_init(argc, argv);
@@ -112,7 +112,8 @@ static void sched_run(ABT_sched sched)
             ABT_xstream_run_unit(unit, pools[0]);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
-            target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
+            target =
+                (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
             ABT_pool_pop(pools[target], &unit);
             if (unit != ABT_UNIT_NULL) {
                 ABT_xstream_run_unit(unit, pools[target]);
@@ -122,7 +123,8 @@ static void sched_run(ABT_sched sched)
         if (++work_count >= p_data->event_freq) {
             work_count = 0;
             ABT_sched_has_to_stop(sched, &stop);
-            if (stop == ABT_TRUE) break;
+            if (stop == ABT_TRUE)
+                break;
             ABT_xstream_check_events(sched);
         }
     }
@@ -228,4 +230,3 @@ static void thread_hello(void *arg)
     msg = (cur_rank == old_rank) ? "" : " (stolen)";
     printf("  [U%d:E%d] Goodbye, world!%s\n", tid, cur_rank, msg);
 }
-

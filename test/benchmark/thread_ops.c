@@ -150,9 +150,9 @@ void thread_func_migrate_to_xstream(void *arg)
 void thread_test(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool    my_pool    = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_thread *my_threads = g_threads[eid];
-    uint64_t   *my_times   = t_times[eid];
+    uint64_t *my_times = t_times[eid];
 
     uint64_t t_all_start, t_start, t_time;
     int i, t;
@@ -163,12 +163,13 @@ void thread_test(void *arg)
     /*************************************************************************/
     /* ULT: create/join (cold) */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ATS_get_cycles();
+    if (eid == 0)
+        t_all_start = ATS_get_cycles();
 
     t_start = ATS_get_cycles();
     for (i = 0; i < num_threads; i++) {
-        ABT_thread_create(my_pool, thread_func, NULL,
-                          ABT_THREAD_ATTR_NULL, &my_threads[i]);
+        ABT_thread_create(my_pool, thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                          &my_threads[i]);
     }
     my_times[T_CREATE_COLD] = ATS_get_cycles() - t_start;
 
@@ -187,7 +188,7 @@ void thread_test(void *arg)
     my_times[T_CREATE_COLD] /= num_threads;
     my_times[T_JOIN_COLD] /= num_threads;
     my_times[T_CREATE_JOIN_COLD] = my_times[T_CREATE_COLD]
-                                 + my_times[T_JOIN_COLD];
+        + my_times[T_JOIN_COLD];
     /*************************************************************************/
 
     /*************************************************************************/
@@ -214,12 +215,13 @@ void thread_test(void *arg)
 
     /* measure the time for create/join operations */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ATS_get_cycles();
+    if (eid == 0)
+        t_all_start = ATS_get_cycles();
     t_start = ATS_get_cycles();
     for (i = 0; i < iter; i++) {
         for (t = 0; t < num_threads; t++) {
-            ABT_thread_create(my_pool, thread_func, NULL,
-                              ABT_THREAD_ATTR_NULL, &my_threads[t]);
+            ABT_thread_create(my_pool, thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                              &my_threads[t]);
         }
 
         ABT_THREAD_JOIN_MANY(num_threads, my_threads);
@@ -238,18 +240,20 @@ void thread_test(void *arg)
 
     /* measure the time for create (unnamed) operations */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ATS_get_cycles();
+    if (eid == 0)
+        t_all_start = ATS_get_cycles();
     t_start = ATS_get_cycles();
     for (i = 0; i < iter; i++) {
         for (t = 0; t < num_threads; t++) {
-            ABT_thread_create(my_pool, thread_func, NULL,
-                              ABT_THREAD_ATTR_NULL, NULL);
+            ABT_thread_create(my_pool, thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                              NULL);
         }
         while (1) {
             ABT_thread_yield();
             size_t size;
             ABT_pool_get_size(my_pool, &size);
-            if (size == 0) break;
+            if (size == 0)
+                break;
         }
     }
     my_times[T_CREATE_UNNAMED] = ATS_get_cycles() - t_start;
@@ -276,7 +280,8 @@ void thread_test(void *arg)
 
     /* measure the time */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ATS_get_cycles();
+    if (eid == 0)
+        t_all_start = ATS_get_cycles();
     t_start = ATS_get_cycles();
     for (i = 0; i < num_threads; i++) {
         ABT_thread_create(my_pool, thread_func_yield, NULL,
@@ -320,7 +325,8 @@ void thread_test(void *arg)
     /* measure the time */
     args = (arg_t *)malloc(num_threads * sizeof(arg_t));
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ATS_get_cycles();
+    if (eid == 0)
+        t_all_start = ATS_get_cycles();
     t_start = ATS_get_cycles();
     for (i = 0; i < num_threads; i++) {
         args[i].eid = eid;
@@ -353,7 +359,8 @@ void thread_test(void *arg)
     /* ULT: migrate_to_xstream */
     args = (arg_t *)malloc(num_threads * sizeof(arg_t));
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ATS_get_cycles();
+    if (eid == 0)
+        t_all_start = ATS_get_cycles();
     t_start = ATS_get_cycles();
     for (i = 0; i < num_threads; i++) {
         args[i].eid = eid;
@@ -394,7 +401,7 @@ int main(int argc, char *argv[])
     /* read command-line arguments */
     ATS_read_args(argc, argv);
     num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+    num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
     iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     /* initialize */
@@ -410,12 +417,13 @@ int main(int argc, char *argv[])
     }
 
     g_xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    g_pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    g_threads  = (ABT_thread **)malloc(num_xstreams * sizeof(ABT_thread *));
+    g_pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    g_threads = (ABT_thread **)malloc(num_xstreams * sizeof(ABT_thread *));
     for (i = 0; i < num_xstreams; i++) {
         g_threads[i] = (ABT_thread *)malloc(num_threads * sizeof(ABT_thread));
     }
-    t_times = (uint64_t (*)[T_LAST])calloc(num_xstreams, sizeof(uint64_t)*T_LAST);
+    t_times =
+        (uint64_t (*)[T_LAST])calloc(num_xstreams, sizeof(uint64_t) * T_LAST);
 
     /* create a global barrier */
     ABT_xstream_barrier_create(num_xstreams, &g_xbarrier);
@@ -435,8 +443,8 @@ int main(int argc, char *argv[])
 
     /* create ESs with a new default scheduler */
     ABT_xstream_self(&g_xstreams[0]);
-    ABT_xstream_set_main_sched_basic(g_xstreams[0], ABT_SCHED_DEFAULT,
-                                     1, &g_pools[0]);
+    ABT_xstream_set_main_sched_basic(g_xstreams[0], ABT_SCHED_DEFAULT, 1,
+                                     &g_pools[0]);
     for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 1, &g_pools[i],
                                  ABT_SCHED_CONFIG_NULL, &g_xstreams[i]);
@@ -455,8 +463,10 @@ int main(int argc, char *argv[])
     /* find min, max, and avg of each case */
     for (i = 0; i < num_xstreams; i++) {
         for (t = 0; t < T_LAST; t++) {
-            if (t_times[i][t] < t_min[t]) t_min[t] = t_times[i][t];
-            if (t_times[i][t] > t_max[t]) t_max[t] = t_times[i][t];
+            if (t_times[i][t] < t_min[t])
+                t_min[t] = t_times[i][t];
+            if (t_times[i][t] > t_max[t])
+                t_max[t] = t_times[i][t];
             t_avg[t] += t_times[i][t];
         }
     }
@@ -499,4 +509,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

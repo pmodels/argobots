@@ -17,27 +17,27 @@
 #endif
 
 struct ABTI_thread_queue {
-    uint32_t mutex; /* can be initialized by just assigning 0*/
+    uint32_t mutex;             /* can be initialized by just assigning 0 */
     uint32_t num_handovers;
     uint32_t num_threads;
     uint32_t pad0;
     ABTI_thread *head;
     ABTI_thread *tail;
-    char pad1[64-8*4];
+    char pad1[64 - 8 * 4];
 
     /* low priority queue */
-    uint32_t low_mutex; /* can be initialized by just assigning 0*/
+    uint32_t low_mutex;         /* can be initialized by just assigning 0 */
     uint32_t low_num_threads;
     ABTI_thread *low_head;
     ABTI_thread *low_tail;
-    char pad2[64-8*3];
+    char pad2[64 - 8 * 3];
 
     /* two doubly-linked lists */
     ABTI_thread_queue *p_h_next;
     ABTI_thread_queue *p_h_prev;
     ABTI_thread_queue *p_l_next;
     ABTI_thread_queue *p_l_prev;
-    char pad3[64-8*4];
+    char pad3[64 - 8 * 4];
 };
 
 struct ABTI_thread_htable {
@@ -48,7 +48,7 @@ struct ABTI_thread_htable {
 #elif defined(USE_PTHREAD_MUTEX)
     pthread_mutex_t mutex;
 #else
-    ABTI_spinlock mutex;          /* To protect table */
+    ABTI_spinlock mutex;        /* To protect table */
 #endif
     uint32_t num_elems;
     uint32_t num_rows;
@@ -72,33 +72,34 @@ struct ABTI_thread_htable {
 #define ABTI_THREAD_HTABLE_UNLOCK(m)    ABTI_spinlock_release(&m)
 #endif
 
-static inline
-void ABTI_thread_queue_acquire_mutex(ABTI_thread_queue *p_queue) {
+static inline void ABTI_thread_queue_acquire_mutex(ABTI_thread_queue *p_queue)
+{
     while (ABTD_atomic_test_and_set_uint8((uint8_t *)&p_queue->mutex)) {
         while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->mutex) != 0);
     }
 }
 
-static inline
-void ABTI_thread_queue_release_mutex(ABTI_thread_queue *p_queue) {
+static inline void ABTI_thread_queue_release_mutex(ABTI_thread_queue *p_queue)
+{
     ABTD_atomic_clear_uint8((uint8_t *)&p_queue->mutex);
 }
 
 static inline
-void ABTI_thread_queue_acquire_low_mutex(ABTI_thread_queue *p_queue) {
+    void ABTI_thread_queue_acquire_low_mutex(ABTI_thread_queue *p_queue)
+{
     while (ABTD_atomic_test_and_set_uint8((uint8_t *)&p_queue->low_mutex)) {
         while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->low_mutex) != 0);
     }
 }
 
 static inline
-void ABTI_thread_queue_release_low_mutex(ABTI_thread_queue *p_queue) {
+    void ABTI_thread_queue_release_low_mutex(ABTI_thread_queue *p_queue)
+{
     ABTD_atomic_clear_uint8((uint8_t *)&p_queue->low_mutex);
 }
 
-static inline
-void ABTI_thread_htable_add_h_node(ABTI_thread_htable *p_htable,
-                                   ABTI_thread_queue *p_node)
+static inline void ABTI_thread_htable_add_h_node(ABTI_thread_htable *p_htable,
+                                                 ABTI_thread_queue *p_node)
 {
     ABTI_thread_queue *p_curr = p_htable->h_list;
     if (!p_curr) {
@@ -113,8 +114,7 @@ void ABTI_thread_htable_add_h_node(ABTI_thread_htable *p_htable,
     }
 }
 
-static inline
-void ABTI_thread_htable_del_h_head(ABTI_thread_htable *p_htable)
+static inline void ABTI_thread_htable_del_h_head(ABTI_thread_htable *p_htable)
 {
     ABTI_thread_queue *p_prev, *p_next;
     ABTI_thread_queue *p_node = p_htable->h_list;
@@ -134,9 +134,8 @@ void ABTI_thread_htable_del_h_head(ABTI_thread_htable *p_htable)
     }
 }
 
-static inline
-void ABTI_thread_htable_add_l_node(ABTI_thread_htable *p_htable,
-                                   ABTI_thread_queue *p_node)
+static inline void ABTI_thread_htable_add_l_node(ABTI_thread_htable *p_htable,
+                                                 ABTI_thread_queue *p_node)
 {
     ABTI_thread_queue *p_curr = p_htable->l_list;
     if (!p_curr) {
@@ -151,8 +150,7 @@ void ABTI_thread_htable_add_l_node(ABTI_thread_htable *p_htable,
     }
 }
 
-static inline
-void ABTI_thread_htable_del_l_head(ABTI_thread_htable *p_htable)
+static inline void ABTI_thread_htable_del_l_head(ABTI_thread_htable *p_htable)
 {
     ABTI_thread_queue *p_prev, *p_next;
     ABTI_thread_queue *p_node = p_htable->l_list;

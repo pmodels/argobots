@@ -84,10 +84,10 @@ void ATS_error(int err, const char *msg, const char *file, int line);
 
 
 typedef enum {
-    ATS_ARG_N_ES   = 0,    /* # of ESs */
-    ATS_ARG_N_ULT  = 1,    /* # of ULTs */
-    ATS_ARG_N_TASK = 2,    /* # of tasklets */
-    ATS_ARG_N_ITER = 3     /* # of iterations */
+    ATS_ARG_N_ES = 0,           /* # of ESs */
+    ATS_ARG_N_ULT = 1,  /* # of ULTs */
+    ATS_ARG_N_TASK = 2, /* # of tasklets */
+    ATS_ARG_N_ITER = 3  /* # of iterations */
 } ATS_arg;
 
 /**
@@ -134,7 +134,7 @@ void ATS_print_line(FILE *fp, char c, int len);
 static inline uint64_t ATS_get_cycles()
 {
     unsigned hi, lo;
-    __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+    __asm__ __volatile__("rdtsc":"=a"(lo), "=d"(hi));
     uint64_t cycle = ((uint64_t)lo) | (((int64_t)hi) << 32);
     return cycle;
 }
@@ -142,7 +142,7 @@ static inline uint64_t ATS_get_cycles()
 static inline uint64_t ATS_get_cycles()
 {
     register uint64_t cycle;
-    __asm__ __volatile__ ("isb; mrs %0, cntvct_el0" : "=r"(cycle));
+    __asm__ __volatile__("isb; mrs %0, cntvct_el0":"=r"(cycle));
     return cycle;
 }
 #else

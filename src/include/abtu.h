@@ -26,8 +26,7 @@
 #define ABTU_free(a)            free((void *)(a))
 #define ABTU_realloc(a,b)       realloc((void *)(a),(size_t)(b))
 
-static inline
-void *ABTU_memalign(size_t alignment, size_t size)
+static inline void *ABTU_memalign(size_t alignment, size_t size)
 {
     void *p_ptr;
     int ret = posix_memalign(&p_ptr, alignment, size);

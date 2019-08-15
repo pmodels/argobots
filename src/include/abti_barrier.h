@@ -9,8 +9,7 @@
 /* Inlined functions for Barrier */
 
 /* Barrier */
-static inline
-ABTI_barrier *ABTI_barrier_get_ptr(ABT_barrier barrier)
+static inline ABTI_barrier *ABTI_barrier_get_ptr(ABT_barrier barrier)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_barrier *p_barrier;
@@ -25,8 +24,7 @@ ABTI_barrier *ABTI_barrier_get_ptr(ABT_barrier barrier)
 #endif
 }
 
-static inline
-ABT_barrier ABTI_barrier_get_handle(ABTI_barrier *p_barrier)
+static inline ABT_barrier ABTI_barrier_get_handle(ABTI_barrier *p_barrier)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_barrier h_barrier;
@@ -42,4 +40,3 @@ ABT_barrier ABTI_barrier_get_handle(ABTI_barrier *p_barrier)
 }
 
 #endif /* BARRIER_H_INCLUDED */
-

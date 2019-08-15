@@ -77,7 +77,8 @@ static void sched_run(ABT_sched sched)
             ABT_xstream_run_unit(unit, my_pool);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
-            target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
+            target =
+                (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
             ABT_pool tar_pool = pools[target];
             ABT_pool_get_size(tar_pool, &size);
             if (size > 0) {
@@ -93,7 +94,8 @@ static void sched_run(ABT_sched sched)
             ABT_bool stop;
             ret = ABT_sched_has_to_stop(sched, &stop);
             ATS_ERROR(ret, "ABT_sched_has_to_stop");
-            if (stop == ABT_TRUE) break;
+            if (stop == ABT_TRUE)
+                break;
             work_count = 0;
             ABT_xstream_check_events(sched);
         }
@@ -151,9 +153,9 @@ static ABT_sched *create_scheds(int num, ABT_pool *pools)
 
     /* Create a scheduler config */
     /* NOTE: The same scheduler config can be used for all schedulers. */
-    ret = ABT_sched_config_create(&config,
-                                  cv_event_freq, 10,
-                                  ABT_sched_config_var_end);
+    ret =
+        ABT_sched_config_create(&config, cv_event_freq, 10,
+                                ABT_sched_config_var_end);
     ATS_ERROR(ret, "ABT_sched_config_create");
 
     my_pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num);
@@ -249,8 +251,9 @@ static void create_threads(void *arg)
     ATS_printf(1, "[U%lu:E%d] creating ULTs\n", id, rank);
     threads = (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);
     for (i = 0; i < num_threads; i++) {
-        ret = ABT_thread_create(pool, thread_func, NULL,
-                                ABT_THREAD_ATTR_NULL, &threads[i]);
+        ret =
+            ABT_thread_create(pool, thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                              &threads[i]);
         ATS_ERROR(ret, "ABT_thread_create");
     }
 
@@ -274,12 +277,12 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc > 1) {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+        num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
     }
     ATS_init(argc, argv, num_xstreams);
 
     ATS_printf(1, "num_xstreams=%d num_threads=%d\n", num_xstreams,
-                    num_threads);
+               num_threads);
 
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
 
@@ -301,8 +304,9 @@ int main(int argc, char *argv[])
 
     /* Create ULTs */
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_thread_create(pools[i], create_threads, NULL,
-                                ABT_THREAD_ATTR_NULL, NULL);
+        ret =
+            ABT_thread_create(pools[i], create_threads, NULL,
+                              ABT_THREAD_ATTR_NULL, NULL);
         ATS_ERROR(ret, "ABT_thread_create");
     }
 
@@ -324,4 +328,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

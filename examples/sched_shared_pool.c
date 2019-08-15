@@ -20,9 +20,9 @@ void thread_hello(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream xstreams[NUM_XSTREAMS];
-    ABT_sched   scheds[NUM_XSTREAMS];
-    ABT_pool    shared_pool;
-    ABT_thread  threads[NUM_THREADS];
+    ABT_sched scheds[NUM_XSTREAMS];
+    ABT_pool shared_pool;
+    ABT_thread threads[NUM_THREADS];
     int i;
 
     ABT_init(argc, argv);
@@ -65,4 +65,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-

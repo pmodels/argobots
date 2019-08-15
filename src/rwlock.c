@@ -31,8 +31,7 @@ int ABT_rwlock_create(ABT_rwlock *newrwlock)
     p_newrwlock = (ABTI_rwlock *)ABTU_malloc(sizeof(ABTI_rwlock));
     if (p_newrwlock == NULL) {
         abt_errno = ABT_ERR_MEM;
-    }
-    else {
+    } else {
         ABTI_rwlock_init(p_newrwlock);
     }
 
@@ -150,9 +149,9 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
  * @brief Unlock the rwlock
  *
  * \c ABT_rwlock_unlock unlocks the rwlock \c rwlock.
- * If the caller ULT locked the rwlock, this routine unlocks the rwlock. However,
- * if the caller ULT did not lock the rwlock, this routine may result in
- * undefined behavior.
+ * If the caller ULT locked the rwlock, this routine unlocks the rwlock.
+ * However, if the caller ULT did not lock the rwlock, this routine may result
+ * in undefined behavior.
  *
  * @param[in] rwlock  handle to the rwlock
  * @return Error code

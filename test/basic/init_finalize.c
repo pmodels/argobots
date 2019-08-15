@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc > 2) {
         num_threads = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_iter    = ATS_get_arg_val(ATS_ARG_N_ITER);
+        num_iter = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
     ATS_init(argc, argv, num_threads);
 

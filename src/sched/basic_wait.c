@@ -9,9 +9,9 @@
  * This group is for the basic waiting scheudler.
  */
 
-static int  sched_init(ABT_sched sched, ABT_sched_config config);
+static int sched_init(ABT_sched sched, ABT_sched_config config);
 static void sched_run(ABT_sched sched);
-static int  sched_free(ABT_sched);
+static int sched_free(ABT_sched);
 static void sched_sort_pools(int num_pools, ABT_pool *pools);
 
 static ABT_sched_def sched_basic_wait_def = {
@@ -63,7 +63,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Sort pools according to their access mode so the scheduler can execute
-       work units from the private pools. */
+     * work units from the private pools. */
     if (num_pools > 1) {
         sched_sort_pools(num_pools, p_data->pools);
     }
@@ -95,8 +95,8 @@ static void sched_run(ABT_sched sched)
     ABT_sched_get_data(sched, &data);
     p_data = sched_data_get_ptr(data);
     event_freq = p_data->event_freq;
-    num_pools  = p_data->num_pools;
-    pools      = p_data->pools;
+    num_pools = p_data->num_pools;
+    pools = p_data->pools;
 
     while (1) {
         run_cnt_nowait = 0;
@@ -117,14 +117,14 @@ static void sched_run(ABT_sched sched)
         /* Block briefly on pop_timedwait() if we didn't find work to do in
          * main loop above.
          */
-        if(!run_cnt_nowait) {
+        if (!run_cnt_nowait) {
             double abstime = ABT_get_wtime();
             abstime += 0.1;
-            ABT_unit unit = ABTI_pool_pop_timedwait(
-                ABTI_pool_get_ptr(pools[0]), abstime);
+            ABT_unit unit =
+                ABTI_pool_pop_timedwait(ABTI_pool_get_ptr(pools[0]), abstime);
             if (unit != ABT_UNIT_NULL) {
                 ABTI_xstream_run_unit(p_xstream, unit,
-                    ABTI_pool_get_ptr(pools[0]));
+                                      ABTI_pool_get_ptr(pools[0]));
                 break;
             }
         }
@@ -165,12 +165,20 @@ static int pool_get_access_num(ABT_pool *p_pool)
 
     ABT_pool_get_access(*p_pool, &access);
     switch (access) {
-        case ABT_POOL_ACCESS_PRIV: num = 0; break;
+        case ABT_POOL_ACCESS_PRIV:
+            num = 0;
+            break;
         case ABT_POOL_ACCESS_SPSC:
-        case ABT_POOL_ACCESS_MPSC: num = 1; break;
+        case ABT_POOL_ACCESS_MPSC:
+            num = 1;
+            break;
         case ABT_POOL_ACCESS_SPMC:
-        case ABT_POOL_ACCESS_MPMC: num = 2; break;
-        default: ABTI_ASSERT(0); break;
+        case ABT_POOL_ACCESS_MPMC:
+            num = 2;
+            break;
+        default:
+            ABTI_ASSERT(0);
+            break;
     }
 
     return num;

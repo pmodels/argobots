@@ -36,7 +36,7 @@ void thread_func(void *arg)
     arg_t *my_arg = (arg_t *)arg;
 
     ATS_printf(3, "[U%d:E%d] %s\n", my_arg->tid, my_arg->eid,
-                       my_arg->op_type == OP_WAIT ? "wait" : "set");
+               my_arg->op_type == OP_WAIT ? "wait" : "set");
 
     if (my_arg->op_type == OP_WAIT) {
         if (my_arg->nbytes == 0) {
@@ -101,14 +101,14 @@ void eventual_test(void *arg)
     thread_args = (arg_t *)malloc(num_threads * sizeof(arg_t));
     nbytes = (int *)malloc(num_tasks * sizeof(int));
     evs1 = (ABT_eventual *)malloc(num_tasks * sizeof(ABT_eventual));
-    assert(threads && thread_args && nbytes && evs1);
+    assert(threads && thread_args &&nbytes && evs1);
 
     waiters = (ABT_thread *)malloc(num_tasks * sizeof(ABT_thread));
     waiter_args = (arg_t *)malloc(num_tasks * sizeof(arg_t));
     tasks = (ABT_task *)malloc(num_tasks * sizeof(ABT_task));
     task_args = (arg_t *)malloc(num_tasks * sizeof(arg_t));
     evs2 = (ABT_eventual *)malloc(num_tasks * sizeof(ABT_eventual));
-    assert(waiters && waiter_args && tasks && task_args && evs2);
+    assert(waiters && waiter_args && tasks && task_args &&evs2);
 
     for (t = 0; t < num_tasks; t++) {
         nbytes[t] = (t & 1) ? sizeof(int) : 0;
@@ -127,21 +127,22 @@ void eventual_test(void *arg)
         for (t = 0; t < num_threads; t += 2) {
             thread_args[t].eid = eid;
             thread_args[t].tid = t;
-            thread_args[t].ev = evs1[t/2];
-            thread_args[t].nbytes = nbytes[t/2];
+            thread_args[t].ev = evs1[t / 2];
+            thread_args[t].nbytes = nbytes[t / 2];
             thread_args[t].op_type = OP_WAIT;
             ret = ABT_thread_create(pools[pid], thread_func, &thread_args[t],
                                     ABT_THREAD_ATTR_NULL, &threads[t]);
             ATS_ERROR(ret, "ABT_thread_create");
             pid = (pid + 1) % num_xstreams;
 
-            thread_args[t+1].eid = eid;
-            thread_args[t+1].tid = t + 1;
-            thread_args[t+1].ev = evs1[t/2];
-            thread_args[t+1].nbytes = nbytes[t/2];
-            thread_args[t+1].op_type = OP_SET;
-            ret = ABT_thread_create(pools[pid], thread_func, &thread_args[t+1],
-                                    ABT_THREAD_ATTR_NULL, &threads[t+1]);
+            thread_args[t + 1].eid = eid;
+            thread_args[t + 1].tid = t + 1;
+            thread_args[t + 1].ev = evs1[t / 2];
+            thread_args[t + 1].nbytes = nbytes[t / 2];
+            thread_args[t + 1].op_type = OP_SET;
+            ret = ABT_thread_create(pools[pid], thread_func,
+                                    &thread_args[t + 1], ABT_THREAD_ATTR_NULL,
+                                    &threads[t + 1]);
             ATS_ERROR(ret, "ABT_thread_create");
             pid = (pid + 1) % num_xstreams;
         }
@@ -159,7 +160,8 @@ void eventual_test(void *arg)
             task_args[t].ev = evs2[t];
             task_args[t].nbytes = nbytes[t];
             task_args[t].op_type = OP_SET;
-            ret = ABT_task_create(pools[pid], task_func, &task_args[t], &tasks[t]);
+            ret = ABT_task_create(pools[pid], task_func, &task_args[t],
+                                  &tasks[t]);
             ATS_ERROR(ret, "ABT_task_create");
             pid = (pid + 1) % num_xstreams;
         }
@@ -216,14 +218,14 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
-        num_threads  = DEFAULT_NUM_THREADS;
-        num_tasks    = DEFAULT_NUM_TASKS;
-        num_iter     = DEFAULT_NUM_ITER;
+        num_threads = DEFAULT_NUM_THREADS;
+        num_tasks = DEFAULT_NUM_TASKS;
+        num_iter = DEFAULT_NUM_ITER;
     } else {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_tasks    = ATS_get_arg_val(ATS_ARG_N_TASK);
-        num_threads  = num_tasks * 2;
-        num_iter     = ATS_get_arg_val(ATS_ARG_N_ITER);
+        num_tasks = ATS_get_arg_val(ATS_ARG_N_TASK);
+        num_threads = num_tasks * 2;
+        num_iter = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
     ATS_init(argc, argv, num_xstreams);
 
@@ -233,8 +235,8 @@ int main(int argc, char *argv[])
     ATS_printf(1, "# of iter       : %d\n", num_iter);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    masters  = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
+    pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    masters = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
@@ -282,4 +284,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

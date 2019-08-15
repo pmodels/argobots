@@ -32,7 +32,7 @@ static char *t_names[] = {
 };
 
 typedef struct {
-    int eid;            /* ES id */
+    int eid;                    /* ES id */
     int test_kind;
 } launch_t;
 
@@ -71,7 +71,8 @@ void mutex_lock_unlock(void *arg)
     ABT_barrier_wait(g_barrier);
 
     /* start timer */
-    if (eid == 0 && tid == 0) ABT_timer_start(timer);
+    if (eid == 0 && tid == 0)
+        ABT_timer_start(timer);
 
     /* measure mutex lock/unlock time */
     for (i = 0; i < iter; i++) {
@@ -97,9 +98,9 @@ void launch_test(void *arg)
     int test_kind = my_arg->test_kind;
 
     ABT_xstream xstream;
-    ABT_pool    pool;
+    ABT_pool pool;
     ABT_thread *threads;
-    void (*test_fn)(void *);
+    void (*test_fn) (void *);
     int i;
 
     ATS_printf(1, "[E%d] main ULT: start\n", eid);
@@ -138,9 +139,9 @@ void launch_test(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream *xstreams;
-    ABT_pool    *pools;
-    ABT_thread  *threads;
-    ABT_mutex   *mutexes;
+    ABT_pool *pools;
+    ABT_thread *threads;
+    ABT_mutex *mutexes;
     ABT_timer timer;
     launch_t *largs;
     double t_time;
@@ -149,7 +150,7 @@ int main(int argc, char *argv[])
     /* read command-line arguments */
     ATS_read_args(argc, argv);
     num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+    num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
     iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     /* initialize */
@@ -160,12 +161,13 @@ int main(int argc, char *argv[])
     ABT_timer_start(timer);
     ABT_timer_stop(timer);
     ABT_timer_get_overhead(&t_overhead);
-    for (i = 0; i < T_LAST; i++) t_timers[i] = 0.0;
+    for (i = 0; i < T_LAST; i++)
+        t_timers[i] = 0.0;
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    threads  = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
-    mutexes  = (ABT_mutex *)malloc(iter * sizeof(ABT_mutex));
+    pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    threads = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
+    mutexes = (ABT_mutex *)malloc(iter * sizeof(ABT_mutex));
 
     /* mutex create (cold) time */
     ABT_timer_start(timer);
@@ -185,7 +187,7 @@ int main(int argc, char *argv[])
 
     /* mutex create/free (cold) time */
     t_timers[T_MUTEX_CREATE_FREE_COLD] = t_timers[T_MUTEX_CREATE_COLD]
-                                       + t_timers[T_MUTEX_FREE_COLD];
+        + t_timers[T_MUTEX_FREE_COLD];
 
     /* mutex create time */
     ABT_timer_start(timer);
@@ -205,7 +207,7 @@ int main(int argc, char *argv[])
 
     /* mutex create/free time */
     t_timers[T_MUTEX_CREATE_FREE] = t_timers[T_MUTEX_CREATE]
-                                  + t_timers[T_MUTEX_FREE];
+        + t_timers[T_MUTEX_FREE];
 
     /* mutex lock/unlock time */
     ABT_timer_start(timer);
@@ -265,4 +267,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

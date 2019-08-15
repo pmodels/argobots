@@ -131,8 +131,8 @@ int main(int argc, char *argv[])
         for (j = 0; j < num_threads; j++) {
             int tid = i * num_threads + j + 1;
             args[i][j].id = tid;
-            args[i][j].issue_signal = (i == num_xstreams / 2)
-                                      && (j == num_threads / 2);
+            args[i][j].issue_signal = ((i == num_xstreams / 2)
+                                       && (j == num_threads / 2));
             args[i][j].dummy_ptr = NULL;
             args[i][j].stack = NULL;
             if (tid % 3 == 0) {

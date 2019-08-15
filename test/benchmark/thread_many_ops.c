@@ -122,11 +122,11 @@ void thread_func_migrate_to_xstream(void *arg)
 void thread_test(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool    my_pool    = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_thread *my_threads = g_threads[eid];
-    uint64_t   *my_times   = t_times[eid];
+    uint64_t *my_times = t_times[eid];
     ABT_pool *pool_list;
-    void (**thread_func_list)(void *);
+    void (**thread_func_list) (void *);
 
     uint64_t t_all_start = 0;
     uint64_t t_start, t_time;
@@ -136,7 +136,7 @@ void thread_test(void *arg)
 
     pool_list = (ABT_pool *)malloc(num_threads * sizeof(ABT_pool));
     thread_func_list = (void (**)(void *))
-                       malloc(num_threads * sizeof(void (*)(void *)));
+        malloc(num_threads * sizeof(void (*)(void *)));
     for (i = 0; i < num_threads; i++) {
         pool_list[i] = my_pool;
         thread_func_list[i] = thread_func;
@@ -145,7 +145,8 @@ void thread_test(void *arg)
     /*************************************************************************/
     /* ULT: create_many/join_many (cold) */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ATS_get_cycles();
+    if (eid == 0)
+        t_all_start = ATS_get_cycles();
 
     t_start = ATS_get_cycles();
     ABT_thread_create_many(num_threads, pool_list, thread_func_list, NULL,
@@ -159,12 +160,13 @@ void thread_test(void *arg)
     ABT_xstream_barrier_wait(g_xbarrier);
     if (eid == 0) {
         /* execution time for all ESs */
-        t_all[T_ALL_CREATE_MANY_JOIN_MANY_COLD] = ATS_get_cycles() - t_all_start;
+        t_all[T_ALL_CREATE_MANY_JOIN_MANY_COLD] =
+            ATS_get_cycles() - t_all_start;
     }
     my_times[T_CREATE_MANY_COLD] /= num_threads;
     my_times[T_JOIN_MANY_COLD] /= num_threads;
     my_times[T_CREATE_MANY_JOIN_MANY_COLD] = my_times[T_CREATE_MANY_COLD]
-                                           + my_times[T_JOIN_MANY_COLD];
+        + my_times[T_JOIN_MANY_COLD];
     /*************************************************************************/
 
     /*************************************************************************/
@@ -186,7 +188,8 @@ void thread_test(void *arg)
 
     /* measure the time for create/join operations */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ATS_get_cycles();
+    if (eid == 0)
+        t_all_start = ATS_get_cycles();
     t_start = ATS_get_cycles();
     for (i = 0; i < iter; i++) {
         ABT_thread_create_many(num_threads, pool_list, thread_func_list, NULL,
@@ -215,7 +218,8 @@ void thread_test(void *arg)
 
     /* measure the time */
     ABT_xstream_barrier_wait(g_xbarrier);
-    if (eid == 0) t_all_start = ATS_get_cycles();
+    if (eid == 0)
+        t_all_start = ATS_get_cycles();
     t_start = ATS_get_cycles();
     ABT_thread_create_many(num_threads, pool_list, thread_func_list, NULL,
                            ABT_THREAD_ATTR_NULL, my_threads);
@@ -249,7 +253,7 @@ int main(int argc, char *argv[])
     /* read command-line arguments */
     ATS_read_args(argc, argv);
     num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-    num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+    num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
     iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     /* initialize */
@@ -265,12 +269,13 @@ int main(int argc, char *argv[])
     }
 
     g_xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    g_pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    g_threads  = (ABT_thread **)malloc(num_xstreams * sizeof(ABT_thread *));
+    g_pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    g_threads = (ABT_thread **)malloc(num_xstreams * sizeof(ABT_thread *));
     for (i = 0; i < num_xstreams; i++) {
         g_threads[i] = (ABT_thread *)malloc(num_threads * sizeof(ABT_thread));
     }
-    t_times = (uint64_t (*)[T_LAST])calloc(num_xstreams, sizeof(uint64_t)*T_LAST);
+    t_times =
+        (uint64_t (*)[T_LAST])calloc(num_xstreams, sizeof(uint64_t) * T_LAST);
 
     /* create a global barrier */
     ABT_xstream_barrier_create(num_xstreams, &g_xbarrier);
@@ -290,8 +295,8 @@ int main(int argc, char *argv[])
 
     /* create ESs with a new default scheduler */
     ABT_xstream_self(&g_xstreams[0]);
-    ABT_xstream_set_main_sched_basic(g_xstreams[0], ABT_SCHED_DEFAULT,
-                                     1, &g_pools[0]);
+    ABT_xstream_set_main_sched_basic(g_xstreams[0], ABT_SCHED_DEFAULT, 1,
+                                     &g_pools[0]);
     for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 1, &g_pools[i],
                                  ABT_SCHED_CONFIG_NULL, &g_xstreams[i]);
@@ -310,8 +315,10 @@ int main(int argc, char *argv[])
     /* find min, max, and avg of each case */
     for (i = 0; i < num_xstreams; i++) {
         for (t = 0; t < T_LAST; t++) {
-            if (t_times[i][t] < t_min[t]) t_min[t] = t_times[i][t];
-            if (t_times[i][t] > t_max[t]) t_max[t] = t_times[i][t];
+            if (t_times[i][t] < t_min[t])
+                t_min[t] = t_times[i][t];
+            if (t_times[i][t] > t_max[t])
+                t_max[t] = t_times[i][t];
             t_avg[t] += t_times[i][t];
         }
     }
@@ -354,4 +361,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

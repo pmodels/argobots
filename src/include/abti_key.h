@@ -8,8 +8,7 @@
 
 /* Inlined functions for Work unit-specific data key */
 
-static inline
-ABTI_key *ABTI_key_get_ptr(ABT_key key)
+static inline ABTI_key *ABTI_key_get_ptr(ABT_key key)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_key *p_key;
@@ -24,8 +23,7 @@ ABTI_key *ABTI_key_get_ptr(ABT_key key)
 #endif
 }
 
-static inline
-ABT_key ABTI_key_get_handle(ABTI_key *p_key)
+static inline ABT_key ABTI_key_get_handle(ABTI_key *p_key)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_key h_key;
@@ -41,4 +39,3 @@ ABT_key ABTI_key_get_handle(ABTI_key *p_key)
 }
 
 #endif /* KEY_H_INCLUDED */
-

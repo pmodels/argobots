@@ -40,7 +40,6 @@ int ABT_self_get_type(ABT_unit_type *type)
         *type = ABT_UNIT_TYPE_EXT;
         goto fn_exit;
     }
-
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (lp_ABTI_local == NULL) {
@@ -91,7 +90,6 @@ int ABT_self_is_primary(ABT_bool *flag)
         *flag = ABT_FALSE;
         goto fn_exit;
     }
-
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (lp_ABTI_local == NULL) {
@@ -104,7 +102,7 @@ int ABT_self_is_primary(ABT_bool *flag)
     p_thread = ABTI_local_get_thread();
     if (p_thread) {
         *flag = (p_thread->type == ABTI_THREAD_TYPE_MAIN)
-              ? ABT_TRUE : ABT_FALSE;
+            ? ABT_TRUE : ABT_FALSE;
     } else {
         abt_errno = ABT_ERR_INV_THREAD;
         *flag = ABT_FALSE;
@@ -140,7 +138,6 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
         *flag = ABT_FALSE;
         goto fn_exit;
     }
-
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (lp_ABTI_local == NULL) {
@@ -155,7 +152,7 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
 
     /* Return value */
     *flag = (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY)
-          ? ABT_TRUE : ABT_FALSE;
+        ? ABT_TRUE : ABT_FALSE;
 
   fn_exit:
     return abt_errno;
@@ -195,7 +192,6 @@ int ABT_self_get_last_pool_id(int *pool_id)
         *pool_id = -1;
         goto fn_exit;
     }
-
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (lp_ABTI_local == NULL) {
@@ -339,7 +335,6 @@ int ABT_self_get_arg(void **arg)
         *arg = NULL;
         goto fn_exit;
     }
-
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* When an external thread called this routine */
     if (lp_ABTI_local == NULL) {

@@ -28,8 +28,8 @@ ABT_cond cond = ABT_COND_NULL;
 ABT_cond broadcast = ABT_COND_NULL;
 
 typedef struct thread_arg {
-    int sid;    /* stream ID */
-    int tid;    /* thread ID */
+    int sid;                    /* stream ID */
+    int tid;                    /* thread ID */
 } thread_arg_t;
 
 void inc_counter(void *arg)
@@ -45,10 +45,10 @@ void inc_counter(void *arg)
 
         if (g_counter == COUNT_LIMIT) {
             ATS_printf(1, "[ES%d:TH%d] inc_counter(): threshold(%d) "
-                    "reached\n", es_id, my_id, g_counter);
+                       "reached\n", es_id, my_id, g_counter);
             ABT_cond_signal(cond);
             ATS_printf(1, "[ES%d:TH%d] inc_counter(): sent signal\n",
-                    es_id, my_id);
+                       es_id, my_id);
         }
 
         ABT_mutex_unlock(mutex);
@@ -73,11 +73,10 @@ void watch_counter(void *arg)
 
     ABT_mutex_lock(mutex);
     while (g_counter < COUNT_LIMIT) {
-        ATS_printf(1, "[ES%d:TH%d] watch_count(): waiting\n",
-                es_id, my_id);
+        ATS_printf(1, "[ES%d:TH%d] watch_count(): waiting\n", es_id, my_id);
         ABT_cond_wait(cond, mutex);
         ATS_printf(1, "[ES%d:TH%d] watch_count(): received signal\n",
-                es_id, my_id);
+                   es_id, my_id);
         g_waiting = 1;
         g_counter += 100;
     }
@@ -96,9 +95,11 @@ int main(int argc, char *argv[])
 {
     int i, j;
     int ret, expected;
-    if (argc > 1) num_xstreams = atoi(argv[1]);
+    if (argc > 1)
+        num_xstreams = atoi(argv[1]);
     assert(num_xstreams >= 0);
-    if (argc > 2) num_threads = atoi(argv[2]);
+    if (argc > 2)
+        num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
 
     if (num_xstreams * num_threads < 3) {
@@ -135,7 +136,7 @@ int main(int argc, char *argv[])
     ABT_pool *pools;
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
@@ -153,18 +154,18 @@ int main(int argc, char *argv[])
     args[0][0].sid = 0;
     args[0][0].tid = 1;
     ret = ABT_thread_create(pools[0], watch_counter, (void *)&args[0][0],
-            ABT_THREAD_ATTR_NULL, NULL);
+                            ABT_THREAD_ATTR_NULL, NULL);
     ATS_ERROR(ret, "ABT_thread_create");
 
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
-            if (!i && !j) continue;
+            if (!i && !j)
+                continue;
             int tid = i * num_threads + j + 1;
             args[i][j].sid = i;
             args[i][j].tid = tid;
-            ret = ABT_thread_create(pools[i],
-                    inc_counter, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
-                    &threads[i][j]);
+            ret = ABT_thread_create(pools[i], inc_counter, (void *)&args[i][j],
+                                    ABT_THREAD_ATTR_NULL, &threads[i][j]);
             ATS_ERROR(ret, "ABT_thread_create");
         }
     }
@@ -172,7 +173,8 @@ int main(int argc, char *argv[])
     /* Join and free ULTs */
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
-            if (!i && !j) continue;
+            if (!i && !j)
+                continue;
             ret = ABT_thread_free(&threads[i][j]);
             ATS_ERROR(ret, "ABT_thread_free");
         }
@@ -220,4 +222,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

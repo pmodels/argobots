@@ -8,8 +8,7 @@
 
 /* Inlined functions for Timer */
 
-static inline
-ABTI_timer *ABTI_timer_get_ptr(ABT_timer timer)
+static inline ABTI_timer *ABTI_timer_get_ptr(ABT_timer timer)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_timer *p_timer;
@@ -24,8 +23,7 @@ ABTI_timer *ABTI_timer_get_ptr(ABT_timer timer)
 #endif
 }
 
-static inline
-ABT_timer ABTI_timer_get_handle(ABTI_timer *p_timer)
+static inline ABT_timer ABTI_timer_get_handle(ABTI_timer *p_timer)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_timer h_timer;
@@ -41,4 +39,3 @@ ABT_timer ABTI_timer_get_handle(ABTI_timer *p_timer)
 }
 
 #endif /* TIMER_H_INCLUDED */
-

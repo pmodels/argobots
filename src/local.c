@@ -52,4 +52,3 @@ int ABTI_local_finalize(void)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-

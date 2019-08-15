@@ -10,18 +10,16 @@
 
 /* Inlined functions for Condition Variable  */
 
-static inline
-void ABTI_cond_init(ABTI_cond *p_cond)
+static inline void ABTI_cond_init(ABTI_cond *p_cond)
 {
     ABTI_spinlock_create(&p_cond->lock);
     p_cond->p_waiter_mutex = NULL;
-    p_cond->num_waiters  = 0;
+    p_cond->num_waiters = 0;
     p_cond->p_head = NULL;
     p_cond->p_tail = NULL;
 }
 
-static inline
-void ABTI_cond_fini(ABTI_cond *p_cond)
+static inline void ABTI_cond_fini(ABTI_cond *p_cond)
 {
     /* The lock needs to be acquired to safely free the condition structure.
      * However, we do not have to unlock it because the entire structure is
@@ -31,8 +29,7 @@ void ABTI_cond_fini(ABTI_cond *p_cond)
     ABTI_spinlock_free(&p_cond->lock);
 }
 
-static inline
-ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond)
+static inline ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_cond *p_cond;
@@ -47,8 +44,7 @@ ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond)
 #endif
 }
 
-static inline
-ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
+static inline ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_cond h_cond;
@@ -63,8 +59,7 @@ ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
 #endif
 }
 
-static inline
-int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
+static inline int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -130,7 +125,7 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
         /* Suspend the current ULT */
         ABTI_thread_suspend(p_thread);
 
-    } else { /* TYPE == ABT_UNIT_TYPE_EXT */
+    } else {    /* TYPE == ABT_UNIT_TYPE_EXT */
         ABTI_spinlock_release(&p_cond->lock);
         ABTI_mutex_unlock(p_mutex);
 
@@ -151,8 +146,7 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
     goto fn_exit;
 }
 
-static inline
-void ABTI_cond_broadcast(ABTI_cond *p_cond)
+static inline void ABTI_cond_broadcast(ABTI_cond *p_cond)
 {
     ABTI_spinlock_acquire(&p_cond->lock);
 
@@ -196,4 +190,3 @@ void ABTI_cond_broadcast(ABTI_cond *p_cond)
 }
 
 #endif /* COND_H_INCLUDED */
-

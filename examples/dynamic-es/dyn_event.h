@@ -11,4 +11,3 @@ void rt1_finalize(void);
 void rt1_launcher(void *arg);
 
 #endif /* DYN_EVENT_H */
-

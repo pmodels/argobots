@@ -29,22 +29,25 @@ int ABTI_contn_free(ABTI_contn **pp_contn)
         ABTI_elem *p_elem = ABTI_contn_pop(p_contn);
 
         switch (ABTI_elem_get_type(p_elem)) {
-            case ABT_UNIT_TYPE_THREAD: {
-                ABTI_thread *p_thread = ABTI_elem_get_thread(p_elem);
-                ABTI_thread_free(p_thread);
-                break;
-            }
-            case ABT_UNIT_TYPE_TASK: {
-                ABTI_task *p_task = ABTI_elem_get_task(p_elem);
-                ABTI_task_free(p_task);
-                break;
-            }
-            case ABT_UNIT_TYPE_XSTREAM: {
-                ABTI_xstream *p_xstream = ABTI_elem_get_xstream(p_elem);
-                abt_errno = ABTI_xstream_free(p_xstream);
-                ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_free");
-                break;
-            }
+            case ABT_UNIT_TYPE_THREAD:
+                {
+                    ABTI_thread *p_thread = ABTI_elem_get_thread(p_elem);
+                    ABTI_thread_free(p_thread);
+                    break;
+                }
+            case ABT_UNIT_TYPE_TASK:
+                {
+                    ABTI_task *p_task = ABTI_elem_get_task(p_elem);
+                    ABTI_task_free(p_task);
+                    break;
+                }
+            case ABT_UNIT_TYPE_XSTREAM:
+                {
+                    ABTI_xstream *p_xstream = ABTI_elem_get_xstream(p_elem);
+                    abt_errno = ABTI_xstream_free(p_xstream);
+                    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_free");
+                    break;
+                }
             default:
                 HANDLE_ERROR("Unknown elem type");
                 break;
@@ -116,9 +119,11 @@ ABTI_elem *ABTI_contn_pop(ABTI_contn *p_contn)
 
 void ABTI_contn_remove(ABTI_contn *p_contn, ABTI_elem *p_elem)
 {
-    if (p_elem->p_contn == NULL) return;
+    if (p_elem->p_contn == NULL)
+        return;
 
-    if (p_contn->num_elems == 0) return;
+    if (p_contn->num_elems == 0)
+        return;
 
     if (p_elem->p_contn != p_contn) {
         HANDLE_ERROR("Not my contn");
@@ -142,7 +147,8 @@ void ABTI_contn_remove(ABTI_contn *p_contn, ABTI_elem *p_elem)
     p_elem->p_next = NULL;
 }
 
-void ABTI_contn_print(ABTI_contn *p_contn, FILE *p_os, int indent, ABT_bool detail)
+void ABTI_contn_print(ABTI_contn *p_contn, FILE *p_os, int indent,
+                      ABT_bool detail)
 {
     size_t i;
     char *prefix = ABTU_get_indent_str(indent);
@@ -153,21 +159,19 @@ void ABTI_contn_print(ABTI_contn *p_contn, FILE *p_os, int indent, ABT_bool deta
     }
 
     fprintf(p_os,
-        "%s== CONTN (%p) ==\n"
-        "%snum_elems: %zu\n"
-        "%shead     : %p\n"
-        "%stail     : %p\n",
-        prefix, p_contn,
-        prefix, p_contn->num_elems,
-        prefix, p_contn->p_head,
-        prefix, p_contn->p_tail
-    );
+            "%s== CONTN (%p) ==\n"
+            "%snum_elems: %zu\n"
+            "%shead     : %p\n"
+            "%stail     : %p\n",
+            prefix, p_contn, prefix, p_contn->num_elems, prefix,
+            p_contn->p_head, prefix, p_contn->p_tail);
 
     if (p_contn->num_elems > 0) {
         fprintf(p_os, "%sCONTN (%p) elements:\n", prefix, p_contn);
         ABTI_elem *p_current = p_contn->p_head;
         for (i = 0; i < p_contn->num_elems; i++) {
-            if (i != 0) fprintf(p_os, "%s  -->\n", prefix);
+            if (i != 0)
+                fprintf(p_os, "%s  -->\n", prefix);
             ABTI_elem_print(p_current, p_os, indent + ABTI_INDENT, detail);
         }
     }
@@ -176,4 +180,3 @@ void ABTI_contn_print(ABTI_contn *p_contn, FILE *p_os, int indent, ABT_bool deta
     fflush(p_os);
     ABTU_free(prefix);
 }
-

@@ -72,7 +72,8 @@ int ABT_eventual_free(ABT_eventual *eventual)
     ABTI_spinlock_acquire(&p_eventual->lock);
 
     ABTI_spinlock_free(&p_eventual->lock);
-    if (p_eventual->value) ABTU_free(p_eventual->value);
+    if (p_eventual->value)
+        ABTU_free(p_eventual->value);
     ABTU_free(p_eventual);
 
     *eventual = ABT_EVENTUAL_NULL;
@@ -159,7 +160,8 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     } else {
         ABTI_spinlock_release(&p_eventual->lock);
     }
-    if (value) *value = p_eventual->value;
+    if (value)
+        *value = p_eventual->value;
 
   fn_exit:
     return abt_errno;
@@ -193,12 +195,13 @@ int ABT_eventual_test(ABT_eventual eventual, void **value, int *is_ready)
 
     ABTI_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready != ABT_FALSE) {
-        if (value) *value = p_eventual->value;
+        if (value)
+            *value = p_eventual->value;
         flag = ABT_TRUE;
     }
     ABTI_spinlock_release(&p_eventual->lock);
 
-   *is_ready = flag;
+    *is_ready = flag;
 
   fn_exit:
     return abt_errno;
@@ -236,7 +239,8 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_spinlock_acquire(&p_eventual->lock);
 
     p_eventual->ready = ABT_TRUE;
-    if (p_eventual->value) memcpy(p_eventual->value, value, nbytes);
+    if (p_eventual->value)
+        memcpy(p_eventual->value, value, nbytes);
 
     if (p_eventual->p_head == NULL) {
         ABTI_spinlock_release(&p_eventual->lock);
@@ -311,4 +315,3 @@ int ABT_eventual_reset(ABT_eventual eventual)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-

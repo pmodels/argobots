@@ -70,7 +70,7 @@ do {                                                                           \
 #define START_NULTS     64
 
 static ABT_xstream *xstreams;
-static ABT_pool    *pools;
+static ABT_pool *pools;
 static int niter, max_ults, ness;
 static ABT_xstream_barrier g_xbarrier = ABT_XSTREAM_BARRIER_NULL;
 
@@ -97,12 +97,12 @@ static void master_thread_func(void *arg)
     ABTX_papi_add_event(event_set);
 #endif /* USE_PAPI */
 
-    ABT_thread *my_ults = (ABT_thread *)malloc(max_ults*sizeof(ABT_thread));
+    ABT_thread *my_ults = (ABT_thread *)malloc(max_ults * sizeof(ABT_thread));
 
     /* warm-up */
     for (t = 0; t < max_ults; t++)
-        ABT_thread_create(pools[my_es], thread_func, NULL,
-                          ABT_THREAD_ATTR_NULL, &my_ults[t]);
+        ABT_thread_create(pools[my_es], thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                          &my_ults[t]);
 #ifdef USE_JOIN_MANY
     ABT_thread_join_many(max_ults, my_ults);
 #else
@@ -113,7 +113,7 @@ static void master_thread_func(void *arg)
         ABT_thread_free(&my_ults[t]);
 
     seq_state_t state;
-    seq_init(&state, 2, START_NULTS/2, START_NULTS/2, 1);
+    seq_init(&state, 2, START_NULTS / 2, START_NULTS / 2, 1);
     while ((nults = seq_get_next_term(&state)) <= max_ults) {
         ABT_xstream_barrier_wait(g_xbarrier);
         float crea_time = 0.0, crea_timestd = 0.0;
@@ -129,8 +129,9 @@ static void master_thread_func(void *arg)
 #endif
         int i;
 
-        /* The following line tries to keep the total number of iterations constant */
-        int iter = niter/(nults/START_NULTS);
+        /* The following line tries to keep the total number of iterations
+         * constant */
+        int iter = niter / (nults / START_NULTS);
         for (i = 0; i < iter; i++) {
             unsigned long long start_time;
 
@@ -190,11 +191,11 @@ int main(int argc, char *argv[])
     int i;
     ATS_read_args(argc, argv);
     niter = ATS_get_arg_val(ATS_ARG_N_ITER);
-    ness  = ATS_get_arg_val(ATS_ARG_N_ES);
+    ness = ATS_get_arg_val(ATS_ARG_N_ES);
     max_ults = ATS_get_arg_val(ATS_ARG_N_ULT);
 
-    xstreams = (ABT_xstream *)malloc(ness*sizeof(ABT_xstream));
-    pools = (ABT_pool *)malloc(ness*sizeof(ABT_pool));
+    xstreams = (ABT_xstream *)malloc(ness * sizeof(ABT_xstream));
+    pools = (ABT_pool *)malloc(ness * sizeof(ABT_pool));
 
     ATS_init(argc, argv, ness);
 
@@ -205,7 +206,7 @@ int main(int argc, char *argv[])
     ABT_xstream_barrier_create(ness, &g_xbarrier);
 
 #ifndef USE_PRIV_POOL
-    /* Create ESs*/
+    /* Create ESs */
     ABT_xstream_self(&xstreams[0]);
     ABT_xstream_get_main_pools(xstreams[0], 1, &pools[0]);
     for (i = 1; i < ness; i++) {
@@ -231,9 +232,10 @@ int main(int argc, char *argv[])
                           ABT_THREAD_ATTR_NULL, NULL);
     }
 
-    /* Create ESs*/
+    /* Create ESs */
     ABT_xstream_self(&xstreams[0]);
-    ABT_xstream_set_main_sched_basic(xstreams[0], ABT_SCHED_DEFAULT, 1, &pools[0]);
+    ABT_xstream_set_main_sched_basic(xstreams[0], ABT_SCHED_DEFAULT, 1,
+                                     &pools[0]);
     for (i = 1; i < ness; i++) {
         ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 1, &pools[i],
                                  ABT_SCHED_CONFIG_NULL, &xstreams[i]);
@@ -255,4 +257,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

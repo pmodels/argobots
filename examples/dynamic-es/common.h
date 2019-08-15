@@ -11,4 +11,3 @@
 #define RECV_BUF_LEN    20
 
 #endif /* COMMON_H */
-

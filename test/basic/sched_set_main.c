@@ -89,12 +89,12 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc > 1) {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+        num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
     }
     ATS_init(argc, argv, num_xstreams);
 
     ATS_printf(1, "num_xstreams=%d num_threads=%d\n",
-                    num_xstreams, num_threads);
+               num_xstreams, num_threads);
 
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
         ATS_ERROR(ret, "ABT_xstream_create");
 
         /* Get the first associated pool */
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
@@ -144,4 +144,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

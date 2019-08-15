@@ -62,8 +62,8 @@ void ABTI_thread_htable_push(ABTI_thread_htable *p_htable, int idx,
         /* Increase the hash table */
         uint32_t new_size;
         new_size = (idx / p_htable->num_rows + 1) * p_htable->num_rows;
-        p_htable->queue = (ABTI_thread_queue *)ABTU_realloc(
-                p_htable->queue, new_size * sizeof(ABTI_thread_queue));
+        p_htable->queue = (ABTI_thread_queue *)
+            ABTU_realloc(p_htable->queue, new_size * sizeof(ABTI_thread_queue));
         memset(&p_htable->queue[p_htable->num_rows], 0,
                (new_size - p_htable->num_rows) * sizeof(ABTI_thread_queue));
         p_htable->num_rows = new_size;
@@ -121,8 +121,8 @@ void ABTI_thread_htable_push_low(ABTI_thread_htable *p_htable, int idx,
         /* Increase the hash table */
         uint32_t new_size;
         new_size = (idx / p_htable->num_rows + 1) * p_htable->num_rows;
-        p_htable->queue = (ABTI_thread_queue *)ABTU_realloc(
-                p_htable->queue, new_size * sizeof(ABTI_thread_queue));
+        p_htable->queue = (ABTI_thread_queue *)
+            ABTU_realloc(p_htable->queue, new_size * sizeof(ABTI_thread_queue));
         memset(&p_htable->queue[p_htable->num_rows], 0,
                (new_size - p_htable->num_rows) * sizeof(ABTI_thread_queue));
         p_htable->num_rows = new_size;
@@ -253,4 +253,3 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_thread_queue *p_queue,
         return ABT_FALSE;
     }
 }
-

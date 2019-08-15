@@ -86,8 +86,10 @@ int ABT_error_get_str(int err, char *str, size_t *len)
     int abt_errno = ABT_SUCCESS;
     ABTI_CHECK_TRUE(err >= ABT_SUCCESS && err <= ABT_ERR_FEATURE_NA,
                     ABT_ERR_OTHER);
-    if (str) ABTU_strcpy(str, err_str[err]);
-    if (len) *len = strlen(err_str[err]);
+    if (str)
+        ABTU_strcpy(str, err_str[err]);
+    if (len)
+        *len = strlen(err_str[err]);
 
   fn_exit:
     return abt_errno;
@@ -96,4 +98,3 @@ int ABT_error_get_str(int err, char *str, size_t *len)
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-

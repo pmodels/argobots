@@ -9,9 +9,9 @@
  * This group is for the basic scheudler.
  */
 
-static int  sched_init(ABT_sched sched, ABT_sched_config config);
+static int sched_init(ABT_sched sched, ABT_sched_config config);
 static void sched_run(ABT_sched sched);
-static int  sched_free(ABT_sched);
+static int sched_free(ABT_sched);
 static void sched_sort_pools(int num_pools, ABT_pool *pools);
 
 static ABT_sched_def sched_basic_def = {
@@ -70,7 +70,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Sort pools according to their access mode so the scheduler can execute
-       work units from the private pools. */
+     * work units from the private pools. */
     if (num_pools > 1) {
         sched_sort_pools(num_pools, p_data->pools);
     }
@@ -102,8 +102,8 @@ static void sched_run(ABT_sched sched)
     ABT_sched_get_data(sched, &data);
     p_data = sched_data_get_ptr(data);
     event_freq = p_data->event_freq;
-    num_pools  = p_data->num_pools;
-    pools      = p_data->pools;
+    num_pools = p_data->num_pools;
+    pools = p_data->pools;
 
     while (1) {
         CNT_INIT(run_cnt, 0);
@@ -152,12 +152,20 @@ static int pool_get_access_num(ABT_pool *p_pool)
 
     ABT_pool_get_access(*p_pool, &access);
     switch (access) {
-        case ABT_POOL_ACCESS_PRIV: num = 0; break;
+        case ABT_POOL_ACCESS_PRIV:
+            num = 0;
+            break;
         case ABT_POOL_ACCESS_SPSC:
-        case ABT_POOL_ACCESS_MPSC: num = 1; break;
+        case ABT_POOL_ACCESS_MPSC:
+            num = 1;
+            break;
         case ABT_POOL_ACCESS_SPMC:
-        case ABT_POOL_ACCESS_MPMC: num = 2; break;
-        default: ABTI_ASSERT(0); break;
+        case ABT_POOL_ACCESS_MPMC:
+            num = 2;
+            break;
+        default:
+            ABTI_ASSERT(0);
+            break;
     }
 
     return num;
@@ -183,4 +191,3 @@ static void sched_sort_pools(int num_pools, ABT_pool *pools)
 {
     qsort(pools, num_pools, sizeof(ABT_pool), sched_cmp_pools);
 }
-

@@ -73,13 +73,13 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     /* Create a wrapper unit */
     ABTI_elem_create_from_xstream(p_newxstream);
 
-    p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
-    p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
-    p_newxstream->scheds       = NULL;
-    p_newxstream->num_scheds   = 0;
-    p_newxstream->max_scheds   = 0;
-    p_newxstream->request      = 0;
-    p_newxstream->p_req_arg    = NULL;
+    p_newxstream->type = ABTI_XSTREAM_TYPE_SECONDARY;
+    p_newxstream->state = ABT_XSTREAM_STATE_CREATED;
+    p_newxstream->scheds = NULL;
+    p_newxstream->num_scheds = 0;
+    p_newxstream->max_scheds = 0;
+    p_newxstream->request = 0;
+    p_newxstream->p_req_arg = NULL;
     p_newxstream->p_main_sched = NULL;
 
     /* Create the spinlock */
@@ -211,13 +211,13 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     /* Create a wrapper unit */
     ABTI_elem_create_from_xstream(p_newxstream);
 
-    p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
-    p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
-    p_newxstream->scheds       = NULL;
-    p_newxstream->num_scheds   = 0;
-    p_newxstream->max_scheds   = 0;
-    p_newxstream->request      = 0;
-    p_newxstream->p_req_arg    = NULL;
+    p_newxstream->type = ABTI_XSTREAM_TYPE_SECONDARY;
+    p_newxstream->state = ABT_XSTREAM_STATE_CREATED;
+    p_newxstream->scheds = NULL;
+    p_newxstream->num_scheds = 0;
+    p_newxstream->max_scheds = 0;
+    p_newxstream->request = 0;
+    p_newxstream->p_req_arg = NULL;
     p_newxstream->p_main_sched = NULL;
 
     /* Create the spinlock */
@@ -303,9 +303,9 @@ int ABTI_xstream_start(ABTI_xstream *p_xstream)
 
     } else {
         /* Start the main scheduler on a different ES */
-        abt_errno = ABTD_xstream_context_create(
-                ABTI_xstream_launch_main_sched, (void *)p_xstream,
-                &p_xstream->ctx);
+        abt_errno =
+            ABTD_xstream_context_create(ABTI_xstream_launch_main_sched,
+                                        (void *)p_xstream, &p_xstream->ctx);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_create");
     }
 
@@ -390,12 +390,13 @@ int ABT_xstream_free(ABT_xstream *xstream)
     ABT_xstream h_xstream = *xstream;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(h_xstream);
-    if (p_xstream == NULL) goto fn_exit;
+    if (p_xstream == NULL)
+        goto fn_exit;
 
     /* We first need to check whether lp_ABTI_local is NULL because this
      * routine might be called by external threads. */
     ABTI_CHECK_TRUE_MSG(lp_ABTI_local == NULL ||
-                          p_xstream != ABTI_local_get_xstream(),
+                        p_xstream != ABTI_local_get_xstream(),
                         ABT_ERR_INV_XSTREAM,
                         "The current xstream cannot be freed.");
 
@@ -787,7 +788,8 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
         }
     }
 
-    /* TODO: permit to change the scheduler even when having work units in pools */
+    /* TODO: permit to change the scheduler even when having work units in
+     * pools */
     if (p_xstream->p_main_sched) {
         /* We only allow to change the main scheduler when the current main
          * scheduler of p_xstream has no work unit in its associated pools. */
@@ -833,7 +835,8 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
  * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
-        ABT_sched_predef predef, int num_pools, ABT_pool *pools)
+                                     ABT_sched_predef predef, int num_pools,
+                                     ABT_pool *pools)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1025,7 +1028,7 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag)
 
     /* Return value */
     *flag = (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY)
-          ? ABT_TRUE : ABT_FALSE;
+        ? ABT_TRUE : ABT_FALSE;
 
   fn_exit:
     return abt_errno;
@@ -1153,7 +1156,6 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
         abt_errno = ABT_sched_exit(sched);
         ABTI_CHECK_ERROR(abt_errno);
     }
-
     // TODO: check event queue
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
     if (ABTI_event_check_power() == ABT_TRUE) {
@@ -1378,7 +1380,8 @@ void ABTI_xstream_schedule(void *p_arg)
         request = ABTD_atomic_load_uint32(&p_xstream->request);
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
         /* If there is a stop request, the ES has to be terminated/ */
-        if (request & ABTI_XSTREAM_REQ_STOP) break;
+        if (request & ABTI_XSTREAM_REQ_STOP)
+            break;
 #endif
 
         /* If there is an exit or a cancel request, the ES terminates
@@ -1391,7 +1394,8 @@ void ABTI_xstream_schedule(void *p_arg)
          * execution of all work units. */
         if (request & ABTI_XSTREAM_REQ_JOIN) {
             if (ABTI_sched_get_effective_size(p_xstream->p_main_sched) == 0) {
-                /* If a ULT has been blocked on the join call, we make it ready */
+                /* If a ULT has been blocked on the join call, we make it
+                 * ready */
                 if (p_xstream->p_req_arg) {
                     ABTI_thread_set_ready((ABTI_thread *)p_xstream->p_req_arg);
                     p_xstream->p_req_arg = NULL;
@@ -1489,8 +1493,8 @@ int ABTI_xstream_schedule_thread(ABTI_xstream *p_xstream, ABTI_thread *p_thread)
         LOG_EVENT("[U%" PRIu64 ":E%d] %s\n",
                   ABTI_thread_get_id(p_thread), p_xstream->rank,
                   (p_thread->request & ABTI_THREAD_REQ_TERMINATE ? "finished" :
-                  ((p_thread->request & ABTI_THREAD_REQ_EXIT) ? "exit called" :
-                  "UNKNOWN")));
+                   ((p_thread->request & ABTI_THREAD_REQ_EXIT) ? "exit called" :
+                    "UNKNOWN")));
         ABTI_xstream_terminate_thread(p_thread);
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     } else if (p_thread->request & ABTI_THREAD_REQ_CANCEL) {
@@ -1622,11 +1626,11 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
     }
 
-    ABTI_spinlock_acquire(&p_thread->lock); // TODO: mutex useful?
+    ABTI_spinlock_acquire(&p_thread->lock);     // TODO: mutex useful?
     {
         /* extracting argument in migration request */
-        p_pool = (ABTI_pool *)ABTI_thread_extract_req_arg(p_thread,
-                ABTI_THREAD_REQ_MIGRATE);
+        p_pool = (ABTI_pool *)
+            ABTI_thread_extract_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE);
         pool = ABTI_pool_get_handle(p_pool);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
@@ -1634,8 +1638,8 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         newstream = p_pool->consumer;
 #endif
         LOG_EVENT("[U%" PRIu64 "] migration: E%d -> E%d\n",
-                ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
-                newstream ? newstream->rank : -1);
+                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
+                  newstream ? newstream->rank : -1);
 
         /* Change the associated pool */
         p_thread->p_pool = p_pool;
@@ -1717,7 +1721,8 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     }
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        ABTI_CHECK_TRUE(p_thread->type == ABTI_THREAD_TYPE_MAIN, ABT_ERR_THREAD);
+        ABTI_CHECK_TRUE(p_thread->type == ABTI_THREAD_TYPE_MAIN,
+                        ABT_ERR_THREAD);
 
         /* Free the current main scheduler */
         abt_errno = ABTI_sched_discard_and_free(p_main_sched);
@@ -1795,16 +1800,32 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
     size_t size, pos;
 
     switch (p_xstream->type) {
-        case ABTI_XSTREAM_TYPE_PRIMARY:   type = "PRIMARY"; break;
-        case ABTI_XSTREAM_TYPE_SECONDARY: type = "SECONDARY"; break;
-        default:                          type = "UNKNOWN"; break;
+        case ABTI_XSTREAM_TYPE_PRIMARY:
+            type = "PRIMARY";
+            break;
+        case ABTI_XSTREAM_TYPE_SECONDARY:
+            type = "SECONDARY";
+            break;
+        default:
+            type = "UNKNOWN";
+            break;
     }
     switch (p_xstream->state) {
-        case ABT_XSTREAM_STATE_CREATED:    state = "CREATED"; break;
-        case ABT_XSTREAM_STATE_READY:      state = "READY"; break;
-        case ABT_XSTREAM_STATE_RUNNING:    state = "RUNNING"; break;
-        case ABT_XSTREAM_STATE_TERMINATED: state = "TERMINATED"; break;
-        default:                           state = "UNKNOWN"; break;
+        case ABT_XSTREAM_STATE_CREATED:
+            state = "CREATED";
+            break;
+        case ABT_XSTREAM_STATE_READY:
+            state = "READY";
+            break;
+        case ABT_XSTREAM_STATE_RUNNING:
+            state = "RUNNING";
+            break;
+        case ABT_XSTREAM_STATE_TERMINATED:
+            state = "TERMINATED";
+            break;
+        default:
+            state = "UNKNOWN";
+            break;
     }
 
     size = sizeof(char) * (p_xstream->num_scheds * 20 + 4);
@@ -1819,25 +1840,23 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
     scheds_str[pos] = ']';
 
     fprintf(p_os,
-        "%s== ES (%p) ==\n"
-        "%srank      : %d\n"
-        "%stype      : %s\n"
-        "%sstate     : %s\n"
-        "%srequest   : 0x%x\n"
-        "%smax_scheds: %d\n"
-        "%snum_scheds: %d\n"
-        "%sscheds    : %s\n"
-        "%smain_sched: %p\n",
-        prefix, p_xstream,
-        prefix, p_xstream->rank,
-        prefix, type,
-        prefix, state,
-        prefix, p_xstream->request,
-        prefix, p_xstream->max_scheds,
-        prefix, p_xstream->num_scheds,
-        prefix, scheds_str,
-        prefix, p_xstream->p_main_sched
-    );
+            "%s== ES (%p) ==\n"
+            "%srank      : %d\n"
+            "%stype      : %s\n"
+            "%sstate     : %s\n"
+            "%srequest   : 0x%x\n"
+            "%smax_scheds: %d\n"
+            "%snum_scheds: %d\n"
+            "%sscheds    : %s\n"
+            "%smain_sched: %p\n",
+            prefix, p_xstream,
+            prefix, p_xstream->rank,
+            prefix, type,
+            prefix, state,
+            prefix, p_xstream->request,
+            prefix, p_xstream->max_scheds,
+            prefix, p_xstream->num_scheds,
+            prefix, scheds_str, prefix, p_xstream->p_main_sched);
     ABTU_free(scheds_str);
 
     if (print_sub == ABT_TRUE) {
@@ -1957,4 +1976,3 @@ static void ABTI_xstream_return_rank(ABTI_xstream *p_xstream)
     gp_ABTI_global->num_xstreams--;
     ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
 }
-

@@ -23,9 +23,11 @@ int main(int argc, char *argv[])
     int ret;
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
-    if (argc > 1) num_xstreams = atoi(argv[1]);
+    if (argc > 1)
+        num_xstreams = atoi(argv[1]);
     assert(num_xstreams >= 0);
-    if (argc > 2) num_threads = atoi(argv[2]);
+    if (argc > 2)
+        num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
 
     ABT_xstream *xstreams;
@@ -47,8 +49,8 @@ int main(int argc, char *argv[])
                                   ABT_sched_config_var_end);
     ATS_ERROR(ret, "ABT_sched_config_create");
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
-                                     config, &scheds[i]);
+        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config,
+                                     &scheds[i]);
         ATS_ERROR(ret, "ABT_sched_create_basic");
     }
     ret = ABT_sched_config_free(&config);
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
 
     /* Get the pools attached to an execution stream */
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
@@ -74,9 +76,8 @@ int main(int argc, char *argv[])
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             size_t tid = i * num_threads + j + 1;
-            ret = ABT_thread_create(pools[i],
-                    thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
-                    NULL);
+            ret = ABT_thread_create(pools[i], thread_func, (void *)tid,
+                                    ABT_THREAD_ATTR_NULL, NULL);
             ATS_ERROR(ret, "ABT_thread_create");
         }
     }
@@ -102,4 +103,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

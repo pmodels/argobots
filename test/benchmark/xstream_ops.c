@@ -54,7 +54,8 @@ int main(int argc, char *argv[])
     ABT_timer_start(timer);
     ABT_timer_stop(timer);
     ABT_timer_get_overhead(&t_overhead);
-    for (i = 0; i < T_LAST; i++) t_times[i] = 0.0;
+    for (i = 0; i < T_LAST; i++)
+        t_times[i] = 0.0;
 
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
@@ -64,8 +65,8 @@ int main(int argc, char *argv[])
     for (t = 0; t < num_xstreams; t++) {
         ABT_xstream_create(ABT_SCHED_NULL, &xstreams[t]);
         ABT_xstream_get_main_pools(xstreams[t], 1, &pools[t]);
-        ABT_thread_create(pools[t], thread_func, NULL,
-                          ABT_THREAD_ATTR_NULL, NULL);
+        ABT_thread_create(pools[t], thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                          NULL);
     }
     for (t = 0; t < num_xstreams; t++) {
         ABT_xstream_join(xstreams[t]);
@@ -111,8 +112,8 @@ int main(int argc, char *argv[])
         for (t = 0; t < num_xstreams; t++) {
             ABT_xstream_create(ABT_SCHED_NULL, &xstreams[t]);
             ABT_xstream_get_main_pools(xstreams[t], 1, &pools[t]);
-            ABT_thread_create(pools[t], thread_func, NULL,
-                              ABT_THREAD_ATTR_NULL, NULL);
+            ABT_thread_create(pools[t], thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                              NULL);
         }
         for (t = 0; t < num_xstreams; t++) {
             ABT_xstream_join(xstreams[t]);
@@ -132,8 +133,8 @@ int main(int argc, char *argv[])
         for (t = 0; t < num_xstreams; t++) {
             ABT_xstream_create(ABT_SCHED_NULL, &xstreams[t]);
             ABT_xstream_get_main_pools(xstreams[t], 1, &pools[t]);
-            ABT_thread_create(pools[t], thread_func, NULL,
-                              ABT_THREAD_ATTR_NULL, NULL);
+            ABT_thread_create(pools[t], thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                              NULL);
         }
         for (t = 0; t < num_xstreams; t++) {
             ABT_xstream_join(xstreams[t]);
@@ -170,4 +171,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

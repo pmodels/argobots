@@ -251,4 +251,3 @@ int ABT_barrier_get_num_waiters(ABT_barrier barrier, uint32_t *num_waiters)
     HANDLE_ERROR_WITH_CODE("ABT_barrier_get_num_waiters", abt_errno);
     goto fn_exit;
 }
-
