@@ -101,6 +101,7 @@ AC_ARG_ENABLE([debug],
         all   - all of the above choices
         most  - same as "all" but not print logs by default
                 (set ABT_ENV_USE_LOG to 1 for logging)
+        err   - print abt_errno information on standard error
         none  - no debugging, i.e., --disable-debug
 ],,[enable_debug=none])
 
@@ -301,18 +302,25 @@ for option in $enable_debug ; do
         log)
             debug_log=yes
             debug_log_print=yes
+            debug_err=yes
         ;;
         all)
             debug_flags=yes
             debug_log=yes
             debug_log_print=yes
+            debug_err=yes
         ;;
         most)
             debug_flags=yes
             debug_log=yes
             debug_log_print=no
+            debug_err=yes
+        ;;
+        err)
+            debug_err=yes
         ;;
         no|none)
+            debug_err=no
             debug_flags=no
             debug_log=no
         ;;
@@ -338,6 +346,9 @@ AS_IF([test "x$debug_log" = "xyes"],
 AS_IF([test "x$debug_log_print" = "xyes"],
     [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG_PRINT, 1,
         [Define to enable printing debug log messages])])
+AS_IF([test "x$debug_err" = "xyes"],
+    [AC_DEFINE(ABT_CONFIG_PRINT_ABT_ERRNO, 1,
+        [Define to enable printing abt_errno upon abt call error])])
 
 
 # --enable-fast: compiler optimization flags

@@ -7,6 +7,7 @@
 #define ABTI_ERROR_H_INCLUDED
 
 #include <assert.h>
+#include <abt_config.h>
 
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
 #define ABTI_ASSERT(cond) assert(cond)
@@ -270,6 +271,8 @@
 #define ABTI_CHECK_NULL_TIMER_PTR(p)
 #endif
 
+#ifdef ABT_CONFIG_PRINT_ABT_ERRNO
+
 #define HANDLE_ERROR(msg) \
     fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
     //fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); exit(-1)
@@ -281,5 +284,13 @@
 #define HANDLE_ERROR_FUNC_WITH_CODE(n) \
     fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, __func__, n)
     //fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, __func__, n); exit(-1)
+
+#else
+
+#define HANDLE_ERROR(msg)              do { } while (0)
+#define HANDLE_ERROR_WITH_CODE(msg,n)  do { } while (0)
+#define HANDLE_ERROR_FUNC_WITH_CODE(n) do { } while (0)
+
+#endif
 
 #endif /* ABTI_ERROR_H_INCLUDED */
