@@ -45,9 +45,6 @@ void ABTI_valgrind_register_stack(const void *p_stack, size_t size) {
     if (p_stack == 0)
         return;
 
-    if (!RUNNING_ON_VALGRIND)
-	    return;
-
     const void *p_start = (char *)(p_stack);
     const void *p_end   = (char *)(p_stack) + size;
 
@@ -73,9 +70,6 @@ void ABTI_valgrind_register_stack(const void *p_stack, size_t size) {
 void ABTI_valgrind_unregister_stack(const void *p_stack) {
     if (p_stack == 0)
         return;
-
-    if (!RUNNING_ON_VALGRIND)
-	    return;
 
     ABTI_valgrind_lock_acquire();
     if (gp_valgrind_id_list_head->p_stack == p_stack) {
