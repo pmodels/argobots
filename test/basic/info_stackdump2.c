@@ -209,11 +209,13 @@ int main(int argc, char *argv[])
     /* Finalize */
     ret = ATS_finalize(0);
 
-    for (i = 0; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
             if (args[i][j].stack)
                 free(args[i][j].stack);
         }
+    }
+    for (i = 0; i < num_xstreams; i++) {
         free(threads[i]);
         free(args[i]);
     }
