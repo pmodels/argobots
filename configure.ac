@@ -196,9 +196,10 @@ AC_ARG_ENABLE([dynamic-promotion],
                    [use the dynamic promotion threading technique that performs
                     better if a ULT does not yield.]))
 
-# --enable-simple-mutex
+# --disable-simple-mutex
 AC_ARG_ENABLE([simple-mutex],
-    AS_HELP_STRING([--enable-simple-mutex], [use a simple mutex implementation]))
+    AS_HELP_STRING([--disable-simple-mutex], [use an experimental mutex implementation]),,
+    [enable_simple_mutex=yes])
 
 # --enable-static-cacheline-size
 AC_ARG_ENABLE([static-cacheline-size],
@@ -642,7 +643,7 @@ if test "x$have_atomic_builtin" = "xyes" ; then
 fi
 
 
-# --enable-simple-mutex
+# --disable-simple-mutex
 AS_IF([test "x$enable_simple_mutex" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SIMPLE_MUTEX, 1,
                  [Define to use a simple mutex implementation])])
