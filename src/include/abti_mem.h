@@ -164,8 +164,9 @@ ABTI_thread *ABTI_mem_alloc_thread(ABTI_thread_attr *p_attr)
 #endif
 
     } else {
-        if (p_attr->stacktype == ABTI_STACK_TYPE_USER ||
-            p_attr->stacktype == ABTI_STACK_TYPE_MAIN) {
+        ABTI_stack_type stacktype = p_attr->stacktype;
+        if (stacktype == ABTI_STACK_TYPE_USER ||
+            stacktype == ABTI_STACK_TYPE_MAIN) {
             /* Since the stack is given by the user, we create ABTI_thread and
              * ABTI_stack_header explicitly with a single ABTU_malloc call. */
             p_thread = (ABTI_thread *)ABTU_CA_MALLOC(sizeof(ABTI_thread));
@@ -179,7 +180,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABTI_thread_attr *p_attr)
         }
 
         stacksize = p_attr->stacksize;
-        if (stacksize != def_stacksize) {
+        if (stacksize != def_stacksize || stacktype == ABTI_STACK_TYPE_MALLOC) {
             /* Since the stack size requested is not the same as default one,
              * we use ABTU_malloc. */
             return ABTI_mem_alloc_thread_with_stacksize(stacksize, p_attr);
