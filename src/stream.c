@@ -70,9 +70,6 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
 
     ABTI_xstream_set_new_rank(p_newxstream);
 
-    /* Create a wrapper unit */
-    ABTI_elem_create_from_xstream(p_newxstream);
-
     p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
     p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
     p_newxstream->scheds       = NULL;
@@ -207,9 +204,6 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
         ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED,
                         ABT_ERR_INV_SCHED);
     }
-
-    /* Create a wrapper unit */
-    ABTI_elem_create_from_xstream(p_newxstream);
 
     p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
     p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
