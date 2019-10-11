@@ -93,11 +93,8 @@ enum ABTI_stack_type {
 /* Data Types */
 typedef struct ABTI_global          ABTI_global;
 typedef struct ABTI_local           ABTI_local;
-typedef struct ABTI_contn           ABTI_contn;
-typedef struct ABTI_elem            ABTI_elem;
 typedef struct ABTI_xstream         ABTI_xstream;
 typedef enum ABTI_xstream_type      ABTI_xstream_type;
-typedef struct ABTI_xstream_contn   ABTI_xstream_contn;
 typedef struct ABTI_sched           ABTI_sched;
 typedef char *                      ABTI_sched_config;
 typedef enum ABTI_sched_used        ABTI_sched_used;
@@ -218,20 +215,6 @@ struct ABTI_local {
 #endif
 };
 
-struct ABTI_contn {
-    size_t     num_elems; /* Number of elements */
-    ABTI_elem *p_head;    /* The first element */
-    ABTI_elem *p_tail;    /* The last element */
-};
-
-struct ABTI_elem {
-    ABTI_contn   *p_contn; /* Container to which this element belongs */
-    ABT_unit_type type;    /* Object type */
-    void         *p_obj;   /* Object */
-    ABTI_elem    *p_prev;  /* Previous element in list */
-    ABTI_elem    *p_next;  /* Next element in list */
-};
-
 struct ABTI_xstream {
     int rank;                   /* Rank */
     ABTI_xstream_type type;     /* Type */
@@ -247,13 +230,6 @@ struct ABTI_xstream {
     ABTI_sched *p_main_sched;   /* Main scheduler */
 
     ABTD_xstream_context ctx;   /* ES context */
-};
-
-struct ABTI_xstream_contn {
-    ABTI_contn *created; /* ESes in CREATED state */
-    ABTI_contn *active;  /* ESes in READY or RUNNING state */
-    ABTI_contn *deads;   /* ESes in TERMINATED state but not freed */
-    ABTI_mutex mutex;    /* Mutex */
 };
 
 struct ABTI_sched {
@@ -476,29 +452,6 @@ void ABTI_global_update_max_xstreams(int new_size);
 /* ES Local Data */
 int ABTI_local_init(void);
 int ABTI_local_finalize(void);
-
-/* Container */
-void       ABTI_contn_create(ABTI_contn **pp_contn);
-int        ABTI_contn_free(ABTI_contn **pp_contn);
-size_t     ABTI_contn_get_size(ABTI_contn *p_contn);
-void       ABTI_contn_push(ABTI_contn *p_contn, ABTI_elem *p_elem);
-ABTI_elem *ABTI_contn_pop(ABTI_contn *p_contn);
-void       ABTI_contn_remove(ABTI_contn *p_contn, ABTI_elem *p_elem);
-void       ABTI_contn_print(ABTI_contn *p_contn, FILE *p_os, int indent,
-                            ABT_bool detail);
-
-/* Element */
-ABT_unit_type ABTI_elem_get_type(ABTI_elem *p_elem);
-ABTI_xstream *ABTI_elem_get_xstream(ABTI_elem *p_elem);
-ABTI_thread  *ABTI_elem_get_thread(ABTI_elem *p_elem);
-ABTI_task    *ABTI_elem_get_task(ABTI_elem *p_elem);
-ABTI_elem    *ABTI_elem_get_next(ABTI_elem *p_elem);
-ABTI_elem    *ABTI_elem_create_from_xstream(ABTI_xstream *p_xstream);
-ABTI_elem    *ABTI_elem_create_from_thread(ABTI_thread *p_thread);
-ABTI_elem    *ABTI_elem_create_from_task(ABTI_task *p_task);
-void          ABTI_elem_free(ABTI_elem **pp_elem);
-void          ABTI_elem_print(ABTI_elem *p_elem, FILE *p_os, int indent,
-                              ABT_bool detail);
 
 /* Execution Stream (ES) */
 int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream);
