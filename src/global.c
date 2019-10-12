@@ -269,6 +269,26 @@ void ABTI_global_update_max_xstreams(int new_size)
 
     ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
 
+    static int max_xstreams_warning_once = 0;
+    if (max_xstreams_warning_once == 0) {
+        /* Because some Argobots functionalities depend on the runtime value
+         * ABT_MAX_NUM_XSTREAMS (or gp_ABTI_global->max_xstreams), changing this
+         * value at run-time can cause an error.  For example, using ABT_mutex
+         * created before updating max_xstreams causes an error since
+         * ABTI_thread_htable's array size depends on ABT_MAX_NUM_XSTREAMS.
+         * To fix this issue, please set a larger number to ABT_MAX_NUM_XSTREAMS
+         * in advance. */
+        char *warning_message = (char *)malloc(sizeof(char) * 1024);
+        snprintf(warning_message, 1024,
+                 "Warning: the number of execution streams exceeds "
+                 "ABT_MAX_NUM_XSTREAMS (=%d), which may cause an unexpected "
+                 "error.",
+                 gp_ABTI_global->max_xstreams);
+        HANDLE_WARNING(warning_message);
+        free(warning_message);
+        max_xstreams_warning_once = 1;
+    }
+
     new_size = (new_size > 0) ? new_size : gp_ABTI_global->max_xstreams * 2;
     gp_ABTI_global->max_xstreams = new_size;
     gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_realloc(
