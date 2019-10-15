@@ -23,21 +23,21 @@ struct ABTI_thread_queue {
     uint32_t pad0;
     ABTI_thread *head;
     ABTI_thread *tail;
-    char pad1[64-8*4];
+    char pad1[64 - sizeof(uint32_t) * 4 - sizeof(ABTI_thread *) * 2];
 
     /* low priority queue */
     uint32_t low_mutex; /* can be initialized by just assigning 0*/
     uint32_t low_num_threads;
     ABTI_thread *low_head;
     ABTI_thread *low_tail;
-    char pad2[64-8*3];
+    char pad2[64 - sizeof(uint32_t) * 2 - sizeof(ABTI_thread *) * 2];
 
     /* two doubly-linked lists */
     ABTI_thread_queue *p_h_next;
     ABTI_thread_queue *p_h_prev;
     ABTI_thread_queue *p_l_next;
     ABTI_thread_queue *p_l_prev;
-    char pad3[64-8*4];
+    char pad3[64 - sizeof(ABTI_thread_queue *) * 4];
 };
 
 struct ABTI_thread_htable {
