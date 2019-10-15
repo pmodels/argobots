@@ -24,6 +24,8 @@
 .align 2
 .type take_fcontext,@function
 take_fcontext:
+    /* first arg is ignored. */
+
     /* second arg of take_fcontext() == context jumping to */
     movl  0x8(%esp), %edx
 
@@ -51,8 +53,9 @@ take_fcontext:
     /* restore return-address */
     popl  %edx
 
-    /* use value in EAX as return-value after jump */
-    /* use value in EAX as first arg in context function */
+    /* use value in EAX (originally third arg) as
+     * 1. return value after jump or
+     * 2. first arg in context function. */
     movl  %eax, 0x4(%esp)
 
     /* indirect jump to context */
