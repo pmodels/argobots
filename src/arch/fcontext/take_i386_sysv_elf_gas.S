@@ -24,9 +24,6 @@
 .align 2
 .type take_fcontext,@function
 take_fcontext:
-    /* fourth arg of take_fcontext() == flag indicating preserving FPU */
-    movl  0x10(%esp), %ecx
-
     /* second arg of take_fcontext() == context jumping to */
     movl  0x8(%esp), %edx
 

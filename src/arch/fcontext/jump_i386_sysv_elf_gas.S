@@ -24,9 +24,6 @@
 .align 2
 .type jump_fcontext,@function
 jump_fcontext:
-    /* fourth arg of jump_fcontext() == flag indicating preserving FPU */
-    movl  0x10(%esp), %ecx
-
     pushl  %ebp  /* save EBP */
     pushl  %ebx  /* save EBX */
     pushl  %esi  /* save ESI */
