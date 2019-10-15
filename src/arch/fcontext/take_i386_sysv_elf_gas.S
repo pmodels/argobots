@@ -28,10 +28,10 @@ take_fcontext:
     movl  0x10(%esp), %ecx
 
     /* second arg of take_fcontext() == context jumping to */
-    movl  0x20(%esp), %edx
+    movl  0x8(%esp), %edx
 
     /* third arg of take_fcontext() == value to be returned after jump */
-    movl  0x24(%esp), %eax
+    movl  0xc(%esp), %eax
 
     /* restore ESP (pointing to context-data) from EDX */
     movl  %edx, %esp
