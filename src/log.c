@@ -43,7 +43,8 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
     ABTI_task *p_task = NULL;
     char *prefix_fmt = NULL, *prefix = NULL;
     char *newfmt;
-    size_t tid, rank;
+    uint64_t tid;
+    int rank;
     int tid_len = 0, rank_len = 0;
     size_t newfmt_len;
 
