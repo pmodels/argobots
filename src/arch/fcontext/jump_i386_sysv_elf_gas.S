@@ -24,9 +24,6 @@
 .align 2
 .type jump_fcontext,@function
 jump_fcontext:
-    /* fourth arg of jump_fcontext() == flag indicating preserving FPU */
-    movl  0x10(%esp), %ecx
-
     pushl  %ebp  /* save EBP */
     pushl  %ebx  /* save EBX */
     pushl  %esi  /* save ESI */
@@ -52,7 +49,7 @@ jump_fcontext:
     movl  0x20(%esp), %edx
 
     /* third arg of jump_fcontext() == value to be returned after jump */
-    /* movl  0x24(%esp), %eax */
+    movl  0x24(%esp), %eax
 
     /* restore ESP (pointing to context-data) from EDX */
     movl  %edx, %esp
@@ -75,8 +72,9 @@ jump_fcontext:
     /* restore return-address */
     popl  %edx
 
-    /* use value in EAX as return-value after jump */
-    /* use value in EAX as first arg in context function */
+    /* use value in EAX (originally third arg) as
+     * 1. return value after jump or
+     * 2. first arg in context function. */
     movl  %eax, 0x4(%esp)
 
     /* indirect jump to context */
