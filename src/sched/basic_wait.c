@@ -118,7 +118,7 @@ static void sched_run(ABT_sched sched)
          * main loop above.
          */
         if(!run_cnt_nowait) {
-            double abstime = ABT_get_wtime();
+            double abstime = ABTI_get_wtime();
             abstime += 0.1;
             ABT_unit unit = ABTI_pool_pop_timedwait(
                 ABTI_pool_get_ptr(pools[0]), abstime);

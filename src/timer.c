@@ -23,9 +23,7 @@
  */
 double ABT_get_wtime(void)
 {
-    ABTD_time t;
-    ABTD_time_get(&t);
-    return ABTD_time_read_sec(&t);
+    return ABTI_get_wtime();
 }
 
 /**

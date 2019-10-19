@@ -556,13 +556,13 @@ void ABTI_info_check_print_all_thread_stacks(void)
     uint32_t self_value = ABTD_atomic_fetch_add_uint32(&print_stack_barrier, 1);
     if (self_value == 0) {
         /* This ES becomes a master. */
-        double start_time = ABT_get_wtime();
+        double start_time = ABTI_get_wtime();
         ABT_bool force_print = ABT_FALSE;
         while (ABTD_atomic_load_uint32(&print_stack_barrier)
                < ABTD_atomic_load_int32(&gp_ABTI_global->num_xstreams)) {
             ABTD_atomic_pause();
             if (print_stack_timeout >= 0.0
-                && (ABT_get_wtime() - start_time) >= print_stack_timeout) {
+                && (ABTI_get_wtime() - start_time) >= print_stack_timeout) {
                 force_print = ABT_TRUE;
                 break;
             }

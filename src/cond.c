@@ -120,23 +120,6 @@ double convert_timespec_to_sec(const struct timespec *p_ts)
 }
 
 static inline
-double get_cur_time(void)
-{
-#if defined(HAVE_CLOCK_GETTIME)
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    return convert_timespec_to_sec(&ts);
-#elif defined(HAVE_GETTIMEOFDAY)
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return ((double)tv.tv_sec) + 1.0e-6 * ((double)tv.tv_usec);
-#else
-#error "No timer function available"
-    return 0.0;
-#endif
-}
-
-static inline
 void remove_unit(ABTI_cond *p_cond, ABTI_unit *p_unit)
 {
     if (p_unit->p_next == NULL) return;
@@ -244,7 +227,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     ABTI_mutex_unlock(p_mutex);
 
     while (!ABTD_atomic_load_int32(&ext_signal)) {
-        double cur_time = get_cur_time();
+        double cur_time = ABTI_get_wtime();
         if (cur_time >= tar_time) {
             remove_unit(p_cond, p_unit);
             abt_errno = ABT_ERR_COND_TIMEDOUT;

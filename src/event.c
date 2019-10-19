@@ -221,7 +221,7 @@ void ABTI_event_init(void)
                 gp_einfo->max_xstream_rank, sizeof(uint32_t));
         gp_einfo->old_timestamp = (double *)ABTU_calloc(
                 gp_einfo->max_xstream_rank, sizeof(double));
-        gp_einfo->timestamp = ABT_get_wtime();
+        gp_einfo->timestamp = ABTI_get_wtime();
 
         int ret = RAPLREADER_INIT(&gp_einfo->rr);
         if (ret) {
@@ -970,7 +970,7 @@ void ABTI_event_publish_info(void)
         ABTI_event_realloc_pub_arrays(rank);
     }
 
-    cur_time = ABT_get_wtime();
+    cur_time = ABTI_get_wtime();
     elapsed_time = cur_time - gp_einfo->timestamp;
 
     /* Update the idle time of the current ES */
@@ -1110,7 +1110,7 @@ int ABT_event_prof_start(void)
 #ifdef ABT_CONFIG_PUBLISH_INFO
     if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
 
-    gp_einfo->prof_start_time = ABT_get_wtime();
+    gp_einfo->prof_start_time = ABTI_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
 #endif
 
@@ -1133,7 +1133,7 @@ int ABT_event_prof_stop(void)
 #ifdef ABT_CONFIG_PUBLISH_INFO
     if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
 
-    gp_einfo->prof_stop_time = ABT_get_wtime();
+    gp_einfo->prof_stop_time = ABTI_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
 #endif
 
@@ -1177,13 +1177,13 @@ int ABT_event_prof_publish(const char *unit_name, double local_work,
     sprintf(info,
             "{\"node\":\"%s\",\"sample\":\"%s\",\"time\":%lf,\"%s_per_sec_per_node\":%lf,"
             "\"%s_per_watt_per_node\":%lf,\"%s_per_sec\":%lf}\n",
-            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name, local_rate,
+            gp_einfo->hostname, sample_name, ABTI_get_wtime(), unit_name, local_rate,
             unit_name, local_work/power, unit_name, global_rate);
 #else
     sprintf(info,
             "{\"node\":\"%s\",\"sample\":\"%s\",\"time\":%lf,\"%s_per_sec_per_node\":%lf,"
             "\"%s_per_sec\":%lf}\n",
-            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name, local_rate,
+            gp_einfo->hostname, sample_name, ABTI_get_wtime(), unit_name, local_rate,
             unit_name, global_rate);
 #endif
 
