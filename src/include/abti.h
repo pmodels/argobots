@@ -496,6 +496,11 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
                                   ABT_pool_access *access, ABT_bool *automatic);
 
 /* Pool */
+int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
+                     ABT_bool automatic, ABTI_pool **pp_newpool);
+int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
+                           ABT_bool automatic, ABTI_pool **pp_newpool);
+void ABTI_pool_free(ABTI_pool *p_pool);
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
 int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def);
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK

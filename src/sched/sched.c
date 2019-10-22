@@ -50,10 +50,12 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
     for (p = 0; p < num_pools; p++) {
         if (pools[p] == ABT_POOL_NULL) {
-            abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO,
-                                              ABT_POOL_ACCESS_MPSC,
-                                              ABT_TRUE, &pool_list[p]);
+            ABTI_pool *p_newpool;
+            abt_errno = ABTI_pool_create_basic(ABT_POOL_FIFO,
+                                               ABT_POOL_ACCESS_MPSC,
+                                               ABT_TRUE, &p_newpool);
             ABTI_CHECK_ERROR(abt_errno);
+            pool_list[p] = ABTI_pool_get_handle(p_newpool);
         } else {
             pool_list[p] = pools[p];
         }
@@ -156,9 +158,12 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
         for (p = 0; p < num_pools; p++) {
             if (pools[p] == ABT_POOL_NULL) {
-                abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access,
-                                                  ABT_TRUE, &pool_list[p]);
+                ABTI_pool *p_newpool;
+                abt_errno = ABTI_pool_create_basic(ABT_POOL_FIFO,
+                                                   ABT_POOL_ACCESS_MPSC,
+                                                   ABT_TRUE, &p_newpool);
                 ABTI_CHECK_ERROR(abt_errno);
+                pool_list[p] = ABTI_pool_get_handle(p_newpool);
             } else {
                 pool_list[p] = pools[p];
             }
@@ -229,9 +234,11 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
         ABT_pool pool_list[ABTI_SCHED_NUM_PRIO];
         int p;
         for (p = 0; p < num_pools; p++) {
-            abt_errno = ABT_pool_create_basic(kind, access, ABT_TRUE,
-                                              pool_list+p);
+            ABTI_pool *p_newpool;
+            abt_errno = ABTI_pool_create_basic(kind, access, ABT_TRUE,
+                                               &p_newpool);
             ABTI_CHECK_ERROR(abt_errno);
+            pool_list[p] = ABTI_pool_get_handle(p_newpool);
         }
 
         /* Creation of the scheduler */
