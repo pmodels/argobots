@@ -95,11 +95,7 @@ int ABT_pool_free(ABT_pool *pool)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(h_pool);
 
     ABTI_CHECK_TRUE(p_pool != NULL && h_pool != ABT_POOL_NULL, ABT_ERR_INV_POOL);
-
-    LOG_EVENT("[P%" PRIu64 "] freed\n", p_pool->id);
-
-    p_pool->p_free(h_pool);
-    ABTU_free(p_pool);
+    ABTI_pool_free(p_pool);
 
     *pool = ABT_POOL_NULL;
 
@@ -624,6 +620,14 @@ int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+}
+
+void ABTI_pool_free(ABTI_pool *p_pool)
+{
+    LOG_EVENT("[P%" PRIu64 "] freed\n", p_pool->id);
+    ABT_pool h_pool = ABTI_pool_get_handle(p_pool);
+    p_pool->p_free(h_pool);
+    ABTU_free(p_pool);
 }
 
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)

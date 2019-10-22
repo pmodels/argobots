@@ -737,8 +737,9 @@ int ABTI_sched_free(ABTI_sched *p_sched)
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
         int32_t num_scheds = ABTI_pool_release(p_pool);
         if (p_pool->automatic == ABT_TRUE && num_scheds == 0) {
-            abt_errno = ABT_pool_free(p_sched->pools+p);
-            ABTI_CHECK_ERROR(abt_errno);
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+            ABTI_CHECK_NULL_POOL_PTR(p_pool);
+            ABTI_pool_free(p_pool);
         }
     }
     ABTU_free(p_sched->pools);
