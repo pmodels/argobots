@@ -1141,8 +1141,7 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
     ABTI_info_check_print_all_thread_stacks();
 
     if (p_xstream->request & ABTI_XSTREAM_REQ_JOIN) {
-        abt_errno = ABT_sched_finish(sched);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTI_sched_finish(p_sched);
     }
 
     if ((p_xstream->request & ABTI_XSTREAM_REQ_EXIT) ||

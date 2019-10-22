@@ -477,6 +477,7 @@ ABT_sched_def *ABTI_sched_get_basic_def(void);
 ABT_sched_def *ABTI_sched_get_basic_wait_def(void);
 ABT_sched_def *ABTI_sched_get_prio_def(void);
 ABT_sched_def *ABTI_sched_get_randws_def(void);
+void ABTI_sched_finish(ABTI_sched *p_sched);
 void ABTI_sched_exit(ABTI_sched *p_sched);
 int ABTI_sched_free(ABTI_sched *p_sched);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
