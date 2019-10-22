@@ -63,7 +63,8 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 #endif
 
     /* Set the variables from the config */
-    ABT_sched_config_read(config, 1, &p_data->event_freq);
+    void *p_event_freq = &p_data->event_freq;
+    ABTI_sched_config_read(config, 1, 1, &p_event_freq);
 
     /* Save the list of pools */
     num_pools = p_sched->num_pools;
