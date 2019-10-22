@@ -207,15 +207,11 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
 int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
 {
     int abt_errno = ABT_SUCCESS;
-    size_t total_size;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    total_size = ABTI_pool_get_size(p_pool);
-    total_size += p_pool->num_blocked;
-    total_size += p_pool->num_migrations;
-    *size = total_size;
+    *size = ABTI_pool_get_total_size(p_pool);
 
   fn_exit:
     return abt_errno;
