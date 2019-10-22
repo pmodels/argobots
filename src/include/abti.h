@@ -598,6 +598,7 @@ void ABTI_event_publish_info(void);
 #endif
 
 /* Information */
+int ABTI_info_print_config(FILE *fp);
 void ABTI_info_check_print_all_thread_stacks(void);
 
 #include "abti_log.h"
