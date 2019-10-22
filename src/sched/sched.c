@@ -614,10 +614,8 @@ size_t ABTI_sched_get_size(ABTI_sched *p_sched)
     int p;
 
     for (p = 0; p < p_sched->num_pools; p++) {
-        size_t s;
-        ABT_pool pool = p_sched->pools[p];
-        ABT_pool_get_size(pool, &s);
-        pool_size += s;
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        pool_size += ABTI_pool_get_size(p_pool);
     }
 
     return pool_size;
