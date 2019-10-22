@@ -903,8 +903,9 @@ int ABT_xstream_get_main_pools(ABT_xstream xstream, int max_pools,
     abt_errno = ABT_xstream_get_main_sched(xstream, &sched);
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = ABT_sched_get_pools(sched, max_pools, 0, pools);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    max_pools = p_sched->num_pools > max_pools ? max_pools : p_sched->num_pools;
+    memcpy(pools, p_sched->pools, sizeof(ABT_pool) * max_pools);
 
   fn_exit:
     return abt_errno;
