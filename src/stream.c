@@ -1607,7 +1607,6 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
 #else
     int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool;
-    ABT_pool pool;
     ABTI_xstream *newstream = NULL;
 
     /* callback function */
@@ -1621,7 +1620,6 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         /* extracting argument in migration request */
         p_pool = (ABTI_pool *)ABTI_thread_extract_req_arg(p_thread,
                 ABTI_THREAD_REQ_MIGRATE);
-        pool = ABTI_pool_get_handle(p_pool);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
@@ -1635,7 +1633,7 @@ int ABTI_xstream_migrate_thread(ABTI_thread *p_thread)
         p_thread->p_pool = p_pool;
 
         /* Add the unit to the scheduler's pool */
-        abt_errno = ABT_pool_push(pool, p_thread->unit);
+        ABTI_POOL_PUSH(p_pool, p_thread->unit, ABTI_local_get_xstream());
     }
     ABTI_spinlock_release(&p_thread->lock);
 
