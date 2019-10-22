@@ -1135,6 +1135,8 @@ int ABT_xstream_check_events(ABT_sched sched)
 int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     ABTI_info_check_print_all_thread_stacks();
 
@@ -1145,15 +1147,13 @@ int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched)
 
     if ((p_xstream->request & ABTI_XSTREAM_REQ_EXIT) ||
         (p_xstream->request & ABTI_XSTREAM_REQ_CANCEL)) {
-        abt_errno = ABT_sched_exit(sched);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTI_sched_exit(p_sched);
     }
 
     // TODO: check event queue
 #ifdef ABT_CONFIG_HANDLE_POWER_EVENT
     if (ABTI_event_check_power() == ABT_TRUE) {
-        abt_errno = ABT_sched_exit(sched);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTI_sched_exit(p_sched);
     }
 #endif
     ABTI_EVENT_PUBLISH_INFO();

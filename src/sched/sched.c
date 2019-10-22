@@ -427,7 +427,7 @@ int ABT_sched_exit(ABT_sched sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_EXIT);
+    ABTI_sched_exit(p_sched);
 
   fn_exit:
     return abt_errno;
@@ -719,6 +719,11 @@ size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched)
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
+
+void ABTI_sched_exit(ABTI_sched *p_sched)
+{
+    ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_EXIT);
+}
 
 int ABTI_sched_free(ABTI_sched *p_sched)
 {
