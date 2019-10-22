@@ -41,23 +41,14 @@ int ABT_self_get_type(ABT_unit_type *type)
         goto fn_exit;
     }
 
+    *type = ABTI_self_get_type();
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
-    if (lp_ABTI_local == NULL) {
+    if (*type == ABT_UNIT_TYPE_EXT) {
         abt_errno = ABT_ERR_INV_XSTREAM;
-        *type = ABT_UNIT_TYPE_EXT;
         goto fn_exit;
     }
 #endif
-
-    if (ABTI_local_get_task() != NULL) {
-        *type = ABT_UNIT_TYPE_TASK;
-    } else {
-        /* Since ABTI_local_get_thread() can return NULL during executing
-         * ABTI_init(), it should always be safe to say that the type of caller
-         * is ULT if the control reaches here. */
-        *type = ABT_UNIT_TYPE_THREAD;
-    }
 
   fn_exit:
     return abt_errno;

@@ -38,5 +38,27 @@ ABTI_unit *ABTI_self_get_unit(void)
     return p_unit;
 }
 
+static inline
+ABT_unit_type ABTI_self_get_type(void)
+{
+    ABTI_ASSERT(gp_ABTI_global);
+
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* This is when an external thread called this routine. */
+    if (lp_ABTI_local == NULL) {
+        return ABT_UNIT_TYPE_EXT;
+    }
+#endif
+
+    if (ABTI_local_get_task() != NULL) {
+        return ABT_UNIT_TYPE_TASK;
+    } else {
+        /* Since ABTI_local_get_thread() can return NULL during executing
+         * ABTI_init(), it should always be safe to say that the type of caller
+         * is ULT if the control reaches here. */
+        return ABT_UNIT_TYPE_THREAD;
+    }
+}
+
 #endif /* SELF_H_INCLUDED */
 

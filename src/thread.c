@@ -392,8 +392,7 @@ int ABT_thread_join(ABT_thread thread)
                         "The main ULT cannot be joined.");
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    ABT_unit_type type;
-    ABT_self_get_type(&type);
+    ABT_unit_type type = ABTI_self_get_type();
     if (type != ABT_UNIT_TYPE_THREAD) goto yield_based;
 #endif
 
