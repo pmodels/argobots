@@ -313,6 +313,8 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
     }
 }
 
+int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
+
 /**
  * @ingroup INFO
  * @brief   Dump stack information of all the threads in the target pool.
@@ -332,6 +334,22 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
+    abt_errno = ABTI_info_print_thread_stacks_in_pool(fp, p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_pool pool = ABTI_pool_get_handle(p_pool);
+
     if (!p_pool->p_print_all) {
         abt_errno = ABT_ERR_POOL;
         goto fn_fail;
@@ -339,7 +357,7 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
     fprintf(fp, "== pool (%p) ==\n", p_pool);
     struct ABTI_info_print_unit_arg_t arg;
     arg.fp = fp;
-    arg.pool = pool;
+    arg.pool = ABTI_pool_get_handle(pool);
     p_pool->p_print_all(pool, &arg, ABTI_info_print_unit);
 
   fn_exit:
@@ -508,7 +526,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
         }
         for (i = 0; i < pool_set.num; i++) {
             ABT_pool pool = pool_set.pools[i];
-            int abt_errno = ABT_info_print_thread_stacks_in_pool(fp, pool);
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+            int abt_errno = ABTI_info_print_thread_stacks_in_pool(fp, p_pool);
             if (abt_errno != ABT_SUCCESS)
                 fprintf(fp, "  Failed to print (errno = %d).\n", abt_errno);
         }
