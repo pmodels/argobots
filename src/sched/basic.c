@@ -150,7 +150,7 @@ static int pool_get_access_num(ABT_pool *p_pool)
     ABT_pool_access access;
     int num = 0;
 
-    ABT_pool_get_access(*p_pool, &access);
+    access = ABTI_pool_get_ptr(*p_pool)->access;
     switch (access) {
         case ABT_POOL_ACCESS_PRIV: num = 0; break;
         case ABT_POOL_ACCESS_SPSC:
