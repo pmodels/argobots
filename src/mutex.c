@@ -181,7 +181,7 @@ void ABTI_mutex_lock_low(ABTI_mutex *p_mutex)
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock_low - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-            ABT_thread_yield();
+            ABTI_thread_yield(ABTI_local_get_thread());
         }
         LOG_EVENT("%p: lock_low - acquired\n", p_mutex);
     } else {
@@ -464,7 +464,12 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTD_atomic_store_uint32(&p_mutex->val, 0);
     LOG_EVENT("%p: unlock_se\n", p_mutex);
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    if (ABTI_self_get_type() == ABT_UNIT_TYPE_THREAD)
+        ABTI_thread_yield(ABTI_local_get_thread());
+#else
     ABTI_thread_yield(ABTI_local_get_thread());
+#endif
 #else
     int i;
     ABTI_xstream *p_xstream;
@@ -477,7 +482,12 @@ int ABTI_mutex_unlock_se(ABTI_mutex *p_mutex)
      * waiter in the mutex queue.  We can just return. */
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) == 1) {
         LOG_EVENT("%p: unlock_se\n", p_mutex);
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+        if (ABTI_self_get_type() == ABT_UNIT_TYPE_THREAD)
+            ABTI_thread_yield(ABTI_local_get_thread());
+#else
         ABTI_thread_yield(ABTI_local_get_thread());
+#endif
         return abt_errno;
     }
 

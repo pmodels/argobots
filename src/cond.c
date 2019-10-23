@@ -233,7 +233,13 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             abt_errno = ABT_ERR_COND_TIMEDOUT;
             break;
         }
-        ABT_thread_yield();
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+            ABTD_atomic_pause();
+            continue;
+        }
+#endif
+        ABTI_thread_yield(ABTI_local_get_thread());
     }
     ABTU_free(p_unit);
 

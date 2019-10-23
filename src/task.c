@@ -304,7 +304,13 @@ int ABT_task_free(ABT_task *task)
     /* Wait until the task terminates */
     while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state)
            != ABT_TASK_STATE_TERMINATED) {
-        ABT_thread_yield();
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+            ABTD_atomic_pause();
+            continue;
+        }
+#endif
+        ABTI_thread_yield(ABTI_local_get_thread());
     }
 
     /* Free the ABTI_task structure */
@@ -343,7 +349,13 @@ int ABT_task_join(ABT_task task)
     /* TODO: better implementation */
     while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state)
            != ABT_TASK_STATE_TERMINATED) {
-        ABT_thread_yield();
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+            ABTD_atomic_pause();
+            continue;
+        }
+#endif
+        ABTI_thread_yield(ABTI_local_get_thread());
     }
 
   fn_exit:

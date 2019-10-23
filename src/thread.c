@@ -488,7 +488,13 @@ int ABT_thread_join(ABT_thread thread)
   yield_based:
     while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state)
            != ABT_THREAD_STATE_TERMINATED) {
-        ABT_thread_yield();
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+            ABTD_atomic_pause();
+            continue;
+        }
+#endif
+        ABTI_thread_yield(ABTI_local_get_thread());
     }
 
   fn_exit:

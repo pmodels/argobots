@@ -345,7 +345,13 @@ static void ABTI_event_free_xstream(void *arg)
 
     while (ABTD_atomic_load_uint32((uint32_t *)p_xstream->state)
            != ABT_XSTREAM_STATE_TERMINATED) {
-        ABT_thread_yield();
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+            ABTD_atomic_pause();
+            continue;
+        }
+#endif
+        ABTI_thread_yield(ABTI_local_get_thread());
     }
 
     abt_errno = ABT_xstream_join(xstream);
@@ -372,7 +378,13 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
         ABTI_xstream *p_xstream = p_xstreams[n+1];
         while (ABTD_atomic_load_uint32((uint32_t *)p_xstream->state)
                != ABT_XSTREAM_STATE_TERMINATED) {
-            ABT_thread_yield();
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+            if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+                ABTD_atomic_pause();
+                continue;
+            }
+#endif
+            ABTI_thread_yield(ABTI_local_get_thread());
         }
 
         ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
