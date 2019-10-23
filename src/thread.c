@@ -1546,6 +1546,19 @@ int ABTI_thread_create_internal(ABTI_pool *p_pool, void (*thread_func)(void *),
     goto fn_exit;
 }
 
+int ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
+                       void *arg, ABTI_thread_attr *p_attr,
+                       ABTI_thread **pp_newthread)
+{
+    int abt_errno = ABT_SUCCESS;
+    int refcount = (pp_newthread != NULL) ? 1 : 0;
+    abt_errno = ABTI_thread_create_internal(p_pool, thread_func, arg, p_attr,
+                                            ABTI_THREAD_TYPE_USER, NULL,
+                                            refcount, NULL, ABT_TRUE,
+                                            pp_newthread);
+    return abt_errno;
+}
+
 int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION

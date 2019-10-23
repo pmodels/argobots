@@ -526,6 +526,9 @@ void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 
 /* User-level Thread (ULT)  */
 int   ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool);
+int   ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
+                         void *arg, ABTI_thread_attr *p_attr,
+                         ABTI_thread **pp_newthread);
 int   ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread);
 int   ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int   ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched);
