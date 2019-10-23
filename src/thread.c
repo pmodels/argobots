@@ -5,14 +5,11 @@
 
 #include "abti.h"
 
-static inline int ABTI_thread_create(ABTI_pool *p_pool,
-                                     void (*thread_func)(void *),
-                                     void *arg, ABTI_thread_attr *p_attr,
-                                     ABTI_thread_type thread_type,
-                                     ABTI_sched *p_sched, int refcount,
-                                     ABTI_xstream *p_parent_xstream,
-                                     ABT_bool push_pool,
-                                     ABTI_thread **pp_newthread);
+static inline int ABTI_thread_create_internal(ABTI_pool *p_pool,
+    void (*thread_func)(void *), void *arg, ABTI_thread_attr *p_attr,
+    ABTI_thread_type thread_type, ABTI_sched *p_sched, int refcount,
+    ABTI_xstream *p_parent_xstream, ABT_bool push_pool,
+    ABTI_thread **pp_newthread);
 static int ABTI_thread_revive(ABTI_pool *p_pool, void(*thread_func)(void *),
                               void *arg, ABTI_thread *p_thread);
 static inline int ABTI_thread_join(ABTI_thread *p_thread);
@@ -60,10 +57,11 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     int refcount = (newthread != NULL) ? 1 : 0;
-    abt_errno = ABTI_thread_create(p_pool, thread_func, arg,
-                                   ABTI_thread_attr_get_ptr(attr),
-                                   ABTI_THREAD_TYPE_USER, NULL, refcount, NULL,
-                                   ABT_TRUE, &p_newthread);
+    abt_errno = ABTI_thread_create_internal(p_pool, thread_func, arg,
+                                            ABTI_thread_attr_get_ptr(attr),
+                                            ABTI_THREAD_TYPE_USER, NULL,
+                                            refcount, NULL, ABT_TRUE,
+                                            &p_newthread);
 
     /* Return value */
     if (newthread) *newthread = ABTI_thread_get_handle(p_newthread);
@@ -1419,11 +1417,12 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
 /*****************************************************************************/
 
 static inline
-int ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
-                       void *arg, ABTI_thread_attr *p_attr,
-                       ABTI_thread_type thread_type, ABTI_sched *p_sched,
-                       int refcount, ABTI_xstream *p_parent_xstream,
-                       ABT_bool push_pool, ABTI_thread **pp_newthread)
+int ABTI_thread_create_internal(ABTI_pool *p_pool, void (*thread_func)(void *),
+                                void *arg, ABTI_thread_attr *p_attr,
+                                ABTI_thread_type thread_type,
+                                ABTI_sched *p_sched, int refcount,
+                                ABTI_xstream *p_parent_xstream,
+                                ABT_bool push_pool, ABTI_thread **pp_newthread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
@@ -1586,9 +1585,9 @@ int ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread)
      * so that the scheduler can schedule the main ULT when the main ULT is
      * context switched to the scheduler for the first time. */
     ABT_bool push_pool = ABT_TRUE;
-    abt_errno = ABTI_thread_create(p_pool, NULL, NULL, &attr,
-                                   ABTI_THREAD_TYPE_MAIN, NULL, 0, p_xstream,
-                                   push_pool, &p_newthread);
+    abt_errno = ABTI_thread_create_internal(p_pool, NULL, NULL, &attr,
+                                            ABTI_THREAD_TYPE_MAIN, NULL, 0,
+                                            p_xstream, push_pool, &p_newthread);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -1616,10 +1615,11 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
         ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
                               ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
         ABTI_thread *p_main_thread = ABTI_global_get_main();
-        abt_errno = ABTI_thread_create(NULL, ABTI_xstream_schedule,
-                                       (void *)p_xstream, &attr,
-                                       ABTI_THREAD_TYPE_MAIN_SCHED, p_sched, 0,
-                                       p_xstream, ABT_FALSE, &p_newthread);
+        abt_errno = ABTI_thread_create_internal(NULL, ABTI_xstream_schedule,
+                                                (void *)p_xstream, &attr,
+                                                ABTI_THREAD_TYPE_MAIN_SCHED,
+                                                p_sched, 0, p_xstream,
+                                                ABT_FALSE, &p_newthread);
         ABTI_CHECK_ERROR(abt_errno);
         /* When the main scheduler is terminated, the control will jump to the
          * primary ULT. */
@@ -1629,10 +1629,11 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
          * scheduler's ULT. */
         ABTI_thread_attr attr;
         ABTI_thread_attr_init(&attr, NULL, 0, ABTI_STACK_TYPE_MAIN, ABT_FALSE);
-        abt_errno = ABTI_thread_create(NULL, ABTI_xstream_schedule,
-                                       (void *)p_xstream, &attr,
-                                       ABTI_THREAD_TYPE_MAIN_SCHED, p_sched, 0,
-                                       p_xstream, ABT_FALSE, &p_newthread);
+        abt_errno = ABTI_thread_create_internal(NULL, ABTI_xstream_schedule,
+                                                (void *)p_xstream, &attr,
+                                                ABTI_THREAD_TYPE_MAIN_SCHED,
+                                                p_sched, 0, p_xstream,
+                                                ABT_FALSE, &p_newthread);
         ABTI_CHECK_ERROR(abt_errno);
     }
 
@@ -1668,10 +1669,9 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     /* Allocate a ULT object and its stack */
     ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
                           ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
-    abt_errno = ABTI_thread_create(p_pool, p_sched->run,
-                                   (void *)ABTI_sched_get_handle(p_sched),
-                                   &attr, ABTI_THREAD_TYPE_USER, p_sched, 1,
-                                   NULL, ABT_TRUE, &p_newthread);
+    abt_errno = ABTI_thread_create_internal(p_pool, p_sched->run,
+        (void *)ABTI_sched_get_handle(p_sched), &attr, ABTI_THREAD_TYPE_USER,
+        p_sched, 1, NULL, ABT_TRUE, &p_newthread);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
