@@ -121,13 +121,23 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
 {
     int abt_errno = ABT_SUCCESS;
     ABT_pool pool;
+    ABTI_thread *p_newthread;
 
     /* TODO: need to consider the access type of target pool */
     abt_errno = ABT_xstream_get_main_pools(xstream, 1, &pool);
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = ABT_thread_create(pool, thread_func, arg, attr, newthread);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    int refcount = (newthread != NULL) ? 1 : 0;
+    abt_errno = ABTI_thread_create_internal(p_pool, thread_func, arg,
+                                            ABTI_thread_attr_get_ptr(attr),
+                                            ABTI_THREAD_TYPE_USER, NULL,
+                                            refcount, NULL, ABT_TRUE,
+                                            &p_newthread);
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Return value */
+    if (newthread) *newthread = ABTI_thread_get_handle(p_newthread);
 
   fn_exit:
     return abt_errno;
@@ -178,18 +188,29 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
     if (newthread_list == NULL) {
         for (i = 0; i < num; i++) {
             ABT_pool pool = pool_list[i];
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+            ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
             void (*thread_f)(void *) = thread_func_list[i];
             void *arg = arg_list ? arg_list[i] : NULL;
-            abt_errno = ABT_thread_create(pool, thread_f, arg, attr, NULL);
+            abt_errno = ABTI_thread_create_internal(p_pool, thread_f, arg,
+                ABTI_thread_attr_get_ptr(attr), ABTI_THREAD_TYPE_USER, NULL,
+                0, NULL, ABT_TRUE, NULL);
             ABTI_CHECK_ERROR(abt_errno);
         }
     } else {
         for (i = 0; i < num; i++) {
+            ABTI_thread *p_newthread;
             ABT_pool pool = pool_list[i];
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+            ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
             void (*thread_f)(void *) = thread_func_list[i];
             void *arg = arg_list ? arg_list[i] : NULL;
-            abt_errno = ABT_thread_create(pool, thread_f, arg, attr,
-                                          &newthread_list[i]);
+            abt_errno = ABTI_thread_create_internal(p_pool, thread_f, arg,
+                ABTI_thread_attr_get_ptr(attr), ABTI_THREAD_TYPE_USER, NULL, 1,
+                NULL, ABT_TRUE, &p_newthread);
+            newthread_list[i] = ABTI_thread_get_handle(p_newthread);
             /* TODO: Release threads that have been already created. */
             ABTI_CHECK_ERROR(abt_errno);
         }
