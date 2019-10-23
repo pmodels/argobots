@@ -13,6 +13,8 @@ static inline int ABTI_thread_create(ABTI_pool *p_pool,
                                      ABTI_xstream *p_parent_xstream,
                                      ABT_bool push_pool,
                                      ABTI_thread **pp_newthread);
+static int ABTI_thread_revive(ABTI_pool *p_pool, void(*thread_func)(void *),
+                              void *arg, ABTI_thread *p_thread);
 static inline int ABTI_thread_join(ABTI_thread *p_thread);
 static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
                                           ABTI_xstream *p_xstream);
@@ -226,59 +228,15 @@ int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
                       ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
-    size_t stacksize;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(*thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-    ABTI_CHECK_TRUE(p_thread->state == ABT_THREAD_STATE_TERMINATED,
-                    ABT_ERR_INV_THREAD);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    /* Create a ULT context */
-    stacksize = p_thread->attr.stacksize;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    if (p_thread->is_sched) {
-        abt_errno = ABTD_thread_context_create_sched(NULL, thread_func, arg,
-                                           stacksize, p_thread->attr.p_stack,
-                                           &p_thread->ctx);
-    } else {
-#endif
-        abt_errno = ABTD_thread_context_create_thread(NULL, thread_func, arg,
-                                           stacksize, p_thread->attr.p_stack,
-                                           &p_thread->ctx);
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    }
-#endif
+    abt_errno = ABTI_thread_revive(p_pool, thread_func, arg, p_thread);
     ABTI_CHECK_ERROR(abt_errno);
-
-    p_thread->state          = ABT_THREAD_STATE_READY;
-    p_thread->request        = 0;
-    p_thread->p_last_xstream = NULL;
-    p_thread->refcount       = 1;
-    p_thread->type           = ABTI_THREAD_TYPE_USER;
-
-    if (p_thread->p_pool != p_pool) {
-        /* Free the unit for the old pool */
-        p_thread->p_pool->u_free(&p_thread->unit);
-
-        /* Set the new pool */
-        p_thread->p_pool = p_pool;
-
-        /* Create a wrapper unit */
-        p_thread->unit = p_pool->u_create_from_thread(*thread);
-    }
-
-    LOG_EVENT("[U%" PRIu64 "] revived\n", ABTI_thread_get_id(p_thread));
-
-    /* Add this thread to the pool */
-#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    ABTI_pool_push(p_pool, p_thread->unit);
-#else
-    abt_errno = ABTI_pool_push(p_pool, p_thread->unit, ABTI_xstream_self());
-    ABTI_CHECK_ERROR(abt_errno);
-#endif
 
   fn_exit:
     return abt_errno;
@@ -1697,13 +1655,12 @@ int ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     ABTI_thread *p_newthread;
     ABTI_thread_attr attr;
 
-    /* If p_sched is reused, ABT_thread_revive() can be used. */
+
+    /* If p_sched is reused, ABTI_thread_revive() can be used. */
     if (p_sched->p_thread) {
-        ABT_thread h_thread = ABTI_thread_get_handle(p_sched->p_thread);
-        ABT_pool h_pool = ABTI_pool_get_handle(p_pool);
         ABT_sched h_sched = ABTI_sched_get_handle(p_sched);
-        abt_errno = ABT_thread_revive(h_pool, p_sched->run, (void *)h_sched,
-                                      &h_thread);
+        abt_errno = ABTI_thread_revive(p_pool, p_sched->run, (void *)h_sched,
+                                       p_sched->p_thread);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
@@ -2157,6 +2114,68 @@ int ABTI_thread_self_xstream_rank(void)
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
+
+static int ABTI_thread_revive(ABTI_pool *p_pool, void(*thread_func)(void *),
+                              void *arg, ABTI_thread *p_thread)
+{
+    int abt_errno = ABT_SUCCESS;
+    size_t stacksize;
+
+    ABTI_CHECK_TRUE(p_thread->state == ABT_THREAD_STATE_TERMINATED,
+                    ABT_ERR_INV_THREAD);
+
+    /* Create a ULT context */
+    stacksize = p_thread->attr.stacksize;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+    if (p_thread->is_sched) {
+        abt_errno = ABTD_thread_context_create_sched(NULL, thread_func, arg,
+                                           stacksize, p_thread->attr.p_stack,
+                                           &p_thread->ctx);
+    } else {
+#endif
+        abt_errno = ABTD_thread_context_create_thread(NULL, thread_func, arg,
+                                           stacksize, p_thread->attr.p_stack,
+                                           &p_thread->ctx);
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+    }
+#endif
+    ABTI_CHECK_ERROR(abt_errno);
+
+    p_thread->state          = ABT_THREAD_STATE_READY;
+    p_thread->request        = 0;
+    p_thread->p_last_xstream = NULL;
+    p_thread->refcount       = 1;
+    p_thread->type           = ABTI_THREAD_TYPE_USER;
+
+    if (p_thread->p_pool != p_pool) {
+        /* Free the unit for the old pool */
+        p_thread->p_pool->u_free(&p_thread->unit);
+
+        /* Set the new pool */
+        p_thread->p_pool = p_pool;
+
+        /* Create a wrapper unit */
+        ABT_thread h_thread = ABTI_thread_get_handle(p_thread);
+        p_thread->unit = p_pool->u_create_from_thread(h_thread);
+    }
+
+    LOG_EVENT("[U%" PRIu64 "] revived\n", ABTI_thread_get_id(p_thread));
+
+    /* Add this thread to the pool */
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    ABTI_pool_push(p_pool, p_thread->unit);
+#else
+    abt_errno = ABTI_pool_push(p_pool, p_thread->unit, ABTI_xstream_self());
+    ABTI_CHECK_ERROR(abt_errno);
+#endif
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
 
 static inline int ABTI_thread_join(ABTI_thread *p_thread)
 {
