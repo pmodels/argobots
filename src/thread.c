@@ -13,6 +13,7 @@ static inline int ABTI_thread_create(ABTI_pool *p_pool,
                                      ABTI_xstream *p_parent_xstream,
                                      ABT_bool push_pool,
                                      ABTI_thread **pp_newthread);
+static inline int ABTI_thread_join(ABTI_thread *p_thread);
 static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
                                           ABTI_xstream *p_xstream);
 static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
@@ -322,7 +323,7 @@ int ABT_thread_free(ABT_thread *thread)
 
     /* Wait until the thread terminates */
     if (p_thread->state != ABT_THREAD_STATE_TERMINATED) {
-        ABT_thread_join(h_thread);
+        ABTI_thread_join(p_thread);
     }
 
     /* Free the ABTI_thread structure */
@@ -385,119 +386,8 @@ int ABT_thread_join(ABT_thread thread)
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) return abt_errno;
-
-    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
-                          p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
-                        ABT_ERR_INV_THREAD,
-                        "The main ULT cannot be joined.");
-
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    ABT_unit_type type = ABTI_self_get_type();
-    if (type != ABT_UNIT_TYPE_THREAD) goto yield_based;
-#endif
-
-    ABTI_CHECK_TRUE_MSG(p_thread != ABTI_local_get_thread(), ABT_ERR_INV_THREAD,
-                        "The target ULT should be different.");
-
-    ABTI_thread *p_self = ABTI_local_get_thread();
-    ABT_pool_access access = p_self->p_pool->access;
-
-    if ((p_self->p_pool == p_thread->p_pool) &&
-        (access == ABT_POOL_ACCESS_PRIV ||
-         access == ABT_POOL_ACCESS_MPSC ||
-         access == ABT_POOL_ACCESS_SPSC) &&
-        (p_thread->state == ABT_THREAD_STATE_READY)) {
-
-        ABTI_xstream *p_xstream = p_self->p_last_xstream;
-
-        /* If other ES is calling ABTI_thread_set_ready(), p_thread may not
-         * have been added to the pool yet because ABTI_thread_set_ready()
-         * changes the state first followed by pushing p_thread to the pool.
-         * Therefore, we have to check whether p_thread is in the pool, and if
-         * not, we need to wait until it is added. */
-        while (p_thread->p_pool->u_is_in_pool(p_thread->unit) != ABT_TRUE) {}
-
-        /* Increase the number of blocked units.  Be sure to execute
-         * ABTI_pool_inc_num_blocked before ABTI_POOL_REMOVE in order not to
-         * underestimate the number of units in a pool. */
-        ABTI_pool_inc_num_blocked(p_self->p_pool);
-        /* Remove the target ULT from the pool */
-        ABTI_POOL_REMOVE(p_thread->p_pool, p_thread->unit, p_xstream);
-
-        /* Set the link in the context for the target ULT */
-        ABTD_thread_context_change_link(&p_thread->ctx, &p_self->ctx);
-
-        /* Set the last ES */
-        p_thread->p_last_xstream = p_xstream;
-        p_thread->state = ABT_THREAD_STATE_RUNNING;
-
-        /* Make the current ULT BLOCKED */
-        p_self->state = ABT_THREAD_STATE_BLOCKED;
-
-        LOG_EVENT("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
-                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
-                  ABTI_thread_get_id(p_thread));
-        LOG_EVENT("[U%" PRIu64 ":E%d] start running\n",
-                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
-
-        /* Switch the context */
-        ABTI_thread_context_switch_thread_to_thread(p_self, p_thread);
-
-    } else if ((p_self->p_pool != p_thread->p_pool) &&
-               (access == ABT_POOL_ACCESS_PRIV ||
-                access == ABT_POOL_ACCESS_SPSC)) {
-        /* FIXME: once we change the suspend/resume mechanism (i.e., asking the
-         * scheduler to wake up the blocked ULT), we will be able to handle all
-         * access modes. */
-        goto yield_based;
-
-    } else {
-        /* Tell p_thread that there has been a join request. */
-        /* If request already has ABTI_THREAD_REQ_JOIN, p_thread is terminating.
-         * We can't block p_self in this case. */
-        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
-                                                   ABTI_THREAD_REQ_JOIN);
-        if (req & ABTI_THREAD_REQ_JOIN) goto yield_based;
-
-        ABTI_thread_set_blocked(p_self);
-        LOG_EVENT("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
-                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
-                  ABTI_thread_get_id(p_thread));
-
-        /* Set the link in the context of the target ULT */
-        ABTD_thread_context_change_link(&p_thread->ctx, &p_self->ctx);
-
-        /* Suspend the current ULT */
-        ABTI_thread_suspend(p_self);
-    }
-
-    /* Resume */
-    /* If p_self's state is BLOCKED, the target ULT has terminated on the same
-     * ES as p_self's ES and the control has come from the target ULT.
-     * Otherwise, the target ULT had been migrated to a different ES, p_self
-     * has been resumed by p_self's scheduler.  In the latter case, we don't
-     * need to change p_self's state. */
-    if (p_self->state == ABT_THREAD_STATE_BLOCKED) {
-        p_self->state = ABT_THREAD_STATE_RUNNING;
-        ABTI_pool_dec_num_blocked(p_self->p_pool);
-        LOG_EVENT("[U%" PRIu64 ":E%d] resume after join\n",
-                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
-        return abt_errno;
-    }
-
-  yield_based:
-    while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state)
-           != ABT_THREAD_STATE_TERMINATED) {
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
-            ABTD_atomic_pause();
-            continue;
-        }
-#endif
-        ABTI_thread_yield(ABTI_local_get_thread());
-    }
+    abt_errno = ABTI_thread_join(p_thread);
+    ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
     return abt_errno;
@@ -524,7 +414,7 @@ int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
     int abt_errno = ABT_SUCCESS;
     int i;
     for (i = 0; i < num_threads; i++) {
-        ABT_thread_join(thread_list[i]);
+        abt_errno = ABTI_thread_join(ABTI_thread_get_ptr(thread_list[i]));
         ABTI_CHECK_ERROR(abt_errno);
     }
 
@@ -2267,6 +2157,132 @@ int ABTI_thread_self_xstream_rank(void)
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
+
+static inline int ABTI_thread_join(ABTI_thread *p_thread)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    if (p_thread->state == ABT_THREAD_STATE_TERMINATED) return abt_errno;
+
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
+                          p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+                        ABT_ERR_INV_THREAD,
+                        "The main ULT cannot be joined.");
+
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    ABT_unit_type type = ABTI_self_get_type();
+    if (type != ABT_UNIT_TYPE_THREAD) goto busywait_based;
+#endif
+
+    ABTI_CHECK_TRUE_MSG(p_thread != ABTI_local_get_thread(), ABT_ERR_INV_THREAD,
+                        "The target ULT should be different.");
+
+    ABTI_thread *p_self = ABTI_local_get_thread();
+    ABT_pool_access access = p_self->p_pool->access;
+
+    if ((p_self->p_pool == p_thread->p_pool) &&
+        (access == ABT_POOL_ACCESS_PRIV ||
+         access == ABT_POOL_ACCESS_MPSC ||
+         access == ABT_POOL_ACCESS_SPSC) &&
+        (p_thread->state == ABT_THREAD_STATE_READY)) {
+
+        ABTI_xstream *p_xstream = p_self->p_last_xstream;
+
+        /* If other ES is calling ABTI_thread_set_ready(), p_thread may not
+         * have been added to the pool yet because ABTI_thread_set_ready()
+         * changes the state first followed by pushing p_thread to the pool.
+         * Therefore, we have to check whether p_thread is in the pool, and if
+         * not, we need to wait until it is added. */
+        while (p_thread->p_pool->u_is_in_pool(p_thread->unit) != ABT_TRUE) {}
+
+        /* Increase the number of blocked units.  Be sure to execute
+         * ABTI_pool_inc_num_blocked before ABTI_POOL_REMOVE in order not to
+         * underestimate the number of units in a pool. */
+        ABTI_pool_inc_num_blocked(p_self->p_pool);
+        /* Remove the target ULT from the pool */
+        ABTI_POOL_REMOVE(p_thread->p_pool, p_thread->unit, p_xstream);
+
+        /* Set the link in the context for the target ULT */
+        ABTD_thread_context_change_link(&p_thread->ctx, &p_self->ctx);
+
+        /* Set the last ES */
+        p_thread->p_last_xstream = p_xstream;
+        p_thread->state = ABT_THREAD_STATE_RUNNING;
+
+        /* Make the current ULT BLOCKED */
+        p_self->state = ABT_THREAD_STATE_BLOCKED;
+
+        LOG_EVENT("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
+                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
+                  ABTI_thread_get_id(p_thread));
+        LOG_EVENT("[U%" PRIu64 ":E%d] start running\n",
+                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+
+        /* Switch the context */
+        ABTI_thread_context_switch_thread_to_thread(p_self, p_thread);
+
+    } else if ((p_self->p_pool != p_thread->p_pool) &&
+               (access == ABT_POOL_ACCESS_PRIV ||
+                access == ABT_POOL_ACCESS_SPSC)) {
+        /* FIXME: once we change the suspend/resume mechanism (i.e., asking the
+         * scheduler to wake up the blocked ULT), we will be able to handle all
+         * access modes. */
+        goto yield_based;
+
+    } else {
+        /* Tell p_thread that there has been a join request. */
+        /* If request already has ABTI_THREAD_REQ_JOIN, p_thread is terminating.
+         * We can't block p_self in this case. */
+        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
+                                                   ABTI_THREAD_REQ_JOIN);
+        if (req & ABTI_THREAD_REQ_JOIN) goto yield_based;
+
+        ABTI_thread_set_blocked(p_self);
+        LOG_EVENT("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
+                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
+                  ABTI_thread_get_id(p_thread));
+
+        /* Set the link in the context of the target ULT */
+        ABTD_thread_context_change_link(&p_thread->ctx, &p_self->ctx);
+
+        /* Suspend the current ULT */
+        ABTI_thread_suspend(p_self);
+    }
+
+    /* Resume */
+    /* If p_self's state is BLOCKED, the target ULT has terminated on the same
+     * ES as p_self's ES and the control has come from the target ULT.
+     * Otherwise, the target ULT had been migrated to a different ES, p_self
+     * has been resumed by p_self's scheduler.  In the latter case, we don't
+     * need to change p_self's state. */
+    if (p_self->state == ABT_THREAD_STATE_BLOCKED) {
+        p_self->state = ABT_THREAD_STATE_RUNNING;
+        ABTI_pool_dec_num_blocked(p_self->p_pool);
+        LOG_EVENT("[U%" PRIu64 ":E%d] resume after join\n",
+                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
+        return abt_errno;
+    }
+
+  yield_based:
+    while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state)
+           != ABT_THREAD_STATE_TERMINATED) {
+        ABTI_thread_yield(ABTI_local_get_thread());
+    }
+    goto fn_exit;
+
+  busywait_based:
+    while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state)
+           != ABT_THREAD_STATE_TERMINATED) {
+        ABTD_atomic_pause();
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
 
 static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
                                           ABTI_xstream *p_xstream)
