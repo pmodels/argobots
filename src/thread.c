@@ -13,6 +13,8 @@ static inline int ABTI_thread_create(ABTI_pool *p_pool,
                                      ABTI_xstream *p_parent_xstream,
                                      ABT_bool push_pool,
                                      ABTI_thread **pp_newthread);
+static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
+                                          ABTI_xstream *p_xstream);
 static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
 static inline void ABTI_thread_free_internal(ABTI_thread *p_thread);
 static inline ABT_thread_id ABTI_thread_get_new_id(void);
@@ -1020,59 +1022,8 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    /* checking for cases when migration is not allowed */
-    ABTI_CHECK_TRUE(p_xstream->state != ABT_XSTREAM_STATE_TERMINATED,
-                    ABT_ERR_INV_XSTREAM);
-    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
-                      p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
-                    ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(p_thread->state != ABT_THREAD_STATE_TERMINATED,
-                    ABT_ERR_INV_THREAD);
-
-    /* We need to find the target scheduler */
-    ABTI_pool *p_pool = NULL;
-    ABTI_sched *p_sched = NULL;
-    do {
-        ABTI_spinlock_acquire(&p_xstream->sched_lock);
-
-        /* We check the state of the ES */
-        if (p_xstream->state == ABT_XSTREAM_STATE_TERMINATED) {
-            abt_errno = ABT_ERR_INV_XSTREAM;
-            ABTI_spinlock_release(&p_xstream->sched_lock);
-            goto fn_fail;
-
-        } else if (p_xstream->state == ABT_XSTREAM_STATE_RUNNING) {
-            p_sched = ABTI_xstream_get_top_sched(p_xstream);
-
-        } else {
-            p_sched = p_xstream->p_main_sched;
-        }
-
-        /* We check the state of the sched */
-        if (p_sched->state == ABT_SCHED_STATE_TERMINATED) {
-            abt_errno = ABT_ERR_INV_XSTREAM;
-            ABTI_spinlock_release(&p_xstream->sched_lock);
-            goto fn_fail;
-        } else {
-            /* Find a pool */
-            ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
-            if (p_pool == NULL) {
-                abt_errno = ABT_ERR_INV_POOL;
-                ABTI_spinlock_release(&p_xstream->sched_lock);
-                goto fn_fail;
-            }
-            /* We set the migration counter to prevent the scheduler from
-             * stopping */
-            ABTI_pool_inc_num_migrations(p_pool);
-        }
-        ABTI_spinlock_release(&p_xstream->sched_lock);
-    } while (p_pool == NULL);
-
-    abt_errno = ABTI_thread_migrate_to_pool(p_thread, p_pool);
-    if (abt_errno != ABT_SUCCESS) {
-        ABTI_pool_dec_num_migrations(p_pool);
-        goto fn_fail;
-    }
+    abt_errno = ABTI_thread_migrate_to_xstream(p_thread, p_xstream);
+    ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
     return abt_errno;
@@ -1203,7 +1154,6 @@ int ABT_thread_migrate(ABT_thread thread)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     /* TODO: fix the bug(s) */
     int abt_errno = ABT_SUCCESS;
-    ABT_xstream xstream;
     ABTI_xstream *p_xstream;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
@@ -1226,8 +1176,7 @@ int ABT_thread_migrate(ABT_thread thread)
         p_xstream = p_xstreams[rand() % gp_ABTI_global->num_xstreams];
         if (p_xstream && p_xstream != p_thread->p_last_xstream) {
             if (p_xstream->state == ABT_XSTREAM_STATE_RUNNING) {
-                xstream = ABTI_xstream_get_handle(p_xstream);
-                abt_errno = ABT_thread_migrate_to_xstream(thread, xstream);
+                abt_errno = ABTI_thread_migrate_to_xstream(p_thread, p_xstream);
                 if (abt_errno != ABT_ERR_INV_XSTREAM &&
                         abt_errno != ABT_ERR_MIGRATION_TARGET) {
                     ABTI_CHECK_ERROR(abt_errno);
@@ -2318,6 +2267,77 @@ int ABTI_thread_self_xstream_rank(void)
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
+
+static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
+                                          ABTI_xstream *p_xstream)
+{
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+    int abt_errno = ABT_SUCCESS;
+
+    /* checking for cases when migration is not allowed */
+    ABTI_CHECK_TRUE(p_xstream->state != ABT_XSTREAM_STATE_TERMINATED,
+                    ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
+                      p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(p_thread->state != ABT_THREAD_STATE_TERMINATED,
+                    ABT_ERR_INV_THREAD);
+
+    /* We need to find the target scheduler */
+    ABTI_pool *p_pool = NULL;
+    ABTI_sched *p_sched = NULL;
+    do {
+        ABTI_spinlock_acquire(&p_xstream->sched_lock);
+
+        /* We check the state of the ES */
+        if (p_xstream->state == ABT_XSTREAM_STATE_TERMINATED) {
+            abt_errno = ABT_ERR_INV_XSTREAM;
+            ABTI_spinlock_release(&p_xstream->sched_lock);
+            goto fn_fail;
+
+        } else if (p_xstream->state == ABT_XSTREAM_STATE_RUNNING) {
+            p_sched = ABTI_xstream_get_top_sched(p_xstream);
+
+        } else {
+            p_sched = p_xstream->p_main_sched;
+        }
+
+        /* We check the state of the sched */
+        if (p_sched->state == ABT_SCHED_STATE_TERMINATED) {
+            abt_errno = ABT_ERR_INV_XSTREAM;
+            ABTI_spinlock_release(&p_xstream->sched_lock);
+            goto fn_fail;
+        } else {
+            /* Find a pool */
+            ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
+            if (p_pool == NULL) {
+                abt_errno = ABT_ERR_INV_POOL;
+                ABTI_spinlock_release(&p_xstream->sched_lock);
+                goto fn_fail;
+            }
+            /* We set the migration counter to prevent the scheduler from
+             * stopping */
+            ABTI_pool_inc_num_migrations(p_pool);
+        }
+        ABTI_spinlock_release(&p_xstream->sched_lock);
+    } while (p_pool == NULL);
+
+    abt_errno = ABTI_thread_migrate_to_pool(p_thread, p_pool);
+    if (abt_errno != ABT_SUCCESS) {
+        ABTI_pool_dec_num_migrations(p_pool);
+        goto fn_fail;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+#else
+    return ABT_ERR_MIGRATION_NA;
+#endif
+}
 
 static inline ABT_thread_id ABTI_thread_get_new_id(void)
 {
