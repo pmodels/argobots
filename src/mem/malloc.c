@@ -377,9 +377,11 @@ static char *ABTI_mem_alloc_large_page(int pgsize, ABT_bool *p_is_mmapped)
 
         case ABTI_MEM_LP_THP:
             *p_is_mmapped = ABT_FALSE;
-            size_t alignment = gp_ABTI_global->huge_page_size;
-            p_page = (char *)ABTU_memalign(alignment, pgsize);
-            LOG_DEBUG("memalign a THP (%d): %p\n", pgsize, p_page);
+            {
+                size_t alignment = gp_ABTI_global->huge_page_size;
+                p_page = (char *)ABTU_memalign(alignment, pgsize);
+                LOG_DEBUG("memalign a THP (%d): %p\n", pgsize, p_page);
+            }
             break;
 
         default:
