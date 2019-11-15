@@ -93,6 +93,7 @@ enum ABTI_stack_type {
 /* Data Types */
 typedef struct ABTI_global          ABTI_global;
 typedef struct ABTI_local           ABTI_local;
+typedef struct ABTI_local_func      ABTI_local_func;
 typedef struct ABTI_xstream         ABTI_xstream;
 typedef enum ABTI_xstream_type      ABTI_xstream_type;
 typedef struct ABTI_sched           ABTI_sched;
@@ -200,6 +201,13 @@ struct ABTI_global {
 #endif
 
     ABT_bool print_config;      /* Whether to print config on ABT_init */
+};
+
+struct ABTI_local_func {
+    char padding1[ABT_CONFIG_STATIC_CACHELINE_SIZE];
+    ABTI_local *(*get_local_f)(void);
+    void (*set_local_f)(ABTI_local *);
+    char padding2[ABT_CONFIG_STATIC_CACHELINE_SIZE];
 };
 
 struct ABTI_local {
@@ -442,6 +450,7 @@ struct ABTI_timer {
 
 /* Global Data */
 extern ABTI_global *gp_ABTI_global;
+extern ABTI_local_func gp_ABTI_local_func;
 
 /* ES Local Data */
 extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
