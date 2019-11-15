@@ -332,20 +332,13 @@ int ABT_thread_free(ABT_thread *thread)
  */
 int ABT_thread_free_many(int num, ABT_thread *thread_list)
 {
-    int abt_errno = ABT_SUCCESS;
     int i;
 
     for (i = 0; i < num; i++) {
-        abt_errno = ABT_thread_free(&thread_list[i]);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(&thread_list[i]);
+        ABTI_thread_free(p_thread);
     }
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
