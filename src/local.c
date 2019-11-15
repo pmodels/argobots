@@ -38,7 +38,7 @@ int ABTI_local_init(ABTI_local **pp_local)
     p_local->p_xstream = NULL;
     p_local->p_thread = NULL;
     p_local->p_task = NULL;
-    lp_ABTI_local = p_local;
+    ABTI_local_set_local(p_local);
 
     ABTI_mem_init_local(p_local);
 
@@ -62,6 +62,7 @@ int ABTI_local_finalize(ABTI_local **pp_local)
     ABTU_free(p_local);
     lp_ABTI_local = NULL;
     *pp_local = NULL;
+    ABTI_local_set_local(NULL);
 
     ABTI_LOG_FINALIZE();
 

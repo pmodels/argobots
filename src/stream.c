@@ -28,7 +28,7 @@ static void ABTI_xstream_return_rank(ABTI_xstream *);
 int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched;
     ABTI_xstream *p_newxstream;
 
@@ -148,7 +148,7 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
                              ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_newxstream;
 
     ABTI_sched *p_sched;
@@ -186,7 +186,7 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
                                  ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_newxstream;
     ABTI_sched *p_sched;
 
@@ -261,7 +261,7 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
 int ABT_xstream_start(ABT_xstream xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
@@ -388,7 +388,7 @@ int ABTI_xstream_start_primary(ABTI_local **pp_local, ABTI_xstream *p_xstream, A
 int ABT_xstream_free(ABT_xstream *xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABT_xstream h_xstream = *xstream;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(h_xstream);
@@ -442,7 +442,7 @@ int ABT_xstream_free(ABT_xstream *xstream)
 int ABT_xstream_join(ABT_xstream xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
@@ -472,7 +472,7 @@ int ABT_xstream_join(ABT_xstream xstream)
 int ABT_xstream_exit(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -556,7 +556,7 @@ int ABT_xstream_cancel(ABT_xstream xstream)
 int ABT_xstream_self(ABT_xstream *xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -599,7 +599,7 @@ int ABT_xstream_self(ABT_xstream *xstream)
 int ABT_xstream_self_rank(int *rank)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -713,7 +713,7 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
 int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched;
 
     ABTI_CHECK_TRUE(p_local != NULL, ABT_ERR_INV_THREAD);
@@ -784,7 +784,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
         ABT_sched_predef predef, int num_pools, ABT_pool *pools)
 {
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     int abt_errno = ABT_SUCCESS;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
@@ -997,7 +997,7 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag)
 int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
 {
     int abt_errno;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_xstream = p_local->p_xstream;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
 
@@ -1059,7 +1059,7 @@ int ABTI_xstream_run_unit(ABTI_local **pp_local, ABTI_xstream *p_xstream,
 int ABT_xstream_check_events(ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -1285,7 +1285,7 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
      * mode, the ULT can be blocked. Otherwise, the access mode, if it is a
      * single-writer access mode, may be violated because another ES has to set
      * the blocked ULT ready. */
-    p_local = lp_ABTI_local;
+    p_local = ABTI_local_get_local();
     p_thread = p_local ? p_local->p_thread : NULL;
     if (p_thread) {
         ABT_pool_access access = p_thread->p_pool->access;
@@ -1390,7 +1390,7 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream)
 /* The main scheduler of each ES executes this routine. */
 void ABTI_xstream_schedule(void *p_arg)
 {
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
 
     while (1) {
@@ -1906,7 +1906,7 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     /* Initialization of the local variables */
     ABTI_local *p_local = NULL;
     abt_errno = ABTI_local_init(&p_local);
-    lp_ABTI_local = p_local;
+    ABTI_local_set_local(p_local);
     ABTI_CHECK_ERROR(abt_errno);
     p_local->p_xstream = p_xstream;
 

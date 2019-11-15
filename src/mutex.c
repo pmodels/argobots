@@ -142,7 +142,7 @@ int ABT_mutex_free(ABT_mutex *mutex)
 int ABT_mutex_lock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
@@ -276,7 +276,7 @@ void ABTI_mutex_lock_low(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 int ABT_mutex_lock_low(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
@@ -342,7 +342,7 @@ int ABT_mutex_trylock(ABT_mutex mutex)
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_local *p_local = lp_ABTI_local;
+        ABTI_local *p_local = ABTI_local_get_local();
         ABTI_unit *p_self = ABTI_self_get_unit(p_local);
         if (p_self != p_mutex->attr.p_owner) {
             abt_errno = ABTI_mutex_trylock(p_mutex);
@@ -394,7 +394,7 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_local *p_local = lp_ABTI_local;
+        ABTI_local *p_local = ABTI_local_get_local();
         ABTI_unit *p_self = ABTI_self_get_unit(p_local);
         if (p_self != p_mutex->attr.p_owner) {
             ABTI_mutex_spinlock(p_mutex);
@@ -432,7 +432,7 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
 int ABT_mutex_unlock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
@@ -591,7 +591,7 @@ int ABTI_mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 int ABT_mutex_unlock_se(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
@@ -626,7 +626,7 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
 int ABT_mutex_unlock_de(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 

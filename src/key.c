@@ -114,7 +114,7 @@ int ABT_key_free(ABT_key *key)
 int ABT_key_set(ABT_key key, void *value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
     ABTI_ktable *p_ktable;
@@ -173,7 +173,7 @@ int ABT_key_set(ABT_key key, void *value)
 int ABT_key_get(ABT_key key, void **value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
     ABTI_ktable *p_ktable = NULL;

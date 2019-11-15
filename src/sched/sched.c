@@ -125,7 +125,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
 int ABT_sched_free(ABT_sched *sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(*sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
@@ -282,7 +282,7 @@ int ABT_sched_exit(ABT_sched sched)
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     *stop = ABT_FALSE;
 

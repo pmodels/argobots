@@ -93,7 +93,7 @@ int ABT_cond_free(ABT_cond *cond)
 int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
@@ -180,7 +180,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
                        const struct timespec *abstime)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
@@ -274,7 +274,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
 int ABT_cond_signal(ABT_cond cond)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
@@ -336,7 +336,7 @@ int ABT_cond_signal(ABT_cond cond)
 int ABT_cond_broadcast(ABT_cond cond)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 

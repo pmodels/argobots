@@ -294,7 +294,7 @@ void ABTI_thread_context_switch_thread_to_thread(ABTI_local **pp_local,
     ABTI_thread_context_switch_thread_to_thread_internal(*pp_local,
                                                          p_old, p_new,
                                                          ABT_FALSE);
-    *pp_local = lp_ABTI_local;
+    *pp_local = ABTI_local_get_local_uninlined();
 }
 
 static inline
@@ -304,7 +304,7 @@ void ABTI_thread_context_switch_thread_to_sched(ABTI_local **pp_local,
 {
     ABTI_thread_context_switch_thread_to_sched_internal(p_old, p_new,
                                                         ABT_FALSE);
-    *pp_local = lp_ABTI_local;
+    *pp_local = ABTI_local_get_local_uninlined();
 }
 
 static inline
@@ -314,7 +314,7 @@ void ABTI_thread_context_switch_sched_to_thread(ABTI_local **pp_local,
 {
     ABTI_thread_context_switch_sched_to_thread_internal(*pp_local, p_old, p_new,
                                                         ABT_FALSE);
-    *pp_local = lp_ABTI_local;
+    *pp_local = ABTI_local_get_local_uninlined();
 }
 
 static inline
@@ -323,7 +323,7 @@ void ABTI_thread_context_switch_sched_to_sched(ABTI_local **pp_local,
                                                ABTI_sched *p_new)
 {
     ABTI_thread_context_switch_sched_to_sched_internal(p_old, p_new, ABT_FALSE);
-    *pp_local = lp_ABTI_local;
+    *pp_local = ABTI_local_get_local_uninlined();
 }
 
 static inline

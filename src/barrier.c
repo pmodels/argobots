@@ -146,7 +146,7 @@ int ABT_barrier_free(ABT_barrier *barrier)
 int ABT_barrier_wait(ABT_barrier barrier)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
     uint32_t pos;

@@ -40,7 +40,7 @@ int ABT_self_get_type(ABT_unit_type *type)
         goto fn_exit;
     }
 
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     *type = ABTI_self_get_type(p_local);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
@@ -74,7 +74,7 @@ int ABT_self_get_type(ABT_unit_type *type)
 int ABT_self_is_primary(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread;
 
     /* If Argobots has not been initialized, set flag to ABT_FALSE. */
@@ -124,7 +124,7 @@ int ABT_self_is_primary(ABT_bool *flag)
 int ABT_self_on_primary_xstream(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_xstream;
 
     /* If Argobots has not been initialized, set flag to ABT_FALSE. */
@@ -179,7 +179,7 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
 int ABT_self_get_last_pool_id(int *pool_id)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
 
@@ -233,7 +233,7 @@ int ABT_self_get_last_pool_id(int *pool_id)
 int ABT_self_suspend(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
     ABTI_thread *p_thread = p_local->p_thread;
 #else
@@ -276,7 +276,7 @@ int ABT_self_suspend(void)
 int ABT_self_set_arg(void *arg)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
 
@@ -326,7 +326,7 @@ int ABT_self_set_arg(void *arg)
 int ABT_self_get_arg(void **arg)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
 

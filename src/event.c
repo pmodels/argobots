@@ -338,7 +338,7 @@ void ABTI_event_send_num_xstream(void)
 
 static void ABTI_event_free_xstream(void *arg)
 {
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     char send_buf[ABTI_MSG_BUF_LEN];
     ABT_xstream xstream = (ABT_xstream)arg;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
@@ -370,7 +370,7 @@ static void ABTI_event_free_xstream(void *arg)
 
 static void ABTI_event_free_multiple_xstreams(void *arg)
 {
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     char send_buf[ABTI_MSG_BUF_LEN];
     ABTI_xstream **p_xstreams = (ABTI_xstream **)arg;
     int num_xstreams = (int)(intptr_t)p_xstreams[0];

@@ -56,7 +56,7 @@ int ABT_thread_create(ABT_pool pool, void(*thread_func)(void *),
                       ABT_thread *newthread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newthread;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -126,7 +126,7 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
                       ABT_thread_attr attr, ABT_thread *newthread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newthread;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
@@ -182,7 +182,7 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
                            ABT_thread_attr attr, ABT_thread *newthread_list)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     int i;
 
     if (attr != ABT_THREAD_ATTR_NULL) {
@@ -254,7 +254,7 @@ int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
                       ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(*thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -289,7 +289,7 @@ int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
 int ABT_thread_free(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABT_thread h_thread = *thread;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(h_thread);
@@ -341,7 +341,7 @@ int ABT_thread_free(ABT_thread *thread)
  */
 int ABT_thread_free_many(int num, ABT_thread *thread_list)
 {
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     int i;
 
     for (i = 0; i < num; i++) {
@@ -364,7 +364,7 @@ int ABT_thread_free_many(int num, ABT_thread *thread_list)
 int ABT_thread_join(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     abt_errno = ABTI_thread_join(&p_local, p_thread);
@@ -393,7 +393,7 @@ int ABT_thread_join(ABT_thread thread)
 int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     int i;
     for (i = 0; i < num_threads; i++) {
         abt_errno = ABTI_thread_join(&p_local,
@@ -423,7 +423,7 @@ int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
 int ABT_thread_exit(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -507,7 +507,7 @@ int ABT_thread_cancel(ABT_thread thread)
 int ABT_thread_self(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
@@ -552,7 +552,7 @@ int ABT_thread_self(ABT_thread *thread)
 int ABT_thread_self_id(ABT_thread_id *id)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
@@ -718,7 +718,7 @@ int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
 int ABT_thread_yield_to(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_cur_thread = NULL;
 
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
@@ -813,7 +813,7 @@ int ABT_thread_yield_to(ABT_thread thread)
 int ABT_thread_yield(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread = NULL;
 
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
@@ -858,7 +858,7 @@ int ABT_thread_yield(void)
 int ABT_thread_resume(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread;
 
     p_thread = ABTI_thread_get_ptr(thread);
@@ -897,7 +897,7 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
@@ -939,7 +939,7 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
@@ -994,7 +994,7 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -1037,7 +1037,7 @@ int ABT_thread_migrate(ABT_thread thread)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     /* TODO: fix the bug(s) */
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_xstream;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);

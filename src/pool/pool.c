@@ -207,7 +207,7 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     ABT_unit unit;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(ABTI_local_get_local() != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -230,7 +230,7 @@ int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
     ABT_unit unit;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(ABTI_local_get_local() != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -269,7 +269,8 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     ABTI_pool_push(p_pool, unit);
 #else
     /* Save the producer ES information in the pool */
-    abt_errno = ABTI_pool_push(p_pool, unit, ABTI_xstream_self(lp_ABTI_local));
+    abt_errno = ABTI_pool_push(p_pool, unit,
+                               ABTI_xstream_self(ABTI_local_get_local()));
     ABTI_CHECK_ERROR(abt_errno);
 #endif
 
@@ -295,12 +296,13 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     int abt_errno = ABT_SUCCESS;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(ABTI_local_get_local() != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_POOL_REMOVE(p_pool, unit, lp_ABTI_local->p_xstream);
+    abt_errno = ABTI_POOL_REMOVE(p_pool, unit,
+                                 ABTI_local_get_local()->p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -432,7 +434,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     return ABT_ERR_FEATURE_NA;
 #else
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);

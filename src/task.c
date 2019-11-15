@@ -47,7 +47,7 @@ int ABT_task_create(ABT_pool pool,
                     ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_task *p_newtask;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -135,7 +135,7 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                                void *arg, ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_task *p_newtask;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
@@ -183,7 +183,7 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     ABTI_task *p_task = ABTI_task_get_ptr(*task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
@@ -218,7 +218,7 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
 int ABT_task_free(ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABT_task h_task = *task;
     ABTI_task *p_task = ABTI_task_get_ptr(h_task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
@@ -264,7 +264,7 @@ int ABT_task_free(ABT_task *task)
 int ABT_task_join(ABT_task task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
@@ -335,7 +335,7 @@ int ABT_task_cancel(ABT_task task)
 int ABT_task_self(ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
@@ -380,7 +380,7 @@ int ABT_task_self(ABT_task *task)
 int ABT_task_self_id(uint64_t *id)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called

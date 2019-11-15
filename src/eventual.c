@@ -105,7 +105,7 @@ int ABT_eventual_free(ABT_eventual *eventual)
 int ABT_eventual_wait(ABT_eventual eventual, void **value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
@@ -230,7 +230,7 @@ int ABT_eventual_test(ABT_eventual eventual, void **value, int *is_ready)
 int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
     ABTI_CHECK_TRUE(nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);

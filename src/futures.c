@@ -130,7 +130,7 @@ int ABT_future_free(ABT_future *future)
 int ABT_future_wait(ABT_future future)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -242,7 +242,7 @@ int ABT_future_test(ABT_future future, ABT_bool *flag)
 int ABT_future_set(ABT_future future, void *value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 

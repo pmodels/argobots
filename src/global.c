@@ -148,7 +148,7 @@ int ABT_init(int argc, char **argv)
 int ABT_finalize(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* First, take a global lock protecting the initialization/finalization
      * process. Don't go to fn_exit before taking a lock */
