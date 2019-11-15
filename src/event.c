@@ -356,7 +356,7 @@ static void ABTI_event_free_xstream(void *arg)
 
     abt_errno = ABT_xstream_join(xstream);
     ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-    abt_errno = ABT_xstream_free(&xstream);
+    abt_errno = ABTI_xstream_free(p_xstream);
     ABTI_ASSERT(abt_errno == ABT_SUCCESS);
 
     if (gp_ABTI_global->pm_connected == ABT_TRUE) {
@@ -390,7 +390,7 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
         ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
         abt_errno = ABT_xstream_join(xstream);
         ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-        abt_errno = ABT_xstream_free(&xstream);
+        abt_errno = ABTI_xstream_free(p_xstream);
         ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     }
     ABTU_free(p_xstreams);
