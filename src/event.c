@@ -354,7 +354,7 @@ static void ABTI_event_free_xstream(void *arg)
         ABTI_thread_yield(ABTI_local_get_thread());
     }
 
-    abt_errno = ABT_xstream_join(xstream);
+    abt_errno = ABTI_xstream_join(p_xstream);
     ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     abt_errno = ABTI_xstream_free(p_xstream);
     ABTI_ASSERT(abt_errno == ABT_SUCCESS);
@@ -387,8 +387,7 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
             ABTI_thread_yield(ABTI_local_get_thread());
         }
 
-        ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
-        abt_errno = ABT_xstream_join(xstream);
+        abt_errno = ABTI_xstream_join(p_xstream);
         ABTI_ASSERT(abt_errno == ABT_SUCCESS);
         abt_errno = ABTI_xstream_free(p_xstream);
         ABTI_ASSERT(abt_errno == ABT_SUCCESS);
