@@ -147,7 +147,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
             ABTI_spinlock_release(&p_eventual->lock);
 
             /* Suspend the current ULT */
-            ABTI_thread_suspend(p_current);
+            ABTI_thread_suspend(&p_local, p_current);
 
         } else {
             ABTI_spinlock_release(&p_eventual->lock);
@@ -230,6 +230,7 @@ int ABT_eventual_test(ABT_eventual eventual, void **value, int *is_ready)
 int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
     ABTI_CHECK_TRUE(nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);
@@ -255,7 +256,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->handle.thread);
-            ABTI_thread_set_ready(p_thread);
+            ABTI_thread_set_ready(p_local, p_thread);
         } else {
             /* When the head is an external thread */
             int32_t *p_ext_signal = (int32_t *)p_unit->pool;

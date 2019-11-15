@@ -64,11 +64,12 @@ ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
 }
 
 static inline
-int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
+int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
+                   ABTI_mutex *p_mutex)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_local *p_local = *pp_local;
     ABTI_thread *p_thread;
     ABTI_unit *p_unit;
     ABT_unit_type type;
@@ -126,14 +127,14 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 
         /* Unlock the mutex that the calling ULT is holding */
         /* FIXME: should check if mutex was locked by the calling ULT */
-        ABTI_mutex_unlock(p_mutex);
+        ABTI_mutex_unlock(p_local, p_mutex);
 
         /* Suspend the current ULT */
-        ABTI_thread_suspend(p_thread);
+        ABTI_thread_suspend(pp_local, p_thread);
 
     } else { /* TYPE == ABT_UNIT_TYPE_EXT */
         ABTI_spinlock_release(&p_cond->lock);
-        ABTI_mutex_unlock(p_mutex);
+        ABTI_mutex_unlock(p_local, p_mutex);
 
         /* External thread is waiting here polling ext_signal. */
         /* FIXME: need a better implementation */
@@ -142,7 +143,7 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
     }
 
     /* Lock the mutex again */
-    ABTI_mutex_lock(p_mutex);
+    ABTI_mutex_lock(pp_local, p_mutex);
 
   fn_exit:
     return abt_errno;
@@ -153,7 +154,7 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 }
 
 static inline
-void ABTI_cond_broadcast(ABTI_cond *p_cond)
+void ABTI_cond_broadcast(ABTI_local *p_local, ABTI_cond *p_cond)
 {
     ABTI_spinlock_acquire(&p_cond->lock);
 
@@ -173,7 +174,7 @@ void ABTI_cond_broadcast(ABTI_cond *p_cond)
 
         if (p_unit->type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->handle.thread);
-            ABTI_thread_set_ready(p_thread);
+            ABTI_thread_set_ready(p_local, p_thread);
         } else {
             /* When the head is an external thread */
             int32_t *p_ext_signal = (int32_t *)p_unit->pool;

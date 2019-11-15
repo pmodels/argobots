@@ -99,10 +99,11 @@ int ABT_rwlock_free(ABT_rwlock *rwlock)
 int ABT_rwlock_rdlock(ABT_rwlock rwlock)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
-    ABTI_rwlock_rdlock(p_rwlock);
+    ABTI_rwlock_rdlock(&p_local, p_rwlock);
 
   fn_exit:
     return abt_errno;
@@ -132,10 +133,11 @@ int ABT_rwlock_rdlock(ABT_rwlock rwlock)
 int ABT_rwlock_wrlock(ABT_rwlock rwlock)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
-    ABTI_rwlock_wrlock(p_rwlock);
+    ABTI_rwlock_wrlock(&p_local, p_rwlock);
 
   fn_exit:
     return abt_errno;
@@ -161,10 +163,11 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
 int ABT_rwlock_unlock(ABT_rwlock rwlock)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
-    ABTI_rwlock_unlock(p_rwlock);
+    ABTI_rwlock_unlock(&p_local, p_rwlock);
 
   fn_exit:
     return abt_errno;

@@ -5,11 +5,13 @@
 
 #include "abti.h"
 
-static int ABTI_task_create(ABTI_pool *p_pool, void (*task_func)(void *),
-                            void *arg, ABTI_sched *p_sched, int refcount,
+static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
+                            void (*task_func)(void *), void *arg,
+                            ABTI_sched *p_sched, int refcount,
                             ABTI_task **pp_newtask);
-static int ABTI_task_revive(ABTI_pool *p_pool, void (*task_func)(void *),
-                            void *arg, ABTI_task *p_task);
+static int ABTI_task_revive(ABTI_local *p_local, ABTI_pool *p_pool,
+                            void (*task_func)(void *), void *arg,
+                            ABTI_task *p_task);
 static inline uint64_t ABTI_task_get_new_id(void);
 
 
@@ -45,13 +47,14 @@ int ABT_task_create(ABT_pool pool,
                     ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_task *p_newtask;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     int refcount = (newtask != NULL) ? 1 : 0;
-    abt_errno = ABTI_task_create(p_pool, task_func, arg, NULL, refcount,
-                                 &p_newtask);
+    abt_errno = ABTI_task_create(p_local, p_pool, task_func, arg, NULL,
+                                 refcount, &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -69,7 +72,8 @@ int ABT_task_create(ABT_pool pool,
 }
 
 /* This routine is to create a tasklet for the scheduler. */
-int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
+int ABTI_task_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
+                           ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_newtask;
@@ -77,14 +81,14 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     void *arg = (void *)ABTI_sched_get_handle(p_sched);
     /* If p_sched is reused, ABTI_task_revive() can be used. */
     if (p_sched->p_task) {
-        abt_errno = ABTI_task_revive(p_pool, p_sched->run, arg,
+        abt_errno = ABTI_task_revive(p_local, p_pool, p_sched->run, arg,
                                      p_sched->p_task);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
 
     /* Allocate a task object */
-    abt_errno = ABTI_task_create(p_pool, p_sched->run, arg, p_sched, 1,
+    abt_errno = ABTI_task_create(p_local, p_pool, p_sched->run, arg, p_sched, 1,
                                  &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -131,6 +135,7 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                                void *arg, ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_task *p_newtask;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
@@ -139,8 +144,8 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
     /* TODO: need to consider the access type of target pool */
     ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_xstream);
     int refcount = (newtask != NULL) ? 1 : 0;
-    abt_errno = ABTI_task_create(p_pool, task_func, arg, NULL, refcount,
-                                 &p_newtask);
+    abt_errno = ABTI_task_create(p_local, p_pool, task_func, arg, NULL,
+                                 refcount, &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -178,6 +183,7 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
     ABTI_task *p_task = ABTI_task_get_ptr(*task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
@@ -185,7 +191,7 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_task_revive(p_pool, task_func, arg, p_task);
+    abt_errno = ABTI_task_revive(p_local, p_pool, task_func, arg, p_task);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -221,16 +227,16 @@ int ABT_task_free(ABT_task *task)
     while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state)
            != ABT_TASK_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+        if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
             ABTD_atomic_pause();
             continue;
         }
 #endif
-        ABTI_thread_yield(p_local->p_thread);
+        ABTI_thread_yield(&p_local, p_local->p_thread);
     }
 
     /* Free the ABTI_task structure */
-    ABTI_task_free(p_task);
+    ABTI_task_free(p_local, p_task);
 
     /* Return value */
     *task = ABT_TASK_NULL;
@@ -267,12 +273,12 @@ int ABT_task_join(ABT_task task)
     while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state)
            != ABT_TASK_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+        if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
             ABTD_atomic_pause();
             continue;
         }
 #endif
-        ABTI_thread_yield(p_local->p_thread);
+        ABTI_thread_yield(&p_local, p_local->p_thread);
     }
 
   fn_exit:
@@ -730,8 +736,9 @@ int ABT_task_get_arg(ABT_task task, void **arg)
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-static int ABTI_task_create(ABTI_pool *p_pool, void (*task_func)(void *),
-                            void *arg, ABTI_sched *p_sched, int refcount,
+static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
+                            void (*task_func)(void *), void *arg,
+                            ABTI_sched *p_sched, int refcount,
                             ABTI_task **pp_newtask)
 {
     int abt_errno = ABT_SUCCESS;
@@ -740,7 +747,7 @@ static int ABTI_task_create(ABTI_pool *p_pool, void (*task_func)(void *),
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     /* Allocate a task object */
-    p_newtask = ABTI_mem_alloc_task();
+    p_newtask = ABTI_mem_alloc_task(p_local);
 
     p_newtask->p_xstream  = NULL;
     p_newtask->state      = ABT_TASK_STATE_READY;
@@ -768,9 +775,10 @@ static int ABTI_task_create(ABTI_pool *p_pool, void (*task_func)(void *),
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     ABTI_pool_push(p_pool, p_newtask->unit);
 #else
-    abt_errno = ABTI_pool_push(p_pool, p_newtask->unit, ABTI_xstream_self());
+    abt_errno = ABTI_pool_push(p_pool, p_newtask->unit,
+                               ABTI_xstream_self(p_local));
     if (abt_errno != ABT_SUCCESS) {
-        ABTI_task_free(p_newtask);
+        ABTI_task_free(p_local, p_newtask);
         goto fn_fail;
     }
 #endif
@@ -786,8 +794,9 @@ static int ABTI_task_create(ABTI_pool *p_pool, void (*task_func)(void *),
     goto fn_exit;
 }
 
-static int ABTI_task_revive(ABTI_pool *p_pool, void (*task_func)(void *),
-                            void *arg, ABTI_task *p_task)
+static int ABTI_task_revive(ABTI_local *p_local, ABTI_pool *p_pool,
+                            void (*task_func)(void *), void *arg,
+                            ABTI_task *p_task)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -820,7 +829,8 @@ static int ABTI_task_revive(ABTI_pool *p_pool, void (*task_func)(void *),
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     ABTI_pool_push(p_pool, p_task->unit);
 #else
-    abt_errno = ABTI_pool_push(p_pool, p_task->unit, ABTI_xstream_self());
+    abt_errno = ABTI_pool_push(p_pool, p_task->unit,
+                               ABTI_xstream_self(p_local));
     ABTI_CHECK_ERROR(abt_errno);
 #endif
 
@@ -832,7 +842,7 @@ static int ABTI_task_revive(ABTI_pool *p_pool, void (*task_func)(void *),
     goto fn_exit;
 }
 
-void ABTI_task_free(ABTI_task *p_task)
+void ABTI_task_free(ABTI_local *p_local, ABTI_task *p_task)
 {
     LOG_EVENT("[T%" PRIu64 "] freed\n", ABTI_task_get_id(p_task));
 
@@ -844,7 +854,7 @@ void ABTI_task_free(ABTI_task *p_task)
         ABTI_ktable_free(p_task->p_keytable);
     }
 
-    ABTI_mem_free_task(p_task);
+    ABTI_mem_free_task(p_local, p_task);
 }
 
 void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)

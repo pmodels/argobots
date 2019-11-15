@@ -33,7 +33,6 @@
 int ABT_self_get_type(ABT_unit_type *type)
 {
     int abt_errno = ABT_SUCCESS;
-
     /* If Argobots has not been initialized, set type to ABT_UNIT_TYPE_EXIT. */
     if (gp_ABTI_global == NULL) {
         abt_errno = ABT_ERR_UNINITIALIZED;
@@ -41,7 +40,8 @@ int ABT_self_get_type(ABT_unit_type *type)
         goto fn_exit;
     }
 
-    *type = ABTI_self_get_type();
+    ABTI_local *p_local = lp_ABTI_local;
+    *type = ABTI_self_get_type(p_local);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (*type == ABT_UNIT_TYPE_EXT) {
@@ -252,7 +252,7 @@ int ABT_self_suspend(void)
     abt_errno = ABTI_thread_set_blocked(p_thread);
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_thread_suspend(p_thread);
+    ABTI_thread_suspend(&p_local, p_thread);
 
   fn_exit:
     return abt_errno;

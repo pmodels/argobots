@@ -35,10 +35,10 @@ void ABTI_log_print(FILE *fh, const char *format, ...)
 
 void ABTI_log_event(FILE *fh, const char *format, ...)
 {
-    ABTI_local *p_local = lp_ABTI_local;
     if (gp_ABTI_global->use_logging == ABT_FALSE) return;
+    ABTI_local *p_local = lp_ABTI_local;
 
-    ABT_unit_type type = ABTI_self_get_type();
+    ABT_unit_type type = ABTI_self_get_type(p_local);
     ABTI_xstream *p_xstream = NULL;
     ABTI_thread *p_thread = NULL;
     ABTI_task *p_task = NULL;

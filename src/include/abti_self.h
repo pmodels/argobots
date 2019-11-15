@@ -7,11 +7,10 @@
 #define SELF_H_INCLUDED
 
 static inline
-ABTI_unit *ABTI_self_get_unit(void)
+ABTI_unit *ABTI_self_get_unit(ABTI_local *p_local)
 {
     ABTI_ASSERT(gp_ABTI_global);
 
-    ABTI_local *p_local = lp_ABTI_local;
     ABTI_unit *p_unit;
     ABTI_thread *p_thread;
     ABTI_task *p_task;
@@ -40,11 +39,10 @@ ABTI_unit *ABTI_self_get_unit(void)
 }
 
 static inline
-ABT_unit_type ABTI_self_get_type(void)
+ABT_unit_type ABTI_self_get_type(ABTI_local *p_local)
 {
     ABTI_ASSERT(gp_ABTI_global);
 
-    ABTI_local *p_local = lp_ABTI_local;
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (p_local == NULL) {

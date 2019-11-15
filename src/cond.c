@@ -93,12 +93,13 @@ int ABT_cond_free(ABT_cond *cond)
 int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    abt_errno = ABTI_cond_wait(p_cond, p_mutex);
+    abt_errno = ABTI_cond_wait(&p_local, p_cond, p_mutex);
     if (abt_errno != ABT_SUCCESS)
         goto fn_fail;
 
@@ -225,7 +226,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     ABTI_spinlock_release(&p_cond->lock);
 
     /* Unlock the mutex that the calling ULT is holding */
-    ABTI_mutex_unlock(p_mutex);
+    ABTI_mutex_unlock(p_local, p_mutex);
 
     while (!ABTD_atomic_load_int32(&ext_signal)) {
         double cur_time = ABTI_get_wtime();
@@ -235,17 +236,17 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             break;
         }
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+        if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
             ABTD_atomic_pause();
             continue;
         }
 #endif
-        ABTI_thread_yield(p_local->p_thread);
+        ABTI_thread_yield(&p_local, p_local->p_thread);
     }
     ABTU_free(p_unit);
 
     /* Lock the mutex again */
-    ABTI_mutex_lock(p_mutex);
+    ABTI_mutex_lock(&p_local, p_mutex);
 
   fn_exit:
     return abt_errno;
@@ -273,6 +274,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
 int ABT_cond_signal(ABT_cond cond)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
@@ -301,7 +303,7 @@ int ABT_cond_signal(ABT_cond cond)
 
     if (p_unit->type == ABT_UNIT_TYPE_THREAD) {
         ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->handle.thread);
-        ABTI_thread_set_ready(p_thread);
+        ABTI_thread_set_ready(p_local, p_thread);
     } else {
         /* When the head is an external thread */
         int32_t *p_ext_signal = (int32_t *)p_unit->pool;
@@ -334,10 +336,11 @@ int ABT_cond_signal(ABT_cond cond)
 int ABT_cond_broadcast(ABT_cond cond)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
-    ABTI_cond_broadcast(p_cond);
+    ABTI_cond_broadcast(p_local, p_cond);
 
   fn_exit:
     return abt_errno;

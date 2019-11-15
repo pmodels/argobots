@@ -667,9 +667,8 @@ void ABTI_event_set_num_xstreams(int num_xstreams)
     }
 }
 
-ABT_bool ABTI_event_check_power(void)
+ABT_bool ABTI_event_check_power(ABTI_local *p_local)
 {
-    ABTI_local *p_local = lp_ABTI_local;
     ABT_bool stop_xstream = ABT_FALSE;
     int rank, n, ret;
     char recv_buf[ABTI_MSG_BUF_LEN];
@@ -966,9 +965,8 @@ void ABTI_event_inc_unit_cnt(ABTI_xstream *p_xstream, ABT_unit_type type)
     }
 }
 
-void ABTI_event_publish_info(void)
+void ABTI_event_publish_info(ABTI_local *p_local)
 {
-    ABTI_local *p_local = lp_ABTI_local;
     ABTI_xstream *p_xstream;
     int rank, i, ret;
     double cur_time, elapsed_time;

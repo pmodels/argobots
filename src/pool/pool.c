@@ -269,8 +269,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     ABTI_pool_push(p_pool, unit);
 #else
     /* Save the producer ES information in the pool */
-    ABTI_xstream *p_xstream = ABTI_xstream_self();
-    abt_errno = ABTI_pool_push(p_pool, unit, p_xstream);
+    abt_errno = ABTI_pool_push(p_pool, unit, ABTI_xstream_self(lp_ABTI_local));
     ABTI_CHECK_ERROR(abt_errno);
 #endif
 
@@ -433,6 +432,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     return ABT_ERR_FEATURE_NA;
 #else
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -484,10 +484,10 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     p_sched->used = ABTI_SCHED_IN_POOL;
 
     if (p_sched->type == ABT_SCHED_TYPE_ULT) {
-        abt_errno = ABTI_thread_create_sched(p_pool, p_sched);
+        abt_errno = ABTI_thread_create_sched(p_local, p_pool, p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else if (p_sched->type == ABT_SCHED_TYPE_TASK){
-        abt_errno = ABTI_task_create_sched(p_pool, p_sched);
+        abt_errno = ABTI_task_create_sched(p_local, p_pool, p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
         ABTI_CHECK_TRUE(0, ABT_ERR_SCHED);

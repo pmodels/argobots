@@ -138,14 +138,14 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t stacksize,
 }
 
 static inline
-ABTI_thread *ABTI_mem_alloc_thread(ABTI_thread_attr *p_attr)
+ABTI_thread *ABTI_mem_alloc_thread(ABTI_local *p_local,
+                                   ABTI_thread_attr *p_attr)
 {
     /* Basic idea: allocate a memory for stack and use the first some memory as
      * ABTI_stack_header and ABTI_thread. So, the effective stack area is
      * reduced as much as the size of ABTI_stack_header and ABTI_thread. */
 
     size_t stacksize, def_stacksize, actual_stacksize;
-    ABTI_local *p_local = lp_ABTI_local;
     char *p_blk = NULL;
     ABTI_thread *p_thread;
     ABTI_stack_header *p_sh;
@@ -236,9 +236,8 @@ ABTI_thread *ABTI_mem_alloc_thread(ABTI_thread_attr *p_attr)
 }
 
 static inline
-void ABTI_mem_free_thread(ABTI_thread *p_thread)
+void ABTI_mem_free_thread(ABTI_local *p_local, ABTI_thread *p_thread)
 {
-    ABTI_local *p_local = lp_ABTI_local;
     ABTI_stack_header *p_sh;
     ABTI_VALGRIND_UNREGISTER_STACK(p_thread->attr.p_stack);
 
@@ -267,10 +266,9 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
 }
 
 static inline
-ABTI_task *ABTI_mem_alloc_task(void)
+ABTI_task *ABTI_mem_alloc_task(ABTI_local *p_local)
 {
     ABTI_task *p_task = NULL;
-    ABTI_local *p_local = lp_ABTI_local;
     const size_t blk_size = sizeof(ABTI_blk_header) + sizeof(ABTI_task);
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
@@ -324,9 +322,8 @@ ABTI_task *ABTI_mem_alloc_task(void)
 }
 
 static inline
-void ABTI_mem_free_task(ABTI_task *p_task)
+void ABTI_mem_free_task(ABTI_local *p_local, ABTI_task *p_task)
 {
-    ABTI_local *p_local = lp_ABTI_local;
     ABTI_blk_header *p_head;
     ABTI_page_header *p_ph;
 

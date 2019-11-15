@@ -188,7 +188,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             /* Suspend the current ULT */
-            ABTI_thread_suspend(p_thread);
+            ABTI_thread_suspend(&p_local, p_thread);
         } else {
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
@@ -200,7 +200,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
         for (i = 0; i < p_barrier->num_waiters - 1; i++) {
             ABTI_thread *p_thread = p_barrier->waiters[i];
             if (p_barrier->waiter_type[i] == ABT_UNIT_TYPE_THREAD) {
-                ABTI_thread_set_ready(p_thread);
+                ABTI_thread_set_ready(p_local, p_thread);
             } else {
                 /* When p_cur is an external thread */
                 int32_t *p_ext_signal = (int32_t *)p_thread;

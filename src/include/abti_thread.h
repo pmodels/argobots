@@ -139,11 +139,11 @@ void ABTI_thread_dynamic_promote_thread(ABTI_thread *p_thread)
 #endif
 
 static inline
-void ABTI_thread_context_switch_thread_to_thread_internal(ABTI_thread *p_old,
+void ABTI_thread_context_switch_thread_to_thread_internal(ABTI_local *p_local,
+                                                          ABTI_thread *p_old,
                                                           ABTI_thread *p_new,
                                                           ABT_bool is_finish)
 {
-    ABTI_local *p_local = lp_ABTI_local;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(!p_old->is_sched && !p_new->is_sched);
 #endif
@@ -191,11 +191,11 @@ void ABTI_thread_context_switch_thread_to_sched_internal(ABTI_thread *p_old,
 }
 
 static inline
-void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
+void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_local *p_local,
+                                                         ABTI_sched *p_old,
                                                          ABTI_thread *p_new,
                                                          ABT_bool is_finish)
 {
-    ABTI_local *p_local = lp_ABTI_local;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(!p_new->is_sched);
 #endif
@@ -232,7 +232,7 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
                 ABTI_thread *p_joiner = (ABTI_thread *)p_link;
                 /* The scheduler may not use a bypass mechanism, so just makes
                  * p_joiner ready. */
-                ABTI_thread_set_ready(p_joiner);
+                ABTI_thread_set_ready(p_local, p_joiner);
 
                 /* We don't need to use the atomic OR operation here because
                  * the ULT will be terminated regardless of other requests. */
@@ -249,7 +249,7 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
                         p_link = (ABTD_thread_context *)
                             ABTD_atomic_load_ptr((void **)&p_fctx->p_link);
                     } while (!p_link);
-                    ABTI_thread_set_ready((ABTI_thread *)p_link);
+                    ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);
                 }
             }
 #else
@@ -287,41 +287,51 @@ void ABTI_thread_context_switch_sched_to_sched_internal(ABTI_sched *p_old,
 }
 
 static inline
-void ABTI_thread_context_switch_thread_to_thread(ABTI_thread *p_old,
+void ABTI_thread_context_switch_thread_to_thread(ABTI_local **pp_local,
+                                                 ABTI_thread *p_old,
                                                  ABTI_thread *p_new)
 {
-    ABTI_thread_context_switch_thread_to_thread_internal(p_old, p_new,
+    ABTI_thread_context_switch_thread_to_thread_internal(*pp_local,
+                                                         p_old, p_new,
                                                          ABT_FALSE);
+    *pp_local = lp_ABTI_local;
 }
 
 static inline
-void ABTI_thread_context_switch_thread_to_sched(ABTI_thread *p_old,
+void ABTI_thread_context_switch_thread_to_sched(ABTI_local **pp_local,
+                                                ABTI_thread *p_old,
                                                 ABTI_sched *p_new)
 {
     ABTI_thread_context_switch_thread_to_sched_internal(p_old, p_new,
                                                         ABT_FALSE);
+    *pp_local = lp_ABTI_local;
 }
 
 static inline
-void ABTI_thread_context_switch_sched_to_thread(ABTI_sched *p_old,
+void ABTI_thread_context_switch_sched_to_thread(ABTI_local **pp_local,
+                                                ABTI_sched *p_old,
                                                 ABTI_thread *p_new)
 {
-    ABTI_thread_context_switch_sched_to_thread_internal(p_old, p_new,
+    ABTI_thread_context_switch_sched_to_thread_internal(*pp_local, p_old, p_new,
                                                         ABT_FALSE);
+    *pp_local = lp_ABTI_local;
 }
 
 static inline
-void ABTI_thread_context_switch_sched_to_sched(ABTI_sched *p_old,
+void ABTI_thread_context_switch_sched_to_sched(ABTI_local **pp_local,
+                                               ABTI_sched *p_old,
                                                ABTI_sched *p_new)
 {
     ABTI_thread_context_switch_sched_to_sched_internal(p_old, p_new, ABT_FALSE);
+    *pp_local = lp_ABTI_local;
 }
 
 static inline
-void ABTI_thread_finish_context_thread_to_thread(ABTI_thread *p_old,
+void ABTI_thread_finish_context_thread_to_thread(ABTI_local *p_local,
+                                                 ABTI_thread *p_old,
                                                  ABTI_thread *p_new)
 {
-    ABTI_thread_context_switch_thread_to_thread_internal(p_old, p_new,
+    ABTI_thread_context_switch_thread_to_thread_internal(p_local, p_old, p_new,
                                                          ABT_TRUE);
 }
 
@@ -333,10 +343,12 @@ void ABTI_thread_finish_context_thread_to_sched(ABTI_thread *p_old,
 }
 
 static inline
-void ABTI_thread_finish_context_sched_to_thread(ABTI_sched *p_old,
+void ABTI_thread_finish_context_sched_to_thread(ABTI_local *p_local,
+                                                ABTI_sched *p_old,
                                                 ABTI_thread *p_new)
 {
-    ABTI_thread_context_switch_sched_to_thread_internal(p_old, p_new, ABT_TRUE);
+    ABTI_thread_context_switch_sched_to_thread_internal(p_local, p_old, p_new,
+                                                        ABT_TRUE);
 }
 
 static inline
@@ -378,7 +390,7 @@ ABTI_thread_req_arg *ABTI_thread_get_req_arg(ABTI_thread *p_thread,
 #endif /* ABT_CONFIG_DISABLE_MIGRATION */
 
 static inline
-void ABTI_thread_yield(ABTI_thread *p_thread)
+void ABTI_thread_yield(ABTI_local **pp_local, ABTI_thread *p_thread)
 {
     ABTI_sched *p_sched;
 
@@ -390,7 +402,7 @@ void ABTI_thread_yield(ABTI_thread *p_thread)
 
     /* Switch to the top scheduler */
     p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
-    ABTI_thread_context_switch_thread_to_sched(p_thread, p_sched);
+    ABTI_thread_context_switch_thread_to_sched(pp_local, p_thread, p_sched);
 
     /* Back to the original thread */
     LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",

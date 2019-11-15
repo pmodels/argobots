@@ -111,7 +111,7 @@ static void sched_run(ABT_sched sched)
             /* Pop one work unit */
             ABT_unit unit = ABTI_pool_pop(p_pool);
             if (unit != ABT_UNIT_NULL) {
-                ABTI_xstream_run_unit(p_xstream, unit, p_pool);
+                ABTI_xstream_run_unit(&p_local, p_xstream, unit, p_pool);
                 run_cnt_nowait++;
                 break;
             }
@@ -126,7 +126,7 @@ static void sched_run(ABT_sched sched)
             ABT_unit unit = ABTI_pool_pop_timedwait(
                 ABTI_pool_get_ptr(pools[0]), abstime);
             if (unit != ABT_UNIT_NULL) {
-                ABTI_xstream_run_unit(p_xstream, unit,
+                ABTI_xstream_run_unit(&p_local, p_xstream, unit,
                     ABTI_pool_get_ptr(pools[0]));
                 break;
             }
@@ -140,7 +140,8 @@ static void sched_run(ABT_sched sched)
          */
         if (!run_cnt_nowait || (++work_count >= event_freq)) {
             ABTI_xstream_check_events(p_xstream, sched);
-            ABT_bool stop = ABTI_sched_has_to_stop(p_sched, p_xstream);
+            ABT_bool stop = ABTI_sched_has_to_stop(&p_local, p_sched,
+                                                   p_xstream);
             if (stop == ABT_TRUE)
                 break;
             work_count = 0;
