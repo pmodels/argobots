@@ -893,9 +893,8 @@ int ABT_xstream_get_main_sched(ABT_xstream xstream, ABT_sched *sched)
  * @ingroup ES
  * @brief   Get the pools of the main scheduler of the target ES.
  *
- * This function is a convenient function that calls
- * \c ABT_xstream_get_main_sched() to get the main scheduler, and then
- * \c ABT_sched_get_pools() to get retrieve the associated pools.
+ * This function is a convenient function that retrieves the associated pools of
+ * the main scheduler.
  *
  * @param[in]  xstream   handle to the target ES
  * @param[in]  max_pools maximum number of pools
@@ -907,12 +906,10 @@ int ABT_xstream_get_main_pools(ABT_xstream xstream, int max_pools,
                                ABT_pool *pools)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_sched sched;
 
-    abt_errno = ABT_xstream_get_main_sched(xstream, &sched);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+    ABTI_sched *p_sched = p_xstream->p_main_sched;
     max_pools = p_sched->num_pools > max_pools ? max_pools : p_sched->num_pools;
     memcpy(pools, p_sched->pools, sizeof(ABT_pool) * max_pools);
 
