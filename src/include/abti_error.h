@@ -31,7 +31,7 @@
 #define ABTI_CHECK_ERROR(abt_errno)             \
     if (abt_errno != ABT_SUCCESS) goto fn_fail
 #else
-#define ABTI_CHECK_ERROR(abt_errno)
+#define ABTI_CHECK_ERROR(abt_errno) do { (void)(abt_errno); } while (0)
 #endif
 
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
