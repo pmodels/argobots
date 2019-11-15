@@ -16,14 +16,15 @@ ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local = NULL;
 int ABTI_local_init(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_TRUE(lp_ABTI_local == NULL, ABT_ERR_OTHER);
+    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_CHECK_TRUE(p_local == NULL, ABT_ERR_OTHER);
 
-    lp_ABTI_local = (ABTI_local *)ABTU_malloc(sizeof(ABTI_local));
-    lp_ABTI_local->p_xstream = NULL;
-    lp_ABTI_local->p_thread = NULL;
-    lp_ABTI_local->p_task = NULL;
+    p_local = (ABTI_local *)ABTU_malloc(sizeof(ABTI_local));
+    p_local->p_xstream = NULL;
+    p_local->p_thread = NULL;
+    p_local->p_task = NULL;
 
-    ABTI_mem_init_local(lp_ABTI_local);
+    ABTI_mem_init_local(p_local);
 
     ABTI_LOG_INIT();
 
@@ -38,10 +39,11 @@ int ABTI_local_init(void)
 int ABTI_local_finalize(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_OTHER);
-    ABTI_mem_finalize_local(lp_ABTI_local);
-    ABTU_free(lp_ABTI_local);
-    lp_ABTI_local = NULL;
+    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_CHECK_TRUE(p_local != NULL, ABT_ERR_OTHER);
+    ABTI_mem_finalize_local(p_local);
+    ABTU_free(p_local);
+    p_local = NULL;
 
     ABTI_LOG_FINALIZE();
 

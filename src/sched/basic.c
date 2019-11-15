@@ -90,6 +90,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
 static void sched_run(ABT_sched sched)
 {
+    ABTI_local *p_local = lp_ABTI_local;
     uint32_t work_count = 0;
     sched_data *p_data;
     uint32_t event_freq;
@@ -98,7 +99,7 @@ static void sched_run(ABT_sched sched)
     int i;
     CNT_DECL(run_cnt);
 
-    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
+    ABTI_xstream *p_xstream = p_local->p_xstream;
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_ASSERT(p_sched);
 

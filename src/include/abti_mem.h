@@ -238,7 +238,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABTI_thread_attr *p_attr)
 static inline
 void ABTI_mem_free_thread(ABTI_thread *p_thread)
 {
-    ABTI_local *p_local;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_stack_header *p_sh;
     ABTI_VALGRIND_UNREGISTER_STACK(p_thread->attr.p_stack);
 
@@ -246,7 +246,6 @@ void ABTI_mem_free_thread(ABTI_thread *p_thread)
         ABTU_free((void *)p_thread);
         return;
     }
-    p_local = lp_ABTI_local;
     p_sh = (ABTI_stack_header *)((char *)p_thread + sizeof(ABTI_thread));
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
@@ -327,7 +326,7 @@ ABTI_task *ABTI_mem_alloc_task(void)
 static inline
 void ABTI_mem_free_task(ABTI_task *p_task)
 {
-    ABTI_local *p_local;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_blk_header *p_head;
     ABTI_page_header *p_ph;
 
@@ -339,7 +338,7 @@ void ABTI_mem_free_task(ABTI_task *p_task)
         /* This was allocated by an external thread. */
         ABTU_free(p_head);
         return;
-    } else if (!lp_ABTI_local) {
+    } else if (!p_local) {
         /* This task has been allocated internally,
          * but now is being freed by an external thread. */
         ABTI_mem_free_remote(p_ph, p_head);
@@ -347,7 +346,6 @@ void ABTI_mem_free_task(ABTI_task *p_task)
     }
 #endif
 
-    p_local = lp_ABTI_local;
     if (p_ph->p_owner == p_local->p_xstream) {
         p_head->p_next = p_ph->p_head;
         p_ph->p_head = p_head;

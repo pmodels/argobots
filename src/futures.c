@@ -130,6 +130,7 @@ int ABT_future_free(ABT_future *future)
 int ABT_future_wait(ABT_future future)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -140,8 +141,8 @@ int ABT_future_wait(ABT_future future)
         ABT_unit_type type;
         int32_t ext_signal = 0;
 
-        if (lp_ABTI_local != NULL) {
-            p_current = lp_ABTI_local->p_thread;
+        if (p_local != NULL) {
+            p_current = p_local->p_thread;
             ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_FUTURE);
 
             type = ABT_UNIT_TYPE_THREAD;

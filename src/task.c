@@ -212,6 +212,7 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
 int ABT_task_free(ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABT_task h_task = *task;
     ABTI_task *p_task = ABTI_task_get_ptr(h_task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
@@ -225,7 +226,7 @@ int ABT_task_free(ABT_task *task)
             continue;
         }
 #endif
-        ABTI_thread_yield(lp_ABTI_local->p_thread);
+        ABTI_thread_yield(p_local->p_thread);
     }
 
     /* Free the ABTI_task structure */
@@ -257,6 +258,7 @@ int ABT_task_free(ABT_task *task)
 int ABT_task_join(ABT_task task)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
@@ -270,7 +272,7 @@ int ABT_task_join(ABT_task task)
             continue;
         }
 #endif
-        ABTI_thread_yield(lp_ABTI_local->p_thread);
+        ABTI_thread_yield(p_local->p_thread);
     }
 
   fn_exit:
@@ -327,6 +329,7 @@ int ABT_task_cancel(ABT_task task)
 int ABT_task_self(ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
@@ -337,14 +340,14 @@ int ABT_task_self(ABT_task *task)
         *task = ABT_TASK_NULL;
         return abt_errno;
     }
-    if (lp_ABTI_local == NULL) {
+    if (p_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *task = ABT_TASK_NULL;
         return abt_errno;
     }
 #endif
 
-    ABTI_task *p_task = lp_ABTI_local->p_task;
+    ABTI_task *p_task = p_local->p_task;
     if (p_task != NULL) {
         *task = ABTI_task_get_handle(p_task);
     } else {
@@ -371,6 +374,7 @@ int ABT_task_self(ABT_task *task)
 int ABT_task_self_id(uint64_t *id)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
@@ -380,13 +384,13 @@ int ABT_task_self_id(uint64_t *id)
         abt_errno = ABT_ERR_UNINITIALIZED;
         return abt_errno;
     }
-    if (lp_ABTI_local == NULL) {
+    if (p_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         return abt_errno;
     }
 #endif
 
-    ABTI_task *p_task = lp_ABTI_local->p_task;
+    ABTI_task *p_task = p_local->p_task;
     if (p_task != NULL) {
         *id = ABTI_task_get_id(p_task);
     } else {

@@ -281,16 +281,17 @@ int ABT_sched_exit(ABT_sched sched)
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
     *stop = ABT_FALSE;
 
     /* When this routine is called by an external thread, e.g., pthread */
-    if (lp_ABTI_local == NULL) {
+    if (p_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
+    ABTI_xstream *p_xstream = p_local->p_xstream;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
@@ -502,11 +503,12 @@ size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
  * between different schedulers associated with different ESs. */
 size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched)
 {
+    ABTI_local *p_local = lp_ABTI_local;
     size_t pool_size = 0;
     int p;
 
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
+    ABTI_xstream *p_xstream = p_local->p_xstream;
 #endif
 
     for (p = 0; p < p_sched->num_pools; p++) {

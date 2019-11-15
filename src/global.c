@@ -90,13 +90,14 @@ int ABT_init(int argc, char **argv)
 
     /* Init the ES local data */
     abt_errno = ABTI_local_init();
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_local_init");
 
     /* Create the primary ES */
     ABTI_xstream *p_newxstream;
     abt_errno = ABTI_xstream_create_primary(&p_newxstream);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_create_primary");
-    lp_ABTI_local->p_xstream = p_newxstream;
+    p_local->p_xstream = p_newxstream;
 
     /* Create the primary ULT, i.e., the main thread */
     ABTI_thread *p_main_thread;
@@ -106,7 +107,7 @@ int ABT_init(int argc, char **argv)
     p_main_thread->p_last_xstream = p_newxstream;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
     gp_ABTI_global->p_thread_main = p_main_thread;
-    lp_ABTI_local->p_thread = p_main_thread;
+    p_local->p_thread = p_main_thread;
 
     /* Start the primary ES */
     abt_errno = ABTI_xstream_start_primary(p_newxstream, p_main_thread);
@@ -146,6 +147,7 @@ int ABT_init(int argc, char **argv)
 int ABT_finalize(void)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
     /* First, take a global lock protecting the initialization/finalization
      * process. Don't go to fn_exit before taking a lock */
@@ -161,14 +163,14 @@ int ABT_finalize(void)
         goto fn_exit;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(p_local != NULL, ABT_ERR_INV_XSTREAM);
 
-    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
+    ABTI_xstream *p_xstream = p_local->p_xstream;
     ABTI_CHECK_TRUE_MSG(p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY,
                         ABT_ERR_INV_XSTREAM,
                         "ABT_finalize must be called by the primary ES.");
 
-    ABTI_thread *p_thread = lp_ABTI_local->p_thread;
+    ABTI_thread *p_thread = p_local->p_thread;
     ABTI_CHECK_TRUE_MSG(p_thread->type == ABTI_THREAD_TYPE_MAIN,
                         ABT_ERR_INV_THREAD,
                         "ABT_finalize must be called by the primary ULT.");

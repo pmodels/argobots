@@ -282,15 +282,16 @@ int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
 int ABT_thread_free(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABT_thread h_thread = *thread;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(h_thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    /* We first need to check whether lp_ABTI_local is NULL because external
+    /* We first need to check whether p_local is NULL because external
      * threads might call this routine. */
-    ABTI_CHECK_TRUE_MSG(lp_ABTI_local == NULL ||
-                          p_thread != lp_ABTI_local->p_thread,
+    ABTI_CHECK_TRUE_MSG(p_local == NULL ||
+                          p_thread != p_local->p_thread,
                         ABT_ERR_INV_THREAD,
                         "The current thread cannot be freed.");
 
@@ -411,6 +412,7 @@ int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
 int ABT_thread_exit(void)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -419,12 +421,12 @@ int ABT_thread_exit(void)
         abt_errno = ABT_ERR_UNINITIALIZED;
         goto fn_exit;
     }
-    if (lp_ABTI_local == NULL) {
+    if (p_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
 
-    ABTI_thread *p_thread = lp_ABTI_local->p_thread;
+    ABTI_thread *p_thread = p_local->p_thread;
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Set the exit request */
@@ -494,6 +496,7 @@ int ABT_thread_cancel(ABT_thread thread)
 int ABT_thread_self(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
@@ -504,14 +507,14 @@ int ABT_thread_self(ABT_thread *thread)
         *thread = ABT_THREAD_NULL;
         return abt_errno;
     }
-    if (lp_ABTI_local == NULL) {
+    if (p_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *thread = ABT_THREAD_NULL;
         return abt_errno;
     }
 #endif
 
-    ABTI_thread *p_thread = lp_ABTI_local->p_thread;
+    ABTI_thread *p_thread = p_local->p_thread;
     if (p_thread != NULL) {
         *thread = ABTI_thread_get_handle(p_thread);
     } else {
@@ -538,6 +541,7 @@ int ABT_thread_self(ABT_thread *thread)
 int ABT_thread_self_id(ABT_thread_id *id)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
@@ -547,13 +551,13 @@ int ABT_thread_self_id(ABT_thread_id *id)
         abt_errno = ABT_ERR_UNINITIALIZED;
         return abt_errno;
     }
-    if (lp_ABTI_local == NULL) {
+    if (p_local == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         return abt_errno;
     }
 #endif
 
-    ABTI_thread *p_thread = lp_ABTI_local->p_thread;
+    ABTI_thread *p_thread = p_local->p_thread;
     if (p_thread != NULL) {
         *id = ABTI_thread_get_id(p_thread);
     } else {
@@ -703,19 +707,20 @@ int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
 int ABT_thread_yield_to(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_thread *p_cur_thread = NULL;
 
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
-    p_cur_thread = lp_ABTI_local->p_thread;
+    p_cur_thread = p_local->p_thread;
 #else
     /* If this routine is called by non-ULT, just return. */
-    if (lp_ABTI_local != NULL) {
-        p_cur_thread = lp_ABTI_local->p_thread;
+    if (p_local != NULL) {
+        p_cur_thread = p_local->p_thread;
     }
     if (p_cur_thread == NULL) goto fn_exit;
 #endif
 
-    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
+    ABTI_xstream *p_xstream = p_local->p_xstream;
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
     LOG_EVENT("[U%" PRIu64 ":E%d] yield_to -> U%" PRIu64 "\n",
@@ -796,19 +801,20 @@ int ABT_thread_yield_to(ABT_thread thread)
 int ABT_thread_yield(void)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_thread *p_thread = NULL;
 
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
-    p_thread = lp_ABTI_local->p_thread;
+    p_thread = p_local->p_thread;
 #else
     /* If this routine is called by non-ULT, just return. */
-    if (lp_ABTI_local != NULL) {
-        p_thread = lp_ABTI_local->p_thread;
+    if (p_local != NULL) {
+        p_thread = p_local->p_thread;
     }
     if (p_thread == NULL) goto fn_exit;
 #endif
 
-    ABTI_CHECK_TRUE(p_thread->p_last_xstream == lp_ABTI_local->p_xstream,
+    ABTI_CHECK_TRUE(p_thread->p_last_xstream == p_local->p_xstream,
                     ABT_ERR_THREAD);
 
     ABTI_thread_yield(p_thread);
@@ -1557,6 +1563,7 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
     /* checking for cases when migration is not allowed */
     ABTI_CHECK_TRUE(ABTI_pool_accept_migration(p_pool, p_thread->p_pool)
@@ -1578,7 +1585,7 @@ int ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool)
     ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
-    if (lp_ABTI_local != NULL && p_thread == lp_ABTI_local->p_thread) {
+    if (p_local != NULL && p_thread == p_local->p_thread) {
         ABTI_thread_yield(p_thread);
     }
     goto fn_exit;
@@ -1807,11 +1814,12 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
 /* NOTE: This routine should be called after ABTI_thread_set_blocked. */
 void ABTI_thread_suspend(ABTI_thread *p_thread)
 {
-    ABTI_ASSERT(p_thread == lp_ABTI_local->p_thread);
-    ABTI_ASSERT(p_thread->p_last_xstream == lp_ABTI_local->p_xstream);
+    ABTI_local *p_local = lp_ABTI_local;
+    ABTI_ASSERT(p_thread == p_local->p_thread);
+    ABTI_ASSERT(p_thread->p_last_xstream == p_local->p_xstream);
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
-    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
+    ABTI_xstream *p_xstream = p_local->p_xstream;
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
     LOG_EVENT("[U%" PRIu64 ":E%d] suspended\n",
               ABTI_thread_get_id(p_thread), p_xstream->rank);
@@ -2116,8 +2124,9 @@ ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread)
 
 ABT_thread_id ABTI_thread_self_id(void)
 {
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_thread *p_self = NULL;
-    if (lp_ABTI_local) p_self = lp_ABTI_local->p_thread;
+    if (p_local) p_self = p_local->p_thread;
     return ABTI_thread_get_id(p_self);
 }
 
@@ -2134,8 +2143,9 @@ int ABTI_thread_get_xstream_rank(ABTI_thread *p_thread)
 
 int ABTI_thread_self_xstream_rank(void)
 {
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_thread *p_self = NULL;
-    if (lp_ABTI_local) p_self = lp_ABTI_local->p_thread;
+    if (p_local) p_self = p_local->p_thread;
     return ABTI_thread_get_xstream_rank(p_self);
 }
 
@@ -2208,6 +2218,7 @@ static int ABTI_thread_revive(ABTI_pool *p_pool, void(*thread_func)(void *),
 static inline int ABTI_thread_join(ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
 
     if (p_thread->state == ABT_THREAD_STATE_TERMINATED) return abt_errno;
 
@@ -2221,10 +2232,10 @@ static inline int ABTI_thread_join(ABTI_thread *p_thread)
     if (type != ABT_UNIT_TYPE_THREAD) goto busywait_based;
 #endif
 
-    ABTI_CHECK_TRUE_MSG(p_thread != lp_ABTI_local->p_thread, ABT_ERR_INV_THREAD,
+    ABTI_CHECK_TRUE_MSG(p_thread != p_local->p_thread, ABT_ERR_INV_THREAD,
                         "The target ULT should be different.");
 
-    ABTI_thread *p_self = lp_ABTI_local->p_thread;
+    ABTI_thread *p_self = p_local->p_thread;
     ABT_pool_access access = p_self->p_pool->access;
 
     if ((p_self->p_pool == p_thread->p_pool) &&
@@ -2313,7 +2324,7 @@ static inline int ABTI_thread_join(ABTI_thread *p_thread)
   yield_based:
     while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state)
            != ABT_THREAD_STATE_TERMINATED) {
-        ABTI_thread_yield(lp_ABTI_local->p_thread);
+        ABTI_thread_yield(p_local->p_thread);
     }
     goto fn_exit;
 

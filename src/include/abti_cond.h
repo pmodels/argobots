@@ -68,13 +68,14 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 {
     int abt_errno = ABT_SUCCESS;
 
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_thread *p_thread;
     ABTI_unit *p_unit;
     ABT_unit_type type;
     int32_t ext_signal = 0;
 
-    if (lp_ABTI_local != NULL) {
-        p_thread = lp_ABTI_local->p_thread;
+    if (p_local != NULL) {
+        p_thread = p_local->p_thread;
         ABTI_CHECK_TRUE(p_thread != NULL, ABT_ERR_COND);
 
         type = ABT_UNIT_TYPE_THREAD;

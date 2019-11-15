@@ -105,6 +105,7 @@ int ABT_eventual_free(ABT_eventual *eventual)
 int ABT_eventual_wait(ABT_eventual eventual, void **value)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
@@ -115,8 +116,8 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         ABT_unit_type type;
         int32_t ext_signal = 0;
 
-        if (lp_ABTI_local != NULL) {
-            p_current = lp_ABTI_local->p_thread;
+        if (p_local != NULL) {
+            p_current = p_local->p_thread;
             ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_EVENTUAL);
 
             type = ABT_UNIT_TYPE_THREAD;

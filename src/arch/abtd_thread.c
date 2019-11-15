@@ -44,6 +44,7 @@ void ABTD_thread_func_wrapper_sched(void *p_arg)
 void ABTD_thread_func_wrapper(int func_upper, int func_lower,
                               int arg_upper, int arg_lower)
 {
+    ABTI_local *p_local = lp_ABTI_local;
     void (*thread_func)(void *);
     void *p_arg;
     size_t ptr_size, int_size;
@@ -71,7 +72,7 @@ void ABTD_thread_func_wrapper(int func_upper, int func_lower,
     /* Now, the ULT has finished its job. Terminate the ULT.
      * We don't need to use the atomic operation here because the ULT will be
      * terminated regardless of other requests. */
-    ABTI_thread *p_thread = lp_ABTI_local->p_thread;
+    ABTI_thread *p_thread = p_local->p_thread;
     p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
 }
 #endif
@@ -190,9 +191,10 @@ static inline void ABTD_thread_terminate_sched(ABTI_thread *p_thread)
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
 void ABTD_thread_terminate_thread_no_arg()
 {
+    ABTI_local *p_local = lp_ABTI_local;
     /* This function is called by `return` in ABTD_thread_context_make_and_call,
      * so it cannot take the argument. We get the thread descriptor from TLS. */
-    ABTI_thread *p_thread = lp_ABTI_local->p_thread;
+    ABTI_thread *p_thread = p_local->p_thread;
     ABTD_thread_terminate_thread(p_thread);
 }
 #endif

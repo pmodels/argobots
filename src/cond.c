@@ -179,6 +179,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
                        const struct timespec *abstime)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
@@ -239,7 +240,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             continue;
         }
 #endif
-        ABTI_thread_yield(lp_ABTI_local->p_thread);
+        ABTI_thread_yield(p_local->p_thread);
     }
     ABTU_free(p_unit);
 

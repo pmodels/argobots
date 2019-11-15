@@ -55,9 +55,10 @@ void ABTI_xstream_unset_request(ABTI_xstream *p_xstream, uint32_t req)
 static inline
 ABTI_xstream *ABTI_xstream_self(void)
 {
+    ABTI_local *p_local = lp_ABTI_local;
     ABTI_xstream *p_xstream;
-    if (lp_ABTI_local != NULL) {
-        p_xstream = lp_ABTI_local->p_xstream;
+    if (p_local != NULL) {
+        p_xstream = p_local->p_xstream;
     } else {
         /* We allow external threads to call Argobots APIs. However, since it
          * is not trivial to identify them, we use ABTD_xstream_context to
