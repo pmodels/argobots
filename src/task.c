@@ -5,6 +5,8 @@
 
 #include "abti.h"
 
+static int ABTI_task_revive(ABTI_pool *p_pool, void (*task_func)(void *),
+                            void *arg, ABTI_task *p_task);
 static inline uint64_t ABTI_task_get_new_id(void);
 
 
@@ -100,13 +102,11 @@ int ABTI_task_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched)
     ABTI_task *p_newtask;
     ABT_task h_newtask;
 
-    /* If p_sched is reused, ABT_task_revive() can be used. */
+    void *arg = (void *)ABTI_sched_get_handle(p_sched);
+    /* If p_sched is reused, ABTI_task_revive() can be used. */
     if (p_sched->p_task) {
-        ABT_task h_task = ABTI_task_get_handle(p_sched->p_task);
-        ABT_pool h_pool = ABTI_pool_get_handle(p_pool);
-        ABT_sched h_sched = ABTI_sched_get_handle(p_sched);
-        abt_errno = ABT_task_revive(h_pool, p_sched->run, (void *)h_sched,
-                                    &h_task);
+        abt_errno = ABTI_task_revive(p_pool, p_sched->run, arg,
+                                     p_sched->p_task);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
@@ -238,40 +238,12 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
 
     ABTI_task *p_task = ABTI_task_get_ptr(*task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
-    ABTI_CHECK_TRUE(p_task->state == ABT_TASK_STATE_TERMINATED,
-                    ABT_ERR_INV_TASK);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    p_task->p_xstream  = NULL;
-    p_task->state      = ABT_TASK_STATE_READY;
-    p_task->request    = 0;
-    p_task->f_task     = task_func;
-    p_task->p_arg      = arg;
-    p_task->refcount   = 1;
-    p_task->p_keytable = NULL;
-
-    if (p_task->p_pool != p_pool) {
-        /* Free the unit for the old pool */
-        p_task->p_pool->u_free(&p_task->unit);
-
-        /* Set the new pool */
-        p_task->p_pool = p_pool;
-
-        /* Create a wrapper work unit */
-        p_task->unit = p_pool->u_create_from_task(*task);
-    }
-
-    LOG_EVENT("[T%" PRIu64 "] revived\n", ABTI_task_get_id(p_task));
-
-    /* Add this task to the scheduler's pool */
-#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    ABTI_pool_push(p_pool, p_task->unit);
-#else
-    abt_errno = ABTI_pool_push(p_pool, p_task->unit, ABTI_xstream_self());
+    abt_errno = ABTI_task_revive(p_pool, task_func, arg, p_task);
     ABTI_CHECK_ERROR(abt_errno);
-#endif
 
   fn_exit:
     return abt_errno;
@@ -810,6 +782,52 @@ int ABT_task_get_arg(ABT_task task, void **arg)
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
+
+static int ABTI_task_revive(ABTI_pool *p_pool, void (*task_func)(void *),
+                            void *arg, ABTI_task *p_task)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_CHECK_TRUE(p_task->state == ABT_TASK_STATE_TERMINATED,
+                    ABT_ERR_INV_TASK);
+
+    p_task->p_xstream  = NULL;
+    p_task->state      = ABT_TASK_STATE_READY;
+    p_task->request    = 0;
+    p_task->f_task     = task_func;
+    p_task->p_arg      = arg;
+    p_task->refcount   = 1;
+    p_task->p_keytable = NULL;
+
+    if (p_task->p_pool != p_pool) {
+        /* Free the unit for the old pool */
+        p_task->p_pool->u_free(&p_task->unit);
+
+        /* Set the new pool */
+        p_task->p_pool = p_pool;
+
+        /* Create a wrapper work unit */
+        ABT_task task = ABTI_task_get_handle(p_task);
+        p_task->unit = p_pool->u_create_from_task(task);
+    }
+
+    LOG_EVENT("[T%" PRIu64 "] revived\n", ABTI_task_get_id(p_task));
+
+    /* Add this task to the scheduler's pool */
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    ABTI_pool_push(p_pool, p_task->unit);
+#else
+    abt_errno = ABTI_pool_push(p_pool, p_task->unit, ABTI_xstream_self());
+    ABTI_CHECK_ERROR(abt_errno);
+#endif
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
 
 void ABTI_task_free(ABTI_task *p_task)
 {
