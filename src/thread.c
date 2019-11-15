@@ -1917,19 +1917,19 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         "%sreq_arg : %p\n"
         "%skeytable: %p\n"
         "%sattr    : %s\n",
-        prefix, p_thread,
+        prefix, (void *)p_thread,
         prefix, ABTI_thread_get_id(p_thread),
         prefix, type,
         prefix, state,
-        prefix, p_xstream, xstream_rank,
+        prefix, (void *)p_xstream, xstream_rank,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-        prefix, p_thread->is_sched,
+        prefix, (void *)p_thread->is_sched,
 #endif
-        prefix, p_thread->p_pool,
+        prefix, (void *)p_thread->p_pool,
         prefix, p_thread->refcount,
         prefix, p_thread->request,
-        prefix, p_thread->p_req_arg,
-        prefix, p_thread->p_keytable,
+        prefix, (void *)p_thread->p_req_arg,
+        prefix, (void *)p_thread->p_keytable,
         prefix, attr
     );
 

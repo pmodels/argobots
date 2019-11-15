@@ -244,10 +244,9 @@ void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent)
     char *prefix = ABTU_get_indent_str(indent);
     ABTD_thread_context *p_ctx = &p_thread->ctx;
 #if defined(ABT_CONFIG_USE_FCONTEXT)
-    fprintf(p_os, "%sfctx     : %p\n", prefix, p_ctx->fctx);
-    fprintf(p_os, "%sf_thread : %p\n", prefix, p_ctx->f_thread);
+    fprintf(p_os, "%sfctx     : %p\n", prefix, (void *)p_ctx->fctx);
     fprintf(p_os, "%sp_arg    : %p\n", prefix, p_ctx->p_arg);
-    fprintf(p_os, "%sp_link   : %p\n", prefix, p_ctx->p_link);
+    fprintf(p_os, "%sp_link   : %p\n", prefix, (void *)p_ctx->p_link);
 #else
     /* TODO: print information in more detail. */
     fprintf(p_os, "%suc_link     : %p\n", prefix, p_ctx->uc_link);

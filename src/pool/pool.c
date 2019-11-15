@@ -666,16 +666,16 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         "%snum_blocked   : %u\n"
         "%snum_migrations: %d\n"
         "%sdata          : %p\n",
-        prefix, p_pool,
+        prefix, (void *)p_pool,
         prefix, p_pool->id,
         prefix, access,
         prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
         prefix, p_pool->num_scheds,
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-        prefix, p_pool->consumer, p_pool->consumer ? p_pool->consumer->rank : 0,
+        prefix, (void *)p_pool->consumer, p_pool->consumer ? p_pool->consumer->rank : 0,
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-        prefix, p_pool->producer, p_pool->producer ? p_pool->producer->rank : 0,
+        prefix, (void *)p_pool->producer, p_pool->producer ? p_pool->producer->rank : 0,
 #endif
         prefix, ABTI_pool_get_size(p_pool),
         prefix, p_pool->num_blocked,

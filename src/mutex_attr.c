@@ -142,7 +142,7 @@ void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf)
         "]",
         p_attr->attrs,
         p_attr->nesting_cnt,
-        p_attr->p_owner
+        (void *)p_attr->p_owner
     );
 }
 

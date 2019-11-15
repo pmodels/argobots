@@ -917,7 +917,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
     pos = 2;
     for (i = 0; i < p_sched->num_pools; i++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
-        sprintf(&pools_str[pos], "%p ", p_pool);
+        sprintf(&pools_str[pos], "%p ", (void *)p_pool);
         pos = strlen(pools_str);
     }
     pools_str[pos] = ']';
@@ -938,7 +938,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
         "%ssize     : %zu\n"
         "%stot_size : %zu\n"
         "%sdata     : %p\n",
-        prefix, p_sched,
+        prefix, (void *)p_sched,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
         prefix, p_sched->id,
 #endif
