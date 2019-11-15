@@ -466,10 +466,10 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
             /* we need to ensure that the pool set of the scheduler does
              * not contain an ES private pool  */
             for (p = 0; p < p_sched->num_pools; p++) {
-                ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-                ABTI_CHECK_TRUE(p_pool->access != ABT_POOL_ACCESS_PRIV &&
-                                  p_pool->access != ABT_POOL_ACCESS_SPSC &&
-                                  p_pool->access != ABT_POOL_ACCESS_MPSC,
+                ABTI_pool *p_local_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+                ABTI_CHECK_TRUE(p_local_pool->access != ABT_POOL_ACCESS_PRIV &&
+                                p_local_pool->access != ABT_POOL_ACCESS_SPSC &&
+                                p_local_pool->access != ABT_POOL_ACCESS_MPSC,
                                 ABT_ERR_POOL);
             }
             break;
@@ -666,16 +666,16 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         "%snum_blocked   : %u\n"
         "%snum_migrations: %d\n"
         "%sdata          : %p\n",
-        prefix, p_pool,
+        prefix, (void *)p_pool,
         prefix, p_pool->id,
         prefix, access,
         prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
         prefix, p_pool->num_scheds,
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-        prefix, p_pool->consumer, p_pool->consumer ? p_pool->consumer->rank : 0,
+        prefix, (void *)p_pool->consumer, p_pool->consumer ? p_pool->consumer->rank : 0,
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-        prefix, p_pool->producer, p_pool->producer ? p_pool->producer->rank : 0,
+        prefix, (void *)p_pool->producer, p_pool->producer ? p_pool->producer->rank : 0,
 #endif
         prefix, ABTI_pool_get_size(p_pool),
         prefix, p_pool->num_blocked,
@@ -705,17 +705,18 @@ int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-            if (p_pool->producer && p_xstream != p_pool->producer) {
-                abt_errno = ABT_ERR_INV_POOL_ACCESS;
-                ABTI_CHECK_ERROR(abt_errno);
-            }
+            ABTI_CHECK_TRUE(!p_pool->producer || p_xstream == p_pool->producer,
+                            ABT_ERR_INV_POOL_ACCESS);
 #endif
+            ABTI_CHECK_TRUE(!p_pool->consumer || p_pool->consumer == p_xstream,
+                            ABT_ERR_INV_POOL_ACCESS);
+            p_pool->consumer = p_xstream;
+            break;
+
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_MPSC:
-            if (p_pool->consumer && p_pool->consumer != p_xstream) {
-                abt_errno = ABT_ERR_INV_POOL_ACCESS;
-                ABTI_CHECK_ERROR(abt_errno);
-            }
+            ABTI_CHECK_TRUE(!p_pool->consumer || p_pool->consumer == p_xstream,
+                            ABT_ERR_INV_POOL_ACCESS);
             /* NB: as we do not want to use a mutex, the function can be wrong
              * here */
             p_pool->consumer = p_xstream;
@@ -760,6 +761,11 @@ int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
             ABTI_CHECK_TRUE(!p_pool->consumer || p_xstream == p_pool->consumer,
                             ABT_ERR_INV_POOL_ACCESS);
 #endif
+            ABTI_CHECK_TRUE(!p_pool->producer || p_pool->producer == p_xstream,
+                            ABT_ERR_INV_POOL_ACCESS);
+            p_pool->producer = p_xstream;
+            break;
+
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_SPMC:
             ABTI_CHECK_TRUE(!p_pool->producer || p_pool->producer == p_xstream,

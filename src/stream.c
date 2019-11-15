@@ -1831,7 +1831,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
     scheds_str[1] = ' ';
     pos = 2;
     for (i = 0; i < p_xstream->num_scheds; i++) {
-        sprintf(&scheds_str[pos], "%p ", p_xstream->scheds[i]);
+        sprintf(&scheds_str[pos], "%p ", (void *)p_xstream->scheds[i]);
         pos = strlen(scheds_str);
     }
     scheds_str[pos] = ']';
@@ -1846,7 +1846,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
         "%snum_scheds: %d\n"
         "%sscheds    : %s\n"
         "%smain_sched: %p\n",
-        prefix, p_xstream,
+        prefix, (void *)p_xstream,
         prefix, p_xstream->rank,
         prefix, type,
         prefix, state,
@@ -1854,7 +1854,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
         prefix, p_xstream->max_scheds,
         prefix, p_xstream->num_scheds,
         prefix, scheds_str,
-        prefix, p_xstream->p_main_sched
+        prefix, (void *)p_xstream->p_main_sched
     );
     ABTU_free(scheds_str);
 

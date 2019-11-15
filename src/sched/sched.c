@@ -325,7 +325,7 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched, ABTI_xstream *p_xstream)
             /* We need to lock in case someone wants to migrate to this
              * scheduler */
             ABTI_spinlock_acquire(&p_xstream->sched_lock);
-            size_t size = ABTI_sched_get_effective_size(p_sched);
+            size = ABTI_sched_get_effective_size(p_sched);
             if (size == 0) {
                 p_sched->state = ABT_SCHED_STATE_TERMINATED;
                 stop = ABT_TRUE;
@@ -630,7 +630,6 @@ int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
     ABT_pool_access access;
     ABT_pool_kind kind = ABT_POOL_FIFO;
     ABT_bool automatic;
-    int p;
 
     /* We set the access to the default one */
     access = ABT_POOL_ACCESS_MPSC;
@@ -644,6 +643,7 @@ int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
         /* Copy of the contents of pools */
         ABT_pool *pool_list;
         pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
+        int p;
         for (p = 0; p < num_pools; p++) {
             if (pools[p] == ABT_POOL_NULL) {
                 ABTI_pool *p_newpool;
@@ -784,7 +784,6 @@ int ABTI_sched_free(ABTI_sched *p_sched)
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
         int32_t num_scheds = ABTI_pool_release(p_pool);
         if (p_pool->automatic == ABT_TRUE && num_scheds == 0) {
-            ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
             ABTI_CHECK_NULL_POOL_PTR(p_pool);
             ABTI_pool_free(p_pool);
         }
@@ -918,7 +917,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
     pos = 2;
     for (i = 0; i < p_sched->num_pools; i++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
-        sprintf(&pools_str[pos], "%p ", p_pool);
+        sprintf(&pools_str[pos], "%p ", (void *)p_pool);
         pos = strlen(pools_str);
     }
     pools_str[pos] = ']';
@@ -939,7 +938,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
         "%ssize     : %zu\n"
         "%stot_size : %zu\n"
         "%sdata     : %p\n",
-        prefix, p_sched,
+        prefix, (void *)p_sched,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
         prefix, p_sched->id,
 #endif

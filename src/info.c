@@ -297,7 +297,7 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
         fprintf(fp, "id        : %" PRIu64 "\n"
                     "ctx       : %p\n",
                     (uint64_t)thread_id,
-                    &p_thread->ctx);
+                    (void *)&p_thread->ctx);
         ABTD_thread_print_context(p_thread, fp, 2);
         fprintf(fp, "stack     : %p\n"
                     "stacksize : %" PRIu64 "\n",
@@ -354,7 +354,7 @@ int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
         abt_errno = ABT_ERR_POOL;
         goto fn_fail;
     }
-    fprintf(fp, "== pool (%p) ==\n", p_pool);
+    fprintf(fp, "== pool (%p) ==\n", (void *)p_pool);
     struct ABTI_info_print_unit_arg_t arg;
     arg.fp = fp;
     arg.pool = ABTI_pool_get_handle(pool);
@@ -513,14 +513,14 @@ void ABTI_info_check_print_all_thread_stacks(void)
         for (i = 0; i < gp_ABTI_global->num_xstreams; i++) {
             ABTI_xstream *p_xstream = gp_ABTI_global->p_xstreams[i];
             ABTI_sched *p_main_sched = p_xstream->p_main_sched;
-            fprintf(fp, "= xstream[%d] (%p) =\n", i, p_xstream);
-            fprintf(fp, "main_sched : %p\n", p_main_sched);
+            fprintf(fp, "= xstream[%d] (%p) =\n", i, (void *)p_xstream);
+            fprintf(fp, "main_sched : %p\n", (void *)p_main_sched);
             if (!p_main_sched)
                 continue;
             for (j = 0; j < p_main_sched->num_pools; j++) {
                 ABT_pool pool = p_main_sched->pools[j];
                 ABTI_ASSERT(pool != ABT_POOL_NULL);
-                fprintf(fp, "  pools[%d] : %p\n", j, pool);
+                fprintf(fp, "  pools[%d] : %p\n", j, (void *)ABTI_pool_get_ptr(pool));
                 ABTI_info_add_pool_set(pool, &pool_set);
             }
         }
@@ -533,6 +533,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
         }
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
+        ABTI_info_finalize_pool_set(&pool_set);
         /* Update print_stack_flag to 3. */
         ABTD_atomic_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_FINALIZE);
     } else {

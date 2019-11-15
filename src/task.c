@@ -876,25 +876,23 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
 #endif
         "%srefcount  : %u\n"
         "%srequest   : 0x%x\n"
-        "%sf_task    : %p\n"
         "%sp_arg     : %p\n"
         "%skeytable  : %p\n",
-        prefix, p_task,
+        prefix, (void *)p_task,
         prefix, ABTI_task_get_id(p_task),
         prefix, state,
-        prefix, p_task->p_xstream, xstream_rank,
+        prefix, (void *)p_task->p_xstream, xstream_rank,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-        prefix, p_task->is_sched,
+        prefix, (void *)p_task->is_sched,
 #endif
-        prefix, p_task->p_pool,
+        prefix, (void *)p_task->p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
 #endif
         prefix, p_task->refcount,
         prefix, p_task->request,
-        prefix, p_task->f_task,
         prefix, p_task->p_arg,
-        prefix, p_task->p_keytable
+        prefix, (void *)p_task->p_keytable
     );
 
   fn_exit:

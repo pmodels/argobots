@@ -13,8 +13,10 @@ static inline int ABTI_thread_create_internal(ABTI_pool *p_pool,
 static int ABTI_thread_revive(ABTI_pool *p_pool, void(*thread_func)(void *),
                               void *arg, ABTI_thread *p_thread);
 static inline int ABTI_thread_join(ABTI_thread *p_thread);
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
 static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
                                           ABTI_xstream *p_xstream);
+#endif
 static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
 static inline void ABTI_thread_free_internal(ABTI_thread *p_thread);
 static inline ABT_thread_id ABTI_thread_get_new_id(void);
@@ -1915,19 +1917,19 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         "%sreq_arg : %p\n"
         "%skeytable: %p\n"
         "%sattr    : %s\n",
-        prefix, p_thread,
+        prefix, (void *)p_thread,
         prefix, ABTI_thread_get_id(p_thread),
         prefix, type,
         prefix, state,
-        prefix, p_xstream, xstream_rank,
+        prefix, (void *)p_xstream, xstream_rank,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-        prefix, p_thread->is_sched,
+        prefix, (void *)p_thread->is_sched,
 #endif
-        prefix, p_thread->p_pool,
+        prefix, (void *)p_thread->p_pool,
         prefix, p_thread->refcount,
         prefix, p_thread->request,
-        prefix, p_thread->p_req_arg,
-        prefix, p_thread->p_keytable,
+        prefix, (void *)p_thread->p_req_arg,
+        prefix, (void *)p_thread->p_keytable,
         prefix, attr
     );
 
@@ -2315,7 +2317,9 @@ static inline int ABTI_thread_join(ABTI_thread *p_thread)
     }
     goto fn_exit;
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
   busywait_based:
+#endif
     while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state)
            != ABT_THREAD_STATE_TERMINATED) {
         ABTD_atomic_pause();
@@ -2329,10 +2333,10 @@ static inline int ABTI_thread_join(ABTI_thread *p_thread)
     goto fn_exit;
 }
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
 static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
                                           ABTI_xstream *p_xstream)
 {
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
 
     /* checking for cases when migration is not allowed */
@@ -2395,10 +2399,8 @@ static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
-#else
-    return ABT_ERR_MIGRATION_NA;
-#endif
 }
+#endif
 
 static inline ABT_thread_id ABTI_thread_get_new_id(void)
 {

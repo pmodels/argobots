@@ -146,7 +146,7 @@ int ABT_future_wait(ABT_future future)
 
             type = ABT_UNIT_TYPE_THREAD;
             p_unit = &p_current->unit_def;
-            p_unit->thread = ABTI_thread_get_handle(p_current);
+            p_unit->handle.thread = ABTI_thread_get_handle(p_current);
             p_unit->type = type;
         } else {
             /* external thread */
@@ -271,7 +271,8 @@ int ABT_future_set(ABT_future future, void *value)
             p_unit->p_next = NULL;
 
             if (type == ABT_UNIT_TYPE_THREAD) {
-                ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->thread);
+                ABTI_thread *p_thread =
+                    ABTI_thread_get_ptr(p_unit->handle.thread);
                 ABTI_thread_set_ready(p_thread);
             } else {
                 /* When the head is an external thread */
