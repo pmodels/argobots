@@ -290,7 +290,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
@@ -506,7 +506,7 @@ size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched)
     int p;
 
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
 #endif
 
     for (p = 0; p < p_sched->num_pools; p++) {

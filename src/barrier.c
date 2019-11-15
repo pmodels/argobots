@@ -162,7 +162,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
         int32_t ext_signal = 0;
 
         if (lp_ABTI_local != NULL) {
-            p_thread = ABTI_local_get_thread();
+            p_thread = lp_ABTI_local->p_thread;
             if (p_thread == NULL) {
                 abt_errno = ABT_ERR_BARRIER;
                 goto fn_fail;

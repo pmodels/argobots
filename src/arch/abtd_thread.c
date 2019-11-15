@@ -71,7 +71,7 @@ void ABTD_thread_func_wrapper(int func_upper, int func_lower,
     /* Now, the ULT has finished its job. Terminate the ULT.
      * We don't need to use the atomic operation here because the ULT will be
      * terminated regardless of other requests. */
-    ABTI_thread *p_thread = ABTI_local_get_thread();
+    ABTI_thread *p_thread = lp_ABTI_local->p_thread;
     p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
 }
 #endif
@@ -192,7 +192,7 @@ void ABTD_thread_terminate_thread_no_arg()
 {
     /* This function is called by `return` in ABTD_thread_context_make_and_call,
      * so it cannot take the argument. We get the thread descriptor from TLS. */
-    ABTI_thread *p_thread = ABTI_local_get_thread();
+    ABTI_thread *p_thread = lp_ABTI_local->p_thread;
     ABTD_thread_terminate_thread(p_thread);
 }
 #endif

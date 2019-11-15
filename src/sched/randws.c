@@ -71,7 +71,7 @@ static void sched_run(ABT_sched sched)
     unsigned seed = time(NULL);
     CNT_DECL(run_cnt);
 
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_ASSERT(p_sched);
 

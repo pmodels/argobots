@@ -57,7 +57,7 @@ ABTI_xstream *ABTI_xstream_self(void)
 {
     ABTI_xstream *p_xstream;
     if (lp_ABTI_local != NULL) {
-        p_xstream = ABTI_local_get_xstream();
+        p_xstream = lp_ABTI_local->p_xstream;
     } else {
         /* We allow external threads to call Argobots APIs. However, since it
          * is not trivial to identify them, we use ABTD_xstream_context to

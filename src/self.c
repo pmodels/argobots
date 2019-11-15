@@ -92,7 +92,7 @@ int ABT_self_is_primary(ABT_bool *flag)
     }
 #endif
 
-    p_thread = ABTI_local_get_thread();
+    p_thread = lp_ABTI_local->p_thread;
     if (p_thread) {
         *flag = (p_thread->type == ABTI_THREAD_TYPE_MAIN)
               ? ABT_TRUE : ABT_FALSE;
@@ -141,7 +141,7 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
     }
 #endif
 
-    p_xstream = ABTI_local_get_xstream();
+    p_xstream = lp_ABTI_local->p_xstream;
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     /* Return value */
@@ -196,10 +196,10 @@ int ABT_self_get_last_pool_id(int *pool_id)
     }
 #endif
 
-    if ((p_thread = ABTI_local_get_thread())) {
+    if ((p_thread = lp_ABTI_local->p_thread)) {
         ABTI_ASSERT(p_thread->p_pool);
         *pool_id = (int)(p_thread->p_pool->id);
-    } else if ((p_task = ABTI_local_get_task())) {
+    } else if ((p_task = lp_ABTI_local->p_task)) {
         ABTI_ASSERT(p_task->p_pool);
         *pool_id = (int)(p_task->p_pool->id);
     } else {
@@ -231,13 +231,13 @@ int ABT_self_suspend(void)
 {
     int abt_errno = ABT_SUCCESS;
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
-    ABTI_thread *p_thread = ABTI_local_get_thread();
+    ABTI_thread *p_thread = lp_ABTI_local->p_thread;
 #else
     ABTI_thread *p_thread = NULL;
 
     /* If this routine is called by non-ULT, just return. */
     if (lp_ABTI_local != NULL) {
-        p_thread = ABTI_local_get_thread();
+        p_thread = lp_ABTI_local->p_thread;
     }
 #endif
     if (p_thread == NULL) {
@@ -287,9 +287,9 @@ int ABT_self_set_arg(void *arg)
         goto fn_exit;
     }
 
-    if ((p_thread = ABTI_local_get_thread())) {
+    if ((p_thread = lp_ABTI_local->p_thread)) {
         ABTD_thread_context_set_arg(&p_thread->ctx, arg);
-    } else if ((p_task = ABTI_local_get_task())) {
+    } else if ((p_task = lp_ABTI_local->p_task)) {
         p_task->p_arg = arg;
     } else {
         abt_errno = ABT_ERR_OTHER;
@@ -340,9 +340,9 @@ int ABT_self_get_arg(void **arg)
     }
 #endif
 
-    if ((p_thread = ABTI_local_get_thread())) {
+    if ((p_thread = lp_ABTI_local->p_thread)) {
         *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
-    } else if ((p_task = ABTI_local_get_task())) {
+    } else if ((p_task = lp_ABTI_local->p_task)) {
         *arg = p_task->p_arg;
     } else {
         *arg = NULL;

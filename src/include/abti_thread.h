@@ -146,7 +146,7 @@ void ABTI_thread_context_switch_thread_to_thread_internal(ABTI_thread *p_old,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(!p_old->is_sched && !p_new->is_sched);
 #endif
-    ABTI_local_set_thread(p_new);
+    lp_ABTI_local->p_thread = p_new;
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     /* Dynamic promotion is unnecessary if p_old is discarded. */
     if (!is_finish && !ABTI_thread_is_dynamic_promoted(p_old)) {
@@ -198,8 +198,8 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
     ABTI_ASSERT(!p_new->is_sched);
 #endif
     ABTI_LOG_SET_SCHED(NULL);
-    ABTI_local_set_thread(p_new);
-    ABTI_local_set_task(NULL); /* A tasklet scheduler can invoke ULT. */
+    lp_ABTI_local->p_thread = p_new;
+    lp_ABTI_local->p_task = NULL; /* A tasklet scheduler can invoke ULT. */
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     /* Schedulers' contexts must be eagerly initialized. */
     ABTI_ASSERT(!p_old->p_thread
@@ -215,7 +215,7 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_sched *p_old,
          * run dynamic promotion, ABTI_thread_context_make_and_call took the
          * fast path. In this case, the request handling has not been done,
          * so it must be done here. */
-        ABTI_thread *p_prev = ABTI_local_get_thread();
+        ABTI_thread *p_prev = lp_ABTI_local->p_thread;
         if (!ABTI_thread_is_dynamic_promoted(p_prev)) {
             ABTI_ASSERT(p_prev == p_new);
 #if defined(ABT_CONFIG_USE_FCONTEXT)

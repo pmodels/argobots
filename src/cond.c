@@ -239,7 +239,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             continue;
         }
 #endif
-        ABTI_thread_yield(ABTI_local_get_thread());
+        ABTI_thread_yield(lp_ABTI_local->p_thread);
     }
     ABTU_free(p_unit);
 

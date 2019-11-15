@@ -25,9 +25,9 @@ ABTI_unit *ABTI_self_get_unit(void)
     }
 #endif
 
-    if ((p_thread = ABTI_local_get_thread())) {
+    if ((p_thread = lp_ABTI_local->p_thread)) {
         p_unit = &p_thread->unit_def;
-    } else if ((p_task = ABTI_local_get_task())) {
+    } else if ((p_task = lp_ABTI_local->p_task)) {
         p_unit = &p_task->unit_def;
     } else {
         /* should not reach here */
@@ -50,10 +50,10 @@ ABT_unit_type ABTI_self_get_type(void)
     }
 #endif
 
-    if (ABTI_local_get_task() != NULL) {
+    if (lp_ABTI_local->p_task != NULL) {
         return ABT_UNIT_TYPE_TASK;
     } else {
-        /* Since ABTI_local_get_thread() can return NULL during executing
+        /* Since lp_ABTI_local->p_thread can return NULL during executing
          * ABTI_init(), it should always be safe to say that the type of caller
          * is ULT if the control reaches here. */
         return ABT_UNIT_TYPE_THREAD;

@@ -351,7 +351,7 @@ static void ABTI_event_free_xstream(void *arg)
             continue;
         }
 #endif
-        ABTI_thread_yield(ABTI_local_get_thread());
+        ABTI_thread_yield(lp_ABTI_local->p_thread);
     }
 
     abt_errno = ABTI_xstream_join(p_xstream);
@@ -384,7 +384,7 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
                 continue;
             }
 #endif
-            ABTI_thread_yield(ABTI_local_get_thread());
+            ABTI_thread_yield(lp_ABTI_local->p_thread);
         }
 
         abt_errno = ABTI_xstream_join(p_xstream);
@@ -674,7 +674,7 @@ ABT_bool ABTI_event_check_power(void)
 
     if (gp_ABTI_global->pm_connected == ABT_FALSE) goto fn_exit;
 
-    p_xstream = ABTI_local_get_xstream();
+    p_xstream = lp_ABTI_local->p_xstream;
     ABTI_ASSERT(p_xstream);
     rank = (int)p_xstream->rank;
 
@@ -751,7 +751,7 @@ ABT_bool ABTI_event_check_power(void)
 
     ABTI_mutex_unlock(&gp_einfo->mutex);
 
-    p_xstream = ABTI_local_get_xstream();
+    p_xstream = lp_ABTI_local->p_xstream;
     if (p_xstream->request & ABTI_XSTREAM_REQ_STOP) {
         stop_xstream = ABT_TRUE;
     }
@@ -976,7 +976,7 @@ void ABTI_event_publish_info(void)
 
     if (gp_ABTI_global->pub_needed == ABT_FALSE) return;
 
-    p_xstream = ABTI_local_get_xstream();
+    p_xstream = lp_ABTI_local->p_xstream;
     rank = (int)p_xstream->rank;
     if (rank > gp_einfo->max_xstream_rank) {
         ABTI_event_realloc_pub_arrays(rank);

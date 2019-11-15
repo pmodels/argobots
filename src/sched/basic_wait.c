@@ -91,7 +91,7 @@ static void sched_run(ABT_sched sched)
     int i;
     int run_cnt_nowait;
 
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_xstream *p_xstream = lp_ABTI_local->p_xstream;
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_ASSERT(p_sched);
 

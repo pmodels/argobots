@@ -50,8 +50,8 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
 
     switch (type) {
         case ABT_UNIT_TYPE_THREAD:
-            p_xstream = ABTI_local_get_xstream();
-            p_thread = ABTI_local_get_thread();
+            p_xstream = lp_ABTI_local->p_xstream;
+            p_thread = lp_ABTI_local->p_thread;
             if (p_thread == NULL) {
                 if (p_xstream && p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
                     prefix_fmt = "<U%" PRIu64 ":E%d> %s";
@@ -74,9 +74,9 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
             break;
 
         case ABT_UNIT_TYPE_TASK:
-            p_xstream = ABTI_local_get_xstream();
+            p_xstream = lp_ABTI_local->p_xstream;
             rank = p_xstream->rank;
-            p_task = ABTI_local_get_task();
+            p_task = lp_ABTI_local->p_task;
             if (lp_ABTI_log->p_sched) {
                 prefix_fmt = "<S%" PRIu64 ":E%d> %s";
                 tid = lp_ABTI_log->p_sched->id;
