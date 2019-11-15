@@ -2317,7 +2317,9 @@ static inline int ABTI_thread_join(ABTI_thread *p_thread)
     }
     goto fn_exit;
 
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
   busywait_based:
+#endif
     while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state)
            != ABT_THREAD_STATE_TERMINATED) {
         ABTD_atomic_pause();
