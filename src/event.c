@@ -679,7 +679,9 @@ ABT_bool ABTI_event_check_power(void)
 
     if (gp_ABTI_global->pm_connected == ABT_FALSE) goto fn_exit;
 
-    ABT_xstream_self_rank(&rank);
+    p_xstream = ABTI_local_get_xstream();
+    ABTI_ASSERT(p_xstream);
+    rank = (int)p_xstream->rank;
 
     ret = ABTI_mutex_trylock(&gp_einfo->mutex);
     if (ret == ABT_ERR_MUTEX_LOCKED) goto fn_exit;
