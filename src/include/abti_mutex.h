@@ -77,12 +77,11 @@ static inline
 void ABTI_mutex_lock(ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
-    ABT_unit_type type;
-    ABT_self_get_type(&type);
+    ABT_unit_type type = ABTI_self_get_type();
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-            ABT_thread_yield();
+            ABTI_thread_yield(ABTI_local_get_thread());
         }
         LOG_EVENT("%p: lock - acquired\n", p_mutex);
     } else {
@@ -90,11 +89,10 @@ void ABTI_mutex_lock(ABTI_mutex *p_mutex)
     }
 #else
     int abt_errno;
-    ABT_unit_type type;
+    ABT_unit_type type = ABTI_self_get_type();
 
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
-    ABT_self_get_type(&type);
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock - try\n", p_mutex);
         int c;

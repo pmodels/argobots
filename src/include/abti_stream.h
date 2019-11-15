@@ -123,6 +123,14 @@ void ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     p_xstream->scheds[p_xstream->num_scheds++] = p_sched;
 }
 
+/* Get the first pool of the main scheduler. */
+static inline
+ABTI_pool *ABTI_xstream_get_main_pool(ABTI_xstream *p_xstream)
+{
+    ABT_pool pool = p_xstream->p_main_sched->pools[0];
+    return ABTI_pool_get_ptr(pool);
+}
+
 static inline
 void ABTI_xstream_terminate_thread(ABTI_thread *p_thread)
 {

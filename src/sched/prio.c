@@ -42,6 +42,9 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 {
     int abt_errno = ABT_SUCCESS;
 
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
     /* Default settings */
     sched_data *p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
     p_data->event_freq = ABTI_global_get_sched_event_freq();
@@ -51,10 +54,10 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 #endif
 
     /* Set the variables from the config */
-    ABT_sched_config_read(config, 1, &p_data->event_freq);
+    void *p_event_freq = &p_data->event_freq;
+    ABTI_sched_config_read(config, 1, 1, &p_event_freq);
 
-    abt_errno = ABT_sched_set_data(sched, (void *)p_data);
-    ABTI_CHECK_ERROR(abt_errno);
+    p_sched->data = p_data;
 
   fn_exit:
     return abt_errno;
@@ -67,7 +70,6 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 static void sched_run(ABT_sched sched)
 {
     uint32_t work_count = 0;
-    void *data;
     sched_data *p_data;
     uint32_t event_freq;
     int num_pools;
@@ -77,15 +79,15 @@ static void sched_run(ABT_sched sched)
 
     ABTI_xstream *p_xstream = ABTI_local_get_xstream();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_ASSERT(p_sched);
 
-    ABT_sched_get_data(sched, &data);
-    p_data = sched_data_get_ptr(data);
+    p_data = sched_data_get_ptr(p_sched->data);
     event_freq = p_data->event_freq;
 
     /* Get the list of pools */
-    ABT_sched_get_num_pools(sched, &num_pools);
+    num_pools = p_sched->num_pools;
     p_pools = (ABT_pool *)ABTU_malloc(num_pools * sizeof(ABT_pool));
-    ABT_sched_get_pools(sched, num_pools, 0, p_pools);
+    memcpy(p_pools, p_sched->pools, sizeof(ABT_pool) * num_pools);
 
     while (1) {
         CNT_INIT(run_cnt, 0);
@@ -117,14 +119,12 @@ static void sched_run(ABT_sched sched)
 
 static int sched_free(ABT_sched sched)
 {
-    int abt_errno = ABT_SUCCESS;
-    void *data;
-    sched_data *p_data;
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    ABTI_ASSERT(p_sched);
 
-    ABT_sched_get_data(sched, &data);
-    p_data = sched_data_get_ptr(data);
+    sched_data *p_data = sched_data_get_ptr(p_sched->data);
     ABTU_free(p_data);
 
-    return abt_errno;
+    return ABT_SUCCESS;
 }
 

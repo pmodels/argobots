@@ -24,94 +24,7 @@
  */
 int ABT_info_print_config(FILE *fp)
 {
-    int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_INITIALIZED();
-
-    ABTI_global *p_global = gp_ABTI_global;
-
-    fprintf(fp, "Argobots Configuration:\n");
-    fprintf(fp, " - # of cores: %d\n", p_global->num_cores);
-    fprintf(fp, " - cache line size: %u\n", ABT_CONFIG_STATIC_CACHELINE_SIZE);
-    fprintf(fp, " - OS page size: %u\n", p_global->os_page_size);
-    fprintf(fp, " - huge page size: %u\n", p_global->huge_page_size);
-    fprintf(fp, " - max. # of ESs: %d\n", p_global->max_xstreams);
-    fprintf(fp, " - cur. # of ESs: %d\n", p_global->num_xstreams);
-    fprintf(fp, " - ES affinity: %s\n",
-                (p_global->set_affinity == ABT_TRUE) ? "on" : "off");
-    fprintf(fp, " - logging: %s\n",
-                (p_global->use_logging == ABT_TRUE) ? "on" : "off");
-    fprintf(fp, " - debug output: %s\n",
-                (p_global->use_debug == ABT_TRUE) ? "on" : "off");
-    fprintf(fp, " - key table entries: %d\n", p_global->key_table_size);
-    fprintf(fp, " - ULT stack size: %u KB\n",
-                (unsigned)(p_global->thread_stacksize / 1024));
-    fprintf(fp, " - scheduler stack size: %u KB\n",
-                (unsigned)(p_global->sched_stacksize / 1024));
-    fprintf(fp, " - scheduler event check frequency: %u\n",
-                p_global->sched_event_freq);
-
-    fprintf(fp, " - timer function: "
-#if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
-                "clock_gettime"
-#elif defined(ABT_CONFIG_USE_MACH_ABSOLUTE_TIME)
-                "mach_absolute_time"
-#elif defined(ABT_CONFIG_USE_GETTIMEOFDAY)
-                "gettimeofday"
-#endif
-                "\n");
-
-#ifdef ABT_CONFIG_USE_MEM_POOL
-    fprintf(fp, "Memory Pool:\n");
-    fprintf(fp, " - page size for allocation: %u KB\n",
-                p_global->mem_page_size / 1024);
-    fprintf(fp, " - stack page size: %u KB\n", p_global->mem_sp_size / 1024);
-    fprintf(fp, " - max. # of stacks per ES: %u\n", p_global->mem_max_stacks);
-    switch (p_global->mem_lp_alloc) {
-        case ABTI_MEM_LP_MALLOC:
-            fprintf(fp, " - large page allocation: malloc\n");
-            break;
-        case ABTI_MEM_LP_MMAP_RP:
-            fprintf(fp, " - large page allocation: mmap regular pages\n");
-            break;
-        case ABTI_MEM_LP_MMAP_HP_RP:
-            fprintf(fp, " - large page allocation: mmap huge pages + "
-                        "regular pages\n");
-            break;
-        case ABTI_MEM_LP_MMAP_HP_THP:
-            fprintf(fp, " - large page allocation: mmap huge pages + THPs\n");
-            break;
-        case ABTI_MEM_LP_THP:
-            fprintf(fp, " - large page allocation: THPs\n");
-            break;
-    }
-#endif /* ABT_CONFIG_USE_MEM_POOL */
-
-#if defined(ABT_CONFIG_HANDLE_POWER_EVENT) || defined(ABT_CONFIG_PUBLISH_INFO)
-    fprintf(fp, "Event:\n");
-
-#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
-    fprintf(fp, " - pm daemon connected: %s\n",
-                (p_global->pm_connected == ABT_TRUE) ? "yes" : "no");
-    fprintf(fp, " - pm hostname: %s\n", p_global->pm_host);
-    fprintf(fp, " - pm port: %d\n", p_global->pm_port);
-#endif /* ABT_CONFIG_HANDLE_POWER_EVENT */
-
-#ifdef ABT_CONFIG_PUBLISH_INFO
-    fprintf(fp, " - publishing needed: %s\n",
-                (p_global->pub_needed == ABT_TRUE) ? "yes" : "no");
-    fprintf(fp, " - publishing filename: %s\n", p_global->pub_filename);
-    fprintf(fp, " - publishing interval: %lf sec.\n", p_global->pub_interval);
-#endif /* ABT_CONFIG_PUBLISH_INFO */
-#endif
-
-    fflush(fp);
-
-  fn_exit:
-    return abt_errno;
-
-  fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABTI_info_print_config(fp);
 }
 
 
@@ -390,7 +303,7 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
                     "stacksize : %" PRIu64 "\n",
                     p_thread->attr.p_stack,
                     (uint64_t)p_thread->attr.stacksize);
-        int abt_errno = ABT_info_print_thread_stack(fp, thread);
+        int abt_errno = ABTI_thread_print_stack(p_thread, fp);
         if (abt_errno != ABT_SUCCESS)
             fprintf(fp, "Failed to print stack.\n");
     } else if (type == ABT_UNIT_TYPE_TASK) {
@@ -399,6 +312,8 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
         fprintf(fp, "=== unknown (%p) ===\n", (void *)unit);
     }
 }
+
+int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
 
 /**
  * @ingroup INFO
@@ -419,6 +334,22 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
+    abt_errno = ABTI_info_print_thread_stacks_in_pool(fp, p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_pool pool = ABTI_pool_get_handle(p_pool);
+
     if (!p_pool->p_print_all) {
         abt_errno = ABT_ERR_POOL;
         goto fn_fail;
@@ -426,7 +357,7 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
     fprintf(fp, "== pool (%p) ==\n", p_pool);
     struct ABTI_info_print_unit_arg_t arg;
     arg.fp = fp;
-    arg.pool = pool;
+    arg.pool = ABTI_pool_get_handle(pool);
     p_pool->p_print_all(pool, &arg, ABTI_info_print_unit);
 
   fn_exit:
@@ -556,13 +487,13 @@ void ABTI_info_check_print_all_thread_stacks(void)
     uint32_t self_value = ABTD_atomic_fetch_add_uint32(&print_stack_barrier, 1);
     if (self_value == 0) {
         /* This ES becomes a master. */
-        double start_time = ABT_get_wtime();
+        double start_time = ABTI_get_wtime();
         ABT_bool force_print = ABT_FALSE;
         while (ABTD_atomic_load_uint32(&print_stack_barrier)
                < ABTD_atomic_load_int32(&gp_ABTI_global->num_xstreams)) {
             ABTD_atomic_pause();
             if (print_stack_timeout >= 0.0
-                && (ABT_get_wtime() - start_time) >= print_stack_timeout) {
+                && (ABTI_get_wtime() - start_time) >= print_stack_timeout) {
                 force_print = ABT_TRUE;
                 break;
             }
@@ -595,7 +526,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
         }
         for (i = 0; i < pool_set.num; i++) {
             ABT_pool pool = pool_set.pools[i];
-            int abt_errno = ABT_info_print_thread_stacks_in_pool(fp, pool);
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+            int abt_errno = ABTI_info_print_thread_stacks_in_pool(fp, p_pool);
             if (abt_errno != ABT_SUCCESS)
                 fprintf(fp, "  Failed to print (errno = %d).\n", abt_errno);
         }
@@ -618,4 +550,96 @@ void ABTI_info_check_print_all_thread_stacks(void)
         /* The last execution stream resets the flag. */
         ABTD_atomic_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_UNSET);
     }
+}
+
+int ABTI_info_print_config(FILE *fp)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_CHECK_INITIALIZED();
+
+    ABTI_global *p_global = gp_ABTI_global;
+
+    fprintf(fp, "Argobots Configuration:\n");
+    fprintf(fp, " - # of cores: %d\n", p_global->num_cores);
+    fprintf(fp, " - cache line size: %u\n", ABT_CONFIG_STATIC_CACHELINE_SIZE);
+    fprintf(fp, " - OS page size: %u\n", p_global->os_page_size);
+    fprintf(fp, " - huge page size: %u\n", p_global->huge_page_size);
+    fprintf(fp, " - max. # of ESs: %d\n", p_global->max_xstreams);
+    fprintf(fp, " - cur. # of ESs: %d\n", p_global->num_xstreams);
+    fprintf(fp, " - ES affinity: %s\n",
+                (p_global->set_affinity == ABT_TRUE) ? "on" : "off");
+    fprintf(fp, " - logging: %s\n",
+                (p_global->use_logging == ABT_TRUE) ? "on" : "off");
+    fprintf(fp, " - debug output: %s\n",
+                (p_global->use_debug == ABT_TRUE) ? "on" : "off");
+    fprintf(fp, " - key table entries: %d\n", p_global->key_table_size);
+    fprintf(fp, " - ULT stack size: %u KB\n",
+                (unsigned)(p_global->thread_stacksize / 1024));
+    fprintf(fp, " - scheduler stack size: %u KB\n",
+                (unsigned)(p_global->sched_stacksize / 1024));
+    fprintf(fp, " - scheduler event check frequency: %u\n",
+                p_global->sched_event_freq);
+
+    fprintf(fp, " - timer function: "
+#if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
+                "clock_gettime"
+#elif defined(ABT_CONFIG_USE_MACH_ABSOLUTE_TIME)
+                "mach_absolute_time"
+#elif defined(ABT_CONFIG_USE_GETTIMEOFDAY)
+                "gettimeofday"
+#endif
+                "\n");
+
+#ifdef ABT_CONFIG_USE_MEM_POOL
+    fprintf(fp, "Memory Pool:\n");
+    fprintf(fp, " - page size for allocation: %u KB\n",
+                p_global->mem_page_size / 1024);
+    fprintf(fp, " - stack page size: %u KB\n", p_global->mem_sp_size / 1024);
+    fprintf(fp, " - max. # of stacks per ES: %u\n", p_global->mem_max_stacks);
+    switch (p_global->mem_lp_alloc) {
+        case ABTI_MEM_LP_MALLOC:
+            fprintf(fp, " - large page allocation: malloc\n");
+            break;
+        case ABTI_MEM_LP_MMAP_RP:
+            fprintf(fp, " - large page allocation: mmap regular pages\n");
+            break;
+        case ABTI_MEM_LP_MMAP_HP_RP:
+            fprintf(fp, " - large page allocation: mmap huge pages + "
+                        "regular pages\n");
+            break;
+        case ABTI_MEM_LP_MMAP_HP_THP:
+            fprintf(fp, " - large page allocation: mmap huge pages + THPs\n");
+            break;
+        case ABTI_MEM_LP_THP:
+            fprintf(fp, " - large page allocation: THPs\n");
+            break;
+    }
+#endif /* ABT_CONFIG_USE_MEM_POOL */
+
+#if defined(ABT_CONFIG_HANDLE_POWER_EVENT) || defined(ABT_CONFIG_PUBLISH_INFO)
+    fprintf(fp, "Event:\n");
+
+#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
+    fprintf(fp, " - pm daemon connected: %s\n",
+                (p_global->pm_connected == ABT_TRUE) ? "yes" : "no");
+    fprintf(fp, " - pm hostname: %s\n", p_global->pm_host);
+    fprintf(fp, " - pm port: %d\n", p_global->pm_port);
+#endif /* ABT_CONFIG_HANDLE_POWER_EVENT */
+
+#ifdef ABT_CONFIG_PUBLISH_INFO
+    fprintf(fp, " - publishing needed: %s\n",
+                (p_global->pub_needed == ABT_TRUE) ? "yes" : "no");
+    fprintf(fp, " - publishing filename: %s\n", p_global->pub_filename);
+    fprintf(fp, " - publishing interval: %lf sec.\n", p_global->pub_interval);
+#endif /* ABT_CONFIG_PUBLISH_INFO */
+#endif
+
+    fflush(fp);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }

@@ -117,7 +117,7 @@ int ABT_init(int argc, char **argv)
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");
 
     if (gp_ABTI_global->print_config == ABT_TRUE) {
-        ABT_info_print_config(stdout);
+        ABTI_info_print_config(stdout);
     }
     ABTD_atomic_store_uint32(&g_ABTI_initialized, 1);
 

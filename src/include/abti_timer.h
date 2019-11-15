@@ -9,6 +9,14 @@
 /* Inlined functions for Timer */
 
 static inline
+double ABTI_get_wtime(void)
+{
+    ABTD_time t;
+    ABTD_time_get(&t);
+    return ABTD_time_read_sec(&t);
+}
+
+static inline
 ABTI_timer *ABTI_timer_get_ptr(ABT_timer timer)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK

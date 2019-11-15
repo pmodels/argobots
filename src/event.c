@@ -221,7 +221,7 @@ void ABTI_event_init(void)
                 gp_einfo->max_xstream_rank, sizeof(uint32_t));
         gp_einfo->old_timestamp = (double *)ABTU_calloc(
                 gp_einfo->max_xstream_rank, sizeof(double));
-        gp_einfo->timestamp = ABT_get_wtime();
+        gp_einfo->timestamp = ABTI_get_wtime();
 
         int ret = RAPLREADER_INIT(&gp_einfo->rr);
         if (ret) {
@@ -329,7 +329,7 @@ void ABTI_event_send_num_xstream(void)
     int num_xstreams;
     int n;
 
-    ABT_xstream_get_num(&num_xstreams);
+    num_xstreams = gp_ABTI_global->num_xstreams;
 
     sprintf(send_buf, "%d", num_xstreams);
     n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
@@ -345,12 +345,18 @@ static void ABTI_event_free_xstream(void *arg)
 
     while (ABTD_atomic_load_uint32((uint32_t *)p_xstream->state)
            != ABT_XSTREAM_STATE_TERMINATED) {
-        ABT_thread_yield();
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+        if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+            ABTD_atomic_pause();
+            continue;
+        }
+#endif
+        ABTI_thread_yield(ABTI_local_get_thread());
     }
 
-    abt_errno = ABT_xstream_join(xstream);
+    abt_errno = ABTI_xstream_join(p_xstream);
     ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-    abt_errno = ABT_xstream_free(&xstream);
+    abt_errno = ABTI_xstream_free(p_xstream);
     ABTI_ASSERT(abt_errno == ABT_SUCCESS);
 
     if (gp_ABTI_global->pm_connected == ABT_TRUE) {
@@ -372,13 +378,18 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
         ABTI_xstream *p_xstream = p_xstreams[n+1];
         while (ABTD_atomic_load_uint32((uint32_t *)p_xstream->state)
                != ABT_XSTREAM_STATE_TERMINATED) {
-            ABT_thread_yield();
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+            if (ABTI_self_get_type() != ABT_UNIT_TYPE_THREAD) {
+                ABTD_atomic_pause();
+                continue;
+            }
+#endif
+            ABTI_thread_yield(ABTI_local_get_thread());
         }
 
-        ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
-        abt_errno = ABT_xstream_join(xstream);
+        abt_errno = ABTI_xstream_join(p_xstream);
         ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-        abt_errno = ABT_xstream_free(&xstream);
+        abt_errno = ABTI_xstream_free(p_xstream);
         ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     }
     ABTU_free(p_xstreams);
@@ -398,8 +409,7 @@ ABT_bool ABTI_event_stop_xstream(ABTI_xstream *p_xstream)
     ABT_bool can_stop = ABT_TRUE;
     ABT_event_cb_fn cb_fn;
     ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
-    ABT_xstream primary;
-    ABT_pool pool;
+    ABTI_xstream *p_primary;
     int i;
 
     /* Ask whether the target ES can be stopped */
@@ -423,10 +433,10 @@ ABT_bool ABTI_event_stop_xstream(ABTI_xstream *p_xstream)
         }
 
         /* Create a ULT on the primary ES to join the target ES */
-        primary = ABTI_xstream_get_handle(gp_ABTI_global->p_xstreams[0]);
-        ABT_xstream_get_main_pools(primary, 1, &pool);
-        abt_errno = ABT_thread_create(pool, ABTI_event_free_xstream, xstream,
-                                      ABT_THREAD_ATTR_NULL, NULL);
+        p_primary = gp_ABTI_global->p_xstreams[0];
+        ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_primary);
+        abt_errno = ABTI_thread_create(p_pool, ABTI_event_free_xstream, xstream,
+                                       ABT_THREAD_ATTR_NULL, NULL);
         ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     }
 
@@ -543,13 +553,13 @@ void ABTI_event_shrink_xstreams(int num_xstreams)
 
     /* Create a ULT on the primary ES to join the target ESs */
     /* NOTE: p_xstreams will be freed by the ULT. */
-    ABT_pool pool;
-    xstream = ABTI_xstream_get_handle(gp_ABTI_global->p_xstreams[0]);
-    ABT_xstream_get_main_pools(xstream, 1, &pool);
+    ABTI_xstream *p_primary = gp_ABTI_global->p_xstreams[0];
     p_xstreams[0] = (ABTI_xstream *)(intptr_t)n;
-    int abt_errno = ABT_thread_create(pool, ABTI_event_free_multiple_xstreams,
-                                      (void *)p_xstreams,
-                                      ABT_THREAD_ATTR_NULL, NULL);
+    ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_primary);
+    int abt_errno;
+    abt_errno = ABTI_thread_create(p_pool, ABTI_event_free_multiple_xstreams,
+                                   (void *)p_xstreams, ABT_THREAD_ATTR_NULL,
+                                   NULL);
     ABTI_ASSERT(abt_errno == ABT_SUCCESS);
 }
 
@@ -664,7 +674,9 @@ ABT_bool ABTI_event_check_power(void)
 
     if (gp_ABTI_global->pm_connected == ABT_FALSE) goto fn_exit;
 
-    ABT_xstream_self_rank(&rank);
+    p_xstream = ABTI_local_get_xstream();
+    ABTI_ASSERT(p_xstream);
+    rank = (int)p_xstream->rank;
 
     ret = ABTI_mutex_trylock(&gp_einfo->mutex);
     if (ret == ABT_ERR_MUTEX_LOCKED) goto fn_exit;
@@ -970,7 +982,7 @@ void ABTI_event_publish_info(void)
         ABTI_event_realloc_pub_arrays(rank);
     }
 
-    cur_time = ABT_get_wtime();
+    cur_time = ABTI_get_wtime();
     elapsed_time = cur_time - gp_einfo->timestamp;
 
     /* Update the idle time of the current ES */
@@ -1110,7 +1122,7 @@ int ABT_event_prof_start(void)
 #ifdef ABT_CONFIG_PUBLISH_INFO
     if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
 
-    gp_einfo->prof_start_time = ABT_get_wtime();
+    gp_einfo->prof_start_time = ABTI_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
 #endif
 
@@ -1133,7 +1145,7 @@ int ABT_event_prof_stop(void)
 #ifdef ABT_CONFIG_PUBLISH_INFO
     if (gp_ABTI_global->pub_needed == ABT_FALSE) return ABT_SUCCESS;
 
-    gp_einfo->prof_stop_time = ABT_get_wtime();
+    gp_einfo->prof_stop_time = ABTI_get_wtime();
     RAPLREADER_SAMPLE(&gp_einfo->rr);
 #endif
 
@@ -1177,13 +1189,13 @@ int ABT_event_prof_publish(const char *unit_name, double local_work,
     sprintf(info,
             "{\"node\":\"%s\",\"sample\":\"%s\",\"time\":%lf,\"%s_per_sec_per_node\":%lf,"
             "\"%s_per_watt_per_node\":%lf,\"%s_per_sec\":%lf}\n",
-            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name, local_rate,
+            gp_einfo->hostname, sample_name, ABTI_get_wtime(), unit_name, local_rate,
             unit_name, local_work/power, unit_name, global_rate);
 #else
     sprintf(info,
             "{\"node\":\"%s\",\"sample\":\"%s\",\"time\":%lf,\"%s_per_sec_per_node\":%lf,"
             "\"%s_per_sec\":%lf}\n",
-            gp_einfo->hostname, sample_name, ABT_get_wtime(), unit_name, local_rate,
+            gp_einfo->hostname, sample_name, ABTI_get_wtime(), unit_name, local_rate,
             unit_name, global_rate);
 #endif
 

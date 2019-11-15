@@ -459,6 +459,7 @@ int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
 int ABTI_xstream_start(ABTI_xstream *p_xstream);
 int ABTI_xstream_start_primary(ABTI_xstream *p_xstream, ABTI_thread *p_thread);
 int ABTI_xstream_free(ABTI_xstream *p_xstream);
+int ABTI_xstream_join(ABTI_xstream *p_xstream);
 void ABTI_xstream_schedule(void *p_arg);
 int ABTI_xstream_run_unit(ABTI_xstream *p_xstream, ABT_unit unit,
                           ABTI_pool *p_pool);
@@ -477,6 +478,14 @@ ABT_sched_def *ABTI_sched_get_basic_def(void);
 ABT_sched_def *ABTI_sched_get_basic_wait_def(void);
 ABT_sched_def *ABTI_sched_get_prio_def(void);
 ABT_sched_def *ABTI_sched_get_randws_def(void);
+void ABTI_sched_finish(ABTI_sched *p_sched);
+void ABTI_sched_exit(ABTI_sched *p_sched);
+int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
+                      ABT_sched_config config, ABT_bool automatic,
+                      ABTI_sched **pp_newsched);
+int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
+                            ABT_pool *pools, ABT_sched_config config,
+                            ABTI_sched **pp_newsched);
 int ABTI_sched_free(ABTI_sched *p_sched);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
 ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
@@ -496,6 +505,11 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
                                   ABT_pool_access *access, ABT_bool *automatic);
 
 /* Pool */
+int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
+                     ABT_bool automatic, ABTI_pool **pp_newpool);
+int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
+                           ABT_bool automatic, ABTI_pool **pp_newpool);
+void ABTI_pool_free(ABTI_pool *p_pool);
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
 int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def);
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
@@ -508,8 +522,14 @@ int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
 
+/* Work Unit */
+void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
+
 /* User-level Thread (ULT)  */
 int   ABTI_thread_migrate_to_pool(ABTI_thread *p_thread, ABTI_pool *p_pool);
+int   ABTI_thread_create(ABTI_pool *p_pool, void (*thread_func)(void *),
+                         void *arg, ABTI_thread_attr *p_attr,
+                         ABTI_thread **pp_newthread);
 int   ABTI_thread_create_main(ABTI_xstream *p_xstream, ABTI_thread **p_thread);
 int   ABTI_thread_create_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int   ABTI_thread_create_sched(ABTI_pool *p_pool, ABTI_sched *p_sched);
@@ -598,6 +618,7 @@ void ABTI_event_publish_info(void);
 #endif
 
 /* Information */
+int ABTI_info_print_config(FILE *fp);
 void ABTI_info_check_print_all_thread_stacks(void);
 
 #include "abti_log.h"

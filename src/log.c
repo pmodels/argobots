@@ -37,7 +37,7 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE) return;
 
-    ABT_unit_type type;
+    ABT_unit_type type = ABTI_self_get_type();
     ABTI_xstream *p_xstream = NULL;
     ABTI_thread *p_thread = NULL;
     ABTI_task *p_task = NULL;
@@ -48,7 +48,6 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
     int tid_len = 0, rank_len = 0;
     size_t newfmt_len;
 
-    ABT_self_get_type(&type);
     switch (type) {
         case ABT_UNIT_TYPE_THREAD:
             p_xstream = ABTI_local_get_xstream();

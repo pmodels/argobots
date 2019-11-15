@@ -250,15 +250,19 @@ int32_t ABTI_pool_release(ABTI_pool *p_pool)
 }
 
 static inline
-void *ABTI_pool_get_data(ABTI_pool *p_pool)
-{
-    return p_pool->data;
-}
-
-static inline
 size_t ABTI_pool_get_size(ABTI_pool *p_pool)
 {
     return p_pool->p_get_size(ABTI_pool_get_handle(p_pool));
+}
+
+static inline
+size_t ABTI_pool_get_total_size(ABTI_pool *p_pool)
+{
+    size_t total_size;
+    total_size = ABTI_pool_get_size(p_pool);
+    total_size += p_pool->num_blocked;
+    total_size += p_pool->num_migrations;
+    return total_size;
 }
 
 #endif /* POOL_H_INCLUDED */

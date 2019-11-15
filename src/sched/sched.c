@@ -39,58 +39,14 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_sched;
-    int p;
 
     ABTI_CHECK_TRUE(newsched != NULL, ABT_ERR_SCHED);
-
-    p_sched = (ABTI_sched *)ABTU_malloc(sizeof(ABTI_sched));
-
-    /* Copy of the contents of pools */
-    ABT_pool *pool_list;
-    pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
-    for (p = 0; p < num_pools; p++) {
-        if (pools[p] == ABT_POOL_NULL) {
-            abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO,
-                                              ABT_POOL_ACCESS_MPSC,
-                                              ABT_TRUE, &pool_list[p]);
-            ABTI_CHECK_ERROR(abt_errno);
-        } else {
-            pool_list[p] = pools[p];
-        }
-    }
-
-    /* Check if the pools are available */
-    for (p = 0; p < num_pools; p++) {
-        ABTI_pool_retain(ABTI_pool_get_ptr(pool_list[p]));
-    }
-
-    p_sched->used          = ABTI_SCHED_NOT_USED;
-    p_sched->automatic     = ABT_FALSE;
-    p_sched->kind          = ABTI_sched_get_kind(def);
-    p_sched->state         = ABT_SCHED_STATE_READY;
-    p_sched->request       = 0;
-    p_sched->pools         = pool_list;
-    p_sched->num_pools     = num_pools;
-    p_sched->type          = def->type;
-    p_sched->p_thread      = NULL;
-    p_sched->p_task        = NULL;
-    p_sched->p_ctx         = NULL;
-
-    p_sched->init          = def->init;
-    p_sched->run           = def->run;
-    p_sched->free          = def->free;
-    p_sched->get_migr_pool = def->get_migr_pool;
-
-#ifdef ABT_CONFIG_USE_DEBUG_LOG
-    p_sched->id            = ABTI_sched_get_new_id();
-#endif
-    LOG_EVENT("[S%" PRIu64 "] created\n", p_sched->id);
+    abt_errno = ABTI_sched_create(def, num_pools, pools, config, ABT_FALSE,
+                                  &p_sched);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
     *newsched = ABTI_sched_get_handle(p_sched);
-
-    /* Specific initialization */
-    p_sched->init(*newsched, config);
 
   fn_exit:
     return abt_errno;
@@ -137,136 +93,11 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                            ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_pool_access access;
-    ABT_pool_kind kind = ABT_POOL_FIFO;
-    ABT_bool automatic;
-    int p;
-
-    /* We set the access to the default one */
-    access = ABT_POOL_ACCESS_MPSC;
-    automatic = ABT_TRUE;;
-    /* We read the config and set the configured parameters */
-    abt_errno = ABTI_sched_config_read_global(config, &access, &automatic);
+    ABTI_sched *p_newsched;
+    abt_errno = ABTI_sched_create_basic(predef, num_pools, pools, config,
+                                        &p_newsched);
     ABTI_CHECK_ERROR(abt_errno);
-
-    /* A pool array is provided, predef has to be compatible */
-    if (pools != NULL) {
-        /* Copy of the contents of pools */
-        ABT_pool *pool_list;
-        pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
-        for (p = 0; p < num_pools; p++) {
-            if (pools[p] == ABT_POOL_NULL) {
-                abt_errno = ABT_pool_create_basic(ABT_POOL_FIFO, access,
-                                                  ABT_TRUE, &pool_list[p]);
-                ABTI_CHECK_ERROR(abt_errno);
-            } else {
-                pool_list[p] = pools[p];
-            }
-        }
-
-        /* Creation of the scheduler */
-        switch (predef) {
-            case ABT_SCHED_DEFAULT:
-            case ABT_SCHED_BASIC:
-                abt_errno = ABT_sched_create(ABTI_sched_get_basic_def(),
-                                             num_pools, pool_list,
-                                             ABT_SCHED_CONFIG_NULL,
-                                             newsched);
-                break;
-            case ABT_SCHED_BASIC_WAIT:
-                abt_errno = ABT_sched_create(ABTI_sched_get_basic_wait_def(),
-                                             num_pools, pool_list,
-                                             ABT_SCHED_CONFIG_NULL,
-                                             newsched);
-                break;
-            case ABT_SCHED_PRIO:
-                abt_errno = ABT_sched_create(ABTI_sched_get_prio_def(),
-                                             num_pools, pool_list,
-                                             ABT_SCHED_CONFIG_NULL,
-                                             newsched);
-                break;
-            case ABT_SCHED_RANDWS:
-                abt_errno = ABT_sched_create(ABTI_sched_get_randws_def(),
-                                             num_pools, pool_list,
-                                             ABT_SCHED_CONFIG_NULL,
-                                             newsched);
-                break;
-            default:
-                abt_errno = ABT_ERR_INV_SCHED_PREDEF;
-                break;
-        }
-        ABTI_CHECK_ERROR(abt_errno);
-        ABTU_free(pool_list);
-    }
-
-    /* No pool array is provided, predef has to be compatible */
-    else {
-        /* Set the number of pools */
-        switch (predef) {
-            case ABT_SCHED_DEFAULT:
-            case ABT_SCHED_BASIC:
-                num_pools = 1;
-                break;
-            case ABT_SCHED_BASIC_WAIT:
-                /* FIFO_WAIT is default pool for use with BASIC_WAIT sched */
-                kind = ABT_POOL_FIFO_WAIT;
-                num_pools = 1;
-                break;
-            case ABT_SCHED_PRIO:
-                num_pools = ABTI_SCHED_NUM_PRIO;
-                break;
-            case ABT_SCHED_RANDWS:
-                num_pools = 1;
-                break;
-            default:
-                abt_errno = ABT_ERR_INV_SCHED_PREDEF;
-                ABTI_CHECK_ERROR(abt_errno);
-                break;
-        }
-
-        /* Creation of the pools */
-        /* To avoid the malloc overhead, we use a stack array. */
-        ABT_pool pool_list[ABTI_SCHED_NUM_PRIO];
-        int p;
-        for (p = 0; p < num_pools; p++) {
-            abt_errno = ABT_pool_create_basic(kind, access, ABT_TRUE,
-                                              pool_list+p);
-            ABTI_CHECK_ERROR(abt_errno);
-        }
-
-        /* Creation of the scheduler */
-        switch (predef) {
-            case ABT_SCHED_DEFAULT:
-            case ABT_SCHED_BASIC:
-                abt_errno = ABT_sched_create(ABTI_sched_get_basic_def(),
-                                             num_pools, pool_list,
-                                             config, newsched);
-                break;
-            case ABT_SCHED_BASIC_WAIT:
-                abt_errno = ABT_sched_create(ABTI_sched_get_basic_wait_def(),
-                                             num_pools, pool_list,
-                                             config, newsched);
-                break;
-            case ABT_SCHED_PRIO:
-                abt_errno = ABT_sched_create(ABTI_sched_get_prio_def(),
-                                             num_pools, pool_list,
-                                             config, newsched);
-                break;
-            case ABT_SCHED_RANDWS:
-                abt_errno = ABT_sched_create(ABTI_sched_get_randws_def(),
-                                             num_pools, pool_list,
-                                             config, newsched);
-                break;
-            default:
-                abt_errno = ABT_ERR_INV_SCHED_PREDEF;
-                ABTI_CHECK_ERROR(abt_errno);
-                break;
-        }
-    }
-    ABTI_CHECK_ERROR(abt_errno);
-
-    ABTI_sched *p_sched = ABTI_sched_get_ptr(*newsched);
-    p_sched->automatic = automatic;
+    *newsched = ABTI_sched_get_handle(p_newsched);
 
   fn_exit:
     return abt_errno;
@@ -393,7 +224,7 @@ int ABT_sched_finish(ABT_sched sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_FINISH);
+    ABTI_sched_finish(p_sched);
 
   fn_exit:
     return abt_errno;
@@ -420,7 +251,7 @@ int ABT_sched_exit(ABT_sched sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_EXIT);
+    ABTI_sched_exit(p_sched);
 
   fn_exit:
     return abt_errno;
@@ -614,10 +445,8 @@ size_t ABTI_sched_get_size(ABTI_sched *p_sched)
     int p;
 
     for (p = 0; p < p_sched->num_pools; p++) {
-        size_t s;
-        ABT_pool pool = p_sched->pools[p];
-        ABT_pool_get_size(pool, &s);
-        pool_size += s;
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        pool_size += ABTI_pool_get_size(p_pool);
     }
 
     return pool_size;
@@ -659,10 +488,8 @@ size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
     int p;
 
     for (p = 0; p < p_sched->num_pools; p++) {
-        size_t s;
-        ABT_pool pool = p_sched->pools[p];
-        ABT_pool_get_total_size(pool, &s);
-        pool_size += s;
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        pool_size += ABTI_pool_get_total_size(p_pool);
     }
 
     return pool_size;
@@ -717,6 +544,229 @@ size_t ABTI_sched_get_effective_size(ABTI_sched *p_sched)
 /* Private APIs                                                              */
 /*****************************************************************************/
 
+void ABTI_sched_finish(ABTI_sched *p_sched)
+{
+    ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_FINISH);
+}
+
+void ABTI_sched_exit(ABTI_sched *p_sched)
+{
+    ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_EXIT);
+}
+
+int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
+                      ABT_sched_config config, ABT_bool automatic,
+                      ABTI_sched **pp_newsched)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_sched *p_sched;
+    int p;
+
+    p_sched = (ABTI_sched *)ABTU_malloc(sizeof(ABTI_sched));
+
+    /* Copy of the contents of pools */
+    ABT_pool *pool_list;
+    pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
+    for (p = 0; p < num_pools; p++) {
+        if (pools[p] == ABT_POOL_NULL) {
+            ABTI_pool *p_newpool;
+            abt_errno = ABTI_pool_create_basic(ABT_POOL_FIFO,
+                                              ABT_POOL_ACCESS_MPSC,
+                                              ABT_TRUE, &p_newpool);
+            ABTI_CHECK_ERROR(abt_errno);
+            pool_list[p] = ABTI_pool_get_handle(p_newpool);
+        } else {
+            pool_list[p] = pools[p];
+        }
+    }
+
+    /* Check if the pools are available */
+    for (p = 0; p < num_pools; p++) {
+        ABTI_pool_retain(ABTI_pool_get_ptr(pool_list[p]));
+    }
+
+    p_sched->used          = ABTI_SCHED_NOT_USED;
+    p_sched->automatic     = automatic;
+    p_sched->kind          = ABTI_sched_get_kind(def);
+    p_sched->state         = ABT_SCHED_STATE_READY;
+    p_sched->request       = 0;
+    p_sched->pools         = pool_list;
+    p_sched->num_pools     = num_pools;
+    p_sched->type          = def->type;
+    p_sched->p_thread      = NULL;
+    p_sched->p_task        = NULL;
+    p_sched->p_ctx         = NULL;
+
+    p_sched->init          = def->init;
+    p_sched->run           = def->run;
+    p_sched->free          = def->free;
+    p_sched->get_migr_pool = def->get_migr_pool;
+
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+    p_sched->id            = ABTI_sched_get_new_id();
+#endif
+    LOG_EVENT("[S%" PRIu64 "] created\n", p_sched->id);
+
+    /* Return value */
+    ABT_sched newsched = ABTI_sched_get_handle(p_sched);
+
+    /* Specific initialization */
+    p_sched->init(newsched, config);
+    *pp_newsched = p_sched;
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
+                            ABT_pool *pools, ABT_sched_config config,
+                            ABTI_sched **pp_newsched)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_pool_access access;
+    ABT_pool_kind kind = ABT_POOL_FIFO;
+    ABT_bool automatic;
+    int p;
+
+    /* We set the access to the default one */
+    access = ABT_POOL_ACCESS_MPSC;
+    automatic = ABT_TRUE;;
+    /* We read the config and set the configured parameters */
+    abt_errno = ABTI_sched_config_read_global(config, &access, &automatic);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* A pool array is provided, predef has to be compatible */
+    if (pools != NULL) {
+        /* Copy of the contents of pools */
+        ABT_pool *pool_list;
+        pool_list = (ABT_pool *)ABTU_malloc(num_pools*sizeof(ABT_pool));
+        for (p = 0; p < num_pools; p++) {
+            if (pools[p] == ABT_POOL_NULL) {
+                ABTI_pool *p_newpool;
+                abt_errno = ABTI_pool_create_basic(ABT_POOL_FIFO, access,
+                                                   ABT_TRUE, &p_newpool);
+                ABTI_CHECK_ERROR(abt_errno);
+                pool_list[p] = ABTI_pool_get_handle(p_newpool);
+            } else {
+                pool_list[p] = pools[p];
+            }
+        }
+
+        /* Creation of the scheduler */
+        switch (predef) {
+            case ABT_SCHED_DEFAULT:
+            case ABT_SCHED_BASIC:
+                abt_errno = ABTI_sched_create(ABTI_sched_get_basic_def(),
+                                              num_pools, pool_list,
+                                              ABT_SCHED_CONFIG_NULL,
+                                              automatic, pp_newsched);
+                break;
+            case ABT_SCHED_BASIC_WAIT:
+                abt_errno = ABTI_sched_create(ABTI_sched_get_basic_wait_def(),
+                                              num_pools, pool_list,
+                                              ABT_SCHED_CONFIG_NULL,
+                                              automatic, pp_newsched);
+                break;
+            case ABT_SCHED_PRIO:
+                abt_errno = ABTI_sched_create(ABTI_sched_get_prio_def(),
+                                              num_pools, pool_list,
+                                              ABT_SCHED_CONFIG_NULL,
+                                              automatic, pp_newsched);
+                break;
+            case ABT_SCHED_RANDWS:
+                abt_errno = ABTI_sched_create(ABTI_sched_get_randws_def(),
+                                              num_pools, pool_list,
+                                              ABT_SCHED_CONFIG_NULL,
+                                              automatic, pp_newsched);
+                break;
+            default:
+                abt_errno = ABT_ERR_INV_SCHED_PREDEF;
+                break;
+        }
+        ABTI_CHECK_ERROR(abt_errno);
+        ABTU_free(pool_list);
+    }
+
+    /* No pool array is provided, predef has to be compatible */
+    else {
+        /* Set the number of pools */
+        switch (predef) {
+            case ABT_SCHED_DEFAULT:
+            case ABT_SCHED_BASIC:
+                num_pools = 1;
+                break;
+            case ABT_SCHED_BASIC_WAIT:
+                /* FIFO_WAIT is default pool for use with BASIC_WAIT sched */
+                kind = ABT_POOL_FIFO_WAIT;
+                num_pools = 1;
+                break;
+            case ABT_SCHED_PRIO:
+                num_pools = ABTI_SCHED_NUM_PRIO;
+                break;
+            case ABT_SCHED_RANDWS:
+                num_pools = 1;
+                break;
+            default:
+                abt_errno = ABT_ERR_INV_SCHED_PREDEF;
+                ABTI_CHECK_ERROR(abt_errno);
+                break;
+        }
+
+        /* Creation of the pools */
+        /* To avoid the malloc overhead, we use a stack array. */
+        ABT_pool pool_list[ABTI_SCHED_NUM_PRIO];
+        int p;
+        for (p = 0; p < num_pools; p++) {
+            ABTI_pool *p_newpool;
+            abt_errno = ABTI_pool_create_basic(kind, access, ABT_TRUE,
+                                               &p_newpool);
+            ABTI_CHECK_ERROR(abt_errno);
+            pool_list[p] = ABTI_pool_get_handle(p_newpool);
+        }
+
+        /* Creation of the scheduler */
+        switch (predef) {
+            case ABT_SCHED_DEFAULT:
+            case ABT_SCHED_BASIC:
+                abt_errno = ABTI_sched_create(ABTI_sched_get_basic_def(),
+                                              num_pools, pool_list,
+                                              config, automatic, pp_newsched);
+                break;
+            case ABT_SCHED_BASIC_WAIT:
+                abt_errno = ABTI_sched_create(ABTI_sched_get_basic_wait_def(),
+                                              num_pools, pool_list,
+                                              config, automatic, pp_newsched);
+                break;
+            case ABT_SCHED_PRIO:
+                abt_errno = ABTI_sched_create(ABTI_sched_get_prio_def(),
+                                              num_pools, pool_list,
+                                              config, automatic, pp_newsched);
+                break;
+            case ABT_SCHED_RANDWS:
+                abt_errno = ABTI_sched_create(ABTI_sched_get_randws_def(),
+                                              num_pools, pool_list,
+                                              config, automatic, pp_newsched);
+                break;
+            default:
+                abt_errno = ABT_ERR_INV_SCHED_PREDEF;
+                ABTI_CHECK_ERROR(abt_errno);
+                break;
+        }
+    }
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
 int ABTI_sched_free(ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
@@ -734,8 +784,9 @@ int ABTI_sched_free(ABTI_sched *p_sched)
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
         int32_t num_scheds = ABTI_pool_release(p_pool);
         if (p_pool->automatic == ABT_TRUE && num_scheds == 0) {
-            abt_errno = ABT_pool_free(p_sched->pools+p);
-            ABTI_CHECK_ERROR(abt_errno);
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+            ABTI_CHECK_NULL_POOL_PTR(p_pool);
+            ABTI_pool_free(p_pool);
         }
     }
     ABTU_free(p_sched->pools);
