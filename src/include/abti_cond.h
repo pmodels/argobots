@@ -79,7 +79,7 @@ int ABTI_cond_wait(ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 
         type = ABT_UNIT_TYPE_THREAD;
         p_unit = &p_thread->unit_def;
-        p_unit->thread = ABTI_thread_get_handle(p_thread);
+        p_unit->handle.thread = ABTI_thread_get_handle(p_thread);
         p_unit->type = type;
     } else {
         /* external thread */
@@ -171,7 +171,7 @@ void ABTI_cond_broadcast(ABTI_cond *p_cond)
         p_unit->p_next = NULL;
 
         if (p_unit->type == ABT_UNIT_TYPE_THREAD) {
-            ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->thread);
+            ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->handle.thread);
             ABTI_thread_set_ready(p_thread);
         } else {
             /* When the head is an external thread */

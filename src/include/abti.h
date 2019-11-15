@@ -300,7 +300,7 @@ struct ABTI_unit {
     union {
         ABT_thread thread;
         ABT_task   task;
-    };
+    } handle;
     ABT_unit_type type;
 };
 
