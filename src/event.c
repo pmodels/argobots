@@ -329,7 +329,7 @@ void ABTI_event_send_num_xstream(void)
     int num_xstreams;
     int n;
 
-    ABT_xstream_get_num(&num_xstreams);
+    num_xstreams = gp_ABTI_global->num_xstreams;
 
     sprintf(send_buf, "%d", num_xstreams);
     n = write(gp_einfo->pfd.fd, send_buf, strlen(send_buf));
