@@ -23,7 +23,6 @@ ABT_pool_access accesses[] = {
 };
 
 typedef struct {
-    int num_scheds;
     int *num_pools;
     ABT_pool **pools;
     ABT_sched *scheds;
@@ -61,7 +60,7 @@ int main(int argc, char *argv[])
     create_work_units();
 
     /* Join ESs */
-    for (i = 1; i < g_data.num_scheds; i++) {
+    for (i = 1; i < num_scheds; i++) {
         ret = ABT_xstream_join(g_data.xstreams[i]);
         ATS_ERROR(ret, "ABT_xstream_join");
     }
@@ -77,7 +76,6 @@ int main(int argc, char *argv[])
 
 static void init_global_data(void)
 {
-    g_data.num_scheds = num_scheds;
     g_data.num_pools = (int *)calloc(num_scheds, sizeof(int));
     g_data.pools = (ABT_pool **)calloc(num_scheds, sizeof(ABT_pool *));
     g_data.scheds = (ABT_sched *)calloc(num_scheds, sizeof(ABT_sched));
@@ -88,7 +86,7 @@ static void fini_global_data(void)
 {
     int i;
 
-    for (i = 0; i < g_data.num_scheds; i++) {
+    for (i = 0; i < num_scheds; i++) {
         if (g_data.pools[i]) free(g_data.pools[i]);
     }
 
@@ -101,7 +99,6 @@ static void fini_global_data(void)
 static void create_scheds_and_xstreams(void)
 {
     int i, k, ret;
-    int num_scheds = g_data.num_scheds;
     ABT_sched *scheds = g_data.scheds;
     int *num_pools = g_data.num_pools;
     ABT_pool **pools = g_data.pools;
@@ -169,7 +166,6 @@ static void create_scheds_and_xstreams(void)
 static void free_scheds_and_xstreams(void)
 {
     int i, ret;
-    int num_scheds = g_data.num_scheds;
     ABT_xstream *xstreams = g_data.xstreams;
 
     /* Free all ESs except the primary ES */
@@ -290,7 +286,7 @@ static void create_work_units(void)
     int i;
     int ret;
 
-    for (i = 0; i < g_data.num_scheds; i++) {
+    for (i = 0; i < num_scheds; i++) {
         /* Create a ULT in the first main pool */
         ABT_pool main_pool;
         ret = ABT_xstream_get_main_pools(g_data.xstreams[i], 1, &main_pool);

@@ -466,10 +466,10 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
             /* we need to ensure that the pool set of the scheduler does
              * not contain an ES private pool  */
             for (p = 0; p < p_sched->num_pools; p++) {
-                ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-                ABTI_CHECK_TRUE(p_pool->access != ABT_POOL_ACCESS_PRIV &&
-                                  p_pool->access != ABT_POOL_ACCESS_SPSC &&
-                                  p_pool->access != ABT_POOL_ACCESS_MPSC,
+                ABTI_pool *p_local_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+                ABTI_CHECK_TRUE(p_local_pool->access != ABT_POOL_ACCESS_PRIV &&
+                                p_local_pool->access != ABT_POOL_ACCESS_SPSC &&
+                                p_local_pool->access != ABT_POOL_ACCESS_MPSC,
                                 ABT_ERR_POOL);
             }
             break;
