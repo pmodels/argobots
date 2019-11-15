@@ -228,6 +228,7 @@ void ABTD_thread_cancel(ABTI_thread *p_thread)
 #endif
 }
 
+#if !defined(ABT_CONFIG_USE_FCONTEXT)
 static inline
 void print_bytes(size_t size, void *p_val, FILE *p_os) {
     size_t i;
@@ -236,6 +237,7 @@ void print_bytes(size_t size, void *p_val, FILE *p_os) {
         fprintf(p_os, "%02" PRIx8, val);
     }
 }
+#endif
 
 void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent)
 {

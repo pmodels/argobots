@@ -533,6 +533,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
         }
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
+        ABTI_info_finalize_pool_set(&pool_set);
         /* Update print_stack_flag to 3. */
         ABTD_atomic_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_FINALIZE);
     } else {

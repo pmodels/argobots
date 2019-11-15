@@ -13,8 +13,10 @@ static inline int ABTI_thread_create_internal(ABTI_pool *p_pool,
 static int ABTI_thread_revive(ABTI_pool *p_pool, void(*thread_func)(void *),
                               void *arg, ABTI_thread *p_thread);
 static inline int ABTI_thread_join(ABTI_thread *p_thread);
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
 static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
                                           ABTI_xstream *p_xstream);
+#endif
 static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
 static inline void ABTI_thread_free_internal(ABTI_thread *p_thread);
 static inline ABT_thread_id ABTI_thread_get_new_id(void);
@@ -2329,10 +2331,10 @@ static inline int ABTI_thread_join(ABTI_thread *p_thread)
     goto fn_exit;
 }
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
 static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
                                           ABTI_xstream *p_xstream)
 {
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
 
     /* checking for cases when migration is not allowed */
@@ -2395,10 +2397,8 @@ static int ABTI_thread_migrate_to_xstream(ABTI_thread *p_thread,
   fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
-#else
-    return ABT_ERR_MIGRATION_NA;
-#endif
 }
+#endif
 
 static inline ABT_thread_id ABTI_thread_get_new_id(void)
 {
