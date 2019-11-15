@@ -410,8 +410,7 @@ ABT_bool ABTI_event_stop_xstream(ABTI_xstream *p_xstream)
     ABT_bool can_stop = ABT_TRUE;
     ABT_event_cb_fn cb_fn;
     ABT_xstream xstream = ABTI_xstream_get_handle(p_xstream);
-    ABT_xstream primary;
-    ABT_pool pool;
+    ABTI_xstream *p_primary;
     int i;
 
     /* Ask whether the target ES can be stopped */
@@ -435,9 +434,8 @@ ABT_bool ABTI_event_stop_xstream(ABTI_xstream *p_xstream)
         }
 
         /* Create a ULT on the primary ES to join the target ES */
-        primary = ABTI_xstream_get_handle(gp_ABTI_global->p_xstreams[0]);
-        ABT_xstream_get_main_pools(primary, 1, &pool);
-        ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+        p_primary = gp_ABTI_global->p_xstreams[0];
+        ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_primary);
         abt_errno = ABTI_thread_create(p_pool, ABTI_event_free_xstream, xstream,
                                        ABT_THREAD_ATTR_NULL, NULL);
         ABTI_ASSERT(abt_errno == ABT_SUCCESS);
@@ -556,11 +554,9 @@ void ABTI_event_shrink_xstreams(int num_xstreams)
 
     /* Create a ULT on the primary ES to join the target ESs */
     /* NOTE: p_xstreams will be freed by the ULT. */
-    ABT_pool pool;
-    xstream = ABTI_xstream_get_handle(gp_ABTI_global->p_xstreams[0]);
-    ABT_xstream_get_main_pools(xstream, 1, &pool);
+    ABTI_xstream *p_primary = gp_ABTI_global->p_xstreams[0];
     p_xstreams[0] = (ABTI_xstream *)(intptr_t)n;
-    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_primary);
     int abt_errno;
     abt_errno = ABTI_thread_create(p_pool, ABTI_event_free_multiple_xstreams,
                                    (void *)p_xstreams, ABT_THREAD_ATTR_NULL,

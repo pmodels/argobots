@@ -120,14 +120,13 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
                       ABT_thread_attr attr, ABT_thread *newthread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_pool pool;
     ABTI_thread *p_newthread;
 
-    /* TODO: need to consider the access type of target pool */
-    abt_errno = ABT_xstream_get_main_pools(xstream, 1, &pool);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    /* TODO: need to consider the access type of target pool */
+    ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_xstream);
     int refcount = (newthread != NULL) ? 1 : 0;
     abt_errno = ABTI_thread_create_internal(p_pool, thread_func, arg,
                                             ABTI_thread_attr_get_ptr(attr),
