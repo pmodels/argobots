@@ -487,11 +487,11 @@ AS_IF([test "x$enable_error_check" = "xno"],
     [ABT_NULL="0"])
 AC_SUBST([ABT_NULL])
 
-AS_IF([test "x$enable_pool_producer_check" = "xno"],
+AS_IF([test "x$enable_error_check" = "xno" -o "x$enable_pool_producer_check" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK, 1,
         [Define to disable pool producer check])])
 
-AS_IF([test "x$enable_pool_consumer_check" = "xno"],
+AS_IF([test "x$enable_error_check" = "xno" -o "x$enable_pool_consumer_check" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK, 1,
         [Define to disable pool consumer check])])
 

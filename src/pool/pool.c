@@ -705,17 +705,18 @@ int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-            if (p_pool->producer && p_xstream != p_pool->producer) {
-                abt_errno = ABT_ERR_INV_POOL_ACCESS;
-                ABTI_CHECK_ERROR(abt_errno);
-            }
+            ABTI_CHECK_TRUE(!p_pool->producer || p_xstream == p_pool->producer,
+                            ABT_ERR_INV_POOL_ACCESS);
 #endif
+            ABTI_CHECK_TRUE(!p_pool->consumer || p_pool->consumer == p_xstream,
+                            ABT_ERR_INV_POOL_ACCESS);
+            p_pool->consumer = p_xstream;
+            break;
+
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_MPSC:
-            if (p_pool->consumer && p_pool->consumer != p_xstream) {
-                abt_errno = ABT_ERR_INV_POOL_ACCESS;
-                ABTI_CHECK_ERROR(abt_errno);
-            }
+            ABTI_CHECK_TRUE(!p_pool->consumer || p_pool->consumer == p_xstream,
+                            ABT_ERR_INV_POOL_ACCESS);
             /* NB: as we do not want to use a mutex, the function can be wrong
              * here */
             p_pool->consumer = p_xstream;
@@ -760,6 +761,11 @@ int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
             ABTI_CHECK_TRUE(!p_pool->consumer || p_xstream == p_pool->consumer,
                             ABT_ERR_INV_POOL_ACCESS);
 #endif
+            ABTI_CHECK_TRUE(!p_pool->producer || p_pool->producer == p_xstream,
+                            ABT_ERR_INV_POOL_ACCESS);
+            p_pool->producer = p_xstream;
+            break;
+
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_SPMC:
             ABTI_CHECK_TRUE(!p_pool->producer || p_pool->producer == p_xstream,
