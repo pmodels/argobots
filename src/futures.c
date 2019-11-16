@@ -130,6 +130,7 @@ int ABT_future_free(ABT_future *future)
 int ABT_future_wait(ABT_future future)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -140,8 +141,8 @@ int ABT_future_wait(ABT_future future)
         ABT_unit_type type;
         int32_t ext_signal = 0;
 
-        if (lp_ABTI_local != NULL) {
-            p_current = ABTI_local_get_thread();
+        if (p_local != NULL) {
+            p_current = p_local->p_thread;
             ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_FUTURE);
 
             type = ABT_UNIT_TYPE_THREAD;
@@ -171,7 +172,7 @@ int ABT_future_wait(ABT_future future)
             ABTI_spinlock_release(&p_future->lock);
 
             /* Suspend the current ULT */
-            ABTI_thread_suspend(p_current);
+            ABTI_thread_suspend(&p_local, p_current);
 
         } else {
             ABTI_spinlock_release(&p_future->lock);
@@ -241,6 +242,7 @@ int ABT_future_test(ABT_future future, ABT_bool *flag)
 int ABT_future_set(ABT_future future, void *value)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -273,7 +275,7 @@ int ABT_future_set(ABT_future future, void *value)
             if (type == ABT_UNIT_TYPE_THREAD) {
                 ABTI_thread *p_thread =
                     ABTI_thread_get_ptr(p_unit->handle.thread);
-                ABTI_thread_set_ready(p_thread);
+                ABTI_thread_set_ready(p_local, p_thread);
             } else {
                 /* When the head is an external thread */
                 int32_t *p_ext_signal = (int32_t *)p_unit->pool;

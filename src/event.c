@@ -338,6 +338,7 @@ void ABTI_event_send_num_xstream(void)
 
 static void ABTI_event_free_xstream(void *arg)
 {
+    ABTI_local *p_local = ABTI_local_get_local();
     char send_buf[ABTI_MSG_BUF_LEN];
     ABT_xstream xstream = (ABT_xstream)arg;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
@@ -351,7 +352,7 @@ static void ABTI_event_free_xstream(void *arg)
             continue;
         }
 #endif
-        ABTI_thread_yield(ABTI_local_get_thread());
+        ABTI_thread_yield(p_local->p_thread);
     }
 
     abt_errno = ABTI_xstream_join(p_xstream);
@@ -369,6 +370,7 @@ static void ABTI_event_free_xstream(void *arg)
 
 static void ABTI_event_free_multiple_xstreams(void *arg)
 {
+    ABTI_local *p_local = ABTI_local_get_local();
     char send_buf[ABTI_MSG_BUF_LEN];
     ABTI_xstream **p_xstreams = (ABTI_xstream **)arg;
     int num_xstreams = (int)(intptr_t)p_xstreams[0];
@@ -384,7 +386,7 @@ static void ABTI_event_free_multiple_xstreams(void *arg)
                 continue;
             }
 #endif
-            ABTI_thread_yield(ABTI_local_get_thread());
+            ABTI_thread_yield(p_local->p_thread);
         }
 
         abt_errno = ABTI_xstream_join(p_xstream);
@@ -665,7 +667,7 @@ void ABTI_event_set_num_xstreams(int num_xstreams)
     }
 }
 
-ABT_bool ABTI_event_check_power(void)
+ABT_bool ABTI_event_check_power(ABTI_local *p_local)
 {
     ABT_bool stop_xstream = ABT_FALSE;
     int rank, n, ret;
@@ -674,7 +676,7 @@ ABT_bool ABTI_event_check_power(void)
 
     if (gp_ABTI_global->pm_connected == ABT_FALSE) goto fn_exit;
 
-    p_xstream = ABTI_local_get_xstream();
+    p_xstream = p_local->p_xstream;
     ABTI_ASSERT(p_xstream);
     rank = (int)p_xstream->rank;
 
@@ -751,7 +753,7 @@ ABT_bool ABTI_event_check_power(void)
 
     ABTI_mutex_unlock(&gp_einfo->mutex);
 
-    p_xstream = ABTI_local_get_xstream();
+    p_xstream = p_local->p_xstream;
     if (p_xstream->request & ABTI_XSTREAM_REQ_STOP) {
         stop_xstream = ABT_TRUE;
     }
@@ -963,7 +965,7 @@ void ABTI_event_inc_unit_cnt(ABTI_xstream *p_xstream, ABT_unit_type type)
     }
 }
 
-void ABTI_event_publish_info(void)
+void ABTI_event_publish_info(ABTI_local *p_local)
 {
     ABTI_xstream *p_xstream;
     int rank, i, ret;
@@ -976,7 +978,7 @@ void ABTI_event_publish_info(void)
 
     if (gp_ABTI_global->pub_needed == ABT_FALSE) return;
 
-    p_xstream = ABTI_local_get_xstream();
+    p_xstream = p_local->p_xstream;
     rank = (int)p_xstream->rank;
     if (rank > gp_einfo->max_xstream_rank) {
         ABTI_event_realloc_pub_arrays(rank);

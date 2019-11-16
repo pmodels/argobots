@@ -89,27 +89,29 @@ int ABT_init(int argc, char **argv)
     ABTI_spinlock_create(&gp_ABTI_global->xstreams_lock);
 
     /* Init the ES local data */
-    abt_errno = ABTI_local_init();
+    ABTI_local *p_local = NULL;
+    abt_errno = ABTI_local_init(&p_local);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_local_init");
 
     /* Create the primary ES */
     ABTI_xstream *p_newxstream;
-    abt_errno = ABTI_xstream_create_primary(&p_newxstream);
+    abt_errno = ABTI_xstream_create_primary(&p_local, &p_newxstream);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_create_primary");
-    ABTI_local_set_xstream(p_newxstream);
+    p_local->p_xstream = p_newxstream;
 
     /* Create the primary ULT, i.e., the main thread */
     ABTI_thread *p_main_thread;
-    abt_errno = ABTI_thread_create_main(p_newxstream, &p_main_thread);
+    abt_errno = ABTI_thread_create_main(p_local, p_newxstream, &p_main_thread);
     /* Set as if p_newxstream is currently running the main thread. */
     p_main_thread->state = ABT_THREAD_STATE_RUNNING;
     p_main_thread->p_last_xstream = p_newxstream;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
     gp_ABTI_global->p_thread_main = p_main_thread;
-    ABTI_local_set_thread(p_main_thread);
+    p_local->p_thread = p_main_thread;
 
     /* Start the primary ES */
-    abt_errno = ABTI_xstream_start_primary(p_newxstream, p_main_thread);
+    abt_errno = ABTI_xstream_start_primary(&p_local, p_newxstream,
+                                           p_main_thread);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");
 
     if (gp_ABTI_global->print_config == ABT_TRUE) {
@@ -146,6 +148,7 @@ int ABT_init(int argc, char **argv)
 int ABT_finalize(void)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* First, take a global lock protecting the initialization/finalization
      * process. Don't go to fn_exit before taking a lock */
@@ -161,14 +164,14 @@ int ABT_finalize(void)
         goto fn_exit;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(lp_ABTI_local != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(p_local != NULL, ABT_ERR_INV_XSTREAM);
 
-    ABTI_xstream *p_xstream = ABTI_local_get_xstream();
+    ABTI_xstream *p_xstream = p_local->p_xstream;
     ABTI_CHECK_TRUE_MSG(p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY,
                         ABT_ERR_INV_XSTREAM,
                         "ABT_finalize must be called by the primary ES.");
 
-    ABTI_thread *p_thread = ABTI_local_get_thread();
+    ABTI_thread *p_thread = p_local->p_thread;
     ABTI_CHECK_TRUE_MSG(p_thread->type == ABTI_THREAD_TYPE_MAIN,
                         ABT_ERR_INV_THREAD,
                         "ABT_finalize must be called by the primary ULT.");
@@ -186,7 +189,7 @@ int ABT_finalize(void)
 
         /* Switch to the top scheduler */
         ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
-        ABTI_thread_context_switch_thread_to_sched(p_thread, p_sched);
+        ABTI_thread_context_switch_thread_to_sched(&p_local, p_thread, p_sched);
 
         /* Back to the original thread */
         LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",
@@ -194,14 +197,14 @@ int ABT_finalize(void)
     }
 
     /* Remove the primary ULT */
-    ABTI_thread_free_main(p_thread);
+    ABTI_thread_free_main(p_local, p_thread);
 
     /* Free the primary ES */
-    abt_errno = ABTI_xstream_free(p_xstream);
+    abt_errno = ABTI_xstream_free(p_local, p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Finalize the ES local data */
-    abt_errno = ABTI_local_finalize();
+    abt_errno = ABTI_local_finalize(&p_local);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Finalize the event environment */
