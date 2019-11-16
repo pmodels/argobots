@@ -357,7 +357,7 @@ int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
     fprintf(fp, "== pool (%p) ==\n", (void *)p_pool);
     struct ABTI_info_print_unit_arg_t arg;
     arg.fp = fp;
-    arg.pool = ABTI_pool_get_handle(pool);
+    arg.pool = pool;
     p_pool->p_print_all(pool, &arg, ABTI_info_print_unit);
 
   fn_exit:

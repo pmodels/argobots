@@ -190,37 +190,88 @@ enum ABT_event_kind {
 #define ABT_XSTREAM_ANY_RANK    -1
 
 /* Data Types */
-typedef void *                 ABT_xstream;         /* Execution Stream */
-typedef enum ABT_xstream_state ABT_xstream_state;   /* ES state */
-typedef void *                 ABT_xstream_barrier; /* ES barrier */
-typedef void *                 ABT_sched;           /* Scheduler */
-typedef void *                 ABT_sched_config;    /* Sched-specific config */
-typedef enum ABT_sched_predef  ABT_sched_predef;    /* Predefined scheduler */
-typedef enum ABT_sched_state   ABT_sched_state;     /* Scheduler state */
-typedef enum ABT_sched_type    ABT_sched_type;      /* Scheduler type */
-typedef void *                 ABT_pool;            /* Pool */
-typedef void *                 ABT_pool_config;     /* Specific pool config */
-typedef enum ABT_pool_kind     ABT_pool_kind;       /* Pool kind */
-typedef enum ABT_pool_access   ABT_pool_access;     /* Pool access mode */
-typedef void *                 ABT_unit;            /* Unit */
-typedef enum ABT_unit_type     ABT_unit_type;       /* Unit type */
-typedef void *                 ABT_thread;          /* User-Level Thread (ULT) */
-typedef void *                 ABT_thread_attr;     /* ULT attribute */
-typedef enum ABT_thread_state  ABT_thread_state;    /* ULT state */
-typedef uint64_t               ABT_thread_id;       /* ULT id */
-typedef void *                 ABT_task;            /* Tasklet */
-typedef enum ABT_task_state    ABT_task_state;      /* Tasklet state */
-typedef void *                 ABT_key;             /* WU-specific data key */
-typedef void *                 ABT_mutex;           /* Mutex */
-typedef void *                 ABT_mutex_attr;      /* Mutex attribute */
-typedef void *                 ABT_cond;            /* Condition variable */
-typedef void *                 ABT_rwlock;          /* Readers writer lock */
-typedef void *                 ABT_eventual;        /* Eventual */
-typedef void *                 ABT_future;          /* Future */
-typedef void *                 ABT_barrier;         /* Barrier */
-typedef void *                 ABT_timer;           /* Timer */
-typedef int                    ABT_bool;            /* Boolean type */
-typedef enum ABT_event_kind    ABT_event_kind;      /* Event kind */
+struct ABT_xstream_opaque;
+struct ABT_xstream_barrier_opaque;
+struct ABT_sched_opaque;
+struct ABT_sched_config_opaque;
+struct ABT_pool_opaque;
+struct ABT_pool_config_opaque;
+struct ABT_unit_opaque;
+struct ABT_thread_opaque;
+struct ABT_thread_attr_opaque;
+struct ABT_task_opaque;
+struct ABT_key_opaque;
+struct ABT_mutex_opaque;
+struct ABT_mutex_attr_opaque;
+struct ABT_cond_opaque;
+struct ABT_rwlock_opaque;
+struct ABT_eventual_opaque;
+struct ABT_future_opaque;
+struct ABT_barrier_opaque;
+struct ABT_timer_opaque;
+
+/* Execution Stream */
+typedef struct ABT_xstream_opaque *         ABT_xstream;
+/* ES state */
+typedef enum ABT_xstream_state              ABT_xstream_state;
+/* ES barrier */
+typedef struct ABT_xstream_barrier_opaque * ABT_xstream_barrier;
+/* Scheduler */
+typedef struct ABT_sched_opaque *           ABT_sched;
+/* Sched-specific config */
+typedef struct ABT_sched_config_opaque *    ABT_sched_config;
+/* Predefined scheduler */
+typedef enum ABT_sched_predef               ABT_sched_predef;
+/* Scheduler state */
+typedef enum ABT_sched_state                ABT_sched_state;
+/* Scheduler type */
+typedef enum ABT_sched_type                 ABT_sched_type;
+/* Pool */
+typedef struct ABT_pool_opaque *            ABT_pool;
+/* Specific pool config */
+typedef struct ABT_pool_config_opaque *     ABT_pool_config;
+/* Pool kind */
+typedef enum ABT_pool_kind                  ABT_pool_kind;
+/* Pool access mode */
+typedef enum ABT_pool_access                ABT_pool_access;
+/* Unit */
+typedef struct ABT_unit_opaque *            ABT_unit;
+/* Unit type */
+typedef enum ABT_unit_type                  ABT_unit_type;
+/* User-Level Thread (ULT) */
+typedef struct ABT_thread_opaque *          ABT_thread;
+/* ULT attribute */
+typedef struct ABT_thread_attr_opaque *     ABT_thread_attr;
+/* ULT state */
+typedef enum ABT_thread_state               ABT_thread_state;
+/* Tasklet state */
+typedef enum ABT_task_state                 ABT_task_state;
+/* ULT id */
+typedef uint64_t                            ABT_thread_id;
+/* Tasklet */
+typedef struct ABT_task_opaque *            ABT_task;
+/* WU-specific data key */
+typedef struct ABT_key_opaque *             ABT_key;
+/* Mutex */
+typedef struct ABT_mutex_opaque *           ABT_mutex;
+/* Mutex attribute */
+typedef struct ABT_mutex_attr_opaque *      ABT_mutex_attr;
+/* Condition variable */
+typedef struct ABT_cond_opaque *            ABT_cond;
+/* Readers writer lock */
+typedef struct ABT_rwlock_opaque *          ABT_rwlock;
+/* Eventual */
+typedef struct ABT_eventual_opaque *        ABT_eventual;
+/* Future */
+typedef struct ABT_future_opaque *          ABT_future;
+/* Barrier */
+typedef struct ABT_barrier_opaque *         ABT_barrier;
+/* Timer */
+typedef struct ABT_timer_opaque *           ABT_timer;
+/* Boolean type */
+typedef int                                 ABT_bool;
+/* Event kind */
+typedef enum ABT_event_kind                 ABT_event_kind;
 
 
 /* Null Object Handles */

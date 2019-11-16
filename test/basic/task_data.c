@@ -80,7 +80,7 @@ static void task_create(void *arg)
     int my_id = (int)(intptr_t)arg;
     ABT_thread my_thread;
     ABT_pool my_pool;
-    ABT_thread *tasks;
+    ABT_task *tasks;
 
     ret = ABT_thread_self(&my_thread);
     ATS_ERROR(ret, "ABT_thread_self");

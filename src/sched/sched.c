@@ -841,10 +841,10 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
         if (p_sched->num_pools == 0)
             p_pool = NULL;
         else
-            p_pool = p_sched->pools[0];
+            p_pool = ABTI_pool_get_ptr(p_sched->pools[0]);
     }
     else
-        p_pool = p_sched->get_migr_pool(sched);
+        p_pool = ABTI_pool_get_ptr(p_sched->get_migr_pool(sched));
 
     /* Check the pool */
     if (ABTI_pool_accept_migration(p_pool, source_pool) == ABT_TRUE) {

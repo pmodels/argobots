@@ -457,8 +457,8 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
              * a pool with another associated pool, and set the right value if
              * it is okay  */
             for (p = 0; p < p_sched->num_pools; p++) {
-                abt_errno = ABTI_pool_set_consumer(p_sched->pools[p],
-                                                   p_pool->consumer);
+                abt_errno = ABTI_pool_set_consumer(
+                    ABTI_pool_get_ptr(p_sched->pools[p]), p_pool->consumer);
                 ABTI_CHECK_ERROR(abt_errno);
             }
             break;
