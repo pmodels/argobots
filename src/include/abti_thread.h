@@ -220,7 +220,6 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_local *p_local,
         ABTI_thread *p_prev = p_local->p_thread;
         if (!ABTI_thread_is_dynamic_promoted(p_prev)) {
             ABTI_ASSERT(p_prev == p_new);
-#if defined(ABT_CONFIG_USE_FCONTEXT)
             /* See ABTDI_thread_terminate for details.
              * TODO: avoid making a copy of the code. */
             ABTD_thread_context *p_fctx = &p_prev->ctx;
@@ -252,9 +251,6 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_local *p_local,
                     ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);
                 }
             }
-#else
-#error "Not implemented yet"
-#endif
         }
         return;
     }

@@ -8,7 +8,6 @@
 
 #include "abt_config.h"
 
-#if defined(ABT_CONFIG_USE_FCONTEXT)
 typedef void *  fcontext_t;
 
 typedef struct abt_ucontext_t {
@@ -17,13 +16,6 @@ typedef struct abt_ucontext_t {
     void *                 p_arg;   /* ULT function argument */
     struct abt_ucontext_t *p_link;  /* pointer to scheduler context */
 } abt_ucontext_t;
-
-#else
-#define _XOPEN_SOURCE
-#include <ucontext.h>
-typedef ucontext_t  abt_ucontext_t;
-
-#endif
 
 void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent);
 
