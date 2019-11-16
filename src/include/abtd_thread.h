@@ -14,13 +14,7 @@
 
 void ABTD_thread_func_wrapper_thread(void *p_arg);
 void ABTD_thread_func_wrapper_sched(void *p_arg);
-fcontext_t make_fcontext(void *sp, size_t size, void (*thread_func)(void *))
-                         ABT_API_PRIVATE;
-void *jump_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
-void *take_fcontext(fcontext_t *old, fcontext_t new, void *arg) ABT_API_PRIVATE;
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-void init_and_call_fcontext(void *p_arg, void (*f_thread)(void *),
-                            void *p_stacktop, fcontext_t *old);
 void ABTD_thread_terminate_thread_no_arg();
 #endif
 
@@ -38,7 +32,7 @@ int ABTDI_thread_context_create(ABTD_thread_context *p_link,
        Note that the parameter, p_stack, points to the bottom of stack. */
     p_stacktop = (void *)(((char *)p_stack) + stacksize);
 
-    p_newctx->fctx = make_fcontext(p_stacktop, stacksize, f_wrapper);
+    ABTD_thread_context_make(p_newctx, p_stacktop, stacksize, f_wrapper);
     p_newctx->f_thread = f_thread;
     p_newctx->p_arg = p_arg;
     p_newctx->p_link = p_link;
@@ -111,8 +105,8 @@ int ABTD_thread_context_arm_thread(size_t stacksize, void *p_stack,
     /* fcontext uses the top address of stack.
        Note that the parameter, p_stack, points to the bottom of stack. */
     void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
-    p_newctx->fctx = make_fcontext(p_stacktop, stacksize,
-                                   ABTD_thread_func_wrapper_thread);
+    ABTD_thread_context_make(p_newctx, p_stacktop, stacksize,
+                             ABTD_thread_func_wrapper_thread);
     return abt_errno;
 }
 #endif
@@ -124,14 +118,14 @@ static inline
 void ABTD_thread_context_switch(ABTD_thread_context *p_old,
                                 ABTD_thread_context *p_new)
 {
-    jump_fcontext(&p_old->fctx, p_new->fctx, p_new);
+    ABTD_thread_context_jump(p_old, p_new, p_new);
 }
 
 static inline
 void ABTD_thread_finish_context(ABTD_thread_context *p_old,
                                 ABTD_thread_context *p_new)
 {
-    take_fcontext(&p_old->fctx, p_new->fctx, p_new);
+    ABTD_thread_context_take(p_old, p_new, p_new);
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
@@ -140,7 +134,7 @@ void ABTD_thread_context_make_and_call(ABTD_thread_context *p_old,
                                        void (*f_thread)(void *), void *p_arg,
                                        void *p_stacktop)
 {
-    init_and_call_fcontext(p_arg, f_thread, p_stacktop, &p_old->fctx);
+    ABTD_thread_context_init_and_call(p_old, p_stacktop, f_thread, p_arg);
 }
 
 static inline
