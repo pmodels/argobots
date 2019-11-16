@@ -346,6 +346,7 @@ int ABT_thread_free_many(int num, ABT_thread *thread_list)
 
     for (i = 0; i < num; i++) {
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread_list[i]);
+        ABTI_thread_join(&p_local, p_thread);
         ABTI_thread_free(p_local, p_thread);
     }
     return ABT_SUCCESS;
