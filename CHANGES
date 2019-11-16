@@ -1,4 +1,15 @@
 ===============================================================================
+                               Changes in 1.0rc2
+===============================================================================
+
+- Added support for stack dump
+- Added support for ucontext to cover more architectures
+- Fixed code that assumes 64-bit OS to support 32bit environments
+- Enhanced performance with --enable-valgrind when Valgrind is not used
+- Fixed a bug in TLS handling
+- Fixed a bug in memory pool
+
+===============================================================================
                                Changes in 1.0rc1
 ===============================================================================
 
