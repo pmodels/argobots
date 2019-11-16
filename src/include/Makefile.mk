@@ -10,7 +10,7 @@ noinst_HEADERS = \
 	include/abtd.h \
 	include/abtd_atomic.h \
 	include/abtd_thread.h \
-	include/abtd_ucontext.h \
+	include/abtd_context.h \
 	include/abti.h \
 	include/abti_barrier.h \
 	include/abti_cond.h \

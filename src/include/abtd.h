@@ -8,7 +8,7 @@
 
 #define __USE_GNU
 #include <pthread.h>
-#include "abtd_ucontext.h"
+#include "abtd_context.h"
 
 /* Atomic Functions */
 #include "abtd_atomic.h"
@@ -21,7 +21,6 @@ typedef pthread_barrier_t   ABTD_xstream_barrier;
 #else
 typedef void *              ABTD_xstream_barrier;
 #endif
-typedef abt_ucontext_t      ABTD_thread_context;
 
 /* ES Storage Qualifier */
 #define ABTD_XSTREAM_LOCAL  __thread
