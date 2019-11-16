@@ -8,6 +8,11 @@
 
 #include "abt_config.h"
 
+#ifndef ABT_CONFIG_USE_FCONTEXT
+#define _XOPEN_SOURCE
+#include <ucontext.h>
+#endif
+
 typedef void *  fcontext_t;
 
 typedef struct ABTD_thread_context {
@@ -15,6 +20,11 @@ typedef struct ABTD_thread_context {
     void (*f_thread)(void *);       /* ULT function */
     void *                 p_arg;   /* ULT function argument */
     struct ABTD_thread_context *p_link;  /* pointer to scheduler context */
+#ifndef ABT_CONFIG_USE_FCONTEXT
+    ucontext_t             uctx;         /* ucontext entity pointed by fctx */
+    void (*f_uctx_thread)(void *);       /* root function called by ucontext */
+    void *                 p_uctx_arg;   /* argument for root function */
+#endif
 } ABTD_thread_context;
 
 static void ABTD_thread_context_make(ABTD_thread_context *p_ctx, void *sp,
@@ -32,6 +42,10 @@ static void ABTD_thread_context_init_and_call(ABTD_thread_context *p_ctx,
 
 void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent);
 
+#ifdef ABT_CONFIG_USE_FCONTEXT
 #include "abtd_fcontext.h"
+#else
+#include "abtd_ucontext.h"
+#endif
 
 #endif /* ABTD_CONTEXT_H_INCLUDED */
