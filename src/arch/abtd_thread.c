@@ -10,16 +10,15 @@ static inline void ABTD_thread_terminate_thread(ABTI_local *p_local,
 static inline void ABTD_thread_terminate_sched(ABTI_local *p_local,
                                                ABTI_thread *p_thread);
 
-#if defined(ABT_CONFIG_USE_FCONTEXT)
 void ABTD_thread_func_wrapper_thread(void *p_arg)
 {
-    ABTD_thread_context *p_fctx = (ABTD_thread_context *)p_arg;
-    void (*thread_func)(void *) = p_fctx->f_thread;
+    ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
+    void (*thread_func)(void *) = p_ctx->f_thread;
 
-    thread_func(p_fctx->p_arg);
+    thread_func(p_ctx->p_arg);
 
     /* NOTE: ctx is located in the beginning of ABTI_thread */
-    ABTI_thread *p_thread = (ABTI_thread *)p_fctx;
+    ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(p_thread->is_sched == NULL);
 #endif
@@ -30,13 +29,13 @@ void ABTD_thread_func_wrapper_thread(void *p_arg)
 
 void ABTD_thread_func_wrapper_sched(void *p_arg)
 {
-    ABTD_thread_context *p_fctx = (ABTD_thread_context *)p_arg;
-    void (*thread_func)(void *) = p_fctx->f_thread;
+    ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
+    void (*thread_func)(void *) = p_ctx->f_thread;
 
-    thread_func(p_fctx->p_arg);
+    thread_func(p_ctx->p_arg);
 
     /* NOTE: ctx is located in the beginning of ABTI_thread */
-    ABTI_thread *p_thread = (ABTI_thread *)p_fctx;
+    ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(p_thread->is_sched != NULL);
 #endif
@@ -44,42 +43,6 @@ void ABTD_thread_func_wrapper_sched(void *p_arg)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTD_thread_terminate_sched(p_local, p_thread);
 }
-#else
-void ABTD_thread_func_wrapper(int func_upper, int func_lower,
-                              int arg_upper, int arg_lower)
-{
-    ABTI_local *p_local = ABTI_local_get_local();
-    void (*thread_func)(void *);
-    void *p_arg;
-    size_t ptr_size, int_size;
-
-    ptr_size = sizeof(void *);
-    int_size = sizeof(int);
-    if (ptr_size == int_size) {
-        thread_func = (void (*)(void *))(uintptr_t)func_lower;
-        p_arg = (void *)(uintptr_t)arg_lower;
-    } else if (ptr_size == int_size * 2) {
-        uintptr_t shift_bits = CHAR_BIT * int_size;
-        uintptr_t mask = ((uintptr_t)1 << shift_bits) - 1;
-        thread_func = (void (*)(void *))(
-                ((uintptr_t)func_upper << shift_bits) |
-                ((uintptr_t)func_lower & mask));
-        p_arg = (void *)(
-                ((uintptr_t)arg_upper << shift_bits) |
-                ((uintptr_t)arg_lower & mask));
-    } else {
-        ABTI_ASSERT(0);
-    }
-
-    thread_func(p_arg);
-
-    /* Now, the ULT has finished its job. Terminate the ULT.
-     * We don't need to use the atomic operation here because the ULT will be
-     * terminated regardless of other requests. */
-    ABTI_thread *p_thread = p_local->p_thread;
-    p_thread->request |= ABTI_THREAD_REQ_TERMINATE;
-}
-#endif
 
 void ABTD_thread_exit(ABTI_local *p_local, ABTI_thread *p_thread)
 {
@@ -98,10 +61,9 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
                                           ABTI_thread *p_thread,
                                           ABT_bool is_sched)
 {
-#if defined(ABT_CONFIG_USE_FCONTEXT)
-    ABTD_thread_context *p_fctx = &p_thread->ctx;
+    ABTD_thread_context *p_ctx = &p_thread->ctx;
     ABTD_thread_context *p_link = (ABTD_thread_context *)
-        ABTD_atomic_load_ptr((void **)&p_fctx->p_link);
+        ABTD_atomic_load_ptr((void **)&p_ctx->p_link);
     if (p_link) {
         /* If p_link is set, it means that other ULT has called the join. */
         ABTI_thread *p_joiner = (ABTI_thread *)p_link;
@@ -150,15 +112,15 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
              * blocked.  We have to wake up the joiner ULT. */
             do {
                 p_link = (ABTD_thread_context *)
-                    ABTD_atomic_load_ptr((void **)&p_fctx->p_link);
+                    ABTD_atomic_load_ptr((void **)&p_ctx->p_link);
             } while (!p_link);
             ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);
         }
     }
 
-    /* No other ULT is waiting or blocked for this ULT. Since fcontext does
-     * not switch to other fcontext when it finishes, we need to explicitly
-     * switch to the scheduler. */
+    /* No other ULT is waiting or blocked for this ULT. Since a context does not
+     * switch to another context when it finishes, we need to explicitly switch
+     * to the scheduler. */
     ABTI_sched *p_sched;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->is_sched) {
@@ -179,9 +141,6 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
         ABTI_thread_finish_context_thread_to_sched(p_thread, p_sched);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
-#endif
-#else
-#error "Not implemented yet"
 #endif
 }
 
@@ -215,13 +174,12 @@ void ABTD_thread_cancel(ABTI_local *p_local, ABTI_thread *p_thread)
      * ULT has finished its execution and calls ABTD_thread_terminate/exit,
      * this function is called by the scheduler.  Therefore, we should not
      * context switch to the joiner ULT and need to always wake it up. */
-#if defined(ABT_CONFIG_USE_FCONTEXT)
-    ABTD_thread_context *p_fctx = &p_thread->ctx;
+    ABTD_thread_context *p_ctx = &p_thread->ctx;
 
     /* acquire load is not needed here. */
-    if (p_fctx->p_link) {
+    if (p_ctx->p_link) {
         /* If p_link is set, it means that other ULT has called the join. */
-        ABTI_thread *p_joiner = (ABTI_thread *)p_fctx->p_link;
+        ABTI_thread *p_joiner = (ABTI_thread *)p_ctx->p_link;
         ABTI_thread_set_ready(p_local, p_joiner);
     } else {
         uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
@@ -229,48 +187,20 @@ void ABTD_thread_cancel(ABTI_local *p_local, ABTI_thread *p_thread)
         if (req & ABTI_THREAD_REQ_JOIN) {
             /* This case means there has been a join request and the joiner has
              * blocked.  We have to wake up the joiner ULT. */
-            while (ABTD_atomic_load_ptr((void **)&p_fctx->p_link) == NULL);
-            ABTI_thread *p_joiner = (ABTI_thread *)p_fctx->p_link;
+            while (ABTD_atomic_load_ptr((void **)&p_ctx->p_link) == NULL);
+            ABTI_thread *p_joiner = (ABTI_thread *)p_ctx->p_link;
             ABTI_thread_set_ready(p_local, p_joiner);
         }
     }
-#else
-#error "Not implemented yet"
-#endif
 }
-
-#if !defined(ABT_CONFIG_USE_FCONTEXT)
-static inline
-void print_bytes(size_t size, void *p_val, FILE *p_os) {
-    size_t i;
-    for (i = 0; i < size; i++) {
-        uint8_t val = ((uint8_t *)p_val)[i];
-        fprintf(p_os, "%02" PRIx8, val);
-    }
-}
-#endif
 
 void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent)
 {
     char *prefix = ABTU_get_indent_str(indent);
     ABTD_thread_context *p_ctx = &p_thread->ctx;
-#if defined(ABT_CONFIG_USE_FCONTEXT)
-    fprintf(p_os, "%sfctx     : %p\n", prefix, (void *)p_ctx->fctx);
+    fprintf(p_os, "%sp_ctx    : %p\n", prefix, p_ctx->p_ctx);
     fprintf(p_os, "%sp_arg    : %p\n", prefix, p_ctx->p_arg);
     fprintf(p_os, "%sp_link   : %p\n", prefix, (void *)p_ctx->p_link);
-#else
-    /* TODO: print information in more detail. */
-    fprintf(p_os, "%suc_link     : %p\n", prefix, p_ctx->uc_link);
-    fprintf(p_os, "%suc_sigmask  : ", prefix);
-    print_bytes(sizeof(sigset_t), &p_ctx->uc_sigmask, p_os);
-    fprintf(p_os, "\n");
-    fprintf(p_os, "%suc_stack    : ", prefix);
-    print_bytes(sizeof(stack_t), &p_ctx->uc_stack, p_os);
-    fprintf(p_os, "\n");
-    fprintf(p_os, "%suc_mcontext : ", prefix);
-    print_bytes(sizeof(mcontext_t), &p_ctx->uc_mcontext, p_os);
-    fprintf(p_os, "\n");
-#endif
     fflush(p_os);
     ABTU_free(prefix);
 }
