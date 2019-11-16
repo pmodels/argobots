@@ -28,7 +28,7 @@ int ABTDI_thread_context_create(ABTD_thread_context *p_link,
     int abt_errno = ABT_SUCCESS;
     void *p_stacktop;
 
-    /* fcontext uses the top address of stack.
+    /* ABTD_thread_context_make uses the top address of stack.
        Note that the parameter, p_stack, points to the bottom of stack. */
     p_stacktop = (void *)(((char *)p_stack) + stacksize);
 
@@ -67,11 +67,11 @@ int ABTD_thread_context_invalidate(ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-    /* fctx is used to check whether the context requires dynamic promotion is
+    /* p_ctx is used to check whether the context requires dynamic promotion is
      * necessary or not, so this value must not be NULL. */
-    p_newctx->fctx = (void *)((intptr_t)0x1);
+    p_newctx->p_ctx = (void *)((intptr_t)0x1);
 #else
-    p_newctx->fctx = NULL;
+    p_newctx->p_ctx = NULL;
 #endif
     p_newctx->f_thread = NULL;
     p_newctx->p_arg = NULL;
@@ -86,7 +86,7 @@ int ABTD_thread_context_init(ABTD_thread_context *p_link,
                              ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
-    p_newctx->fctx = NULL;
+    p_newctx->p_ctx = NULL;
     p_newctx->f_thread = f_thread;
     p_newctx->p_arg = p_arg;
     p_newctx->p_link = p_link;
@@ -100,9 +100,9 @@ int ABTD_thread_context_arm_thread(size_t stacksize, void *p_stack,
     /* This function *arms* the dynamic promotion thread (initialized by
      * ABTD_thread_context_init) as if it were created by
      * ABTD_thread_context_create; this function fully creates the context
-     * so that the thread can be run by jump_fcontext. */
+     * so that the thread can be run by ABTD_thread_context_jump. */
     int abt_errno = ABT_SUCCESS;
-    /* fcontext uses the top address of stack.
+    /* ABTD_thread_context_make uses the top address of stack.
        Note that the parameter, p_stack, points to the bottom of stack. */
     void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
     ABTD_thread_context_make(p_newctx, p_stacktop, stacksize,
@@ -142,7 +142,7 @@ ABT_bool ABTD_thread_context_is_dynamic_promoted(ABTD_thread_context *p_ctx)
 {
     /* Check if the ULT has been dynamically promoted; internally, it checks if
      * the context is NULL. */
-    return p_ctx->fctx ? ABT_TRUE : ABT_FALSE;
+    return p_ctx->p_ctx ? ABT_TRUE : ABT_FALSE;
 }
 
 static inline

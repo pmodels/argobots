@@ -6,6 +6,8 @@
 #ifndef ABTD_FCONTEXT_H_INCLUDED
 #define ABTD_FCONTEXT_H_INCLUDED
 
+typedef void *fcontext_t;
+
 #if defined(ABT_C_HAVE_VISIBILITY)
 #define ABT_API_PRIVATE     __attribute__((visibility ("hidden")))
 #else
@@ -25,21 +27,21 @@ static inline
 void ABTD_thread_context_make(ABTD_thread_context *p_ctx, void *sp, size_t size,
                               void (*thread_func)(void *))
 {
-    p_ctx->fctx = make_fcontext(sp, size, thread_func);
+    p_ctx->p_ctx = make_fcontext(sp, size, thread_func);
 }
 
 static inline
 void ABTD_thread_context_jump(ABTD_thread_context *p_old,
                               ABTD_thread_context *p_new, void *arg)
 {
-    jump_fcontext(&p_old->fctx, p_new->fctx, arg);
+    jump_fcontext(&p_old->p_ctx, p_new->p_ctx, arg);
 }
 
 static inline
 void ABTD_thread_context_take(ABTD_thread_context *p_old,
                               ABTD_thread_context *p_new, void *arg)
 {
-    take_fcontext(&p_old->fctx, p_new->fctx, arg);
+    take_fcontext(&p_old->p_ctx, p_new->p_ctx, arg);
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
@@ -47,7 +49,7 @@ static inline
 void ABTD_thread_context_init_and_call(ABTD_thread_context *p_ctx, void *sp,
                                        void (*thread_func)(void *), void *arg)
 {
-    init_and_call_fcontext(arg, thread_func, sp, &p_ctx->fctx);
+    init_and_call_fcontext(arg, thread_func, sp, &p_ctx->p_ctx);
 }
 #endif
 

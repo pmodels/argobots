@@ -222,9 +222,9 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_local *p_local,
             ABTI_ASSERT(p_prev == p_new);
             /* See ABTDI_thread_terminate for details.
              * TODO: avoid making a copy of the code. */
-            ABTD_thread_context *p_fctx = &p_prev->ctx;
+            ABTD_thread_context *p_ctx = &p_prev->ctx;
             ABTD_thread_context *p_link = (ABTD_thread_context *)
-                ABTD_atomic_load_ptr((void **)&p_fctx->p_link);
+                ABTD_atomic_load_ptr((void **)&p_ctx->p_link);
             if (p_link) {
                 /* If p_link is set, it means that other ULT has called the
                  * join. */
@@ -246,7 +246,7 @@ void ABTI_thread_context_switch_sched_to_thread_internal(ABTI_local *p_local,
                      */
                     do {
                         p_link = (ABTD_thread_context *)
-                            ABTD_atomic_load_ptr((void **)&p_fctx->p_link);
+                            ABTD_atomic_load_ptr((void **)&p_ctx->p_link);
                     } while (!p_link);
                     ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);
                 }

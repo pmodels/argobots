@@ -28,7 +28,7 @@ void ABTD_thread_context_make(ABTD_thread_context *p_ctx, void *sp, size_t size,
                               void (*thread_func)(void *))
 {
     getcontext(&p_ctx->uctx);
-    p_ctx->fctx = &p_ctx->uctx;
+    p_ctx->p_ctx = &p_ctx->uctx;
 
     /* uc_link is not used. */
     p_ctx->uctx.uc_link = NULL;
