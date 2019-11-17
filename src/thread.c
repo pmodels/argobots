@@ -2354,6 +2354,7 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
     while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state)
            != ABT_THREAD_STATE_TERMINATED) {
         ABTI_thread_yield(pp_local, p_local->p_thread);
+        p_local = *pp_local;
     }
     goto fn_exit;
 
