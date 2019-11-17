@@ -201,7 +201,22 @@ void ABTD_env_init(ABTI_global *p_global)
     env = getenv("ABT_MEM_LP_ALLOC");
     if (env == NULL) env = getenv("ABT_ENV_MEM_LP_ALLOC");
 #if defined(HAVE_MAP_ANONYMOUS) || defined(HAVE_MAP_ANON)
+#if defined(__x86_64__)
     int lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
+#else
+    /*
+     * If hugepage is used, mmap() needs a correct size of hugepage; otherwise,
+     * error happens on munmap().  However, the default size is for typical
+     * x86/64 machines, not for other architectures, so the error happens when
+     * the hugepage size is different.  To run Argobots with default settings
+     * on these architectures, we disable hugepage allocation by default on
+     * non-x86/64 architectures; on such a machine, hugepage settings should
+     * be explicitly enabled via an environmental variable.
+     *
+     * TODO: fix this issue by detecting and setting a correct hugepage size.
+     */
+    int lp_alloc = ABTI_MEM_LP_MALLOC;
+#endif
 #else
     int lp_alloc = ABTI_MEM_LP_MALLOC;
 #endif
