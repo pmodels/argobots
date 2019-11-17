@@ -1285,7 +1285,7 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
      * mode, the ULT can be blocked. Otherwise, the access mode, if it is a
      * single-writer access mode, may be violated because another ES has to set
      * the blocked ULT ready. */
-    p_local = ABTI_local_get_local();
+    p_local = *pp_local;
     p_thread = p_local ? p_local->p_thread : NULL;
     if (p_thread) {
         ABT_pool_access access = p_thread->p_pool->access;
