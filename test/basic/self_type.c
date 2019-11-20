@@ -75,7 +75,7 @@ void thread_hello(void *arg)
     ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
     /* Create a task */
-    ret = ABT_task_create(pool, task_hello, (void *)my_id, NULL);
+    ret = ABT_task_create(pool, task_hello, (void *)((intptr_t)my_id), NULL);
     ATS_ERROR(ret, "ABT_task_create");
 
     ret = ABT_self_on_primary_xstream(&flag);
