@@ -1993,13 +1993,15 @@ int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os)
             memcpy(buffer, &((uint8_t *)p_stack)[i], stacksize - i);
         }
         /* Print the stack address */
-        if (sizeof(void *) == 8) {
-            fprintf(p_os, "%016" PRIxPTR ":",
-                    (uintptr_t)(&((uint8_t *)p_stack)[i]));
-        } else {
-            fprintf(p_os, "%08" PRIxPTR ":",
-                    (uintptr_t)(&((uint8_t *)p_stack)[i]));
-        }
+#if SIZEOF_VOID_P == 8
+        fprintf(p_os, "%016" PRIxPTR ":",
+                (uintptr_t)(&((uint8_t *)p_stack)[i]));
+#elif SIZEOF_VOID_P == 4
+        fprintf(p_os, "%08" PRIxPTR ":",
+                (uintptr_t)(&((uint8_t *)p_stack)[i]));
+#else
+#error "unknown pointer size"
+#endif
         /* Print the raw stack data */
         for (j = 0; j < num_bytes / value_width; j++) {
             if (value_width == 8) {
