@@ -158,7 +158,12 @@ void ABTDI_thread_context_dynamic_promote(void *p_stacktop, void *jump_f)
 static inline
 void ABTD_thread_context_dynamic_promote_thread(void *p_stacktop)
 {
-    void *jump_f = (void *)ABTD_thread_terminate_thread_no_arg;
+    union fp_conv {
+        void (*f)(void *);
+        void *ptr;
+    } conv;
+    conv.f = ABTD_thread_terminate_thread_no_arg;
+    void *jump_f = conv.ptr;
     ABTDI_thread_context_dynamic_promote(p_stacktop, jump_f);
 }
 #endif

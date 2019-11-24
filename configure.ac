@@ -277,6 +277,8 @@ AS_CASE([$host_cpu],
               [darwin*], [fctx_arch_bin="arm64_aapcs_macho_gas"])])
 AC_SUBST([fctx_arch_bin])
 AM_SUBST_NOTMAKE([fctx_arch_bin])
+# check the pointer size
+AC_CHECK_SIZEOF([void *])
 dnl ----------------------------------------------------------------------------
 
 

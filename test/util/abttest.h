@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include "abt.h"
 
 /* We always have to use assert in our test suite. */
 #ifdef NDEBUG
@@ -146,10 +147,10 @@ static inline uint64_t ATS_get_cycles()
     return cycle;
 }
 #else
-#warning "Cycle information is not supported on this platform"
 static inline uint64_t ATS_get_cycles()
 {
-    return 0;
+    /* Return a nanosecond as the best effort. */
+    return (uint64_t)(ABT_get_wtime() * 1.0e9);
 }
 #endif
 

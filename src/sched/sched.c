@@ -931,7 +931,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
         "%sid       : %" PRIu64 "\n"
 #endif
-        "%skind     : %" PRIu64 " (%s)\n"
+        "%skind     : %" PRIxPTR " (%s)\n"
         "%stype     : %s\n"
         "%sstate    : %s\n"
         "%sused     : %s\n"

@@ -100,7 +100,7 @@ typedef struct ABTI_sched           ABTI_sched;
 typedef char *                      ABTI_sched_config;
 typedef enum ABTI_sched_used        ABTI_sched_used;
 typedef void *                      ABTI_sched_id;      /* Scheduler id */
-typedef uint64_t                    ABTI_sched_kind;    /* Scheduler kind */
+typedef uintptr_t                   ABTI_sched_kind;    /* Scheduler kind */
 typedef struct ABTI_pool            ABTI_pool;
 typedef struct ABTI_unit            ABTI_unit;
 typedef struct ABTI_thread_attr     ABTI_thread_attr;
