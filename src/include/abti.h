@@ -336,18 +336,22 @@ struct ABTI_thread {
     ABTI_pool *p_pool;              /* Associated pool */
     uint32_t refcount;              /* Reference count */
     ABTI_thread_type type;          /* Type */
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread_req_arg *p_req_arg; /* Request argument */
     ABTI_spinlock lock;             /* Spinlock */
+#endif
     ABTI_ktable *p_keytable;        /* ULT-specific data */
     ABTI_thread_attr attr;          /* Attributes */
     ABT_thread_id id;               /* ID */
 };
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
 struct ABTI_thread_req_arg {
     uint32_t request;
     void *p_arg;
     ABTI_thread_req_arg *next;
 };
+#endif
 
 struct ABTI_thread_list {
     ABTI_thread_entry *head;
@@ -564,10 +568,6 @@ int   ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 void  ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
-void  ABTI_thread_put_req_arg(ABTI_thread *p_thread,
-                              ABTI_thread_req_arg *p_req_arg);
-ABTI_thread_req_arg *ABTI_thread_get_req_arg(ABTI_thread *p_thread,
-                                             uint32_t req);
 #endif
 void  ABTI_thread_retain(ABTI_thread *p_thread);
 void  ABTI_thread_release(ABTI_thread *p_thread);
