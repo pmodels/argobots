@@ -564,10 +564,6 @@ int   ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 void  ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
-void  ABTI_thread_put_req_arg(ABTI_thread *p_thread,
-                              ABTI_thread_req_arg *p_req_arg);
-ABTI_thread_req_arg *ABTI_thread_get_req_arg(ABTI_thread *p_thread,
-                                             uint32_t req);
 #endif
 void  ABTI_thread_retain(ABTI_thread *p_thread);
 void  ABTI_thread_release(ABTI_thread *p_thread);
