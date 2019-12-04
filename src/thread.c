@@ -1508,12 +1508,16 @@ int ABTI_thread_create_internal(ABTI_local *p_local, ABTI_pool *p_pool,
     p_newthread->p_pool         = p_pool;
     p_newthread->refcount       = refcount;
     p_newthread->type           = thread_type;
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newthread->p_req_arg      = NULL;
+#endif
     p_newthread->p_keytable     = NULL;
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     /* Create a spinlock */
     ABTI_spinlock_create(&p_newthread->lock);
+#endif
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_thread_id thread_id = ABTI_thread_get_id(p_newthread);
@@ -1759,8 +1763,10 @@ void ABTI_thread_free_internal(ABTI_thread *p_thread)
         ABTI_ktable_free(p_thread->p_keytable);
     }
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     /* Free the spinlock */
     ABTI_spinlock_free(&p_thread->lock);
+#endif
 }
 
 void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
@@ -1949,7 +1955,9 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         "%spool    : %p\n"
         "%srefcount: %u\n"
         "%srequest : 0x%x\n"
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
         "%sreq_arg : %p\n"
+#endif
         "%skeytable: %p\n"
         "%sattr    : %s\n",
         prefix, (void *)p_thread,
@@ -1963,7 +1971,9 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         prefix, (void *)p_thread->p_pool,
         prefix, p_thread->refcount,
         prefix, p_thread->request,
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
         prefix, (void *)p_thread->p_req_arg,
+#endif
         prefix, (void *)p_thread->p_keytable,
         prefix, attr
     );

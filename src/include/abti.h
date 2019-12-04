@@ -336,18 +336,22 @@ struct ABTI_thread {
     ABTI_pool *p_pool;              /* Associated pool */
     uint32_t refcount;              /* Reference count */
     ABTI_thread_type type;          /* Type */
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread_req_arg *p_req_arg; /* Request argument */
     ABTI_spinlock lock;             /* Spinlock */
+#endif
     ABTI_ktable *p_keytable;        /* ULT-specific data */
     ABTI_thread_attr attr;          /* Attributes */
     ABT_thread_id id;               /* ID */
 };
 
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
 struct ABTI_thread_req_arg {
     uint32_t request;
     void *p_arg;
     ABTI_thread_req_arg *next;
 };
+#endif
 
 struct ABTI_thread_list {
     ABTI_thread_entry *head;
