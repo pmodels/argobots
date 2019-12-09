@@ -1754,18 +1754,6 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     ABTI_pool *p_tar_pool = NULL;
     int p;
 
-    /* Pool effective size check is required to make nested ABT calls work, and to avoid replacing the main scheduler of the ES. 
-     * This will return an error which should be handled in user code */
-    /* TODO: permit to change the scheduler even when having work units in pools */
-    if (p_xstream->p_main_sched) {
-	/* We only allow to change the main scheduler when the current main
-	 * * *          * scheduler of p_xstream has no work unit in its associated pools. */
-	if (ABTI_sched_get_effective_size(p_xstream->p_main_sched) > 0) {
-	    abt_errno = ABT_ERR_XSTREAM;
-	    goto fn_fail;
-	}
-    }
-
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     /* We check that from the pool set of the scheduler we do not find a pool
      * with another associated pool, and set the right value if it is okay  */
