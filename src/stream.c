@@ -1754,13 +1754,6 @@ int ABTI_xstream_set_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     ABTI_pool *p_tar_pool = NULL;
     int p;
 
-    if (p_xstream->p_main_sched) {
-	if (ABTI_sched_get_effective_size(p_xstream->p_main_sched) > 0) {
-		abt_errno = ABT_ERR_XSTREAM;
-		return abt_errno;
-	}
-    }
-
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     /* We check that from the pool set of the scheduler we do not find a pool
      * with another associated pool, and set the right value if it is okay  */
