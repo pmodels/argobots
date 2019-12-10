@@ -159,6 +159,10 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
     abt_errno = ABTI_xstream_create(&p_local, p_sched, &p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
+    /* Start this ES */
+    abt_errno = ABTI_xstream_start(p_local, p_newxstream);
+    ABTI_CHECK_ERROR(abt_errno);
+
     *newxstream = ABTI_xstream_get_handle(p_newxstream);
 
   fn_exit:
