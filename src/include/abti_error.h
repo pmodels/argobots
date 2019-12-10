@@ -199,28 +199,38 @@
     } while(0)
 
 #ifdef ABT_CONFIG_PRINT_ABT_ERRNO
-#define HANDLE_WARNING(msg) \
-    fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
-
-#define HANDLE_ERROR(msg) \
-    fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg)
-    //fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); exit(-1)
-
-#define HANDLE_ERROR_WITH_CODE(msg,n) \
-    fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n)
-    //fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n); exit(-1)
-
-#define HANDLE_ERROR_FUNC_WITH_CODE(n) \
-    fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, __func__, n)
-    //fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, __func__, n); exit(-1)
-
+#define ABTI_IS_PRINT_ABT_ERRNO_ENABLED 1
 #else
-
-#define HANDLE_WARNING(msg)            do { } while (0)
-#define HANDLE_ERROR(msg)              do { } while (0)
-#define HANDLE_ERROR_WITH_CODE(msg,n)  do { } while (0)
-#define HANDLE_ERROR_FUNC_WITH_CODE(n) do { } while (0)
-
+#define ABTI_IS_PRINT_ABT_ERRNO_ENABLED 0
 #endif
+
+#define HANDLE_WARNING(msg)                                           \
+    do {                                                              \
+        if (ABTI_IS_PRINT_ABT_ERRNO_ENABLED) {                        \
+            fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); \
+        }                                                             \
+    } while(0)
+
+#define HANDLE_ERROR(msg)                                             \
+    do {                                                              \
+        if (ABTI_IS_PRINT_ABT_ERRNO_ENABLED) {                        \
+            fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, msg); \
+        }                                                             \
+    } while(0)
+
+#define HANDLE_ERROR_WITH_CODE(msg, n)                                       \
+    do {                                                                     \
+        if (ABTI_IS_PRINT_ABT_ERRNO_ENABLED) {                               \
+            fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, msg, n); \
+        }                                                                    \
+    } while(0)
+
+#define HANDLE_ERROR_FUNC_WITH_CODE(n)                                         \
+    do {                                                                       \
+        if (ABTI_IS_PRINT_ABT_ERRNO_ENABLED) {                                 \
+            fprintf(stderr, "[%s:%d] %s: %d\n", __FILE__, __LINE__, __func__,  \
+                    n);                                                        \
+        }                                                                      \
+    } while(0)
 
 #endif /* ABTI_ERROR_H_INCLUDED */
