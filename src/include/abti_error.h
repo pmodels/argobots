@@ -190,6 +190,15 @@
         }                                                               \
     } while (0)
 
+#define ABTI_CHECK_NULL_XSTREAM_BARRIER_PTR(p)      \
+    do {                                            \
+        if (ABTI_IS_ERROR_CHECK_ENABLED             \
+            && p == (ABTI_xstream_barrier *)NULL) { \
+            abt_errno = ABT_ERR_INV_BARRIER;        \
+            goto fn_fail;                           \
+        }                                           \
+    } while (0)
+
 #define ABTI_CHECK_NULL_TIMER_PTR(p)                                  \
     do {                                                              \
         if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_timer *)NULL) { \
