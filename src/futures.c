@@ -319,7 +319,7 @@ int ABT_future_reset(ABT_future future)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future = ABTI_future_get_ptr(future);
-    ABTI_CHECK_NULL_EVENTUAL_PTR(p_future);
+    ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
     ABTI_spinlock_acquire(&p_future->lock);
     p_future->ready = ABT_FALSE;

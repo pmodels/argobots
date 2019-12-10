@@ -514,7 +514,7 @@ int ABT_task_get_last_pool_id(ABT_task task, int *id)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_task *p_task = ABTI_task_get_ptr(task);
-    ABTI_CHECK_NULL_THREAD_PTR(p_task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     ABTI_ASSERT(p_task->p_pool);
     *id = (int)(p_task->p_pool->id);
@@ -692,7 +692,7 @@ int ABT_task_get_id(ABT_task task, uint64_t *task_id)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_task *p_task = ABTI_task_get_ptr(task);
-    ABTI_CHECK_NULL_THREAD_PTR(p_task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     *task_id = ABTI_task_get_id(p_task);
 
@@ -721,7 +721,7 @@ int ABT_task_get_arg(ABT_task task, void **arg)
     int abt_errno = ABT_SUCCESS;
 
     ABTI_task *p_task = ABTI_task_get_ptr(task);
-    ABTI_CHECK_NULL_THREAD_PTR(p_task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     *arg = p_task->p_arg;
 
