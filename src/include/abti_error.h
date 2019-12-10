@@ -78,124 +78,124 @@
         }                                             \
     } while(0)
 
-#define ABTI_CHECK_NULL_XSTREAM_PTR(p)                  \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_XSTREAM;            \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_XSTREAM_PTR(p)                                  \
+    do {                                                                \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_xstream *)NULL) { \
+            abt_errno = ABT_ERR_INV_XSTREAM;                            \
+            goto fn_fail;                                               \
+        }                                                               \
     } while(0)
 
-#define ABTI_CHECK_NULL_POOL_PTR(p)                     \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_POOL;               \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_POOL_PTR(p)                                  \
+    do {                                                             \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_pool *)NULL) { \
+            abt_errno = ABT_ERR_INV_POOL;                            \
+            goto fn_fail;                                            \
+        }                                                            \
     } while(0)
 
-#define ABTI_CHECK_NULL_SCHED_PTR(p)                    \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_SCHED;              \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_SCHED_PTR(p)                                  \
+    do {                                                              \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_sched *)NULL) { \
+            abt_errno = ABT_ERR_INV_SCHED;                            \
+            goto fn_fail;                                             \
+        }                                                             \
     } while(0)
 
-#define ABTI_CHECK_NULL_THREAD_PTR(p)                   \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_THREAD;             \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_THREAD_PTR(p)                                  \
+    do {                                                               \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_thread *)NULL) { \
+            abt_errno = ABT_ERR_INV_THREAD;                            \
+            goto fn_fail;                                              \
+        }                                                              \
     } while(0)
 
-#define ABTI_CHECK_NULL_THREAD_ATTR_PTR(p)              \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_THREAD_ATTR;        \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_THREAD_ATTR_PTR(p)                                  \
+    do {                                                                    \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_thread_attr *)NULL) { \
+            abt_errno = ABT_ERR_INV_THREAD_ATTR;                            \
+            goto fn_fail;                                                   \
+        }                                                                   \
     } while(0)
 
-#define ABTI_CHECK_NULL_TASK_PTR(p)                     \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_TASK;               \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_TASK_PTR(p)                                  \
+    do {                                                             \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_task *)NULL) { \
+            abt_errno = ABT_ERR_INV_TASK;                            \
+            goto fn_fail;                                            \
+        }                                                            \
     } while(0)
 
-#define ABTI_CHECK_NULL_KEY_PTR(p)                      \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_KEY;                \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_KEY_PTR(p)                                  \
+    do {                                                            \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_key *)NULL) { \
+            abt_errno = ABT_ERR_INV_KEY;                            \
+            goto fn_fail;                                           \
+        }                                                           \
     } while(0)
 
-#define ABTI_CHECK_NULL_MUTEX_PTR(p)                    \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_MUTEX;              \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_MUTEX_PTR(p)                                  \
+    do {                                                              \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_mutex *)NULL) { \
+            abt_errno = ABT_ERR_INV_MUTEX;                            \
+            goto fn_fail;                                             \
+        }                                                             \
     } while(0)
 
-#define ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p)               \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_MUTEX_ATTR;         \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p)                                  \
+    do {                                                                   \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_mutex_attr *)NULL) { \
+            abt_errno = ABT_ERR_INV_MUTEX_ATTR;                            \
+            goto fn_fail;                                                  \
+        }                                                                  \
     } while(0)
 
-#define ABTI_CHECK_NULL_COND_PTR(p)                     \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_COND;               \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_COND_PTR(p)                                  \
+    do {                                                             \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_cond *)NULL) { \
+            abt_errno = ABT_ERR_INV_COND;                            \
+            goto fn_fail;                                            \
+        }                                                            \
     } while(0)
 
-#define ABTI_CHECK_NULL_RWLOCK_PTR(p)                   \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_RWLOCK;             \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_RWLOCK_PTR(p)                                  \
+    do {                                                               \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_rwlock *)NULL) { \
+            abt_errno = ABT_ERR_INV_RWLOCK;                            \
+            goto fn_fail;                                              \
+        }                                                              \
     } while(0)
 
-#define ABTI_CHECK_NULL_FUTURE_PTR(p)                   \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_FUTURE;             \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_FUTURE_PTR(p)                                  \
+    do {                                                               \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_future *)NULL) { \
+            abt_errno = ABT_ERR_INV_FUTURE;                            \
+            goto fn_fail;                                              \
+        }                                                              \
     } while(0)
 
-#define ABTI_CHECK_NULL_EVENTUAL_PTR(p)                 \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_EVENTUAL;           \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_EVENTUAL_PTR(p)                                  \
+    do {                                                                 \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_eventual *)NULL) { \
+            abt_errno = ABT_ERR_INV_EVENTUAL;                            \
+            goto fn_fail;                                                \
+        }                                                                \
     } while(0)
 
-#define ABTI_CHECK_NULL_BARRIER_PTR(p)                  \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_BARRIER;            \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_BARRIER_PTR(p)                                  \
+    do {                                                                \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_barrier *)NULL) { \
+            abt_errno = ABT_ERR_INV_BARRIER;                            \
+            goto fn_fail;                                               \
+        }                                                               \
     } while (0)
 
-#define ABTI_CHECK_NULL_TIMER_PTR(p)                    \
-    do {                                                \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == NULL) { \
-            abt_errno = ABT_ERR_INV_TIMER;              \
-            goto fn_fail;                               \
-        }                                               \
+#define ABTI_CHECK_NULL_TIMER_PTR(p)                                  \
+    do {                                                              \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_timer *)NULL) { \
+            abt_errno = ABT_ERR_INV_TIMER;                            \
+            goto fn_fail;                                             \
+        }                                                             \
     } while(0)
 
 #ifdef ABT_CONFIG_PRINT_ABT_ERRNO
