@@ -41,6 +41,11 @@ void ABTU_free(void *ptr)
 static inline
 void *ABTU_malloc(size_t size)
 {
+    /* Round up to the smallest multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE
+     * which is greater than or equal to size in order to avoid any
+     * false-sharing. */
+    size = (size + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)
+           & (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
     return ABTU_memalign(ABT_CONFIG_STATIC_CACHELINE_SIZE, size);
 }
 
