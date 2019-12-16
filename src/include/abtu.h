@@ -21,10 +21,29 @@
 #endif
 
 /* Utility Functions */
-#define ABTU_malloc(a)          malloc((size_t)(a))
-#define ABTU_calloc(a,b)        calloc((size_t)(a),(size_t)b)
-#define ABTU_free(a)            free((void *)(a))
-#define ABTU_realloc(a,b)       realloc((void *)(a),(size_t)(b))
+static inline
+void *ABTU_malloc(size_t size)
+{
+    return malloc(size);
+}
+
+static inline
+void *ABTU_calloc(size_t num, size_t size)
+{
+    return calloc(num, size);
+}
+
+static inline
+void ABTU_free(void *ptr)
+{
+    free(ptr);
+}
+
+static inline
+void *ABTU_realloc(void *ptr, size_t size)
+{
+    return realloc(ptr, size);
+}
 
 static inline
 void *ABTU_memalign(size_t alignment, size_t size)
