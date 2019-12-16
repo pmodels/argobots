@@ -23,6 +23,47 @@
 /* Utility Functions */
 
 static inline
+void *ABTU_memalign(size_t alignment, size_t size)
+{
+    void *p_ptr;
+    int ret = posix_memalign(&p_ptr, alignment, size);
+    assert(ret == 0);
+    return p_ptr;
+}
+static inline
+void ABTU_free(void *ptr)
+{
+    free(ptr);
+}
+
+#ifdef ABT_CONFIG_USE_ALIGNED_ALLOC
+
+static inline
+void *ABTU_malloc(size_t size)
+{
+    return ABTU_memalign(ABT_CONFIG_STATIC_CACHELINE_SIZE, size);
+}
+
+static inline
+void *ABTU_calloc(size_t num, size_t size)
+{
+    void *ptr = ABTU_malloc(num * size);
+    memset(ptr, 0, num * size);
+    return ptr;
+}
+
+static inline
+void *ABTU_realloc(void *ptr, size_t old_size, size_t new_size)
+{
+    void *new_ptr = ABTU_malloc(new_size);
+    memcpy(new_ptr, ptr, (old_size < new_size) ? old_size : new_size);
+    ABTU_free(ptr);
+    return new_ptr;
+}
+
+#else /* ABT_CONFIG_USE_ALIGNED_ALLOC */
+
+static inline
 void *ABTU_malloc(size_t size)
 {
     return malloc(size);
@@ -35,26 +76,13 @@ void *ABTU_calloc(size_t num, size_t size)
 }
 
 static inline
-void ABTU_free(void *ptr)
-{
-    free(ptr);
-}
-
-static inline
 void *ABTU_realloc(void *ptr, size_t old_size, size_t new_size)
 {
     (void)old_size;
     return realloc(ptr, new_size);
 }
 
-static inline
-void *ABTU_memalign(size_t alignment, size_t size)
-{
-    void *p_ptr;
-    int ret = posix_memalign(&p_ptr, alignment, size);
-    assert(ret == 0);
-    return p_ptr;
-}
+#endif /* !ABT_CONFIG_USE_ALIGNED_ALLOC */
 
 #define ABTU_strcpy(d,s)        strcpy(d,s)
 #define ABTU_strncpy(d,s,n)     strncpy(d,s,n)
