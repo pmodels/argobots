@@ -800,14 +800,18 @@ int ABT_event_add_callback(ABT_event_kind event,
             max_num = gp_einfo->max_stop_xstream_fn;
             if (cur_num == max_num) {
                 /* We need to allocate more space */
+                size_t cur_size;
                 max_num = max_num * 2;
                 gp_einfo->max_stop_xstream_fn = max_num;
+                cur_size = cur_num * 2 * sizeof(ABT_event_cb_fn);
                 new_size = max_num * 2 * sizeof(ABT_event_cb_fn);
                 gp_einfo->stop_xstream_fn = (ABT_event_cb_fn *)
-                    ABTU_realloc(gp_einfo->stop_xstream_fn, new_size);
+                    ABTU_realloc(gp_einfo->stop_xstream_fn, cur_size, new_size);
+                cur_size = cur_num * 2 * sizeof(void *);
                 new_size = max_num * 2 * sizeof(void *);
                 gp_einfo->stop_xstream_arg = (void **)
-                    ABTU_realloc(gp_einfo->stop_xstream_arg, new_size);
+                    ABTU_realloc(gp_einfo->stop_xstream_arg, cur_size,
+                                 new_size);
             }
             ABTI_ASSERT(cur_num < max_num);
 
@@ -838,14 +842,17 @@ int ABT_event_add_callback(ABT_event_kind event,
             max_num = gp_einfo->max_add_xstream_fn;
             if (cur_num == max_num) {
                 /* We need to allocate more space */
+                size_t cur_size;
                 max_num = max_num * 2;
                 gp_einfo->max_add_xstream_fn = max_num;
+                cur_size = cur_num * 2 * sizeof(ABT_event_cb_fn);
                 new_size = max_num * 2 * sizeof(ABT_event_cb_fn);
                 gp_einfo->add_xstream_fn = (ABT_event_cb_fn *)
-                    ABTU_realloc(gp_einfo->add_xstream_fn, new_size);
+                    ABTU_realloc(gp_einfo->add_xstream_fn, cur_size, new_size);
+                cur_size = cur_num * 2 * sizeof(void *);
                 new_size = max_num * 2 * sizeof(void *);
                 gp_einfo->add_xstream_arg = (void **)
-                    ABTU_realloc(gp_einfo->add_xstream_arg, new_size);
+                    ABTU_realloc(gp_einfo->add_xstream_arg, cur_size, new_size);
             }
             ABTI_ASSERT(cur_num < max_num);
 

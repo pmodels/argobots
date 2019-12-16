@@ -113,11 +113,13 @@ static inline
 void ABTI_xstream_push_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 {
     if (p_xstream->num_scheds == p_xstream->max_scheds) {
-        int max_size = p_xstream->max_scheds+10;
+        int cur_size = p_xstream->max_scheds;
+        int new_size = cur_size + 10;
         void *temp;
-        temp = ABTU_realloc(p_xstream->scheds, max_size*sizeof(ABTI_sched *));
+        temp = ABTU_realloc(p_xstream->scheds, cur_size * sizeof(ABTI_sched *),
+                            new_size * sizeof(ABTI_sched *));
         p_xstream->scheds = (ABTI_sched **)temp;
-        p_xstream->max_scheds = max_size;
+        p_xstream->max_scheds = new_size;
     }
 
     p_xstream->scheds[p_xstream->num_scheds++] = p_sched;

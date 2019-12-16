@@ -401,6 +401,7 @@ void ABTI_info_add_pool_set(ABT_pool pool, struct ABTI_info_pool_set_t *p_set)
     if (p_set->num == p_set->len) {
         size_t new_len = p_set->len * 2;
         p_set->pools = (ABT_pool *)ABTU_realloc(p_set->pools,
+                                                sizeof(ABT_pool) * p_set->len,
                                                 sizeof(ABT_pool) * new_len);
         p_set->len = new_len;
     }

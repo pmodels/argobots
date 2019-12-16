@@ -85,8 +85,9 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
 
         size_t size = ABTI_sched_config_type_size(type);
         if (offset+sizeof(param)+sizeof(type)+size > buffer_size) {
+            size_t cur_buffer_size = buffer_size;
             buffer_size += alloc_size;
-            buffer = ABTU_realloc(buffer, buffer_size);
+            buffer = ABTU_realloc(buffer, cur_buffer_size, buffer_size);
         }
         /* Copy the parameter index */
         memcpy(buffer+offset, (void *)&param, sizeof(param));

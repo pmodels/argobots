@@ -21,6 +21,7 @@
 #endif
 
 /* Utility Functions */
+
 static inline
 void *ABTU_malloc(size_t size)
 {
@@ -40,9 +41,10 @@ void ABTU_free(void *ptr)
 }
 
 static inline
-void *ABTU_realloc(void *ptr, size_t size)
+void *ABTU_realloc(void *ptr, size_t old_size, size_t new_size)
 {
-    return realloc(ptr, size);
+    (void)old_size;
+    return realloc(ptr, new_size);
 }
 
 static inline
