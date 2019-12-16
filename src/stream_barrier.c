@@ -109,7 +109,7 @@ int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier)
     int abt_errno = ABT_SUCCESS;
     ABT_xstream_barrier h_barrier = *barrier;
     ABTI_xstream_barrier *p_barrier = ABTI_xstream_barrier_get_ptr(h_barrier);
-    ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
+    ABTI_CHECK_NULL_XSTREAM_BARRIER_PTR(p_barrier);
 
     abt_errno = ABTD_xstream_barrier_destroy(&p_barrier->bar);
     ABTI_CHECK_ERROR(abt_errno);
@@ -146,7 +146,7 @@ int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier)
 #ifdef HAVE_PTHREAD_BARRIER_INIT
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream_barrier *p_barrier = ABTI_xstream_barrier_get_ptr(barrier);
-    ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
+    ABTI_CHECK_NULL_XSTREAM_BARRIER_PTR(p_barrier);
 
     if (p_barrier->num_waiters > 1) {
         ABTD_xstream_barrier_wait(&p_barrier->bar);
