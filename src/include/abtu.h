@@ -21,10 +21,6 @@
 #endif
 
 /* Utility Functions */
-#define ABTU_malloc(a)          malloc((size_t)(a))
-#define ABTU_calloc(a,b)        calloc((size_t)(a),(size_t)b)
-#define ABTU_free(a)            free((void *)(a))
-#define ABTU_realloc(a,b)       realloc((void *)(a),(size_t)(b))
 
 static inline
 void *ABTU_memalign(size_t alignment, size_t size)
@@ -34,6 +30,64 @@ void *ABTU_memalign(size_t alignment, size_t size)
     assert(ret == 0);
     return p_ptr;
 }
+static inline
+void ABTU_free(void *ptr)
+{
+    free(ptr);
+}
+
+#ifdef ABT_CONFIG_USE_ALIGNED_ALLOC
+
+static inline
+void *ABTU_malloc(size_t size)
+{
+    /* Round up to the smallest multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE
+     * which is greater than or equal to size in order to avoid any
+     * false-sharing. */
+    size = (size + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)
+           & (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
+    return ABTU_memalign(ABT_CONFIG_STATIC_CACHELINE_SIZE, size);
+}
+
+static inline
+void *ABTU_calloc(size_t num, size_t size)
+{
+    void *ptr = ABTU_malloc(num * size);
+    memset(ptr, 0, num * size);
+    return ptr;
+}
+
+static inline
+void *ABTU_realloc(void *ptr, size_t old_size, size_t new_size)
+{
+    void *new_ptr = ABTU_malloc(new_size);
+    memcpy(new_ptr, ptr, (old_size < new_size) ? old_size : new_size);
+    ABTU_free(ptr);
+    return new_ptr;
+}
+
+#else /* ABT_CONFIG_USE_ALIGNED_ALLOC */
+
+static inline
+void *ABTU_malloc(size_t size)
+{
+    return malloc(size);
+}
+
+static inline
+void *ABTU_calloc(size_t num, size_t size)
+{
+    return calloc(num, size);
+}
+
+static inline
+void *ABTU_realloc(void *ptr, size_t old_size, size_t new_size)
+{
+    (void)old_size;
+    return realloc(ptr, new_size);
+}
+
+#endif /* !ABT_CONFIG_USE_ALIGNED_ALLOC */
 
 #define ABTU_strcpy(d,s)        strcpy(d,s)
 #define ABTU_strncpy(d,s,n)     strncpy(d,s,n)
