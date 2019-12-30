@@ -336,6 +336,8 @@ extern ABT_sched_config_var ABT_sched_basic_freq ABT_API_PUBLIC;
   /* To configure the frequency for checking events of the basic scheduler */
 extern ABT_sched_config_var ABT_sched_config_access ABT_API_PUBLIC;
   /* To configure the access type of the pools created automatically */
+extern ABT_sched_config_var ABT_sched_config_automatic ABT_API_PUBLIC;
+  /* To configure whether ths scheduler is freed automatically or not */
 
 /* Scheduler Functions */
 typedef int      (*ABT_sched_init_fn)(ABT_sched, ABT_sched_config);

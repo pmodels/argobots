@@ -25,6 +25,11 @@ ABT_sched_config_var ABT_sched_config_access = {
     .type = ABT_SCHED_CONFIG_INT
 };
 
+ABT_sched_config_var ABT_sched_config_automatic = {
+    .idx = -3,
+    .type = ABT_SCHED_CONFIG_INT
+};
+
 
 /**
  * @ingroup SCHED_CONFIG
@@ -227,9 +232,9 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
     int access_i = -1;
     int automatic_i = -1;
 
-    void **variables = (void **)ABTU_malloc(num_vars*sizeof(void *));
-    variables[0] = &access_i;
-    variables[1] = &automatic_i;
+    void **variables = (void **)ABTU_malloc(num_vars * sizeof(void *));
+    variables[(ABT_sched_config_access.idx + 2) * (-1)] = &access_i;
+    variables[(ABT_sched_config_automatic.idx + 2) * (-1)] = &automatic_i;
 
     abt_errno = ABTI_sched_config_read(config, 0, num_vars, variables);
     ABTU_free(variables);
