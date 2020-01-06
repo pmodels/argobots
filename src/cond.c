@@ -204,6 +204,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
         if (result == ABT_FALSE) {
             ABTI_spinlock_release(&p_cond->lock);
             abt_errno = ABT_ERR_INV_MUTEX;
+            ABTU_free(p_unit);
             goto fn_fail;
         }
     }

@@ -99,6 +99,8 @@ int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
         ABT_bool result = ABTI_mutex_equal(p_cond->p_waiter_mutex, p_mutex);
         if (result == ABT_FALSE) {
             ABTI_spinlock_release(&p_cond->lock);
+            if (type == ABT_UNIT_TYPE_EXT)
+                ABTU_free(p_unit);
             abt_errno = ABT_ERR_INV_MUTEX;
             goto fn_fail;
         }
