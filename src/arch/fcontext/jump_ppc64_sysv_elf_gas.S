@@ -164,9 +164,6 @@ jump_fcontext:
     # reserve space on stack
     subi  %r1, %r1, 528
 
-#if _CALL_ELF != 2
-    std  %r2,  496(%r1)  # save TOC
-#endif
     std  %r14, 352(%r1)  # save R14
     std  %r15, 360(%r1)  # save R15
     std  %r16, 368(%r1)  # save R16
@@ -185,6 +182,9 @@ jump_fcontext:
     std  %r29, 472(%r1)  # save R29
     std  %r30, 480(%r1)  # save R30
     std  %r31, 488(%r1)  # save R31
+#if _CALL_ELF != 2
+    std  %r2,  496(%r1)  # save TOC
+#endif
 
     # save CR
     mfcr  %r0
@@ -311,9 +311,6 @@ jump_fcontext:
 #endif
 #endif
 
-#if _CALL_ELF != 2
-    ld  %r2,  496(%r1)  # restore TOC
-#endif
     ld  %r14, 352(%r1)  # restore R14
     ld  %r15, 360(%r1)  # restore R15
     ld  %r16, 368(%r1)  # restore R16
@@ -332,6 +329,9 @@ jump_fcontext:
     ld  %r29, 472(%r1)  # restore R29
     ld  %r30, 480(%r1)  # restore R30
     ld  %r31, 488(%r1)  # restore R31
+#if _CALL_ELF != 2
+    ld  %r2,  496(%r1)  # restore TOC
+#endif
 
     # restore CR
     ld  %r0, 504(%r1)

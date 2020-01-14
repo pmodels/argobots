@@ -216,9 +216,6 @@ take_fcontext:
 #endif
 #endif
 
-#if _CALL_ELF != 2
-    ld  %r2,  496(%r1)  # restore TOC
-#endif
     ld  %r14, 352(%r1)  # restore R14
     ld  %r15, 360(%r1)  # restore R15
     ld  %r16, 368(%r1)  # restore R16
@@ -237,6 +234,9 @@ take_fcontext:
     ld  %r29, 472(%r1)  # restore R29
     ld  %r30, 480(%r1)  # restore R30
     ld  %r31, 488(%r1)  # restore R31
+#if _CALL_ELF != 2
+    ld  %r2,  496(%r1)  # restore TOC
+#endif
 
     # restore CR
     ld  %r0, 504(%r1)
