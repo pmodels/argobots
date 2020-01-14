@@ -119,66 +119,6 @@ take_fcontext:
 .take_fcontext:
 # endif
 #endif
-    # reserve space on stack
-    subi  %r1, %r1, 328
-
-#if _CALL_ELF != 2
-    std  %r2,  152(%r1)  # save TOC
-#endif
-    std  %r14, 160(%r1)  # save R14
-    std  %r15, 168(%r1)  # save R15
-    std  %r16, 176(%r1)  # save R16
-    std  %r17, 184(%r1)  # save R17
-    std  %r18, 192(%r1)  # save R18
-    std  %r19, 200(%r1)  # save R19
-    std  %r20, 208(%r1)  # save R20
-    std  %r21, 216(%r1)  # save R21
-    std  %r22, 224(%r1)  # save R22
-    std  %r23, 232(%r1)  # save R23
-    std  %r24, 240(%r1)  # save R24
-    std  %r25, 248(%r1)  # save R25
-    std  %r26, 256(%r1)  # save R26
-    std  %r27, 264(%r1)  # save R27
-    std  %r28, 272(%r1)  # save R28
-    std  %r29, 280(%r1)  # save R29
-    std  %r30, 288(%r1)  # save R30
-    std  %r31, 296(%r1)  # save R31
-
-    # save CR
-    mfcr  %r0
-    std  %r0, 304(%r1)
-    # save LR
-    mflr  %r0
-    std  %r0, 312(%r1)
-    # save LR as PC
-    std  %r0, 320(%r1)
-
-#if ABTD_FCONTEXT_PRESERVE_FPU
-    stfd  %f14, 0(%r1)  # save F14
-    stfd  %f15, 8(%r1)  # save F15
-    stfd  %f16, 16(%r1)  # save F16
-    stfd  %f17, 24(%r1)  # save F17
-    stfd  %f18, 32(%r1)  # save F18
-    stfd  %f19, 40(%r1)  # save F19
-    stfd  %f20, 48(%r1)  # save F20
-    stfd  %f21, 56(%r1)  # save F21
-    stfd  %f22, 64(%r1)  # save F22
-    stfd  %f23, 72(%r1)  # save F23
-    stfd  %f24, 80(%r1)  # save F24
-    stfd  %f25, 88(%r1)  # save F25
-    stfd  %f26, 96(%r1)  # save F26
-    stfd  %f27, 104(%r1)  # save F27
-    stfd  %f28, 112(%r1)  # save F28
-    stfd  %f29, 120(%r1)  # save F29
-    stfd  %f30, 128(%r1)  # save F30
-    stfd  %f31, 136(%r1)  # save F31
-    mffs  %f0  # load FPSCR
-    stfd  %f0, 144(%r1)  # save FPSCR
-#endif
-
-    # store RSP (pointing to context-data) in R3
-    std  %r1, 0(%r3)
-
     # restore RSP (pointing to context-data) from R4
     mr  %r1, %r4
 
