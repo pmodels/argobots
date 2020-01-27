@@ -39,6 +39,7 @@ enum {
 };
 static int g_affinity_type = ABTI_ES_AFFINITY_DEFAULT;
 static cpu_set_t g_cpusets[CPU_SETSIZE];
+static cpu_set_t g_initial_cpuset;
 
 static inline cpu_set_t ABTD_affinity_get_cpuset_for_rank(int rank)
 {
@@ -93,13 +94,12 @@ void ABTD_affinity_init(void)
     }
     num_cores = CPU_SETSIZE;
 #else
-    cpu_set_t cpuset;
-    i = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuset);
+    i = sched_getaffinity(getpid(), sizeof(cpu_set_t), &g_initial_cpuset);
     ABTI_ASSERT(i == 0);
 
     for (i = 0; i < CPU_SETSIZE; i++) {
         CPU_ZERO(&g_cpusets[i]);
-        if (CPU_ISSET(i, &cpuset)) {
+        if (CPU_ISSET(i, &g_initial_cpuset)) {
             CPU_SET(i, &g_cpusets[num_cores]);
             num_cores++;
         }
@@ -120,6 +120,14 @@ void ABTD_affinity_init(void)
 #else
     /* In this case, we don't support the ES affinity. */
     gp_ABTI_global->set_affinity = ABT_FALSE;
+#endif
+}
+
+void ABTD_affinity_finalize(void)
+{
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+    ABTD_xstream_context ctx = pthread_self();
+    pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &g_initial_cpuset);
 #endif
 }
 
