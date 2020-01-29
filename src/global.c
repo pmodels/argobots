@@ -221,6 +221,11 @@ int ABT_finalize(void)
     /* Free the spinlock */
     ABTI_spinlock_free(&gp_ABTI_global->xstreams_lock);
 
+    /* Restore the affinity */
+    if (gp_ABTI_global->set_affinity == ABT_TRUE) {
+        ABTD_affinity_finalize();
+    }
+
     /* Free the ABTI_global structure */
     ABTU_free(gp_ABTI_global);
     gp_ABTI_global = NULL;

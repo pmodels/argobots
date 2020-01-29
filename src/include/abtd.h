@@ -38,6 +38,7 @@ int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx);
 
 /* ES Affinity */
 void ABTD_affinity_init(void);
+void ABTD_affinity_finalize(void);
 int ABTD_affinity_set(ABTD_xstream_context ctx, int rank);
 int ABTD_affinity_set_cpuset(ABTD_xstream_context ctx, int cpuset_size,
                              int *p_cpuset);
