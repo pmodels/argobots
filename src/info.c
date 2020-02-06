@@ -490,14 +490,23 @@ void ABTI_info_check_print_all_thread_stacks(void)
         /* This ES becomes a master. */
         double start_time = ABTI_get_wtime();
         ABT_bool force_print = ABT_FALSE;
-        while (ABTD_atomic_load_uint32(&print_stack_barrier)
-               < ABTD_atomic_load_int32(&gp_ABTI_global->num_xstreams)) {
-            ABTD_atomic_pause();
+
+        /* xstreams_lock is acquired to avoid dynamic ES creation while
+         * printing data. */
+        ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
+        while (1) {
+            if (ABTD_atomic_load_uint32(&print_stack_barrier)
+                >= gp_ABTI_global->num_xstreams) {
+                break;
+            }
             if (print_stack_timeout >= 0.0
                 && (ABTI_get_wtime() - start_time) >= print_stack_timeout) {
                 force_print = ABT_TRUE;
                 break;
             }
+            ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
+            ABTD_atomic_pause();
+            ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
         }
         /* All the available ESs are (supposed to be) stopped. We *assume* that
          * no ES is calling and will call Argobots functions except this
@@ -532,6 +541,9 @@ void ABTI_info_check_print_all_thread_stacks(void)
             if (abt_errno != ABT_SUCCESS)
                 fprintf(fp, "  Failed to print (errno = %d).\n", abt_errno);
         }
+        /* Release the lock that protects ES data. */
+        ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
+
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
         ABTI_info_finalize_pool_set(&pool_set);
