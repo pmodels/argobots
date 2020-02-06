@@ -16,23 +16,9 @@ ABTI_global *gp_ABTI_global = NULL;
 /* To indicate how many times ABT_init is called. */
 static uint32_t g_ABTI_num_inits = 0;
 /* A global lock protecting the initialization/finalization process */
-static uint8_t g_ABTI_init_lock = 0;
+static ABTI_spinlock g_ABTI_init_lock = ABTI_SPINLOCK_STATIC_INITIALIZER();
 /* A flag whether Argobots has been initialized or not */
 static uint32_t g_ABTI_initialized = 0;
-
-static inline void ABTI_init_lock_acquire() {
-    while (ABTD_atomic_test_and_set_uint8(&g_ABTI_init_lock)) {
-        /* Busy-wait is allowed since this function may not be run in
-         * ULT context. */
-        while (ABTD_atomic_load_uint8(&g_ABTI_init_lock) != 0)
-            ABTD_atomic_pause();
-    }
-}
-
-static inline void ABTI_init_lock_release() {
-    ABTD_atomic_clear_uint8(&g_ABTI_init_lock);
-}
-
 
 /**
  * @ingroup ENV
@@ -57,7 +43,7 @@ int ABT_init(int argc, char **argv)
 
     /* First, take a global lock protecting the initialization/finalization
      * process. Don't go to fn_exit before taking a lock */
-    ABTI_init_lock_acquire();
+    ABTI_spinlock_acquire(&g_ABTI_init_lock);
 
     /* If Argobots has already been initialized, just return */
     if (g_ABTI_num_inits++ > 0)
@@ -121,7 +107,7 @@ int ABT_init(int argc, char **argv)
 
   fn_exit:
     /* Unlock a global lock */
-    ABTI_init_lock_release();
+    ABTI_spinlock_release(&g_ABTI_init_lock);
     return abt_errno;
 
   fn_fail:
@@ -152,7 +138,7 @@ int ABT_finalize(void)
 
     /* First, take a global lock protecting the initialization/finalization
      * process. Don't go to fn_exit before taking a lock */
-    ABTI_init_lock_acquire();
+    ABTI_spinlock_acquire(&g_ABTI_init_lock);
 
     /* If Argobots is not initialized, just return */
     if (g_ABTI_num_inits == 0) {
@@ -230,7 +216,7 @@ int ABT_finalize(void)
 
   fn_exit:
     /* Unlock a global lock */
-    ABTI_init_lock_release();
+    ABTI_spinlock_release(&g_ABTI_init_lock);
     return abt_errno;
 
   fn_fail:
