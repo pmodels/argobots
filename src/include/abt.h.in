@@ -58,6 +58,7 @@ extern "C" {
 #define ABT_CALC_VERSION(MAJOR, MINOR, REVISION, TYPE, PATCH) \
     (((MAJOR) * 10000000) + ((MINOR) * 100000) + ((REVISION) * 1000) + ((TYPE) * 100) + (PATCH))
 
+#define ABT_DEPRECATED @ABT_DEPRECATED@
 
 /* Error Classes */
 #define ABT_SUCCESS                 0  /* Successful return code */
