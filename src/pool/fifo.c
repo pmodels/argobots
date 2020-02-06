@@ -127,7 +127,7 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
 
     if (access != ABT_POOL_ACCESS_PRIV) {
         /* Initialize the mutex */
-        ABTI_spinlock_create(&p_data->mutex);
+        ABTI_spinlock_clear(&p_data->mutex);
     }
 
     p_data->num_units = 0;
@@ -142,14 +142,8 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
 static int pool_free(ABT_pool pool)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_pool_access access;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-
-    access = p_pool->access;
-    if (access != ABT_POOL_ACCESS_PRIV) {
-        ABTI_spinlock_free(&p_data->mutex);
-    }
 
     ABTU_free(p_data);
 

@@ -61,7 +61,7 @@ int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
     ABTI_future *p_future;
 
     p_future = (ABTI_future *)ABTU_malloc(sizeof(ABTI_future));
-    ABTI_spinlock_create(&p_future->lock);
+    ABTI_spinlock_clear(&p_future->lock);
     p_future->ready = ABT_FALSE;
     p_future->counter = 0;
     p_future->compartments = compartments;
@@ -98,7 +98,6 @@ int ABT_future_free(ABT_future *future)
      * freed here. */
     ABTI_spinlock_acquire(&p_future->lock);
 
-    ABTI_spinlock_free(&p_future->lock);
     ABTU_free(p_future->array);
     ABTU_free(p_future);
 

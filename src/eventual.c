@@ -36,7 +36,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     ABTI_eventual *p_eventual;
 
     p_eventual = (ABTI_eventual *)ABTU_malloc(sizeof(ABTI_eventual));
-    ABTI_spinlock_create(&p_eventual->lock);
+    ABTI_spinlock_clear(&p_eventual->lock);
     p_eventual->ready = ABT_FALSE;
     p_eventual->nbytes = nbytes;
     p_eventual->value = (nbytes == 0) ? NULL : ABTU_malloc(nbytes);
@@ -71,7 +71,6 @@ int ABT_eventual_free(ABT_eventual *eventual)
      * freed here. */
     ABTI_spinlock_acquire(&p_eventual->lock);
 
-    ABTI_spinlock_free(&p_eventual->lock);
     if (p_eventual->value) ABTU_free(p_eventual->value);
     ABTU_free(p_eventual);
 

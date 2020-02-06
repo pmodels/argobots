@@ -22,7 +22,7 @@ ABTI_thread_htable *ABTI_thread_htable_create(uint32_t num_rows)
     int ret = pthread_mutex_init(&p_htable->mutex, NULL);
     assert(!ret);
 #else
-    ABTI_spinlock_create(&p_htable->mutex);
+    ABTI_spinlock_clear(&p_htable->mutex);
 #endif
     p_htable->num_elems = 0;
     p_htable->num_rows = num_rows;
@@ -46,7 +46,7 @@ void ABTI_thread_htable_free(ABTI_thread_htable *p_htable)
     int ret = pthread_mutex_destroy(&p_htable->mutex);
     assert(!ret);
 #else
-    ABTI_spinlock_free(&p_htable->mutex);
+    /* ABTI_spinlock needs no finalization. */
 #endif
     ABTU_free(p_htable->queue);
     ABTU_free(p_htable);

@@ -85,8 +85,8 @@ int ABT_init(int argc, char **argv)
             gp_ABTI_global->max_xstreams, sizeof(ABTI_xstream *));
     gp_ABTI_global->num_xstreams = 0;
 
-    /* Create a spinlock */
-    ABTI_spinlock_create(&gp_ABTI_global->xstreams_lock);
+    /* Initialize a spinlock */
+    ABTI_spinlock_clear(&gp_ABTI_global->xstreams_lock);
 
     /* Init the ES local data */
     ABTI_local *p_local = NULL;
@@ -217,9 +217,6 @@ int ABT_finalize(void)
 
     /* Finalize the memory pool */
     ABTI_mem_finalize(gp_ABTI_global);
-
-    /* Free the spinlock */
-    ABTI_spinlock_free(&gp_ABTI_global->xstreams_lock);
 
     /* Restore the affinity */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {

@@ -80,8 +80,8 @@ int ABTI_xstream_create(ABTI_local **pp_local, ABTI_sched *p_sched,
     p_newxstream->p_req_arg    = NULL;
     p_newxstream->p_main_sched = NULL;
 
-    /* Create the spinlock */
-    ABTI_spinlock_create(&p_newxstream->sched_lock);
+    /* Initialize the spinlock */
+    ABTI_spinlock_clear(&p_newxstream->sched_lock);
 
     /* Set the main scheduler */
     abt_errno = ABTI_xstream_set_main_sched(pp_local, p_newxstream, p_sched);
@@ -224,8 +224,8 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     p_newxstream->p_req_arg    = NULL;
     p_newxstream->p_main_sched = NULL;
 
-    /* Create the spinlock */
-    ABTI_spinlock_create(&p_newxstream->sched_lock);
+    /* Initialize the spinlock */
+    ABTI_spinlock_clear(&p_newxstream->sched_lock);
 
     /* Set the main scheduler */
     abt_errno = ABTI_xstream_set_main_sched(&p_local, p_newxstream, p_sched);
@@ -1377,9 +1377,6 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream)
     /* Free the context */
     abt_errno = ABTD_xstream_context_free(&p_xstream->ctx);
     ABTI_CHECK_ERROR(abt_errno);
-
-    /* Free the spinlock */
-    ABTI_spinlock_free(&p_xstream->sched_lock);
 
     ABTU_free(p_xstream);
 

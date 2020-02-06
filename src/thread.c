@@ -1515,8 +1515,8 @@ int ABTI_thread_create_internal(ABTI_local *p_local, ABTI_pool *p_pool,
     p_newthread->id             = ABTI_THREAD_INIT_ID;
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    /* Create a spinlock */
-    ABTI_spinlock_create(&p_newthread->lock);
+    /* Initialize a spinlock */
+    ABTI_spinlock_clear(&p_newthread->lock);
 #endif
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
@@ -1762,11 +1762,6 @@ void ABTI_thread_free_internal(ABTI_thread *p_thread)
     if (p_thread->p_keytable) {
         ABTI_ktable_free(p_thread->p_keytable);
     }
-
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    /* Free the spinlock */
-    ABTI_spinlock_free(&p_thread->lock);
-#endif
 }
 
 void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
