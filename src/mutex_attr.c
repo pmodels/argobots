@@ -98,9 +98,9 @@ int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive)
 
     /* Set the value */
     if (recursive == ABT_TRUE) {
-        ABTD_atomic_fetch_or_uint32(&p_attr->attrs, ABTI_MUTEX_ATTR_RECURSIVE);
+        p_attr->attrs |= ABTI_MUTEX_ATTR_RECURSIVE;
     } else {
-        ABTD_atomic_fetch_and_uint32(&p_attr->attrs, ~ABTI_MUTEX_ATTR_RECURSIVE);
+        p_attr->attrs &= ~ABTI_MUTEX_ATTR_RECURSIVE;
     }
 
   fn_exit:
