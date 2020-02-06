@@ -10,14 +10,11 @@ struct ABTI_spinlock {
     uint8_t val;
 };
 
-static inline void ABTI_spinlock_create(ABTI_spinlock *p_lock)
+#define ABTI_SPINLOCK_STATIC_INITIALIZER() {0}
+
+static inline void ABTI_spinlock_clear(ABTI_spinlock *p_lock)
 {
     p_lock->val = 0;
-}
-
-static inline void ABTI_spinlock_free(ABTI_spinlock *p_lock)
-{
-    ABTI_UNUSED(p_lock);
 }
 
 static inline void ABTI_spinlock_acquire(ABTI_spinlock *p_lock)
