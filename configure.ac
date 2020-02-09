@@ -622,13 +622,13 @@ AS_IF([test "x$enable_dynamic_promotion" = "xyes" -a "x$enable_fcontext" != "xno
 # check if __atomic builtins are supported
 AC_TRY_COMPILE(
 [#include <stdint.h>],
-[int *lock = 0, new = 0, old = 0, val = 0, weak;
+[int *lock = 0, new = 0, old = 0, val = 0;
  __atomic_test_and_set((char *)lock, __ATOMIC_ACQ_REL);
  __atomic_clear((volatile char *)lock, __ATOMIC_RELEASE);
  __atomic_exchange(&val, &new, &old, __ATOMIC_ACQ_REL);
  old = __atomic_exchange_n(&val, new, __ATOMIC_ACQ_REL);
- val = __atomic_compare_exchange(&val, &old, &new, weak = 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
- val = __atomic_compare_exchange_n(&val, &old, new, weak = 1, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+ val = __atomic_compare_exchange(&val, &old, &new, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+ val = __atomic_compare_exchange_n(&val, &old, new, 1, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
  __atomic_load(lock, &val, __ATOMIC_ACQUIRE);
  val = __atomic_load_n(lock, __ATOMIC_ACQUIRE);
  __atomic_store(lock, &val, __ATOMIC_RELEASE);
