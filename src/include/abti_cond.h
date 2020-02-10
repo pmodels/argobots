@@ -13,7 +13,7 @@
 static inline
 void ABTI_cond_init(ABTI_cond *p_cond)
 {
-    ABTI_spinlock_create(&p_cond->lock);
+    ABTI_spinlock_clear(&p_cond->lock);
     p_cond->p_waiter_mutex = NULL;
     p_cond->num_waiters  = 0;
     p_cond->p_head = NULL;
@@ -27,8 +27,6 @@ void ABTI_cond_fini(ABTI_cond *p_cond)
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
     ABTI_spinlock_acquire(&p_cond->lock);
-
-    ABTI_spinlock_free(&p_cond->lock);
 }
 
 static inline

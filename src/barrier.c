@@ -31,7 +31,7 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
 
     p_newbarrier = (ABTI_barrier *)ABTU_malloc(sizeof(ABTI_barrier));
 
-    ABTI_spinlock_create(&p_newbarrier->lock);
+    ABTI_spinlock_clear(&p_newbarrier->lock);
     p_newbarrier->num_waiters = num_waiters;
     p_newbarrier->counter = 0;
     p_newbarrier->waiters =
@@ -116,7 +116,6 @@ int ABT_barrier_free(ABT_barrier *barrier)
      * freed here. */
     ABTI_spinlock_acquire(&p_barrier->lock);
 
-    ABTI_spinlock_free(&p_barrier->lock);
     ABTU_free(p_barrier->waiters);
     ABTU_free(p_barrier->waiter_type);
     ABTU_free(p_barrier);

@@ -53,7 +53,7 @@ static uint64_t g_sp_id = 0;
 void ABTI_mem_init(ABTI_global *p_global)
 {
     p_global->p_mem_stack = NULL;
-    ABTI_spinlock_create(&p_global->mem_task_lock);
+    ABTI_spinlock_clear(&p_global->mem_task_lock);
     p_global->p_mem_task = NULL;
     p_global->p_mem_sph = NULL;
 
@@ -78,7 +78,6 @@ void ABTI_mem_finalize(ABTI_global *p_global)
     p_global->p_mem_stack = NULL;
 
     /* Free all task blocks */
-    ABTI_spinlock_free(&p_global->mem_task_lock);
     ABTI_mem_free_page_list(p_global->p_mem_task);
     p_global->p_mem_task = NULL;
 
