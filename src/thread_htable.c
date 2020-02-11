@@ -8,7 +8,7 @@
 
 ABTI_thread_htable *ABTI_thread_htable_create(uint32_t num_rows)
 {
-    ABTI_ASSERT(sizeof(ABTI_thread_queue) == 192);
+    ABTI_STATIC_ASSERT(sizeof(ABTI_thread_queue) == 192);
 
     ABTI_thread_htable *p_htable;
     size_t q_size = num_rows * sizeof(ABTI_thread_queue);

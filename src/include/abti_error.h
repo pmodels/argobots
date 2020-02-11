@@ -23,6 +23,11 @@
         }                                  \
     } while(0)
 
+#define ABTI_STATIC_ASSERT(cond)                \
+    do {                                        \
+        ((void)sizeof(char[2 * !!(cond) - 1])); \
+    } while(0)
+
 #define ABTI_CHECK_INITIALIZED()                                     \
     do {                                                             \
         if (ABTI_IS_ERROR_CHECK_ENABLED && gp_ABTI_global == NULL) { \
