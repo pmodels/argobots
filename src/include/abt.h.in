@@ -58,6 +58,7 @@ extern "C" {
 #define ABT_CALC_VERSION(MAJOR, MINOR, REVISION, TYPE, PATCH) \
     (((MAJOR) * 10000000) + ((MINOR) * 100000) + ((REVISION) * 1000) + ((TYPE) * 100) + (PATCH))
 
+#define ABT_DEPRECATED @ABT_DEPRECATED@
 
 /* Error Classes */
 #define ABT_SUCCESS                 0  /* Successful return code */
@@ -530,8 +531,8 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag) ABT_API_PUBLIC;
 int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag) ABT_API_PUBLIC;
 int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
                      ABT_API_PUBLIC;
-int ABT_thread_retain(ABT_thread thread) ABT_API_PUBLIC;
-int ABT_thread_release(ABT_thread thread) ABT_API_PUBLIC;
+int ABT_thread_retain(ABT_thread thread) ABT_API_PUBLIC ABT_DEPRECATED;
+int ABT_thread_release(ABT_thread thread) ABT_API_PUBLIC ABT_DEPRECATED;
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize) ABT_API_PUBLIC;
 int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id) ABT_API_PUBLIC;
 int ABT_thread_set_arg(ABT_thread thread, void *arg) ABT_API_PUBLIC;
@@ -570,8 +571,8 @@ int ABT_task_get_last_pool_id(ABT_task task, int *id) ABT_API_PUBLIC;
 int ABT_task_set_migratable(ABT_task task, ABT_bool flag) ABT_API_PUBLIC;
 int ABT_task_is_migratable(ABT_task task, ABT_bool *flag) ABT_API_PUBLIC;
 int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result) ABT_API_PUBLIC;
-int ABT_task_retain(ABT_task task) ABT_API_PUBLIC;
-int ABT_task_release(ABT_task task) ABT_API_PUBLIC;
+int ABT_task_retain(ABT_task task) ABT_API_PUBLIC ABT_DEPRECATED;
+int ABT_task_release(ABT_task task) ABT_API_PUBLIC ABT_DEPRECATED;
 int ABT_task_get_id(ABT_task task, uint64_t *task_id) ABT_API_PUBLIC;
 int ABT_task_get_arg(ABT_task task, void **arg) ABT_API_PUBLIC;
 

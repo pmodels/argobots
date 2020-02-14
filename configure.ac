@@ -279,6 +279,15 @@ AC_SUBST([fctx_arch_bin])
 AM_SUBST_NOTMAKE([fctx_arch_bin])
 # check the pointer size
 AC_CHECK_SIZEOF([void *])
+# check __attribute__((deprecated))
+AX_GCC_FUNC_ATTRIBUTE(deprecated)
+if test "x$ax_cv_have_func_attribute_deprecated" = "xyes" ; then
+  ABT_DEPRECATED="__attribute__((deprecated))"
+else
+  ABT_DEPRECATED=""
+fi
+AC_SUBST([ABT_DEPRECATED])
+
 dnl ----------------------------------------------------------------------------
 
 
