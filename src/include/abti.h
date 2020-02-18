@@ -191,15 +191,6 @@ struct ABTI_global {
     ABTI_sp_header *p_mem_sph;         /* List of stack pages */
 #endif
 
-    ABT_bool pm_connected;      /* Is power mgmt. daemon connected? */
-    char *pm_host;              /* Hostname for power mgmt. daemon */
-    int pm_port;                /* Port number for power mgmt. daemon */
-#ifdef ABT_CONFIG_PUBLISH_INFO
-    ABT_bool pub_needed;        /* Is info. publishing needed? */
-    char *pub_filename;         /* Filename for publishing */
-    double pub_interval;        /* Time interval in seconds */
-#endif
-
     ABT_bool print_config;      /* Whether to print config on ABT_init */
 };
 
@@ -626,25 +617,11 @@ void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex);
 void ABTI_mutex_attr_print(ABTI_mutex_attr *p_attr, FILE *p_os, int indent);
 void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf);
 
-/* Event */
-void ABTI_event_init(void);
-void ABTI_event_finalize(void);
-#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
-void ABTI_event_connect_power(char *p_host, int port);
-void ABTI_event_disconnect_power(void);
-ABT_bool ABTI_event_check_power(ABTI_local *p_local);
-#endif
-#ifdef ABT_CONFIG_PUBLISH_INFO
-void ABTI_event_inc_unit_cnt(ABTI_xstream *p_xstream, ABT_unit_type type);
-void ABTI_event_publish_info(void);
-#endif
-
 /* Information */
 int ABTI_info_print_config(FILE *fp);
 void ABTI_info_check_print_all_thread_stacks(void);
 
 #include "abti_log.h"
-#include "abti_event.h"
 #include "abti_local.h"
 #include "abti_global.h"
 #include "abti_pool.h"

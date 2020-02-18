@@ -57,9 +57,6 @@ int ABT_init(int argc, char **argv)
     /* Initialize memory pool */
     ABTI_mem_init(gp_ABTI_global);
 
-    /* Initialize the event environment */
-    ABTI_event_init();
-
     /* Initialize IDs */
     ABTI_thread_reset_id();
     ABTI_task_reset_id();
@@ -194,9 +191,6 @@ int ABT_finalize(void)
     /* Finalize the ES local data */
     abt_errno = ABTI_local_finalize(&p_local);
     ABTI_CHECK_ERROR(abt_errno);
-
-    /* Finalize the event environment */
-    ABTI_event_finalize();
 
     /* Free the ES array */
     ABTU_free(gp_ABTI_global->p_xstreams);

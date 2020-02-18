@@ -244,44 +244,6 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 #endif
 
-#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
-    /* Hostname for power management daemon */
-    env = getenv("ABT_POWER_EVENT_HOSTNAME");
-    if (env == NULL) env = getenv("ABT_ENV_POWER_EVENT_HOSTNAME");
-    p_global->pm_host = (env != NULL) ? env : "localhost";
-
-    /* Port number for power management daemon */
-    env = getenv("ABT_POWER_EVENT_PORT");
-    if (env == NULL) env = getenv("ABT_ENV_POWER_EVENT_PORT");
-    p_global->pm_port = (env != NULL) ? atoi(env) : 60439;
-#endif
-
-#ifdef ABT_CONFIG_PUBLISH_INFO
-    /* Do we need to publish exec. information? */
-    env = getenv("ABT_PUBLISH_INFO");
-    if (env == NULL) env = getenv("ABT_ENV_PUBLISH_INFO");
-    if (env != NULL) {
-        if (strcmp(env, "0") == 0 || strcasecmp(env, "n") == 0 ||
-            strcasecmp(env, "no") == 0) {
-            p_global->pub_needed = ABT_FALSE;
-        } else {
-            p_global->pub_needed = ABT_TRUE;
-        }
-    } else {
-        p_global->pub_needed = ABT_TRUE;
-    }
-
-    /* Filename for exec. information publishing */
-    env = getenv("ABT_PUBLISH_FILENAME");
-    if (env == NULL) env = getenv("ABT_ENV_PUBLISH_FILENAME");
-    p_global->pub_filename = env ? env : ABT_CONFIG_DEFAULT_PUB_FILENAME;
-
-    /* Time interval for exec. information publishing */
-    env = getenv("ABT_PUBLISH_INTERVAL");
-    if (env == NULL) env = getenv("ABT_ENV_PUBLISH_INTERVAL");
-    p_global->pub_interval = env ? atof(env) : 1.0;
-#endif
-
     /* Whether to print the configuration on ABT_init() */
     env = getenv("ABT_PRINT_CONFIG");
     if (env == NULL) env = getenv("ABT_ENV_PRINT_CONFIG");

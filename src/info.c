@@ -630,24 +630,6 @@ int ABTI_info_print_config(FILE *fp)
     }
 #endif /* ABT_CONFIG_USE_MEM_POOL */
 
-#if defined(ABT_CONFIG_HANDLE_POWER_EVENT) || defined(ABT_CONFIG_PUBLISH_INFO)
-    fprintf(fp, "Event:\n");
-
-#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
-    fprintf(fp, " - pm daemon connected: %s\n",
-                (p_global->pm_connected == ABT_TRUE) ? "yes" : "no");
-    fprintf(fp, " - pm hostname: %s\n", p_global->pm_host);
-    fprintf(fp, " - pm port: %d\n", p_global->pm_port);
-#endif /* ABT_CONFIG_HANDLE_POWER_EVENT */
-
-#ifdef ABT_CONFIG_PUBLISH_INFO
-    fprintf(fp, " - publishing needed: %s\n",
-                (p_global->pub_needed == ABT_TRUE) ? "yes" : "no");
-    fprintf(fp, " - publishing filename: %s\n", p_global->pub_filename);
-    fprintf(fp, " - publishing interval: %lf sec.\n", p_global->pub_interval);
-#endif /* ABT_CONFIG_PUBLISH_INFO */
-#endif
-
     fflush(fp);
 
   fn_exit:

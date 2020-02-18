@@ -177,11 +177,6 @@ enum ABT_unit_type {
     ABT_UNIT_TYPE_EXT       /* External thread */
 };
 
-enum ABT_event_kind {
-    ABT_EVENT_STOP_XSTREAM,     /* stop the target ES */
-    ABT_EVENT_ADD_XSTREAM,      /* create a new ES */
-};
-
 
 /* Constants for ABT_bool */
 #define ABT_TRUE    1
@@ -271,8 +266,6 @@ typedef struct ABT_barrier_opaque *         ABT_barrier;
 typedef struct ABT_timer_opaque *           ABT_timer;
 /* Boolean type */
 typedef int                                 ABT_bool;
-/* Event kind */
-typedef enum ABT_event_kind                 ABT_event_kind;
 
 
 /* Null Object Handles */
@@ -665,18 +658,6 @@ int ABT_timer_read(ABT_timer timer, double *secs) ABT_API_PUBLIC;
 int ABT_timer_stop_and_read(ABT_timer timer, double *secs) ABT_API_PUBLIC;
 int ABT_timer_stop_and_add(ABT_timer timer, double *secs) ABT_API_PUBLIC;
 int ABT_timer_get_overhead(double *overhead) ABT_API_PUBLIC;
-
-/* Event */
-typedef ABT_bool (*ABT_event_cb_fn)(void *user_arg, void *abt_arg);
-int ABT_event_add_callback(ABT_event_kind event,
-                           ABT_event_cb_fn ask_cb, void *ask_user_arg,
-                           ABT_event_cb_fn act_cb, void *act_user_arg,
-                           int *cb_id) ABT_API_PUBLIC;
-int ABT_event_del_callback(ABT_event_kind event, int cb_id) ABT_API_PUBLIC;
-int ABT_event_prof_start(void) ABT_API_PUBLIC;
-int ABT_event_prof_stop(void) ABT_API_PUBLIC;
-int ABT_event_prof_publish(const char *unit_name, double local_work,
-                           double global_work) ABT_API_PUBLIC;
 
 /* Information */
 int ABT_info_print_config(FILE *fp) ABT_API_PUBLIC;
