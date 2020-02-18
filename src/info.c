@@ -10,6 +10,234 @@
  * routines in this group are meant for debugging and diagnosing Argobots.
  */
 
+
+/**
+ * @ingroup INFO
+ * @brief   Get the configuration information associated with \c query_kind.
+ *
+ * \c ABT_info_query_config() gets the configuration information associated with
+ * the given \c query_kind and writes a value to \c val.
+ *
+ * The behavior of \c ABT_info_query_config() depends on \c query_kind.
+ * - ABT_INFO_QUERY_KIND_ENABLED_DEBUG
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the debug mode is enabled.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to print an error
+ *   number when an error happens.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_LOG
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to print debug
+ *   messages.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_VALGRIND
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to be Valgrind
+ *   friendly.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_CHECK_ERROR
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_FALSE is
+ *   set to \c *val if the Argobots library is configured to ignore some error
+ *   checks.  Otherwise, ABT_TRUE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_PRODUCER
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_FALSE is
+ *   set to \c *val if the Argobots library is configured to ignore an access
+ *   violation error regarding pool producers.  Otherwise, ABT_TRUE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_CONSUMER
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_FALSE is
+ *   set to \c *val if the Argobots library is configured to ignore an access
+ *   violation error regarding pool consumers.  Otherwise, ABT_TRUE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_PRESERVE_FPU
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to save floating-point
+ *   registers on user-level context switching.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_THREAD_CANCEL
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to enable the thread
+ *   cancellation feature. Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_TASK_CANCEL
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to enable the task
+ *   cancellation feature. Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_MIGRATION
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to enable the
+ *   thread/task migration cancellation feature. Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_STACKABLE_SCHED
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to enable the
+ *   stackable scheduler feature is supported.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_EXTERNAL_THREAD
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to enable the
+ *   external thread feature is supported.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_SCHED_SLEEP
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to enable the sleep
+ *   feature of predefined schedulers.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to print all the
+ *   configuration settings on ABT_init().  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_AFFINITY
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the Argobots library is configured to enable the affinity
+ *   setting.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS
+ *   \c val must be a pointer to a variable of the type unsigned int.  The
+ *   maximum number of execution streams that can be created in Argobots is set
+ *   to \c *val.
+ * - ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE
+ *   \c val must be a pointer to a variable of the type size_t.  The default
+ *   stack size of ULTs is set to \c *val.
+ * - ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE
+ *   \c val must be a pointer to a variable of the type size_t.  The default
+ *   stack size of ULT-type schedulers is set to \c *val.
+ * - ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ
+ *   \c val must be a pointer to a variable of the type uint64_t.  The default
+ *   event-checking frequency of predefined schedulers is set to \c *val.
+ * - ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC
+ *   \c val must be a pointer to a variable of the type uint64_t.  The default
+ *   sleep time (nanoseconds) of predefined schedulers is set to \c *val.
+ *
+ * @param[in]  query_kind  query kind
+ * @param[out] val         a pointer to a result
+ * @return Error code
+ * @retval ABT_SUCCESS            on success
+ * @retval ABT_ERR_INV_QUERY_KIND given query kind is invalid
+ * @retval ABT_ERR_UNINITIALIZED  Argobots has not been initialized
+ */
+int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_CHECK_INITIALIZED();
+
+    switch (query_kind) {
+        case ABT_INFO_QUERY_KIND_ENABLED_DEBUG:
+            *((ABT_bool *)val) = gp_ABTI_global->use_debug;
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO:
+#ifdef ABT_CONFIG_PRINT_ABT_ERRNO
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_LOG:
+            *((ABT_bool *)val) = gp_ABTI_global->use_logging;
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_VALGRIND:
+#ifdef HAVE_VALGRIND_SUPPORT
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_CHECK_ERROR:
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_PRODUCER:
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_CONSUMER:
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_PRESERVE_FPU:
+#ifdef ABTD_FCONTEXT_PRESERVE_FPU
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_THREAD_CANCEL:
+#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_TASK_CANCEL:
+#ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_MIGRATION:
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_STACKABLE_SCHED:
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_EXTERNAL_THREAD:
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_SCHED_SLEEP:
+#ifdef ABT_CONFIG_USE_SCHED_SLEEP
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG:
+            *((ABT_bool *)val) = gp_ABTI_global->print_config;
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_AFFINITY:
+            *((ABT_bool *)val) = gp_ABTI_global->set_affinity;
+            break;
+        case ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS:
+            *((unsigned int *)val) = gp_ABTI_global->max_xstreams;
+            break;
+        case ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE:
+            *((size_t *)val) = gp_ABTI_global->thread_stacksize;
+            break;
+        case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE:
+            *((size_t *)val) = gp_ABTI_global->sched_stacksize;
+            break;
+        case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ:
+            *((uint64_t *)val) = gp_ABTI_global->sched_event_freq;
+            break;
+        case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC:
+            *((uint64_t *)val) = gp_ABTI_global->sched_sleep_nsec;
+            break;
+        default:
+            abt_errno = ABT_ERR_INV_QUERY_KIND;
+            ABTI_CHECK_ERROR(abt_errno);
+            break;
+    }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+
 /**
  * @ingroup INFO
  * @brief   Write the configuration information to the output stream.
