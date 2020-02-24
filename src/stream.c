@@ -1634,7 +1634,6 @@ int ABTI_xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
 #else
     int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool;
-    ABTI_xstream *newstream = NULL;
 
     /* callback function */
     if (p_thread->attr.f_cb) {
@@ -1649,12 +1648,9 @@ int ABTI_xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
                 ABTI_THREAD_REQ_MIGRATE);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-        newstream = p_pool->consumer;
-#endif
         LOG_EVENT("[U%" PRIu64 "] migration: E%d -> E%d\n",
                 ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
-                newstream ? newstream->rank : -1);
+                p_pool->consumer ? p_pool->consumer->rank : -1);
 
         /* Change the associated pool */
         p_thread->p_pool = p_pool;
