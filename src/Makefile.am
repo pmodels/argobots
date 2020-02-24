@@ -7,7 +7,6 @@ abt_sources = \
 	barrier.c \
 	cond.c \
 	error.c \
-	event.c \
 	eventual.c \
 	futures.c \
 	global.c \

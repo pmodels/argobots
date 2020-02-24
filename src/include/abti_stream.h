@@ -138,7 +138,6 @@ void ABTI_xstream_terminate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
 {
     LOG_EVENT("[U%" PRIu64 ":E%d] terminated\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
-    ABTI_EVENT_INC_UNIT_CNT(p_thread->p_last_xstream, ABT_UNIT_TYPE_THREAD);
     if (p_thread->refcount == 0) {
         ABTD_atomic_store_uint32((uint32_t *)&p_thread->state,
                                  ABT_THREAD_STATE_TERMINATED);
@@ -165,7 +164,6 @@ void ABTI_xstream_terminate_task(ABTI_local *p_local, ABTI_task *p_task)
 {
     LOG_EVENT("[T%" PRIu64 ":E%d] terminated\n",
               ABTI_task_get_id(p_task), p_task->p_xstream->rank);
-    ABTI_EVENT_INC_UNIT_CNT(p_task->p_xstream, ABT_UNIT_TYPE_TASK);
     if (p_task->refcount == 0) {
         ABTD_atomic_store_uint32((uint32_t *)&p_task->state,
                                  ABT_TASK_STATE_TERMINATED);

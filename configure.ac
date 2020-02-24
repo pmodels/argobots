@@ -218,26 +218,6 @@ AC_ARG_WITH([hugetlbfs],
     AS_HELP_STRING([--with-hugetlbfs=PATH],
         [specify path where hugetlbfs include directory and lib directory can be found]))
 
-# --enable-power-event
-AC_ARG_ENABLE([power-event],
-    AS_HELP_STRING([--enable-power-event],
-        [enable handling power management events]))
-
-# --enable-publish-info
-AC_ARG_ENABLE([publish-info],
-    AS_HELP_STRING([--enable-publish-info],
-        [enable publishing execution information]))
-
-# --with-beacon
-AC_ARG_WITH([beacon],
-    AS_HELP_STRING([--with-beacon=PATH],
-        [specify path where beacon include directory and lib directory can be found]))
-
-# --with-intercoolr
-AC_ARG_WITH([intercoolr],
-    AS_HELP_STRING([--with-intercoolr=PATH],
-        [specify path where intercoolr include directory and lib directory can be found]))
-
 # --with-papi
 AC_ARG_WITH([papi],
     AS_HELP_STRING([--with-papi=PATH],
@@ -698,39 +678,6 @@ if test "x$with_hugetlbfs" != "x"; then
     PAC_PREPEND_FLAG([-L${with_hugetlbfs}/lib64 -lhugetlbfs], [LDFLAGS])
     AC_CHECK_LIB(hugetlbfs, get_huge_pages)
 fi
-
-
-# --enable-power-event: power management events from outside
-AS_IF([test "x$enable_power_event" = "xyes"],
-      [AC_DEFINE(ABT_CONFIG_HANDLE_POWER_EVENT, 1,
-                 [Define to handle power management events])])
-
-
-# --enable-publish-info: publish execution information
-AS_IF([test "x$enable_publish_info" = "xyes"],
-      [AC_DEFINE(ABT_CONFIG_PUBLISH_INFO, 1,
-                 [Define to publish execution information])])
-
-
-# --with-beacon: BEACON path
-if test "x$with_beacon" != "x"; then
-    CFLAGS="-I$with_beacon/include $CFLAGS"
-    LDFLAGS="-L$with_beacon/lib -lbeacon $LDFLAGS"
-fi
-AC_CHECK_HEADERS(beacon.h)
-default_pub_filename="stdout"
-AC_CHECK_LIB(beacon, BEACON_Publish, [default_pub_filename="beacon"])
-AC_DEFINE_UNQUOTED(ABT_CONFIG_DEFAULT_PUB_FILENAME, ["$default_pub_filename"],
-                   [Default filename for publishing the performance data])
-
-
-# --with-intercoolr: INTERCOOLR path
-if test "x$with_intercoolr" != "x"; then
-    CFLAGS="-I$with_intercoolr/include $CFLAGS"
-    LDFLAGS="-L$with_intercoolr/lib -lintercoolr $LDFLAGS"
-fi
-AC_CHECK_HEADERS(raplreader.h)
-AC_CHECK_LIB(intercoolr, raplreader_init)
 
 
 # --with-papi
