@@ -118,8 +118,8 @@ extern "C" {
 
 /* Constants */
 enum ABT_xstream_state {
-    ABT_XSTREAM_STATE_CREATED,
-    ABT_XSTREAM_STATE_READY,
+    ABT_XSTREAM_STATE_CREATED,  /* Deprecated */
+    ABT_XSTREAM_STATE_READY,    /* Deprecated */
     ABT_XSTREAM_STATE_RUNNING,
     ABT_XSTREAM_STATE_TERMINATED
 };

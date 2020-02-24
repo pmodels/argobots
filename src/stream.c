@@ -72,7 +72,7 @@ int ABTI_xstream_create(ABTI_local **pp_local, ABTI_sched *p_sched,
     ABTI_xstream_set_new_rank(p_newxstream);
 
     p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
-    p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
+    p_newxstream->state        = ABT_XSTREAM_STATE_RUNNING;
     p_newxstream->scheds       = NULL;
     p_newxstream->num_scheds   = 0;
     p_newxstream->max_scheds   = 0;
@@ -216,7 +216,7 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     }
 
     p_newxstream->type         = ABTI_XSTREAM_TYPE_SECONDARY;
-    p_newxstream->state        = ABT_XSTREAM_STATE_CREATED;
+    p_newxstream->state        = ABT_XSTREAM_STATE_RUNNING;
     p_newxstream->scheds       = NULL;
     p_newxstream->num_scheds   = 0;
     p_newxstream->max_scheds   = 0;
@@ -284,12 +284,8 @@ int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
 
-    /* Set the ES's state as READY */
-    if (!ABTD_atomic_bool_cas_strong_int32((int32_t *)&p_xstream->state,
-                                           ABT_XSTREAM_STATE_CREATED,
-                                           ABT_XSTREAM_STATE_READY)) {
-        goto fn_exit;
-    }
+    /* The ES's state must be RUNNING */
+    ABTI_ASSERT(p_xstream->state == ABT_XSTREAM_STATE_RUNNING);
 
     /* Add the main scheduler to the stack of schedulers */
     ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
@@ -338,9 +334,8 @@ int ABTI_xstream_start_primary(ABTI_local **pp_local, ABTI_xstream *p_xstream, A
     /* Add the main scheduler to the stack of schedulers */
     ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
 
-    /* Set the ES's state to READY.  The ES's state will be set to RUNNING in
-     * ABTI_xstream_schedule(). */
-    p_xstream->state = ABT_XSTREAM_STATE_READY;
+    /* The ES's state must be running here. */
+    ABTI_ASSERT(p_xstream->state == ABT_XSTREAM_STATE_RUNNING);
 
     LOG_EVENT("[E%d] start\n", p_xstream->rank);
 
@@ -1266,17 +1261,6 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
                         ABT_ERR_INV_XSTREAM,
                         "The primary ES cannot be joined.");
 
-    if (p_xstream->state == ABT_XSTREAM_STATE_CREATED) {
-        /* If xstream's state was changed, we cannot terminate it here */
-        if (!ABTD_atomic_bool_cas_strong_int32((int32_t *)&p_xstream->state,
-                                               ABT_XSTREAM_STATE_CREATED,
-                                               ABT_XSTREAM_STATE_TERMINATED)) {
-            goto fn_body;
-        }
-        goto fn_exit;
-    }
-
-  fn_body:
     /* When the associated pool of the caller ULT has multiple-writer access
      * mode, the ULT can be blocked. Otherwise, the access mode, if it is a
      * single-writer access mode, may be violated because another ES has to set
@@ -1386,11 +1370,9 @@ void ABTI_xstream_schedule(void *p_arg)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
 
+    ABTI_ASSERT(p_xstream->state == ABT_XSTREAM_STATE_RUNNING);
     while (1) {
         uint32_t request;
-
-        ABTD_atomic_store_uint32((uint32_t *)&p_xstream->state,
-                                 ABT_XSTREAM_STATE_RUNNING);
 
         /* Execute the run function of scheduler */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
@@ -1404,8 +1386,6 @@ void ABTI_xstream_schedule(void *p_arg)
         LOG_EVENT("[S%" PRIu64 "] end\n", p_sched->id);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
 
-        ABTD_atomic_store_uint32((uint32_t *)&p_xstream->state,
-                                 ABT_XSTREAM_STATE_READY);
         ABTI_spinlock_release(&p_xstream->sched_lock);
 
         request = ABTD_atomic_load_uint32(&p_xstream->request);
@@ -1688,12 +1668,6 @@ int ABTI_xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
 
     /* Check the push */
     ABTI_CHECK_ERROR(abt_errno);
-
-    /* checking the state destination xstream */
-    if (newstream && newstream->state == ABT_XSTREAM_STATE_CREATED) {
-        abt_errno = ABTI_xstream_start(p_local, newstream);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start");
-    }
 
   fn_exit:
     return abt_errno;
