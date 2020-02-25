@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef SPINLOCK_H_INCLUDED
-#define SPINLOCK_H_INCLUDED
+#ifndef ABTI_SPINLOCK_H_INCLUDED
+#define ABTI_SPINLOCK_H_INCLUDED
 
 struct ABTI_spinlock {
     uint8_t val;
@@ -29,4 +29,4 @@ static inline void ABTI_spinlock_release(ABTI_spinlock *p_lock)
     ABTD_atomic_clear_uint8((uint8_t *)&p_lock->val);
 }
 
-#endif /* SPINLOCK_H_INCLUDED */
+#endif /* ABTI_SPINLOCK_H_INCLUDED */

@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef KEY_H_INCLUDED
-#define KEY_H_INCLUDED
+#ifndef ABTI_KEY_H_INCLUDED
+#define ABTI_KEY_H_INCLUDED
 
 /* Inlined functions for Work unit-specific data key */
 
@@ -40,5 +40,5 @@ ABT_key ABTI_key_get_handle(ABTI_key *p_key)
 #endif
 }
 
-#endif /* KEY_H_INCLUDED */
+#endif /* ABTI_KEY_H_INCLUDED */
 

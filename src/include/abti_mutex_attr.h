@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef MUTEX_ATTR_H_INCLUDED
-#define MUTEX_ATTR_H_INCLUDED
+#ifndef ABTI_MUTEX_ATTR_H_INCLUDED
+#define ABTI_MUTEX_ATTR_H_INCLUDED
 
 /* Inlined functions for mutex attributes */
 
@@ -43,5 +43,5 @@ ABT_mutex_attr ABTI_mutex_attr_get_handle(ABTI_mutex_attr *p_attr)
 #define ABTI_mutex_attr_copy(p_dest,p_src)              \
     memcpy(p_dest, p_src, sizeof(ABTI_mutex_attr))
 
-#endif /* MUTEX_ATTR_H_INCLUDED */
+#endif /* ABTI_MUTEX_ATTR_H_INCLUDED */
 

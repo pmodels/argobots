@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef THREAD_H_INCLUDED
-#define THREAD_H_INCLUDED
+#ifndef ABTI_THREAD_H_INCLUDED
+#define ABTI_THREAD_H_INCLUDED
 
 /* Inlined functions for User-level Thread (ULT) */
 
@@ -386,5 +386,5 @@ void ABTI_thread_yield(ABTI_local **pp_local, ABTI_thread *p_thread)
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 }
 
-#endif /* THREAD_H_INCLUDED */
+#endif /* ABTI_THREAD_H_INCLUDED */
 

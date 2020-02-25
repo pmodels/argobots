@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef LOCAL_H_INCLUDED
-#define LOCAL_H_INCLUDED
+#ifndef ABTI_LOCAL_H_INCLUDED
+#define ABTI_LOCAL_H_INCLUDED
 
 /*
  * An inlined getter function for ES Local Data.  This function is more
@@ -63,5 +63,5 @@ static inline void ABTI_local_set_local(ABTI_local *p_local)
 }
 
 
-#endif /* LOCAL_H_INCLUDED */
+#endif /* ABTI_LOCAL_H_INCLUDED */
 

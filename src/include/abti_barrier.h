@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef BARRIER_H_INCLUDED
-#define BARRIER_H_INCLUDED
+#ifndef ABTI_BARRIER_H_INCLUDED
+#define ABTI_BARRIER_H_INCLUDED
 
 /* Inlined functions for Barrier */
 
@@ -41,5 +41,5 @@ ABT_barrier ABTI_barrier_get_handle(ABTI_barrier *p_barrier)
 #endif
 }
 
-#endif /* BARRIER_H_INCLUDED */
+#endif /* ABTI_BARRIER_H_INCLUDED */
 

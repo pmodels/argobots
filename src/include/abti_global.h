@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef GLOBAL_H_INCLUDED
-#define GLOBAL_H_INCLUDED
+#ifndef ABTI_GLOBAL_H_INCLUDED
+#define ABTI_GLOBAL_H_INCLUDED
 
 /* Inlined functions for Global Data */
 
@@ -50,5 +50,5 @@ uint32_t ABTI_global_get_mutex_max_wakeups(void)
     return gp_ABTI_global->mutex_max_wakeups;
 }
 
-#endif /* GLOBAL_H_INCLUDED */
+#endif /* ABTI_GLOBAL_H_INCLUDED */
 

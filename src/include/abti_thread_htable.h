@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef THREAD_HTABLE_H_INCLUDED
-#define THREAD_HTABLE_H_INCLUDED
+#ifndef ABTI_THREAD_HTABLE_H_INCLUDED
+#define ABTI_THREAD_HTABLE_H_INCLUDED
 
 #include "abt_config.h"
 
@@ -172,4 +172,4 @@ void ABTI_thread_htable_del_l_head(ABTI_thread_htable *p_htable)
     }
 }
 
-#endif /* THREAD_HTABLE_H_INCLUDED */
+#endif /* ABTI_THREAD_HTABLE_H_INCLUDED */

@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef TIMER_H_INCLUDED
-#define TIMER_H_INCLUDED
+#ifndef ABTI_TIMER_H_INCLUDED
+#define ABTI_TIMER_H_INCLUDED
 
 /* Inlined functions for Timer */
 
@@ -48,5 +48,5 @@ ABT_timer ABTI_timer_get_handle(ABTI_timer *p_timer)
 #endif
 }
 
-#endif /* TIMER_H_INCLUDED */
+#endif /* ABTI_TIMER_H_INCLUDED */
 

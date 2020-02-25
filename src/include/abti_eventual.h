@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef EVENTUAL_H_INCLUDED
-#define EVENTUAL_H_INCLUDED
+#ifndef ABTI_EVENTUAL_H_INCLUDED
+#define ABTI_EVENTUAL_H_INCLUDED
 
 /* Inlined functions for Eventual */
 
@@ -40,5 +40,5 @@ ABT_eventual ABTI_eventual_get_handle(ABTI_eventual *p_eventual)
 #endif
 }
 
-#endif /* EVENTUAL_H_INCLUDED */
+#endif /* ABTI_EVENTUAL_H_INCLUDED */
 

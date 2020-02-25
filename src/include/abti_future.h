@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef FUTURE_H_INCLUDED
-#define FUTURE_H_INCLUDED
+#ifndef ABTI_FUTURE_H_INCLUDED
+#define ABTI_FUTURE_H_INCLUDED
 
 /* Inlined functions for Future */
 
@@ -40,5 +40,5 @@ ABT_future ABTI_future_get_handle(ABTI_future *p_future)
 #endif
 }
 
-#endif /* FUTURE_H_INCLUDED */
+#endif /* ABTI_FUTURE_H_INCLUDED */
 

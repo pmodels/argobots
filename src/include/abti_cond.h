@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef COND_H_INCLUDED
-#define COND_H_INCLUDED
+#ifndef ABTI_COND_H_INCLUDED
+#define ABTI_COND_H_INCLUDED
 
 #include "abti_mutex.h"
 
@@ -197,5 +197,5 @@ void ABTI_cond_broadcast(ABTI_local *p_local, ABTI_cond *p_cond)
     ABTI_spinlock_release(&p_cond->lock);
 }
 
-#endif /* COND_H_INCLUDED */
+#endif /* ABTI_COND_H_INCLUDED */
 
