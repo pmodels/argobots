@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef POOL_H_INCLUDED
-#define POOL_H_INCLUDED
+#ifndef ABTI_POOL_H_INCLUDED
+#define ABTI_POOL_H_INCLUDED
 
 /* Inlined functions for Pool */
 
@@ -265,5 +265,5 @@ size_t ABTI_pool_get_total_size(ABTI_pool *p_pool)
     return total_size;
 }
 
-#endif /* POOL_H_INCLUDED */
+#endif /* ABTI_POOL_H_INCLUDED */
 

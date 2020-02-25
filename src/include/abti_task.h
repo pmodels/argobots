@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef TASK_H_INCLUDED
-#define TASK_H_INCLUDED
+#ifndef ABTI_TASK_H_INCLUDED
+#define ABTI_TASK_H_INCLUDED
 
 /* Inlined functions for Tasklet  */
 
@@ -52,5 +52,5 @@ void ABTI_task_unset_request(ABTI_task *p_task, uint32_t req)
     ABTD_atomic_fetch_and_uint32(&p_task->request, ~req);
 }
 
-#endif /* TASK_H_INCLUDED */
+#endif /* ABTI_TASK_H_INCLUDED */
 

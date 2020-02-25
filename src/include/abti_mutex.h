@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef MUTEX_H_INCLUDED
-#define MUTEX_H_INCLUDED
+#ifndef ABTI_MUTEX_H_INCLUDED
+#define ABTI_MUTEX_H_INCLUDED
 
 static inline
 ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
@@ -173,5 +173,5 @@ ABT_bool ABTI_mutex_equal(ABTI_mutex *p_mutex1, ABTI_mutex *p_mutex2)
     return (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
 }
 
-#endif /* MUTEX_H_INCLUDED */
+#endif /* ABTI_MUTEX_H_INCLUDED */
 

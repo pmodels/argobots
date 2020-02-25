@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef SCHED_H_INCLUDED
-#define SCHED_H_INCLUDED
+#ifndef ABTI_SCHED_H_INCLUDED
+#define ABTI_SCHED_H_INCLUDED
 
 /* Inlined functions for Scheduler */
 
@@ -93,5 +93,5 @@ ABT_bool ABTI_sched_has_unit(ABTI_sched *p_sched)
 #define SCHED_SLEEP(c,t)
 #endif
 
-#endif /* SCHED_H_INCLUDED */
+#endif /* ABTI_SCHED_H_INCLUDED */
 

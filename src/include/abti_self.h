@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef SELF_H_INCLUDED
-#define SELF_H_INCLUDED
+#ifndef ABTI_SELF_H_INCLUDED
+#define ABTI_SELF_H_INCLUDED
 
 static inline
 ABTI_unit *ABTI_self_get_unit(ABTI_local *p_local)
@@ -60,5 +60,5 @@ ABT_unit_type ABTI_self_get_type(ABTI_local *p_local)
     }
 }
 
-#endif /* SELF_H_INCLUDED */
+#endif /* ABTI_SELF_H_INCLUDED */
 

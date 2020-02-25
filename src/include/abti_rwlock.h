@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef RWLOCK_H_INCLUDED
-#define RWLOCK_H_INCLUDED
+#ifndef ABTI_RWLOCK_H_INCLUDED
+#define ABTI_RWLOCK_H_INCLUDED
 
 #include "abti_mutex.h"
 #include "abti_cond.h"
@@ -116,5 +116,5 @@ void ABTI_rwlock_unlock(ABTI_local **pp_local, ABTI_rwlock *p_rwlock)
     ABTI_mutex_unlock(p_local, &p_rwlock->mutex);
 }
 
-#endif /* RWLOCK_H_INCLUDED */
+#endif /* ABTI_RWLOCK_H_INCLUDED */
 

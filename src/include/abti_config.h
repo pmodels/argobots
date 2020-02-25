@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef CONFIG_H_INCLUDED
-#define CONFIG_H_INCLUDED
+#ifndef ABTI_CONFIG_H_INCLUDED
+#define ABTI_CONFIG_H_INCLUDED
 
 /* Inlined functions for Config */
 
@@ -40,5 +40,5 @@ ABT_sched_config ABTI_sched_config_get_handle(ABTI_sched_config *p_config)
 #endif
 }
 
-#endif /* CONFIG_H_INCLUDED */
+#endif /* ABTI_CONFIG_H_INCLUDED */
 

@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef XSTREAM_H_INCLUDED
-#define XSTREAM_H_INCLUDED
+#ifndef ABTI_XSTREAM_H_INCLUDED
+#define ABTI_XSTREAM_H_INCLUDED
 
 /* Inlined functions for Execution Stream (ES) */
 
@@ -185,4 +185,4 @@ void ABTI_xstream_terminate_task(ABTI_local *p_local, ABTI_task *p_task)
     }
 }
 
-#endif /* XSTREAM_H_INCLUDED */
+#endif /* ABTI_XSTREAM_H_INCLUDED */

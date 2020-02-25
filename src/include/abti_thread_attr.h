@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef THREAD_ATTR_H_INCLUDED
-#define THREAD_ATTR_H_INCLUDED
+#ifndef ABTI_THREAD_ATTR_H_INCLUDED
+#define ABTI_THREAD_ATTR_H_INCLUDED
 
 /* Inlined functions for ULT Attributes */
 
@@ -92,5 +92,5 @@ void ABTI_thread_attr_copy(ABTI_thread_attr *p_dest, ABTI_thread_attr *p_src)
     memcpy(p_dest, p_src, sizeof(ABTI_thread_attr));
 }
 
-#endif /* THREAD_ATTR_H_INCLUDED */
+#endif /* ABTI_THREAD_ATTR_H_INCLUDED */
 
