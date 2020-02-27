@@ -8,8 +8,6 @@
 
 /* Inlined functions for Pool */
 
-static inline ABTI_xstream *ABTI_xstream_self(ABTI_local *p_local);
-
 static inline
 ABTI_pool *ABTI_pool_get_ptr(ABT_pool pool)
 {
