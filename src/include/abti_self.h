@@ -39,6 +39,20 @@ ABTI_unit *ABTI_self_get_unit(ABTI_local *p_local)
 }
 
 static inline
+ABTI_native_thread_id ABTI_self_get_native_thread_id(ABTI_local *p_local)
+{
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* This is when an external thread called this routine. */
+    if (p_local == NULL) {
+        /* A pointer to a thread local variable can distinguish all external
+         * threads and execution streams. */
+        return (ABTI_native_thread_id)ABTI_local_get_local_ptr();
+    }
+#endif
+    return (ABTI_native_thread_id)p_local->p_xstream;
+}
+
+static inline
 ABTI_unit_id ABTI_self_get_unit_id(ABTI_local *p_local)
 {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD

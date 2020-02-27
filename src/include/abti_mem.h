@@ -48,7 +48,7 @@ struct ABTI_page_header {
     uint32_t num_remote_free;   /* Number of remote free blocks */
     ABTI_blk_header *p_head;    /* First empty block */
     ABTI_blk_header *p_free;    /* For remote free */
-    ABTI_xstream *p_owner;      /* Owner ES */
+    ABTI_native_thread_id owner_id; /* Owner's ID */
     ABTI_page_header *p_prev;   /* Prev page header */
     ABTI_page_header *p_next;   /* Next page header */
     ABT_bool is_mmapped;        /* ABT_TRUE if it is mmapped */
@@ -337,7 +337,7 @@ void ABTI_mem_free_task(ABTI_local *p_local, ABTI_task *p_task)
     }
 #endif
 
-    if (p_ph->p_owner == p_local->p_xstream) {
+    if (p_ph->owner_id == ABTI_self_get_native_thread_id(p_local)) {
         p_head->p_next = p_ph->p_head;
         p_ph->p_head = p_head;
         p_ph->num_empty_blks++;

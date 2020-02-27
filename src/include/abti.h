@@ -129,6 +129,10 @@ typedef struct ABTI_stack_header    ABTI_stack_header;
 typedef struct ABTI_page_header     ABTI_page_header;
 typedef struct ABTI_sp_header       ABTI_sp_header;
 #endif
+/* ID associated with native thread (e.g, Pthreads), which can distinguish
+ * execution streams and external threads */
+struct ABTI_native_thread_id_opaque;
+typedef struct ABTI_native_thread_id_opaque *ABTI_native_thread_id;
 /* ID associated with work unit (i.e., ULTs, tasklets, and external threads) */
 struct ABTI_unit_id_opaque;
 typedef struct ABTI_unit_id_opaque *ABTI_unit_id;
