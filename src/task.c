@@ -778,7 +778,7 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     ABTI_pool_push(p_pool, p_newtask->unit);
 #else
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit,
-                               ABTI_xstream_self(p_local));
+                               ABTI_self_get_native_thread_id(p_local));
     if (abt_errno != ABT_SUCCESS) {
         ABTI_task_free(p_local, p_newtask);
         goto fn_fail;
@@ -832,7 +832,7 @@ static int ABTI_task_revive(ABTI_local *p_local, ABTI_pool *p_pool,
     ABTI_pool_push(p_pool, p_task->unit);
 #else
     abt_errno = ABTI_pool_push(p_pool, p_task->unit,
-                               ABTI_xstream_self(p_local));
+                               ABTI_self_get_native_thread_id(p_local));
     ABTI_CHECK_ERROR(abt_errno);
 #endif
 

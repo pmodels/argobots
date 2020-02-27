@@ -74,7 +74,8 @@ void ABTI_pool_dec_num_migrations(ABTI_pool *p_pool)
 static inline
 void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 {
-    LOG_EVENT_POOL_PUSH(p_pool, unit, ABTI_xstream_self());
+    LOG_EVENT_POOL_PUSH(p_pool, unit,
+        ABTI_self_get_native_thread_id(ABTI_local_get_local()));
 
     /* Push unit into pool */
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
@@ -99,14 +100,14 @@ void ABTI_pool_add_thread(ABTI_thread *p_thread)
 #else /* ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK */
 
 static inline
-int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_producer)
+int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_native_thread_id producer_id)
 {
     int abt_errno = ABT_SUCCESS;
 
-    LOG_EVENT_POOL_PUSH(p_pool, unit, p_producer);
+    LOG_EVENT_POOL_PUSH(p_pool, unit, producer_id);
 
     /* Save the producer ES information in the pool */
-    abt_errno = ABTI_pool_set_producer(p_pool, p_producer);
+    abt_errno = ABTI_pool_set_producer(p_pool, producer_id);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Push unit into pool */
@@ -121,7 +122,7 @@ int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_producer)
 }
 
 static inline
-int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
+int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_native_thread_id producer_id)
 {
     int abt_errno;
 
@@ -129,7 +130,7 @@ int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
     p_thread->state = ABT_THREAD_STATE_READY;
 
     /* Add the ULT to the associated pool */
-    abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, p_producer);
+    abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, producer_id);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -140,16 +141,16 @@ int ABTI_pool_add_thread(ABTI_thread *p_thread, ABTI_xstream *p_producer)
     goto fn_exit;
 }
 
-#define ABTI_POOL_PUSH(p_pool,unit,p_producer)                  \
-    do {                                                        \
-        abt_errno = ABTI_pool_push(p_pool, unit, p_producer);   \
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_pool_push");      \
+#define ABTI_POOL_PUSH(p_pool,unit,producer_id)                  \
+    do {                                                         \
+        abt_errno = ABTI_pool_push(p_pool, unit, producer_id);   \
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_pool_push");       \
     } while(0)
 
-#define ABTI_POOL_ADD_THREAD(p_thread,p_producer)               \
-    do {                                                        \
-        abt_errno = ABTI_pool_add_thread(p_thread, p_producer); \
-        ABTI_CHECK_ERROR(abt_errno);                            \
+#define ABTI_POOL_ADD_THREAD(p_thread,producer_id)               \
+    do {                                                         \
+        abt_errno = ABTI_pool_add_thread(p_thread, producer_id); \
+        ABTI_CHECK_ERROR(abt_errno);                             \
     } while(0)
 
 #endif /* ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK */
@@ -160,7 +161,8 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
 {
     int abt_errno = ABT_SUCCESS;
 
-    LOG_EVENT_POOL_REMOVE(p_pool, unit, ABTI_xstream_self());
+    LOG_EVENT_POOL_REMOVE(p_pool, unit,
+        ABTI_self_get_native_thread_id(ABTI_local_get_local()));
 
     abt_errno = p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);
     ABTI_CHECK_ERROR(abt_errno);
@@ -173,20 +175,21 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
     goto fn_exit;
 }
 
-#define ABTI_POOL_REMOVE(p_pool,unit,p_consumer)    \
+#define ABTI_POOL_REMOVE(p_pool,unit,consumer_id)    \
     ABTI_pool_remove(p_pool, unit)
-#define ABTI_POOL_SET_CONSUMER(p_pool,p_consumer)
+#define ABTI_POOL_SET_CONSUMER(p_pool,consumer_id)
 
 #else /* ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK */
 
 static inline
-int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
+int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
+                     ABTI_native_thread_id consumer_id)
 {
     int abt_errno = ABT_SUCCESS;
 
-    LOG_EVENT_POOL_REMOVE(p_pool, unit, p_consumer);
+    LOG_EVENT_POOL_REMOVE(p_pool, unit, consumer_id);
 
-    abt_errno = ABTI_pool_set_consumer(p_pool, p_consumer);
+    abt_errno = ABTI_pool_set_consumer(p_pool, consumer_id);
     ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno = p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);
@@ -200,12 +203,12 @@ int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit, ABTI_xstream *p_consumer)
     goto fn_exit;
 }
 
-#define ABTI_POOL_REMOVE(p_pool,unit,p_consumer)                \
-    ABTI_pool_remove(p_pool, unit, p_consumer)
-#define ABTI_POOL_SET_CONSUMER(p_pool,p_consumer)               \
-    do {                                                        \
-        abt_errno = ABTI_pool_set_consumer(p_pool, p_consumer); \
-        ABTI_CHECK_ERROR(abt_errno);                            \
+#define ABTI_POOL_REMOVE(p_pool,unit,consumer_id)                \
+    ABTI_pool_remove(p_pool, unit, consumer_id)
+#define ABTI_POOL_SET_CONSUMER(p_pool,consumer_id)               \
+    do {                                                         \
+        abt_errno = ABTI_pool_set_consumer(p_pool, consumer_id); \
+        ABTI_CHECK_ERROR(abt_errno);                             \
     } while(0)
 
 #endif /* ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK */

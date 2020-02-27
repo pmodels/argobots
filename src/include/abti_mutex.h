@@ -118,7 +118,7 @@ void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                         ABTI_thread *p_giver = p_mutex->p_giver;
                         p_giver->state = ABT_THREAD_STATE_READY;
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
-                                       p_self->p_last_xstream);
+                            ABTI_self_get_native_thread_id(*pp_local));
                         break;
                     }
                 }

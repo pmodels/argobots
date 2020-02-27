@@ -270,10 +270,10 @@ struct ABTI_pool {
     int32_t num_scheds;      /* Number of associated schedulers */
                              /* NOTE: int32_t to check if still positive */
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    ABTI_xstream *consumer;  /* Associated consumer ES */
+    ABTI_native_thread_id consumer_id; /* Associated consumer ID */
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    ABTI_xstream *producer;  /* Associated producer ES */
+    ABTI_native_thread_id producer_id; /* Associated producer ID */
 #endif
     uint32_t num_blocked;    /* Number of blocked ULTs */
     int32_t num_migrations;  /* Number of migrating ULTs */
@@ -531,10 +531,12 @@ void ABTI_pool_free(ABTI_pool *p_pool);
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
 int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def);
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
+int ABTI_pool_set_consumer(ABTI_pool *p_pool,
+                           ABTI_native_thread_id consumer_id);
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
+int ABTI_pool_set_producer(ABTI_pool *p_pool,
+                           ABTI_native_thread_id producer_id);
 #endif
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);

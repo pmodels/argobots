@@ -1289,7 +1289,8 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
 
     /* Wait until the target ES terminates */
     if (is_blockable == ABT_TRUE) {
-        ABTI_POOL_SET_CONSUMER(p_thread->p_pool, p_local->p_xstream);
+        ABTI_POOL_SET_CONSUMER(p_thread->p_pool,
+                               ABTI_self_get_native_thread_id(p_local));
 
         /* Save the caller ULT to set it ready when the ES is terminated */
         p_xstream->p_req_arg = (void *)p_thread;
@@ -1523,7 +1524,7 @@ int ABTI_xstream_schedule_thread(ABTI_local **pp_local, ABTI_xstream *p_xstream,
         /* The ULT did not finish its execution.
          * Change the state of current running ULT and
          * add it to the pool again. */
-        ABTI_POOL_ADD_THREAD(p_thread, p_xstream);
+        ABTI_POOL_ADD_THREAD(p_thread, ABTI_self_get_native_thread_id(p_local));
     } else if (p_thread->request & ABTI_THREAD_REQ_BLOCK) {
         LOG_EVENT("[U%" PRIu64 ":E%d] check blocked\n",
                   ABTI_thread_get_id(p_thread), p_xstream->rank);
@@ -1648,15 +1649,16 @@ int ABTI_xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
                 ABTI_THREAD_REQ_MIGRATE);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
-        LOG_EVENT("[U%" PRIu64 "] migration: E%d -> E%d\n",
+        LOG_EVENT("[U%" PRIu64 "] migration: E%d -> NT %p\n",
                 ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
-                p_pool->consumer ? p_pool->consumer->rank : -1);
+                (void *)p_pool->consumer_id);
 
         /* Change the associated pool */
         p_thread->p_pool = p_pool;
 
         /* Add the unit to the scheduler's pool */
-        ABTI_POOL_PUSH(p_pool, p_thread->unit, p_local->p_xstream);
+        ABTI_POOL_PUSH(p_pool, p_thread->unit,
+                       ABTI_self_get_native_thread_id(p_local));
     }
     ABTI_spinlock_release(&p_thread->lock);
 
@@ -1686,9 +1688,11 @@ int ABTI_xstream_set_main_sched(ABTI_local **pp_local, ABTI_xstream *p_xstream,
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     /* We check that from the pool set of the scheduler we do not find a pool
      * with another associated pool, and set the right value if it is okay  */
+    ABTI_native_thread_id consumer_id
+        = ABTI_xstream_get_native_thread_id(p_xstream);
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        abt_errno = ABTI_pool_set_consumer(p_pool, p_xstream);
+        abt_errno = ABTI_pool_set_consumer(p_pool, consumer_id);
         ABTI_CHECK_ERROR(abt_errno);
     }
 #endif
@@ -1738,7 +1742,8 @@ int ABTI_xstream_set_main_sched(ABTI_local **pp_local, ABTI_xstream *p_xstream,
          * it is freed in ABT_finalize. */
         p_sched->automatic = ABT_TRUE;
 
-        ABTI_POOL_PUSH(p_tar_pool, p_thread->unit, p_xstream);
+        ABTI_POOL_PUSH(p_tar_pool, p_thread->unit,
+                       ABTI_self_get_native_thread_id(*pp_local));
 
         /* Pop the top scheduler */
         ABTI_xstream_pop_sched(p_xstream);
@@ -1764,7 +1769,8 @@ int ABTI_xstream_set_main_sched(ABTI_local **pp_local, ABTI_xstream *p_xstream,
          * the new scheduler starts (see below), it can be scheduled by the new
          * scheduler. When the current ULT resumes its execution, it will free
          * the current main scheduler (see below). */
-        ABTI_POOL_PUSH(p_tar_pool, p_thread->unit, p_xstream);
+        ABTI_POOL_PUSH(p_tar_pool, p_thread->unit,
+                       ABTI_self_get_native_thread_id(*pp_local));
 
         /* Set the scheduler */
         p_xstream->p_main_sched = p_sched;

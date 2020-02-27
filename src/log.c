@@ -142,7 +142,7 @@ void ABTI_log_debug(FILE *fh, char *path, int line, const char *format, ...)
 }
 
 void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
-                        ABTI_xstream *p_producer)
+                        ABTI_native_thread_id producer_id)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE) return;
 
@@ -153,17 +153,17 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
             p_thread = ABTI_thread_get_ptr(p_pool->u_get_thread(unit));
             if (p_thread->p_last_xstream) {
                 LOG_EVENT("[U%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
-                          "(producer: E%d)\n",
+                          "(producer: NT %p)\n",
                           ABTI_thread_get_id(p_thread),
                           p_thread->p_last_xstream->rank,
                           p_pool->id,
-                          p_producer->rank);
+                          (void *)producer_id);
             } else {
                 LOG_EVENT("[U%" PRIu64 "] pushed to P%" PRIu64 " "
-                          "(producer: E%d)\n",
+                          "(producer: NT %p)\n",
                           ABTI_thread_get_id(p_thread),
                           p_pool->id,
-                          p_producer->rank);
+                          (void *)producer_id);
             }
             break;
 
@@ -171,17 +171,17 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_xstream) {
                 LOG_EVENT("[T%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
-                          "(producer: E%d)\n",
+                          "(producer: NT %p)\n",
                           ABTI_task_get_id(p_task),
                           p_task->p_xstream->rank,
                           p_pool->id,
-                          p_producer->rank);
+                          (void *)producer_id);
             } else {
                 LOG_EVENT("[T%" PRIu64 "] pushed to P%" PRIu64 " "
-                          "(producer: E%d)\n",
+                          "(producer: NT %p)\n",
                           ABTI_task_get_id(p_task),
                           p_pool->id,
-                          p_producer->rank);
+                          (void *)producer_id);
             }
             break;
 
@@ -192,7 +192,7 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
 }
 
 void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
-                          ABTI_xstream *p_consumer)
+                          ABTI_native_thread_id consumer_id)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE) return;
 
@@ -203,17 +203,17 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
             p_thread = ABTI_thread_get_ptr(p_pool->u_get_thread(unit));
             if (p_thread->p_last_xstream) {
                 LOG_EVENT("[U%" PRIu64 ":E%d] removed from "
-                          "P%" PRIu64 " (consumer: E%d)\n",
+                          "P%" PRIu64 " (consumer: NT %p)\n",
                           ABTI_thread_get_id(p_thread),
                           p_thread->p_last_xstream->rank,
                           p_pool->id,
-                          p_consumer->rank);
+                          (void *)consumer_id);
             } else {
                 LOG_EVENT("[U%" PRIu64 "] removed from P%" PRIu64 " "
-                          "(consumer: E%d)\n",
+                          "(consumer: NT %p)\n",
                           ABTI_thread_get_id(p_thread),
                           p_pool->id,
-                          p_consumer->rank);
+                          (void *)consumer_id);
             }
             break;
 
@@ -221,17 +221,17 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_xstream) {
                 LOG_EVENT("[T%" PRIu64 ":E%d] removed from "
-                          "P%" PRIu64 " (consumer: E%d)\n",
+                          "P%" PRIu64 " (consumer: NT %p)\n",
                           ABTI_task_get_id(p_task),
                           p_task->p_xstream->rank,
                           p_pool->id,
-                          p_consumer->rank);
+                          (void *)consumer_id);
             } else {
                 LOG_EVENT("[T%" PRIu64 "] removed from P%" PRIu64 " "
-                          "(consumer: E%d)\n",
+                          "(consumer: NT %p)\n",
                           ABTI_task_get_id(p_task),
                           p_pool->id,
-                          p_consumer->rank);
+                          (void *)consumer_id);
             }
             break;
 

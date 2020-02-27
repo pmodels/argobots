@@ -270,7 +270,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 #else
     /* Save the producer ES information in the pool */
     abt_errno = ABTI_pool_push(p_pool, unit,
-                               ABTI_xstream_self(ABTI_local_get_local()));
+        ABTI_self_get_native_thread_id(ABTI_local_get_local()));
     ABTI_CHECK_ERROR(abt_errno);
 #endif
 
@@ -302,7 +302,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     abt_errno = ABTI_POOL_REMOVE(p_pool, unit,
-                                 ABTI_local_get_local()->p_xstream);
+        ABTI_self_get_native_thread_id(ABTI_local_get_local()));
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -451,14 +451,14 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
         case ABT_POOL_ACCESS_MPSC:
             /* we need to ensure that the target pool has already an
              * associated ES */
-            ABTI_CHECK_TRUE(p_pool->consumer != NULL, ABT_ERR_POOL);
+            ABTI_CHECK_TRUE(p_pool->consumer_id != 0, ABT_ERR_POOL);
 
             /* We check that from the pool set of the scheduler we do not find
              * a pool with another associated pool, and set the right value if
              * it is okay  */
             for (p = 0; p < p_sched->num_pools; p++) {
                 abt_errno = ABTI_pool_set_consumer(
-                    ABTI_pool_get_ptr(p_sched->pools[p]), p_pool->consumer);
+                    ABTI_pool_get_ptr(p_sched->pools[p]), p_pool->consumer_id);
                 ABTI_CHECK_ERROR(abt_errno);
             }
             break;
@@ -547,10 +547,10 @@ int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->automatic            = automatic;
     p_pool->num_scheds           = 0;
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    p_pool->consumer             = NULL;
+    p_pool->consumer_id          = 0;
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    p_pool->producer             = NULL;
+    p_pool->producer_id          = 0;
 #endif
     p_pool->num_blocked          = 0;
     p_pool->num_migrations       = 0;
@@ -659,10 +659,10 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         "%sautomatic     : %s\n"
         "%snum_scheds    : %d\n"
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-        "%sconsumer ES   : %p (%d)\n"
+        "%sconsumer ID   : %p\n"
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-        "%sproducer ES   : %p (%d)\n"
+        "%sproducer ID   : %p\n"
 #endif
         "%ssize          : %zu\n"
         "%snum_blocked   : %u\n"
@@ -674,10 +674,10 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
         prefix, p_pool->num_scheds,
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-        prefix, (void *)p_pool->consumer, p_pool->consumer ? p_pool->consumer->rank : 0,
+        prefix, (void *)p_pool->consumer_id,
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-        prefix, (void *)p_pool->producer, p_pool->producer ? p_pool->producer->rank : 0,
+        prefix, (void *)p_pool->producer_id,
 #endif
         prefix, ABTI_pool_get_size(p_pool),
         prefix, p_pool->num_blocked,
@@ -693,10 +693,10 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
 /* Set the associated consumer ES of a pool. This function has no effect on pools
  * of shared-read access mode.
- * If a pool is private-read to an ES, we check that the previous value of the
- * field "p_xstream" is the same as the argument of the function "p_xstream"
+ * If a pool is private-read to an ES, we check that the previous value of
+ * "consumer_id" is the same as the argument of the function "consumer_id"
  * */
-int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
+int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_native_thread_id consumer_id)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -707,26 +707,29 @@ int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-            ABTI_CHECK_TRUE(!p_pool->producer || p_xstream == p_pool->producer,
+            ABTI_CHECK_TRUE(!p_pool->producer_id ||
+                            p_pool->producer_id == consumer_id,
                             ABT_ERR_INV_POOL_ACCESS);
 #endif
-            ABTI_CHECK_TRUE(!p_pool->consumer || p_pool->consumer == p_xstream,
+            ABTI_CHECK_TRUE(!p_pool->consumer_id ||
+                            p_pool->consumer_id == consumer_id,
                             ABT_ERR_INV_POOL_ACCESS);
-            p_pool->consumer = p_xstream;
+            p_pool->consumer_id = consumer_id;
             break;
 
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_MPSC:
-            ABTI_CHECK_TRUE(!p_pool->consumer || p_pool->consumer == p_xstream,
+            ABTI_CHECK_TRUE(!p_pool->consumer_id ||
+                            p_pool->consumer_id == consumer_id,
                             ABT_ERR_INV_POOL_ACCESS);
             /* NB: as we do not want to use a mutex, the function can be wrong
              * here */
-            p_pool->consumer = p_xstream;
+            p_pool->consumer_id = consumer_id;
             break;
 
         case ABT_POOL_ACCESS_SPMC:
         case ABT_POOL_ACCESS_MPMC:
-            p_pool->consumer = p_xstream;
+            p_pool->consumer_id = consumer_id;
             break;
 
         default:
@@ -746,10 +749,10 @@ fn_fail:
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
 /* Set the associated producer ES of a pool. This function has no effect on pools
  * of shared-write access mode.
- * If a pool is private-write to an ES, we check that the previous value of the
- * field "p_xstream" is the same as the argument of the function "p_xstream"
+ * If a pool is private-write to an ES, we check that the previous value of
+ * "producer_id" is the same as the argument of the function "producer_id"
  * */
-int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
+int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_native_thread_id producer_id)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -760,26 +763,29 @@ int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream)
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-            ABTI_CHECK_TRUE(!p_pool->consumer || p_xstream == p_pool->consumer,
+            ABTI_CHECK_TRUE(!p_pool->consumer_id ||
+                            p_pool->consumer_id == producer_id,
                             ABT_ERR_INV_POOL_ACCESS);
 #endif
-            ABTI_CHECK_TRUE(!p_pool->producer || p_pool->producer == p_xstream,
+            ABTI_CHECK_TRUE(!p_pool->producer_id ||
+                            p_pool->producer_id == producer_id,
                             ABT_ERR_INV_POOL_ACCESS);
-            p_pool->producer = p_xstream;
+            p_pool->producer_id = producer_id;
             break;
 
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_SPMC:
-            ABTI_CHECK_TRUE(!p_pool->producer || p_pool->producer == p_xstream,
+            ABTI_CHECK_TRUE(!p_pool->producer_id ||
+                            p_pool->producer_id == producer_id,
                             ABT_ERR_INV_POOL_ACCESS);
             /* NB: as we do not want to use a mutex, the function can be wrong
              * here */
-            p_pool->producer = p_xstream;
+            p_pool->producer_id = producer_id;
             break;
 
         case ABT_POOL_ACCESS_MPSC:
         case ABT_POOL_ACCESS_MPMC:
-            p_pool->producer = p_xstream;
+            p_pool->producer_id = producer_id;
             break;
 
         default:
@@ -809,7 +815,7 @@ int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
         case ABT_POOL_ACCESS_PRIV:
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_SPMC:
-            if (p_pool->consumer == source->producer)
+            if (p_pool->consumer_id == source->producer_id)
                 return ABT_TRUE;
             return ABT_FALSE;
 

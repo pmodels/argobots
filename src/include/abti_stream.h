@@ -185,4 +185,11 @@ void ABTI_xstream_terminate_task(ABTI_local *p_local, ABTI_task *p_task)
     }
 }
 
+/* Get the native thread id associated with the target xstream. */
+static inline
+ABTI_native_thread_id ABTI_xstream_get_native_thread_id(ABTI_xstream *p_xstream)
+{
+    return (ABTI_native_thread_id)p_xstream;
+}
+
 #endif /* ABTI_XSTREAM_H_INCLUDED */

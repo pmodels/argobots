@@ -762,7 +762,8 @@ int ABT_thread_yield_to(ABT_thread thread)
     p_cur_thread->state = ABT_THREAD_STATE_READY;
 
     /* Add the current thread to the pool again */
-    ABTI_POOL_PUSH(p_cur_thread->p_pool, p_cur_thread->unit, p_xstream);
+    ABTI_POOL_PUSH(p_cur_thread->p_pool, p_cur_thread->unit,
+                   ABTI_self_get_native_thread_id(p_local));
 
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Delete the last context if the ULT is a scheduler */
@@ -773,7 +774,8 @@ int ABT_thread_yield_to(ABT_thread thread)
 #endif
 
     /* Remove the target ULT from the pool */
-    ABTI_POOL_REMOVE(p_tar_thread->p_pool, p_tar_thread->unit, p_xstream);
+    ABTI_POOL_REMOVE(p_tar_thread->p_pool, p_tar_thread->unit,
+                     ABTI_self_get_native_thread_id(p_local));
 
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Add a new scheduler if the ULT is a scheduler */
@@ -1540,9 +1542,8 @@ int ABTI_thread_create_internal(ABTI_local *p_local, ABTI_pool *p_pool,
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
         ABTI_pool_push(p_pool, p_newthread->unit);
 #else
-        ABTI_xstream *p_producer = p_parent_xstream ? p_parent_xstream
-                                   : ABTI_xstream_self(p_local);
-        abt_errno = ABTI_pool_push(p_pool, p_newthread->unit, p_producer);
+        abt_errno = ABTI_pool_push(p_pool, p_newthread->unit,
+                                   ABTI_self_get_native_thread_id(p_local));
         if (abt_errno != ABT_SUCCESS) {
             if (thread_type == ABTI_THREAD_TYPE_MAIN) {
                 ABTI_thread_free_main(p_local, p_newthread);
@@ -1881,7 +1882,7 @@ int ABTI_thread_set_ready(ABTI_local *p_local, ABTI_thread *p_thread)
     ABTI_pool *p_pool = p_thread->p_pool;
 
     /* Add the ULT to its associated pool */
-    ABTI_POOL_ADD_THREAD(p_thread, ABTI_xstream_self(p_local));
+    ABTI_POOL_ADD_THREAD(p_thread, ABTI_self_get_native_thread_id(p_local));
 
     /* Decrease the number of blocked threads */
     ABTI_pool_dec_num_blocked(p_pool);
@@ -2237,7 +2238,7 @@ static int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
     ABTI_pool_push(p_pool, p_thread->unit);
 #else
     abt_errno = ABTI_pool_push(p_pool, p_thread->unit,
-                               ABTI_xstream_self(p_local));
+                               ABTI_self_get_native_thread_id(p_local));
     ABTI_CHECK_ERROR(abt_errno);
 #endif
 
@@ -2292,7 +2293,8 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
          * underestimate the number of units in a pool. */
         ABTI_pool_inc_num_blocked(p_self->p_pool);
         /* Remove the target ULT from the pool */
-        ABTI_POOL_REMOVE(p_thread->p_pool, p_thread->unit, p_xstream);
+        ABTI_POOL_REMOVE(p_thread->p_pool, p_thread->unit,
+                         ABTI_self_get_native_thread_id(p_local));
 
         /* Set the link in the context for the target ULT */
         ABTD_thread_context_change_link(&p_thread->ctx, &p_self->ctx);
