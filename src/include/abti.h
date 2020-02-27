@@ -129,6 +129,9 @@ typedef struct ABTI_stack_header    ABTI_stack_header;
 typedef struct ABTI_page_header     ABTI_page_header;
 typedef struct ABTI_sp_header       ABTI_sp_header;
 #endif
+/* ID associated with work unit (i.e., ULTs, tasklets, and external threads) */
+struct ABTI_unit_id_opaque;
+typedef struct ABTI_unit_id_opaque *ABTI_unit_id;
 
 
 /* Architecture-Dependent Definitions */
@@ -144,7 +147,7 @@ typedef struct ABTI_spinlock        ABTI_spinlock;
 struct ABTI_mutex_attr {
     uint32_t attrs;             /* bit-or'ed attributes */
     uint32_t nesting_cnt;       /* nesting count */
-    ABTI_unit *p_owner;         /* owner work unit */
+    ABTI_unit_id owner_id;      /* owner's ID */
     uint32_t max_handovers;     /* max. # of handovers */
     uint32_t max_wakeups;       /* max. # of wakeups */
 };
@@ -198,6 +201,7 @@ struct ABTI_local_func {
     char padding1[ABT_CONFIG_STATIC_CACHELINE_SIZE];
     ABTI_local *(*get_local_f)(void);
     void (*set_local_f)(ABTI_local *);
+    void *(*get_local_ptr_f)(void);
     char padding2[ABT_CONFIG_STATIC_CACHELINE_SIZE];
 };
 

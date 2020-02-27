@@ -39,6 +39,30 @@ ABTI_unit *ABTI_self_get_unit(ABTI_local *p_local)
 }
 
 static inline
+ABTI_unit_id ABTI_self_get_unit_id(ABTI_local *p_local)
+{
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* This is when an external thread called this routine. */
+    if (p_local == NULL) {
+        /* A pointer to a thread local variable is unique to an external thread
+         * and its value is different from pointers to ULTs and tasks. */
+        return (ABTI_unit_id)ABTI_local_get_local_ptr();
+    }
+#endif
+    ABTI_unit_id id;
+    if (p_local->p_thread) {
+        id = (ABTI_unit_id)p_local->p_thread;
+    } else if (p_local->p_task) {
+        id = (ABTI_unit_id)p_local->p_task;
+    } else {
+        /* should not reach here */
+        id = 0;
+        ABTI_ASSERT(0);
+    }
+    return id;
+}
+
+static inline
 ABT_unit_type ABTI_self_get_type(ABTI_local *p_local)
 {
     ABTI_ASSERT(gp_ABTI_global);

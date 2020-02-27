@@ -20,10 +20,16 @@ static void ABTI_local_set_local_internal(ABTI_local *p_local)
     lp_ABTI_local = p_local;
 }
 
+static void *ABTI_local_get_local_ptr_internal(void)
+{
+    return (void *)&lp_ABTI_local;
+}
+
 ABTI_local_func gp_ABTI_local_func = {
     {0},
     ABTI_local_get_local_internal,
     ABTI_local_set_local_internal,
+    ABTI_local_get_local_ptr_internal,
     {0}
 };
 /* ES Local Data */
