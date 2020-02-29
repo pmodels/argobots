@@ -513,7 +513,7 @@ size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
     int p;
 
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    ABTI_xstream *p_xstream = p_local->p_xstream;
+    ABTI_native_thread_id self_id = ABTI_self_get_native_thread_id(p_local);
 #endif
 
     for (p = 0; p < p_sched->num_pools; p++) {
@@ -534,7 +534,7 @@ size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
                     pool_size += p_pool->num_blocked;
                 }
 #else
-                if (p_pool->num_scheds == 1 && p_pool->consumer == p_xstream) {
+                if (p_pool->num_scheds == 1 && p_pool->consumer_id == self_id) {
                     pool_size += p_pool->num_blocked;
                 }
 #endif

@@ -129,6 +129,13 @@ typedef struct ABTI_stack_header    ABTI_stack_header;
 typedef struct ABTI_page_header     ABTI_page_header;
 typedef struct ABTI_sp_header       ABTI_sp_header;
 #endif
+/* ID associated with native thread (e.g, Pthreads), which can distinguish
+ * execution streams and external threads */
+struct ABTI_native_thread_id_opaque;
+typedef struct ABTI_native_thread_id_opaque *ABTI_native_thread_id;
+/* ID associated with work unit (i.e., ULTs, tasklets, and external threads) */
+struct ABTI_unit_id_opaque;
+typedef struct ABTI_unit_id_opaque *ABTI_unit_id;
 
 
 /* Architecture-Dependent Definitions */
@@ -144,7 +151,7 @@ typedef struct ABTI_spinlock        ABTI_spinlock;
 struct ABTI_mutex_attr {
     uint32_t attrs;             /* bit-or'ed attributes */
     uint32_t nesting_cnt;       /* nesting count */
-    ABTI_unit *p_owner;         /* owner work unit */
+    ABTI_unit_id owner_id;      /* owner's ID */
     uint32_t max_handovers;     /* max. # of handovers */
     uint32_t max_wakeups;       /* max. # of wakeups */
 };
@@ -198,6 +205,7 @@ struct ABTI_local_func {
     char padding1[ABT_CONFIG_STATIC_CACHELINE_SIZE];
     ABTI_local *(*get_local_f)(void);
     void (*set_local_f)(ABTI_local *);
+    void *(*get_local_ptr_f)(void);
     char padding2[ABT_CONFIG_STATIC_CACHELINE_SIZE];
 };
 
@@ -262,10 +270,10 @@ struct ABTI_pool {
     int32_t num_scheds;      /* Number of associated schedulers */
                              /* NOTE: int32_t to check if still positive */
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    ABTI_xstream *consumer;  /* Associated consumer ES */
+    ABTI_native_thread_id consumer_id; /* Associated consumer ID */
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    ABTI_xstream *producer;  /* Associated producer ES */
+    ABTI_native_thread_id producer_id; /* Associated producer ID */
 #endif
     uint32_t num_blocked;    /* Number of blocked ULTs */
     int32_t num_migrations;  /* Number of migrating ULTs */
@@ -523,10 +531,12 @@ void ABTI_pool_free(ABTI_pool *p_pool);
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
 int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def);
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
+int ABTI_pool_set_consumer(ABTI_pool *p_pool,
+                           ABTI_native_thread_id consumer_id);
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_xstream *p_xstream);
+int ABTI_pool_set_producer(ABTI_pool *p_pool,
+                           ABTI_native_thread_id producer_id);
 #endif
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);

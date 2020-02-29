@@ -7,35 +7,41 @@
 #define ABTI_SELF_H_INCLUDED
 
 static inline
-ABTI_unit *ABTI_self_get_unit(ABTI_local *p_local)
+ABTI_native_thread_id ABTI_self_get_native_thread_id(ABTI_local *p_local)
 {
-    ABTI_ASSERT(gp_ABTI_global);
-
-    ABTI_unit *p_unit;
-    ABTI_thread *p_thread;
-    ABTI_task *p_task;
-
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (p_local == NULL) {
-        ABTD_xstream_context ctx;
-        ABTD_xstream_context_self(&ctx);
-        p_unit = (ABTI_unit *)ctx;
-        return p_unit;
+        /* A pointer to a thread local variable can distinguish all external
+         * threads and execution streams. */
+        return (ABTI_native_thread_id)ABTI_local_get_local_ptr();
     }
 #endif
+    return (ABTI_native_thread_id)p_local->p_xstream;
+}
 
-    if ((p_thread = p_local->p_thread)) {
-        p_unit = &p_thread->unit_def;
-    } else if ((p_task = p_local->p_task)) {
-        p_unit = &p_task->unit_def;
+static inline
+ABTI_unit_id ABTI_self_get_unit_id(ABTI_local *p_local)
+{
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* This is when an external thread called this routine. */
+    if (p_local == NULL) {
+        /* A pointer to a thread local variable is unique to an external thread
+         * and its value is different from pointers to ULTs and tasks. */
+        return (ABTI_unit_id)ABTI_local_get_local_ptr();
+    }
+#endif
+    ABTI_unit_id id;
+    if (p_local->p_thread) {
+        id = (ABTI_unit_id)p_local->p_thread;
+    } else if (p_local->p_task) {
+        id = (ABTI_unit_id)p_local->p_task;
     } else {
         /* should not reach here */
-        p_unit = NULL;
+        id = 0;
         ABTI_ASSERT(0);
     }
-
-    return p_unit;
+    return id;
 }
 
 static inline

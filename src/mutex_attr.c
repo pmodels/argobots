@@ -34,7 +34,7 @@ int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
     /* Default values */
     p_newattr->attrs = ABTI_MUTEX_ATTR_NONE;
     p_newattr->nesting_cnt = 0;
-    p_newattr->p_owner = NULL;
+    p_newattr->owner_id = 0;
     p_newattr->max_handovers = ABTI_global_get_mutex_max_handovers();
     p_newattr->max_wakeups = ABTI_global_get_mutex_max_wakeups();
 
@@ -138,11 +138,11 @@ void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf)
         "["
         "attrs:%x "
         "nesting_cnt:%u "
-        "p_owner:%p "
+        "owner_id:%p "
         "]",
         p_attr->attrs,
         p_attr->nesting_cnt,
-        (void *)p_attr->p_owner
+        (void *)p_attr->owner_id
     );
 }
 

@@ -62,6 +62,14 @@ static inline void ABTI_local_set_local(ABTI_local *p_local)
     gp_ABTI_local_func.set_local_f(p_local);
 }
 
+/*
+ * A safe getter function for a pointer to an ES Local Data, which is useful to
+ * identify a native thread (i.e., execution streams and external threads).
+ */
+static inline void *ABTI_local_get_local_ptr(void)
+{
+	return gp_ABTI_local_func.get_local_ptr_f();
+}
 
 #endif /* ABTI_LOCAL_H_INCLUDED */
 

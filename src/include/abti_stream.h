@@ -52,23 +52,6 @@ void ABTI_xstream_unset_request(ABTI_xstream *p_xstream, uint32_t req)
     ABTD_atomic_fetch_and_uint32(&p_xstream->request, ~req);
 }
 
-static inline
-ABTI_xstream *ABTI_xstream_self(ABTI_local *p_local)
-{
-    ABTI_xstream *p_xstream;
-    if (p_local != NULL) {
-        p_xstream = p_local->p_xstream;
-    } else {
-        /* We allow external threads to call Argobots APIs. However, since it
-         * is not trivial to identify them, we use ABTD_xstream_context to
-         * distinguish them for now. */
-        ABTD_xstream_context tmp_ctx;
-        ABTD_xstream_context_self(&tmp_ctx);
-        p_xstream = (ABTI_xstream *)tmp_ctx;
-    }
-    return p_xstream;
-}
-
 /* Get the top scheduler from the sched stack (field scheds) */
 static inline
 ABTI_sched *ABTI_xstream_get_top_sched(ABTI_xstream *p_xstream)
@@ -183,6 +166,13 @@ void ABTI_xstream_terminate_task(ABTI_local *p_local, ABTI_task *p_task)
         ABTD_atomic_store_uint32((uint32_t *)&p_task->state,
                                  ABT_TASK_STATE_TERMINATED);
     }
+}
+
+/* Get the native thread id associated with the target xstream. */
+static inline
+ABTI_native_thread_id ABTI_xstream_get_native_thread_id(ABTI_xstream *p_xstream)
+{
+    return (ABTI_native_thread_id)p_xstream;
 }
 
 #endif /* ABTI_XSTREAM_H_INCLUDED */

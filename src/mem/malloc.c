@@ -113,7 +113,7 @@ void ABTI_mem_finalize_local(ABTI_local *p_local)
                 ABTI_mem_take_free(p_tmp);
             }
 
-            p_tmp->p_owner = NULL;
+            p_tmp->owner_id = 0;
             p_tmp->p_prev = NULL;
             p_tmp->p_next = p_rem_head;
             p_rem_head = p_tmp;
@@ -231,7 +231,7 @@ static inline void ABTI_mem_free_page_list(ABTI_page_header *p_ph)
 static inline void ABTI_mem_add_page(ABTI_local *p_local,
                                      ABTI_page_header *p_ph)
 {
-    p_ph->p_owner = p_local->p_xstream;
+    p_ph->owner_id = ABTI_self_get_native_thread_id(p_local);
 
     /* Add the page to the head */
     if (p_local->p_mem_task_head != NULL) {
