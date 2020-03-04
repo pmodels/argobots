@@ -1351,9 +1351,11 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream)
     /* Free the array of sched contexts */
     ABTU_free(p_xstream->scheds);
 
-    /* Free the context */
-    abt_errno = ABTD_xstream_context_free(&p_xstream->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
+    /* Free the context if a given xstream is secondary. */
+    if (p_xstream->type == ABTI_XSTREAM_TYPE_SECONDARY) {
+        abt_errno = ABTD_xstream_context_free(&p_xstream->ctx);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
 
     ABTU_free(p_xstream);
 
