@@ -14,7 +14,9 @@
 #include "abtd_atomic.h"
 
 /* Data Types */
-typedef pthread_t           ABTD_xstream_context;
+typedef struct {
+    pthread_t native_thread;
+} ABTD_xstream_context;
 typedef pthread_mutex_t     ABTD_xstream_mutex;
 #ifdef HAVE_PTHREAD_BARRIER_INIT
 typedef pthread_barrier_t   ABTD_xstream_barrier;

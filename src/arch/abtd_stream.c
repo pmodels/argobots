@@ -9,7 +9,7 @@ int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
                                 ABTD_xstream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
-    int ret = pthread_create(p_ctx, NULL, f_xstream, p_arg);
+    int ret = pthread_create(&p_ctx->native_thread, NULL, f_xstream, p_arg);
     if (ret != 0) {
         HANDLE_ERROR("pthread_create");
         abt_errno = ABT_ERR_XSTREAM;
@@ -28,7 +28,7 @@ int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx)
 int ABTD_xstream_context_join(ABTD_xstream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
-    int ret = pthread_join(*p_ctx, NULL);
+    int ret = pthread_join(p_ctx->native_thread, NULL);
     if (ret != 0) {
         HANDLE_ERROR("pthread_join");
         abt_errno = ABT_ERR_XSTREAM;
@@ -45,7 +45,7 @@ int ABTD_xstream_context_exit(void)
 int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
-    *p_ctx = pthread_self();
+    p_ctx->native_thread = pthread_self();
     return abt_errno;
 }
 
