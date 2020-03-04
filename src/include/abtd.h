@@ -14,10 +14,19 @@
 #include "abtd_atomic.h"
 
 /* Data Types */
-typedef struct {
+typedef enum {
+    ABTD_XSTREAM_CONTEXT_STATE_RUNNING,
+    ABTD_XSTREAM_CONTEXT_STATE_WAITING,
+    ABTD_XSTREAM_CONTEXT_STATE_REQ_JOIN,
+    ABTD_XSTREAM_CONTEXT_STATE_REQ_TERMINATE,
+} ABTD_xstream_context_state;
+typedef struct ABTD_xstream_context {
     pthread_t native_thread;
     void *(*thread_f)(void *);
     void *p_arg;
+    ABTD_xstream_context_state state;
+    pthread_mutex_t state_lock;
+    pthread_cond_t state_cond;
 } ABTD_xstream_context;
 typedef pthread_mutex_t     ABTD_xstream_mutex;
 #ifdef HAVE_PTHREAD_BARRIER_INIT
@@ -37,6 +46,7 @@ int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
                                 ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_join(ABTD_xstream_context *p_ctx);
+int ABTD_xstream_context_revive(ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx);
 
 /* ES Affinity */

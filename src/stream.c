@@ -323,6 +323,34 @@ int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
     goto fn_exit;
 }
 
+/**
+ * @ingroup ES
+ * @brief   Restart an ES that has been joined by \c ABT_xstream_join().
+ *
+ * @param[in] xstream  handle to an ES that has been joined but not freed.
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_revive(ABT_xstream xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    p_xstream->state        = ABT_XSTREAM_STATE_RUNNING;
+    p_xstream->request      = 0;
+    p_xstream->p_req_arg    = NULL;
+    abt_errno = ABTD_xstream_context_revive(&p_xstream->ctx);
+    ABTI_CHECK_ERROR(abt_errno);
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
 /* This routine starts the primary ES. It should be called in ABT_init.
  * [in] p_xstream  the primary ES
  * [in] p_thread   the main ULT
@@ -1881,7 +1909,6 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     ABTI_CHECK_ERROR(abt_errno);
     p_local->p_xstream = p_xstream;
 
-    /* Create the main sched ULT */
     ABTI_sched *p_sched = p_xstream->p_main_sched;
     abt_errno = ABTI_thread_create_main_sched(p_local, p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
