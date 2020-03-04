@@ -1909,10 +1909,13 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     ABTI_CHECK_ERROR(abt_errno);
     p_local->p_xstream = p_xstream;
 
+    /* Create the main sched ULT if not created yet */
     ABTI_sched *p_sched = p_xstream->p_main_sched;
-    abt_errno = ABTI_thread_create_main_sched(p_local, p_xstream, p_sched);
-    ABTI_CHECK_ERROR(abt_errno);
-    p_sched->p_thread->p_last_xstream = p_xstream;
+    if (!p_sched->p_thread) {
+        abt_errno = ABTI_thread_create_main_sched(p_local, p_xstream, p_sched);
+        ABTI_CHECK_ERROR(abt_errno);
+        p_sched->p_thread->p_last_xstream = p_xstream;
+    }
 
     /* Set the sched ULT as the current ULT */
     p_local->p_thread = p_sched->p_thread;
