@@ -113,7 +113,7 @@ int ABTD_xstream_context_revive(ABTD_xstream_context *p_ctx)
     return abt_errno;
 }
 
-int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx)
+int ABTD_xstream_context_set_self(ABTD_xstream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
     p_ctx->native_thread = pthread_self();

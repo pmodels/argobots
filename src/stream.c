@@ -293,8 +293,8 @@ int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         LOG_EVENT("[E%d] start\n", p_xstream->rank);
 
-        abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
+        abt_errno = ABTD_xstream_context_set_self(&p_xstream->ctx);
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_set_self");
 
         /* Create the main sched ULT */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
@@ -367,8 +367,8 @@ int ABTI_xstream_start_primary(ABTI_local **pp_local, ABTI_xstream *p_xstream, A
 
     LOG_EVENT("[E%d] start\n", p_xstream->rank);
 
-    abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
+    abt_errno = ABTD_xstream_context_set_self(&p_xstream->ctx);
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_set_self");
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
