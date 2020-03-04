@@ -16,6 +16,8 @@
 /* Data Types */
 typedef struct {
     pthread_t native_thread;
+    void *(*thread_f)(void *);
+    void *p_arg;
 } ABTD_xstream_context;
 typedef pthread_mutex_t     ABTD_xstream_mutex;
 #ifdef HAVE_PTHREAD_BARRIER_INIT
