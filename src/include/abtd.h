@@ -32,17 +32,17 @@ void ABTD_env_init(ABTI_global *p_global);
 int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
                                 ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx);
-int ABTD_xstream_context_join(ABTD_xstream_context ctx);
+int ABTD_xstream_context_join(ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_exit(void);
 int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx);
 
 /* ES Affinity */
 void ABTD_affinity_init(void);
 void ABTD_affinity_finalize(void);
-int ABTD_affinity_set(ABTD_xstream_context ctx, int rank);
-int ABTD_affinity_set_cpuset(ABTD_xstream_context ctx, int cpuset_size,
+int ABTD_affinity_set(ABTD_xstream_context *p_ctx, int rank);
+int ABTD_affinity_set_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
                              int *p_cpuset);
-int ABTD_affinity_get_cpuset(ABTD_xstream_context ctx, int cpuset_size,
+int ABTD_affinity_get_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
                              int *p_cpuset, int *p_num_cpus);
 
 #include "abtd_stream.h"

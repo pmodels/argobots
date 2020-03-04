@@ -25,10 +25,10 @@ int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx)
     return abt_errno;
 }
 
-int ABTD_xstream_context_join(ABTD_xstream_context ctx)
+int ABTD_xstream_context_join(ABTD_xstream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
-    int ret = pthread_join(ctx, NULL);
+    int ret = pthread_join(*p_ctx, NULL);
     if (ret != 0) {
         HANDLE_ERROR("pthread_join");
         abt_errno = ABT_ERR_XSTREAM;

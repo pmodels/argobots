@@ -312,7 +312,7 @@ int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_set(&p_xstream->ctx, p_xstream->rank);
     }
 
   fn_exit:
@@ -344,7 +344,7 @@ int ABTI_xstream_start_primary(ABTI_local **pp_local, ABTI_xstream *p_xstream, A
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_set(&p_xstream->ctx, p_xstream->rank);
     }
 
     /* Create the main sched ULT */
@@ -645,7 +645,7 @@ int ABT_xstream_set_rank(ABT_xstream xstream, const int rank)
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_set(&p_xstream->ctx, p_xstream->rank);
     }
 
   fn_exit:
@@ -1130,7 +1130,7 @@ int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTD_affinity_set_cpuset(p_xstream->ctx, 1, &cpuid);
+    abt_errno = ABTD_affinity_set_cpuset(&p_xstream->ctx, 1, &cpuid);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -1160,7 +1160,7 @@ int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTD_affinity_get_cpuset(p_xstream->ctx, 1, cpuid, NULL);
+    abt_errno = ABTD_affinity_get_cpuset(&p_xstream->ctx, 1, cpuid, NULL);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -1191,7 +1191,7 @@ int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTD_affinity_set_cpuset(p_xstream->ctx, cpuset_size, cpuset);
+    abt_errno = ABTD_affinity_set_cpuset(&p_xstream->ctx, cpuset_size, cpuset);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -1233,7 +1233,7 @@ int ABT_xstream_get_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset,
         goto fn_exit;
     }
 
-    abt_errno = ABTD_affinity_get_cpuset(p_xstream->ctx, cpuset_size, cpuset,
+    abt_errno = ABTD_affinity_get_cpuset(&p_xstream->ctx, cpuset_size, cpuset,
                                          num_cpus);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -1320,7 +1320,7 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
 
   fn_join:
     /* Normal join request */
-    abt_errno = ABTD_xstream_context_join(p_xstream->ctx);
+    abt_errno = ABTD_xstream_context_join(&p_xstream->ctx);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_join");
 
   fn_exit:
