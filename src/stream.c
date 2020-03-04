@@ -1898,8 +1898,6 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     /* Reset the current ES and its local info. */
     ABTI_local_finalize(&p_local);
 
-    ABTD_xstream_context_exit();
-
   fn_exit:
     return NULL;
 

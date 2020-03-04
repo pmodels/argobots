@@ -37,7 +37,6 @@ int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
                                 ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_join(ABTD_xstream_context *p_ctx);
-int ABTD_xstream_context_exit(void);
 int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx);
 
 /* ES Affinity */

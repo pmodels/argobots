@@ -48,12 +48,6 @@ int ABTD_xstream_context_join(ABTD_xstream_context *p_ctx)
     return abt_errno;
 }
 
-int ABTD_xstream_context_exit(void)
-{
-    pthread_exit(NULL);
-    return ABT_SUCCESS;
-}
-
 int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx)
 {
     int abt_errno = ABT_SUCCESS;
