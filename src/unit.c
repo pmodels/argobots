@@ -62,3 +62,50 @@ void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool)
         p_task->p_pool = p_pool;
     }
 }
+
+/*****************************************************************************/
+/* Public APIs                                                               */
+/*****************************************************************************/
+
+ABT_unit_type ABT_unit_get_type(ABT_unit unit, ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+
+    return (p_pool->u_get_type(unit));
+}
+
+ABT_thread ABT_unit_get_thread(ABT_unit unit, ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+
+    return (p_pool->u_get_thread(unit));
+}
+
+ABT_task ABT_unit_get_task(ABT_unit unit, ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+
+    return (p_pool->u_get_task(unit));
+}
+
+ABT_sched ABT_unit_get_sched(ABT_unit unit, ABT_pool pool)
+{
+    ABTI_sched *p_sched;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+
+    if (p_pool->u_get_type(unit) == ABT_UNIT_TYPE_TASK)
+    {
+        ABT_task task = p_pool->u_get_task(unit);
+        ABTI_task *p_task = ABTI_task_get_ptr(task);
+        p_sched = p_task->is_sched;
+    }
+    else
+    {
+        ABT_thread thread = p_pool->u_get_thread(unit);
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+        p_sched = p_thread->is_sched;
+    }
+
+    return ABTI_sched_get_handle(p_sched);
+}
+
