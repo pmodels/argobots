@@ -6,6 +6,7 @@
 TESTS = \
 	init_finalize \
 	xstream_create \
+	xstream_revive \
 	xstream_affinity \
 	xstream_barrier \
 	xstream_rank \
@@ -75,6 +76,7 @@ include $(top_srcdir)/test/Makefile.mk
 
 init_finalize_SOURCES = init_finalize.c
 xstream_create_SOURCES = xstream_create.c
+xstream_revive_SOURCES = xstream_revive.c
 xstream_affinity_SOURCES = xstream_affinity.c
 xstream_barrier_SOURCES = xstream_barrier.c
 xstream_rank_SOURCES = xstream_rank.c
@@ -132,6 +134,7 @@ info_stackdump2_SOURCES = info_stackdump2.c
 testing:
 	./init_finalize
 	./xstream_create
+	./xstream_revive
 	./xstream_affinity
 	./xstream_barrier
 	./xstream_rank
