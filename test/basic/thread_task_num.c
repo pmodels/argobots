@@ -8,8 +8,8 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_THREADS     4
-#define DEFAULT_NUM_TASKS       4
+#define DEFAULT_NUM_THREADS 4
+#define DEFAULT_NUM_TASKS 4
 
 void thread_func(void *arg)
 {
@@ -28,12 +28,14 @@ int main(int argc, char *argv[])
     int i, ret;
     int num_threads = DEFAULT_NUM_THREADS;
     int num_tasks = DEFAULT_NUM_TASKS;
-    if (argc > 1) num_threads = atoi(argv[1]);
+    if (argc > 1)
+        num_threads = atoi(argv[1]);
     assert(num_threads >= 0);
-    if (argc > 2) num_tasks = atoi(argv[2]);
+    if (argc > 2)
+        num_tasks = atoi(argv[2]);
     assert(num_tasks >= 0);
 
-    unsigned long num_units = (unsigned long)(num_threads+num_tasks);
+    unsigned long num_units = (unsigned long)(num_threads + num_tasks);
 
     ABT_xstream xstream;
     size_t n_units;
@@ -55,8 +57,8 @@ int main(int argc, char *argv[])
 
     /* Create ULTs */
     for (i = 0; i < num_threads; i++) {
-        ret = ABT_thread_create(pool, thread_func, NULL,
-                ABT_THREAD_ATTR_NULL, NULL);
+        ret = ABT_thread_create(pool, thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                                NULL);
         ATS_ERROR(ret, "ABT_thread_create");
     }
 
@@ -75,8 +77,8 @@ int main(int argc, char *argv[])
 
     if (n_units != num_units) {
         err++;
-        printf("# of units: expected(%lu) vs. result(%lu)\n",
-               num_units, (unsigned long)n_units);
+        printf("# of units: expected(%lu) vs. result(%lu)\n", num_units,
+               (unsigned long)n_units);
     }
 
     do {
@@ -91,8 +93,8 @@ int main(int argc, char *argv[])
     ATS_ERROR(ret, "ABT_sched_get_total_size");
     if (n_units != 0) {
         err++;
-        printf("# of units: expected(%d) vs. result(%lu)\n",
-               0, (unsigned long)n_units);
+        printf("# of units: expected(%d) vs. result(%lu)\n", 0,
+               (unsigned long)n_units);
     }
 
     /* Finalize */
@@ -100,4 +102,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

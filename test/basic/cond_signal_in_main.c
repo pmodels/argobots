@@ -50,8 +50,8 @@ int main(int argc, char *argv[])
 
     /* Create the ULT */
     ABT_thread thread;
-    ret = ABT_thread_create(pool, wait_on_condition, NULL,
-                            ABT_THREAD_ATTR_NULL, &thread);
+    ret = ABT_thread_create(pool, wait_on_condition, NULL, ABT_THREAD_ATTR_NULL,
+                            &thread);
     ATS_ERROR(ret, "ABT_thread_create");
 
     /* Switch to the other user level thread */
@@ -78,4 +78,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

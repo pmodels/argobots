@@ -8,7 +8,7 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    4
+#define DEFAULT_NUM_XSTREAMS 4
 
 int main(int argc, char *argv[])
 {

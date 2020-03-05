@@ -8,8 +8,8 @@
 
 /* Inlined functions for Config */
 
-static inline
-ABTI_sched_config *ABTI_sched_config_get_ptr(ABT_sched_config config)
+static inline ABTI_sched_config *
+ABTI_sched_config_get_ptr(ABT_sched_config config)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_sched_config *p_config;
@@ -24,8 +24,8 @@ ABTI_sched_config *ABTI_sched_config_get_ptr(ABT_sched_config config)
 #endif
 }
 
-static inline
-ABT_sched_config ABTI_sched_config_get_handle(ABTI_sched_config *p_config)
+static inline ABT_sched_config
+ABTI_sched_config_get_handle(ABTI_sched_config *p_config)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_sched_config h_config;
@@ -41,4 +41,3 @@ ABT_sched_config ABTI_sched_config_get_handle(ABTI_sched_config *p_config)
 }
 
 #endif /* ABTI_CONFIG_H_INCLUDED */
-

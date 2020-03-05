@@ -31,8 +31,7 @@ int ABT_rwlock_create(ABT_rwlock *newrwlock)
     p_newrwlock = (ABTI_rwlock *)ABTU_malloc(sizeof(ABTI_rwlock));
     if (p_newrwlock == NULL) {
         abt_errno = ABT_ERR_MEM;
-    }
-    else {
+    } else {
         ABTI_rwlock_init(p_newrwlock);
     }
 
@@ -70,10 +69,10 @@ int ABT_rwlock_free(ABT_rwlock *rwlock)
     /* Return value */
     *rwlock = ABT_RWLOCK_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -105,10 +104,10 @@ int ABT_rwlock_rdlock(ABT_rwlock rwlock)
 
     ABTI_rwlock_rdlock(&p_local, p_rwlock);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -139,10 +138,10 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
 
     ABTI_rwlock_wrlock(&p_local, p_rwlock);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -152,9 +151,9 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
  * @brief Unlock the rwlock
  *
  * \c ABT_rwlock_unlock unlocks the rwlock \c rwlock.
- * If the caller ULT locked the rwlock, this routine unlocks the rwlock. However,
- * if the caller ULT did not lock the rwlock, this routine may result in
- * undefined behavior.
+ * If the caller ULT locked the rwlock, this routine unlocks the rwlock.
+ * However, if the caller ULT did not lock the rwlock, this routine may result
+ * in undefined behavior.
  *
  * @param[in] rwlock  handle to the rwlock
  * @return Error code
@@ -169,10 +168,10 @@ int ABT_rwlock_unlock(ABT_rwlock rwlock)
 
     ABTI_rwlock_unlock(&p_local, p_rwlock);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

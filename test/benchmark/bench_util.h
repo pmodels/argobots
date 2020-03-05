@@ -7,48 +7,50 @@
 #define BENCH_UTIL_H_INCLUDED
 
 #ifdef USE_PAPI
-#define ABTX_papi_assert(expr)                   \
-do {                                             \
-    if (expr != PAPI_OK) {                       \
-        fprintf(stderr, "Error at " #expr "\n"); \
-        exit(-1);                                \
-    }                                            \
-} while (0)
+#define ABTX_papi_assert(expr)                                                 \
+    do {                                                                       \
+        if (expr != PAPI_OK) {                                                 \
+            fprintf(stderr, "Error at " #expr "\n");                           \
+            exit(-1);                                                          \
+        }                                                                      \
+    } while (0)
 #endif
 
 #ifndef USE_PAPI
-#define ABTX_start_prof(start_time, evset)       \
-do {                                             \
-    start_time = ATS_get_cycles();               \
-} while (0)
+#define ABTX_start_prof(start_time, evset)                                     \
+    do {                                                                       \
+        start_time = ATS_get_cycles();                                         \
+    } while (0)
 #else
-#define ABTX_start_prof(start_time, evset)       \
-do {                                             \
-    start_time = ATS_get_cycles();               \
-    ABTX_papi_assert(PAPI_start(evset));         \
-} while (0)
+#define ABTX_start_prof(start_time, evset)                                     \
+    do {                                                                       \
+        start_time = ATS_get_cycles();                                         \
+        ABTX_papi_assert(PAPI_start(evset));                                   \
+    } while (0)
 #endif
 
 #ifndef USE_PAPI
-#define ABTX_stop_prof(start_time, num, time_sum, time_sqrsum, evset, vals, \
-                       llcm_sum, llcm_sqrsum, totm_sum, tlbm_sqrsum)        \
-do {                                                                        \
-    float elaps_time = (float)(ATS_get_cycles() - start_time)/num;          \
-    time_sum += elaps_time;                                                 \
-    time_sqrsum += elaps_time*elaps_time;                                   \
-} while (0)
+#define ABTX_stop_prof(start_time, num, time_sum, time_sqrsum, evset, vals,    \
+                       llcm_sum, llcm_sqrsum, totm_sum, tlbm_sqrsum)           \
+    do {                                                                       \
+        float elaps_time = (float)(ATS_get_cycles() - start_time) / num;       \
+        time_sum += elaps_time;                                                \
+        time_sqrsum += elaps_time * elaps_time;                                \
+    } while (0)
 #else
-#define ABTX_stop_prof(start_time, num, time_sum, time_sqrsum, evset, vals, \
-                       llcm_sum, llcm_sqrsum, totm_sum, tlbm_sqrsum)        \
-do {                                                                        \
-    ABTX_papi_assert(PAPI_stop(evset, vals));                               \
-    float llcm = (float)vals[0]/num, tlbm = (float)vals[1]/num;             \
-    llcm_sum += llcm; llcm_sqrsum += llcm*llcm;                             \
-    totm_sum += tlbm; tlbm_sqrsum += tlbm*tlbm;                             \
-    float elaps_time = (float)(ATS_get_cycles() - start_time)/num;          \
-    time_sum += elaps_time;                                                 \
-    time_sqrsum += elaps_time*elaps_time;                                   \
-} while (0)
+#define ABTX_stop_prof(start_time, num, time_sum, time_sqrsum, evset, vals,    \
+                       llcm_sum, llcm_sqrsum, totm_sum, tlbm_sqrsum)           \
+    do {                                                                       \
+        ABTX_papi_assert(PAPI_stop(evset, vals));                              \
+        float llcm = (float)vals[0] / num, tlbm = (float)vals[1] / num;        \
+        llcm_sum += llcm;                                                      \
+        llcm_sqrsum += llcm * llcm;                                            \
+        totm_sum += tlbm;                                                      \
+        tlbm_sqrsum += tlbm * tlbm;                                            \
+        float elaps_time = (float)(ATS_get_cycles() - start_time) / num;       \
+        time_sum += elaps_time;                                                \
+        time_sqrsum += elaps_time * elaps_time;                                \
+    } while (0)
 #endif
 
 #ifdef USE_PAPI
@@ -87,7 +89,8 @@ static inline void print_header(char *wu, int need_join)
     line_size = need_join ? 86 : 65;
     ATS_print_line(stdout, '-', line_size);
     printf("%-3s %8s %8s %22s ", "ES#", wu, "#Iter", "Create: cycles [std]");
-    if (need_join) printf("%20s ", "Join: cycles [std]");
+    if (need_join)
+        printf("%20s ", "Join: cycles [std]");
     printf("%20s\n", "Free: cycles [std]");
 #else
 
@@ -96,27 +99,39 @@ static inline void print_header(char *wu, int need_join)
     printf("%-3s %8s %8s ", "ES#", wu, "#Iter");
 #if (defined __MIC__) || (defined __KNC__)
 #ifdef USE_PAPI_L1M_L2M
-    printf("%22s %14s %14s ", "Create: cycles [std]", "L1Dm [std]", "L1Im [std]");
+    printf("%22s %14s %14s ", "Create: cycles [std]", "L1Dm [std]",
+           "L1Im [std]");
     if (need_join)
-    printf("%20s %14s %14s ", "Join: cycles [std]", "L1Dm [std]", "L1Im [std]");
-    printf("%20s %14s %14s\n", "Free: cycles [std]", "L1Dm [std]", "L1Im [std]");
+        printf("%20s %14s %14s ", "Join: cycles [std]", "L1Dm [std]",
+               "L1Im [std]");
+    printf("%20s %14s %14s\n", "Free: cycles [std]", "L1Dm [std]",
+           "L1Im [std]");
 #else
-    printf("%22s %14s %14s ", "Create: cycles [std]", "L2Dm [std]", "TLBm [std]");
+    printf("%22s %14s %14s ", "Create: cycles [std]", "L2Dm [std]",
+           "TLBm [std]");
     if (need_join)
-    printf("%20s %14s %14s ", "Join: cycles [std]", "L2Dm [std]", "TLBm [std]");
-    printf("%20s %14s %14s\n", "Free: cycles [std]", "L2Dm [std]", "TLBm [std]");
+        printf("%20s %14s %14s ", "Join: cycles [std]", "L2Dm [std]",
+               "TLBm [std]");
+    printf("%20s %14s %14s\n", "Free: cycles [std]", "L2Dm [std]",
+           "TLBm [std]");
 #endif /* USE_PAPI_L1M_L2M */
 #else
 #ifdef USE_PAPI_L1M_L2M
-    printf("%22s %14s %14s ", "Create: cycles [std]", "L1Cm [std]", "L2Cm [std]");
+    printf("%22s %14s %14s ", "Create: cycles [std]", "L1Cm [std]",
+           "L2Cm [std]");
     if (need_join)
-    printf("%20s %14s %14s", "Join: cycles [std]", "L1Cm [std]", "L2Cm [std]");
-    printf("%20s %14s %14s\n", "Free: cycles [std]", "L1Cm [std]", "L2Cm [std]");
+        printf("%20s %14s %14s", "Join: cycles [std]", "L1Cm [std]",
+               "L2Cm [std]");
+    printf("%20s %14s %14s\n", "Free: cycles [std]", "L1Cm [std]",
+           "L2Cm [std]");
 #else
-    printf("%22s %14s %14s ", "Create: cycles [std]", "LLCm [std]", "TLBm [std]");
+    printf("%22s %14s %14s ", "Create: cycles [std]", "LLCm [std]",
+           "TLBm [std]");
     if (need_join)
-    printf("%20s %14s %14s ", "Join: cycles [std]", "LLCm [std]", "TLBm [std]");
-    printf("%20s %14s %14s\n", "Free: cycles [std]", "LLCm [std]", "TLBm [std]");
+        printf("%20s %14s %14s ", "Join: cycles [std]", "LLCm [std]",
+               "TLBm [std]");
+    printf("%20s %14s %14s\n", "Free: cycles [std]", "LLCm [std]",
+           "TLBm [std]");
 #endif /* USE_PAPI_L1M_L2M */
 #endif
 #endif /* USE_PAPI */
@@ -125,7 +140,8 @@ static inline void print_header(char *wu, int need_join)
 }
 
 #ifdef USE_PAPI
-static inline unsigned long ABTX_xstream_get_self(void) {
+static inline unsigned long ABTX_xstream_get_self(void)
+{
     ABT_xstream self;
     ABT_xstream_self(&self);
     return (unsigned long)self;
@@ -149,9 +165,8 @@ typedef struct seq_state_t {
     int max_nonpow_terms;
 } seq_state_t;
 
-static inline void seq_init(seq_state_t* state, const int base,
-                            const int prev_term,
-                            const int last_pow_term,
+static inline void seq_init(seq_state_t *state, const int base,
+                            const int prev_term, const int last_pow_term,
                             const int max_nonpow_terms)
 {
     state->base = base;
@@ -162,12 +177,12 @@ static inline void seq_init(seq_state_t* state, const int base,
 }
 
 /* Core of the sequence generator */
-static inline int seq_get_next_term(seq_state_t* state)
+static inline int seq_get_next_term(seq_state_t *state)
 {
     int cur_term; /* term to return */
     cur_term = state->prev_term + state->cur_stride;
-    if (cur_term == state->last_pow_term*state->base) {
-        while (cur_term/state->cur_stride - 1 > state->max_nonpow_terms)
+    if (cur_term == state->last_pow_term * state->base) {
+        while (cur_term / state->cur_stride - 1 > state->max_nonpow_terms)
             state->cur_stride *= state->base;
         state->last_pow_term = cur_term;
     }
@@ -176,4 +191,3 @@ static inline int seq_get_next_term(seq_state_t* state)
 }
 
 #endif /* BENCH_UTIL_H_INCLUDED */
-

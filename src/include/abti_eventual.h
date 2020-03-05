@@ -8,8 +8,7 @@
 
 /* Inlined functions for Eventual */
 
-static inline
-ABTI_eventual *ABTI_eventual_get_ptr(ABT_eventual eventual)
+static inline ABTI_eventual *ABTI_eventual_get_ptr(ABT_eventual eventual)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_eventual *p_eventual;
@@ -24,8 +23,7 @@ ABTI_eventual *ABTI_eventual_get_ptr(ABT_eventual eventual)
 #endif
 }
 
-static inline
-ABT_eventual ABTI_eventual_get_handle(ABTI_eventual *p_eventual)
+static inline ABT_eventual ABTI_eventual_get_handle(ABTI_eventual *p_eventual)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_eventual h_eventual;
@@ -41,4 +39,3 @@ ABT_eventual ABTI_eventual_get_handle(ABTI_eventual *p_eventual)
 }
 
 #endif /* ABTI_EVENTUAL_H_INCLUDED */
-

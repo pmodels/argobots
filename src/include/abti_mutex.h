@@ -6,8 +6,7 @@
 #ifndef ABTI_MUTEX_H_INCLUDED
 #define ABTI_MUTEX_H_INCLUDED
 
-static inline
-ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
+static inline ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_mutex *p_mutex;
@@ -22,8 +21,7 @@ ABTI_mutex *ABTI_mutex_get_ptr(ABT_mutex mutex)
 #endif
 }
 
-static inline
-ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
+static inline ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_mutex h_mutex;
@@ -38,8 +36,7 @@ ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 #endif
 }
 
-static inline
-void ABTI_mutex_init(ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 {
     p_mutex->val = 0;
     p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
@@ -55,26 +52,24 @@ void ABTI_mutex_init(ABTI_mutex *p_mutex)
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
 #define ABTI_mutex_fini(p_mutex)
 #else
-static inline
-void ABTI_mutex_fini(ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_fini(ABTI_mutex *p_mutex)
 {
     ABTI_thread_htable_free(p_mutex->p_htable);
 }
 #endif
 
-static inline
-void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
 {
     /* ABTI_spinlock_ functions cannot be used since p_mutex->val can take
      * other values (i.e., not UNLOCKED nor LOCKED.) */
     while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-        while (ABTD_atomic_load_uint32(&p_mutex->val) != 0);
+        while (ABTD_atomic_load_uint32(&p_mutex->val) != 0)
+            ;
     }
     LOG_EVENT("%p: spinlock\n", p_mutex);
 }
 
-static inline
-void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_local *p_local = *pp_local;
@@ -118,7 +113,8 @@ void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                         ABTI_thread *p_giver = p_mutex->p_giver;
                         p_giver->state = ABT_THREAD_STATE_READY;
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
-                            ABTI_self_get_native_thread_id(*pp_local));
+                                       ABTI_self_get_native_thread_id(
+                                           *pp_local));
                         break;
                     }
                 }
@@ -131,17 +127,16 @@ void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
         ABTI_mutex_spinlock(p_mutex);
     }
 
-  fn_exit:
-    return ;
+fn_exit:
+    return;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #endif
 }
 
-static inline
-int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
+static inline int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
 {
     if (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
         return ABT_ERR_MUTEX_LOCKED;
@@ -149,8 +144,7 @@ int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
     return ABT_SUCCESS;
 }
 
-static inline
-void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTD_atomic_mem_barrier();
@@ -167,11 +161,10 @@ void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
 #endif
 }
 
-static inline
-ABT_bool ABTI_mutex_equal(ABTI_mutex *p_mutex1, ABTI_mutex *p_mutex2)
+static inline ABT_bool ABTI_mutex_equal(ABTI_mutex *p_mutex1,
+                                        ABTI_mutex *p_mutex2)
 {
     return (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
 }
 
 #endif /* ABTI_MUTEX_H_INCLUDED */
-

@@ -8,9 +8,9 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    4
-#define DEFAULT_NUM_THREADS     4
-#define NUM_TLS                 4
+#define DEFAULT_NUM_XSTREAMS 4
+#define DEFAULT_NUM_THREADS 4
+#define NUM_TLS 4
 
 static ABT_key tls[NUM_TLS];
 static int num_threads;
@@ -122,10 +122,10 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
-        num_threads  = DEFAULT_NUM_THREADS;
+        num_threads = DEFAULT_NUM_THREADS;
     } else {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+        num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
     }
     ATS_init(argc, argv, num_xstreams);
 

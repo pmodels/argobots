@@ -68,8 +68,7 @@ static inline void ABTI_local_set_local(ABTI_local *p_local)
  */
 static inline void *ABTI_local_get_local_ptr(void)
 {
-	return gp_ABTI_local_func.get_local_ptr_f();
+    return gp_ABTI_local_func.get_local_ptr_f();
 }
 
 #endif /* ABTI_LOCAL_H_INCLUDED */
-

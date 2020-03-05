@@ -41,7 +41,8 @@ double ABTD_time_read_sec(ABTD_time *p_time)
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
     secs = ((double)p_time->tv_sec) + 1.0e-9 * ((double)p_time->tv_nsec);
 #elif defined(ABT_CONFIG_USE_MACH_ABSOLUTE_TIME)
-    if (g_time_mult == 0.0) ABTD_time_init();
+    if (g_time_mult == 0.0)
+        ABTD_time_init();
     secs = *p_time * g_time_mult;
 #elif defined(ABT_CONFIG_USE_GETTIMEOFDAY)
     secs = ((double)p_time->tv_sec) + 1.0e-6 * ((double)p_time->tv_usec);
@@ -49,4 +50,3 @@ double ABTD_time_read_sec(ABTD_time *p_time)
 
     return secs;
 }
-

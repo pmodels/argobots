@@ -8,8 +8,8 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    2
-#define DEFAULT_NUM_TASKS       4
+#define DEFAULT_NUM_XSTREAMS 2
+#define DEFAULT_NUM_TASKS 4
 
 typedef struct {
     size_t num;
@@ -43,9 +43,11 @@ int main(int argc, char *argv[])
     int i, ret;
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_tasks = DEFAULT_NUM_TASKS;
-    if (argc > 1) num_xstreams = atoi(argv[1]);
+    if (argc > 1)
+        num_xstreams = atoi(argv[1]);
     assert(num_xstreams >= 0);
-    if (argc > 2) num_tasks = atoi(argv[2]);
+    if (argc > 2)
+        num_tasks = atoi(argv[2]);
     assert(num_tasks >= 0);
 
     ABT_xstream *xstreams;
@@ -71,19 +73,16 @@ int main(int argc, char *argv[])
     /* Create tasklets with task_func1 */
     for (i = 0; i < num_tasks; i++) {
         size_t num = 100 + i;
-        ret = ABT_task_create_on_xstream(xstreams[i % num_xstreams],
-                              task_func1, (void *)num,
-                              NULL);
+        ret = ABT_task_create_on_xstream(xstreams[i % num_xstreams], task_func1,
+                                         (void *)num, NULL);
         ATS_ERROR(ret, "ABT_task_create");
     }
-
 
     /* Create tasklets with task_func2 */
     for (i = 0; i < num_tasks; i++) {
         args[i].num = 100 + i;
-        ret = ABT_task_create_on_xstream(xstreams[i % num_xstreams],
-                              task_func2, (void *)&args[i],
-                              &tasks[i]);
+        ret = ABT_task_create_on_xstream(xstreams[i % num_xstreams], task_func2,
+                                         (void *)&args[i], &tasks[i]);
         ATS_ERROR(ret, "ABT_task_create");
     }
 
@@ -95,8 +94,8 @@ int main(int argc, char *argv[])
             ABT_thread_yield();
         } while (state != ABT_TASK_STATE_TERMINATED);
 
-        ATS_printf(1, "task_func2: num=%lu result=%llu\n",
-                        args[i].num, args[i].result);
+        ATS_printf(1, "task_func2: num=%lu result=%llu\n", args[i].num,
+                   args[i].result);
 
         /* Free named tasklets */
         ret = ABT_task_free(&tasks[i]);
@@ -124,4 +123,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

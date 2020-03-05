@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include "abt.h"
 
-#define NUM_XSTREAMS    4
+#define NUM_XSTREAMS 4
 
 void task_hello(void *arg)
 {
@@ -28,8 +28,8 @@ void thread_hello(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream xstreams[NUM_XSTREAMS];
-    ABT_pool    pools[NUM_XSTREAMS];
-    ABT_thread  threads[NUM_XSTREAMS];
+    ABT_pool pools[NUM_XSTREAMS];
+    ABT_thread threads[NUM_XSTREAMS];
     size_t i;
 
     ABT_init(argc, argv);

@@ -34,8 +34,8 @@ static void *ABTDI_xstream_context_thread_func(void *arg)
             restart = ABT_FALSE;
         } else {
             /* ABTD_xstream_context_restart() restarts this thread */
-            ABTI_ASSERT(p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_RUNNING
-                        || p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_REQ_JOIN);
+            ABTI_ASSERT(p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_RUNNING ||
+                        p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_REQ_JOIN);
             restart = ABT_TRUE;
         }
         pthread_mutex_unlock(&p_ctx->state_lock);
@@ -119,4 +119,3 @@ int ABTD_xstream_context_set_self(ABTD_xstream_context *p_ctx)
     p_ctx->native_thread = pthread_self();
     return abt_errno;
 }
-

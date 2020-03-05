@@ -8,47 +8,39 @@
 
 /* Inlined functions for Global Data */
 
-static inline
-size_t ABTI_global_get_thread_stacksize(void)
+static inline size_t ABTI_global_get_thread_stacksize(void)
 {
     return gp_ABTI_global->thread_stacksize;
 }
 
-static inline
-size_t ABTI_global_get_sched_stacksize(void)
+static inline size_t ABTI_global_get_sched_stacksize(void)
 {
     return gp_ABTI_global->sched_stacksize;
 }
 
-static inline
-size_t ABTI_global_get_sched_event_freq(void)
+static inline size_t ABTI_global_get_sched_event_freq(void)
 {
     return gp_ABTI_global->sched_event_freq;
 }
 
-static inline
-long ABTI_global_get_sched_sleep_nsec(void)
+static inline long ABTI_global_get_sched_sleep_nsec(void)
 {
     return gp_ABTI_global->sched_sleep_nsec;
 }
 
-static inline
-ABTI_thread *ABTI_global_get_main(void)
+static inline ABTI_thread *ABTI_global_get_main(void)
 {
     return gp_ABTI_global->p_thread_main;
 }
 
-static inline
-uint32_t ABTI_global_get_mutex_max_handovers(void)
+static inline uint32_t ABTI_global_get_mutex_max_handovers(void)
 {
     return gp_ABTI_global->mutex_max_handovers;
 }
 
-static inline
-uint32_t ABTI_global_get_mutex_max_wakeups(void)
+static inline uint32_t ABTI_global_get_mutex_max_wakeups(void)
 {
     return gp_ABTI_global->mutex_max_wakeups;
 }
 
 #endif /* ABTI_GLOBAL_H_INCLUDED */
-

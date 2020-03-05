@@ -5,7 +5,6 @@
 
 #include "abti.h"
 
-
 /** @defgroup UNIT  Work Unit
  * This group is for work units.
  */
@@ -34,10 +33,10 @@ int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool)
 
     ABTI_unit_set_associated_pool(unit, p_pool);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

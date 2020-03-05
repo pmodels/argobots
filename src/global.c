@@ -38,7 +38,8 @@ static uint32_t g_ABTI_initialized = 0;
  */
 int ABT_init(int argc, char **argv)
 {
-    ABTI_UNUSED(argc); ABTI_UNUSED(argv);
+    ABTI_UNUSED(argc);
+    ABTI_UNUSED(argv);
     int abt_errno = ABT_SUCCESS;
 
     /* First, take a global lock protecting the initialization/finalization
@@ -64,8 +65,9 @@ int ABT_init(int argc, char **argv)
     ABTI_pool_reset_id();
 
     /* Initialize the ES array */
-    gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_calloc(
-            gp_ABTI_global->max_xstreams, sizeof(ABTI_xstream *));
+    gp_ABTI_global->p_xstreams =
+        (ABTI_xstream **)ABTU_calloc(gp_ABTI_global->max_xstreams,
+                                     sizeof(ABTI_xstream *));
     gp_ABTI_global->num_xstreams = 0;
 
     /* Initialize a spinlock */
@@ -93,8 +95,8 @@ int ABT_init(int argc, char **argv)
     p_local->p_thread = p_main_thread;
 
     /* Start the primary ES */
-    abt_errno = ABTI_xstream_start_primary(&p_local, p_newxstream,
-                                           p_main_thread);
+    abt_errno =
+        ABTI_xstream_start_primary(&p_local, p_newxstream, p_main_thread);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");
 
     if (gp_ABTI_global->print_config == ABT_TRUE) {
@@ -102,12 +104,12 @@ int ABT_init(int argc, char **argv)
     }
     ABTD_atomic_store_uint32(&g_ABTI_initialized, 1);
 
-  fn_exit:
+fn_exit:
     /* Unlock a global lock */
     ABTI_spinlock_release(&g_ABTI_init_lock);
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -171,7 +173,8 @@ int ABT_finalize(void)
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
         /* Switch to the top scheduler */
-        ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
+        ABTI_sched *p_sched =
+            ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
         ABTI_thread_context_switch_thread_to_sched(&p_local, p_thread, p_sched);
 
         /* Back to the original thread */
@@ -208,12 +211,12 @@ int ABT_finalize(void)
     gp_ABTI_global = NULL;
     ABTD_atomic_store_uint32(&g_ABTI_initialized, 0);
 
-  fn_exit:
+fn_exit:
     /* Unlock a global lock */
     ABTI_spinlock_release(&g_ABTI_init_lock);
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -248,7 +251,8 @@ void ABTI_global_update_max_xstreams(int new_size)
 {
     int i, cur_size;
 
-    if (new_size != 0 && new_size < gp_ABTI_global->max_xstreams) return;
+    if (new_size != 0 && new_size < gp_ABTI_global->max_xstreams)
+        return;
 
     ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
 
@@ -275,9 +279,10 @@ void ABTI_global_update_max_xstreams(int new_size)
     cur_size = gp_ABTI_global->max_xstreams;
     new_size = (new_size > 0) ? new_size : cur_size * 2;
     gp_ABTI_global->max_xstreams = new_size;
-    gp_ABTI_global->p_xstreams = (ABTI_xstream **)ABTU_realloc(
-            gp_ABTI_global->p_xstreams, cur_size * sizeof(ABTI_xstream *),
-            new_size * sizeof(ABTI_xstream *));
+    gp_ABTI_global->p_xstreams =
+        (ABTI_xstream **)ABTU_realloc(gp_ABTI_global->p_xstreams,
+                                      cur_size * sizeof(ABTI_xstream *),
+                                      new_size * sizeof(ABTI_xstream *));
 
     for (i = gp_ABTI_global->num_xstreams; i < new_size; i++) {
         gp_ABTI_global->p_xstreams[i] = NULL;
@@ -285,4 +290,3 @@ void ABTI_global_update_max_xstreams(int new_size)
 
     ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
 }
-

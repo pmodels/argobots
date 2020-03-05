@@ -6,7 +6,6 @@
 #include "abti.h"
 #include "abti_thread_htable.h"
 
-
 /** @defgroup MUTEX Mutex
  * Mutex is a synchronization method to support mutual exclusion between ULTs.
  * When more than one ULT competes for locking the same mutex, only one ULT is
@@ -77,10 +76,10 @@ int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -113,10 +112,10 @@ int ABT_mutex_free(ABT_mutex *mutex)
     /* Return value */
     *mutex = ABT_MUTEX_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -166,16 +165,16 @@ int ABT_mutex_lock(ABT_mutex mutex)
         ABTI_mutex_lock(&p_local, p_mutex);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
-static inline
-void ABTI_mutex_lock_low(ABTI_local **pp_local, ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
+                                       ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_local *p_local = *pp_local;
@@ -225,7 +224,7 @@ void ABTI_mutex_lock_low(ABTI_local **pp_local, ABTI_mutex *p_mutex)
             while (c != 0) {
                 ABTI_mutex_wait_low(pp_local, p_mutex, 2);
 
-  check_handover:
+            check_handover:
                 /* If the mutex has been handed over to the current ULT from
                  * other ULT on the same ES, we don't need to change the mutex
                  * state. */
@@ -238,7 +237,8 @@ void ABTI_mutex_lock_low(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                         ABTI_thread *p_giver = p_mutex->p_giver;
                         p_giver->state = ABT_THREAD_STATE_READY;
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
-                            ABTI_self_get_native_thread_id(*pp_local));
+                                       ABTI_self_get_native_thread_id(
+                                           *pp_local));
                         break;
                     }
                 }
@@ -251,10 +251,10 @@ void ABTI_mutex_lock_low(ABTI_local **pp_local, ABTI_mutex *p_mutex)
         ABTI_mutex_spinlock(p_mutex);
     }
 
-  fn_exit:
-    return ;
+fn_exit:
+    return;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #endif
@@ -300,10 +300,10 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
         ABTI_mutex_lock_low(&p_local, p_mutex);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -360,10 +360,10 @@ int ABT_mutex_trylock(ABT_mutex mutex)
         abt_errno = ABTI_mutex_trylock(p_mutex);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -409,10 +409,10 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
         ABTI_mutex_spinlock(p_mutex);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -442,8 +442,9 @@ int ABT_mutex_unlock(ABT_mutex mutex)
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_CHECK_TRUE(ABTI_self_get_unit_id(p_local)
-                        == p_mutex->attr.owner_id, ABT_ERR_INV_THREAD);
+        ABTI_CHECK_TRUE(ABTI_self_get_unit_id(p_local) ==
+                            p_mutex->attr.owner_id,
+                        ABT_ERR_INV_THREAD);
         if (p_mutex->attr.nesting_cnt == 0) {
             p_mutex->attr.owner_id = 0;
             ABTI_mutex_unlock(p_local, p_mutex);
@@ -456,17 +457,17 @@ int ABT_mutex_unlock(ABT_mutex mutex)
         ABTI_mutex_unlock(p_local, p_mutex);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
 /* Hand over the mutex to other ULT on the same ES */
-static inline
-int ABTI_mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
+static inline int ABTI_mutex_unlock_se(ABTI_local **pp_local,
+                                       ABTI_mutex *p_mutex)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -510,7 +511,7 @@ int ABTI_mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
     i = (int)p_xstream->rank;
     p_queue = &p_htable->queue[i];
 
- check_cond:
+check_cond:
     /* Check whether the mutex handover is possible */
     if (p_queue->num_handovers >= p_mutex->attr.max_handovers) {
         ABTD_atomic_store_uint32(&p_mutex->val, 0); /* Unlock */
@@ -523,7 +524,7 @@ int ABTI_mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 
     /* Hand over the mutex to high-priority ULTs */
     if (p_queue->num_threads <= 1) {
-        if(p_htable->h_list != NULL) {
+        if (p_htable->h_list != NULL) {
             ABTD_atomic_store_uint32(&p_mutex->val, 0); /* Unlock */
             LOG_EVENT("%p: unlock_se\n", p_mutex);
             ABTI_mutex_wake_de(*pp_local, p_mutex);
@@ -532,8 +533,10 @@ int ABTI_mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
         }
     } else {
         p_next = ABTI_thread_htable_pop(p_htable, p_queue);
-        if (p_next == NULL) goto check_cond;
-        else goto handover;
+        if (p_next == NULL)
+            goto check_cond;
+        else
+            goto handover;
     }
 
     /* When we don't have high-priority ULTs and other ESs don't either,
@@ -546,10 +549,11 @@ int ABTI_mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
         return abt_errno;
     } else {
         p_next = ABTI_thread_htable_pop_low(p_htable, p_queue);
-        if (p_next == NULL) goto check_cond;
+        if (p_next == NULL)
+            goto check_cond;
     }
 
-  handover:
+handover:
     /* We don't push p_thread to the pool. Instead, we will yield_to p_thread
      * directly at the end of this function. */
     p_queue->num_handovers++;
@@ -558,11 +562,12 @@ int ABTI_mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
     p_mutex->p_handover = p_next;
     p_mutex->p_giver = p_thread;
 
-    LOG_EVENT("%p: handover -> U%" PRIu64 "\n",
-              p_mutex, ABTI_thread_get_id(p_next));
+    LOG_EVENT("%p: handover -> U%" PRIu64 "\n", p_mutex,
+              ABTI_thread_get_id(p_next));
 
     /* yield_to the next ULT */
-    while (ABTD_atomic_load_uint32(&p_next->request) & ABTI_THREAD_REQ_BLOCK);
+    while (ABTD_atomic_load_uint32(&p_next->request) & ABTI_THREAD_REQ_BLOCK)
+        ;
     ABTI_pool_dec_num_blocked(p_next->p_pool);
     p_next->state = ABT_THREAD_STATE_RUNNING;
     ABTI_thread_context_switch_thread_to_thread(pp_local, p_thread, p_next);
@@ -601,8 +606,9 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_CHECK_TRUE(ABTI_self_get_unit_id(p_local)
-                        == p_mutex->attr.owner_id, ABT_ERR_INV_THREAD);
+        ABTI_CHECK_TRUE(ABTI_self_get_unit_id(p_local) ==
+                            p_mutex->attr.owner_id,
+                        ABT_ERR_INV_THREAD);
         if (p_mutex->attr.nesting_cnt == 0) {
             p_mutex->attr.owner_id = 0;
             ABTI_mutex_unlock_se(&p_local, p_mutex);
@@ -615,10 +621,10 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
         ABTI_mutex_unlock_se(&p_local, p_mutex);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -632,10 +638,10 @@ int ABT_mutex_unlock_de(ABT_mutex mutex)
 
     ABTI_mutex_unlock(p_local, p_mutex);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -662,7 +668,6 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
     *result = ABTI_mutex_equal(p_mutex1, p_mutex2);
     return ABT_SUCCESS;
 }
-
 
 void ABTI_mutex_wait(ABTI_local **pp_local, ABTI_mutex *p_mutex, int val)
 {
@@ -755,30 +760,34 @@ void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex)
 
         /* Wake up the high-priority ULTs */
         p_start = p_htable->h_list;
-        for (p_curr = p_start; p_curr; ) {
+        for (p_curr = p_start; p_curr;) {
             p_thread = ABTI_thread_htable_pop(p_htable, p_curr);
             if (p_curr->num_threads == 0) {
                 ABTI_thread_htable_del_h_head(p_htable);
             } else {
                 p_htable->h_list = p_curr->p_h_next;
             }
-            if (p_thread != NULL) goto done;
+            if (p_thread != NULL)
+                goto done;
             p_curr = p_htable->h_list;
-            if (p_curr == p_start) break;
+            if (p_curr == p_start)
+                break;
         }
 
         /* Wake up the low-priority ULTs */
         p_start = p_htable->l_list;
-        for (p_curr = p_start; p_curr; ) {
+        for (p_curr = p_start; p_curr;) {
             p_thread = ABTI_thread_htable_pop_low(p_htable, p_curr);
             if (p_curr->low_num_threads == 0) {
                 ABTI_thread_htable_del_l_head(p_htable);
             } else {
                 p_htable->l_list = p_curr->p_l_next;
             }
-            if (p_thread != NULL) goto done;
+            if (p_thread != NULL)
+                goto done;
             p_curr = p_htable->l_list;
-            if (p_curr == p_start) break;
+            if (p_curr == p_start)
+                break;
         }
 
         /* Nothing to wake up */
@@ -786,7 +795,7 @@ void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex)
         LOG_EVENT("%p: nothing to wake up\n", p_mutex);
         break;
 
-  done:
+    done:
         ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
 
         /* Push p_thread to the scheduler's pool */
@@ -796,4 +805,3 @@ void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex)
         ABTI_thread_set_ready(p_local, p_thread);
     }
 }
-

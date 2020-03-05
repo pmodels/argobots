@@ -8,7 +8,6 @@
 #include "abt.h"
 #include "abttest.h"
 
-
 enum {
     T_CREATE_JOIN = 0,
     T_CREATE_JOIN_FREE,
@@ -17,15 +16,12 @@ enum {
     T_LAST
 };
 
-static char *t_names[] = {
-    "ES: create/join without creating a ULT",
-    "ES: create/join/free without creating a ULT",
-    "ES: create/join with creating a ULT",
-    "ES: create/join/free with creating a ULT"
-};
+static char *t_names[] = { "ES: create/join without creating a ULT",
+                           "ES: create/join/free without creating a ULT",
+                           "ES: create/join with creating a ULT",
+                           "ES: create/join/free with creating a ULT" };
 
 static double t_times[T_LAST];
-
 
 void thread_func(void *arg)
 {
@@ -54,8 +50,8 @@ int main(int argc, char *argv[])
     ABT_timer_start(timer);
     ABT_timer_stop(timer);
     ABT_timer_get_overhead(&t_overhead);
-    for (i = 0; i < T_LAST; i++) t_times[i] = 0.0;
-
+    for (i = 0; i < T_LAST; i++)
+        t_times[i] = 0.0;
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
@@ -64,8 +60,8 @@ int main(int argc, char *argv[])
     for (t = 0; t < num_xstreams; t++) {
         ABT_xstream_create(ABT_SCHED_NULL, &xstreams[t]);
         ABT_xstream_get_main_pools(xstreams[t], 1, &pools[t]);
-        ABT_thread_create(pools[t], thread_func, NULL,
-                          ABT_THREAD_ATTR_NULL, NULL);
+        ABT_thread_create(pools[t], thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                          NULL);
     }
     for (t = 0; t < num_xstreams; t++) {
         ABT_xstream_join(xstreams[t]);
@@ -111,8 +107,8 @@ int main(int argc, char *argv[])
         for (t = 0; t < num_xstreams; t++) {
             ABT_xstream_create(ABT_SCHED_NULL, &xstreams[t]);
             ABT_xstream_get_main_pools(xstreams[t], 1, &pools[t]);
-            ABT_thread_create(pools[t], thread_func, NULL,
-                              ABT_THREAD_ATTR_NULL, NULL);
+            ABT_thread_create(pools[t], thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                              NULL);
         }
         for (t = 0; t < num_xstreams; t++) {
             ABT_xstream_join(xstreams[t]);
@@ -132,8 +128,8 @@ int main(int argc, char *argv[])
         for (t = 0; t < num_xstreams; t++) {
             ABT_xstream_create(ABT_SCHED_NULL, &xstreams[t]);
             ABT_xstream_get_main_pools(xstreams[t], 1, &pools[t]);
-            ABT_thread_create(pools[t], thread_func, NULL,
-                              ABT_THREAD_ATTR_NULL, NULL);
+            ABT_thread_create(pools[t], thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                              NULL);
         }
         for (t = 0; t < num_xstreams; t++) {
             ABT_xstream_join(xstreams[t]);
@@ -170,4 +166,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

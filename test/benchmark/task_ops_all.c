@@ -8,12 +8,7 @@
 #include "abt.h"
 #include "abttest.h"
 
-
-enum {
-    T_CREATE_JOIN = 0,
-    T_CREATE_UNNAMED,
-    T_LAST
-};
+enum { T_CREATE_JOIN = 0, T_CREATE_UNNAMED, T_LAST };
 static char *t_names[] = {
     "create/join",
     "create (unnamed)",
@@ -29,7 +24,6 @@ static ABT_task **g_tasks;
 
 static uint64_t t_times[T_LAST];
 
-
 void task_func(void *arg)
 {
     ATS_UNUSED(arg);
@@ -38,7 +32,7 @@ void task_func(void *arg)
 void test_create_join(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool  my_pool  = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     ABT_task *my_tasks = g_tasks[eid];
     int i, t;
 
@@ -56,7 +50,7 @@ void test_create_join(void *arg)
 void test_create_unnamed(void *arg)
 {
     int eid = (int)(size_t)arg;
-    ABT_pool  my_pool  = g_pools[eid];
+    ABT_pool my_pool = g_pools[eid];
     int i, t;
 
     for (i = 0; i < iter; i++) {
@@ -69,7 +63,7 @@ void test_create_unnamed(void *arg)
 
 int main(int argc, char *argv[])
 {
-    ABT_pool (*all_pools)[2];
+    ABT_pool(*all_pools)[2];
     ABT_sched *scheds;
     ABT_thread *top_threads;
     size_t i, t;
@@ -78,7 +72,7 @@ int main(int argc, char *argv[])
     /* read command-line arguments */
     ATS_read_args(argc, argv);
     num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-    num_tasks    = ATS_get_arg_val(ATS_ARG_N_TASK);
+    num_tasks = ATS_get_arg_val(ATS_ARG_N_TASK);
     iter = ATS_get_arg_val(ATS_ARG_N_ITER);
 
     /* initialize */
@@ -88,14 +82,13 @@ int main(int argc, char *argv[])
         t_times[i] = 0;
     }
 
-
     g_xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    g_pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    g_tasks    = (ABT_task **)malloc(num_xstreams * sizeof(ABT_task *));
+    g_pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    g_tasks = (ABT_task **)malloc(num_xstreams * sizeof(ABT_task *));
     for (i = 0; i < num_xstreams; i++) {
         g_tasks[i] = (ABT_task *)malloc(num_tasks * sizeof(ABT_task));
     }
-    all_pools = (ABT_pool (*)[2])malloc(num_xstreams * sizeof(ABT_pool) * 2);
+    all_pools = (ABT_pool(*)[2])malloc(num_xstreams * sizeof(ABT_pool) * 2);
     scheds = (ABT_sched *)malloc(num_xstreams * sizeof(ABT_sched));
     top_threads = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
 
@@ -123,11 +116,14 @@ int main(int argc, char *argv[])
         void (*test_fn)(void *);
 
         switch (t) {
-            case T_CREATE_JOIN:    test_fn = test_create_join;
-                                   break;
-            case T_CREATE_UNNAMED: test_fn = test_create_unnamed;
-                                   break;
-            default: assert(0);
+            case T_CREATE_JOIN:
+                test_fn = test_create_join;
+                break;
+            case T_CREATE_UNNAMED:
+                test_fn = test_create_unnamed;
+                break;
+            default:
+                assert(0);
         }
 
         /* warm-up */
@@ -192,4 +188,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

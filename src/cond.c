@@ -6,7 +6,6 @@
 #include "abti.h"
 #include <sys/time.h>
 
-
 /** @defgroup COND Condition Variable
  * This group is for Condition Variable.
  */
@@ -65,10 +64,10 @@ int ABT_cond_free(ABT_cond *cond)
     /* Return value */
     *cond = ABT_COND_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -103,33 +102,31 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
     if (abt_errno != ABT_SUCCESS)
         goto fn_fail;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
-
-static inline
-double convert_timespec_to_sec(const struct timespec *p_ts)
+static inline double convert_timespec_to_sec(const struct timespec *p_ts)
 {
     double secs;
     secs = ((double)p_ts->tv_sec) + 1.0e-9 * ((double)p_ts->tv_nsec);
     return secs;
 }
 
-static inline
-void remove_unit(ABTI_cond *p_cond, ABTI_unit *p_unit)
+static inline void remove_unit(ABTI_cond *p_cond, ABTI_unit *p_unit)
 {
-    if (p_unit->p_next == NULL) return;
+    if (p_unit->p_next == NULL)
+        return;
 
     ABTI_spinlock_acquire(&p_cond->lock);
 
     if (p_unit->p_next == NULL) {
         ABTI_spinlock_release(&p_cond->lock);
-        return ;
+        return;
     }
 
     /* If p_unit is still in the queue, we have to remove it. */
@@ -249,14 +246,13 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     /* Lock the mutex again */
     ABTI_mutex_lock(&p_local, p_mutex);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /**
  * @ingroup COND
@@ -313,10 +309,10 @@ int ABT_cond_signal(ABT_cond cond)
 
     ABTI_spinlock_release(&p_cond->lock);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -343,11 +339,10 @@ int ABT_cond_broadcast(ABT_cond cond)
 
     ABTI_cond_broadcast(p_local, p_cond);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-

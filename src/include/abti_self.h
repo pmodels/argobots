@@ -6,8 +6,8 @@
 #ifndef ABTI_SELF_H_INCLUDED
 #define ABTI_SELF_H_INCLUDED
 
-static inline
-ABTI_native_thread_id ABTI_self_get_native_thread_id(ABTI_local *p_local)
+static inline ABTI_native_thread_id
+ABTI_self_get_native_thread_id(ABTI_local *p_local)
 {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
@@ -20,8 +20,7 @@ ABTI_native_thread_id ABTI_self_get_native_thread_id(ABTI_local *p_local)
     return (ABTI_native_thread_id)p_local->p_xstream;
 }
 
-static inline
-ABTI_unit_id ABTI_self_get_unit_id(ABTI_local *p_local)
+static inline ABTI_unit_id ABTI_self_get_unit_id(ABTI_local *p_local)
 {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
@@ -44,8 +43,7 @@ ABTI_unit_id ABTI_self_get_unit_id(ABTI_local *p_local)
     return id;
 }
 
-static inline
-ABT_unit_type ABTI_self_get_type(ABTI_local *p_local)
+static inline ABT_unit_type ABTI_self_get_type(ABTI_local *p_local)
 {
     ABTI_ASSERT(gp_ABTI_global);
 
@@ -67,4 +65,3 @@ ABT_unit_type ABTI_self_get_type(ABTI_local *p_local)
 }
 
 #endif /* ABTI_SELF_H_INCLUDED */
-

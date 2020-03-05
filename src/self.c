@@ -5,11 +5,9 @@
 
 #include "abti.h"
 
-
 /** @defgroup SELF Self
  * This group is for the self wok unit.
  */
-
 
 /**
  * @ingroup SELF
@@ -50,7 +48,7 @@ int ABT_self_get_type(ABT_unit_type *type)
     }
 #endif
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 }
 
@@ -95,14 +93,14 @@ int ABT_self_is_primary(ABT_bool *flag)
 
     p_thread = p_local->p_thread;
     if (p_thread) {
-        *flag = (p_thread->type == ABTI_THREAD_TYPE_MAIN)
-              ? ABT_TRUE : ABT_FALSE;
+        *flag =
+            (p_thread->type == ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
     } else {
         abt_errno = ABT_ERR_INV_THREAD;
         *flag = ABT_FALSE;
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 }
 
@@ -147,13 +145,13 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     /* Return value */
-    *flag = (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY)
-          ? ABT_TRUE : ABT_FALSE;
+    *flag =
+        (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE : ABT_FALSE;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -210,7 +208,7 @@ int ABT_self_get_last_pool_id(int *pool_id)
         *pool_id = -1;
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 }
 
@@ -254,10 +252,10 @@ int ABT_self_suspend(void)
 
     ABTI_thread_suspend(&p_local, p_thread);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -301,10 +299,10 @@ int ABT_self_set_arg(void *arg)
         goto fn_fail;
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -356,10 +354,10 @@ int ABT_self_get_arg(void **arg)
         goto fn_fail;
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

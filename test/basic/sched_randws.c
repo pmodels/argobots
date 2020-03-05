@@ -8,8 +8,8 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    4
-#define DEFAULT_NUM_THREADS     4
+#define DEFAULT_NUM_XSTREAMS 4
+#define DEFAULT_NUM_THREADS 4
 
 static int num_threads = DEFAULT_NUM_THREADS;
 
@@ -79,8 +79,8 @@ static void create_threads(void *arg)
     ATS_printf(1, "[U%lu:E%d] creating ULTs\n", id, rank);
     threads = (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);
     for (i = 0; i < num_threads; i++) {
-        ret = ABT_thread_create(pool, thread_func, NULL,
-                                ABT_THREAD_ATTR_NULL, &threads[i]);
+        ret = ABT_thread_create(pool, thread_func, NULL, ABT_THREAD_ATTR_NULL,
+                                &threads[i]);
         ATS_ERROR(ret, "ABT_thread_create");
     }
 
@@ -106,18 +106,19 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc > 1) {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
+        num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
     }
     ATS_init(argc, argv, num_xstreams);
 
-    ATS_printf(1, "# of ESs    : %d\n"
-                       "# of ULTs/ES: %d\n",
-                       num_xstreams, num_threads);
+    ATS_printf(1,
+               "# of ESs    : %d\n"
+               "# of ULTs/ES: %d\n",
+               num_xstreams, num_threads);
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
-    scheds   = (ABT_sched *)malloc(num_xstreams * sizeof(ABT_sched));
-    pools    = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    masters  = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
+    scheds = (ABT_sched *)malloc(num_xstreams * sizeof(ABT_sched));
+    pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
+    masters = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
 
     /* Create a mutex */
     ret = ABT_mutex_create(&g_mutex);
@@ -195,4 +196,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-
