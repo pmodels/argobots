@@ -541,7 +541,7 @@ int ABT_xstream_exit(void)
 
 /**
  * @ingroup ES
- * @brief   Request the cancelation of the target ES.
+ * @brief   Request the cancellation of the target ES.
  *
  * @param[in] xstream  handle to the target ES
  * @return Error code

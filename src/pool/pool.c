@@ -803,7 +803,7 @@ fn_fail:
 #endif
 
 /* Check if a pool accept migrations or not. When the producer of the
- * destination pool is ES private, we have to ensure thaht we are on the right
+ * destination pool is ES private, we have to ensure that we are on the right
  * ES */
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
 {

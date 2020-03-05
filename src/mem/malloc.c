@@ -73,7 +73,7 @@ void ABTI_mem_init_local(ABTI_local *p_local)
 
 void ABTI_mem_finalize(ABTI_global *p_global)
 {
-    /* Free all ramaining stacks */
+    /* Free all remaining stacks */
     ABTI_mem_free_stack_list(p_global->p_mem_stack);
     p_global->p_mem_stack = NULL;
 
@@ -88,7 +88,7 @@ void ABTI_mem_finalize(ABTI_global *p_global)
 
 void ABTI_mem_finalize_local(ABTI_local *p_local)
 {
-    /* Free all ramaining stacks */
+    /* Free all remaining stacks */
     ABTI_mem_free_stack_list(p_local->p_mem_stack);
     p_local->num_stacks = 0;
     p_local->p_mem_stack = NULL;

@@ -575,7 +575,7 @@ int ABTI_mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
  * @ingroup MUTEX
  * @brief   Hand over the mutex within the ES.
  *
- * \c ABT_mutex_unlock_se() fisrt tries to hand over the mutex to a ULT, which
+ * \c ABT_mutex_unlock_se() first tries to hand over the mutex to a ULT, which
  * is waiting for this mutex and is running on the same ES as the caller.  If
  * no ULT on the same ES is waiting, it unlocks the mutex like
  * \c ABT_mutex_unlock().
