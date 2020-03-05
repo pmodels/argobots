@@ -293,8 +293,8 @@ int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         LOG_EVENT("[E%d] start\n", p_xstream->rank);
 
-        abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
-        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
+        abt_errno = ABTD_xstream_context_set_self(&p_xstream->ctx);
+        ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_set_self");
 
         /* Create the main sched ULT */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
@@ -312,8 +312,36 @@ int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_set(&p_xstream->ctx, p_xstream->rank);
     }
+
+  fn_exit:
+    return abt_errno;
+
+  fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ES
+ * @brief   Restart an ES that has been joined by \c ABT_xstream_join().
+ *
+ * @param[in] xstream  handle to an ES that has been joined but not freed.
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_xstream_revive(ABT_xstream xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+
+    p_xstream->state        = ABT_XSTREAM_STATE_RUNNING;
+    p_xstream->request      = 0;
+    p_xstream->p_req_arg    = NULL;
+    abt_errno = ABTD_xstream_context_revive(&p_xstream->ctx);
+    ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
     return abt_errno;
@@ -339,12 +367,12 @@ int ABTI_xstream_start_primary(ABTI_local **pp_local, ABTI_xstream *p_xstream, A
 
     LOG_EVENT("[E%d] start\n", p_xstream->rank);
 
-    abt_errno = ABTD_xstream_context_self(&p_xstream->ctx);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_self");
+    abt_errno = ABTD_xstream_context_set_self(&p_xstream->ctx);
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_set_self");
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_set(&p_xstream->ctx, p_xstream->rank);
     }
 
     /* Create the main sched ULT */
@@ -645,7 +673,7 @@ int ABT_xstream_set_rank(ABT_xstream xstream, const int rank)
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_set(&p_xstream->ctx, p_xstream->rank);
     }
 
   fn_exit:
@@ -1130,7 +1158,7 @@ int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTD_affinity_set_cpuset(p_xstream->ctx, 1, &cpuid);
+    abt_errno = ABTD_affinity_set_cpuset(&p_xstream->ctx, 1, &cpuid);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -1160,7 +1188,7 @@ int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTD_affinity_get_cpuset(p_xstream->ctx, 1, cpuid, NULL);
+    abt_errno = ABTD_affinity_get_cpuset(&p_xstream->ctx, 1, cpuid, NULL);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -1191,7 +1219,7 @@ int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTD_affinity_set_cpuset(p_xstream->ctx, cpuset_size, cpuset);
+    abt_errno = ABTD_affinity_set_cpuset(&p_xstream->ctx, cpuset_size, cpuset);
     ABTI_CHECK_ERROR(abt_errno);
 
   fn_exit:
@@ -1233,7 +1261,7 @@ int ABT_xstream_get_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset,
         goto fn_exit;
     }
 
-    abt_errno = ABTD_affinity_get_cpuset(p_xstream->ctx, cpuset_size, cpuset,
+    abt_errno = ABTD_affinity_get_cpuset(&p_xstream->ctx, cpuset_size, cpuset,
                                          num_cpus);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -1320,7 +1348,7 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
 
   fn_join:
     /* Normal join request */
-    abt_errno = ABTD_xstream_context_join(p_xstream->ctx);
+    abt_errno = ABTD_xstream_context_join(&p_xstream->ctx);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTD_xstream_context_join");
 
   fn_exit:
@@ -1351,9 +1379,11 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream)
     /* Free the array of sched contexts */
     ABTU_free(p_xstream->scheds);
 
-    /* Free the context */
-    abt_errno = ABTD_xstream_context_free(&p_xstream->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
+    /* Free the context if a given xstream is secondary. */
+    if (p_xstream->type == ABTI_XSTREAM_TYPE_SECONDARY) {
+        abt_errno = ABTD_xstream_context_free(&p_xstream->ctx);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
 
     ABTU_free(p_xstream);
 
@@ -1879,11 +1909,13 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     ABTI_CHECK_ERROR(abt_errno);
     p_local->p_xstream = p_xstream;
 
-    /* Create the main sched ULT */
+    /* Create the main sched ULT if not created yet */
     ABTI_sched *p_sched = p_xstream->p_main_sched;
-    abt_errno = ABTI_thread_create_main_sched(p_local, p_xstream, p_sched);
-    ABTI_CHECK_ERROR(abt_errno);
-    p_sched->p_thread->p_last_xstream = p_xstream;
+    if (!p_sched->p_thread) {
+        abt_errno = ABTI_thread_create_main_sched(p_local, p_xstream, p_sched);
+        ABTI_CHECK_ERROR(abt_errno);
+        p_sched->p_thread->p_last_xstream = p_xstream;
+    }
 
     /* Set the sched ULT as the current ULT */
     p_local->p_thread = p_sched->p_thread;
@@ -1895,8 +1927,6 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 
     /* Reset the current ES and its local info. */
     ABTI_local_finalize(&p_local);
-
-    ABTD_xstream_context_exit();
 
   fn_exit:
     return NULL;

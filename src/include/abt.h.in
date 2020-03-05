@@ -454,6 +454,7 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
 int ABT_xstream_start(ABT_xstream xstream) ABT_API_PUBLIC ABT_DEPRECATED;
 int ABT_xstream_free(ABT_xstream *xstream) ABT_API_PUBLIC;
 int ABT_xstream_join(ABT_xstream xstream) ABT_API_PUBLIC;
+int ABT_xstream_revive(ABT_xstream xstream) ABT_API_PUBLIC;
 int ABT_xstream_exit(void) ABT_API_PUBLIC;
 int ABT_xstream_cancel(ABT_xstream xstream) ABT_API_PUBLIC;
 int ABT_xstream_self(ABT_xstream *xstream) ABT_API_PUBLIC;

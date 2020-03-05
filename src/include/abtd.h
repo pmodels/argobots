@@ -14,7 +14,20 @@
 #include "abtd_atomic.h"
 
 /* Data Types */
-typedef pthread_t           ABTD_xstream_context;
+typedef enum {
+    ABTD_XSTREAM_CONTEXT_STATE_RUNNING,
+    ABTD_XSTREAM_CONTEXT_STATE_WAITING,
+    ABTD_XSTREAM_CONTEXT_STATE_REQ_JOIN,
+    ABTD_XSTREAM_CONTEXT_STATE_REQ_TERMINATE,
+} ABTD_xstream_context_state;
+typedef struct ABTD_xstream_context {
+    pthread_t native_thread;
+    void *(*thread_f)(void *);
+    void *p_arg;
+    ABTD_xstream_context_state state;
+    pthread_mutex_t state_lock;
+    pthread_cond_t state_cond;
+} ABTD_xstream_context;
 typedef pthread_mutex_t     ABTD_xstream_mutex;
 #ifdef HAVE_PTHREAD_BARRIER_INIT
 typedef pthread_barrier_t   ABTD_xstream_barrier;
@@ -32,17 +45,17 @@ void ABTD_env_init(ABTI_global *p_global);
 int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
                                 ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx);
-int ABTD_xstream_context_join(ABTD_xstream_context ctx);
-int ABTD_xstream_context_exit(void);
-int ABTD_xstream_context_self(ABTD_xstream_context *p_ctx);
+int ABTD_xstream_context_join(ABTD_xstream_context *p_ctx);
+int ABTD_xstream_context_revive(ABTD_xstream_context *p_ctx);
+int ABTD_xstream_context_set_self(ABTD_xstream_context *p_ctx);
 
 /* ES Affinity */
 void ABTD_affinity_init(void);
 void ABTD_affinity_finalize(void);
-int ABTD_affinity_set(ABTD_xstream_context ctx, int rank);
-int ABTD_affinity_set_cpuset(ABTD_xstream_context ctx, int cpuset_size,
+int ABTD_affinity_set(ABTD_xstream_context *p_ctx, int rank);
+int ABTD_affinity_set_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
                              int *p_cpuset);
-int ABTD_affinity_get_cpuset(ABTD_xstream_context ctx, int cpuset_size,
+int ABTD_affinity_get_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
                              int *p_cpuset, int *p_num_cpus);
 
 #include "abtd_stream.h"
