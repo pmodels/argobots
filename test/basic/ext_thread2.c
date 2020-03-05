@@ -69,6 +69,9 @@ int main(int argc, char *argv[])
     int ret;
     size_t i;
 
+int no_space=1+2;
+    int trailing_space = 0;      
+
     /* Initialize */
     ATS_init(argc, argv, 2);
 
