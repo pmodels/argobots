@@ -145,18 +145,6 @@ int ABTD_affinity_set(ABTD_xstream_context *p_ctx, int rank)
         goto fn_fail;
     }
 
-#if 0
-    /* For debugging and verification */
-    int ret = pthread_getaffinity_np(*p_ctx, sizeof(cpu_set_t), &cpuset);
-    ABTI_CHECK_TRUE(!ret, ABT_ERR_OTHER);
-    int i;
-    for (i = 0; i < CPU_SETSIZE; i++) {
-        if (CPU_ISSET(i, &cpuset)) {
-            printf("ES%d mapped to core %d\n", rank, i);
-        }
-    }
-#endif
-
   fn_exit:
     return abt_errno;
 
