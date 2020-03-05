@@ -389,10 +389,10 @@ int ABT_sched_set_data(ABT_sched sched, void *data)
 
 /**
  * @ingroup SCHED
- * @brief   Retrieve the specific data of the target user-defnied scheduler
+ * @brief   Retrieve the specific data of the target user-defined scheduler
  *
  * This function will be called by the user in a user-defined function of his
- * user-defnied scheduler.
+ * user-defined scheduler.
  *
  * @param[in]  sched  handle to the scheduler
  * @param[out] data   specific data of the scheduler
@@ -788,7 +788,7 @@ int ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched)
     }
 
     /* If sched is a default provided one, it should free its pool here.
-     * Otherwise, freeing the pool is the user's reponsibility. */
+     * Otherwise, freeing the pool is the user's responsibility. */
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
         int32_t num_scheds = ABTI_pool_release(p_pool);

@@ -541,7 +541,7 @@ int ABT_xstream_exit(void)
 
 /**
  * @ingroup ES
- * @brief   Request the cancelation of the target ES.
+ * @brief   Request the cancellation of the target ES.
  *
  * @param[in] xstream  handle to the target ES
  * @return Error code
@@ -1420,10 +1420,6 @@ void ABTI_xstream_schedule(void *p_arg)
         ABTI_spinlock_release(&p_xstream->sched_lock);
 
         request = ABTD_atomic_load_uint32(&p_xstream->request);
-#ifdef ABT_CONFIG_HANDLE_POWER_EVENT
-        /* If there is a stop request, the ES has to be terminated/ */
-        if (request & ABTI_XSTREAM_REQ_STOP) break;
-#endif
 
         /* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */

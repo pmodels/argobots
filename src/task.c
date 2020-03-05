@@ -293,7 +293,7 @@ int ABT_task_join(ABT_task task)
 
 /**
  * @ingroup TASK
- * @brief   Request the cancelation of the target task.
+ * @brief   Request the cancellation of the target task.
  *
  * @param[in] task  handle to the target task
  * @return Error code

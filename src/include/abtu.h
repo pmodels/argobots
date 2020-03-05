@@ -96,6 +96,5 @@ void *ABTU_realloc(void *ptr, size_t old_size, size_t new_size)
 char *ABTU_get_indent_str(int indent);
 
 int ABTU_get_int_len(size_t num);
-char *ABTU_strtrim(char *str);
 
 #endif /* ABTU_H_INCLUDED */

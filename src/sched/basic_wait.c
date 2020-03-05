@@ -6,7 +6,7 @@
 #include "abti.h"
 
 /** @defgroup SCHED_BASIC_WAIT Basic waiting scheduler
- * This group is for the basic waiting scheudler.
+ * This group is for the basic waiting scheduler.
  */
 
 static int  sched_init(ABT_sched sched, ABT_sched_config config);

@@ -12,6 +12,3 @@ sched_and_pool_user
 stencil_task
 stencil_thread
 stencil_thread_cond
-dynamic-es/dyn_server
-dynamic-es/dyn_app
-dynamic-es/dyn_event

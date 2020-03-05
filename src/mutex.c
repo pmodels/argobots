@@ -575,7 +575,7 @@ int ABTI_mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
  * @ingroup MUTEX
  * @brief   Hand over the mutex within the ES.
  *
- * \c ABT_mutex_unlock_se() fisrt tries to hand over the mutex to a ULT, which
+ * \c ABT_mutex_unlock_se() first tries to hand over the mutex to a ULT, which
  * is waiting for this mutex and is running on the same ES as the caller.  If
  * no ULT on the same ES is waiting, it unlocks the mutex like
  * \c ABT_mutex_unlock().
@@ -675,25 +675,6 @@ void ABTI_mutex_wait(ABTI_local **pp_local, ABTI_mutex *p_mutex, int val)
     ABTI_ASSERT(rank < p_htable->num_rows);
     ABTI_thread_queue *p_queue = &p_htable->queue[rank];
 
-#if 0
-    if (p_queue->num_threads > 0) {
-        /* Push the current ULT to the queue */
-        if (ABTI_thread_htable_add(p_htable, rank, p_self) == ABT_TRUE) {
-            /* If p_queue is not linked in the list, we should correct it. */
-            if (p_queue->p_h_next == NULL) {
-                ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
-                ABTI_thread_htable_add_h_node(p_htable, p_queue);
-                ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);return;
-            }
-
-            /* Suspend the current ULT */
-            ABTI_thread_suspend(p_self);
-
-            return;
-        }
-    }
-#endif
-
     ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
 
     if (ABTD_atomic_load_uint32(&p_mutex->val) != val) {
@@ -728,25 +709,6 @@ void ABTI_mutex_wait_low(ABTI_local **pp_local, ABTI_mutex *p_mutex, int val)
     int rank = (int)p_xstream->rank;
     ABTI_ASSERT(rank < p_htable->num_rows);
     ABTI_thread_queue *p_queue = &p_htable->queue[rank];
-
-#if 0
-    if (p_queue->low_num_threads > 0) {
-        /* Push the current ULT to the queue */
-        if (ABTI_thread_htable_add_low(p_htable, rank, p_self) == ABT_TRUE) {
-            /* If p_queue is not linked in the list, we should correct it. */
-            if (p_queue->p_l_next == NULL) {
-                ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
-                ABTI_thread_htable_add_l_node(p_htable, p_queue);
-                ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
-            }
-
-            /* Suspend the current ULT */
-            ABTI_thread_suspend(p_self);
-
-            return;
-        }
-    }
-#endif
 
     ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
 

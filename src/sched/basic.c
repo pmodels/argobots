@@ -6,7 +6,7 @@
 #include "abti.h"
 
 /** @defgroup SCHED_BASIC Basic scheduler
- * This group is for the basic scheudler.
+ * This group is for the basic scheduler.
  */
 
 static int  sched_init(ABT_sched sched, ABT_sched_config config);

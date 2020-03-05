@@ -457,7 +457,7 @@ int ABT_thread_exit(void)
 
 /**
  * @ingroup ULT
- * @brief   Request the cancelation of the target thread.
+ * @brief   Request the cancellation of the target thread.
  *
  * @param[in] thread  handle to the target thread
  * @return Error code
@@ -611,7 +611,7 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
  * @brief   Return the last pool of ULT.
  *
  * If the ULT is not running, we get the pool where it is, else we get the
- * last pool where it was (the pool from the thread was poped).
+ * last pool where it was (i.e., the pool from which the ULT was popped).
  *
  * @param[in]  thread handle to the target ULT
  * @param[out] pool   the last pool of the ULT
@@ -1049,7 +1049,7 @@ int ABT_thread_migrate(ABT_thread thread)
     ABTI_xstream **p_xstreams = gp_ABTI_global->p_xstreams;
 
     /* Choose the destination xstream */
-    /* FIXME: Currenlty, the target xstream is randomly chosen. We need a
+    /* FIXME: Currently, the target xstream is randomly chosen. We need a
      * better selection strategy. */
     /* TODO: handle better when no pool accepts migration */
     /* TODO: choose a pool also when (p_thread->p_pool->consumer == NULL) */
