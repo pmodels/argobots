@@ -8,8 +8,8 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    2
-#define DEFAULT_NUM_THREADS     3
+#define DEFAULT_NUM_XSTREAMS 2
+#define DEFAULT_NUM_THREADS 3
 #define BUFFER_SIZE 10
 
 ABT_future myfuture;
@@ -19,7 +19,6 @@ ABT_future myfuture2;
 int num_xstreams = DEFAULT_NUM_XSTREAMS;
 int num_threads = DEFAULT_NUM_THREADS;
 int total_num_threads;
-
 
 void future_wait(void *args)
 {
@@ -43,11 +42,11 @@ void future_cb(void **args)
     for (i = 0; i < total_num_threads; i++) {
         total += (int)(intptr_t)args[i];
     }
-    if (total_num_threads*(total_num_threads-1)/2 != total) {
+    if (total_num_threads * (total_num_threads - 1) / 2 != total) {
         ATS_ERROR(ABT_ERR_OTHER, "Wrong value!");
     }
 
-    ABT_future_set(myfuture2,  NULL);
+    ABT_future_set(myfuture2, NULL);
     ATS_printf(1, "Callback signals future\n");
 }
 
@@ -55,11 +54,13 @@ int main(int argc, char *argv[])
 {
     int i, j;
     int ret;
-    if (argc > 1) num_xstreams = atoi(argv[1]);
+    if (argc > 1)
+        num_xstreams = atoi(argv[1]);
     assert(num_xstreams >= 0);
-    if (argc > 2) num_threads = atoi(argv[2]);
+    if (argc > 2)
+        num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
-    total_num_threads = num_threads*num_xstreams;
+    total_num_threads = num_threads * num_xstreams;
 
     /* init and thread creation */
     ATS_read_args(argc, argv);
@@ -67,7 +68,7 @@ int main(int argc, char *argv[])
 
     /* Create Execution Streams */
     ABT_xstream *xstreams =
-      (ABT_xstream *)malloc(num_xstreams*sizeof(ABT_xstream));
+        (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     ret = ABT_xstream_self(&xstreams[0]);
     ATS_ERROR(ret, "ABT_xstream_self");
     for (i = 1; i < num_xstreams; i++) {
@@ -76,9 +77,9 @@ int main(int argc, char *argv[])
     }
 
     /* Get the pools attached to an execution stream */
-    ABT_pool *pools = (ABT_pool *)malloc(num_xstreams*sizeof(ABT_pool));
+    ABT_pool *pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
@@ -89,9 +90,9 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {
-            int idx = i*num_threads+j;
+            int idx = i * num_threads + j;
             ret = ABT_thread_create(pools[i], future_wait,
-                                    (void *)(intptr_t)(idx+total_num_threads),
+                                    (void *)(intptr_t)(idx + total_num_threads),
                                     ABT_THREAD_ATTR_NULL, NULL);
             ATS_ERROR(ret, "ABT_thread_create");
             ret = ABT_thread_create(pools[i], future_set, (void *)(intptr_t)idx,

@@ -14,7 +14,6 @@ static int ABTI_task_revive(ABTI_local *p_local, ABTI_pool *p_pool,
                             ABTI_task *p_task);
 static inline uint64_t ABTI_task_get_new_id(void);
 
-
 /** @defgroup TASK Tasklet
  * This group is for Tasklet.
  */
@@ -42,8 +41,7 @@ static inline uint64_t ABTI_task_get_new_id(void);
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_create(ABT_pool pool,
-                    void (*task_func)(void *), void *arg,
+int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
@@ -62,11 +60,12 @@ int ABT_task_create(ABT_pool pool,
         *newtask = ABTI_task_get_handle(p_newtask);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
-    if (newtask) *newtask = ABT_TASK_NULL;
+fn_fail:
+    if (newtask)
+        *newtask = ABT_TASK_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -81,23 +80,23 @@ int ABTI_task_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
     void *arg = (void *)ABTI_sched_get_handle(p_sched);
     /* If p_sched is reused, ABTI_task_revive() can be used. */
     if (p_sched->p_task) {
-        abt_errno = ABTI_task_revive(p_local, p_pool,
-                                     (void (*)(void *))p_sched->run, arg,
-                                     p_sched->p_task);
+        abt_errno =
+            ABTI_task_revive(p_local, p_pool, (void (*)(void *))p_sched->run,
+                             arg, p_sched->p_task);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
 
     /* Allocate a task object */
-    abt_errno = ABTI_task_create(p_local, p_pool,
-                                 (void (*)(void *))p_sched->run, arg, p_sched,
-                                 1, &p_newtask);
+    abt_errno =
+        ABTI_task_create(p_local, p_pool, (void (*)(void *))p_sched->run, arg,
+                         p_sched, 1, &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -154,11 +153,12 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
     if (newtask)
         *newtask = ABTI_task_get_handle(p_newtask);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
-    if (newtask) *newtask = ABT_TASK_NULL;
+fn_fail:
+    if (newtask)
+        *newtask = ABT_TASK_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -196,10 +196,10 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
     abt_errno = ABTI_task_revive(p_local, p_pool, task_func, arg, p_task);
     ABTI_CHECK_ERROR(abt_errno);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -226,8 +226,8 @@ int ABT_task_free(ABT_task *task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Wait until the task terminates */
-    while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state)
-           != ABT_TASK_STATE_TERMINATED) {
+    while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state) !=
+           ABT_TASK_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
             ABTD_atomic_pause();
@@ -243,10 +243,10 @@ int ABT_task_free(ABT_task *task)
     /* Return value */
     *task = ABT_TASK_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -272,8 +272,8 @@ int ABT_task_join(ABT_task task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* TODO: better implementation */
-    while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state)
-           != ABT_TASK_STATE_TERMINATED) {
+    while (ABTD_atomic_load_uint32((uint32_t *)&p_task->state) !=
+           ABT_TASK_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
             ABTD_atomic_pause();
@@ -283,10 +283,10 @@ int ABT_task_join(ABT_task task)
         ABTI_thread_yield(&p_local, p_local->p_thread);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -311,10 +311,10 @@ int ABT_task_cancel(ABT_task task)
     /* Set the cancel request */
     ABTI_task_set_request(p_task, ABTI_TASK_REQ_CANCEL);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #endif
@@ -430,10 +430,10 @@ int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream)
     /* Return value */
     *xstream = ABTI_xstream_get_handle(p_task->p_xstream);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -457,10 +457,10 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
     /* Return value */
     *state = p_task->state;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -487,10 +487,10 @@ int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool)
     /* Return value */
     *pool = ABTI_pool_get_handle(p_task->p_pool);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -519,10 +519,10 @@ int ABT_task_get_last_pool_id(ABT_task task, int *id)
     ABTI_ASSERT(p_task->p_pool);
     *id = (int)(p_task->p_pool->id);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -552,10 +552,10 @@ int ABT_task_set_migratable(ABT_task task, ABT_bool flag)
 
     p_task->migratable = flag;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
@@ -586,10 +586,10 @@ int ABT_task_is_migratable(ABT_task task, ABT_bool *flag)
 
     *flag = p_task->migratable;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
@@ -640,10 +640,10 @@ int ABT_task_retain(ABT_task task)
 
     ABTI_task_retain(p_task);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -668,10 +668,10 @@ int ABT_task_release(ABT_task task)
 
     ABTI_task_release(p_task);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -696,10 +696,10 @@ int ABT_task_get_id(ABT_task task, uint64_t *task_id)
 
     *task_id = ABTI_task_get_id(p_task);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -725,14 +725,13 @@ int ABT_task_get_arg(ABT_task task, void **arg)
 
     *arg = p_task->p_arg;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /*****************************************************************************/
 /* Private APIs                                                              */
@@ -751,21 +750,21 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     /* Allocate a task object */
     p_newtask = ABTI_mem_alloc_task(p_local);
 
-    p_newtask->p_xstream  = NULL;
-    p_newtask->state      = ABT_TASK_STATE_READY;
-    p_newtask->request    = 0;
-    p_newtask->f_task     = task_func;
-    p_newtask->p_arg      = arg;
+    p_newtask->p_xstream = NULL;
+    p_newtask->state = ABT_TASK_STATE_READY;
+    p_newtask->request = 0;
+    p_newtask->f_task = task_func;
+    p_newtask->p_arg = arg;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    p_newtask->is_sched   = p_sched;
+    p_newtask->is_sched = p_sched;
 #endif
-    p_newtask->p_pool     = p_pool;
-    p_newtask->refcount   = refcount;
+    p_newtask->p_pool = p_pool;
+    p_newtask->refcount = refcount;
     p_newtask->p_keytable = NULL;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newtask->migratable = ABT_TRUE;
 #endif
-    p_newtask->id         = ABTI_TASK_INIT_ID;
+    p_newtask->id = ABTI_TASK_INIT_ID;
 
     /* Create a wrapper work unit */
     h_newtask = ABTI_task_get_handle(p_newtask);
@@ -788,10 +787,10 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     /* Return value */
     *pp_newtask = p_newtask;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -805,12 +804,12 @@ static int ABTI_task_revive(ABTI_local *p_local, ABTI_pool *p_pool,
     ABTI_CHECK_TRUE(p_task->state == ABT_TASK_STATE_TERMINATED,
                     ABT_ERR_INV_TASK);
 
-    p_task->p_xstream  = NULL;
-    p_task->state      = ABT_TASK_STATE_READY;
-    p_task->request    = 0;
-    p_task->f_task     = task_func;
-    p_task->p_arg      = arg;
-    p_task->refcount   = 1;
+    p_task->p_xstream = NULL;
+    p_task->state = ABT_TASK_STATE_READY;
+    p_task->request = 0;
+    p_task->f_task = task_func;
+    p_task->p_arg = arg;
+    p_task->refcount = 1;
     p_task->p_keytable = NULL;
 
     if (p_task->p_pool != p_pool) {
@@ -836,10 +835,10 @@ static int ABTI_task_revive(ABTI_local *p_local, ABTI_pool *p_pool,
     ABTI_CHECK_ERROR(abt_errno);
 #endif
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -872,46 +871,48 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *state;
     switch (p_task->state) {
-        case ABT_TASK_STATE_READY:      state = "READY"; break;
-        case ABT_TASK_STATE_RUNNING:    state = "RUNNING"; break;
-        case ABT_TASK_STATE_TERMINATED: state = "TERMINATED"; break;
-        default:                        state = "UNKNOWN";
+        case ABT_TASK_STATE_READY:
+            state = "READY";
+            break;
+        case ABT_TASK_STATE_RUNNING:
+            state = "RUNNING";
+            break;
+        case ABT_TASK_STATE_TERMINATED:
+            state = "TERMINATED";
+            break;
+        default:
+            state = "UNKNOWN";
     }
 
     fprintf(p_os,
-        "%s== TASKLET (%p) ==\n"
-        "%sid        : %" PRIu64 "\n"
-        "%sstate     : %s\n"
-        "%sES        : %p (%d)\n"
+            "%s== TASKLET (%p) ==\n"
+            "%sid        : %" PRIu64 "\n"
+            "%sstate     : %s\n"
+            "%sES        : %p (%d)\n"
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-        "%sis_sched  : %p\n"
+            "%sis_sched  : %p\n"
 #endif
-        "%spool      : %p\n"
+            "%spool      : %p\n"
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-        "%smigratable: %s\n"
+            "%smigratable: %s\n"
 #endif
-        "%srefcount  : %u\n"
-        "%srequest   : 0x%x\n"
-        "%sp_arg     : %p\n"
-        "%skeytable  : %p\n",
-        prefix, (void *)p_task,
-        prefix, ABTI_task_get_id(p_task),
-        prefix, state,
-        prefix, (void *)p_task->p_xstream, xstream_rank,
+            "%srefcount  : %u\n"
+            "%srequest   : 0x%x\n"
+            "%sp_arg     : %p\n"
+            "%skeytable  : %p\n",
+            prefix, (void *)p_task, prefix, ABTI_task_get_id(p_task), prefix,
+            state, prefix, (void *)p_task->p_xstream, xstream_rank,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-        prefix, (void *)p_task->is_sched,
+            prefix, (void *)p_task->is_sched,
 #endif
-        prefix, (void *)p_task->p_pool,
+            prefix, (void *)p_task->p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-        prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
+            prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
 #endif
-        prefix, p_task->refcount,
-        prefix, p_task->request,
-        prefix, p_task->p_arg,
-        prefix, (void *)p_task->p_keytable
-    );
+            prefix, p_task->refcount, prefix, p_task->request, prefix,
+            p_task->p_arg, prefix, (void *)p_task->p_keytable);
 
-  fn_exit:
+fn_exit:
     fflush(p_os);
     ABTU_free(prefix);
 }
@@ -954,4 +955,3 @@ static inline uint64_t ABTI_task_get_new_id(void)
 {
     return ABTD_atomic_fetch_add_uint64(&g_task_id, 1);
 }
-

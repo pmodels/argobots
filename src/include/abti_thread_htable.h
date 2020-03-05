@@ -48,57 +48,60 @@ struct ABTI_thread_htable {
 #elif defined(USE_PTHREAD_MUTEX)
     pthread_mutex_t mutex;
 #else
-    ABTI_spinlock mutex;          /* To protect table */
+    ABTI_spinlock mutex; /* To protect table */
 #endif
     uint32_t num_elems;
     uint32_t num_rows;
     ABTI_thread_queue *queue;
 
-    ABTI_thread_queue *h_list;  /* list of non-empty high prio. queues */
-    ABTI_thread_queue *l_list;  /* list of non-empty low prio. queues */
+    ABTI_thread_queue *h_list; /* list of non-empty high prio. queues */
+    ABTI_thread_queue *l_list; /* list of non-empty low prio. queues */
 };
 
 #if defined(HAVE_LH_LOCK_H)
-#define ABTI_THREAD_HTABLE_LOCK(m)      lh_acquire_lock(&m)
-#define ABTI_THREAD_HTABLE_UNLOCK(m)    lh_release_lock(&m)
+#define ABTI_THREAD_HTABLE_LOCK(m) lh_acquire_lock(&m)
+#define ABTI_THREAD_HTABLE_UNLOCK(m) lh_release_lock(&m)
 #elif defined(HAVE_CLH_H)
-#define ABTI_THREAD_HTABLE_LOCK(m)      clh_acquire(&m)
-#define ABTI_THREAD_HTABLE_UNLOCK(m)    clh_release(&m)
+#define ABTI_THREAD_HTABLE_LOCK(m) clh_acquire(&m)
+#define ABTI_THREAD_HTABLE_UNLOCK(m) clh_release(&m)
 #elif defined(USE_PTHREAD_MUTEX)
-#define ABTI_THREAD_HTABLE_LOCK(m)      pthread_mutex_lock(&m)
-#define ABTI_THREAD_HTABLE_UNLOCK(m)    pthread_mutex_unlock(&m)
+#define ABTI_THREAD_HTABLE_LOCK(m) pthread_mutex_lock(&m)
+#define ABTI_THREAD_HTABLE_UNLOCK(m) pthread_mutex_unlock(&m)
 #else
-#define ABTI_THREAD_HTABLE_LOCK(m)      ABTI_spinlock_acquire(&m)
-#define ABTI_THREAD_HTABLE_UNLOCK(m)    ABTI_spinlock_release(&m)
+#define ABTI_THREAD_HTABLE_LOCK(m) ABTI_spinlock_acquire(&m)
+#define ABTI_THREAD_HTABLE_UNLOCK(m) ABTI_spinlock_release(&m)
 #endif
 
-static inline
-void ABTI_thread_queue_acquire_mutex(ABTI_thread_queue *p_queue) {
+static inline void ABTI_thread_queue_acquire_mutex(ABTI_thread_queue *p_queue)
+{
     while (ABTD_atomic_test_and_set_uint8((uint8_t *)&p_queue->mutex)) {
-        while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->mutex) != 0);
+        while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->mutex) != 0)
+            ;
     }
 }
 
-static inline
-void ABTI_thread_queue_release_mutex(ABTI_thread_queue *p_queue) {
+static inline void ABTI_thread_queue_release_mutex(ABTI_thread_queue *p_queue)
+{
     ABTD_atomic_clear_uint8((uint8_t *)&p_queue->mutex);
 }
 
-static inline
-void ABTI_thread_queue_acquire_low_mutex(ABTI_thread_queue *p_queue) {
+static inline void
+ABTI_thread_queue_acquire_low_mutex(ABTI_thread_queue *p_queue)
+{
     while (ABTD_atomic_test_and_set_uint8((uint8_t *)&p_queue->low_mutex)) {
-        while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->low_mutex) != 0);
+        while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->low_mutex) != 0)
+            ;
     }
 }
 
-static inline
-void ABTI_thread_queue_release_low_mutex(ABTI_thread_queue *p_queue) {
+static inline void
+ABTI_thread_queue_release_low_mutex(ABTI_thread_queue *p_queue)
+{
     ABTD_atomic_clear_uint8((uint8_t *)&p_queue->low_mutex);
 }
 
-static inline
-void ABTI_thread_htable_add_h_node(ABTI_thread_htable *p_htable,
-                                   ABTI_thread_queue *p_node)
+static inline void ABTI_thread_htable_add_h_node(ABTI_thread_htable *p_htable,
+                                                 ABTI_thread_queue *p_node)
 {
     ABTI_thread_queue *p_curr = p_htable->h_list;
     if (!p_curr) {
@@ -113,8 +116,7 @@ void ABTI_thread_htable_add_h_node(ABTI_thread_htable *p_htable,
     }
 }
 
-static inline
-void ABTI_thread_htable_del_h_head(ABTI_thread_htable *p_htable)
+static inline void ABTI_thread_htable_del_h_head(ABTI_thread_htable *p_htable)
 {
     ABTI_thread_queue *p_prev, *p_next;
     ABTI_thread_queue *p_node = p_htable->h_list;
@@ -134,9 +136,8 @@ void ABTI_thread_htable_del_h_head(ABTI_thread_htable *p_htable)
     }
 }
 
-static inline
-void ABTI_thread_htable_add_l_node(ABTI_thread_htable *p_htable,
-                                   ABTI_thread_queue *p_node)
+static inline void ABTI_thread_htable_add_l_node(ABTI_thread_htable *p_htable,
+                                                 ABTI_thread_queue *p_node)
 {
     ABTI_thread_queue *p_curr = p_htable->l_list;
     if (!p_curr) {
@@ -151,8 +152,7 @@ void ABTI_thread_htable_add_l_node(ABTI_thread_htable *p_htable,
     }
 }
 
-static inline
-void ABTI_thread_htable_del_l_head(ABTI_thread_htable *p_htable)
+static inline void ABTI_thread_htable_del_l_head(ABTI_thread_htable *p_htable)
 {
     ABTI_thread_queue *p_prev, *p_next;
     ABTI_thread_queue *p_node = p_htable->l_list;

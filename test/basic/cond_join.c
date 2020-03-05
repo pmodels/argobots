@@ -8,13 +8,13 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define NUM_THREADS     2
-#define NUM_XSTREAMS    NUM_THREADS
+#define NUM_THREADS 2
+#define NUM_XSTREAMS NUM_THREADS
 
 typedef struct {
-    ABT_mutex    mutex;
-    ABT_cond     cond;
-    int          count;
+    ABT_mutex mutex;
+    ABT_cond cond;
+    int count;
     volatile int curcount;
     volatile int generation;
 } barrier_t;
@@ -25,7 +25,6 @@ typedef struct {
     int tid;
     barrier_t *barrier;
 } thread_arg_t;
-
 
 barrier_t *barrier_create(int count)
 {
@@ -61,33 +60,33 @@ void barrier_free(barrier_t *barrier)
 void thread_wait(thread_arg_t *my_arg)
 {
     int generation;
-    barrier_t* barrier = my_arg->barrier;
+    barrier_t *barrier = my_arg->barrier;
 
     ABT_mutex_lock(barrier->mutex);
     if ((barrier->curcount + 1) == barrier->count) {
         barrier->generation++;
         barrier->curcount = 0;
 
-        ATS_printf(3, "<S%d:TH%d> T%d broadcast-1\n",
-                        my_arg->eid, my_arg->uid, my_arg->tid);
+        ATS_printf(3, "<S%d:TH%d> T%d broadcast-1\n", my_arg->eid, my_arg->uid,
+                   my_arg->tid);
         ABT_cond_broadcast(barrier->cond);
         ABT_mutex_unlock(barrier->mutex);
-        ATS_printf(3, "<S%d:TH%d> T%d broadcast-2\n",
-                        my_arg->eid, my_arg->uid, my_arg->tid);
+        ATS_printf(3, "<S%d:TH%d> T%d broadcast-2\n", my_arg->eid, my_arg->uid,
+                   my_arg->tid);
         return;
     }
     barrier->curcount++;
     generation = barrier->generation;
     do {
-        ATS_printf(3, "<S%d:TH%d> T%d wait-1\n",
-                        my_arg->eid, my_arg->uid, my_arg->tid);
+        ATS_printf(3, "<S%d:TH%d> T%d wait-1\n", my_arg->eid, my_arg->uid,
+                   my_arg->tid);
         ABT_cond_wait(barrier->cond, barrier->mutex);
-        ATS_printf(3, "<S%d:TH%d> T%d wait-2\n",
-                        my_arg->eid, my_arg->uid, my_arg->tid);
+        ATS_printf(3, "<S%d:TH%d> T%d wait-2\n", my_arg->eid, my_arg->uid,
+                   my_arg->tid);
     } while (generation == barrier->generation);
     ABT_mutex_unlock(barrier->mutex);
-    ATS_printf(3, "<S%d:TH%d> T%d wait-3\n",
-                    my_arg->eid, my_arg->uid, my_arg->tid);
+    ATS_printf(3, "<S%d:TH%d> T%d wait-3\n", my_arg->eid, my_arg->uid,
+               my_arg->tid);
 }
 
 void cond_test(void *arg)
@@ -111,11 +110,11 @@ void cond_test(void *arg)
 
 void thread_work(void *arg)
 {
-    ABT_xstream  xstreams[NUM_XSTREAMS];
-    ABT_pool     pools[NUM_XSTREAMS];
-    ABT_thread   threads[NUM_THREADS];
+    ABT_xstream xstreams[NUM_XSTREAMS];
+    ABT_pool pools[NUM_XSTREAMS];
+    ABT_thread threads[NUM_THREADS];
     thread_arg_t args[NUM_THREADS];
-    barrier_t   *barrier;
+    barrier_t *barrier;
     int i, t, ret;
     int iter = (int)(size_t)arg;
 
@@ -172,12 +171,13 @@ void thread_work(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream xstream;
-    ABT_pool    pool;
-    ABT_thread  thread;
+    ABT_pool pool;
+    ABT_thread thread;
     int ret;
     int iter = 5;
 
-    if (argc > 1) iter = atoi(argv[1]);
+    if (argc > 1)
+        iter = atoi(argv[1]);
 
     /* Initialize */
     ATS_read_args(argc, argv);
@@ -206,4 +206,3 @@ int main(int argc, char *argv[])
     /* Finalize */
     return ATS_finalize(0);
 }
-

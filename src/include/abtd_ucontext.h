@@ -23,9 +23,9 @@ static void ABTD_ucontext_wrapper(int arg1, int arg2)
     ABTI_ASSERT(0);
 }
 
-static inline
-void ABTD_thread_context_make(ABTD_thread_context *p_ctx, void *sp, size_t size,
-                              void (*thread_func)(void *))
+static inline void ABTD_thread_context_make(ABTD_thread_context *p_ctx,
+                                            void *sp, size_t size,
+                                            void (*thread_func)(void *))
 {
     getcontext(&p_ctx->uctx);
     p_ctx->p_ctx = &p_ctx->uctx;
@@ -49,17 +49,17 @@ void ABTD_thread_context_make(ABTD_thread_context *p_ctx, void *sp, size_t size,
 #endif
 }
 
-static inline
-void ABTD_thread_context_jump(ABTD_thread_context *p_old,
-                              ABTD_thread_context *p_new, void *arg)
+static inline void ABTD_thread_context_jump(ABTD_thread_context *p_old,
+                                            ABTD_thread_context *p_new,
+                                            void *arg)
 {
     p_new->p_uctx_arg = arg;
     swapcontext(&p_old->uctx, &p_new->uctx);
 }
 
-static inline
-void ABTD_thread_context_take(ABTD_thread_context *p_old,
-                              ABTD_thread_context *p_new, void *arg)
+static inline void ABTD_thread_context_take(ABTD_thread_context *p_old,
+                                            ABTD_thread_context *p_new,
+                                            void *arg)
 {
     p_new->p_uctx_arg = arg;
     setcontext(&p_new->uctx);

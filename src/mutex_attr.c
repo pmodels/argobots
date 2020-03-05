@@ -5,7 +5,6 @@
 
 #include "abti.h"
 
-
 /** @defgroup MUTEX_ATTR Mutex Attributes
  * Attributes are used to specify mutex behavior that is different from the
  * default.  When a mutex is created with \c ABT_mutex_create_with_attr(),
@@ -69,10 +68,10 @@ int ABT_mutex_attr_free(ABT_mutex_attr *attr)
     /* Return value */
     *attr = ABT_MUTEX_ATTR_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -103,14 +102,13 @@ int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive)
         p_attr->attrs &= ~ABTI_MUTEX_ATTR_RECURSIVE;
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /*****************************************************************************/
 /* Private APIs                                                              */
@@ -135,15 +133,10 @@ void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf)
     }
 
     sprintf(p_buf,
-        "["
-        "attrs:%x "
-        "nesting_cnt:%u "
-        "owner_id:%p "
-        "]",
-        p_attr->attrs,
-        p_attr->nesting_cnt,
-        (void *)p_attr->owner_id
-    );
+            "["
+            "attrs:%x "
+            "nesting_cnt:%u "
+            "owner_id:%p "
+            "]",
+            p_attr->attrs, p_attr->nesting_cnt, (void *)p_attr->owner_id);
 }
-
-

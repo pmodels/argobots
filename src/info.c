@@ -10,7 +10,6 @@
  * routines in this group are meant for debugging and diagnosing Argobots.
  */
 
-
 /**
  * @ingroup INFO
  * @brief   Get the configuration information associated with \c query_kind.
@@ -229,14 +228,13 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             break;
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /**
  * @ingroup INFO
@@ -254,7 +252,6 @@ int ABT_info_print_config(FILE *fp)
 {
     return ABTI_info_print_config(fp);
 }
-
 
 /**
  * @ingroup INFO
@@ -290,14 +287,13 @@ int ABT_info_print_all_xstreams(FILE *fp)
 
     fflush(fp);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /**
  * @ingroup INFO
@@ -319,14 +315,13 @@ int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 
     ABTI_xstream_print(p_xstream, fp, 0, ABT_FALSE);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /**
  * @ingroup INFO
@@ -348,14 +343,13 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 
     ABTI_sched_print(p_sched, fp, 0, ABT_FALSE);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /**
  * @ingroup INFO
@@ -369,7 +363,7 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
  * @return Error code
  * @retval ABT_SUCCESS  on success
  */
-int ABT_info_print_pool(FILE* fp, ABT_pool pool)
+int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -377,14 +371,13 @@ int ABT_info_print_pool(FILE* fp, ABT_pool pool)
 
     ABTI_pool_print(p_pool, fp, 0);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /**
  * @ingroup INFO
@@ -398,7 +391,7 @@ int ABT_info_print_pool(FILE* fp, ABT_pool pool)
  * @return Error code
  * @retval ABT_SUCCESS  on success
  */
-int ABT_info_print_thread(FILE* fp, ABT_thread thread)
+int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
@@ -406,14 +399,13 @@ int ABT_info_print_thread(FILE* fp, ABT_thread thread)
 
     ABTI_thread_print(p_thread, fp, 0);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /**
  * @ingroup INFO
@@ -428,7 +420,7 @@ int ABT_info_print_thread(FILE* fp, ABT_thread thread)
  * @return Error code
  * @retval ABT_SUCCESS  on success
  */
-int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr)
+int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
@@ -436,14 +428,13 @@ int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr)
 
     ABTI_thread_attr_print(p_attr, fp, 0);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /**
  * @ingroup INFO
@@ -457,7 +448,7 @@ int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr)
  * @return Error code
  * @retval ABT_SUCCESS  on success
  */
-int ABT_info_print_task(FILE* fp, ABT_task task)
+int ABT_info_print_task(FILE *fp, ABT_task task)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_task *p_task = ABTI_task_get_ptr(task);
@@ -465,10 +456,10 @@ int ABT_info_print_task(FILE* fp, ABT_task task)
 
     ABTI_task_print(p_task, fp, 0);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -493,10 +484,10 @@ int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 
     abt_errno = ABTI_thread_print_stack(p_thread, fp);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -522,15 +513,15 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
         ABT_thread thread = p_pool->u_get_thread(unit);
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
         ABT_thread_id thread_id = ABTI_thread_get_id(p_thread);
-        fprintf(fp, "id        : %" PRIu64 "\n"
-                    "ctx       : %p\n",
-                    (uint64_t)thread_id,
-                    (void *)&p_thread->ctx);
+        fprintf(fp,
+                "id        : %" PRIu64 "\n"
+                "ctx       : %p\n",
+                (uint64_t)thread_id, (void *)&p_thread->ctx);
         ABTD_thread_print_context(p_thread, fp, 2);
-        fprintf(fp, "stack     : %p\n"
-                    "stacksize : %" PRIu64 "\n",
-                    p_thread->attr.p_stack,
-                    (uint64_t)p_thread->attr.stacksize);
+        fprintf(fp,
+                "stack     : %p\n"
+                "stacksize : %" PRIu64 "\n",
+                p_thread->attr.p_stack, (uint64_t)p_thread->attr.stacksize);
         int abt_errno = ABTI_thread_print_stack(p_thread, fp);
         if (abt_errno != ABT_SUCCESS)
             fprintf(fp, "Failed to print stack.\n");
@@ -565,10 +556,10 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
     abt_errno = ABTI_info_print_thread_stacks_in_pool(fp, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -588,10 +579,10 @@ int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
     arg.pool = pool;
     p_pool->p_print_all(pool, &arg, ABTI_info_print_unit);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -602,8 +593,8 @@ struct ABTI_info_pool_set_t {
     size_t len;
 };
 
-static inline
-void ABTI_info_initialize_pool_set(struct ABTI_info_pool_set_t *p_set)
+static inline void
+ABTI_info_initialize_pool_set(struct ABTI_info_pool_set_t *p_set)
 {
     size_t default_len = 16;
     p_set->pools = (ABT_pool *)ABTU_malloc(sizeof(ABT_pool) * default_len);
@@ -611,14 +602,14 @@ void ABTI_info_initialize_pool_set(struct ABTI_info_pool_set_t *p_set)
     p_set->len = default_len;
 }
 
-static inline
-void ABTI_info_finalize_pool_set(struct ABTI_info_pool_set_t *p_set)
+static inline void
+ABTI_info_finalize_pool_set(struct ABTI_info_pool_set_t *p_set)
 {
     ABTU_free(p_set->pools);
 }
 
-static inline
-void ABTI_info_add_pool_set(ABT_pool pool, struct ABTI_info_pool_set_t *p_set)
+static inline void ABTI_info_add_pool_set(ABT_pool pool,
+                                          struct ABTI_info_pool_set_t *p_set)
 {
     size_t i;
     for (i = 0; i < p_set->num; i++) {
@@ -636,10 +627,10 @@ void ABTI_info_add_pool_set(ABT_pool pool, struct ABTI_info_pool_set_t *p_set)
     p_set->pools[p_set->num++] = pool;
 }
 
-#define PRINT_STACK_FLAG_UNSET      0
+#define PRINT_STACK_FLAG_UNSET 0
 #define PRINT_STACK_FLAG_INITIALIZE 1
-#define PRINT_STACK_FLAG_WAIT       2
-#define PRINT_STACK_FLAG_FINALIZE   3
+#define PRINT_STACK_FLAG_WAIT 2
+#define PRINT_STACK_FLAG_FINALIZE 3
 
 static uint32_t print_stack_flag = PRINT_STACK_FLAG_UNSET;
 static FILE *print_stack_fp = NULL;
@@ -653,9 +644,9 @@ static uint32_t print_stack_barrier = 0;
  * @brief   Dump stacks of threads in pools existing in Argobots.
  *
  * \c ABT_info_trigger_print_all_thread_stacks() tries to dump call stacks of
- * all threads stored in pools in the Argobots runtime. This function itself does
- * not print stacks; it immediately returns after updating a flag. Stacks are
- * printed when all execution streams stop in \c ABT_xstream_check_events().
+ * all threads stored in pools in the Argobots runtime. This function itself
+ * does not print stacks; it immediately returns after updating a flag. Stacks
+ * are printed when all execution streams stop in \c ABT_xstream_check_events().
  *
  * If some execution streams do not stop within a certain time period, one of
  * the stopped execution streams starts to print stack information. In this
@@ -665,10 +656,10 @@ static uint32_t print_stack_barrier = 0;
  *
  * \c cb_func is called after completing stack dump unless it is NULL. The first
  * argument is set to \c ABT_TRUE if not all the execution streams stop within
- * \c timeout. Otherwise, \c ABT_FALSE is set. The second argument is user-defined
- * data \c arg. Since \c cb_func is not called by a thread or an execution
- * stream, \c ABT_self_...() functions in \c cb_func return undefined values.
- * Neither signal-safety nor thread-safety is required for \c cb_func.
+ * \c timeout. Otherwise, \c ABT_FALSE is set. The second argument is
+ * user-defined data \c arg. Since \c cb_func is not called by a thread or an
+ * execution stream, \c ABT_self_...() functions in \c cb_func return undefined
+ * values. Neither signal-safety nor thread-safety is required for \c cb_func.
  *
  * In Argobots, \c ABT_info_trigger_print_all_thread_stacks is exceptionally
  * signal-safe; it can be safely called in a signal handler.
@@ -723,12 +714,12 @@ void ABTI_info_check_print_all_thread_stacks(void)
          * printing data. */
         ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
         while (1) {
-            if (ABTD_atomic_load_uint32(&print_stack_barrier)
-                >= gp_ABTI_global->num_xstreams) {
+            if (ABTD_atomic_load_uint32(&print_stack_barrier) >=
+                gp_ABTI_global->num_xstreams) {
                 break;
             }
-            if (print_stack_timeout >= 0.0
-                && (ABTI_get_wtime() - start_time) >= print_stack_timeout) {
+            if (print_stack_timeout >= 0.0 &&
+                (ABTI_get_wtime() - start_time) >= print_stack_timeout) {
                 force_print = ABT_TRUE;
                 break;
             }
@@ -744,9 +735,10 @@ void ABTI_info_check_print_all_thread_stacks(void)
         ABTI_info_initialize_pool_set(&pool_set);
         FILE *fp = print_stack_fp;
         if (force_print) {
-            fprintf(fp, "ABT_info_trigger_print_all_thread_stacks: "
-                        "timeout (only %d ESs stop)\n",
-                        (int)print_stack_barrier);
+            fprintf(fp,
+                    "ABT_info_trigger_print_all_thread_stacks: "
+                    "timeout (only %d ESs stop)\n",
+                    (int)print_stack_barrier);
         }
         for (i = 0; i < gp_ABTI_global->num_xstreams; i++) {
             ABTI_xstream *p_xstream = gp_ABTI_global->p_xstreams[i];
@@ -758,7 +750,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
             for (j = 0; j < p_main_sched->num_pools; j++) {
                 ABT_pool pool = p_main_sched->pools[j];
                 ABTI_ASSERT(pool != ABT_POOL_NULL);
-                fprintf(fp, "  pools[%d] : %p\n", j, (void *)ABTI_pool_get_ptr(pool));
+                fprintf(fp, "  pools[%d] : %p\n", j,
+                        (void *)ABTI_pool_get_ptr(pool));
                 ABTI_info_add_pool_set(pool, &pool_set);
             }
         }
@@ -779,12 +772,12 @@ void ABTI_info_check_print_all_thread_stacks(void)
         ABTD_atomic_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_FINALIZE);
     } else {
         /* Wait for the master's work. */
-        while (ABTD_atomic_load_uint32(&print_stack_flag)
-               != PRINT_STACK_FLAG_FINALIZE)
+        while (ABTD_atomic_load_uint32(&print_stack_flag) !=
+               PRINT_STACK_FLAG_FINALIZE)
             ABTD_atomic_pause();
     }
-    ABTI_ASSERT(ABTD_atomic_load_uint32(&print_stack_flag)
-                == PRINT_STACK_FLAG_FINALIZE);
+    ABTI_ASSERT(ABTD_atomic_load_uint32(&print_stack_flag) ==
+                PRINT_STACK_FLAG_FINALIZE);
 
     /* Decrement the barrier value. */
     uint32_t dec_value = ABTD_atomic_fetch_sub_uint32(&print_stack_barrier, 1);
@@ -809,18 +802,18 @@ int ABTI_info_print_config(FILE *fp)
     fprintf(fp, " - max. # of ESs: %d\n", p_global->max_xstreams);
     fprintf(fp, " - cur. # of ESs: %d\n", p_global->num_xstreams);
     fprintf(fp, " - ES affinity: %s\n",
-                (p_global->set_affinity == ABT_TRUE) ? "on" : "off");
+            (p_global->set_affinity == ABT_TRUE) ? "on" : "off");
     fprintf(fp, " - logging: %s\n",
-                (p_global->use_logging == ABT_TRUE) ? "on" : "off");
+            (p_global->use_logging == ABT_TRUE) ? "on" : "off");
     fprintf(fp, " - debug output: %s\n",
-                (p_global->use_debug == ABT_TRUE) ? "on" : "off");
+            (p_global->use_debug == ABT_TRUE) ? "on" : "off");
     fprintf(fp, " - key table entries: %d\n", p_global->key_table_size);
     fprintf(fp, " - ULT stack size: %u KB\n",
-                (unsigned)(p_global->thread_stacksize / 1024));
+            (unsigned)(p_global->thread_stacksize / 1024));
     fprintf(fp, " - scheduler stack size: %u KB\n",
-                (unsigned)(p_global->sched_stacksize / 1024));
+            (unsigned)(p_global->sched_stacksize / 1024));
     fprintf(fp, " - scheduler event check frequency: %u\n",
-                p_global->sched_event_freq);
+            p_global->sched_event_freq);
 
     fprintf(fp, " - timer function: "
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
@@ -835,7 +828,7 @@ int ABTI_info_print_config(FILE *fp)
 #ifdef ABT_CONFIG_USE_MEM_POOL
     fprintf(fp, "Memory Pool:\n");
     fprintf(fp, " - page size for allocation: %u KB\n",
-                p_global->mem_page_size / 1024);
+            p_global->mem_page_size / 1024);
     fprintf(fp, " - stack page size: %u KB\n", p_global->mem_sp_size / 1024);
     fprintf(fp, " - max. # of stacks per ES: %u\n", p_global->mem_max_stacks);
     switch (p_global->mem_lp_alloc) {
@@ -860,10 +853,10 @@ int ABTI_info_print_config(FILE *fp)
 
     fflush(fp);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

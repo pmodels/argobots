@@ -8,7 +8,6 @@
 #include "abt.h"
 #include "abttest.h"
 
-
 enum {
     T_INIT_FINALIZE_COLD = 0,
     T_INIT,
@@ -18,16 +17,10 @@ enum {
     T_LAST
 };
 
-static char *t_names[] = {
-    "init/finalize (cold)",
-    "init",
-    "finalize",
-    "init/finalize",
-    "init/finalize with work"
-};
+static char *t_names[] = { "init/finalize (cold)", "init", "finalize",
+                           "init/finalize", "init/finalize with work" };
 
 static double t_timers[T_LAST];
-
 
 void thread_func(void *arg)
 {
@@ -49,7 +42,8 @@ int main(int argc, char *argv[])
     ABT_timer_start(timer);
     ABT_timer_stop(timer);
     ABT_timer_get_overhead(&t_overhead);
-    for (i = 0; i < T_LAST; i++) t_timers[i] = 0.0;
+    for (i = 0; i < T_LAST; i++)
+        t_timers[i] = 0.0;
 
     /* measure init/finalize time (cold) */
     ABT_timer_start(timer);
@@ -82,8 +76,7 @@ int main(int argc, char *argv[])
 
         ABT_xstream_create(ABT_SCHED_NULL, &xstream);
         ABT_xstream_get_main_pools(xstream, 1, &pool);
-        ABT_thread_create(pool, thread_func, NULL, ABT_THREAD_ATTR_NULL,
-                          NULL);
+        ABT_thread_create(pool, thread_func, NULL, ABT_THREAD_ATTR_NULL, NULL);
         ABT_xstream_join(xstream);
         ABT_xstream_free(&xstream);
 
@@ -108,4 +101,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-

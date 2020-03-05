@@ -8,9 +8,9 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    4
-#define DEFAULT_NUM_THREADS     4
-#define DEFAULT_NUM_ITER        100
+#define DEFAULT_NUM_XSTREAMS 4
+#define DEFAULT_NUM_THREADS 4
+#define DEFAULT_NUM_ITER 100
 
 int g_counter = 0;
 int g_iter = DEFAULT_NUM_ITER;
@@ -63,7 +63,6 @@ int main(int argc, char *argv[])
     }
     ATS_init(argc, argv, num_xstreams);
 
-
     ATS_printf(2, "# of ESs : %d\n", num_xstreams);
     ATS_printf(1, "# of ULTs: %d\n", num_threads);
     ATS_printf(1, "# of iter: %d\n", g_iter);
@@ -95,7 +94,7 @@ int main(int argc, char *argv[])
     ABT_pool *pools;
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
@@ -109,9 +108,8 @@ int main(int argc, char *argv[])
             int tid = i * num_threads + j + 1;
             args[i][j].id = tid;
             args[i][j].mutex = mutex;
-            ret = ABT_thread_create(pools[i],
-                    thread_func, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
-                    &threads[i][j]);
+            ret = ABT_thread_create(pools[i], thread_func, (void *)&args[i][j],
+                                    ABT_THREAD_ATTR_NULL, &threads[i][j]);
             ATS_ERROR(ret, "ABT_thread_create");
         }
     }
@@ -160,4 +158,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

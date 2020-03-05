@@ -20,8 +20,8 @@ long int value = 0;
 
 void task_func(void *arg)
 {
-    long int v = (long int) arg;
-    assert(v == value+1);
+    long int v = (long int)arg;
+    assert(v == value + 1);
     value++;
 }
 
@@ -31,7 +31,8 @@ int main(int argc, char *argv[])
     int i, ret;
     int num_tasks = DEFAULT_NUM_TASKS;
 
-    if (argc > 1) num_tasks = atoi(argv[1]);
+    if (argc > 1)
+        num_tasks = atoi(argv[1]);
     assert(num_tasks >= 0);
 
     ABT_xstream xstream;
@@ -44,8 +45,8 @@ int main(int argc, char *argv[])
     ATS_init(argc, argv, 1);
 
     /* Creation of the main pool/sched */
-    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV,
-                                ABT_TRUE, &pool_mainsched);
+    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV, ABT_TRUE,
+                                &pool_mainsched);
     ATS_ERROR(ret, "ABT_pool_create_basic");
     ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool_mainsched,
                                  ABT_SCHED_CONFIG_NULL, &mainsched);
@@ -57,31 +58,29 @@ int main(int argc, char *argv[])
     ret = ABT_xstream_set_main_sched(xstream, mainsched);
     ATS_ERROR(ret, "ABT_xstream_set_main_sched");
 
-
     /* Creation of subsched1 */
-    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV,
-                                ABT_TRUE, &pool_subsched1);
+    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV, ABT_TRUE,
+                                &pool_subsched1);
     ATS_ERROR(ret, "ABT_pool_create_basic");
     ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool_subsched1,
                                  ABT_SCHED_CONFIG_NULL, &subsched1);
     ATS_ERROR(ret, "ABT_sched_create_basic");
 
     /* Creation of subsched2 */
-    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV,
-                                ABT_TRUE, &pool_subsched2);
+    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_PRIV, ABT_TRUE,
+                                &pool_subsched2);
     ATS_ERROR(ret, "ABT_pool_create_basic");
     ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool_subsched2,
                                  ABT_SCHED_CONFIG_NULL, &subsched2);
     ATS_ERROR(ret, "ABT_sched_create_basic");
-
 
     long int num = 0;
     ret = ABT_task_create(pool_mainsched, task_func, (void *)++num, NULL);
     ATS_ERROR(ret, "ABT_task_create");
 
     for (i = 0; i < num_tasks; i++) {
-      ret = ABT_task_create(pool_subsched1, task_func, (void *)++num, NULL);
-      ATS_ERROR(ret, "ABT_task_create");
+        ret = ABT_task_create(pool_subsched1, task_func, (void *)++num, NULL);
+        ATS_ERROR(ret, "ABT_task_create");
     }
     ret = ABT_pool_add_sched(pool_mainsched, subsched1);
     ATS_ERROR(ret, "ABT_pool_add_sched");
@@ -90,8 +89,8 @@ int main(int argc, char *argv[])
     ATS_ERROR(ret, "ABT_task_create");
 
     for (i = 0; i < num_tasks; i++) {
-      ret = ABT_task_create(pool_subsched2, task_func, (void *)++num, NULL);
-      ATS_ERROR(ret, "ABT_task_create");
+        ret = ABT_task_create(pool_subsched2, task_func, (void *)++num, NULL);
+        ATS_ERROR(ret, "ABT_task_create");
     }
     ret = ABT_pool_add_sched(pool_mainsched, subsched2);
     ATS_ERROR(ret, "ABT_pool_add_sched");
@@ -102,8 +101,6 @@ int main(int argc, char *argv[])
     /* Finalize */
     ret = ATS_finalize(0);
 
-    assert(value == 3+2*num_tasks);
+    assert(value == 3 + 2 * num_tasks);
     return ret;
 }
-
-

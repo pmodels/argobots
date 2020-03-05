@@ -9,13 +9,14 @@
 /* Memory allocation */
 
 /* Header size should be a multiple of cache line size. It is constant. */
-#define ABTI_MEM_SH_SIZE (((sizeof(ABTI_thread) + sizeof(ABTI_stack_header) \
-                            + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) \
-                           / ABT_CONFIG_STATIC_CACHELINE_SIZE) \
-                          * ABT_CONFIG_STATIC_CACHELINE_SIZE)
+#define ABTI_MEM_SH_SIZE                                                       \
+    (((sizeof(ABTI_thread) + sizeof(ABTI_stack_header) +                       \
+       ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) /                                 \
+      ABT_CONFIG_STATIC_CACHELINE_SIZE) *                                      \
+     ABT_CONFIG_STATIC_CACHELINE_SIZE)
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
-typedef struct ABTI_blk_header  ABTI_blk_header;
+typedef struct ABTI_blk_header ABTI_blk_header;
 
 enum {
     ABTI_MEM_LP_MALLOC = 0,
@@ -26,13 +27,13 @@ enum {
 };
 
 struct ABTI_sp_header {
-    uint32_t num_total_stacks;  /* Number of total stacks */
-    uint32_t num_empty_stacks;  /* Number of empty stacks */
-    size_t stacksize;           /* Stack size */
-    uint64_t id;                /* ID */
-    ABT_bool is_mmapped;        /* ABT_TRUE if it is mmapped */
-    void *p_sp;                 /* Pointer to the allocated stack page */
-    ABTI_sp_header *p_next;     /* Next stack page header */
+    uint32_t num_total_stacks; /* Number of total stacks */
+    uint32_t num_empty_stacks; /* Number of empty stacks */
+    size_t stacksize;          /* Stack size */
+    uint64_t id;               /* ID */
+    ABT_bool is_mmapped;       /* ABT_TRUE if it is mmapped */
+    void *p_sp;                /* Pointer to the allocated stack page */
+    ABTI_sp_header *p_next;    /* Next stack page header */
 };
 
 struct ABTI_stack_header {
@@ -42,21 +43,21 @@ struct ABTI_stack_header {
 };
 
 struct ABTI_page_header {
-    uint32_t blk_size;          /* Block size in bytes */
-    uint32_t num_total_blks;    /* Number of total blocks */
-    uint32_t num_empty_blks;    /* Number of empty blocks */
-    uint32_t num_remote_free;   /* Number of remote free blocks */
-    ABTI_blk_header *p_head;    /* First empty block */
-    ABTI_blk_header *p_free;    /* For remote free */
+    uint32_t blk_size;              /* Block size in bytes */
+    uint32_t num_total_blks;        /* Number of total blocks */
+    uint32_t num_empty_blks;        /* Number of empty blocks */
+    uint32_t num_remote_free;       /* Number of remote free blocks */
+    ABTI_blk_header *p_head;        /* First empty block */
+    ABTI_blk_header *p_free;        /* For remote free */
     ABTI_native_thread_id owner_id; /* Owner's ID */
-    ABTI_page_header *p_prev;   /* Prev page header */
-    ABTI_page_header *p_next;   /* Next page header */
-    ABT_bool is_mmapped;        /* ABT_TRUE if it is mmapped */
+    ABTI_page_header *p_prev;       /* Prev page header */
+    ABTI_page_header *p_next;       /* Next page header */
+    ABT_bool is_mmapped;            /* ABT_TRUE if it is mmapped */
 };
 
 struct ABTI_blk_header {
-    ABTI_page_header *p_ph;     /* Page header */
-    ABTI_blk_header *p_next;    /* Next block header */
+    ABTI_page_header *p_ph;  /* Page header */
+    ABTI_blk_header *p_next; /* Next block header */
 };
 
 void ABTI_mem_init(ABTI_global *p_global);
@@ -74,7 +75,6 @@ void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh);
 ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local);
 
 char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize);
-
 
 /******************************************************************************
  * Unless the stack is given by the user, we allocate a stack first and then
@@ -94,9 +94,8 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize);
  *****************************************************************************/
 
 /* Inline functions */
-static inline
-ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t stacksize,
-                                                  ABTI_thread_attr *p_attr)
+static inline ABTI_thread *
+ABTI_mem_alloc_thread_with_stacksize(size_t stacksize, ABTI_thread_attr *p_attr)
 {
     size_t actual_stacksize;
     char *p_blk;
@@ -131,9 +130,8 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t stacksize,
     return p_thread;
 }
 
-static inline
-ABTI_thread *ABTI_mem_alloc_thread(ABTI_local *p_local,
-                                   ABTI_thread_attr *p_attr)
+static inline ABTI_thread *ABTI_mem_alloc_thread(ABTI_local *p_local,
+                                                 ABTI_thread_attr *p_attr)
 {
     /* Basic idea: allocate a memory for stack and use the first some memory as
      * ABTI_stack_header and ABTI_thread. So, the effective stack area is
@@ -212,7 +210,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABTI_local *p_local,
 
     /* Get the ABTI_thread pointer and stack pointer */
     p_thread = (ABTI_thread *)p_blk;
-    p_stack  = p_sh->p_stack;
+    p_stack = p_sh->p_stack;
 
     /* Set attributes */
     if (p_attr == NULL) {
@@ -229,8 +227,8 @@ ABTI_thread *ABTI_mem_alloc_thread(ABTI_local *p_local,
     return p_thread;
 }
 
-static inline
-void ABTI_mem_free_thread(ABTI_local *p_local, ABTI_thread *p_thread)
+static inline void ABTI_mem_free_thread(ABTI_local *p_local,
+                                        ABTI_thread *p_thread)
 {
     ABTI_stack_header *p_sh;
     ABTI_VALGRIND_UNREGISTER_STACK(p_thread->attr.p_stack);
@@ -259,8 +257,7 @@ void ABTI_mem_free_thread(ABTI_local *p_local, ABTI_thread *p_thread)
     }
 }
 
-static inline
-ABTI_task *ABTI_mem_alloc_task(ABTI_local *p_local)
+static inline ABTI_task *ABTI_mem_alloc_task(ABTI_local *p_local)
 {
     ABTI_task *p_task = NULL;
     const size_t blk_size = sizeof(ABTI_blk_header) + sizeof(ABTI_task);
@@ -279,7 +276,8 @@ ABTI_task *ABTI_mem_alloc_task(ABTI_local *p_local)
     /* Find the page that has an empty block */
     ABTI_page_header *p_ph = p_local->p_mem_task_head;
     while (p_ph) {
-        if (p_ph->p_head) break;
+        if (p_ph->p_head)
+            break;
         if (p_ph->p_free) {
             ABTI_mem_take_free(p_ph);
             break;
@@ -315,8 +313,7 @@ ABTI_task *ABTI_mem_alloc_task(ABTI_local *p_local)
     return p_task;
 }
 
-static inline
-void ABTI_mem_free_task(ABTI_local *p_local, ABTI_task *p_task)
+static inline void ABTI_mem_free_task(ABTI_local *p_local, ABTI_task *p_task)
 {
     ABTI_blk_header *p_head;
     ABTI_page_header *p_ph;
@@ -357,8 +354,8 @@ void ABTI_mem_free_task(ABTI_local *p_local, ABTI_task *p_task)
 #define ABTI_mem_finalize(p)
 #define ABTI_mem_finalize_local(p)
 
-static inline
-ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
+static inline ABTI_thread *
+ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
 {
     size_t stacksize, actual_stacksize;
     char *p_blk;
@@ -384,8 +381,8 @@ ABTI_thread *ABTI_mem_alloc_thread_with_stacksize(size_t *p_stacksize)
     return p_thread;
 }
 
-static inline
-ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
+static inline ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr,
+                                                 size_t *p_stacksize)
 {
     ABTI_thread *p_thread;
 
@@ -418,8 +415,7 @@ ABTI_thread *ABTI_mem_alloc_thread(ABT_thread_attr attr, size_t *p_stacksize)
     return p_thread;
 }
 
-static inline
-ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
+static inline ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
 {
     ABTI_thread *p_thread;
 
@@ -433,21 +429,18 @@ ABTI_thread *ABTI_mem_alloc_main_thread(ABT_thread_attr attr)
     return p_thread;
 }
 
-static inline
-void ABTI_mem_free_thread(ABTI_thread *p_thread)
+static inline void ABTI_mem_free_thread(ABTI_thread *p_thread)
 {
     ABTI_VALGRIND_UNREGISTER_STACK(p_thread->attr.p_stack);
     ABTU_free(p_thread);
 }
 
-static inline
-ABTI_task *ABTI_mem_alloc_task(void)
+static inline ABTI_task *ABTI_mem_alloc_task(void)
 {
     return (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
 }
 
-static inline
-void ABTI_mem_free_task(ABTI_task *p_task)
+static inline void ABTI_mem_free_task(ABTI_task *p_task)
 {
     ABTU_free(p_task);
 }
@@ -455,4 +448,3 @@ void ABTI_mem_free_task(ABTI_task *p_task)
 #endif /* ABT_CONFIG_USE_MEM_POOL */
 
 #endif /* ABTI_MEM_H_INCLUDED */
-

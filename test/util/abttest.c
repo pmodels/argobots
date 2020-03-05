@@ -15,7 +15,7 @@ static int g_num_errs = 0;
 
 /* NOTE: The below NUM_ARG_KINDS should match the number of values in enum
  * ATS_arg in abttest.h. */
-#define NUM_ARG_KINDS   4
+#define NUM_ARG_KINDS 4
 static int g_arg_val[NUM_ARG_KINDS];
 
 void ATS_init(int argc, char **argv, int num_xstreams)
@@ -46,8 +46,7 @@ void ATS_init(int argc, char **argv, int num_xstreams)
             g_verbose = val;
         } else {
             /* Negative value */
-            fprintf(stderr, "WARNING: %s is invalid for ATS_VERBOSE\n",
-                    envval);
+            fprintf(stderr, "WARNING: %s is invalid for ATS_VERBOSE\n", envval);
             fflush(stderr);
         }
     }
@@ -94,7 +93,8 @@ void ATS_error(int err, const char *msg, const char *file, int line)
     size_t len;
     int ret;
 
-    if (err == ABT_SUCCESS) return;
+    if (err == ABT_SUCCESS)
+        return;
     if (err == ABT_ERR_FEATURE_NA) {
         printf("Skipped\n");
         fflush(stdout);
@@ -107,8 +107,7 @@ void ATS_error(int err, const char *msg, const char *file, int line)
     assert(err_str != NULL);
     ret = ABT_error_get_str(err, err_str, NULL);
 
-    fprintf(stderr, "%s (%d): %s (%s:%d)\n",
-            err_str, err, msg, file, line);
+    fprintf(stderr, "%s (%d): %s (%s:%d)\n", err_str, err, msg, file, line);
 
     free(err_str);
 
@@ -119,8 +118,10 @@ void ATS_error(int err, const char *msg, const char *file, int line)
 
 static void ATS_print_help(char *prog)
 {
-    fprintf(stderr, "Usage: %s [-e num_es] [-u num_ult] [-t num_task] "
-                    "[-i iter] [-v verbose_level]\n", prog);
+    fprintf(stderr,
+            "Usage: %s [-e num_es] [-u num_ult] [-t num_task] "
+            "[-i iter] [-v verbose_level]\n",
+            prog);
     fflush(stderr);
 }
 
@@ -129,8 +130,10 @@ void ATS_read_args(int argc, char **argv)
     static int read = 0;
     int i, opt;
 
-    if (read == 0) read = 1;
-    else return;
+    if (read == 0)
+        read = 1;
+    else
+        return;
 
     for (i = 0; i < NUM_ARG_KINDS; i++) {
         g_arg_val[i] = 1;
@@ -181,4 +184,3 @@ void ATS_print_line(FILE *fp, char c, int len)
     fprintf(fp, "\n");
     fflush(fp);
 }
-

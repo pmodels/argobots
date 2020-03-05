@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include "abt.h"
 
-#define NUM_XSTREAMS    4
-#define NUM_THREADS     (NUM_XSTREAMS * 2)
+#define NUM_XSTREAMS 4
+#define NUM_THREADS (NUM_XSTREAMS * 2)
 
 void thread_hello(void *arg)
 {
@@ -20,16 +20,16 @@ void thread_hello(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream xstreams[NUM_XSTREAMS];
-    ABT_sched   scheds[NUM_XSTREAMS];
-    ABT_pool    shared_pool;
-    ABT_thread  threads[NUM_THREADS];
+    ABT_sched scheds[NUM_XSTREAMS];
+    ABT_pool shared_pool;
+    ABT_thread threads[NUM_THREADS];
     int i;
 
     ABT_init(argc, argv);
 
     /* Create a shared pool */
-    ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC,
-                          ABT_TRUE, &shared_pool);
+    ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE,
+                          &shared_pool);
 
     /* Create schedulers */
     for (i = 0; i < NUM_XSTREAMS; i++) {
@@ -65,4 +65,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-

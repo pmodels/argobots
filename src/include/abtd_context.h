@@ -14,15 +14,15 @@
 #endif
 
 typedef struct ABTD_thread_context {
-    void *                 p_ctx;        /* actual context of fcontext, or a
-                                          * pointer to uctx */
-    void (*f_thread)(void *);            /* ULT function */
-    void *                 p_arg;        /* ULT function argument */
-    struct ABTD_thread_context *p_link;  /* pointer to scheduler context */
+    void *p_ctx;                        /* actual context of fcontext, or a
+                                         * pointer to uctx */
+    void (*f_thread)(void *);           /* ULT function */
+    void *p_arg;                        /* ULT function argument */
+    struct ABTD_thread_context *p_link; /* pointer to scheduler context */
 #ifndef ABT_CONFIG_USE_FCONTEXT
-    ucontext_t             uctx;         /* ucontext entity pointed by p_ctx */
-    void (*f_uctx_thread)(void *);       /* root function called by ucontext */
-    void *                 p_uctx_arg;   /* argument for root function */
+    ucontext_t uctx;               /* ucontext entity pointed by p_ctx */
+    void (*f_uctx_thread)(void *); /* root function called by ucontext */
+    void *p_uctx_arg;              /* argument for root function */
 #endif
 } ABTD_thread_context;
 

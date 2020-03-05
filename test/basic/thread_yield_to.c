@@ -9,8 +9,8 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    1
-#define DEFAULT_NUM_THREADS     2
+#define DEFAULT_NUM_XSTREAMS 1
+#define DEFAULT_NUM_THREADS 2
 
 typedef struct thread_arg {
     int id;
@@ -31,7 +31,8 @@ ABT_thread pick_one(ABT_thread *threads, int num_threads, unsigned *seed,
         next = threads[i];
         ret = ABT_thread_equal(next, caller, &is_same);
         ATS_ERROR(ret, "ABT_thread_equal");
-        if (is_same == ABT_TRUE) continue;
+        if (is_same == ABT_TRUE)
+            continue;
 
         if (next != ABT_THREAD_NULL) {
             ret = ABT_thread_get_state(next, &state);
@@ -80,9 +81,11 @@ int main(int argc, char *argv[])
     int ret;
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
-    if (argc > 1) num_xstreams = atoi(argv[1]);
+    if (argc > 1)
+        num_xstreams = atoi(argv[1]);
     assert(num_xstreams >= 0);
-    if (argc > 2) num_threads = atoi(argv[2]);
+    if (argc > 2)
+        num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
 
     ABT_xstream *xstreams;
@@ -115,7 +118,7 @@ int main(int argc, char *argv[])
     ABT_pool *pools;
     pools = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
@@ -126,9 +129,8 @@ int main(int argc, char *argv[])
             args[i][j].id = tid;
             args[i][j].num_threads = num_threads;
             args[i][j].threads = &threads[i][0];
-            ret = ABT_thread_create(pools[i],
-                    thread_func, (void *)&args[i][j], ABT_THREAD_ATTR_NULL,
-                    &threads[i][j]);
+            ret = ABT_thread_create(pools[i], thread_func, (void *)&args[i][j],
+                                    ABT_THREAD_ATTR_NULL, &threads[i][j]);
             ATS_ERROR(ret, "ABT_thread_create");
         }
     }
@@ -146,7 +148,8 @@ int main(int argc, char *argv[])
             ATS_ERROR(ret, "ABT_thread_free");
         }
 
-        if (i == 0) continue;
+        if (i == 0)
+            continue;
 
         ret = ABT_xstream_free(&xstreams[i]);
         ATS_ERROR(ret, "ABT_xstream_free");

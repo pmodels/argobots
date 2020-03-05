@@ -5,7 +5,6 @@
 
 #include "abti.h"
 
-
 /** @defgroup ERROR Error
  * This group is for error classes.
  */
@@ -27,73 +26,72 @@
  */
 int ABT_error_get_str(int err, char *str, size_t *len)
 {
-    static const char *err_str[] = {
-        "ABT_SUCCESS",
-        "ABT_ERR_UNINITIALIZED",
-        "ABT_ERR_MEM",
-        "ABT_ERR_OTHER",
-        "ABT_ERR_INV_XSTREAM",
-        "ABT_ERR_INV_XSTREAM_RANK",
-        "ABT_ERR_INV_XSTREAM_BARRIER",
-        "ABT_ERR_INV_SCHED",
-        "ABT_ERR_INV_SCHED_KIND",
-        "ABT_ERR_INV_SCHED_PREDEF",
-        "ABT_ERR_INV_SCHED_TYPE",
-        "ABT_ERR_INV_SCHED_CONFIG",
-        "ABT_ERR_INV_POOL",
-        "ABT_ERR_INV_POOL_KIND",
-        "ABT_ERR_INV_POOL_ACCESS",
-        "ABT_ERR_INV_UNIT",
-        "ABT_ERR_INV_THREAD",
-        "ABT_ERR_INV_THREAD_ATTR",
-        "ABT_ERR_INV_TASK",
-        "ABT_ERR_INV_KEY",
-        "ABT_ERR_INV_MUTEX",
-        "ABT_ERR_INV_MUTEX_ATTR",
-        "ABT_ERR_INV_COND",
-        "ABT_ERR_INV_RWLOCK",
-        "ABT_ERR_INV_EVENTUAL",
-        "ABT_ERR_INV_FUTURE",
-        "ABT_ERR_INV_BARRIER",
-        "ABT_ERR_INV_TIMER",
-        "ABT_ERR_INV_EVENT",
-        "ABT_ERR_XSTREAM",
-        "ABT_ERR_XSTREAM_STATE",
-        "ABT_ERR_XSTREAM_BARRIER",
-        "ABT_ERR_SCHED",
-        "ABT_ERR_SCHED_CONFIG",
-        "ABT_ERR_POOL",
-        "ABT_ERR_UNIT",
-        "ABT_ERR_THREAD",
-        "ABT_ERR_TASK",
-        "ABT_ERR_KEY",
-        "ABT_ERR_MUTEX",
-        "ABT_ERR_MUTEX_LOCKED",
-        "ABT_ERR_COND",
-        "ABT_ERR_COND_TIMEDOUT",
-        "ABT_ERR_RWLOCK",
-        "ABT_ERR_EVENTUAL",
-        "ABT_ERR_FUTURE",
-        "ABT_ERR_BARRIER",
-        "ABT_ERR_TIMER",
-        "ABT_ERR_EVENT",
-        "ABT_ERR_MIGRATION_TARGET",
-        "ABT_ERR_MIGRATION_NA",
-        "ABT_ERR_MISSING_JOIN",
-        "ABT_ERR_FEATURE_NA"
-    };
+    static const char *err_str[] = { "ABT_SUCCESS",
+                                     "ABT_ERR_UNINITIALIZED",
+                                     "ABT_ERR_MEM",
+                                     "ABT_ERR_OTHER",
+                                     "ABT_ERR_INV_XSTREAM",
+                                     "ABT_ERR_INV_XSTREAM_RANK",
+                                     "ABT_ERR_INV_XSTREAM_BARRIER",
+                                     "ABT_ERR_INV_SCHED",
+                                     "ABT_ERR_INV_SCHED_KIND",
+                                     "ABT_ERR_INV_SCHED_PREDEF",
+                                     "ABT_ERR_INV_SCHED_TYPE",
+                                     "ABT_ERR_INV_SCHED_CONFIG",
+                                     "ABT_ERR_INV_POOL",
+                                     "ABT_ERR_INV_POOL_KIND",
+                                     "ABT_ERR_INV_POOL_ACCESS",
+                                     "ABT_ERR_INV_UNIT",
+                                     "ABT_ERR_INV_THREAD",
+                                     "ABT_ERR_INV_THREAD_ATTR",
+                                     "ABT_ERR_INV_TASK",
+                                     "ABT_ERR_INV_KEY",
+                                     "ABT_ERR_INV_MUTEX",
+                                     "ABT_ERR_INV_MUTEX_ATTR",
+                                     "ABT_ERR_INV_COND",
+                                     "ABT_ERR_INV_RWLOCK",
+                                     "ABT_ERR_INV_EVENTUAL",
+                                     "ABT_ERR_INV_FUTURE",
+                                     "ABT_ERR_INV_BARRIER",
+                                     "ABT_ERR_INV_TIMER",
+                                     "ABT_ERR_INV_EVENT",
+                                     "ABT_ERR_XSTREAM",
+                                     "ABT_ERR_XSTREAM_STATE",
+                                     "ABT_ERR_XSTREAM_BARRIER",
+                                     "ABT_ERR_SCHED",
+                                     "ABT_ERR_SCHED_CONFIG",
+                                     "ABT_ERR_POOL",
+                                     "ABT_ERR_UNIT",
+                                     "ABT_ERR_THREAD",
+                                     "ABT_ERR_TASK",
+                                     "ABT_ERR_KEY",
+                                     "ABT_ERR_MUTEX",
+                                     "ABT_ERR_MUTEX_LOCKED",
+                                     "ABT_ERR_COND",
+                                     "ABT_ERR_COND_TIMEDOUT",
+                                     "ABT_ERR_RWLOCK",
+                                     "ABT_ERR_EVENTUAL",
+                                     "ABT_ERR_FUTURE",
+                                     "ABT_ERR_BARRIER",
+                                     "ABT_ERR_TIMER",
+                                     "ABT_ERR_EVENT",
+                                     "ABT_ERR_MIGRATION_TARGET",
+                                     "ABT_ERR_MIGRATION_NA",
+                                     "ABT_ERR_MISSING_JOIN",
+                                     "ABT_ERR_FEATURE_NA" };
 
     int abt_errno = ABT_SUCCESS;
     ABTI_CHECK_TRUE(err >= ABT_SUCCESS && err <= ABT_ERR_FEATURE_NA,
                     ABT_ERR_OTHER);
-    if (str) ABTU_strcpy(str, err_str[err]);
-    if (len) *len = strlen(err_str[err]);
+    if (str)
+        ABTU_strcpy(str, err_str[err]);
+    if (len)
+        *len = strlen(err_str[err]);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-

@@ -36,7 +36,7 @@ void task_hello(void *arg)
     assert(ret == ABT_SUCCESS);
 
     ATS_printf(1, "TASK %d: running on the %s\n", (int)(size_t)arg,
-                    (flag == ABT_TRUE ? "primary ES" : "secondary ES"));
+               (flag == ABT_TRUE ? "primary ES" : "secondary ES"));
 }
 
 void thread_hello(void *arg)
@@ -82,7 +82,7 @@ void thread_hello(void *arg)
     assert(ret == ABT_SUCCESS);
 
     ATS_printf(1, "ULT %lu running on the %s\n", my_id,
-                    (flag == ABT_TRUE ? "primary ES" : "secondary ES"));
+               (flag == ABT_TRUE ? "primary ES" : "secondary ES"));
 }
 
 void *pthread_hello(void *arg)
@@ -214,4 +214,3 @@ int main(int argc, char *argv[])
     /* Finalize */
     return ATS_finalize(0);
 }
-

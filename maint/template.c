@@ -18,9 +18,9 @@ int ABTI_template(ABTI_thread *p_thread, void *p_arg)
     /* Implementation */
     /* ... */
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     goto fn_exit;
 }

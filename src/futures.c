@@ -5,7 +5,6 @@
 
 #include "abti.h"
 
-
 /** @defgroup FUTURE Future
  * A future, an eventual, or a \a promise, is a mechanism for passing a value
  * between threads, allowing a thread to wait for a value that is set
@@ -103,10 +102,10 @@ int ABT_future_free(ABT_future *future)
 
     *future = ABT_FUTURE_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -178,17 +177,18 @@ int ABT_future_wait(ABT_future future)
 
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
-            while (!ABTD_atomic_load_int32(&ext_signal));
+            while (!ABTD_atomic_load_int32(&ext_signal))
+                ;
             ABTU_free(p_unit);
         }
     } else {
         ABTI_spinlock_release(&p_future->lock);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -213,10 +213,10 @@ int ABT_future_test(ABT_future future, ABT_bool *flag)
 
     *flag = p_future->ready;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -294,10 +294,10 @@ int ABT_future_set(ABT_future future, void *value)
 
     ABTI_spinlock_release(&p_future->lock);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -324,10 +324,10 @@ int ABT_future_reset(ABT_future future)
     p_future->ready = ABT_FALSE;
     ABTI_spinlock_release(&p_future->lock);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

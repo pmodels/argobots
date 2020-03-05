@@ -8,8 +8,8 @@
 #include <time.h>
 #include "abt.h"
 
-#define NUM_XSTREAMS    4
-#define NUM_THREADS     4
+#define NUM_XSTREAMS 4
+#define NUM_THREADS 4
 
 static void create_scheds(int num, ABT_pool *pools, ABT_sched *scheds);
 static int example_pool_get_def(ABT_pool_access access, ABT_pool_def *p_def);
@@ -19,9 +19,9 @@ static void thread_hello(void *arg);
 int main(int argc, char *argv[])
 {
     ABT_xstream xstreams[NUM_XSTREAMS];
-    ABT_sched   scheds[NUM_XSTREAMS];
-    ABT_pool    pools[NUM_XSTREAMS];
-    ABT_thread  threads[NUM_XSTREAMS];
+    ABT_sched scheds[NUM_XSTREAMS];
+    ABT_pool pools[NUM_XSTREAMS];
+    ABT_thread threads[NUM_XSTREAMS];
     ABT_pool_def pool_def;
     int i;
 
@@ -114,7 +114,8 @@ static void sched_run(ABT_sched sched)
             ABT_xstream_run_unit(unit, pools[0]);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
-            target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
+            target =
+                (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
             ABT_pool_pop(pools[target], &unit);
             if (unit != ABT_UNIT_NULL) {
                 ABT_xstream_run_unit(unit, pools[target]);
@@ -124,7 +125,8 @@ static void sched_run(ABT_sched sched)
         if (++work_count >= p_data->event_freq) {
             work_count = 0;
             ABT_sched_has_to_stop(sched, &stop);
-            if (stop == ABT_TRUE) break;
+            if (stop == ABT_TRUE)
+                break;
             ABT_xstream_check_events(sched);
         }
     }
@@ -148,18 +150,14 @@ static void create_scheds(int num, ABT_pool *pools, ABT_sched *scheds)
     ABT_pool *my_pools;
     int i, k;
 
-    ABT_sched_config_var cv_event_freq = {
-        .idx = 0,
-        .type = ABT_SCHED_CONFIG_INT
-    };
+    ABT_sched_config_var cv_event_freq = { .idx = 0,
+                                           .type = ABT_SCHED_CONFIG_INT };
 
-    ABT_sched_def sched_def = {
-        .type = ABT_SCHED_TYPE_ULT,
-        .init = sched_init,
-        .run = sched_run,
-        .free = sched_free,
-        .get_migr_pool = NULL
-    };
+    ABT_sched_def sched_def = { .type = ABT_SCHED_TYPE_ULT,
+                                .init = sched_init,
+                                .run = sched_run,
+                                .free = sched_free,
+                                .get_migr_pool = NULL };
 
     /* Create a scheduler config */
     ABT_sched_config_create(&config, cv_event_freq, 10,
@@ -194,8 +192,8 @@ static void create_threads(void *arg)
     threads = (ABT_thread *)malloc(sizeof(ABT_thread) * NUM_THREADS);
     for (i = 0; i < NUM_THREADS; i++) {
         size_t id = (rank + 1) * 10 + i;
-        ABT_thread_create(pool, thread_hello, (void *)id,
-                          ABT_THREAD_ATTR_NULL, &threads[i]);
+        ABT_thread_create(pool, thread_hello, (void *)id, ABT_THREAD_ATTR_NULL,
+                          &threads[i]);
     }
 
     ABT_xstream_get_rank(xstream, &rank);
@@ -231,8 +229,8 @@ static void thread_hello(void *arg)
     printf("  [U%d:E%d] Goodbye, world!%s\n", tid, cur_rank, msg);
 }
 
-/* FIFO pool implementation 
- * 
+/* FIFO pool implementation
+ *
  * Based on src/pool/fifo.c, but modified to avoid the use of internal data
  * structures.
  */
@@ -245,7 +243,7 @@ struct example_unit {
     ABT_pool pool;
     union {
         ABT_thread thread;
-        ABT_task   task;
+        ABT_task task;
     };
     ABT_unit_type type;
 };
@@ -257,15 +255,15 @@ struct example_pool_data {
     struct example_unit *p_tail;
 };
 
-static int      pool_init(ABT_pool pool, ABT_pool_config config);
-static int      pool_free(ABT_pool pool);
-static size_t   pool_get_size(ABT_pool pool);
-static void     pool_push_shared(ABT_pool pool, ABT_unit unit);
-static void     pool_push_private(ABT_pool pool, ABT_unit unit);
+static int pool_init(ABT_pool pool, ABT_pool_config config);
+static int pool_free(ABT_pool pool);
+static size_t pool_get_size(ABT_pool pool);
+static void pool_push_shared(ABT_pool pool, ABT_unit unit);
+static void pool_push_private(ABT_pool pool, ABT_unit unit);
 static ABT_unit pool_pop_shared(ABT_pool pool);
 static ABT_unit pool_pop_private(ABT_pool pool);
-static int      pool_remove_shared(ABT_pool pool, ABT_unit unit);
-static int      pool_remove_private(ABT_pool pool, ABT_unit unit);
+static int pool_remove_shared(ABT_pool pool, ABT_unit unit);
+static int pool_remove_private(ABT_pool pool, ABT_unit unit);
 
 typedef struct example_unit unit_t;
 static ABT_unit_type unit_get_type(ABT_unit unit);
@@ -283,7 +281,6 @@ static inline data_t *pool_get_data_ptr(void *p_data)
     return (data_t *)p_data;
 }
 
-
 /* Obtain the FIFO pool definition according to the access type */
 static int example_pool_get_def(ABT_pool_access access, ABT_pool_def *p_def)
 {
@@ -293,8 +290,8 @@ static int example_pool_get_def(ABT_pool_access access, ABT_pool_def *p_def)
     /* FIXME: need better implementation, e.g., lock-free one */
     switch (access) {
         case ABT_POOL_ACCESS_PRIV:
-            p_def->p_push   = pool_push_private;
-            p_def->p_pop    = pool_pop_private;
+            p_def->p_push = pool_push_private;
+            p_def->p_pop = pool_pop_private;
             p_def->p_remove = pool_remove_private;
             break;
 
@@ -302,8 +299,8 @@ static int example_pool_get_def(ABT_pool_access access, ABT_pool_def *p_def)
         case ABT_POOL_ACCESS_MPSC:
         case ABT_POOL_ACCESS_SPMC:
         case ABT_POOL_ACCESS_MPMC:
-            p_def->p_push   = pool_push_shared;
-            p_def->p_pop    = pool_pop_shared;
+            p_def->p_push = pool_push_shared;
+            p_def->p_pop = pool_pop_shared;
             p_def->p_remove = pool_remove_shared;
             break;
 
@@ -312,21 +309,20 @@ static int example_pool_get_def(ABT_pool_access access, ABT_pool_def *p_def)
     }
 
     /* Common definitions regardless of the access type */
-    p_def->access               = access;
-    p_def->p_init               = pool_init;
-    p_def->p_free               = pool_free;
-    p_def->p_get_size           = pool_get_size;
-    p_def->u_get_type           = unit_get_type;
-    p_def->u_get_thread         = unit_get_thread;
-    p_def->u_get_task           = unit_get_task;
-    p_def->u_is_in_pool         = unit_is_in_pool;
+    p_def->access = access;
+    p_def->p_init = pool_init;
+    p_def->p_free = pool_free;
+    p_def->p_get_size = pool_get_size;
+    p_def->u_get_type = unit_get_type;
+    p_def->u_get_thread = unit_get_thread;
+    p_def->u_get_task = unit_get_task;
+    p_def->u_is_in_pool = unit_is_in_pool;
     p_def->u_create_from_thread = unit_create_from_thread;
-    p_def->u_create_from_task   = unit_create_from_task;
-    p_def->u_free               = unit_free;
+    p_def->u_create_from_task = unit_create_from_task;
+    p_def->u_free = unit_free;
 
     return abt_errno;
 }
-
 
 /* Pool functions */
 
@@ -336,7 +332,8 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
     ABT_pool_access access;
 
     data_t *p_data = (data_t *)malloc(sizeof(data_t));
-    if (!p_data) return ABT_ERR_MEM;
+    if (!p_data)
+        return ABT_ERR_MEM;
 
     ABT_pool_get_access(pool, &access);
 
@@ -497,8 +494,10 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = (unit_t *)unit;
 
-    if (p_data->num_units == 0) return ABT_ERR_POOL;
-    if (p_unit->pool == ABT_POOL_NULL) return ABT_ERR_POOL;
+    if (p_data->num_units == 0)
+        return ABT_ERR_POOL;
+    if (p_unit->pool == ABT_POOL_NULL)
+        return ABT_ERR_POOL;
 
     if (p_unit->pool != pool) {
         return ABT_ERR_INV_POOL;
@@ -535,8 +534,10 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
     data_t *p_data = pool_get_data_ptr(data);
     unit_t *p_unit = (unit_t *)unit;
 
-    if (p_data->num_units == 0) return ABT_ERR_POOL;
-    if (p_unit->pool == ABT_POOL_NULL) return ABT_ERR_POOL;
+    if (p_data->num_units == 0)
+        return ABT_ERR_POOL;
+    if (p_unit->pool == ABT_POOL_NULL)
+        return ABT_ERR_POOL;
 
     if (p_unit->pool != pool) {
         return ABT_ERR_INV_POOL;
@@ -563,13 +564,12 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
     return ABT_SUCCESS;
 }
 
-
 /* Unit functions */
 
 static ABT_unit_type unit_get_type(ABT_unit unit)
 {
-   unit_t *p_unit = (unit_t *)unit;
-   return p_unit->type;
+    unit_t *p_unit = (unit_t *)unit;
+    return p_unit->type;
 }
 
 static ABT_thread unit_get_thread(ABT_unit unit)
@@ -605,13 +605,14 @@ static ABT_bool unit_is_in_pool(ABT_unit unit)
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
     unit_t *p_unit = malloc(sizeof(unit_t));
-    if (!p_unit) return ABT_UNIT_NULL;
+    if (!p_unit)
+        return ABT_UNIT_NULL;
 
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
-    p_unit->pool   = ABT_POOL_NULL;
+    p_unit->pool = ABT_POOL_NULL;
     p_unit->thread = thread;
-    p_unit->type   = ABT_UNIT_TYPE_THREAD;
+    p_unit->type = ABT_UNIT_TYPE_THREAD;
 
     return (ABT_unit)p_unit;
 }
@@ -619,13 +620,14 @@ static ABT_unit unit_create_from_thread(ABT_thread thread)
 static ABT_unit unit_create_from_task(ABT_task task)
 {
     unit_t *p_unit = malloc(sizeof(unit_t));
-    if (!p_unit) return ABT_UNIT_NULL;
+    if (!p_unit)
+        return ABT_UNIT_NULL;
 
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
-    p_unit->pool   = ABT_POOL_NULL;
-    p_unit->task   = task;
-    p_unit->type   = ABT_UNIT_TYPE_TASK;
+    p_unit->pool = ABT_POOL_NULL;
+    p_unit->task = task;
+    p_unit->type = ABT_UNIT_TYPE_TASK;
 
     return (ABT_unit)p_unit;
 }
@@ -635,4 +637,3 @@ static void unit_free(ABT_unit *unit)
     free(*unit);
     *unit = ABT_UNIT_NULL;
 }
-

@@ -9,9 +9,9 @@
  * This group is for the basic scheduler.
  */
 
-static int  sched_init(ABT_sched sched, ABT_sched_config config);
+static int sched_init(ABT_sched sched, ABT_sched_config config);
 static void sched_run(ABT_sched sched);
-static int  sched_free(ABT_sched);
+static int sched_free(ABT_sched);
 static void sched_sort_pools(int num_pools, ABT_pool *pools);
 
 static ABT_sched_def sched_basic_def = {
@@ -31,10 +31,8 @@ typedef struct {
 #endif
 } sched_data;
 
-ABT_sched_config_var ABT_sched_basic_freq = {
-    .idx = 0,
-    .type = ABT_SCHED_CONFIG_INT
-};
+ABT_sched_config_var ABT_sched_basic_freq = { .idx = 0,
+                                              .type = ABT_SCHED_CONFIG_INT };
 
 ABT_sched_def *ABTI_sched_get_basic_def(void)
 {
@@ -80,10 +78,10 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     p_sched->data = p_data;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_WITH_CODE("basic: sched_init", abt_errno);
     goto fn_exit;
 }
@@ -105,8 +103,8 @@ static void sched_run(ABT_sched sched)
 
     p_data = sched_data_get_ptr(p_sched->data);
     event_freq = p_data->event_freq;
-    num_pools  = p_data->num_pools;
-    pools      = p_data->pools;
+    num_pools = p_data->num_pools;
+    pools = p_data->pools;
 
     while (1) {
         for (i = 0; i < num_pools; i++) {
@@ -120,8 +118,8 @@ static void sched_run(ABT_sched sched)
         /* if we attempted event_freq pops, check for events */
         if (pop_count >= event_freq) {
             ABTI_xstream_check_events(p_xstream, sched);
-            if (ABTI_sched_has_to_stop(&p_local, p_sched, p_xstream)
-                == ABT_TRUE)
+            if (ABTI_sched_has_to_stop(&p_local, p_sched, p_xstream) ==
+                ABT_TRUE)
                 break;
             SCHED_SLEEP(unit != ABT_UNIT_NULL, p_data->sleep_time);
             pop_count = 0;
@@ -147,12 +145,20 @@ static int pool_get_access_num(ABT_pool *p_pool)
 
     access = ABTI_pool_get_ptr(*p_pool)->access;
     switch (access) {
-        case ABT_POOL_ACCESS_PRIV: num = 0; break;
+        case ABT_POOL_ACCESS_PRIV:
+            num = 0;
+            break;
         case ABT_POOL_ACCESS_SPSC:
-        case ABT_POOL_ACCESS_MPSC: num = 1; break;
+        case ABT_POOL_ACCESS_MPSC:
+            num = 1;
+            break;
         case ABT_POOL_ACCESS_SPMC:
-        case ABT_POOL_ACCESS_MPMC: num = 2; break;
-        default: ABTI_ASSERT(0); break;
+        case ABT_POOL_ACCESS_MPMC:
+            num = 2;
+            break;
+        default:
+            ABTI_ASSERT(0);
+            break;
     }
 
     return num;
@@ -178,4 +184,3 @@ static void sched_sort_pools(int num_pools, ABT_pool *pools)
 {
     qsort(pools, num_pools, sizeof(ABT_pool), sched_cmp_pools);
 }
-

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "abt.h"
 
-#define NUM_XSTREAMS    4
+#define NUM_XSTREAMS 4
 
 void thread_hello(void *arg)
 {
@@ -19,9 +19,9 @@ void thread_hello(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream xstreams[NUM_XSTREAMS];
-    ABT_sched   scheds[NUM_XSTREAMS];
-    int         num_pools[NUM_XSTREAMS];
-    ABT_pool   *pools[NUM_XSTREAMS];
+    ABT_sched scheds[NUM_XSTREAMS];
+    int num_pools[NUM_XSTREAMS];
+    ABT_pool *pools[NUM_XSTREAMS];
     int i, k;
 
     ABT_init(argc, argv);

@@ -9,8 +9,8 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_THREADS     10
-#define DEFAULT_NUM_ITER        10
+#define DEFAULT_NUM_THREADS 10
+#define DEFAULT_NUM_ITER 10
 
 static int num_iter = DEFAULT_NUM_ITER;
 
@@ -47,10 +47,9 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc > 2) {
         num_threads = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_iter    = ATS_get_arg_val(ATS_ARG_N_ITER);
+        num_iter = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
     ATS_init(argc, argv, num_threads);
-
 
     threads = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
     assert(threads);

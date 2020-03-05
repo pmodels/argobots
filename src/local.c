@@ -5,7 +5,6 @@
 
 #include "abti.h"
 
-
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
@@ -25,13 +24,11 @@ static void *ABTI_local_get_local_ptr_internal(void)
     return (void *)&lp_ABTI_local;
 }
 
-ABTI_local_func gp_ABTI_local_func = {
-    {0},
-    ABTI_local_get_local_internal,
-    ABTI_local_set_local_internal,
-    ABTI_local_get_local_ptr_internal,
-    {0}
-};
+ABTI_local_func gp_ABTI_local_func = { { 0 },
+                                       ABTI_local_get_local_internal,
+                                       ABTI_local_set_local_internal,
+                                       ABTI_local_get_local_ptr_internal,
+                                       { 0 } };
 /* ES Local Data */
 ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local = NULL;
 
@@ -51,10 +48,10 @@ int ABTI_local_init(ABTI_local **pp_local)
     ABTI_LOG_INIT();
     *pp_local = p_local;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -72,11 +69,10 @@ int ABTI_local_finalize(ABTI_local **pp_local)
 
     ABTI_LOG_FINALIZE();
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-

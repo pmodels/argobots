@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include "abt.h"
 
-#define NUM_XSTREAMS    2
-#define NUM_TASKS       10
+#define NUM_XSTREAMS 2
+#define NUM_TASKS 10
 
 void task_hello(void *arg)
 {
@@ -47,8 +47,8 @@ void add_sched(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream xstreams[NUM_XSTREAMS];
-    ABT_pool    pools[NUM_XSTREAMS];
-    ABT_thread  threads[NUM_XSTREAMS];
+    ABT_pool pools[NUM_XSTREAMS];
+    ABT_thread threads[NUM_XSTREAMS];
     int i;
 
     ABT_init(argc, argv);
