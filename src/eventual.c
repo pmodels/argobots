@@ -5,7 +5,6 @@
 
 #include "abti.h"
 
-
 /** @defgroup EVENTUAL Eventual
  * In Argobots, an \a eventual corresponds to the traditional behavior of
  * the future concept (refer to \ref FUTURE "Future"). A ULT creates an
@@ -71,15 +70,16 @@ int ABT_eventual_free(ABT_eventual *eventual)
      * freed here. */
     ABTI_spinlock_acquire(&p_eventual->lock);
 
-    if (p_eventual->value) ABTU_free(p_eventual->value);
+    if (p_eventual->value)
+        ABTU_free(p_eventual->value);
     ABTU_free(p_eventual);
 
     *eventual = ABT_EVENTUAL_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -153,18 +153,20 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
-            while (!ABTD_atomic_load_int32(&ext_signal));
+            while (!ABTD_atomic_load_int32(&ext_signal))
+                ;
             ABTU_free(p_unit);
         }
     } else {
         ABTI_spinlock_release(&p_eventual->lock);
     }
-    if (value) *value = p_eventual->value;
+    if (value)
+        *value = p_eventual->value;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -193,21 +195,21 @@ int ABT_eventual_test(ABT_eventual eventual, void **value, int *is_ready)
 
     ABTI_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready != ABT_FALSE) {
-        if (value) *value = p_eventual->value;
+        if (value)
+            *value = p_eventual->value;
         flag = ABT_TRUE;
     }
     ABTI_spinlock_release(&p_eventual->lock);
 
-   *is_ready = flag;
+    *is_ready = flag;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
 
 /**
  * @ingroup EVENTUAL
@@ -237,7 +239,8 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_spinlock_acquire(&p_eventual->lock);
 
     p_eventual->ready = ABT_TRUE;
-    if (p_eventual->value) memcpy(p_eventual->value, value, nbytes);
+    if (p_eventual->value)
+        memcpy(p_eventual->value, value, nbytes);
 
     if (p_eventual->p_head == NULL) {
         ABTI_spinlock_release(&p_eventual->lock);
@@ -275,10 +278,10 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 
     ABTI_spinlock_release(&p_eventual->lock);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -305,11 +308,10 @@ int ABT_eventual_reset(ABT_eventual eventual)
     p_eventual->ready = ABT_FALSE;
     ABTI_spinlock_release(&p_eventual->lock);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-

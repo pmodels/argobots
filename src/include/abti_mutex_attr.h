@@ -8,8 +8,7 @@
 
 /* Inlined functions for mutex attributes */
 
-static inline
-ABTI_mutex_attr *ABTI_mutex_attr_get_ptr(ABT_mutex_attr attr)
+static inline ABTI_mutex_attr *ABTI_mutex_attr_get_ptr(ABT_mutex_attr attr)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_mutex_attr *p_attr;
@@ -24,8 +23,7 @@ ABTI_mutex_attr *ABTI_mutex_attr_get_ptr(ABT_mutex_attr attr)
 #endif
 }
 
-static inline
-ABT_mutex_attr ABTI_mutex_attr_get_handle(ABTI_mutex_attr *p_attr)
+static inline ABT_mutex_attr ABTI_mutex_attr_get_handle(ABTI_mutex_attr *p_attr)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_mutex_attr h_attr;
@@ -40,8 +38,7 @@ ABT_mutex_attr ABTI_mutex_attr_get_handle(ABTI_mutex_attr *p_attr)
 #endif
 }
 
-#define ABTI_mutex_attr_copy(p_dest,p_src)              \
+#define ABTI_mutex_attr_copy(p_dest, p_src)                                    \
     memcpy(p_dest, p_src, sizeof(ABTI_mutex_attr))
 
 #endif /* ABTI_MUTEX_ATTR_H_INCLUDED */
-

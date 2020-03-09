@@ -9,8 +9,8 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    4
-#define DEFAULT_NUM_THREADS     8
+#define DEFAULT_NUM_XSTREAMS 4
+#define DEFAULT_NUM_THREADS 8
 
 int g_counter = 0;
 int g_stop = 0;
@@ -144,8 +144,8 @@ int main(int argc, char *argv[])
         for (j = 0; j < num_threads; j++) {
             int tid = i * num_threads + j + 1;
             args[i][j].id = tid;
-            args[i][j].issue_signal = (i == ((num_xstreams - 1) / 2) + 1)
-                                      && (j == num_threads / 2);
+            args[i][j].issue_signal =
+                (i == ((num_xstreams - 1) / 2) + 1) && (j == num_threads / 2);
             args[i][j].stop = (j == num_threads / 2);
             args[i][j].num_xstreams = num_xstreams;
             args[i][j].dummy_ptr = NULL;
@@ -162,8 +162,8 @@ int main(int argc, char *argv[])
                 ret = ABT_thread_attr_set_stacksize(attr, 32768);
                 ATS_ERROR(ret, "ABT_thread_attr_set_stacksize");
                 ret = ABT_thread_create(pools[i], thread_func,
-                                        (void *)&args[i][j],
-                                        attr, &threads[i][j]);
+                                        (void *)&args[i][j], attr,
+                                        &threads[i][j]);
                 ATS_ERROR(ret, "ABT_thread_create");
                 ret = ABT_thread_attr_free(&attr);
                 ATS_ERROR(ret, "ABT_thread_attr_free");
@@ -177,8 +177,8 @@ int main(int argc, char *argv[])
                                                 stacksize);
                 ATS_ERROR(ret, "ABT_thread_attr_set_stack");
                 ret = ABT_thread_create(pools[i], thread_func,
-                                        (void *)&args[i][j],
-                                        attr, &threads[i][j]);
+                                        (void *)&args[i][j], attr,
+                                        &threads[i][j]);
                 ATS_ERROR(ret, "ABT_thread_create");
                 ret = ABT_thread_attr_free(&attr);
                 ATS_ERROR(ret, "ABT_thread_attr_free");

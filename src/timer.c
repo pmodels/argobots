@@ -11,7 +11,6 @@ int ABTI_timer_create(ABTI_timer **pp_newtimer);
  * This group is for Timer.
  */
 
-
 /**
  * @ingroup TIMER
  * @brief   Get elapsed wall clock time.
@@ -50,10 +49,10 @@ int ABT_timer_create(ABT_timer *newtimer)
 
     *newtimer = ABTI_timer_get_handle(p_newtimer);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     *newtimer = ABT_TIMER_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
@@ -89,10 +88,10 @@ int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer)
 
     *newtimer = ABTI_timer_get_handle(p_newtimer);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -124,10 +123,10 @@ int ABT_timer_free(ABT_timer *timer)
     free(p_timer);
     *timer = ABT_TIMER_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -152,10 +151,10 @@ int ABT_timer_start(ABT_timer timer)
 
     ABTD_time_get(&p_timer->start);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -180,10 +179,10 @@ int ABT_timer_stop(ABT_timer timer)
 
     ABTD_time_get(&p_timer->end);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -211,14 +210,14 @@ int ABT_timer_read(ABT_timer timer, double *secs)
     double start, end;
 
     start = ABTD_time_read_sec(&p_timer->start);
-    end   = ABTD_time_read_sec(&p_timer->end);
+    end = ABTD_time_read_sec(&p_timer->end);
 
     *secs = end - start;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -230,7 +229,7 @@ int ABT_timer_read(ABT_timer timer, double *secs)
  * \c ABT_timer_stop_and_read() stops the timer and returns the time difference
  * in seconds between the start time of \c timer (when \c ABT_timer_start() was
  * called) and the end time of \c timer (when this routine was called) through
-  *\c secs.
+ *\c secs.
  * The resolution of elapsed time is at least a unit of microsecond.
  *
  * @param[in]  timer  handle to the timer
@@ -248,14 +247,14 @@ int ABT_timer_stop_and_read(ABT_timer timer, double *secs)
 
     ABTD_time_get(&p_timer->end);
     start = ABTD_time_read_sec(&p_timer->start);
-    end   = ABTD_time_read_sec(&p_timer->end);
+    end = ABTD_time_read_sec(&p_timer->end);
 
     *secs = end - start;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -285,14 +284,14 @@ int ABT_timer_stop_and_add(ABT_timer timer, double *secs)
 
     ABTD_time_get(&p_timer->end);
     start = ABTD_time_read_sec(&p_timer->start);
-    end   = ABTD_time_read_sec(&p_timer->end);
+    end = ABTD_time_read_sec(&p_timer->end);
 
     *secs += (end - start);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -333,10 +332,10 @@ int ABT_timer_get_overhead(double *overhead)
 
     *overhead = sum / iter;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -358,10 +357,10 @@ int ABTI_timer_create(ABTI_timer **pp_newtimer)
 
     *pp_newtimer = p_newtimer;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

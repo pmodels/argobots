@@ -91,10 +91,10 @@ int ABT_key_free(ABT_key *key)
     /* Return value */
     *key = ABT_KEY_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -147,10 +147,10 @@ int ABT_key_set(ABT_key key, void *value)
     /* Save the value in the key-value table */
     ABTI_ktable_set(p_ktable, p_key, value);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -206,10 +206,10 @@ int ABT_key_get(ABT_key key, void **value)
 
     *value = keyval;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -221,7 +221,8 @@ ABTI_ktable *ABTI_ktable_alloc(int size)
     p_ktable = (ABTI_ktable *)ABTU_malloc(sizeof(ABTI_ktable));
     p_ktable->size = size;
     p_ktable->num = 0;
-    p_ktable->p_elems = (ABTI_ktelem **)ABTU_calloc(size, sizeof(ABTI_ktelem *));
+    p_ktable->p_elems =
+        (ABTI_ktelem **)ABTU_calloc(size, sizeof(ABTI_ktelem *));
 
     return p_ktable;
 }
@@ -331,4 +332,3 @@ void ABTI_ktable_delete(ABTI_ktable *p_ktable, ABTI_key *p_key)
         p_elem = p_elem->p_next;
     }
 }
-

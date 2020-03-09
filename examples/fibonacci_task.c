@@ -21,8 +21,8 @@
 #include <string.h>
 #include <abt.h>
 
-#define N               10
-#define NUM_XSTREAMS    4
+#define N 10
+#define NUM_XSTREAMS 4
 
 /* global variables */
 ABT_pool g_pool = ABT_POOL_NULL;
@@ -110,7 +110,8 @@ void aggregate_fibonacci(void *arguments)
         ABT_mutex_lock(parent->mutex);
         parent->result += result;
         flag = parent->flag;
-        if (!flag) parent->flag = 1;
+        if (!flag)
+            parent->flag = 1;
         ABT_mutex_unlock(parent->mutex);
         if (flag) {
             /* creating an aggregate task */
@@ -162,7 +163,8 @@ int verify(int n)
     int i;
     int old[2], val;
 
-    if (n <= 2) return 1;
+    if (n <= 2)
+        return 1;
 
     old[0] = old[1] = 1;
     for (i = 3; i <= n; i++) {
@@ -197,8 +199,8 @@ int main(int argc, char *argv[])
     /* ES creation */
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
     ABT_xstream_self(&xstreams[0]);
-    ABT_xstream_set_main_sched_basic(xstreams[0], ABT_SCHED_DEFAULT,
-                                     1, &g_pool);
+    ABT_xstream_set_main_sched_basic(xstreams[0], ABT_SCHED_DEFAULT, 1,
+                                     &g_pool);
     for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 1, &g_pool,
                                  ABT_SCHED_CONFIG_NULL, &xstreams[i]);

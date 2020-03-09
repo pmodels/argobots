@@ -5,7 +5,6 @@
 
 #include "abti.h"
 
-
 /** @defgroup BARRIER Barrier
  * This group is for Barrier.
  */
@@ -82,10 +81,10 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
             (ABT_unit_type *)ABTU_malloc(num_waiters * sizeof(ABT_unit_type));
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_barrier_reinit", abt_errno);
     goto fn_exit;
 }
@@ -123,10 +122,10 @@ int ABT_barrier_free(ABT_barrier *barrier)
     /* Return value */
     *barrier = ABT_BARRIER_NULL;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_barrier_free", abt_errno);
     goto fn_exit;
 }
@@ -191,7 +190,8 @@ int ABT_barrier_wait(ABT_barrier barrier)
         } else {
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
-            while (!ABTD_atomic_load_int32(&ext_signal));
+            while (!ABTD_atomic_load_int32(&ext_signal))
+                ;
         }
     } else {
         /* Signal all the waiting ULTs */
@@ -215,10 +215,10 @@ int ABT_barrier_wait(ABT_barrier barrier)
         ABTI_spinlock_release(&p_barrier->lock);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -244,11 +244,10 @@ int ABT_barrier_get_num_waiters(ABT_barrier barrier, uint32_t *num_waiters)
 
     *num_waiters = p_barrier->num_waiters;
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_WITH_CODE("ABT_barrier_get_num_waiters", abt_errno);
     goto fn_exit;
 }
-

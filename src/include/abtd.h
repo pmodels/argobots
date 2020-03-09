@@ -28,15 +28,15 @@ typedef struct ABTD_xstream_context {
     pthread_mutex_t state_lock;
     pthread_cond_t state_cond;
 } ABTD_xstream_context;
-typedef pthread_mutex_t     ABTD_xstream_mutex;
+typedef pthread_mutex_t ABTD_xstream_mutex;
 #ifdef HAVE_PTHREAD_BARRIER_INIT
-typedef pthread_barrier_t   ABTD_xstream_barrier;
+typedef pthread_barrier_t ABTD_xstream_barrier;
 #else
-typedef void *              ABTD_xstream_barrier;
+typedef void *ABTD_xstream_barrier;
 #endif
 
 /* ES Storage Qualifier */
-#define ABTD_XSTREAM_LOCAL  __thread
+#define ABTD_XSTREAM_LOCAL __thread
 
 /* Environment */
 void ABTD_env_init(ABTI_global *p_global);
@@ -79,8 +79,8 @@ typedef struct timeval ABTD_time;
 
 #endif
 
-void   ABTD_time_init(void);
-int    ABTD_time_get(ABTD_time *p_time);
+void ABTD_time_init(void);
+int ABTD_time_get(ABTD_time *p_time);
 double ABTD_time_read_sec(ABTD_time *p_time);
 
 #endif /* ABTD_H_INCLUDED */

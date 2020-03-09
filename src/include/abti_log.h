@@ -36,20 +36,19 @@ static inline ABTI_sched *ABTI_log_get_sched(void)
     return lp_ABTI_log->p_sched;
 }
 
-#define ABTI_LOG_INIT()             ABTI_log_init()
-#define ABTI_LOG_FINALIZE()         ABTI_log_finalize()
-#define ABTI_LOG_SET_SCHED(s)       ABTI_log_set_sched(s)
-#define ABTI_LOG_GET_SCHED(ret)     ret = ABTI_log_get_sched()
-#define LOG_EVENT(fmt,...)          ABTI_log_event(stderr,fmt,__VA_ARGS__)
-#define LOG_DEBUG(fmt,...)          \
-    ABTI_log_debug(stderr,__FILE__,__LINE__,fmt,__VA_ARGS__)
+#define ABTI_LOG_INIT() ABTI_log_init()
+#define ABTI_LOG_FINALIZE() ABTI_log_finalize()
+#define ABTI_LOG_SET_SCHED(s) ABTI_log_set_sched(s)
+#define ABTI_LOG_GET_SCHED(ret) ret = ABTI_log_get_sched()
+#define LOG_EVENT(fmt, ...) ABTI_log_event(stderr, fmt, __VA_ARGS__)
+#define LOG_DEBUG(fmt, ...)                                                    \
+    ABTI_log_debug(stderr, __FILE__, __LINE__, fmt, __VA_ARGS__)
 
-#define LOG_EVENT_POOL_PUSH(p_pool, unit, produer_id)    \
+#define LOG_EVENT_POOL_PUSH(p_pool, unit, produer_id)                          \
     ABTI_log_pool_push(p_pool, unit, produer_id)
-#define LOG_EVENT_POOL_REMOVE(p_pool, unit, consumer_id) \
+#define LOG_EVENT_POOL_REMOVE(p_pool, unit, consumer_id)                       \
     ABTI_log_pool_remove(p_pool, unit, consumer_id)
-#define LOG_EVENT_POOL_POP(p_pool, unit) \
-    ABTI_log_pool_pop(p_pool, unit)
+#define LOG_EVENT_POOL_POP(p_pool, unit) ABTI_log_pool_pop(p_pool, unit)
 
 #else
 
@@ -58,8 +57,8 @@ static inline ABTI_sched *ABTI_log_get_sched(void)
 #define ABTI_LOG_SET_SCHED(s)
 #define ABTI_LOG_GET_SCHED(ret)
 
-#define LOG_EVENT(fmt,...)
-#define LOG_DEBUG(fmt,...)
+#define LOG_EVENT(fmt, ...)
+#define LOG_DEBUG(fmt, ...)
 
 #define LOG_EVENT_POOL_PUSH(p_pool, unit, produer_id)
 #define LOG_EVENT_POOL_REMOVE(p_pool, unit, consumer_id)

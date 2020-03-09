@@ -8,9 +8,9 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    4
-#define DEFAULT_NUM_THREADS     4
-#define DEFAULT_NUM_ITER        10
+#define DEFAULT_NUM_XSTREAMS 4
+#define DEFAULT_NUM_THREADS 4
+#define DEFAULT_NUM_ITER 10
 
 static ABT_pool *pools;
 static int num_xstreams;
@@ -102,12 +102,12 @@ int main(int argc, char *argv[])
     ATS_read_args(argc, argv);
     if (argc < 2) {
         num_xstreams = DEFAULT_NUM_XSTREAMS;
-        num_threads  = DEFAULT_NUM_THREADS;
-        num_iter     = DEFAULT_NUM_ITER;
+        num_threads = DEFAULT_NUM_THREADS;
+        num_iter = DEFAULT_NUM_ITER;
     } else {
         num_xstreams = ATS_get_arg_val(ATS_ARG_N_ES);
-        num_threads  = ATS_get_arg_val(ATS_ARG_N_ULT);
-        num_iter     = ATS_get_arg_val(ATS_ARG_N_ITER);
+        num_threads = ATS_get_arg_val(ATS_ARG_N_ULT);
+        num_iter = ATS_get_arg_val(ATS_ARG_N_ITER);
     }
     ATS_init(argc, argv, num_xstreams);
 
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    for (i = 0; i< num_xstreams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         free(threads[i]);
         free(values[i]);
     }
@@ -196,4 +196,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

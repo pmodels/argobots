@@ -12,10 +12,9 @@
 #include <sys/cpuset.h>
 #include <pthread_np.h>
 
-typedef cpuset_t  cpu_set_t;
+typedef cpuset_t cpu_set_t;
 
-static inline
-int ABTD_CPU_COUNT(cpu_set_t *p_cpuset)
+static inline int ABTD_CPU_COUNT(cpu_set_t *p_cpuset)
 {
     int i, num_cpus = 0;
     for (i = 0; i < CPU_SETSIZE; i++) {
@@ -29,7 +28,7 @@ int ABTD_CPU_COUNT(cpu_set_t *p_cpuset)
 #else
 #define _GNU_SOURCE
 #include <sched.h>
-#define ABTD_CPU_COUNT  CPU_COUNT
+#define ABTD_CPU_COUNT CPU_COUNT
 #endif
 
 enum {
@@ -49,8 +48,9 @@ static inline cpu_set_t ABTD_affinity_get_cpuset_for_rank(int rank)
         int num_threads_per_socket = num_cores / 2;
         int rem = rank % 2;
         int socket_id = rank / num_threads_per_socket;
-        int target = (rank - num_threads_per_socket * socket_id - rem + socket_id)
-                   + num_threads_per_socket * rem;
+        int target =
+            (rank - num_threads_per_socket * socket_id - rem + socket_id) +
+            num_threads_per_socket * rem;
         return g_cpusets[target % num_cores];
 
     } else if (g_affinity_type == ABTI_ES_AFFINITY_KNC) {
@@ -109,7 +109,8 @@ void ABTD_affinity_init(void)
 
     /* affinity type */
     char *env = getenv("ABT_AFFINITY_TYPE");
-    if (env == NULL) env = getenv("ABT_ENV_AFFINITY_TYPE");
+    if (env == NULL)
+        env = getenv("ABT_ENV_AFFINITY_TYPE");
     if (env != NULL) {
         if (strcmp(env, "chameleon") == 0) {
             g_affinity_type = ABTI_ES_AFFINITY_CHAMELEON;
@@ -145,10 +146,10 @@ int ABTD_affinity_set(ABTD_xstream_context *p_ctx, int rank)
         goto fn_fail;
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
@@ -174,10 +175,10 @@ int ABTD_affinity_set_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
                                &cpuset);
     ABTI_CHECK_TRUE(!i, ABT_ERR_OTHER);
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
@@ -215,14 +216,13 @@ int ABTD_affinity_get_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
         *p_num_cpus = ABTD_CPU_COUNT(&cpuset);
     }
 
-  fn_exit:
+fn_exit:
     return abt_errno;
 
-  fn_fail:
+fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
     return ABT_ERR_FEATURE_NA;
 #endif
 }
-

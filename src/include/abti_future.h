@@ -8,8 +8,7 @@
 
 /* Inlined functions for Future */
 
-static inline
-ABTI_future *ABTI_future_get_ptr(ABT_future future)
+static inline ABTI_future *ABTI_future_get_ptr(ABT_future future)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_future *p_future;
@@ -24,8 +23,7 @@ ABTI_future *ABTI_future_get_ptr(ABT_future future)
 #endif
 }
 
-static inline
-ABT_future ABTI_future_get_handle(ABTI_future *p_future)
+static inline ABT_future ABTI_future_get_handle(ABTI_future *p_future)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABT_future h_future;
@@ -41,4 +39,3 @@ ABT_future ABTI_future_get_handle(ABTI_future *p_future)
 }
 
 #endif /* ABTI_FUTURE_H_INCLUDED */
-

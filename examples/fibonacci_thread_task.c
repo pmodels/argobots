@@ -13,8 +13,8 @@
 #include <string.h>
 #include <abt.h>
 
-#define N               10
-#define NUM_XSTREAMS    4
+#define N 10
+#define NUM_XSTREAMS 4
 
 /* global variables */
 ABT_pool g_pool = ABT_POOL_NULL;
@@ -95,7 +95,8 @@ void fibonacci_task(void *arguments)
         while (flag && parent != NULL) {
             ABT_mutex_lock(parent->mutex);
             parent->result += result;
-            if (result == parent->result) flag = 0;
+            if (result == parent->result)
+                flag = 0;
             ABT_mutex_unlock(parent->mutex);
             result = parent->result;
             temp = parent->parent;
@@ -135,7 +136,8 @@ int verify(int n)
     int i;
     int old[2], val;
 
-    if (n <= 2) return 1;
+    if (n <= 2)
+        return 1;
 
     old[0] = old[1] = 1;
     for (i = 3; i <= n; i++) {
@@ -180,8 +182,8 @@ int main(int argc, char *argv[])
     /* ES creation */
     xstreams = (ABT_xstream *)malloc(sizeof(ABT_xstream) * num_xstreams);
     ABT_xstream_self(&xstreams[0]);
-    ABT_xstream_set_main_sched_basic(xstreams[0], ABT_SCHED_DEFAULT,
-                                     1, &g_pool);
+    ABT_xstream_set_main_sched_basic(xstreams[0], ABT_SCHED_DEFAULT, 1,
+                                     &g_pool);
     for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 1, &g_pool,
                                  ABT_SCHED_CONFIG_NULL, &xstreams[i]);
@@ -191,7 +193,8 @@ int main(int argc, char *argv[])
     /* creating thread */
     args_thread.n = n - 1;
     args_thread.eventual = ABT_EVENTUAL_NULL;
-    ABT_thread_create(g_pool, fibonacci_thread, &args_thread, ABT_THREAD_ATTR_NULL, &thread);
+    ABT_thread_create(g_pool, fibonacci_thread, &args_thread,
+                      ABT_THREAD_ATTR_NULL, &thread);
 
     /* creating task */
     args_task = (task_args *)malloc(sizeof(task_args));
@@ -218,7 +221,7 @@ int main(int argc, char *argv[])
 
     free(xstreams);
 
-  fn_result:
+fn_result:
     printf("Fib(%d): %d\n", n, result);
     expected = verify(n);
     if (result != expected) {

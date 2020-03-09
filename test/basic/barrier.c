@@ -23,17 +23,19 @@ void run(void *args)
 
     assert(values[i] == i);
     ABT_barrier_wait(row_barrier[i]);
-    if (!j) values[i] = i+N;
+    if (!j)
+        values[i] = i + N;
 
     ABT_barrier_wait(row_barrier[i]);
-    assert(values[i] == i+N);
+    assert(values[i] == i + N);
 
     ABT_barrier_wait(global_barrier);
     ABT_barrier_wait(global_barrier);
-    if (!i) values[j] = j+2*N;
+    if (!i)
+        values[j] = j + 2 * N;
 
     ABT_barrier_wait(col_barrier[j]);
-    assert(values[j] == j+2*N);
+    assert(values[j] == j + 2 * N);
 }
 
 int main(int argc, char *argv[])
@@ -106,10 +108,12 @@ int main(int argc, char *argv[])
         }
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
-                args[2*(i*N+j)] = i;
-                args[2*(i*N+j)+1] = j;
-                ret = ABT_thread_create(pools[es], run, (void *)&args[2*(i*N+j)],
-                                        ABT_THREAD_ATTR_NULL, &threads[i*N+j]);
+                args[2 * (i * N + j)] = i;
+                args[2 * (i * N + j) + 1] = j;
+                ret = ABT_thread_create(pools[es], run,
+                                        (void *)&args[2 * (i * N + j)],
+                                        ABT_THREAD_ATTR_NULL,
+                                        &threads[i * N + j]);
                 ATS_ERROR(ret, "ABT_thread_create");
                 es = (es + 1) % num_xstreams;
             }
@@ -118,7 +122,7 @@ int main(int argc, char *argv[])
         /* Join and free ULTs */
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
-                ret = ABT_thread_free(&threads[i*N+j]);
+                ret = ABT_thread_free(&threads[i * N + j]);
                 ATS_ERROR(ret, "ABT_thread_free");
             }
         }
@@ -159,4 +163,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

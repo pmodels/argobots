@@ -8,8 +8,8 @@
 #include "abt.h"
 #include "abttest.h"
 
-#define DEFAULT_NUM_XSTREAMS    4
-#define DEFAULT_NUM_THREADS     4
+#define DEFAULT_NUM_XSTREAMS 4
+#define DEFAULT_NUM_THREADS 4
 
 int num_threads = DEFAULT_NUM_THREADS;
 
@@ -34,9 +34,8 @@ void thread_create(void *arg)
     /* Create threads */
     for (i = 0; i < num_threads; i++) {
         size_t tid = 100 * my_id + i;
-        ret = ABT_thread_create(my_pool,
-                thread_func, (void *)tid, ABT_THREAD_ATTR_NULL,
-                NULL);
+        ret = ABT_thread_create(my_pool, thread_func, (void *)tid,
+                                ABT_THREAD_ATTR_NULL, NULL);
         ATS_ERROR(ret, "ABT_thread_create");
     }
 
@@ -48,9 +47,11 @@ int main(int argc, char *argv[])
     int i;
     int ret;
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
-    if (argc > 1) num_xstreams = atoi(argv[1]);
+    if (argc > 1)
+        num_xstreams = atoi(argv[1]);
     assert(num_xstreams >= 0);
-    if (argc > 2) num_threads = atoi(argv[2]);
+    if (argc > 2)
+        num_threads = atoi(argv[2]);
     assert(num_threads >= 0);
 
     ABT_xstream *xstreams;
@@ -73,16 +74,15 @@ int main(int argc, char *argv[])
 
     /* Get the pools attached to an execution stream */
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools+i);
+        ret = ABT_xstream_get_main_pools(xstreams[i], 1, pools + i);
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
     /* Create one thread for each ES */
     for (i = 0; i < num_xstreams; i++) {
         size_t tid = i + 1;
-        ret = ABT_thread_create(pools[i],
-                thread_create, (void *)tid, ABT_THREAD_ATTR_NULL,
-                NULL);
+        ret = ABT_thread_create(pools[i], thread_create, (void *)tid,
+                                ABT_THREAD_ATTR_NULL, NULL);
         ATS_ERROR(ret, "ABT_thread_create");
     }
 
@@ -106,4 +106,3 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-

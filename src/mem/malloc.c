@@ -16,28 +16,28 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#define PROTS           (PROT_READ | PROT_WRITE)
+#define PROTS (PROT_READ | PROT_WRITE)
 
 #if defined(HAVE_MAP_ANONYMOUS)
-#define FLAGS_RP        (MAP_PRIVATE | MAP_ANONYMOUS)
+#define FLAGS_RP (MAP_PRIVATE | MAP_ANONYMOUS)
 #elif defined(HAVE_MAP_ANON)
-#define FLAGS_RP        (MAP_PRIVATE | MAP_ANON)
+#define FLAGS_RP (MAP_PRIVATE | MAP_ANON)
 #else
 /* In this case, we don't allow using mmap. We always use malloc. */
-#define FLAGS_RP        (MAP_PRIVATE)
+#define FLAGS_RP (MAP_PRIVATE)
 #endif
 
 #if defined(HAVE_MAP_HUGETLB)
-#define FLAGS_HP        (FLAGS_RP | MAP_HUGETLB)
-#define FD_HP           0
-#define MMAP_DBG_MSG    "mmap a hugepage"
+#define FLAGS_HP (FLAGS_RP | MAP_HUGETLB)
+#define FD_HP 0
+#define MMAP_DBG_MSG "mmap a hugepage"
 #else
 /* NOTE: On Mac OS, we tried VM_FLAGS_SUPERPAGE_SIZE_ANY that is defined in
  * <mach/vm_statistics.h>, but mmap() failed with it and its execution was too
  * slow.  By that reason, we do not support it for now. */
-#define FLAGS_HP        FLAGS_RP
-#define FD_HP           0
-#define MMAP_DBG_MSG    "mmap regular pages"
+#define FLAGS_HP FLAGS_RP
+#define FD_HP 0
+#define MMAP_DBG_MSG "mmap regular pages"
 #endif
 
 static inline void ABTI_mem_free_stack_list(ABTI_stack_header *p_stack);
@@ -48,7 +48,6 @@ static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
                                                 ABTI_page_header *p_tail);
 static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph);
 static uint64_t g_sp_id = 0;
-
 
 void ABTI_mem_init(ABTI_global *p_global)
 {
@@ -122,7 +121,8 @@ void ABTI_mem_finalize_local(ABTI_local *p_local)
             }
         }
 
-        if (p_cur == p_local->p_mem_task_head) break;
+        if (p_cur == p_local->p_mem_task_head)
+            break;
     }
     p_local->p_mem_task_head = NULL;
     p_local->p_mem_task_tail = NULL;
@@ -269,13 +269,14 @@ char *ABTI_mem_take_global_stack(ABTI_local *p_local)
     void **ptr;
     void *old;
     do {
-        p_sh = (ABTI_stack_header *)
-            ABTD_atomic_load_ptr((void **)&p_global->p_mem_stack);
+        p_sh = (ABTI_stack_header *)ABTD_atomic_load_ptr(
+            (void **)&p_global->p_mem_stack);
         ptr = (void **)&p_global->p_mem_stack;
         old = (void *)p_sh;
     } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, NULL));
 
-    if (p_sh == NULL) return NULL;
+    if (p_sh == NULL)
+        return NULL;
 
     /* TODO: need a better counting method */
     /* TODO: if there are too many stacks in the global stack pool, we should
@@ -301,8 +302,9 @@ void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh)
     void *old, *new;
 
     do {
-        ABTI_stack_header *p_mem_stack = (ABTI_stack_header *)
-            ABTD_atomic_load_ptr((void **)&p_global->p_mem_stack);
+        ABTI_stack_header *p_mem_stack =
+            (ABTI_stack_header *)ABTD_atomic_load_ptr(
+                (void **)&p_global->p_mem_stack);
         p_sh->p_next = p_mem_stack;
         ptr = (void **)&p_global->p_mem_stack;
         old = (void *)p_mem_stack;
@@ -341,7 +343,7 @@ static char *ABTI_mem_alloc_large_page(int pgsize, ABT_bool *p_is_mmapped)
             p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_HP, 0, 0);
             if ((void *)p_page != MAP_FAILED) {
                 *p_is_mmapped = ABT_TRUE;
-                LOG_DEBUG(MMAP_DBG_MSG" (%d): %p\n", pgsize, p_page);
+                LOG_DEBUG(MMAP_DBG_MSG " (%d): %p\n", pgsize, p_page);
             } else {
                 /* Huge pages are run out of. Use a normal mmap. */
                 p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_RP, 0, 0);
@@ -365,7 +367,7 @@ static char *ABTI_mem_alloc_large_page(int pgsize, ABT_bool *p_is_mmapped)
             p_page = (char *)mmap(NULL, pgsize, PROTS, FLAGS_HP, 0, 0);
             if ((void *)p_page != MAP_FAILED) {
                 *p_is_mmapped = ABT_TRUE;
-                LOG_DEBUG(MMAP_DBG_MSG" (%d): %p\n", pgsize, p_page);
+                LOG_DEBUG(MMAP_DBG_MSG " (%d): %p\n", pgsize, p_page);
             } else {
                 *p_is_mmapped = ABT_FALSE;
                 size_t alignment = gp_ABTI_global->huge_page_size;
@@ -402,7 +404,8 @@ ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
     ABT_bool is_mmapped;
 
     /* Make the page header size a multiple of cache line size */
-    const size_t ph_size = (sizeof(ABTI_page_header)+clsize) / clsize * clsize;
+    const size_t ph_size =
+        (sizeof(ABTI_page_header) + clsize) / clsize * clsize;
 
     uint32_t num_blks = (pgsize - ph_size) / blk_size;
     char *p_page = ABTI_mem_alloc_large_page(pgsize, &is_mmapped);
@@ -434,7 +437,8 @@ ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
 void ABTI_mem_free_page(ABTI_local *p_local, ABTI_page_header *p_ph)
 {
     /* We keep one page for future use. */
-    if (p_local->p_mem_task_head == p_local->p_mem_task_tail) return;
+    if (p_local->p_mem_task_head == p_local->p_mem_task_tail)
+        return;
 
     uint32_t num_free_blks = p_ph->num_empty_blks + p_ph->num_remote_free;
     if (num_free_blks == p_ph->num_total_blks) {
@@ -471,8 +475,8 @@ void ABTI_mem_take_free(ABTI_page_header *p_ph)
 
     /* Take the remote free pointer */
     do {
-        ABTI_blk_header *p_free = (ABTI_blk_header *)
-            ABTD_atomic_load_ptr((void **)&p_ph->p_free);
+        ABTI_blk_header *p_free =
+            (ABTI_blk_header *)ABTD_atomic_load_ptr((void **)&p_ph->p_free);
         p_ph->p_head = p_free;
         ptr = (void **)&p_ph->p_free;
         old = (void *)p_free;
@@ -484,8 +488,8 @@ void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh)
     void **ptr;
     void *old, *new;
     do {
-        ABTI_blk_header *p_free = (ABTI_blk_header *)
-            ABTD_atomic_load_ptr((void **)&p_ph->p_free);
+        ABTI_blk_header *p_free =
+            (ABTI_blk_header *)ABTD_atomic_load_ptr((void **)&p_ph->p_free);
         p_bh->p_next = p_free;
         ptr = (void **)&p_ph->p_free;
         old = (void *)p_free;
@@ -511,8 +515,10 @@ ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local)
 
     if (p_ph) {
         ABTI_mem_add_page(p_local, p_ph);
-        if (p_ph->p_free) ABTI_mem_take_free(p_ph);
-        if (p_ph->p_head == NULL) p_ph = NULL;
+        if (p_ph->p_free)
+            ABTI_mem_take_free(p_ph);
+        if (p_ph->p_head == NULL)
+            p_ph = NULL;
     }
 
     return p_ph;
@@ -577,8 +583,8 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     p_first = p_sp + actual_stacksize * first_pos;
     p_sh = (ABTI_stack_header *)(p_first + sizeof(ABTI_thread));
     p_sh->p_sph = p_sph;
-    p_stack = (first_pos == 0)
-            ? (void *)(p_first + header_size * num_stacks) : (void *)p_sp;
+    p_stack = (first_pos == 0) ? (void *)(p_first + header_size * num_stacks)
+                               : (void *)p_sp;
     p_sh->p_stack = p_stack;
 
     if (num_stacks > 1) {
@@ -590,18 +596,20 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
 
         for (i = 1; i < num_stacks; i++) {
             p_next = (i + 1) < num_stacks
-                   ? (ABTI_stack_header *)((char *)p_sh + header_size)
-                   : NULL;
+                         ? (ABTI_stack_header *)((char *)p_sh + header_size)
+                         : NULL;
             p_sh->p_next = p_next;
             p_sh->p_sph = p_sph;
             if (first_pos == 0) {
-                p_sh->p_stack = (void *)((char *)p_stack + i * actual_stacksize);
+                p_sh->p_stack =
+                    (void *)((char *)p_stack + i * actual_stacksize);
             } else {
                 if (i < first_pos) {
                     p_sh->p_stack = (void *)(p_sp + i * actual_stacksize);
                 } else {
-                    p_sh->p_stack = (void *)(p_first + header_size * num_stacks
-                                  + (i - first_pos) * actual_stacksize);
+                    p_sh->p_stack =
+                        (void *)(p_first + header_size * num_stacks +
+                                 (i - first_pos) * actual_stacksize);
                 }
             }
 
@@ -621,4 +629,3 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
 }
 
 #endif /* ABT_CONFIG_USE_MEM_POOL */
-

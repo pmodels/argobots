@@ -8,10 +8,9 @@
 #include "abt.h"
 #include "abttest.h"
 
-
 ABT_pool_access accesses[5] = {
-  ABT_POOL_ACCESS_PRIV, ABT_POOL_ACCESS_SPSC, ABT_POOL_ACCESS_MPSC,
-  ABT_POOL_ACCESS_SPMC, ABT_POOL_ACCESS_MPMC,
+    ABT_POOL_ACCESS_PRIV, ABT_POOL_ACCESS_SPSC, ABT_POOL_ACCESS_MPSC,
+    ABT_POOL_ACCESS_SPMC, ABT_POOL_ACCESS_MPMC,
 };
 
 int add_to_another_ES(int accessIdx, int result)
@@ -47,14 +46,14 @@ int add_to_another_ES(int accessIdx, int result)
     ATS_ERROR(ret, "ABT_xstream_get_main_pools");
 
     /* Use the pool with two schedulers in the same ES */
-    ret =  ABT_pool_add_sched(pool1, scheds[0]);
+    ret = ABT_pool_add_sched(pool1, scheds[0]);
     ATS_ERROR(ret, "ABT_pool_add_sched");
 
-    ret =  ABT_pool_add_sched(pool1, scheds[1]);
+    ret = ABT_pool_add_sched(pool1, scheds[1]);
     ATS_ERROR(ret, "ABT_pool_add_sched");
 
     /* Use the pool with another scheduler in another ES */
-    ret =  ABT_pool_add_sched(pool2, scheds[2]);
+    ret = ABT_pool_add_sched(pool2, scheds[2]);
 
     /* Free scheds[2] if it was not added to pool2 */
     if (ret != ABT_SUCCESS) {
@@ -77,11 +76,11 @@ void task_func1(void *arg)
 {
     int ret;
     void **args = (void **)arg;
-    int result           = *(int *)      args[0];
-    ABT_pool pool_main   = *(ABT_pool *) args[1];
-    ABT_pool pool_dest   = *(ABT_pool *) args[2];
+    int result = *(int *)args[0];
+    ABT_pool pool_main = *(ABT_pool *)args[1];
+    ABT_pool pool_dest = *(ABT_pool *)args[2];
     ABT_sched sched_dest = *(ABT_sched *)args[3];
-    ABT_sched sched      = *(ABT_sched *)args[4];
+    ABT_sched sched = *(ABT_sched *)args[4];
 
     ret = ABT_pool_add_sched(pool_main, sched_dest);
     ATS_ERROR(ret, "ABT_pool_add_sched");
@@ -121,7 +120,8 @@ int add_to_another_access(int accessIdx, int *results)
 
         /* Test */
         ABT_pool pool_dest;
-        ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[p], ABT_TRUE, &pool_dest);
+        ret = ABT_pool_create_basic(ABT_POOL_FIFO, accesses[p], ABT_TRUE,
+                                    &pool_dest);
         ATS_ERROR(ret, "ABT_pool_create_basic");
         ABT_sched sched_dest;
         ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 1, &pool_dest,
@@ -129,12 +129,12 @@ int add_to_another_access(int accessIdx, int *results)
         ATS_ERROR(ret, "ABT_sched_create_basic");
 
         ABT_sched_config config;
-        ret = ABT_sched_config_create(&config,
-                                      ABT_sched_config_access, access,
+        ret = ABT_sched_config_create(&config, ABT_sched_config_access, access,
                                       ABT_sched_config_var_end);
         ATS_ERROR(ret, "ABT_sched_config_create");
         ABT_sched sched;
-        ret = ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config, &sched);
+        ret =
+            ABT_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, config, &sched);
         ATS_ERROR(ret, "ABT_sched_create_basic");
         ret = ABT_sched_config_free(&config);
         ATS_ERROR(ret, "ABT_sched_config_free");
@@ -167,7 +167,7 @@ void task_func2(void *arg)
         ret = ABT_task_create(pool, task_func2, NULL, NULL);
         if ((ret != ABT_SUCCESS && result == ABT_SUCCESS) ||
             (ret == ABT_SUCCESS && result != ABT_SUCCESS))
-            ret =  ABT_ERR_INV_POOL_ACCESS;
+            ret = ABT_ERR_INV_POOL_ACCESS;
         else
             ret = ABT_SUCCESS;
         ATS_ERROR(ret, "ABT_task_create");
@@ -183,8 +183,7 @@ int push_from_another_es(int accessIdx, int *results)
 
     /* Creation of the ES */
     ABT_sched_config config;
-    ret = ABT_sched_config_create(&config,
-                                  ABT_sched_config_access, access,
+    ret = ABT_sched_config_create(&config, ABT_sched_config_access, access,
                                   ABT_sched_config_var_end);
     ATS_ERROR(ret, "ABT_sched_config_create");
     ABT_sched sched;
@@ -231,37 +230,37 @@ int main(int argc, char *argv[])
 
     /* ABT_POOL_ACCESS_PRIV */
     ret_add_to_another_ES[0] = error;
-    int temp00[5] = {success, success, success, error, error};
+    int temp00[5] = { success, success, success, error, error };
     ret_add_to_another_access[0] = temp00;
-    int temp01[2] = {error, error};
+    int temp01[2] = { error, error };
     ret_push_from_another_pool[0] = temp01;
 
     /* ABT_POOL_ACCESS_SPSC */
     ret_add_to_another_ES[1] = error;
-    int temp10[5] = {success, success, success, error, error};
+    int temp10[5] = { success, success, success, error, error };
     ret_add_to_another_access[1] = temp10;
-    int temp11[2] = {success, error};
+    int temp11[2] = { success, error };
     ret_push_from_another_pool[1] = temp11;
 
     /* ABT_POOL_ACCESS_MPSC */
     ret_add_to_another_ES[2] = error;
-    int temp20[5] = {success, success, success, error, error};
+    int temp20[5] = { success, success, success, error, error };
     ret_add_to_another_access[2] = temp20;
-    int temp21[2] = {success, success};
+    int temp21[2] = { success, success };
     ret_push_from_another_pool[2] = temp21;
 
     /* ABT_POOL_ACCESS_SPMC */
     ret_add_to_another_ES[3] = success;
-    int temp30[5] = {success, success, success, success, success};
+    int temp30[5] = { success, success, success, success, success };
     ret_add_to_another_access[3] = temp30;
-    int temp31[2] = {success, error};
+    int temp31[2] = { success, error };
     ret_push_from_another_pool[3] = temp31;
 
     /* ABT_POOL_ACCESS_MPMC */
     ret_add_to_another_ES[4] = success;
-    int temp40[5] = {success, success, success, success, success};
+    int temp40[5] = { success, success, success, success, success };
     ret_add_to_another_access[4] = temp40;
-    int temp41[2] = {success, success};
+    int temp41[2] = { success, success };
     ret_push_from_another_pool[4] = temp41;
 
     for (i = 0; i < 5; i++) {
@@ -277,5 +276,3 @@ int main(int argc, char *argv[])
     ret = ATS_finalize(0);
     return ret;
 }
-
-

@@ -11,15 +11,9 @@
 #include "abt.h"
 #include "abttest.h"
 
-ABT_sched_config_var param_a = {
-  .idx = 0,
-  .type = ABT_SCHED_CONFIG_INT
-};
+ABT_sched_config_var param_a = { .idx = 0, .type = ABT_SCHED_CONFIG_INT };
 
-ABT_sched_config_var param_b = {
-  .idx = 1,
-  .type = ABT_SCHED_CONFIG_DOUBLE
-};
+ABT_sched_config_var param_b = { .idx = 1, .type = ABT_SCHED_CONFIG_DOUBLE };
 
 int main(int argc, char *argv[])
 {
@@ -35,27 +29,31 @@ int main(int argc, char *argv[])
     ATS_init(argc, argv, 1);
 
     ABT_sched_config_create(&config1, param_a, a, ABT_sched_config_var_end);
-    a2 = 0; b2 = 0.0;
+    a2 = 0;
+    b2 = 0.0;
     ABT_sched_config_read(config1, 2, &a2, &b2);
     ABT_sched_config_free(&config1);
     assert(a2 == a && b2 == 0.0);
 
     ABT_sched_config_create(&config2, param_b, b, ABT_sched_config_var_end);
-    a2 = 0; b2 = 0.0;
+    a2 = 0;
+    b2 = 0.0;
     ABT_sched_config_read(config2, 2, &a2, &b2);
     ABT_sched_config_free(&config2);
     assert(a2 == 0 && b2 == b);
 
     ABT_sched_config_create(&config3, param_a, a, param_b, b,
-                          ABT_sched_config_var_end);
-    a2 = 0; b2 = 0.0;
+                            ABT_sched_config_var_end);
+    a2 = 0;
+    b2 = 0.0;
     ABT_sched_config_read(config3, 2, &a2, &b2);
     ABT_sched_config_free(&config3);
     assert(a2 == a && b2 == b);
 
     ABT_sched_config_create(&config4, param_b, b, param_a, a,
-                          ABT_sched_config_var_end);
-    a2 = 0; b2 = 0.0;
+                            ABT_sched_config_var_end);
+    a2 = 0;
+    b2 = 0.0;
     ABT_sched_config_read(config4, 2, &a2, &b2);
     ABT_sched_config_free(&config4);
     assert(a2 == a && b2 == b);
@@ -63,4 +61,3 @@ int main(int argc, char *argv[])
     /* Finalize */
     return ATS_finalize(0);
 }
-

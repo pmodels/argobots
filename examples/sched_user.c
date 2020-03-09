@@ -8,8 +8,8 @@
 #include <time.h>
 #include "abt.h"
 
-#define NUM_XSTREAMS    4
-#define NUM_THREADS     4
+#define NUM_XSTREAMS 4
+#define NUM_THREADS 4
 
 static void create_scheds(int num, ABT_pool *pools, ABT_sched *scheds);
 static void create_threads(void *arg);
@@ -18,17 +18,17 @@ static void thread_hello(void *arg);
 int main(int argc, char *argv[])
 {
     ABT_xstream xstreams[NUM_XSTREAMS];
-    ABT_sched   scheds[NUM_XSTREAMS];
-    ABT_pool    pools[NUM_XSTREAMS];
-    ABT_thread  threads[NUM_XSTREAMS];
+    ABT_sched scheds[NUM_XSTREAMS];
+    ABT_pool pools[NUM_XSTREAMS];
+    ABT_thread threads[NUM_XSTREAMS];
     int i;
 
     ABT_init(argc, argv);
 
     /* Create pools */
     for (i = 0; i < NUM_XSTREAMS; i++) {
-        ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC,
-                              ABT_TRUE, &pools[i]);
+        ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE,
+                              &pools[i]);
     }
 
     /* Create schedulers */
@@ -112,7 +112,8 @@ static void sched_run(ABT_sched sched)
             ABT_xstream_run_unit(unit, pools[0]);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
-            target = (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools-1) + 1);
+            target =
+                (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
             ABT_pool_pop(pools[target], &unit);
             if (unit != ABT_UNIT_NULL) {
                 ABT_xstream_run_unit(unit, pools[target]);
@@ -122,7 +123,8 @@ static void sched_run(ABT_sched sched)
         if (++work_count >= p_data->event_freq) {
             work_count = 0;
             ABT_sched_has_to_stop(sched, &stop);
-            if (stop == ABT_TRUE) break;
+            if (stop == ABT_TRUE)
+                break;
             ABT_xstream_check_events(sched);
         }
     }
@@ -146,18 +148,14 @@ static void create_scheds(int num, ABT_pool *pools, ABT_sched *scheds)
     ABT_pool *my_pools;
     int i, k;
 
-    ABT_sched_config_var cv_event_freq = {
-        .idx = 0,
-        .type = ABT_SCHED_CONFIG_INT
-    };
+    ABT_sched_config_var cv_event_freq = { .idx = 0,
+                                           .type = ABT_SCHED_CONFIG_INT };
 
-    ABT_sched_def sched_def = {
-        .type = ABT_SCHED_TYPE_ULT,
-        .init = sched_init,
-        .run = sched_run,
-        .free = sched_free,
-        .get_migr_pool = NULL
-    };
+    ABT_sched_def sched_def = { .type = ABT_SCHED_TYPE_ULT,
+                                .init = sched_init,
+                                .run = sched_run,
+                                .free = sched_free,
+                                .get_migr_pool = NULL };
 
     /* Create a scheduler config */
     ABT_sched_config_create(&config, cv_event_freq, 10,
@@ -192,8 +190,8 @@ static void create_threads(void *arg)
     threads = (ABT_thread *)malloc(sizeof(ABT_thread) * NUM_THREADS);
     for (i = 0; i < NUM_THREADS; i++) {
         size_t id = (rank + 1) * 10 + i;
-        ABT_thread_create(pool, thread_hello, (void *)id,
-                          ABT_THREAD_ATTR_NULL, &threads[i]);
+        ABT_thread_create(pool, thread_hello, (void *)id, ABT_THREAD_ATTR_NULL,
+                          &threads[i]);
     }
 
     ABT_xstream_get_rank(xstream, &rank);
@@ -228,4 +226,3 @@ static void thread_hello(void *arg)
     msg = (cur_rank == old_rank) ? "" : " (stolen)";
     printf("  [U%d:E%d] Goodbye, world!%s\n", tid, cur_rank, msg);
 }
-
