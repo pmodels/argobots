@@ -1,0 +1,13 @@
+sudo: false
+language: c
+
+os: linux
+
+dist: bionic
+
+addons:
+  apt:
+    packages: indent
+
+script:
+  - maint/hook/pre-commit
