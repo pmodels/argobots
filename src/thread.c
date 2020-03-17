@@ -2385,7 +2385,7 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
     }
 
 yield_based:
-    while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state) !=
+    while (ABTD_atomic_load_int((int *)&p_thread->state) !=
            ABT_THREAD_STATE_TERMINATED) {
         ABTI_thread_yield(pp_local, p_local->p_thread);
         p_local = *pp_local;
@@ -2395,7 +2395,7 @@ yield_based:
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
 busywait_based:
 #endif
-    while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->state) !=
+    while (ABTD_atomic_load_int((int *)&p_thread->state) !=
            ABT_THREAD_STATE_TERMINATED) {
         ABTD_atomic_pause();
     }

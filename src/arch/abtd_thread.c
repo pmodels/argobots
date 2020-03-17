@@ -70,7 +70,7 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
         if (p_thread->p_last_xstream == p_joiner->p_last_xstream) {
             /* Only when the current ULT is on the same ES as p_joiner's,
              * we can jump to the joiner ULT. */
-            ABTD_atomic_store_uint32((uint32_t *)&p_thread->state,
+            ABTD_atomic_store_int((int *)&p_thread->state,
                                      ABT_THREAD_STATE_TERMINATED);
             LOG_EVENT("[U%" PRIu64 ":E%d] terminated\n",
                       ABTI_thread_get_id(p_thread),

@@ -528,7 +528,7 @@ int ABT_xstream_exit(void)
         }
 #endif
         ABTI_thread_yield(&p_local, p_local->p_thread);
-    } while (ABTD_atomic_load_uint32((uint32_t *)&p_xstream->state) !=
+    } while (ABTD_atomic_load_int((int *)&p_xstream->state) !=
              ABT_XSTREAM_STATE_TERMINATED);
 
 fn_exit:
@@ -1310,7 +1310,7 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
         }
     }
 
-    if (ABTD_atomic_load_uint32((uint32_t *)&p_xstream->state) ==
+    if (ABTD_atomic_load_int((int *)&p_xstream->state) ==
         ABT_XSTREAM_STATE_TERMINATED) {
         goto fn_join;
     }
@@ -1333,7 +1333,7 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
         /* Set the join request */
         ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
 
-        while (ABTD_atomic_load_uint32((uint32_t *)&p_xstream->state) !=
+        while (ABTD_atomic_load_int((int *)&p_xstream->state) !=
                ABT_XSTREAM_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
             if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
@@ -1445,7 +1445,7 @@ void ABTI_xstream_schedule(void *p_arg)
     }
 
     /* Set the ES's state as TERMINATED */
-    ABTD_atomic_store_uint32((uint32_t *)&p_xstream->state,
+    ABTD_atomic_store_int((int *)&p_xstream->state,
                              ABT_XSTREAM_STATE_TERMINATED);
     LOG_EVENT("[E%d] terminated\n", p_xstream->rank);
 }
