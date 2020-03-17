@@ -284,22 +284,6 @@ static inline uint64_t ABTD_atomic_fetch_add_uint64(uint64_t *ptr, uint64_t v)
 #endif
 }
 
-static inline double ABTD_atomic_fetch_add_double(double *ptr, double v)
-{
-    union value {
-        double d_val;
-        uint64_t u_val;
-    } oldv, newv;
-
-    do {
-        oldv.d_val = *ptr;
-        newv.d_val = oldv.d_val + v;
-    } while (!ABTD_atomic_bool_cas_weak_uint64((uint64_t *)ptr, oldv.u_val,
-                                               newv.u_val));
-
-    return oldv.d_val;
-}
-
 static inline int32_t ABTD_atomic_fetch_sub_int32(int32_t *ptr, int32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
@@ -334,11 +318,6 @@ static inline uint64_t ABTD_atomic_fetch_sub_uint64(uint64_t *ptr, uint64_t v)
 #else
     return __sync_fetch_and_sub(ptr, v);
 #endif
-}
-
-static inline double ABTD_atomic_fetch_sub_double(double *ptr, double v)
-{
-    return ABTD_atomic_fetch_add_double(ptr, -v);
 }
 
 static inline int32_t ABTD_atomic_fetch_and_int32(int32_t *ptr, int32_t v)
