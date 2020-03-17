@@ -933,7 +933,7 @@ void ABTI_task_release(ABTI_task *p_task)
     }
 }
 
-static uint64_t g_task_id = 0;
+static ABTD_atomic_uint64 g_task_id = 0;
 void ABTI_task_reset_id(void)
 {
     g_task_id = 0;

@@ -150,7 +150,7 @@ struct ABTI_mutex_attr {
 };
 
 struct ABTI_mutex {
-    uint32_t val;                 /* 0: unlocked, 1: locked */
+    ABTD_atomic_uint32 val;       /* 0: unlocked, 1: locked */
     ABTI_mutex_attr attr;         /* attributes */
     ABTI_thread_htable *p_htable; /* a set of queues */
     ABTI_thread *p_handover;      /* next ULT for the mutex handover */
@@ -218,13 +218,13 @@ struct ABTI_local {
 struct ABTI_xstream {
     int rank;                         /* Rank */
     ABTI_xstream_type type;           /* Type */
-    volatile ABT_xstream_state state; /* State */
+    ABTD_atomic_int state;            /* State (ABT_xstream_state) */
     ABTI_sched **scheds;              /* Stack of running schedulers */
     int max_scheds;                   /* Allocation size of the array scheds */
     int num_scheds;                   /* Number of scheds */
     ABTI_spinlock sched_lock;         /* Lock for the scheduler management */
 
-    uint32_t request;         /* Request */
+    ABTD_atomic_uint32 request; /* Request */
     void *p_req_arg;          /* Request argument */
     ABTI_sched *p_main_sched; /* Main scheduler */
 
@@ -237,7 +237,7 @@ struct ABTI_sched {
     ABTI_sched_kind kind;       /* Kind of the scheduler  */
     ABT_sched_type type;        /* Can yield or not (ULT or task) */
     ABT_sched_state state;      /* State */
-    uint32_t request;           /* Request */
+    ABTD_atomic_uint32 request; /* Request */
     ABT_pool *pools;            /* Work unit pools */
     int num_pools;              /* Number of work unit pools */
     ABTI_thread *p_thread;      /* Associated ULT */
@@ -266,9 +266,9 @@ struct ABTI_pool {
     ABTI_native_thread_id producer_id; /* Associated producer ID */
 #endif
     /* NOTE: int32_t to check if still positive */
-    int32_t num_scheds;     /* Number of associated schedulers */
-    int32_t num_blocked;    /* Number of blocked ULTs */
-    int32_t num_migrations; /* Number of migrating ULTs */
+    ABTD_atomic_int32 num_scheds;     /* Number of associated schedulers */
+    ABTD_atomic_int32 num_blocked;    /* Number of blocked ULTs */
+    ABTD_atomic_int32 num_migrations; /* Number of migrating ULTs */
     void *data;             /* Specific data */
     uint64_t id;            /* ID */
 
@@ -317,8 +317,8 @@ struct ABTI_thread_attr {
 struct ABTI_thread {
     ABTD_thread_context ctx;      /* Context */
     ABTI_unit unit_def;           /* Internal unit definition */
-    ABT_thread_state state;       /* State */
-    uint32_t request;             /* Request */
+    ABTD_atomic_int state;        /* State (ABT_thread_state) */
+    ABTD_atomic_uint32 request;   /* Request */
     ABTI_xstream *p_last_xstream; /* Last ES where it ran */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_sched *is_sched; /* If it is a scheduler, its ptr */
@@ -357,8 +357,8 @@ struct ABTI_thread_entry {
 
 struct ABTI_task {
     ABTI_xstream *p_xstream; /* Associated ES */
-    ABT_task_state state;    /* State */
-    uint32_t request;        /* Request */
+    ABTD_atomic_int state;   /* State (ABT_task_state) */
+    ABTD_atomic_uint32 request; /* Request */
     void (*f_task)(void *);  /* Task function */
     void *p_arg;             /* Task arguments */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
@@ -378,7 +378,7 @@ struct ABTI_task {
 struct ABTI_key {
     void (*f_destructor)(void *value);
     uint32_t id;
-    uint32_t refcount; /* Reference count */
+    ABTD_atomic_uint32 refcount; /* Reference count */
     ABT_bool freed;    /* TRUE: freed, FALSE: not */
 };
 

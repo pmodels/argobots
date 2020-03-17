@@ -7,7 +7,7 @@
 #define ABTI_SPINLOCK_H_INCLUDED
 
 struct ABTI_spinlock {
-    uint8_t val;
+    ABTD_atomic_uint8 val;
 };
 
 #define ABTI_SPINLOCK_STATIC_INITIALIZER()                                     \

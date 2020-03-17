@@ -66,7 +66,7 @@ static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
     ABTI_thread *p_thread;
     ABTI_unit *p_unit;
     ABT_unit_type type;
-    int32_t ext_signal = 0;
+    ABTD_atomic_int32 ext_signal = 0;
 
     if (p_local != NULL) {
         p_thread = p_local->p_thread;
@@ -172,7 +172,7 @@ static inline void ABTI_cond_broadcast(ABTI_local *p_local, ABTI_cond *p_cond)
             ABTI_thread_set_ready(p_local, p_thread);
         } else {
             /* When the head is an external thread */
-            int32_t *p_ext_signal = (int32_t *)p_unit->pool;
+            ABTD_atomic_int32 *p_ext_signal = (ABTD_atomic_int32 *)p_unit->pool;
             ABTD_atomic_release_store_int32(p_ext_signal, 1);
         }
 

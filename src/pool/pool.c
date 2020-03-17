@@ -841,7 +841,7 @@ int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
 #endif
 }
 
-static uint64_t g_pool_id = 0;
+static ABTD_atomic_uint64 g_pool_id = 0;
 void ABTI_pool_reset_id(void)
 {
     g_pool_id = 0;

@@ -993,7 +993,7 @@ fn_exit:
     ABTU_free(prefix);
 }
 
-static uint64_t g_sched_id = 0;
+static ABTD_atomic_uint64 g_sched_id = 0;
 void ABTI_sched_reset_id(void)
 {
     g_sched_id = 0;

@@ -158,7 +158,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
     if (p_barrier->counter < p_barrier->num_waiters) {
         ABTI_thread *p_thread;
         ABT_unit_type type;
-        int32_t ext_signal = 0;
+        ABTD_atomic_int32 ext_signal = 0;
 
         if (p_local != NULL) {
             p_thread = p_local->p_thread;
@@ -202,7 +202,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
                 ABTI_thread_set_ready(p_local, p_thread);
             } else {
                 /* When p_cur is an external thread */
-                int32_t *p_ext_signal = (int32_t *)p_thread;
+                ABTD_atomic_int32 *p_ext_signal = (ABTD_atomic_int32 *)p_thread;
                 ABTD_atomic_release_store_int32(p_ext_signal, 1);
             }
 

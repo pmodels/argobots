@@ -18,7 +18,7 @@ static uint32_t g_ABTI_num_inits = 0;
 /* A global lock protecting the initialization/finalization process */
 static ABTI_spinlock g_ABTI_init_lock = ABTI_SPINLOCK_STATIC_INITIALIZER();
 /* A flag whether Argobots has been initialized or not */
-static uint32_t g_ABTI_initialized = 0;
+static ABTD_atomic_uint32 g_ABTI_initialized = 0;
 
 /**
  * @ingroup ENV

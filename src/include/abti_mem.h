@@ -28,7 +28,7 @@ enum {
 
 struct ABTI_sp_header {
     uint32_t num_total_stacks; /* Number of total stacks */
-    uint32_t num_empty_stacks; /* Number of empty stacks */
+    ABTD_atomic_uint32 num_empty_stacks; /* Number of empty stacks */
     size_t stacksize;          /* Stack size */
     uint64_t id;               /* ID */
     ABT_bool is_mmapped;       /* ABT_TRUE if it is mmapped */
@@ -46,7 +46,7 @@ struct ABTI_page_header {
     uint32_t blk_size;              /* Block size in bytes */
     uint32_t num_total_blks;        /* Number of total blocks */
     uint32_t num_empty_blks;        /* Number of empty blocks */
-    uint32_t num_remote_free;       /* Number of remote free blocks */
+    ABTD_atomic_uint32 num_remote_free;       /* Number of remote free blocks */
     ABTI_blk_header *p_head;        /* First empty block */
     ABTI_blk_header *p_free;        /* For remote free */
     ABTI_native_thread_id owner_id; /* Owner's ID */

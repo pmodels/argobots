@@ -632,12 +632,12 @@ static inline void ABTI_info_add_pool_set(ABT_pool pool,
 #define PRINT_STACK_FLAG_WAIT 2
 #define PRINT_STACK_FLAG_FINALIZE 3
 
-static uint32_t print_stack_flag = PRINT_STACK_FLAG_UNSET;
+static ABTD_atomic_uint32 print_stack_flag = PRINT_STACK_FLAG_UNSET;
 static FILE *print_stack_fp = NULL;
 static double print_stack_timeout = 0.0;
 static void (*print_cb_func)(ABT_bool, void *) = NULL;
 static void *print_arg = NULL;
-static uint32_t print_stack_barrier = 0;
+static ABTD_atomic_uint32 print_stack_barrier = 0;
 
 /**
  * @ingroup INFO

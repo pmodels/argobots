@@ -2158,7 +2158,7 @@ void ABTI_thread_release(ABTI_thread *p_thread)
     }
 }
 
-static uint64_t g_thread_id = 0;
+static ABTD_atomic_uint64 g_thread_id = 0;
 void ABTI_thread_reset_id(void)
 {
     g_thread_id = 0;

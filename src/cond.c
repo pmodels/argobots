@@ -186,7 +186,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     double tar_time = convert_timespec_to_sec(abstime);
 
     ABTI_unit *p_unit;
-    int32_t ext_signal = 0;
+    ABTD_atomic_int32 ext_signal = 0;
 
     p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
     p_unit->pool = (ABT_pool)&ext_signal;
@@ -303,7 +303,7 @@ int ABT_cond_signal(ABT_cond cond)
         ABTI_thread_set_ready(p_local, p_thread);
     } else {
         /* When the head is an external thread */
-        int32_t *p_ext_signal = (int32_t *)p_unit->pool;
+        ABTD_atomic_int32 *p_ext_signal = (ABTD_atomic_int32 *)p_unit->pool;
         ABTD_atomic_release_store_int32(p_ext_signal, 1);
     }
 

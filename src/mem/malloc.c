@@ -47,7 +47,7 @@ static inline void ABTI_mem_add_page(ABTI_local *p_local,
 static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
                                                 ABTI_page_header *p_tail);
 static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph);
-static uint64_t g_sp_id = 0;
+static ABTD_atomic_uint64 g_sp_id = 0;
 
 void ABTI_mem_init(ABTI_global *p_global)
 {
@@ -266,7 +266,7 @@ char *ABTI_mem_take_global_stack(ABTI_local *p_local)
     ABTI_stack_header *p_sh, *p_cur;
     uint32_t cnt_stacks = 0;
 
-    void **ptr;
+    ABTD_atomic_ptr *ptr;
     void *old;
     do {
         p_sh = (ABTI_stack_header *)ABTD_atomic_acquire_load_ptr(
@@ -298,7 +298,7 @@ char *ABTI_mem_take_global_stack(ABTI_local *p_local)
 void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh)
 {
     ABTI_global *p_global = gp_ABTI_global;
-    void **ptr;
+    ABTD_atomic_ptr *ptr;
     void *old, *new;
 
     do {
@@ -467,7 +467,7 @@ void ABTI_mem_take_free(ABTI_page_header *p_ph)
      * blocks. We keep these variables to avoid chasing the linked list to count
      * the number of free blocks. */
     uint32_t num_remote_free = p_ph->num_remote_free;
-    void **ptr;
+    ABTD_atomic_ptr *ptr;
     void *old;
 
     ABTD_atomic_fetch_sub_uint32(&p_ph->num_remote_free, num_remote_free);
@@ -485,7 +485,7 @@ void ABTI_mem_take_free(ABTI_page_header *p_ph)
 
 void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh)
 {
-    void **ptr;
+    ABTD_atomic_ptr *ptr;
     void *old, *new;
     do {
         ABTI_blk_header *p_free =
@@ -618,7 +618,7 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     }
 
     /* Add this stack page to the global stack page list */
-    void **ptr = (void **)&gp_ABTI_global->p_mem_sph;
+    ABTD_atomic_ptr *ptr = (void **)&gp_ABTI_global->p_mem_sph;
     void *old;
     do {
         p_sph->p_next = (ABTI_sp_header *)ABTD_atomic_acquire_load_ptr(ptr);

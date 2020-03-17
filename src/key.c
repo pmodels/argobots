@@ -15,7 +15,7 @@ static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
 static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key);
 void ABTI_ktable_delete(ABTI_ktable *p_ktable, ABTI_key *p_key);
 
-static uint32_t g_key_id = 0;
+static ABTD_atomic_uint32 g_key_id = 0;
 
 /**
  * @ingroup KEY
