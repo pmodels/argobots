@@ -682,7 +682,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
             "%sproducer ID   : %p\n"
 #endif
             "%ssize          : %zu\n"
-            "%snum_blocked   : %u\n"
+            "%snum_blocked   : %d\n"
             "%snum_migrations: %d\n"
             "%sdata          : %p\n",
             prefix, (void *)p_pool, prefix, p_pool->id, prefix, access, prefix,

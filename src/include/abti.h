@@ -259,15 +259,15 @@ struct ABTI_sched {
 struct ABTI_pool {
     ABT_pool_access access; /* Access mode */
     ABT_bool automatic;     /* To know if automatic data free */
-    int32_t num_scheds;     /* Number of associated schedulers */
-                            /* NOTE: int32_t to check if still positive */
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     ABTI_native_thread_id consumer_id; /* Associated consumer ID */
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     ABTI_native_thread_id producer_id; /* Associated producer ID */
 #endif
-    uint32_t num_blocked;   /* Number of blocked ULTs */
+    /* NOTE: int32_t to check if still positive */
+    int32_t num_scheds;     /* Number of associated schedulers */
+    int32_t num_blocked;    /* Number of blocked ULTs */
     int32_t num_migrations; /* Number of migrating ULTs */
     void *data;             /* Specific data */
     uint64_t id;            /* ID */
