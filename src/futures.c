@@ -151,6 +151,8 @@ int ABT_future_wait(ABT_future future)
             /* external thread */
             type = ABT_UNIT_TYPE_EXT;
             p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
+            /* Check size if ext_signal can be stored in p_unit->pool. */
+            ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_unit->pool));
             p_unit->pool = (ABT_pool)&ext_signal;
             p_unit->type = type;
         }

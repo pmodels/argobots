@@ -189,6 +189,8 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
     p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
+    /* Check size if ext_signal can be stored in p_unit->pool. */
+    ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_unit->pool));
     p_unit->pool = (ABT_pool)&ext_signal;
     p_unit->type = ABT_UNIT_TYPE_EXT;
 

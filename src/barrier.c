@@ -169,6 +169,8 @@ int ABT_barrier_wait(ABT_barrier barrier)
             type = ABT_UNIT_TYPE_THREAD;
         } else {
             /* external thread */
+            /* Check size if ext_signal can be stored in p_thread. */
+            ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_thread));
             p_thread = (ABTI_thread *)&ext_signal;
             type = ABT_UNIT_TYPE_EXT;
         }
