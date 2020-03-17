@@ -8,9 +8,9 @@
 
 #include <stdint.h>
 
-typedef struct ABTD_atomic_uint8 {
+typedef struct ABTD_atomic_bool {
     uint8_t val;
-} ABTD_atomic_uint8;
+} ABTD_atomic_bool;
 
 typedef struct ABTD_atomic_int {
     int val;
@@ -36,7 +36,7 @@ typedef struct ABTD_atomic_ptr {
     void *val;
 } ABTD_atomic_ptr;
 
-#define ABTD_ATOMIC_UINT8_STATIC_INITIALIZER(val)                              \
+#define ABTD_ATOMIC_BOOL_STATIC_INITIALIZER(val)                               \
     {                                                                          \
         (val)                                                                  \
     }
@@ -572,7 +572,7 @@ static inline uint64_t ABTD_atomic_fetch_xor_uint64(ABTD_atomic_uint64 *ptr, uin
 #endif
 }
 
-static inline uint16_t ABTD_atomic_test_and_set_uint8(ABTD_atomic_uint8 *ptr)
+static inline uint16_t ABTD_atomic_test_and_set_bool(ABTD_atomic_bool *ptr)
 {
     /* return 0 if this test_and_set succeeds to set a value. */
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
@@ -582,7 +582,7 @@ static inline uint16_t ABTD_atomic_test_and_set_uint8(ABTD_atomic_uint8 *ptr)
 #endif
 }
 
-static inline void ABTD_atomic_relaxed_clear_uint8(ABTD_atomic_uint8 *ptr)
+static inline void ABTD_atomic_relaxed_clear_bool(ABTD_atomic_bool *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_clear(&ptr->val, __ATOMIC_RELAXED);
@@ -591,7 +591,7 @@ static inline void ABTD_atomic_relaxed_clear_uint8(ABTD_atomic_uint8 *ptr)
 #endif
 }
 
-static inline void ABTD_atomic_release_clear_uint8(ABTD_atomic_uint8 *ptr)
+static inline void ABTD_atomic_release_clear_bool(ABTD_atomic_bool *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_clear(&ptr->val, __ATOMIC_RELEASE);
@@ -600,12 +600,12 @@ static inline void ABTD_atomic_release_clear_uint8(ABTD_atomic_uint8 *ptr)
 #endif
 }
 
-static inline uint16_t ABTD_atomic_relaxed_load_uint8(const ABTD_atomic_uint8 *ptr)
+static inline ABT_bool ABTD_atomic_relaxed_load_bool(const ABTD_atomic_bool *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
-    return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
+    return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED) ? ABT_TRUE : ABT_FALSE;
 #else
-    return *(volatile uint8_t *)&ptr->val;
+    return (*(volatile uint8_t *)&ptr->val) ? ABT_TRUE : ABT_FALSE;
 #endif
 }
 
@@ -665,13 +665,13 @@ static inline void *ABTD_atomic_relaxed_load_ptr(const ABTD_atomic_ptr *ptr)
 #endif
 }
 
-static inline uint16_t ABTD_atomic_acquire_load_uint8(const ABTD_atomic_uint8 *ptr)
+static inline ABT_bool ABTD_atomic_acquire_load_bool(const ABTD_atomic_bool *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
-    return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
+    return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE) ? ABT_TRUE : ABT_FALSE;
 #else
     __sync_synchronize();
-    uint8_t val = *(volatile uint8_t *)&ptr->val;
+    ABT_bool val = *(volatile uint8_t *)&ptr->val ? ABT_TRUE : ABT_FALSE;
     __sync_synchronize();
     return val;
 #endif
