@@ -66,7 +66,7 @@ static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
     ABTI_thread *p_thread;
     ABTI_unit *p_unit;
     ABT_unit_type type;
-    ABTD_atomic_int32 ext_signal = 0;
+    ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
     if (p_local != NULL) {
         p_thread = p_local->p_thread;

@@ -632,12 +632,12 @@ static inline void ABTI_info_add_pool_set(ABT_pool pool,
 #define PRINT_STACK_FLAG_WAIT 2
 #define PRINT_STACK_FLAG_FINALIZE 3
 
-static ABTD_atomic_uint32 print_stack_flag = PRINT_STACK_FLAG_UNSET;
+static ABTD_atomic_uint32 print_stack_flag = ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(PRINT_STACK_FLAG_UNSET);
 static FILE *print_stack_fp = NULL;
 static double print_stack_timeout = 0.0;
 static void (*print_cb_func)(ABT_bool, void *) = NULL;
 static void *print_arg = NULL;
-static ABTD_atomic_uint32 print_stack_barrier = 0;
+static ABTD_atomic_uint32 print_stack_barrier = ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
 
 /**
  * @ingroup INFO
@@ -738,7 +738,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
             fprintf(fp,
                     "ABT_info_trigger_print_all_thread_stacks: "
                     "timeout (only %d ESs stop)\n",
-                    (int)print_stack_barrier);
+                    (int)ABTD_atomic_acquire_load_uint32(&print_stack_barrier));
         }
         for (i = 0; i < gp_ABTI_global->num_xstreams; i++) {
             ABTI_xstream *p_xstream = gp_ABTI_global->p_xstreams[i];

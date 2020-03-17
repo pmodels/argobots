@@ -18,7 +18,7 @@ static uint32_t g_ABTI_num_inits = 0;
 /* A global lock protecting the initialization/finalization process */
 static ABTI_spinlock g_ABTI_init_lock = ABTI_SPINLOCK_STATIC_INITIALIZER();
 /* A flag whether Argobots has been initialized or not */
-static ABTD_atomic_uint32 g_ABTI_initialized = 0;
+static ABTD_atomic_uint32 g_ABTI_initialized = ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
 
 /**
  * @ingroup ENV
@@ -88,7 +88,7 @@ int ABT_init(int argc, char **argv)
     ABTI_thread *p_main_thread;
     abt_errno = ABTI_thread_create_main(p_local, p_newxstream, &p_main_thread);
     /* Set as if p_newxstream is currently running the main thread. */
-    p_main_thread->state = ABT_THREAD_STATE_RUNNING;
+    ABTD_atomic_relaxed_store_int(&p_main_thread->state, ABT_THREAD_STATE_RUNNING);
     p_main_thread->p_last_xstream = p_newxstream;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
     gp_ABTI_global->p_thread_main = p_main_thread;
@@ -165,7 +165,7 @@ int ABT_finalize(void)
     ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
 
     /* We wait for the remaining jobs */
-    if (p_xstream->state != ABT_XSTREAM_STATE_TERMINATED) {
+    if (ABTD_atomic_acquire_load_int(&p_xstream->state) != ABT_XSTREAM_STATE_TERMINATED) {
         /* Set the orphan request for the primary ULT */
         ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
 

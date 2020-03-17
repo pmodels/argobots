@@ -15,7 +15,7 @@ static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
 static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key);
 void ABTI_ktable_delete(ABTI_ktable *p_ktable, ABTI_key *p_key);
 
-static ABTD_atomic_uint32 g_key_id = 0;
+static ABTD_atomic_uint32 g_key_id = ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
 
 /**
  * @ingroup KEY
@@ -51,7 +51,7 @@ int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
     p_newkey = (ABTI_key *)ABTU_malloc(sizeof(ABTI_key));
     p_newkey->f_destructor = destructor;
     p_newkey->id = ABTD_atomic_fetch_add_uint32(&g_key_id, 1);
-    p_newkey->refcount = 1;
+    ABTD_atomic_relaxed_store_uint32(&p_newkey->refcount, 1);
     p_newkey->freed = ABT_FALSE;
 
     /* Return value */

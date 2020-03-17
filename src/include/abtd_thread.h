@@ -35,7 +35,7 @@ static inline int ABTDI_thread_context_create(ABTD_thread_context *p_link,
     ABTD_thread_context_make(p_newctx, p_stacktop, stacksize, f_wrapper);
     p_newctx->f_thread = f_thread;
     p_newctx->p_arg = p_arg;
-    p_newctx->p_link = p_link;
+    ABTD_atomic_relaxed_store_ptr((ABTD_atomic_ptr *)&p_newctx->p_link, p_link);
 
     return abt_errno;
 }
@@ -70,7 +70,7 @@ static inline int ABTD_thread_context_invalidate(ABTD_thread_context *p_newctx)
 #endif
     p_newctx->f_thread = NULL;
     p_newctx->p_arg = NULL;
-    p_newctx->p_link = NULL;
+    ABTD_atomic_relaxed_store_ptr((ABTD_atomic_ptr *)&p_newctx->p_link, NULL);
     return abt_errno;
 }
 
@@ -84,7 +84,7 @@ static inline int ABTD_thread_context_init(ABTD_thread_context *p_link,
     p_newctx->p_ctx = NULL;
     p_newctx->f_thread = f_thread;
     p_newctx->p_arg = p_arg;
-    p_newctx->p_link = p_link;
+    ABTD_atomic_relaxed_store_ptr((ABTD_atomic_ptr *)&p_newctx->p_link, p_link);
     return abt_errno;
 }
 
@@ -163,7 +163,7 @@ static inline void ABTD_thread_context_dynamic_promote_thread(void *p_stacktop)
 static inline void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
                                                    ABTD_thread_context *p_link)
 {
-    ABTD_atomic_release_store_ptr((void **)&p_ctx->p_link, (void *)p_link);
+    ABTD_atomic_release_store_ptr((ABTD_atomic_ptr *)&p_ctx->p_link, (void *)p_link);
 }
 
 static inline void ABTD_thread_context_set_arg(ABTD_thread_context *p_ctx,

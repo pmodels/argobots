@@ -74,8 +74,9 @@ static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 
 static inline void ABTI_pool_add_thread(ABTI_thread *p_thread)
 {
-    /* Set the ULT's state as READY */
-    p_thread->state = ABT_THREAD_STATE_READY;
+    /* Set the ULT's state as READY. The relaxed version is used since the state
+     * is synchronized by the following pool operation. */
+    ABTD_atomic_relaxed_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
 
     /* Add the ULT to the associated pool */
     ABTI_pool_push(p_thread->p_pool, p_thread->unit);
@@ -115,8 +116,9 @@ static inline int ABTI_pool_add_thread(ABTI_thread *p_thread,
 {
     int abt_errno;
 
-    /* Set the ULT's state as READY */
-    p_thread->state = ABT_THREAD_STATE_READY;
+    /* Set the ULT's state as READY. The relaxed version is used since the state
+     * is synchronized by the following pool operation. */
+    ABTD_atomic_relaxed_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
 
     /* Add the ULT to the associated pool */
     abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, producer_id);
@@ -233,7 +235,7 @@ static inline void ABTI_pool_retain(ABTI_pool *p_pool)
  * the pool is removed from a scheduler or when it stops. */
 static inline int32_t ABTI_pool_release(ABTI_pool *p_pool)
 {
-    ABTI_ASSERT(p_pool->num_scheds > 0);
+    ABTI_ASSERT(ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) > 0);
     return ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1) - 1;
 }
 
@@ -246,8 +248,8 @@ static inline size_t ABTI_pool_get_total_size(ABTI_pool *p_pool)
 {
     size_t total_size;
     total_size = ABTI_pool_get_size(p_pool);
-    total_size += p_pool->num_blocked;
-    total_size += p_pool->num_migrations;
+    total_size += ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
+    total_size += ABTD_atomic_acquire_load_int32(&p_pool->num_migrations);
     return total_size;
 }
 

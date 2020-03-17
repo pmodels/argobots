@@ -113,7 +113,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         ABTI_thread *p_current;
         ABTI_unit *p_unit;
         ABT_unit_type type;
-        ABTD_atomic_int32 ext_signal = 0;
+        ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
         if (p_local != NULL) {
             p_current = p_local->p_thread;

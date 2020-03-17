@@ -24,7 +24,7 @@ ABTI_thread_htable *ABTI_thread_htable_create(uint32_t num_rows)
 #else
     ABTI_spinlock_clear(&p_htable->mutex);
 #endif
-    p_htable->num_elems = 0;
+    ABTD_atomic_relaxed_store_uint32(&p_htable->num_elems, 0);
     p_htable->num_rows = num_rows;
     p_htable->queue = (ABTI_thread_queue *)ABTU_memalign(64, q_size);
     memset(p_htable->queue, 0, q_size);
@@ -36,7 +36,7 @@ ABTI_thread_htable *ABTI_thread_htable_create(uint32_t num_rows)
 
 void ABTI_thread_htable_free(ABTI_thread_htable *p_htable)
 {
-    ABTI_ASSERT(p_htable->num_elems == 0);
+    ABTI_ASSERT(ABTD_atomic_relaxed_load_uint32(&p_htable->num_elems) == 0);
 
 #if defined(HAVE_LH_LOCK_H)
     lh_lock_destroy(&p_htable->mutex);
@@ -234,7 +234,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_local **pp_local,
         p_target = p_queue->low_head;
 
         /* Push p_thread to the queue */
-        p_thread->state = ABT_THREAD_STATE_BLOCKED;
+        ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_BLOCKED);
         if (p_queue->low_head == p_queue->low_tail) {
             p_queue->low_head = p_thread;
             p_queue->low_tail = p_thread;
@@ -251,7 +251,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_local **pp_local,
         LOG_EVENT("switch -> U%" PRIu64 "\n", ABTI_thread_get_id(p_target));
 
         /* Context-switch to p_target */
-        p_target->state = ABT_THREAD_STATE_RUNNING;
+        ABTD_atomic_release_store_int(&p_target->state, ABT_THREAD_STATE_RUNNING);
         ABTI_thread_context_switch_thread_to_thread(pp_local, p_thread,
                                                     p_target);
         return ABT_TRUE;

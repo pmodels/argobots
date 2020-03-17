@@ -226,7 +226,7 @@ int ABT_task_free(ABT_task *task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Wait until the task terminates */
-    while (ABTD_atomic_acquire_load_int((int *)&p_task->state) !=
+    while (ABTD_atomic_acquire_load_int(&p_task->state) !=
            ABT_TASK_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
@@ -272,7 +272,7 @@ int ABT_task_join(ABT_task task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* TODO: better implementation */
-    while (ABTD_atomic_acquire_load_int((int *)&p_task->state) !=
+    while (ABTD_atomic_acquire_load_int(&p_task->state) !=
            ABT_TASK_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
@@ -455,7 +455,7 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Return value */
-    *state = p_task->state;
+    *state = (ABT_task_state)ABTD_atomic_acquire_load_int(&p_task->state);
 
 fn_exit:
     return abt_errno;
@@ -751,8 +751,8 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     p_newtask = ABTI_mem_alloc_task(p_local);
 
     p_newtask->p_xstream = NULL;
-    p_newtask->state = ABT_TASK_STATE_READY;
-    p_newtask->request = 0;
+    ABTD_atomic_relaxed_store_int(&p_newtask->state, ABT_TASK_STATE_READY);
+    ABTD_atomic_relaxed_store_uint32(&p_newtask->request, 0);
     p_newtask->f_task = task_func;
     p_newtask->p_arg = arg;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
@@ -801,12 +801,12 @@ static int ABTI_task_revive(ABTI_local *p_local, ABTI_pool *p_pool,
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_CHECK_TRUE(p_task->state == ABT_TASK_STATE_TERMINATED,
+    ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_task->state) == ABT_TASK_STATE_TERMINATED,
                     ABT_ERR_INV_TASK);
 
     p_task->p_xstream = NULL;
-    p_task->state = ABT_TASK_STATE_READY;
-    p_task->request = 0;
+    ABTD_atomic_relaxed_store_int(&p_task->state, ABT_TASK_STATE_READY);
+    ABTD_atomic_relaxed_store_uint32(&p_task->request, 0);
     p_task->f_task = task_func;
     p_task->p_arg = arg;
     p_task->refcount = 1;
@@ -870,7 +870,7 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
     ABTI_xstream *p_xstream = p_task->p_xstream;
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *state;
-    switch (p_task->state) {
+    switch (ABTD_atomic_acquire_load_int(&p_task->state)) {
         case ABT_TASK_STATE_READY:
             state = "READY";
             break;
@@ -909,7 +909,7 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
             prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
 #endif
-            prefix, p_task->refcount, prefix, p_task->request, prefix,
+            prefix, p_task->refcount, prefix, ABTD_atomic_acquire_load_uint32(&p_task->request), prefix,
             p_task->p_arg, prefix, (void *)p_task->p_keytable);
 
 fn_exit:
@@ -919,24 +919,24 @@ fn_exit:
 
 void ABTI_task_retain(ABTI_task *p_task)
 {
-    ABTD_atomic_fetch_add_uint32(&p_task->refcount, 1);
+    ABTD_atomic_fetch_add_uint32((ABTD_atomic_uint32 *)&p_task->refcount, 1);
 }
 
 void ABTI_task_release(ABTI_task *p_task)
 {
     uint32_t refcount;
     while ((refcount = p_task->refcount) > 0) {
-        if (ABTD_atomic_bool_cas_weak_uint32(&p_task->refcount, refcount,
+        if (ABTD_atomic_bool_cas_weak_uint32((ABTD_atomic_uint32 *)&p_task->refcount, refcount,
                                              refcount - 1)) {
             break;
         }
     }
 }
 
-static ABTD_atomic_uint64 g_task_id = 0;
+static ABTD_atomic_uint64 g_task_id = ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);
 void ABTI_task_reset_id(void)
 {
-    g_task_id = 0;
+    ABTD_atomic_release_store_uint64(&g_task_id, 0);
 }
 
 uint64_t ABTI_task_get_id(ABTI_task *p_task)
