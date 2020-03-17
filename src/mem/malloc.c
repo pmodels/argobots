@@ -269,7 +269,7 @@ char *ABTI_mem_take_global_stack(ABTI_local *p_local)
     void **ptr;
     void *old;
     do {
-        p_sh = (ABTI_stack_header *)ABTD_atomic_load_ptr(
+        p_sh = (ABTI_stack_header *)ABTD_atomic_acquire_load_ptr(
             (void **)&p_global->p_mem_stack);
         ptr = (void **)&p_global->p_mem_stack;
         old = (void *)p_sh;
@@ -303,7 +303,7 @@ void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh)
 
     do {
         ABTI_stack_header *p_mem_stack =
-            (ABTI_stack_header *)ABTD_atomic_load_ptr(
+            (ABTI_stack_header *)ABTD_atomic_acquire_load_ptr(
                 (void **)&p_global->p_mem_stack);
         p_sh->p_next = p_mem_stack;
         ptr = (void **)&p_global->p_mem_stack;
@@ -476,7 +476,7 @@ void ABTI_mem_take_free(ABTI_page_header *p_ph)
     /* Take the remote free pointer */
     do {
         ABTI_blk_header *p_free =
-            (ABTI_blk_header *)ABTD_atomic_load_ptr((void **)&p_ph->p_free);
+            (ABTI_blk_header *)ABTD_atomic_acquire_load_ptr((void **)&p_ph->p_free);
         p_ph->p_head = p_free;
         ptr = (void **)&p_ph->p_free;
         old = (void *)p_free;
@@ -489,7 +489,7 @@ void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh)
     void *old, *new;
     do {
         ABTI_blk_header *p_free =
-            (ABTI_blk_header *)ABTD_atomic_load_ptr((void **)&p_ph->p_free);
+            (ABTI_blk_header *)ABTD_atomic_acquire_load_ptr((void **)&p_ph->p_free);
         p_bh->p_next = p_free;
         ptr = (void **)&p_ph->p_free;
         old = (void *)p_free;
@@ -621,7 +621,7 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     void **ptr = (void **)&gp_ABTI_global->p_mem_sph;
     void *old;
     do {
-        p_sph->p_next = (ABTI_sp_header *)ABTD_atomic_load_ptr(ptr);
+        p_sph->p_next = (ABTI_sp_header *)ABTD_atomic_acquire_load_ptr(ptr);
         old = (void *)p_sph->p_next;
     } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, (void *)p_sph));
 

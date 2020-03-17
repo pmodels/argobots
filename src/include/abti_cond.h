@@ -133,7 +133,7 @@ static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
 
         /* External thread is waiting here polling ext_signal. */
         /* FIXME: need a better implementation */
-        while (!ABTD_atomic_load_int32(&ext_signal))
+        while (!ABTD_atomic_acquire_load_int32(&ext_signal))
             ;
         ABTU_free(p_unit);
     }
@@ -173,7 +173,7 @@ static inline void ABTI_cond_broadcast(ABTI_local *p_local, ABTI_cond *p_cond)
         } else {
             /* When the head is an external thread */
             int32_t *p_ext_signal = (int32_t *)p_unit->pool;
-            ABTD_atomic_store_int32(p_ext_signal, 1);
+            ABTD_atomic_release_store_int32(p_ext_signal, 1);
         }
 
         /* Next ULT */

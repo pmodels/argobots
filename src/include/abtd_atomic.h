@@ -525,7 +525,7 @@ static inline uint16_t ABTD_atomic_test_and_set_uint8(uint8_t *ptr)
 #endif
 }
 
-static inline void ABTD_atomic_clear_uint8(uint8_t *ptr)
+static inline void ABTD_atomic_release_clear_uint8(uint8_t *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_clear(ptr, __ATOMIC_RELEASE);
@@ -534,7 +534,7 @@ static inline void ABTD_atomic_clear_uint8(uint8_t *ptr)
 #endif
 }
 
-static inline uint16_t ABTD_atomic_load_uint8(uint8_t *ptr)
+static inline uint16_t ABTD_atomic_acquire_load_uint8(uint8_t *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(ptr, __ATOMIC_ACQUIRE);
@@ -546,7 +546,7 @@ static inline uint16_t ABTD_atomic_load_uint8(uint8_t *ptr)
 #endif
 }
 
-static inline int ABTD_atomic_load_int(int *ptr)
+static inline int ABTD_atomic_acquire_load_int(int *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(ptr, __ATOMIC_ACQUIRE);
@@ -558,7 +558,7 @@ static inline int ABTD_atomic_load_int(int *ptr)
 #endif
 }
 
-static inline int32_t ABTD_atomic_load_int32(int32_t *ptr)
+static inline int32_t ABTD_atomic_acquire_load_int32(int32_t *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(ptr, __ATOMIC_ACQUIRE);
@@ -570,7 +570,7 @@ static inline int32_t ABTD_atomic_load_int32(int32_t *ptr)
 #endif
 }
 
-static inline uint32_t ABTD_atomic_load_uint32(uint32_t *ptr)
+static inline uint32_t ABTD_atomic_acquire_load_uint32(uint32_t *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(ptr, __ATOMIC_ACQUIRE);
@@ -582,7 +582,7 @@ static inline uint32_t ABTD_atomic_load_uint32(uint32_t *ptr)
 #endif
 }
 
-static inline int64_t ABTD_atomic_load_int64(int64_t *ptr)
+static inline int64_t ABTD_atomic_acquire_load_int64(int64_t *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(ptr, __ATOMIC_ACQUIRE);
@@ -594,7 +594,7 @@ static inline int64_t ABTD_atomic_load_int64(int64_t *ptr)
 #endif
 }
 
-static inline uint64_t ABTD_atomic_load_uint64(uint64_t *ptr)
+static inline uint64_t ABTD_atomic_acquire_load_uint64(uint64_t *ptr)
 {
     /* return 0 if this test_and_set succeeds to set a value. */
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
@@ -607,7 +607,7 @@ static inline uint64_t ABTD_atomic_load_uint64(uint64_t *ptr)
 #endif
 }
 
-static inline void *ABTD_atomic_load_ptr(void **ptr)
+static inline void *ABTD_atomic_acquire_load_ptr(void **ptr)
 {
     /* return 0 if this test_and_set succeeds to set a value. */
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
@@ -620,7 +620,7 @@ static inline void *ABTD_atomic_load_ptr(void **ptr)
 #endif
 }
 
-static inline void ABTD_atomic_store_int(int *ptr, int val)
+static inline void ABTD_atomic_release_store_int(int *ptr, int val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(ptr, val, __ATOMIC_RELEASE);
@@ -631,7 +631,7 @@ static inline void ABTD_atomic_store_int(int *ptr, int val)
 #endif
 }
 
-static inline void ABTD_atomic_store_int32(int32_t *ptr, int32_t val)
+static inline void ABTD_atomic_release_store_int32(int32_t *ptr, int32_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(ptr, val, __ATOMIC_RELEASE);
@@ -642,7 +642,7 @@ static inline void ABTD_atomic_store_int32(int32_t *ptr, int32_t val)
 #endif
 }
 
-static inline void ABTD_atomic_store_uint32(uint32_t *ptr, uint32_t val)
+static inline void ABTD_atomic_release_store_uint32(uint32_t *ptr, uint32_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(ptr, val, __ATOMIC_RELEASE);
@@ -653,7 +653,7 @@ static inline void ABTD_atomic_store_uint32(uint32_t *ptr, uint32_t val)
 #endif
 }
 
-static inline void ABTD_atomic_store_int64(int64_t *ptr, int64_t val)
+static inline void ABTD_atomic_release_store_int64(int64_t *ptr, int64_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(ptr, val, __ATOMIC_RELEASE);
@@ -664,7 +664,7 @@ static inline void ABTD_atomic_store_int64(int64_t *ptr, int64_t val)
 #endif
 }
 
-static inline void ABTD_atomic_store_uint64(uint64_t *ptr, uint64_t val)
+static inline void ABTD_atomic_release_store_uint64(uint64_t *ptr, uint64_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(ptr, val, __ATOMIC_RELEASE);
@@ -675,7 +675,7 @@ static inline void ABTD_atomic_store_uint64(uint64_t *ptr, uint64_t val)
 #endif
 }
 
-static inline void ABTD_atomic_store_ptr(void **ptr, void *val)
+static inline void ABTD_atomic_release_store_ptr(void **ptr, void *val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(ptr, val, __ATOMIC_RELEASE);
@@ -693,7 +693,7 @@ static inline int ABTD_atomic_exchange_int(int *ptr, int v)
 #else
     int val;
     do {
-        val = ABTD_atomic_load_int(ptr);
+        val = ABTD_atomic_acquire_load_int(ptr);
     } while (!ABTD_atomic_bool_cas_weak_int(ptr, val, v));
     return val;
 #endif
@@ -706,7 +706,7 @@ static inline int32_t ABTD_atomic_exchange_int32(int32_t *ptr, int32_t v)
 #else
     int32_t val;
     do {
-        val = ABTD_atomic_load_int32(ptr);
+        val = ABTD_atomic_acquire_load_int32(ptr);
     } while (!ABTD_atomic_bool_cas_weak_int32(ptr, val, v));
     return val;
 #endif
@@ -719,7 +719,7 @@ static inline uint32_t ABTD_atomic_exchange_uint32(uint32_t *ptr, uint32_t v)
 #else
     uint32_t val;
     do {
-        val = ABTD_atomic_load_uint32(ptr);
+        val = ABTD_atomic_acquire_load_uint32(ptr);
     } while (!ABTD_atomic_bool_cas_weak_uint32(ptr, val, v));
     return val;
 #endif
@@ -732,7 +732,7 @@ static inline int64_t ABTD_atomic_exchange_int64(int64_t *ptr, int64_t v)
 #else
     int64_t val;
     do {
-        val = ABTD_atomic_load_int64(ptr);
+        val = ABTD_atomic_acquire_load_int64(ptr);
     } while (!ABTD_atomic_bool_cas_weak_int64(ptr, val, v));
     return val;
 #endif
@@ -745,7 +745,7 @@ static inline uint64_t ABTD_atomic_exchange_uint64(uint64_t *ptr, uint64_t v)
 #else
     uint64_t val;
     do {
-        val = ABTD_atomic_load_uint64(ptr);
+        val = ABTD_atomic_acquire_load_uint64(ptr);
     } while (!ABTD_atomic_bool_cas_weak_uint64(ptr, val, v));
     return val;
 #endif
@@ -758,7 +758,7 @@ static inline void *ABTD_atomic_exchange_ptr(void **ptr, void *v)
 #else
     void *val;
     do {
-        val = ABTD_atomic_load_ptr(ptr);
+        val = ABTD_atomic_acquire_load_ptr(ptr);
     } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, val, v));
     return val;
 #endif

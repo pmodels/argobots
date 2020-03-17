@@ -75,21 +75,21 @@ struct ABTI_thread_htable {
 static inline void ABTI_thread_queue_acquire_mutex(ABTI_thread_queue *p_queue)
 {
     while (ABTD_atomic_test_and_set_uint8((uint8_t *)&p_queue->mutex)) {
-        while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->mutex) != 0)
+        while (ABTD_atomic_acquire_load_uint8((uint8_t *)&p_queue->mutex) != 0)
             ;
     }
 }
 
 static inline void ABTI_thread_queue_release_mutex(ABTI_thread_queue *p_queue)
 {
-    ABTD_atomic_clear_uint8((uint8_t *)&p_queue->mutex);
+    ABTD_atomic_release_clear_uint8((uint8_t *)&p_queue->mutex);
 }
 
 static inline void
 ABTI_thread_queue_acquire_low_mutex(ABTI_thread_queue *p_queue)
 {
     while (ABTD_atomic_test_and_set_uint8((uint8_t *)&p_queue->low_mutex)) {
-        while (ABTD_atomic_load_uint8((uint8_t *)&p_queue->low_mutex) != 0)
+        while (ABTD_atomic_acquire_load_uint8((uint8_t *)&p_queue->low_mutex) != 0)
             ;
     }
 }
@@ -97,7 +97,7 @@ ABTI_thread_queue_acquire_low_mutex(ABTI_thread_queue *p_queue)
 static inline void
 ABTI_thread_queue_release_low_mutex(ABTI_thread_queue *p_queue)
 {
-    ABTD_atomic_clear_uint8((uint8_t *)&p_queue->low_mutex);
+    ABTD_atomic_release_clear_uint8((uint8_t *)&p_queue->low_mutex);
 }
 
 static inline void ABTI_thread_htable_add_h_node(ABTI_thread_htable *p_htable,

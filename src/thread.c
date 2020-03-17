@@ -1873,7 +1873,7 @@ int ABTI_thread_set_ready(ABTI_local *p_local, ABTI_thread *p_thread)
     /* We should wait until the scheduler of the blocked ULT resets the BLOCK
      * request. Otherwise, the ULT can be pushed to a pool here and be
      * scheduled by another scheduler if it is pushed to a shared pool. */
-    while (ABTD_atomic_load_uint32((uint32_t *)&p_thread->request) &
+    while (ABTD_atomic_acquire_load_uint32((uint32_t *)&p_thread->request) &
            ABTI_THREAD_REQ_BLOCK)
         ;
 
@@ -2385,7 +2385,7 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
     }
 
 yield_based:
-    while (ABTD_atomic_load_int((int *)&p_thread->state) !=
+    while (ABTD_atomic_acquire_load_int((int *)&p_thread->state) !=
            ABT_THREAD_STATE_TERMINATED) {
         ABTI_thread_yield(pp_local, p_local->p_thread);
         p_local = *pp_local;
@@ -2395,7 +2395,7 @@ yield_based:
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
 busywait_based:
 #endif
-    while (ABTD_atomic_load_int((int *)&p_thread->state) !=
+    while (ABTD_atomic_acquire_load_int((int *)&p_thread->state) !=
            ABT_THREAD_STATE_TERMINATED) {
         ABTD_atomic_pause();
     }

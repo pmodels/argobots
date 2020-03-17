@@ -214,7 +214,7 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
              * TODO: avoid making a copy of the code. */
             ABTD_thread_context *p_ctx = &p_prev->ctx;
             ABTD_thread_context *p_link =
-                (ABTD_thread_context *)ABTD_atomic_load_ptr(
+                (ABTD_thread_context *)ABTD_atomic_acquire_load_ptr(
                     (void **)&p_ctx->p_link);
             if (p_link) {
                 /* If p_link is set, it means that other ULT has called the
@@ -226,7 +226,7 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
 
                 /* We don't need to use the atomic OR operation here because
                  * the ULT will be terminated regardless of other requests. */
-                ABTD_atomic_store_uint32(&p_prev->request,
+                ABTD_atomic_release_store_uint32(&p_prev->request,
                                          ABTI_THREAD_REQ_TERMINATE);
             } else {
                 uint32_t req =
@@ -238,7 +238,7 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
                      * joiner has blocked.  We have to wake up the joiner ULT.
                      */
                     do {
-                        p_link = (ABTD_thread_context *)ABTD_atomic_load_ptr(
+                        p_link = (ABTD_thread_context *)ABTD_atomic_acquire_load_ptr(
                             (void **)&p_ctx->p_link);
                     } while (!p_link);
                     ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);

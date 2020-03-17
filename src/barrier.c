@@ -190,7 +190,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
         } else {
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
-            while (!ABTD_atomic_load_int32(&ext_signal))
+            while (!ABTD_atomic_acquire_load_int32(&ext_signal))
                 ;
         }
     } else {
@@ -203,7 +203,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
             } else {
                 /* When p_cur is an external thread */
                 int32_t *p_ext_signal = (int32_t *)p_thread;
-                ABTD_atomic_store_int32(p_ext_signal, 1);
+                ABTD_atomic_release_store_int32(p_ext_signal, 1);
             }
 
             p_barrier->waiters[i] = NULL;

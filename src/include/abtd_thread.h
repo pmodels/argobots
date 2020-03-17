@@ -163,7 +163,7 @@ static inline void ABTD_thread_context_dynamic_promote_thread(void *p_stacktop)
 static inline void ABTD_thread_context_change_link(ABTD_thread_context *p_ctx,
                                                    ABTD_thread_context *p_link)
 {
-    ABTD_atomic_store_ptr((void **)&p_ctx->p_link, (void *)p_link);
+    ABTD_atomic_release_store_ptr((void **)&p_ctx->p_link, (void *)p_link);
 }
 
 static inline void ABTD_thread_context_set_arg(ABTD_thread_context *p_ctx,

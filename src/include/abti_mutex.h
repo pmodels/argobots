@@ -63,7 +63,7 @@ static inline void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
     /* ABTI_spinlock_ functions cannot be used since p_mutex->val can take
      * other values (i.e., not UNLOCKED nor LOCKED.) */
     while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-        while (ABTD_atomic_load_uint32(&p_mutex->val) != 0)
+        while (ABTD_atomic_acquire_load_uint32(&p_mutex->val) != 0)
             ;
     }
     LOG_EVENT("%p: spinlock\n", p_mutex);
@@ -152,7 +152,7 @@ static inline void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
     LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
 #else
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) != 1) {
-        ABTD_atomic_store_uint32(&p_mutex->val, 0);
+        ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
         LOG_EVENT("%p: unlock with wake\n", p_mutex);
         ABTI_mutex_wake_de(p_local, p_mutex);
     } else {

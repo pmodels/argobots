@@ -177,7 +177,7 @@ int ABT_future_wait(ABT_future future)
 
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
-            while (!ABTD_atomic_load_int32(&ext_signal))
+            while (!ABTD_atomic_acquire_load_int32(&ext_signal))
                 ;
             ABTU_free(p_unit);
         }
@@ -278,7 +278,7 @@ int ABT_future_set(ABT_future future, void *value)
             } else {
                 /* When the head is an external thread */
                 int32_t *p_ext_signal = (int32_t *)p_unit->pool;
-                ABTD_atomic_store_int32(p_ext_signal, 1);
+                ABTD_atomic_release_store_int32(p_ext_signal, 1);
             }
 
             /* Next ULT */

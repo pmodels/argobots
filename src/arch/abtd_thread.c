@@ -63,14 +63,14 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
 {
     ABTD_thread_context *p_ctx = &p_thread->ctx;
     ABTD_thread_context *p_link =
-        (ABTD_thread_context *)ABTD_atomic_load_ptr((void **)&p_ctx->p_link);
+        (ABTD_thread_context *)ABTD_atomic_acquire_load_ptr((void **)&p_ctx->p_link);
     if (p_link) {
         /* If p_link is set, it means that other ULT has called the join. */
         ABTI_thread *p_joiner = (ABTI_thread *)p_link;
         if (p_thread->p_last_xstream == p_joiner->p_last_xstream) {
             /* Only when the current ULT is on the same ES as p_joiner's,
              * we can jump to the joiner ULT. */
-            ABTD_atomic_store_int((int *)&p_thread->state,
+            ABTD_atomic_release_store_int((int *)&p_thread->state,
                                      ABT_THREAD_STATE_TERMINATED);
             LOG_EVENT("[U%" PRIu64 ":E%d] terminated\n",
                       ABTI_thread_get_id(p_thread),
@@ -101,7 +101,7 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
 
             /* We don't need to use the atomic OR operation here because the ULT
              * will be terminated regardless of other requests. */
-            ABTD_atomic_store_uint32(&p_thread->request,
+            ABTD_atomic_release_store_uint32(&p_thread->request,
                                      ABTI_THREAD_REQ_TERMINATE);
         }
     } else {
@@ -113,7 +113,7 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
             /* This case means there has been a join request and the joiner has
              * blocked.  We have to wake up the joiner ULT. */
             do {
-                p_link = (ABTD_thread_context *)ABTD_atomic_load_ptr(
+                p_link = (ABTD_thread_context *)ABTD_atomic_acquire_load_ptr(
                     (void **)&p_ctx->p_link);
             } while (!p_link);
             ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);
@@ -191,7 +191,7 @@ void ABTD_thread_cancel(ABTI_local *p_local, ABTI_thread *p_thread)
         if (req & ABTI_THREAD_REQ_JOIN) {
             /* This case means there has been a join request and the joiner has
              * blocked.  We have to wake up the joiner ULT. */
-            while (ABTD_atomic_load_ptr((void **)&p_ctx->p_link) == NULL)
+            while (ABTD_atomic_acquire_load_ptr((void **)&p_ctx->p_link) == NULL)
                 ;
             ABTI_thread *p_joiner = (ABTI_thread *)p_ctx->p_link;
             ABTI_thread_set_ready(p_local, p_joiner);

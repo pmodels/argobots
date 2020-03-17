@@ -226,7 +226,7 @@ int ABT_task_free(ABT_task *task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Wait until the task terminates */
-    while (ABTD_atomic_load_int((int *)&p_task->state) !=
+    while (ABTD_atomic_acquire_load_int((int *)&p_task->state) !=
            ABT_TASK_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
@@ -272,7 +272,7 @@ int ABT_task_join(ABT_task task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* TODO: better implementation */
-    while (ABTD_atomic_load_int((int *)&p_task->state) !=
+    while (ABTD_atomic_acquire_load_int((int *)&p_task->state) !=
            ABT_TASK_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {

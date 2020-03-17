@@ -102,7 +102,7 @@ int ABT_init(int argc, char **argv)
     if (gp_ABTI_global->print_config == ABT_TRUE) {
         ABTI_info_print_config(stdout);
     }
-    ABTD_atomic_store_uint32(&g_ABTI_initialized, 1);
+    ABTD_atomic_release_store_uint32(&g_ABTI_initialized, 1);
 
 fn_exit:
     /* Unlock a global lock */
@@ -209,7 +209,7 @@ int ABT_finalize(void)
     /* Free the ABTI_global structure */
     ABTU_free(gp_ABTI_global);
     gp_ABTI_global = NULL;
-    ABTD_atomic_store_uint32(&g_ABTI_initialized, 0);
+    ABTD_atomic_release_store_uint32(&g_ABTI_initialized, 0);
 
 fn_exit:
     /* Unlock a global lock */
@@ -237,7 +237,7 @@ int ABT_initialized(void)
 {
     int abt_errno = ABT_SUCCESS;
 
-    if (ABTD_atomic_load_uint32(&g_ABTI_initialized) == 0) {
+    if (ABTD_atomic_acquire_load_uint32(&g_ABTI_initialized) == 0) {
         abt_errno = ABT_ERR_UNINITIALIZED;
     }
 

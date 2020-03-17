@@ -23,14 +23,14 @@ static inline void ABTI_spinlock_clear(ABTI_spinlock *p_lock)
 static inline void ABTI_spinlock_acquire(ABTI_spinlock *p_lock)
 {
     while (ABTD_atomic_test_and_set_uint8((uint8_t *)&p_lock->val)) {
-        while (ABTD_atomic_load_uint8((uint8_t *)&p_lock->val) != 0)
+        while (ABTD_atomic_acquire_load_uint8((uint8_t *)&p_lock->val) != 0)
             ;
     }
 }
 
 static inline void ABTI_spinlock_release(ABTI_spinlock *p_lock)
 {
-    ABTD_atomic_clear_uint8((uint8_t *)&p_lock->val);
+    ABTD_atomic_release_clear_uint8((uint8_t *)&p_lock->val);
 }
 
 #endif /* ABTI_SPINLOCK_H_INCLUDED */
