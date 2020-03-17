@@ -632,12 +632,14 @@ static inline void ABTI_info_add_pool_set(ABT_pool pool,
 #define PRINT_STACK_FLAG_WAIT 2
 #define PRINT_STACK_FLAG_FINALIZE 3
 
-static ABTD_atomic_uint32 print_stack_flag = ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(PRINT_STACK_FLAG_UNSET);
+static ABTD_atomic_uint32 print_stack_flag =
+    ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(PRINT_STACK_FLAG_UNSET);
 static FILE *print_stack_fp = NULL;
 static double print_stack_timeout = 0.0;
 static void (*print_cb_func)(ABT_bool, void *) = NULL;
 static void *print_arg = NULL;
-static ABTD_atomic_uint32 print_stack_barrier = ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
+static ABTD_atomic_uint32 print_stack_barrier =
+    ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
 
 /**
  * @ingroup INFO
@@ -681,7 +683,8 @@ int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
 {
     /* This function is signal-safe, so it may not call other functions unless
      * you really know what the called functions do. */
-    if (ABTD_atomic_acquire_load_uint32(&print_stack_flag) == PRINT_STACK_FLAG_UNSET) {
+    if (ABTD_atomic_acquire_load_uint32(&print_stack_flag) ==
+        PRINT_STACK_FLAG_UNSET) {
         if (ABTD_atomic_bool_cas_strong_uint32(&print_stack_flag,
                                                PRINT_STACK_FLAG_UNSET,
                                                PRINT_STACK_FLAG_INITIALIZE)) {
@@ -691,8 +694,10 @@ int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
             print_cb_func = cb_func;
             print_arg = arg;
             /* Here print_stack_barrier must be 0. */
-            ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&print_stack_barrier) == 0);
-            ABTD_atomic_release_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_WAIT);
+            ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&print_stack_barrier) ==
+                        0);
+            ABTD_atomic_release_store_uint32(&print_stack_flag,
+                                             PRINT_STACK_FLAG_WAIT);
         }
     }
     return ABT_SUCCESS;
@@ -700,7 +705,8 @@ int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
 
 void ABTI_info_check_print_all_thread_stacks(void)
 {
-    if (ABTD_atomic_acquire_load_uint32(&print_stack_flag) != PRINT_STACK_FLAG_WAIT)
+    if (ABTD_atomic_acquire_load_uint32(&print_stack_flag) !=
+        PRINT_STACK_FLAG_WAIT)
         return;
 
     /* Wait for the other execution streams using a barrier mechanism. */
@@ -769,7 +775,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
             print_cb_func(force_print, print_arg);
         ABTI_info_finalize_pool_set(&pool_set);
         /* Update print_stack_flag to 3. */
-        ABTD_atomic_release_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_FINALIZE);
+        ABTD_atomic_release_store_uint32(&print_stack_flag,
+                                         PRINT_STACK_FLAG_FINALIZE);
     } else {
         /* Wait for the master's work. */
         while (ABTD_atomic_acquire_load_uint32(&print_stack_flag) !=
@@ -783,7 +790,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
     uint32_t dec_value = ABTD_atomic_fetch_sub_uint32(&print_stack_barrier, 1);
     if (dec_value == 0) {
         /* The last execution stream resets the flag. */
-        ABTD_atomic_release_store_uint32(&print_stack_flag, PRINT_STACK_FLAG_UNSET);
+        ABTD_atomic_release_store_uint32(&print_stack_flag,
+                                         PRINT_STACK_FLAG_UNSET);
     }
 }
 

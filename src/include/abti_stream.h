@@ -117,13 +117,13 @@ static inline void ABTI_xstream_terminate_thread(ABTI_local *p_local,
               p_thread->p_last_xstream->rank);
     if (p_thread->refcount == 0) {
         ABTD_atomic_release_store_int(&p_thread->state,
-                                 ABT_THREAD_STATE_TERMINATED);
+                                      ABT_THREAD_STATE_TERMINATED);
         ABTI_thread_free(p_local, p_thread);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     } else if (p_thread->is_sched) {
         /* NOTE: p_thread itself will be freed in ABTI_sched_free. */
         ABTD_atomic_release_store_int(&p_thread->state,
-                                 ABT_THREAD_STATE_TERMINATED);
+                                      ABT_THREAD_STATE_TERMINATED);
         ABTI_sched_discard_and_free(p_local, p_thread->is_sched);
 #endif
     } else {
@@ -132,7 +132,7 @@ static inline void ABTI_xstream_terminate_thread(ABTI_local *p_local,
          * must not access any field of p_thead after changing the state to
          * TERMINATED. */
         ABTD_atomic_release_store_int(&p_thread->state,
-                                 ABT_THREAD_STATE_TERMINATED);
+                                      ABT_THREAD_STATE_TERMINATED);
     }
 }
 
@@ -143,13 +143,13 @@ static inline void ABTI_xstream_terminate_task(ABTI_local *p_local,
               p_task->p_xstream->rank);
     if (p_task->refcount == 0) {
         ABTD_atomic_release_store_int(&p_task->state,
-                                 ABT_TASK_STATE_TERMINATED);
+                                      ABT_TASK_STATE_TERMINATED);
         ABTI_task_free(p_local, p_task);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     } else if (p_task->is_sched) {
         /* NOTE: p_task itself will be freed in ABTI_sched_free. */
         ABTD_atomic_release_store_int(&p_task->state,
-                                 ABT_TASK_STATE_TERMINATED);
+                                      ABT_TASK_STATE_TERMINATED);
         ABTI_sched_discard_and_free(p_local, p_task->is_sched);
 #endif
     } else {
@@ -158,7 +158,7 @@ static inline void ABTI_xstream_terminate_task(ABTI_local *p_local,
          * must not access any field of p_task after changing the state to
          * TERMINATED. */
         ABTD_atomic_release_store_int(&p_task->state,
-                                 ABT_TASK_STATE_TERMINATED);
+                                      ABT_TASK_STATE_TERMINATED);
     }
 }
 

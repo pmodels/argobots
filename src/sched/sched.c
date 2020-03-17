@@ -317,7 +317,8 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched,
     size_t size;
 
     /* Check exit request */
-    if (ABTD_atomic_acquire_load_uint32(&p_sched->request) & ABTI_SCHED_REQ_EXIT) {
+    if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
+        ABTI_SCHED_REQ_EXIT) {
         ABTI_spinlock_acquire(&p_xstream->sched_lock);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
         stop = ABT_TRUE;
@@ -326,7 +327,8 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched,
 
     size = ABTI_sched_get_effective_size(*pp_local, p_sched);
     if (size == 0) {
-        if (ABTD_atomic_acquire_load_uint32(&p_sched->request) & ABTI_SCHED_REQ_FINISH) {
+        if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
+            ABTI_SCHED_REQ_FINISH) {
             /* Check join request */
             /* We need to lock in case someone wants to migrate to this
              * scheduler */
@@ -523,7 +525,8 @@ size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
         pool_size += ABTD_atomic_acquire_load_int32(&p_pool->num_migrations);
         switch (p_pool->access) {
             case ABT_POOL_ACCESS_PRIV:
-                pool_size += ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
+                pool_size +=
+                    ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
                 break;
             case ABT_POOL_ACCESS_SPSC:
             case ABT_POOL_ACCESS_MPSC:
@@ -531,11 +534,14 @@ size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
             case ABT_POOL_ACCESS_MPMC:
 #ifdef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
                 if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1) {
-                    pool_size += ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
+                    pool_size +=
+                        ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
                 }
 #else
-                if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1 && p_pool->consumer_id == self_id) {
-                    pool_size += ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
+                if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1 &&
+                    p_pool->consumer_id == self_id) {
+                    pool_size +=
+                        ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
                 }
 #endif
                 break;
@@ -976,8 +982,9 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
             prefix, p_sched->kind, kind_str, prefix, type, prefix, state,
             prefix, used, prefix,
             (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE", prefix,
-            ABTD_atomic_acquire_load_uint32(&p_sched->request), prefix, p_sched->num_pools, prefix, pools_str,
-            prefix, ABTI_sched_get_size(p_sched), prefix,
+            ABTD_atomic_acquire_load_uint32(&p_sched->request), prefix,
+            p_sched->num_pools, prefix, pools_str, prefix,
+            ABTI_sched_get_size(p_sched), prefix,
             ABTI_sched_get_total_size(p_sched), prefix, p_sched->data);
     ABTU_free(pools_str);
 

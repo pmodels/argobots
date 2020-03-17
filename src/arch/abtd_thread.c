@@ -71,7 +71,7 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
             /* Only when the current ULT is on the same ES as p_joiner's,
              * we can jump to the joiner ULT. */
             ABTD_atomic_release_store_int(&p_thread->state,
-                                     ABT_THREAD_STATE_TERMINATED);
+                                          ABT_THREAD_STATE_TERMINATED);
             LOG_EVENT("[U%" PRIu64 ":E%d] terminated\n",
                       ABTI_thread_get_id(p_thread),
                       p_thread->p_last_xstream->rank);
@@ -102,7 +102,7 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
             /* We don't need to use the atomic OR operation here because the ULT
              * will be terminated regardless of other requests. */
             ABTD_atomic_release_store_uint32(&p_thread->request,
-                                     ABTI_THREAD_REQ_TERMINATE);
+                                             ABTI_THREAD_REQ_TERMINATE);
         }
     } else {
         uint32_t req =
@@ -113,7 +113,8 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
             /* This case means there has been a join request and the joiner has
              * blocked.  We have to wake up the joiner ULT. */
             do {
-                p_link = ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link);
+                p_link =
+                    ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link);
             } while (!p_link);
             ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);
         }
@@ -179,7 +180,9 @@ void ABTD_thread_cancel(ABTI_local *p_local, ABTI_thread *p_thread)
 
     if (ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link)) {
         /* If p_link is set, it means that other ULT has called the join. */
-        ABTI_thread *p_joiner = (ABTI_thread *)ABTD_atomic_relaxed_load_thread_context_ptr(&p_ctx->p_link);
+        ABTI_thread *p_joiner =
+            (ABTI_thread *)ABTD_atomic_relaxed_load_thread_context_ptr(
+                &p_ctx->p_link);
         ABTI_thread_set_ready(p_local, p_joiner);
     } else {
         uint32_t req =
@@ -189,9 +192,12 @@ void ABTD_thread_cancel(ABTI_local *p_local, ABTI_thread *p_thread)
         if (req & ABTI_THREAD_REQ_JOIN) {
             /* This case means there has been a join request and the joiner has
              * blocked.  We have to wake up the joiner ULT. */
-            while (ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link) == NULL)
+            while (ABTD_atomic_acquire_load_thread_context_ptr(
+                       &p_ctx->p_link) == NULL)
                 ;
-            ABTI_thread *p_joiner = (ABTI_thread *)ABTD_atomic_relaxed_load_thread_context_ptr(&p_ctx->p_link);
+            ABTI_thread *p_joiner =
+                (ABTI_thread *)ABTD_atomic_relaxed_load_thread_context_ptr(
+                    &p_ctx->p_link);
             ABTI_thread_set_ready(p_local, p_joiner);
         }
     }
@@ -203,7 +209,9 @@ void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent)
     ABTD_thread_context *p_ctx = &p_thread->ctx;
     fprintf(p_os, "%sp_ctx    : %p\n", prefix, p_ctx->p_ctx);
     fprintf(p_os, "%sp_arg    : %p\n", prefix, p_ctx->p_arg);
-    fprintf(p_os, "%sp_link   : %p\n", prefix, (void *)ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link));
+    fprintf(p_os, "%sp_link   : %p\n", prefix,
+            (void *)ABTD_atomic_acquire_load_thread_context_ptr(
+                &p_ctx->p_link));
     fflush(p_os);
     ABTU_free(prefix);
 }

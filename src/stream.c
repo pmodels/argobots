@@ -71,7 +71,8 @@ int ABTI_xstream_create(ABTI_local **pp_local, ABTI_sched *p_sched,
     ABTI_xstream_set_new_rank(p_newxstream);
 
     p_newxstream->type = ABTI_XSTREAM_TYPE_SECONDARY;
-    ABTD_atomic_relaxed_store_int(&p_newxstream->state, ABT_XSTREAM_STATE_RUNNING);
+    ABTD_atomic_relaxed_store_int(&p_newxstream->state,
+                                  ABT_XSTREAM_STATE_RUNNING);
     p_newxstream->scheds = NULL;
     p_newxstream->num_scheds = 0;
     p_newxstream->max_scheds = 0;
@@ -215,7 +216,8 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     }
 
     p_newxstream->type = ABTI_XSTREAM_TYPE_SECONDARY;
-    ABTD_atomic_relaxed_store_int(&p_newxstream->state, ABT_XSTREAM_STATE_RUNNING);
+    ABTD_atomic_relaxed_store_int(&p_newxstream->state,
+                                  ABT_XSTREAM_STATE_RUNNING);
     p_newxstream->scheds = NULL;
     p_newxstream->num_scheds = 0;
     p_newxstream->max_scheds = 0;
@@ -284,7 +286,8 @@ int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
     int abt_errno = ABT_SUCCESS;
 
     /* The ES's state must be RUNNING */
-    ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) == ABT_XSTREAM_STATE_RUNNING);
+    ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
+                ABT_XSTREAM_STATE_RUNNING);
 
     /* Add the main scheduler to the stack of schedulers */
     ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
@@ -363,7 +366,8 @@ int ABTI_xstream_start_primary(ABTI_local **pp_local, ABTI_xstream *p_xstream,
     ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
 
     /* The ES's state must be running here. */
-    ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) == ABT_XSTREAM_STATE_RUNNING);
+    ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
+                ABT_XSTREAM_STATE_RUNNING);
 
     LOG_EVENT("[E%d] start\n", p_xstream->rank);
 
@@ -433,7 +437,8 @@ int ABT_xstream_free(ABT_xstream *xstream)
                         "The primary xstream cannot be freed explicitly.");
 
     /* Wait until xstream terminates */
-    if (ABTD_atomic_acquire_load_int(&p_xstream->state) != ABT_XSTREAM_STATE_TERMINATED) {
+    if (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
+        ABT_XSTREAM_STATE_TERMINATED) {
         abt_errno = ABTI_xstream_join(&p_local, p_xstream);
         ABTI_CHECK_ERROR(abt_errno);
     }
@@ -756,7 +761,8 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
     /* TODO: a new state representing that the scheduler is changed is needed
      * to avoid running xstreams while the scheduler is changed in this
      * function. */
-    if (ABTD_atomic_acquire_load_int(&p_xstream->state) == ABT_XSTREAM_STATE_RUNNING) {
+    if (ABTD_atomic_acquire_load_int(&p_xstream->state) ==
+        ABT_XSTREAM_STATE_RUNNING) {
         if (p_thread->p_last_xstream != p_xstream) {
             abt_errno = ABT_ERR_XSTREAM_STATE;
             goto fn_fail;
@@ -1402,7 +1408,8 @@ void ABTI_xstream_schedule(void *p_arg)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
 
-    ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) == ABT_XSTREAM_STATE_RUNNING);
+    ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
+                ABT_XSTREAM_STATE_RUNNING);
     while (1) {
         uint32_t request;
 
@@ -1447,7 +1454,7 @@ void ABTI_xstream_schedule(void *p_arg)
 
     /* Set the ES's state as TERMINATED */
     ABTD_atomic_release_store_int(&p_xstream->state,
-                             ABT_XSTREAM_STATE_TERMINATED);
+                                  ABT_XSTREAM_STATE_TERMINATED);
     LOG_EVENT("[E%d] terminated\n", p_xstream->rank);
 }
 
@@ -1458,7 +1465,8 @@ int ABTI_xstream_schedule_thread(ABTI_local **pp_local, ABTI_xstream *p_xstream,
     ABTI_local *p_local = *pp_local;
 
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
-    if (ABTD_atomic_acquire_load_uint32(&p_thread->request) & ABTI_THREAD_REQ_CANCEL) {
+    if (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
+        ABTI_THREAD_REQ_CANCEL) {
         LOG_EVENT("[U%" PRIu64 ":E%d] canceled\n", ABTI_thread_get_id(p_thread),
                   p_xstream->rank);
         ABTD_thread_cancel(p_local, p_thread);
@@ -1468,7 +1476,8 @@ int ABTI_xstream_schedule_thread(ABTI_local **pp_local, ABTI_xstream *p_xstream,
 #endif
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    if (ABTD_atomic_acquire_load_uint32(&p_thread->request) & ABTI_THREAD_REQ_MIGRATE) {
+    if (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
+        ABTI_THREAD_REQ_MIGRATE) {
         abt_errno = ABTI_xstream_migrate_thread(p_local, p_thread);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
@@ -1540,9 +1549,8 @@ int ABTI_xstream_schedule_thread(ABTI_local **pp_local, ABTI_xstream *p_xstream,
                   p_xstream->rank,
                   (request & ABTI_THREAD_REQ_TERMINATE
                        ? "finished"
-                       : ((request & ABTI_THREAD_REQ_EXIT)
-                              ? "exit called"
-                              : "UNKNOWN")));
+                       : ((request & ABTI_THREAD_REQ_EXIT) ? "exit called"
+                                                           : "UNKNOWN")));
         ABTI_xstream_terminate_thread(p_local, p_thread);
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     } else if (request & ABTI_THREAD_REQ_CANCEL) {
@@ -1596,7 +1604,8 @@ void ABTI_xstream_schedule_task(ABTI_local *p_local, ABTI_xstream *p_xstream,
                                 ABTI_task *p_task)
 {
 #ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
-    if (ABTD_atomic_acquire_load_uint32(&p_task->request) & ABTI_TASK_REQ_CANCEL) {
+    if (ABTD_atomic_acquire_load_uint32(&p_task->request) &
+        ABTI_TASK_REQ_CANCEL) {
         ABTI_xstream_terminate_task(p_local, p_task);
         return;
     }
@@ -1895,7 +1904,8 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
             "%sscheds    : %s\n"
             "%smain_sched: %p\n",
             prefix, (void *)p_xstream, prefix, p_xstream->rank, prefix, type,
-            prefix, state, prefix, ABTD_atomic_acquire_load_uint32(&p_xstream->request), prefix,
+            prefix, state, prefix,
+            ABTD_atomic_acquire_load_uint32(&p_xstream->request), prefix,
             p_xstream->max_scheds, prefix, p_xstream->num_scheds, prefix,
             scheds_str, prefix, (void *)p_xstream->p_main_sched);
     ABTU_free(scheds_str);

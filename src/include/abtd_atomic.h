@@ -65,7 +65,8 @@ typedef struct ABTD_atomic_ptr {
         (val)                                                                  \
     }
 
-static inline int ABTDI_atomic_val_cas_int(ABTD_atomic_int *ptr, int oldv, int newv, int weak)
+static inline int ABTDI_atomic_val_cas_int(ABTD_atomic_int *ptr, int oldv,
+                                           int newv, int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     int tmp_oldv = oldv;
@@ -77,8 +78,9 @@ static inline int ABTDI_atomic_val_cas_int(ABTD_atomic_int *ptr, int oldv, int n
 #endif
 }
 
-static inline int32_t ABTDI_atomic_val_cas_int32(ABTD_atomic_int32 *ptr, int32_t oldv,
-                                                 int32_t newv, int weak)
+static inline int32_t ABTDI_atomic_val_cas_int32(ABTD_atomic_int32 *ptr,
+                                                 int32_t oldv, int32_t newv,
+                                                 int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     int32_t tmp_oldv = oldv;
@@ -90,8 +92,9 @@ static inline int32_t ABTDI_atomic_val_cas_int32(ABTD_atomic_int32 *ptr, int32_t
 #endif
 }
 
-static inline uint32_t ABTDI_atomic_val_cas_uint32(ABTD_atomic_uint32 *ptr, uint32_t oldv,
-                                                   uint32_t newv, int weak)
+static inline uint32_t ABTDI_atomic_val_cas_uint32(ABTD_atomic_uint32 *ptr,
+                                                   uint32_t oldv, uint32_t newv,
+                                                   int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     uint32_t tmp_oldv = oldv;
@@ -103,8 +106,9 @@ static inline uint32_t ABTDI_atomic_val_cas_uint32(ABTD_atomic_uint32 *ptr, uint
 #endif
 }
 
-static inline int64_t ABTDI_atomic_val_cas_int64(ABTD_atomic_int64 *ptr, int64_t oldv,
-                                                 int64_t newv, int weak)
+static inline int64_t ABTDI_atomic_val_cas_int64(ABTD_atomic_int64 *ptr,
+                                                 int64_t oldv, int64_t newv,
+                                                 int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     int64_t tmp_oldv = oldv;
@@ -116,8 +120,9 @@ static inline int64_t ABTDI_atomic_val_cas_int64(ABTD_atomic_int64 *ptr, int64_t
 #endif
 }
 
-static inline uint64_t ABTDI_atomic_val_cas_uint64(ABTD_atomic_uint64 *ptr, uint64_t oldv,
-                                                   uint64_t newv, int weak)
+static inline uint64_t ABTDI_atomic_val_cas_uint64(ABTD_atomic_uint64 *ptr,
+                                                   uint64_t oldv, uint64_t newv,
+                                                   int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     uint64_t tmp_oldv = oldv;
@@ -129,8 +134,8 @@ static inline uint64_t ABTDI_atomic_val_cas_uint64(ABTD_atomic_uint64 *ptr, uint
 #endif
 }
 
-static inline void *ABTDI_atomic_val_cas_ptr(ABTD_atomic_ptr *ptr, void *oldv, void *newv,
-                                             int weak)
+static inline void *ABTDI_atomic_val_cas_ptr(ABTD_atomic_ptr *ptr, void *oldv,
+                                             void *newv, int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     void *tmp_oldv = oldv;
@@ -142,207 +147,224 @@ static inline void *ABTDI_atomic_val_cas_ptr(ABTD_atomic_ptr *ptr, void *oldv, v
 #endif
 }
 
-static inline int ABTDI_atomic_bool_cas_int(ABTD_atomic_int *ptr, int oldv, int newv, int weak)
+static inline int ABTDI_atomic_bool_cas_int(ABTD_atomic_int *ptr, int oldv,
+                                            int newv, int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
-    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak, __ATOMIC_ACQ_REL,
-                                       __ATOMIC_ACQUIRE);
+    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak,
+                                       __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
 #else
     return __sync_bool_compare_and_swap(&ptr->val, oldv, newv);
 #endif
 }
 
-static inline int ABTDI_atomic_bool_cas_int32(ABTD_atomic_int32 *ptr, int32_t oldv,
-                                              int32_t newv, int weak)
+static inline int ABTDI_atomic_bool_cas_int32(ABTD_atomic_int32 *ptr,
+                                              int32_t oldv, int32_t newv,
+                                              int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
-    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak, __ATOMIC_ACQ_REL,
-                                       __ATOMIC_ACQUIRE);
+    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak,
+                                       __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
 #else
     return __sync_bool_compare_and_swap(&ptr->val, oldv, newv);
 #endif
 }
 
-static inline int ABTDI_atomic_bool_cas_uint32(ABTD_atomic_uint32 *ptr, uint32_t oldv,
-                                               uint32_t newv, int weak)
+static inline int ABTDI_atomic_bool_cas_uint32(ABTD_atomic_uint32 *ptr,
+                                               uint32_t oldv, uint32_t newv,
+                                               int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
-    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak, __ATOMIC_ACQ_REL,
-                                       __ATOMIC_ACQUIRE);
+    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak,
+                                       __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
 #else
     return __sync_bool_compare_and_swap(&ptr->val, oldv, newv);
 #endif
 }
 
-static inline int ABTDI_atomic_bool_cas_int64(ABTD_atomic_int64 *ptr, int64_t oldv,
-                                              int64_t newv, int weak)
+static inline int ABTDI_atomic_bool_cas_int64(ABTD_atomic_int64 *ptr,
+                                              int64_t oldv, int64_t newv,
+                                              int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
-    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak, __ATOMIC_ACQ_REL,
-                                       __ATOMIC_ACQUIRE);
+    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak,
+                                       __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
 #else
     return __sync_bool_compare_and_swap(&ptr->val, oldv, newv);
 #endif
 }
 
-static inline int ABTDI_atomic_bool_cas_uint64(ABTD_atomic_uint64 *ptr, uint64_t oldv,
-                                               uint64_t newv, int weak)
+static inline int ABTDI_atomic_bool_cas_uint64(ABTD_atomic_uint64 *ptr,
+                                               uint64_t oldv, uint64_t newv,
+                                               int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
-    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak, __ATOMIC_ACQ_REL,
-                                       __ATOMIC_ACQUIRE);
+    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak,
+                                       __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
 #else
     return __sync_bool_compare_and_swap(&ptr->val, oldv, newv);
 #endif
 }
 
-static inline int ABTDI_atomic_bool_cas_ptr(ABTD_atomic_ptr *ptr, void *oldv, void *newv,
-                                            int weak)
+static inline int ABTDI_atomic_bool_cas_ptr(ABTD_atomic_ptr *ptr, void *oldv,
+                                            void *newv, int weak)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
-    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak, __ATOMIC_ACQ_REL,
-                                       __ATOMIC_ACQUIRE);
+    return __atomic_compare_exchange_n(&ptr->val, &oldv, newv, weak,
+                                       __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
 #else
     return __sync_bool_compare_and_swap(&ptr->val, oldv, newv);
 #endif
 }
 
-static inline int ABTD_atomic_val_cas_weak_int(ABTD_atomic_int *ptr, int oldv, int newv)
+static inline int ABTD_atomic_val_cas_weak_int(ABTD_atomic_int *ptr, int oldv,
+                                               int newv)
 {
     return ABTDI_atomic_val_cas_int(ptr, oldv, newv, 1);
 }
 
-static inline int32_t ABTD_atomic_val_cas_weak_int32(ABTD_atomic_int32 *ptr, int32_t oldv,
-                                                     int32_t newv)
+static inline int32_t ABTD_atomic_val_cas_weak_int32(ABTD_atomic_int32 *ptr,
+                                                     int32_t oldv, int32_t newv)
 {
     return ABTDI_atomic_val_cas_int32(ptr, oldv, newv, 1);
 }
 
-static inline uint32_t
-ABTD_atomic_val_cas_weak_uint32(ABTD_atomic_uint32 *ptr, uint32_t oldv, uint32_t newv)
+static inline uint32_t ABTD_atomic_val_cas_weak_uint32(ABTD_atomic_uint32 *ptr,
+                                                       uint32_t oldv,
+                                                       uint32_t newv)
 {
     return ABTDI_atomic_val_cas_uint32(ptr, oldv, newv, 1);
 }
 
-static inline int64_t ABTD_atomic_val_cas_weak_int64(ABTD_atomic_int64 *ptr, int64_t oldv,
-                                                     int64_t newv)
+static inline int64_t ABTD_atomic_val_cas_weak_int64(ABTD_atomic_int64 *ptr,
+                                                     int64_t oldv, int64_t newv)
 {
     return ABTDI_atomic_val_cas_int64(ptr, oldv, newv, 1);
 }
 
-static inline uint64_t
-ABTD_atomic_val_cas_weak_uint64(ABTD_atomic_uint64 *ptr, uint64_t oldv, uint64_t newv)
+static inline uint64_t ABTD_atomic_val_cas_weak_uint64(ABTD_atomic_uint64 *ptr,
+                                                       uint64_t oldv,
+                                                       uint64_t newv)
 {
     return ABTDI_atomic_val_cas_uint64(ptr, oldv, newv, 1);
 }
 
-static inline void *ABTD_atomic_val_cas_weak_ptr(ABTD_atomic_ptr *ptr, void *oldv,
-                                                 void *newv)
+static inline void *ABTD_atomic_val_cas_weak_ptr(ABTD_atomic_ptr *ptr,
+                                                 void *oldv, void *newv)
 {
     return ABTDI_atomic_val_cas_ptr(ptr, oldv, newv, 1);
 }
 
-static inline int ABTD_atomic_val_cas_strong_int(ABTD_atomic_int *ptr, int oldv, int newv)
+static inline int ABTD_atomic_val_cas_strong_int(ABTD_atomic_int *ptr, int oldv,
+                                                 int newv)
 {
     return ABTDI_atomic_val_cas_int(ptr, oldv, newv, 0);
 }
 
-static inline int32_t
-ABTD_atomic_val_cas_strong_int32(ABTD_atomic_int32 *ptr, int32_t oldv, int32_t newv)
+static inline int32_t ABTD_atomic_val_cas_strong_int32(ABTD_atomic_int32 *ptr,
+                                                       int32_t oldv,
+                                                       int32_t newv)
 {
     return ABTDI_atomic_val_cas_int32(ptr, oldv, newv, 0);
 }
 
 static inline uint32_t
-ABTD_atomic_val_cas_strong_uint32(ABTD_atomic_uint32 *ptr, uint32_t oldv, uint32_t newv)
+ABTD_atomic_val_cas_strong_uint32(ABTD_atomic_uint32 *ptr, uint32_t oldv,
+                                  uint32_t newv)
 {
     return ABTDI_atomic_val_cas_uint32(ptr, oldv, newv, 0);
 }
 
-static inline int64_t
-ABTD_atomic_val_cas_strong_int64(ABTD_atomic_int64 *ptr, int64_t oldv, int64_t newv)
+static inline int64_t ABTD_atomic_val_cas_strong_int64(ABTD_atomic_int64 *ptr,
+                                                       int64_t oldv,
+                                                       int64_t newv)
 {
     return ABTDI_atomic_val_cas_int64(ptr, oldv, newv, 0);
 }
 
 static inline uint64_t
-ABTD_atomic_val_cas_strong_uint64(ABTD_atomic_uint64 *ptr, uint64_t oldv, uint64_t newv)
+ABTD_atomic_val_cas_strong_uint64(ABTD_atomic_uint64 *ptr, uint64_t oldv,
+                                  uint64_t newv)
 {
     return ABTDI_atomic_val_cas_uint64(ptr, oldv, newv, 0);
 }
 
-static inline void *ABTD_atomic_val_cas_strong_ptr(ABTD_atomic_ptr *ptr, void *oldv,
-                                                   void *newv)
+static inline void *ABTD_atomic_val_cas_strong_ptr(ABTD_atomic_ptr *ptr,
+                                                   void *oldv, void *newv)
 {
     return ABTDI_atomic_val_cas_ptr(ptr, oldv, newv, 0);
 }
 
-static inline int ABTD_atomic_bool_cas_weak_int(ABTD_atomic_int *ptr, int oldv, int newv)
+static inline int ABTD_atomic_bool_cas_weak_int(ABTD_atomic_int *ptr, int oldv,
+                                                int newv)
 {
     return ABTDI_atomic_bool_cas_int(ptr, oldv, newv, 1);
 }
 
-static inline int ABTD_atomic_bool_cas_weak_int32(ABTD_atomic_int32 *ptr, int32_t oldv,
-                                                  int32_t newv)
+static inline int ABTD_atomic_bool_cas_weak_int32(ABTD_atomic_int32 *ptr,
+                                                  int32_t oldv, int32_t newv)
 {
     return ABTDI_atomic_bool_cas_int32(ptr, oldv, newv, 1);
 }
 
-static inline int ABTD_atomic_bool_cas_weak_uint32(ABTD_atomic_uint32 *ptr, uint32_t oldv,
-                                                   uint32_t newv)
+static inline int ABTD_atomic_bool_cas_weak_uint32(ABTD_atomic_uint32 *ptr,
+                                                   uint32_t oldv, uint32_t newv)
 {
     return ABTDI_atomic_bool_cas_uint32(ptr, oldv, newv, 1);
 }
 
-static inline int ABTD_atomic_bool_cas_weak_int64(ABTD_atomic_int64 *ptr, int64_t oldv,
-                                                  int64_t newv)
+static inline int ABTD_atomic_bool_cas_weak_int64(ABTD_atomic_int64 *ptr,
+                                                  int64_t oldv, int64_t newv)
 {
     return ABTDI_atomic_bool_cas_int64(ptr, oldv, newv, 1);
 }
 
-static inline int ABTD_atomic_bool_cas_weak_uint64(ABTD_atomic_uint64 *ptr, uint64_t oldv,
-                                                   uint64_t newv)
+static inline int ABTD_atomic_bool_cas_weak_uint64(ABTD_atomic_uint64 *ptr,
+                                                   uint64_t oldv, uint64_t newv)
 {
     return ABTDI_atomic_bool_cas_uint64(ptr, oldv, newv, 1);
 }
 
-static inline int ABTD_atomic_bool_cas_weak_ptr(ABTD_atomic_ptr *ptr, void *oldv,
-                                                void *newv)
+static inline int ABTD_atomic_bool_cas_weak_ptr(ABTD_atomic_ptr *ptr,
+                                                void *oldv, void *newv)
 {
     return ABTDI_atomic_bool_cas_ptr(ptr, oldv, newv, 1);
 }
 
-static inline int ABTD_atomic_bool_cas_strong_int(ABTD_atomic_int *ptr, int oldv, int newv)
+static inline int ABTD_atomic_bool_cas_strong_int(ABTD_atomic_int *ptr,
+                                                  int oldv, int newv)
 {
     return ABTDI_atomic_bool_cas_int(ptr, oldv, newv, 0);
 }
 
-static inline int ABTD_atomic_bool_cas_strong_int32(ABTD_atomic_int32 *ptr, int32_t oldv,
-                                                    int32_t newv)
+static inline int ABTD_atomic_bool_cas_strong_int32(ABTD_atomic_int32 *ptr,
+                                                    int32_t oldv, int32_t newv)
 {
     return ABTDI_atomic_bool_cas_int32(ptr, oldv, newv, 0);
 }
 
-static inline int
-ABTD_atomic_bool_cas_strong_uint32(ABTD_atomic_uint32 *ptr, uint32_t oldv, uint32_t newv)
+static inline int ABTD_atomic_bool_cas_strong_uint32(ABTD_atomic_uint32 *ptr,
+                                                     uint32_t oldv,
+                                                     uint32_t newv)
 {
     return ABTDI_atomic_bool_cas_uint32(ptr, oldv, newv, 0);
 }
 
-static inline int ABTD_atomic_bool_cas_strong_int64(ABTD_atomic_int64 *ptr, int64_t oldv,
-                                                    int64_t newv)
+static inline int ABTD_atomic_bool_cas_strong_int64(ABTD_atomic_int64 *ptr,
+                                                    int64_t oldv, int64_t newv)
 {
     return ABTDI_atomic_bool_cas_int64(ptr, oldv, newv, 0);
 }
 
-static inline int
-ABTD_atomic_bool_cas_strong_uint64(ABTD_atomic_uint64 *ptr, uint64_t oldv, uint64_t newv)
+static inline int ABTD_atomic_bool_cas_strong_uint64(ABTD_atomic_uint64 *ptr,
+                                                     uint64_t oldv,
+                                                     uint64_t newv)
 {
     return ABTDI_atomic_bool_cas_uint64(ptr, oldv, newv, 0);
 }
 
-static inline int ABTD_atomic_bool_cas_strong_ptr(ABTD_atomic_ptr *ptr, void *oldv,
-                                                  void *newv)
+static inline int ABTD_atomic_bool_cas_strong_ptr(ABTD_atomic_ptr *ptr,
+                                                  void *oldv, void *newv)
 {
     return ABTDI_atomic_bool_cas_ptr(ptr, oldv, newv, 0);
 }
@@ -356,7 +378,8 @@ static inline int ABTD_atomic_fetch_add_int(ABTD_atomic_int *ptr, int v)
 #endif
 }
 
-static inline int32_t ABTD_atomic_fetch_add_int32(ABTD_atomic_int32 *ptr, int32_t v)
+static inline int32_t ABTD_atomic_fetch_add_int32(ABTD_atomic_int32 *ptr,
+                                                  int32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_add(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -365,7 +388,8 @@ static inline int32_t ABTD_atomic_fetch_add_int32(ABTD_atomic_int32 *ptr, int32_
 #endif
 }
 
-static inline uint32_t ABTD_atomic_fetch_add_uint32(ABTD_atomic_uint32 *ptr, uint32_t v)
+static inline uint32_t ABTD_atomic_fetch_add_uint32(ABTD_atomic_uint32 *ptr,
+                                                    uint32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_add(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -374,7 +398,8 @@ static inline uint32_t ABTD_atomic_fetch_add_uint32(ABTD_atomic_uint32 *ptr, uin
 #endif
 }
 
-static inline int64_t ABTD_atomic_fetch_add_int64(ABTD_atomic_int64 *ptr, int64_t v)
+static inline int64_t ABTD_atomic_fetch_add_int64(ABTD_atomic_int64 *ptr,
+                                                  int64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_add(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -383,7 +408,8 @@ static inline int64_t ABTD_atomic_fetch_add_int64(ABTD_atomic_int64 *ptr, int64_
 #endif
 }
 
-static inline uint64_t ABTD_atomic_fetch_add_uint64(ABTD_atomic_uint64 *ptr, uint64_t v)
+static inline uint64_t ABTD_atomic_fetch_add_uint64(ABTD_atomic_uint64 *ptr,
+                                                    uint64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_add(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -401,7 +427,8 @@ static inline int ABTD_atomic_fetch_sub_int(ABTD_atomic_int *ptr, int v)
 #endif
 }
 
-static inline int32_t ABTD_atomic_fetch_sub_int32(ABTD_atomic_int32 *ptr, int32_t v)
+static inline int32_t ABTD_atomic_fetch_sub_int32(ABTD_atomic_int32 *ptr,
+                                                  int32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_sub(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -410,7 +437,8 @@ static inline int32_t ABTD_atomic_fetch_sub_int32(ABTD_atomic_int32 *ptr, int32_
 #endif
 }
 
-static inline uint32_t ABTD_atomic_fetch_sub_uint32(ABTD_atomic_uint32 *ptr, uint32_t v)
+static inline uint32_t ABTD_atomic_fetch_sub_uint32(ABTD_atomic_uint32 *ptr,
+                                                    uint32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_sub(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -419,7 +447,8 @@ static inline uint32_t ABTD_atomic_fetch_sub_uint32(ABTD_atomic_uint32 *ptr, uin
 #endif
 }
 
-static inline int64_t ABTD_atomic_fetch_sub_int64(ABTD_atomic_int64 *ptr, int64_t v)
+static inline int64_t ABTD_atomic_fetch_sub_int64(ABTD_atomic_int64 *ptr,
+                                                  int64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_sub(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -428,7 +457,8 @@ static inline int64_t ABTD_atomic_fetch_sub_int64(ABTD_atomic_int64 *ptr, int64_
 #endif
 }
 
-static inline uint64_t ABTD_atomic_fetch_sub_uint64(ABTD_atomic_uint64 *ptr, uint64_t v)
+static inline uint64_t ABTD_atomic_fetch_sub_uint64(ABTD_atomic_uint64 *ptr,
+                                                    uint64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_sub(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -446,7 +476,8 @@ static inline int ABTD_atomic_fetch_and_int(ABTD_atomic_int *ptr, int v)
 #endif
 }
 
-static inline int32_t ABTD_atomic_fetch_and_int32(ABTD_atomic_int32 *ptr, int32_t v)
+static inline int32_t ABTD_atomic_fetch_and_int32(ABTD_atomic_int32 *ptr,
+                                                  int32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_and(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -455,7 +486,8 @@ static inline int32_t ABTD_atomic_fetch_and_int32(ABTD_atomic_int32 *ptr, int32_
 #endif
 }
 
-static inline uint32_t ABTD_atomic_fetch_and_uint32(ABTD_atomic_uint32 *ptr, uint32_t v)
+static inline uint32_t ABTD_atomic_fetch_and_uint32(ABTD_atomic_uint32 *ptr,
+                                                    uint32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_and(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -464,7 +496,8 @@ static inline uint32_t ABTD_atomic_fetch_and_uint32(ABTD_atomic_uint32 *ptr, uin
 #endif
 }
 
-static inline int64_t ABTD_atomic_fetch_and_int64(ABTD_atomic_int64 *ptr, int64_t v)
+static inline int64_t ABTD_atomic_fetch_and_int64(ABTD_atomic_int64 *ptr,
+                                                  int64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_and(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -473,7 +506,8 @@ static inline int64_t ABTD_atomic_fetch_and_int64(ABTD_atomic_int64 *ptr, int64_
 #endif
 }
 
-static inline uint64_t ABTD_atomic_fetch_and_uint64(ABTD_atomic_uint64 *ptr, uint64_t v)
+static inline uint64_t ABTD_atomic_fetch_and_uint64(ABTD_atomic_uint64 *ptr,
+                                                    uint64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_and(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -491,7 +525,8 @@ static inline int ABTD_atomic_fetch_or_int(ABTD_atomic_int *ptr, int v)
 #endif
 }
 
-static inline int32_t ABTD_atomic_fetch_or_int32(ABTD_atomic_int32 *ptr, int32_t v)
+static inline int32_t ABTD_atomic_fetch_or_int32(ABTD_atomic_int32 *ptr,
+                                                 int32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_or(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -500,7 +535,8 @@ static inline int32_t ABTD_atomic_fetch_or_int32(ABTD_atomic_int32 *ptr, int32_t
 #endif
 }
 
-static inline uint32_t ABTD_atomic_fetch_or_uint32(ABTD_atomic_uint32 *ptr, uint32_t v)
+static inline uint32_t ABTD_atomic_fetch_or_uint32(ABTD_atomic_uint32 *ptr,
+                                                   uint32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_or(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -509,7 +545,8 @@ static inline uint32_t ABTD_atomic_fetch_or_uint32(ABTD_atomic_uint32 *ptr, uint
 #endif
 }
 
-static inline int64_t ABTD_atomic_fetch_or_int64(ABTD_atomic_int64 *ptr, int64_t v)
+static inline int64_t ABTD_atomic_fetch_or_int64(ABTD_atomic_int64 *ptr,
+                                                 int64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_or(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -518,7 +555,8 @@ static inline int64_t ABTD_atomic_fetch_or_int64(ABTD_atomic_int64 *ptr, int64_t
 #endif
 }
 
-static inline uint64_t ABTD_atomic_fetch_or_uint64(ABTD_atomic_uint64 *ptr, uint64_t v)
+static inline uint64_t ABTD_atomic_fetch_or_uint64(ABTD_atomic_uint64 *ptr,
+                                                   uint64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_or(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -536,7 +574,8 @@ static inline int ABTD_atomic_fetch_xor_int(ABTD_atomic_int *ptr, int v)
 #endif
 }
 
-static inline int32_t ABTD_atomic_fetch_xor_int32(ABTD_atomic_int32 *ptr, int32_t v)
+static inline int32_t ABTD_atomic_fetch_xor_int32(ABTD_atomic_int32 *ptr,
+                                                  int32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_xor(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -545,7 +584,8 @@ static inline int32_t ABTD_atomic_fetch_xor_int32(ABTD_atomic_int32 *ptr, int32_
 #endif
 }
 
-static inline uint32_t ABTD_atomic_fetch_xor_uint32(ABTD_atomic_uint32 *ptr, uint32_t v)
+static inline uint32_t ABTD_atomic_fetch_xor_uint32(ABTD_atomic_uint32 *ptr,
+                                                    uint32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_xor(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -554,7 +594,8 @@ static inline uint32_t ABTD_atomic_fetch_xor_uint32(ABTD_atomic_uint32 *ptr, uin
 #endif
 }
 
-static inline int64_t ABTD_atomic_fetch_xor_int64(ABTD_atomic_int64 *ptr, int64_t v)
+static inline int64_t ABTD_atomic_fetch_xor_int64(ABTD_atomic_int64 *ptr,
+                                                  int64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_xor(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -563,7 +604,8 @@ static inline int64_t ABTD_atomic_fetch_xor_int64(ABTD_atomic_int64 *ptr, int64_
 #endif
 }
 
-static inline uint64_t ABTD_atomic_fetch_xor_uint64(ABTD_atomic_uint64 *ptr, uint64_t v)
+static inline uint64_t ABTD_atomic_fetch_xor_uint64(ABTD_atomic_uint64 *ptr,
+                                                    uint64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_fetch_xor(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -600,7 +642,8 @@ static inline void ABTD_atomic_release_clear_bool(ABTD_atomic_bool *ptr)
 #endif
 }
 
-static inline ABT_bool ABTD_atomic_relaxed_load_bool(const ABTD_atomic_bool *ptr)
+static inline ABT_bool
+ABTD_atomic_relaxed_load_bool(const ABTD_atomic_bool *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED) ? ABT_TRUE : ABT_FALSE;
@@ -618,7 +661,8 @@ static inline int ABTD_atomic_relaxed_load_int(const ABTD_atomic_int *ptr)
 #endif
 }
 
-static inline int32_t ABTD_atomic_relaxed_load_int32(const ABTD_atomic_int32 *ptr)
+static inline int32_t
+ABTD_atomic_relaxed_load_int32(const ABTD_atomic_int32 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
@@ -627,7 +671,8 @@ static inline int32_t ABTD_atomic_relaxed_load_int32(const ABTD_atomic_int32 *pt
 #endif
 }
 
-static inline uint32_t ABTD_atomic_relaxed_load_uint32(const ABTD_atomic_uint32 *ptr)
+static inline uint32_t
+ABTD_atomic_relaxed_load_uint32(const ABTD_atomic_uint32 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
@@ -636,7 +681,8 @@ static inline uint32_t ABTD_atomic_relaxed_load_uint32(const ABTD_atomic_uint32 
 #endif
 }
 
-static inline int64_t ABTD_atomic_relaxed_load_int64(const ABTD_atomic_int64 *ptr)
+static inline int64_t
+ABTD_atomic_relaxed_load_int64(const ABTD_atomic_int64 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
@@ -645,7 +691,8 @@ static inline int64_t ABTD_atomic_relaxed_load_int64(const ABTD_atomic_int64 *pt
 #endif
 }
 
-static inline uint64_t ABTD_atomic_relaxed_load_uint64(const ABTD_atomic_uint64 *ptr)
+static inline uint64_t
+ABTD_atomic_relaxed_load_uint64(const ABTD_atomic_uint64 *ptr)
 {
     /* return 0 if this test_and_set succeeds to set a value. */
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
@@ -665,7 +712,8 @@ static inline void *ABTD_atomic_relaxed_load_ptr(const ABTD_atomic_ptr *ptr)
 #endif
 }
 
-static inline ABT_bool ABTD_atomic_acquire_load_bool(const ABTD_atomic_bool *ptr)
+static inline ABT_bool
+ABTD_atomic_acquire_load_bool(const ABTD_atomic_bool *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE) ? ABT_TRUE : ABT_FALSE;
@@ -689,7 +737,8 @@ static inline int ABTD_atomic_acquire_load_int(const ABTD_atomic_int *ptr)
 #endif
 }
 
-static inline int32_t ABTD_atomic_acquire_load_int32(const ABTD_atomic_int32 *ptr)
+static inline int32_t
+ABTD_atomic_acquire_load_int32(const ABTD_atomic_int32 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
@@ -701,7 +750,8 @@ static inline int32_t ABTD_atomic_acquire_load_int32(const ABTD_atomic_int32 *pt
 #endif
 }
 
-static inline uint32_t ABTD_atomic_acquire_load_uint32(const ABTD_atomic_uint32 *ptr)
+static inline uint32_t
+ABTD_atomic_acquire_load_uint32(const ABTD_atomic_uint32 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
@@ -713,7 +763,8 @@ static inline uint32_t ABTD_atomic_acquire_load_uint32(const ABTD_atomic_uint32 
 #endif
 }
 
-static inline int64_t ABTD_atomic_acquire_load_int64(const ABTD_atomic_int64 *ptr)
+static inline int64_t
+ABTD_atomic_acquire_load_int64(const ABTD_atomic_int64 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
@@ -725,7 +776,8 @@ static inline int64_t ABTD_atomic_acquire_load_int64(const ABTD_atomic_int64 *pt
 #endif
 }
 
-static inline uint64_t ABTD_atomic_acquire_load_uint64(const ABTD_atomic_uint64 *ptr)
+static inline uint64_t
+ABTD_atomic_acquire_load_uint64(const ABTD_atomic_uint64 *ptr)
 {
     /* return 0 if this test_and_set succeeds to set a value. */
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
@@ -760,7 +812,8 @@ static inline void ABTD_atomic_relaxed_store_int(ABTD_atomic_int *ptr, int val)
 #endif
 }
 
-static inline void ABTD_atomic_relaxed_store_int32(ABTD_atomic_int32 *ptr, int32_t val)
+static inline void ABTD_atomic_relaxed_store_int32(ABTD_atomic_int32 *ptr,
+                                                   int32_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELAXED);
@@ -769,7 +822,8 @@ static inline void ABTD_atomic_relaxed_store_int32(ABTD_atomic_int32 *ptr, int32
 #endif
 }
 
-static inline void ABTD_atomic_relaxed_store_uint32(ABTD_atomic_uint32 *ptr, uint32_t val)
+static inline void ABTD_atomic_relaxed_store_uint32(ABTD_atomic_uint32 *ptr,
+                                                    uint32_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELAXED);
@@ -778,7 +832,8 @@ static inline void ABTD_atomic_relaxed_store_uint32(ABTD_atomic_uint32 *ptr, uin
 #endif
 }
 
-static inline void ABTD_atomic_relaxed_store_int64(ABTD_atomic_int64 *ptr, int64_t val)
+static inline void ABTD_atomic_relaxed_store_int64(ABTD_atomic_int64 *ptr,
+                                                   int64_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELAXED);
@@ -787,7 +842,8 @@ static inline void ABTD_atomic_relaxed_store_int64(ABTD_atomic_int64 *ptr, int64
 #endif
 }
 
-static inline void ABTD_atomic_relaxed_store_uint64(ABTD_atomic_uint64 *ptr, uint64_t val)
+static inline void ABTD_atomic_relaxed_store_uint64(ABTD_atomic_uint64 *ptr,
+                                                    uint64_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELAXED);
@@ -796,7 +852,8 @@ static inline void ABTD_atomic_relaxed_store_uint64(ABTD_atomic_uint64 *ptr, uin
 #endif
 }
 
-static inline void ABTD_atomic_relaxed_store_ptr(ABTD_atomic_ptr *ptr, void *val)
+static inline void ABTD_atomic_relaxed_store_ptr(ABTD_atomic_ptr *ptr,
+                                                 void *val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELAXED);
@@ -816,7 +873,8 @@ static inline void ABTD_atomic_release_store_int(ABTD_atomic_int *ptr, int val)
 #endif
 }
 
-static inline void ABTD_atomic_release_store_int32(ABTD_atomic_int32 *ptr, int32_t val)
+static inline void ABTD_atomic_release_store_int32(ABTD_atomic_int32 *ptr,
+                                                   int32_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELEASE);
@@ -827,7 +885,8 @@ static inline void ABTD_atomic_release_store_int32(ABTD_atomic_int32 *ptr, int32
 #endif
 }
 
-static inline void ABTD_atomic_release_store_uint32(ABTD_atomic_uint32 *ptr, uint32_t val)
+static inline void ABTD_atomic_release_store_uint32(ABTD_atomic_uint32 *ptr,
+                                                    uint32_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELEASE);
@@ -838,7 +897,8 @@ static inline void ABTD_atomic_release_store_uint32(ABTD_atomic_uint32 *ptr, uin
 #endif
 }
 
-static inline void ABTD_atomic_release_store_int64(ABTD_atomic_int64 *ptr, int64_t val)
+static inline void ABTD_atomic_release_store_int64(ABTD_atomic_int64 *ptr,
+                                                   int64_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELEASE);
@@ -849,7 +909,8 @@ static inline void ABTD_atomic_release_store_int64(ABTD_atomic_int64 *ptr, int64
 #endif
 }
 
-static inline void ABTD_atomic_release_store_uint64(ABTD_atomic_uint64 *ptr, uint64_t val)
+static inline void ABTD_atomic_release_store_uint64(ABTD_atomic_uint64 *ptr,
+                                                    uint64_t val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELEASE);
@@ -860,7 +921,8 @@ static inline void ABTD_atomic_release_store_uint64(ABTD_atomic_uint64 *ptr, uin
 #endif
 }
 
-static inline void ABTD_atomic_release_store_ptr(ABTD_atomic_ptr *ptr, void *val)
+static inline void ABTD_atomic_release_store_ptr(ABTD_atomic_ptr *ptr,
+                                                 void *val)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_store_n(&ptr->val, val, __ATOMIC_RELEASE);
@@ -884,7 +946,8 @@ static inline int ABTD_atomic_exchange_int(ABTD_atomic_int *ptr, int v)
 #endif
 }
 
-static inline int32_t ABTD_atomic_exchange_int32(ABTD_atomic_int32 *ptr, int32_t v)
+static inline int32_t ABTD_atomic_exchange_int32(ABTD_atomic_int32 *ptr,
+                                                 int32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_exchange_n(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -897,7 +960,8 @@ static inline int32_t ABTD_atomic_exchange_int32(ABTD_atomic_int32 *ptr, int32_t
 #endif
 }
 
-static inline uint32_t ABTD_atomic_exchange_uint32(ABTD_atomic_uint32 *ptr, uint32_t v)
+static inline uint32_t ABTD_atomic_exchange_uint32(ABTD_atomic_uint32 *ptr,
+                                                   uint32_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_exchange_n(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -910,7 +974,8 @@ static inline uint32_t ABTD_atomic_exchange_uint32(ABTD_atomic_uint32 *ptr, uint
 #endif
 }
 
-static inline int64_t ABTD_atomic_exchange_int64(ABTD_atomic_int64 *ptr, int64_t v)
+static inline int64_t ABTD_atomic_exchange_int64(ABTD_atomic_int64 *ptr,
+                                                 int64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_exchange_n(&ptr->val, v, __ATOMIC_ACQ_REL);
@@ -923,7 +988,8 @@ static inline int64_t ABTD_atomic_exchange_int64(ABTD_atomic_int64 *ptr, int64_t
 #endif
 }
 
-static inline uint64_t ABTD_atomic_exchange_uint64(ABTD_atomic_uint64 *ptr, uint64_t v)
+static inline uint64_t ABTD_atomic_exchange_uint64(ABTD_atomic_uint64 *ptr,
+                                                   uint64_t v)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     return __atomic_exchange_n(&ptr->val, v, __ATOMIC_ACQ_REL);

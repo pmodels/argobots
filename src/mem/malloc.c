@@ -100,7 +100,9 @@ void ABTI_mem_finalize_local(ABTI_local *p_local)
         ABTI_page_header *p_tmp = p_cur;
         p_cur = p_cur->p_next;
 
-        size_t num_free_blks = p_tmp->num_empty_blks + ABTD_atomic_acquire_load_uint32(&p_tmp->num_remote_free);
+        size_t num_free_blks =
+            p_tmp->num_empty_blks +
+            ABTD_atomic_acquire_load_uint32(&p_tmp->num_remote_free);
         if (num_free_blks == p_tmp->num_total_blks) {
             if (p_tmp->is_mmapped == ABT_TRUE) {
                 munmap(p_tmp, gp_ABTI_global->mem_page_size);
@@ -440,7 +442,9 @@ void ABTI_mem_free_page(ABTI_local *p_local, ABTI_page_header *p_ph)
     if (p_local->p_mem_task_head == p_local->p_mem_task_tail)
         return;
 
-    uint32_t num_free_blks = p_ph->num_empty_blks + ABTD_atomic_acquire_load_uint32(&p_ph->num_remote_free);
+    uint32_t num_free_blks =
+        p_ph->num_empty_blks +
+        ABTD_atomic_acquire_load_uint32(&p_ph->num_remote_free);
     if (num_free_blks == p_ph->num_total_blks) {
         /* All blocks in the page have been freed */
         /* Remove from the list and free the page */
@@ -466,7 +470,8 @@ void ABTI_mem_take_free(ABTI_page_header *p_ph)
      * accurate as long as their sum is the same as the actual number of free
      * blocks. We keep these variables to avoid chasing the linked list to count
      * the number of free blocks. */
-    uint32_t num_remote_free = ABTD_atomic_acquire_load_uint32(&p_ph->num_remote_free);
+    uint32_t num_remote_free =
+        ABTD_atomic_acquire_load_uint32(&p_ph->num_remote_free);
     ABTD_atomic_ptr *ptr;
     void *old;
 
@@ -476,7 +481,8 @@ void ABTI_mem_take_free(ABTI_page_header *p_ph)
     /* Take the remote free pointer */
     do {
         ABTI_blk_header *p_free =
-            (ABTI_blk_header *)ABTD_atomic_acquire_load_ptr((ABTD_atomic_ptr *)&p_ph->p_free);
+            (ABTI_blk_header *)ABTD_atomic_acquire_load_ptr(
+                (ABTD_atomic_ptr *)&p_ph->p_free);
         p_ph->p_head = p_free;
         ptr = (ABTD_atomic_ptr *)&p_ph->p_free;
         old = (void *)p_free;
@@ -489,7 +495,8 @@ void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh)
     void *old, *new;
     do {
         ABTI_blk_header *p_free =
-            (ABTI_blk_header *)ABTD_atomic_acquire_load_ptr((ABTD_atomic_ptr *)&p_ph->p_free);
+            (ABTI_blk_header *)ABTD_atomic_acquire_load_ptr(
+                (ABTD_atomic_ptr *)&p_ph->p_free);
         p_bh->p_next = p_free;
         ptr = (ABTD_atomic_ptr *)&p_ph->p_free;
         old = (void *)p_free;
@@ -533,9 +540,11 @@ static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph)
         p_tmp = p_cur;
         p_cur = p_cur->p_next;
 
-        if (p_tmp->num_total_stacks != ABTD_atomic_acquire_load_uint32(&p_tmp->num_empty_stacks)) {
+        if (p_tmp->num_total_stacks !=
+            ABTD_atomic_acquire_load_uint32(&p_tmp->num_empty_stacks)) {
             LOG_DEBUG("%u ULTs are not freed\n",
-                      p_tmp->num_total_stacks - ABTD_atomic_acquire_load_uint32(&p_tmp->num_empty_stacks));
+                      p_tmp->num_total_stacks - ABTD_atomic_acquire_load_uint32(
+                                                    &p_tmp->num_empty_stacks));
         }
 
         if (p_tmp->is_mmapped == ABT_TRUE) {

@@ -216,17 +216,17 @@ struct ABTI_local {
 };
 
 struct ABTI_xstream {
-    int rank;                         /* Rank */
-    ABTI_xstream_type type;           /* Type */
-    ABTD_atomic_int state;            /* State (ABT_xstream_state) */
-    ABTI_sched **scheds;              /* Stack of running schedulers */
-    int max_scheds;                   /* Allocation size of the array scheds */
-    int num_scheds;                   /* Number of scheds */
-    ABTI_spinlock sched_lock;         /* Lock for the scheduler management */
+    int rank;                 /* Rank */
+    ABTI_xstream_type type;   /* Type */
+    ABTD_atomic_int state;    /* State (ABT_xstream_state) */
+    ABTI_sched **scheds;      /* Stack of running schedulers */
+    int max_scheds;           /* Allocation size of the array scheds */
+    int num_scheds;           /* Number of scheds */
+    ABTI_spinlock sched_lock; /* Lock for the scheduler management */
 
     ABTD_atomic_uint32 request; /* Request */
-    void *p_req_arg;          /* Request argument */
-    ABTI_sched *p_main_sched; /* Main scheduler */
+    void *p_req_arg;            /* Request argument */
+    ABTI_sched *p_main_sched;   /* Main scheduler */
 
     ABTD_xstream_context ctx; /* ES context */
 };
@@ -269,8 +269,8 @@ struct ABTI_pool {
     ABTD_atomic_int32 num_scheds;     /* Number of associated schedulers */
     ABTD_atomic_int32 num_blocked;    /* Number of blocked ULTs */
     ABTD_atomic_int32 num_migrations; /* Number of migrating ULTs */
-    void *data;             /* Specific data */
-    uint64_t id;            /* ID */
+    void *data;                       /* Specific data */
+    uint64_t id;                      /* ID */
 
     /* Functions to manage units */
     ABT_unit_get_type_fn u_get_type;
@@ -356,11 +356,11 @@ struct ABTI_thread_entry {
 };
 
 struct ABTI_task {
-    ABTI_xstream *p_xstream; /* Associated ES */
-    ABTD_atomic_int state;   /* State (ABT_task_state) */
+    ABTI_xstream *p_xstream;    /* Associated ES */
+    ABTD_atomic_int state;      /* State (ABT_task_state) */
     ABTD_atomic_uint32 request; /* Request */
-    void (*f_task)(void *);  /* Task function */
-    void *p_arg;             /* Task arguments */
+    void (*f_task)(void *);     /* Task function */
+    void *p_arg;                /* Task arguments */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_sched *is_sched; /* If it is a scheduler, its ptr */
 #endif
@@ -379,7 +379,7 @@ struct ABTI_key {
     void (*f_destructor)(void *value);
     uint32_t id;
     ABTD_atomic_uint32 refcount; /* Reference count */
-    ABT_bool freed;    /* TRUE: freed, FALSE: not */
+    ABT_bool freed;              /* TRUE: freed, FALSE: not */
 };
 
 struct ABTI_ktelem {

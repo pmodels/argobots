@@ -226,7 +226,7 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
                 /* We don't need to use the atomic OR operation here because
                  * the ULT will be terminated regardless of other requests. */
                 ABTD_atomic_release_store_uint32(&p_prev->request,
-                                         ABTI_THREAD_REQ_TERMINATE);
+                                                 ABTI_THREAD_REQ_TERMINATE);
             } else {
                 uint32_t req =
                     ABTD_atomic_fetch_or_uint32(&p_prev->request,

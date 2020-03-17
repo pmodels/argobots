@@ -694,8 +694,10 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
             prefix, (void *)p_pool->producer_id,
 #endif
-            prefix, ABTI_pool_get_size(p_pool), prefix, ABTD_atomic_acquire_load_int32(&p_pool->num_blocked),
-            prefix, ABTD_atomic_acquire_load_int32(&p_pool->num_migrations), prefix, p_pool->data);
+            prefix, ABTI_pool_get_size(p_pool), prefix,
+            ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), prefix,
+            ABTD_atomic_acquire_load_int32(&p_pool->num_migrations), prefix,
+            p_pool->data);
 
 fn_exit:
     fflush(p_os);

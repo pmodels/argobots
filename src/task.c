@@ -801,7 +801,8 @@ static int ABTI_task_revive(ABTI_local *p_local, ABTI_pool *p_pool,
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_task->state) == ABT_TASK_STATE_TERMINATED,
+    ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_task->state) ==
+                        ABT_TASK_STATE_TERMINATED,
                     ABT_ERR_INV_TASK);
 
     p_task->p_xstream = NULL;
@@ -909,7 +910,8 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
             prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
 #endif
-            prefix, p_task->refcount, prefix, ABTD_atomic_acquire_load_uint32(&p_task->request), prefix,
+            prefix, p_task->refcount, prefix,
+            ABTD_atomic_acquire_load_uint32(&p_task->request), prefix,
             p_task->p_arg, prefix, (void *)p_task->p_keytable);
 
 fn_exit:
@@ -926,8 +928,9 @@ void ABTI_task_release(ABTI_task *p_task)
 {
     uint32_t refcount;
     while ((refcount = p_task->refcount) > 0) {
-        if (ABTD_atomic_bool_cas_weak_uint32((ABTD_atomic_uint32 *)&p_task->refcount, refcount,
-                                             refcount - 1)) {
+        if (ABTD_atomic_bool_cas_weak_uint32((ABTD_atomic_uint32 *)&p_task
+                                                 ->refcount,
+                                             refcount, refcount - 1)) {
             break;
         }
     }
