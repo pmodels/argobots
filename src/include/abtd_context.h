@@ -13,18 +13,48 @@
 #include <ucontext.h>
 #endif
 
-typedef struct ABTD_thread_context {
+typedef struct ABTD_thread_context ABTD_thread_context;
+
+typedef struct ABTD_thread_context_atomic_ptr {
+    ABTD_atomic_ptr val;
+} ABTD_thread_context_atomic_ptr;
+
+static inline ABTD_thread_context *ABTD_atomic_relaxed_load_thread_context_ptr(
+    const ABTD_thread_context_atomic_ptr *ptr)
+{
+    return (ABTD_thread_context *)ABTD_atomic_relaxed_load_ptr(&ptr->val);
+}
+
+static inline ABTD_thread_context *ABTD_atomic_acquire_load_thread_context_ptr(
+    const ABTD_thread_context_atomic_ptr *ptr)
+{
+    return (ABTD_thread_context *)ABTD_atomic_acquire_load_ptr(&ptr->val);
+}
+
+static inline void ABTD_atomic_relaxed_store_thread_context_ptr(
+    ABTD_thread_context_atomic_ptr *ptr, ABTD_thread_context *p_ctx)
+{
+    ABTD_atomic_relaxed_store_ptr(&ptr->val, (void *)p_ctx);
+}
+
+static inline void ABTD_atomic_release_store_thread_context_ptr(
+    ABTD_thread_context_atomic_ptr *ptr, ABTD_thread_context *p_ctx)
+{
+    ABTD_atomic_release_store_ptr(&ptr->val, (void *)p_ctx);
+}
+
+struct ABTD_thread_context {
     void *p_ctx;                        /* actual context of fcontext, or a
                                          * pointer to uctx */
     void (*f_thread)(void *);           /* ULT function */
     void *p_arg;                        /* ULT function argument */
-    struct ABTD_thread_context *p_link; /* pointer to scheduler context */
+    ABTD_thread_context_atomic_ptr p_link; /* pointer to scheduler context */
 #ifndef ABT_CONFIG_USE_FCONTEXT
     ucontext_t uctx;               /* ucontext entity pointed by p_ctx */
     void (*f_uctx_thread)(void *); /* root function called by ucontext */
     void *p_uctx_arg;              /* argument for root function */
 #endif
-} ABTD_thread_context;
+};
 
 static void ABTD_thread_context_make(ABTD_thread_context *p_ctx, void *sp,
                                      size_t size, void (*thread_func)(void *));

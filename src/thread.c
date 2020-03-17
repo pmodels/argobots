@@ -1690,7 +1690,7 @@ int ABTI_thread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
         ABTI_CHECK_ERROR(abt_errno);
         /* When the main scheduler is terminated, the control will jump to the
          * primary ULT. */
-        ABTD_thread_context_change_link(&p_newthread->ctx, &p_main_thread->ctx);
+        ABTD_atomic_relaxed_store_thread_context_ptr(&p_newthread->ctx.p_link, &p_main_thread->ctx);
     } else {
         /* For secondary ESs, the stack of OS thread is used for the main
          * scheduler's ULT. */
@@ -2320,9 +2320,9 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         ABTI_POOL_REMOVE(p_thread->p_pool, p_thread->unit,
                          ABTI_self_get_native_thread_id(p_local));
 
-        /* Set the link in the context for the target ULT */
-        ABTD_thread_context_change_link(&p_thread->ctx, &p_self->ctx);
-
+        /* Set the link in the context for the target ULT.  Since p_link will be
+         * referenced by p_self, this update does not require release store. */
+        ABTD_atomic_relaxed_store_thread_context_ptr(&p_thread->ctx.p_link, &p_self->ctx);
         /* Set the last ES */
         p_thread->p_last_xstream = p_xstream;
         ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_RUNNING);
@@ -2362,8 +2362,10 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
                   ABTI_thread_get_id(p_thread));
 
-        /* Set the link in the context of the target ULT */
-        ABTD_thread_context_change_link(&p_thread->ctx, &p_self->ctx);
+        /* Set the link in the context of the target ULT. This p_link might be
+         * read by p_thread running on another ES in parallel, so release-store
+         * is needed here. */
+        ABTD_atomic_release_store_thread_context_ptr(&p_thread->ctx.p_link, &p_self->ctx);
 
         /* Suspend the current ULT */
         ABTI_thread_suspend(pp_local, p_self);

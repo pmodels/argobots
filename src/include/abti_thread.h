@@ -214,8 +214,7 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
              * TODO: avoid making a copy of the code. */
             ABTD_thread_context *p_ctx = &p_prev->ctx;
             ABTD_thread_context *p_link =
-                (ABTD_thread_context *)ABTD_atomic_acquire_load_ptr(
-                    (ABTD_atomic_ptr *)&p_ctx->p_link);
+                ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link);
             if (p_link) {
                 /* If p_link is set, it means that other ULT has called the
                  * join. */
@@ -238,8 +237,8 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
                      * joiner has blocked.  We have to wake up the joiner ULT.
                      */
                     do {
-                        p_link = (ABTD_thread_context *)ABTD_atomic_acquire_load_ptr(
-                            (ABTD_atomic_ptr *)&p_ctx->p_link);
+                        p_link = ABTD_atomic_acquire_load_thread_context_ptr(
+                            &p_ctx->p_link);
                     } while (!p_link);
                     ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);
                 }

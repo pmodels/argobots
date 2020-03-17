@@ -8,10 +8,8 @@
 
 #define __USE_GNU
 #include <pthread.h>
-#include "abtd_context.h"
-
-/* Atomic Functions */
 #include "abtd_atomic.h"
+#include "abtd_context.h"
 
 /* Data Types */
 typedef enum {
