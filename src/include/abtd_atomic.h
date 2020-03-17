@@ -525,12 +525,86 @@ static inline uint16_t ABTD_atomic_test_and_set_uint8(uint8_t *ptr)
 #endif
 }
 
+static inline void ABTD_atomic_relaxed_clear_uint8(uint8_t *ptr)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    __atomic_clear(ptr, __ATOMIC_RELAXED);
+#else
+    *(volatile uint8_t *)ptr = 0;
+#endif
+}
+
 static inline void ABTD_atomic_release_clear_uint8(uint8_t *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
     __atomic_clear(ptr, __ATOMIC_RELEASE);
 #else
     __sync_lock_release(ptr);
+#endif
+}
+
+static inline uint16_t ABTD_atomic_relaxed_load_uint8(uint8_t *ptr)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+#else
+    return *(volatile uint8_t *)ptr;
+#endif
+}
+
+static inline int ABTD_atomic_relaxed_load_int(int *ptr)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+#else
+    return *(volatile int *)ptr;
+#endif
+}
+
+static inline int32_t ABTD_atomic_relaxed_load_int32(int32_t *ptr)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+#else
+    return *(volatile int32_t *)ptr;
+#endif
+}
+
+static inline uint32_t ABTD_atomic_relaxed_load_uint32(uint32_t *ptr)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+#else
+    return *(volatile uint32_t *)ptr;
+#endif
+}
+
+static inline int64_t ABTD_atomic_relaxed_load_int64(int64_t *ptr)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+#else
+    return *(volatile int64_t *)ptr;
+#endif
+}
+
+static inline uint64_t ABTD_atomic_relaxed_load_uint64(uint64_t *ptr)
+{
+    /* return 0 if this test_and_set succeeds to set a value. */
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+#else
+    return *(volatile uint64_t *)ptr;
+#endif
+}
+
+static inline void *ABTD_atomic_relaxed_load_ptr(void **ptr)
+{
+    /* return 0 if this test_and_set succeeds to set a value. */
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+#else
+    return *(void *volatile *)ptr;
 #endif
 }
 
@@ -617,6 +691,60 @@ static inline void *ABTD_atomic_acquire_load_ptr(void **ptr)
     void *val = *(void *volatile *)ptr;
     __sync_synchronize();
     return val;
+#endif
+}
+
+static inline void ABTD_atomic_relaxed_store_int(int *ptr, int val)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    __atomic_store_n(ptr, val, __ATOMIC_RELAXED);
+#else
+    *(volatile int *)ptr = val;
+#endif
+}
+
+static inline void ABTD_atomic_relaxed_store_int32(int32_t *ptr, int32_t val)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    __atomic_store_n(ptr, val, __ATOMIC_RELAXED);
+#else
+    *(volatile int32_t *)ptr = val;
+#endif
+}
+
+static inline void ABTD_atomic_relaxed_store_uint32(uint32_t *ptr, uint32_t val)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    __atomic_store_n(ptr, val, __ATOMIC_RELAXED);
+#else
+    *(volatile uint32_t *)ptr = val;
+#endif
+}
+
+static inline void ABTD_atomic_relaxed_store_int64(int64_t *ptr, int64_t val)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    __atomic_store_n(ptr, val, __ATOMIC_RELAXED);
+#else
+    *(volatile int64_t *)ptr = val;
+#endif
+}
+
+static inline void ABTD_atomic_relaxed_store_uint64(uint64_t *ptr, uint64_t val)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    __atomic_store_n(ptr, val, __ATOMIC_RELAXED);
+#else
+    *(volatile uint64_t *)ptr = val;
+#endif
+}
+
+static inline void ABTD_atomic_relaxed_store_ptr(void **ptr, void *val)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    __atomic_store_n(ptr, val, __ATOMIC_RELAXED);
+#else
+    *(void *volatile *)ptr = val;
 #endif
 }
 
