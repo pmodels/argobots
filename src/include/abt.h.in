@@ -89,7 +89,6 @@ extern "C" {
 #define ABT_ERR_INV_FUTURE         25  /* Invalid future */
 #define ABT_ERR_INV_BARRIER        26  /* Invalid barrier */
 #define ABT_ERR_INV_TIMER          27  /* Invalid timer */
-#define ABT_ERR_INV_EVENT          28  /* Invalid event */
 #define ABT_ERR_XSTREAM            29  /* ES-related error */
 #define ABT_ERR_XSTREAM_STATE      30  /* ES state error */
 #define ABT_ERR_XSTREAM_BARRIER    31  /* ES barrier-related error */
@@ -109,7 +108,6 @@ extern "C" {
 #define ABT_ERR_FUTURE             45  /* Future-related error */
 #define ABT_ERR_BARRIER            46  /* Barrier-related error */
 #define ABT_ERR_TIMER              47  /* Timer-related error */
-#define ABT_ERR_EVENT              48  /* Event-related error */
 #define ABT_ERR_MIGRATION_TARGET   49  /* Migration target error */
 #define ABT_ERR_MIGRATION_NA       50  /* Migration not available */
 #define ABT_ERR_MISSING_JOIN       51  /* An ES or more did not join */
