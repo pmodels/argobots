@@ -47,7 +47,7 @@ static inline void ABTI_mem_add_page(ABTI_local *p_local,
 static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
                                                 ABTI_page_header *p_tail);
 static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph);
-static uint64_t g_sp_id = 0;
+static ABTD_atomic_uint64 g_sp_id = ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);
 
 void ABTI_mem_init(ABTI_global *p_global)
 {
@@ -56,7 +56,7 @@ void ABTI_mem_init(ABTI_global *p_global)
     p_global->p_mem_task = NULL;
     p_global->p_mem_sph = NULL;
 
-    g_sp_id = 0;
+    ABTD_atomic_relaxed_store_uint64(&g_sp_id, 0);
 }
 
 void ABTI_mem_init_local(ABTI_local *p_local)
@@ -100,7 +100,9 @@ void ABTI_mem_finalize_local(ABTI_local *p_local)
         ABTI_page_header *p_tmp = p_cur;
         p_cur = p_cur->p_next;
 
-        size_t num_free_blks = p_tmp->num_empty_blks + p_tmp->num_remote_free;
+        size_t num_free_blks =
+            p_tmp->num_empty_blks +
+            ABTD_atomic_acquire_load_uint32(&p_tmp->num_remote_free);
         if (num_free_blks == p_tmp->num_total_blks) {
             if (p_tmp->is_mmapped == ABT_TRUE) {
                 munmap(p_tmp, gp_ABTI_global->mem_page_size);
@@ -266,12 +268,12 @@ char *ABTI_mem_take_global_stack(ABTI_local *p_local)
     ABTI_stack_header *p_sh, *p_cur;
     uint32_t cnt_stacks = 0;
 
-    void **ptr;
+    ABTD_atomic_ptr *ptr;
     void *old;
     do {
-        p_sh = (ABTI_stack_header *)ABTD_atomic_load_ptr(
-            (void **)&p_global->p_mem_stack);
-        ptr = (void **)&p_global->p_mem_stack;
+        p_sh = (ABTI_stack_header *)ABTD_atomic_acquire_load_ptr(
+            (ABTD_atomic_ptr *)&p_global->p_mem_stack);
+        ptr = (ABTD_atomic_ptr *)&p_global->p_mem_stack;
         old = (void *)p_sh;
     } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, NULL));
 
@@ -298,15 +300,15 @@ char *ABTI_mem_take_global_stack(ABTI_local *p_local)
 void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh)
 {
     ABTI_global *p_global = gp_ABTI_global;
-    void **ptr;
+    ABTD_atomic_ptr *ptr;
     void *old, *new;
 
     do {
         ABTI_stack_header *p_mem_stack =
-            (ABTI_stack_header *)ABTD_atomic_load_ptr(
-                (void **)&p_global->p_mem_stack);
+            (ABTI_stack_header *)ABTD_atomic_acquire_load_ptr(
+                (ABTD_atomic_ptr *)&p_global->p_mem_stack);
         p_sh->p_next = p_mem_stack;
-        ptr = (void **)&p_global->p_mem_stack;
+        ptr = (ABTD_atomic_ptr *)&p_global->p_mem_stack;
         old = (void *)p_mem_stack;
         new = (void *)p_sh;
     } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, new));
@@ -415,7 +417,7 @@ ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
     p_ph->blk_size = blk_size;
     p_ph->num_total_blks = num_blks;
     p_ph->num_empty_blks = num_blks;
-    p_ph->num_remote_free = 0;
+    ABTD_atomic_relaxed_store_uint32(&p_ph->num_remote_free, 0);
     p_ph->p_head = (ABTI_blk_header *)(p_page + ph_size);
     p_ph->p_free = NULL;
     ABTI_mem_add_page(p_local, p_ph);
@@ -440,7 +442,9 @@ void ABTI_mem_free_page(ABTI_local *p_local, ABTI_page_header *p_ph)
     if (p_local->p_mem_task_head == p_local->p_mem_task_tail)
         return;
 
-    uint32_t num_free_blks = p_ph->num_empty_blks + p_ph->num_remote_free;
+    uint32_t num_free_blks =
+        p_ph->num_empty_blks +
+        ABTD_atomic_acquire_load_uint32(&p_ph->num_remote_free);
     if (num_free_blks == p_ph->num_total_blks) {
         /* All blocks in the page have been freed */
         /* Remove from the list and free the page */
@@ -466,8 +470,9 @@ void ABTI_mem_take_free(ABTI_page_header *p_ph)
      * accurate as long as their sum is the same as the actual number of free
      * blocks. We keep these variables to avoid chasing the linked list to count
      * the number of free blocks. */
-    uint32_t num_remote_free = p_ph->num_remote_free;
-    void **ptr;
+    uint32_t num_remote_free =
+        ABTD_atomic_acquire_load_uint32(&p_ph->num_remote_free);
+    ABTD_atomic_ptr *ptr;
     void *old;
 
     ABTD_atomic_fetch_sub_uint32(&p_ph->num_remote_free, num_remote_free);
@@ -476,22 +481,24 @@ void ABTI_mem_take_free(ABTI_page_header *p_ph)
     /* Take the remote free pointer */
     do {
         ABTI_blk_header *p_free =
-            (ABTI_blk_header *)ABTD_atomic_load_ptr((void **)&p_ph->p_free);
+            (ABTI_blk_header *)ABTD_atomic_acquire_load_ptr(
+                (ABTD_atomic_ptr *)&p_ph->p_free);
         p_ph->p_head = p_free;
-        ptr = (void **)&p_ph->p_free;
+        ptr = (ABTD_atomic_ptr *)&p_ph->p_free;
         old = (void *)p_free;
     } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, NULL));
 }
 
 void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh)
 {
-    void **ptr;
+    ABTD_atomic_ptr *ptr;
     void *old, *new;
     do {
         ABTI_blk_header *p_free =
-            (ABTI_blk_header *)ABTD_atomic_load_ptr((void **)&p_ph->p_free);
+            (ABTI_blk_header *)ABTD_atomic_acquire_load_ptr(
+                (ABTD_atomic_ptr *)&p_ph->p_free);
         p_bh->p_next = p_free;
-        ptr = (void **)&p_ph->p_free;
+        ptr = (ABTD_atomic_ptr *)&p_ph->p_free;
         old = (void *)p_free;
         new = (void *)p_bh;
     } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, new));
@@ -533,9 +540,11 @@ static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph)
         p_tmp = p_cur;
         p_cur = p_cur->p_next;
 
-        if (p_tmp->num_total_stacks != p_tmp->num_empty_stacks) {
+        if (p_tmp->num_total_stacks !=
+            ABTD_atomic_acquire_load_uint32(&p_tmp->num_empty_stacks)) {
             LOG_DEBUG("%u ULTs are not freed\n",
-                      p_tmp->num_total_stacks - p_tmp->num_empty_stacks);
+                      p_tmp->num_total_stacks - ABTD_atomic_acquire_load_uint32(
+                                                    &p_tmp->num_empty_stacks));
         }
 
         if (p_tmp->is_mmapped == ABT_TRUE) {
@@ -568,7 +577,7 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     p_sph = (ABTI_sp_header *)ABTU_malloc(sizeof(ABTI_sp_header));
     num_stacks = sp_size / stacksize;
     p_sph->num_total_stacks = num_stacks;
-    p_sph->num_empty_stacks = 0;
+    ABTD_atomic_relaxed_store_uint32(&p_sph->num_empty_stacks, 0);
     p_sph->stacksize = stacksize;
     p_sph->id = ABTD_atomic_fetch_add_uint64(&g_sp_id, 1);
 
@@ -618,10 +627,10 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
     }
 
     /* Add this stack page to the global stack page list */
-    void **ptr = (void **)&gp_ABTI_global->p_mem_sph;
+    ABTD_atomic_ptr *ptr = (ABTD_atomic_ptr *)&gp_ABTI_global->p_mem_sph;
     void *old;
     do {
-        p_sph->p_next = (ABTI_sp_header *)ABTD_atomic_load_ptr(ptr);
+        p_sph->p_next = (ABTI_sp_header *)ABTD_atomic_acquire_load_ptr(ptr);
         old = (void *)p_sph->p_next;
     } while (!ABTD_atomic_bool_cas_weak_ptr(ptr, old, (void *)p_sph));
 

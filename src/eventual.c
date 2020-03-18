@@ -113,7 +113,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         ABTI_thread *p_current;
         ABTI_unit *p_unit;
         ABT_unit_type type;
-        int32_t ext_signal = 0;
+        ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
         if (p_local != NULL) {
             p_current = p_local->p_thread;
@@ -127,6 +127,8 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
             /* external thread */
             type = ABT_UNIT_TYPE_EXT;
             p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
+            /* Check size if ext_signal can be stored in p_unit->pool. */
+            ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_unit->pool));
             p_unit->pool = (ABT_pool)&ext_signal;
             p_unit->type = type;
         }
@@ -153,7 +155,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
-            while (!ABTD_atomic_load_int32(&ext_signal))
+            while (!ABTD_atomic_acquire_load_int32(&ext_signal))
                 ;
             ABTU_free(p_unit);
         }
@@ -261,8 +263,8 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
             ABTI_thread_set_ready(p_local, p_thread);
         } else {
             /* When the head is an external thread */
-            int32_t *p_ext_signal = (int32_t *)p_unit->pool;
-            ABTD_atomic_store_int32(p_ext_signal, 1);
+            ABTD_atomic_int32 *p_ext_signal = (ABTD_atomic_int32 *)p_unit->pool;
+            ABTD_atomic_release_store_int32(p_ext_signal, 1);
         }
 
         /* Next ULT */

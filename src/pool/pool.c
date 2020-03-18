@@ -550,15 +550,15 @@ int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool = (ABTI_pool *)ABTU_malloc(sizeof(ABTI_pool));
     p_pool->access = def->access;
     p_pool->automatic = automatic;
-    p_pool->num_scheds = 0;
+    ABTD_atomic_release_store_int32(&p_pool->num_scheds, 0);
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
     p_pool->consumer_id = 0;
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
     p_pool->producer_id = 0;
 #endif
-    p_pool->num_blocked = 0;
-    p_pool->num_migrations = 0;
+    ABTD_atomic_release_store_int32(&p_pool->num_blocked, 0);
+    ABTD_atomic_release_store_int32(&p_pool->num_migrations, 0);
     p_pool->data = NULL;
 
     /* Set up the pool functions from def */
@@ -682,20 +682,22 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
             "%sproducer ID   : %p\n"
 #endif
             "%ssize          : %zu\n"
-            "%snum_blocked   : %u\n"
+            "%snum_blocked   : %d\n"
             "%snum_migrations: %d\n"
             "%sdata          : %p\n",
             prefix, (void *)p_pool, prefix, p_pool->id, prefix, access, prefix,
             (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE", prefix,
-            p_pool->num_scheds,
+            ABTD_atomic_acquire_load_int32(&p_pool->num_scheds),
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
             prefix, (void *)p_pool->consumer_id,
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
             prefix, (void *)p_pool->producer_id,
 #endif
-            prefix, ABTI_pool_get_size(p_pool), prefix, p_pool->num_blocked,
-            prefix, p_pool->num_migrations, prefix, p_pool->data);
+            prefix, ABTI_pool_get_size(p_pool), prefix,
+            ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), prefix,
+            ABTD_atomic_acquire_load_int32(&p_pool->num_migrations), prefix,
+            p_pool->data);
 
 fn_exit:
     fflush(p_os);
@@ -712,7 +714,7 @@ int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_native_thread_id consumer_id)
 {
     int abt_errno = ABT_SUCCESS;
 
-    if (p_pool->num_scheds == 0) {
+    if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 0) {
         return abt_errno;
     }
 
@@ -768,7 +770,7 @@ int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_native_thread_id producer_id)
 {
     int abt_errno = ABT_SUCCESS;
 
-    if (p_pool->num_scheds == 0) {
+    if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 0) {
         return abt_errno;
     }
 
@@ -841,10 +843,10 @@ int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
 #endif
 }
 
-static uint64_t g_pool_id = 0;
+static ABTD_atomic_uint64 g_pool_id = ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);
 void ABTI_pool_reset_id(void)
 {
-    g_pool_id = 0;
+    ABTD_atomic_release_store_uint64(&g_pool_id, 0);
 }
 
 /*****************************************************************************/

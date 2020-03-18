@@ -214,8 +214,7 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
              * TODO: avoid making a copy of the code. */
             ABTD_thread_context *p_ctx = &p_prev->ctx;
             ABTD_thread_context *p_link =
-                (ABTD_thread_context *)ABTD_atomic_load_ptr(
-                    (void **)&p_ctx->p_link);
+                ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link);
             if (p_link) {
                 /* If p_link is set, it means that other ULT has called the
                  * join. */
@@ -226,8 +225,8 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
 
                 /* We don't need to use the atomic OR operation here because
                  * the ULT will be terminated regardless of other requests. */
-                ABTD_atomic_store_uint32(&p_prev->request,
-                                         ABTI_THREAD_REQ_TERMINATE);
+                ABTD_atomic_release_store_uint32(&p_prev->request,
+                                                 ABTI_THREAD_REQ_TERMINATE);
             } else {
                 uint32_t req =
                     ABTD_atomic_fetch_or_uint32(&p_prev->request,
@@ -238,8 +237,8 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
                      * joiner has blocked.  We have to wake up the joiner ULT.
                      */
                     do {
-                        p_link = (ABTD_thread_context *)ABTD_atomic_load_ptr(
-                            (void **)&p_ctx->p_link);
+                        p_link = ABTD_atomic_acquire_load_thread_context_ptr(
+                            &p_ctx->p_link);
                     } while (!p_link);
                     ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);
                 }
@@ -352,7 +351,7 @@ static inline void ABTI_thread_yield(ABTI_local **pp_local,
               p_thread->p_last_xstream->rank);
 
     /* Change the state of current running thread */
-    p_thread->state = ABT_THREAD_STATE_READY;
+    ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
 
     /* Switch to the top scheduler */
     p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);

@@ -38,7 +38,7 @@ static inline ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 
 static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 {
-    p_mutex->val = 0;
+    ABTD_atomic_relaxed_store_uint32(&p_mutex->val, 0);
     p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
     p_mutex->attr.max_handovers = ABTI_global_get_mutex_max_handovers();
     p_mutex->attr.max_wakeups = ABTI_global_get_mutex_max_wakeups();
@@ -63,7 +63,7 @@ static inline void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
     /* ABTI_spinlock_ functions cannot be used since p_mutex->val can take
      * other values (i.e., not UNLOCKED nor LOCKED.) */
     while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-        while (ABTD_atomic_load_uint32(&p_mutex->val) != 0)
+        while (ABTD_atomic_acquire_load_uint32(&p_mutex->val) != 0)
             ;
     }
     LOG_EVENT("%p: spinlock\n", p_mutex);
@@ -107,11 +107,12 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                     ABTI_thread *p_self = (*pp_local)->p_thread;
                     if (p_self == p_mutex->p_handover) {
                         p_mutex->p_handover = NULL;
-                        p_mutex->val = 2;
+                        ABTD_atomic_release_store_uint32(&p_mutex->val, 2);
 
                         /* Push the previous ULT to its pool */
                         ABTI_thread *p_giver = p_mutex->p_giver;
-                        p_giver->state = ABT_THREAD_STATE_READY;
+                        ABTD_atomic_release_store_int(&p_giver->state,
+                                                      ABT_THREAD_STATE_READY);
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
                                        ABTI_self_get_native_thread_id(
                                            *pp_local));
@@ -148,11 +149,11 @@ static inline void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTD_atomic_mem_barrier();
-    *(volatile uint32_t *)&p_mutex->val = 0;
+    ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
     LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
 #else
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) != 1) {
-        ABTD_atomic_store_uint32(&p_mutex->val, 0);
+        ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
         LOG_EVENT("%p: unlock with wake\n", p_mutex);
         ABTI_mutex_wake_de(p_local, p_mutex);
     } else {
