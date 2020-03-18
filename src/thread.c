@@ -1263,61 +1263,6 @@ int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
 
 /**
  * @ingroup ULT
- * @brief   Increment the ULT's reference count.
- *
- * \c ABT_thread_retain() increments the ULT's reference count by one. If the
- * user obtains a ULT handle through \c ABT_thread_create(), the creation
- * routine performs an implicit retain.
- *
- * @param[in] thread  handle to the ULT
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_retain(ABT_thread thread)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    ABTI_thread_retain(p_thread);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ULT
- * @brief   Decrement the ULT's reference count.
- *
- * \c ABT_thread_release() decrements the ULT's reference count by one.
- * After the ULT's reference count becomes zero, the ULT object will be freed.
- *
- * @param[in] thread  handle to the ULT
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_thread_release(ABT_thread thread)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    ABTI_thread_release(p_thread);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup ULT
  * @brief   Get the ULT's stack size.
  *
  * \c ABT_thread_get_stacksize() returns the stack size of \c thread in bytes.
@@ -2150,23 +2095,6 @@ ABTI_thread_req_arg *ABTI_thread_get_req_arg(ABTI_thread *p_thread,
     return p_result;
 }
 #endif /* ABT_CONFIG_DISABLE_MIGRATION */
-
-void ABTI_thread_retain(ABTI_thread *p_thread)
-{
-    ABTD_atomic_fetch_add_uint32((ABTD_atomic_uint32 *)&p_thread->refcount, 1);
-}
-
-void ABTI_thread_release(ABTI_thread *p_thread)
-{
-    uint32_t refcount;
-    while ((refcount = p_thread->refcount) > 0) {
-        if (ABTD_atomic_bool_cas_weak_uint32((ABTD_atomic_uint32 *)&p_thread
-                                                 ->refcount,
-                                             refcount, refcount - 1)) {
-            break;
-        }
-    }
-}
 
 static ABTD_atomic_uint64 g_thread_id =
     ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);

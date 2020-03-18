@@ -250,37 +250,6 @@ fn_fail:
     goto fn_exit;
 }
 
-/**
- * @ingroup ES
- * @brief   Start the target ES.
- *
- * \c ABT_xstream_start() starts the target ES \c xstream if it has not been
- * started.  That is, this routine is effective only when the state of the
- * target ES is CREATED or READY, and once this routine returns, the ES's state
- * becomes RUNNING.
- *
- * @param[in] xstream  handle to the target ES
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_xstream_start(ABT_xstream xstream)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
-    abt_errno = ABTI_xstream_start(p_local, p_xstream);
-    ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
 int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -1865,12 +1834,6 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
             break;
     }
     switch (ABTD_atomic_acquire_load_int(&p_xstream->state)) {
-        case ABT_XSTREAM_STATE_CREATED:
-            state = "CREATED";
-            break;
-        case ABT_XSTREAM_STATE_READY:
-            state = "READY";
-            break;
         case ABT_XSTREAM_STATE_RUNNING:
             state = "RUNNING";
             break;

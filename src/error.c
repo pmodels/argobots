@@ -54,7 +54,7 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_INV_FUTURE",
                                      "ABT_ERR_INV_BARRIER",
                                      "ABT_ERR_INV_TIMER",
-                                     "ABT_ERR_INV_EVENT",
+                                     "ABT_ERR_INV_QUERY_KIND",
                                      "ABT_ERR_XSTREAM",
                                      "ABT_ERR_XSTREAM_STATE",
                                      "ABT_ERR_XSTREAM_BARRIER",
