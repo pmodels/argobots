@@ -622,62 +622,6 @@ int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result)
 
 /**
  * @ingroup TASK
- * @brief   Increment the tasklet's reference count.
- *
- * \c ABT_task_retain() increments the tasklet's reference count by one.
- * If the user obtains a tasklet handle through \c ABT_task_create(),
- * the creation routine performs an implicit retain.
- *
- * @param[in] task  handle to the tasklet
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_task_retain(ABT_task task)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    ABTI_task_retain(p_task);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup TASK
- * @brief   Decrement the tasklet's reference count.
- *
- * \c ABT_task_release() decrements the tasklet's reference count by one.
- * After the tasklet's reference count becomes zero, the tasklet object will
- * be freed.
- *
- * @param[in] task  handle to the tasklet
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
-int ABT_task_release(ABT_task task)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    ABTI_task_release(p_task);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-/**
- * @ingroup TASK
  * @brief   Get the tasklet's id
  *
  * \c ABT_task_get_id() returns the id of \c task.
@@ -917,23 +861,6 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
 fn_exit:
     fflush(p_os);
     ABTU_free(prefix);
-}
-
-void ABTI_task_retain(ABTI_task *p_task)
-{
-    ABTD_atomic_fetch_add_uint32((ABTD_atomic_uint32 *)&p_task->refcount, 1);
-}
-
-void ABTI_task_release(ABTI_task *p_task)
-{
-    uint32_t refcount;
-    while ((refcount = p_task->refcount) > 0) {
-        if (ABTD_atomic_bool_cas_weak_uint32((ABTD_atomic_uint32 *)&p_task
-                                                 ->refcount,
-                                             refcount, refcount - 1)) {
-            break;
-        }
-    }
 }
 
 static ABTD_atomic_uint64 g_task_id = ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);

@@ -560,8 +560,6 @@ int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os);
 void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
 #endif
-void ABTI_thread_retain(ABTI_thread *p_thread);
-void ABTI_thread_release(ABTI_thread *p_thread);
 void ABTI_thread_reset_id(void);
 ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread);
 ABT_thread_id ABTI_thread_self_id(ABTI_local *p_local);
@@ -598,8 +596,6 @@ int ABTI_task_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
                            ABTI_sched *p_sched);
 void ABTI_task_free(ABTI_local *p_local, ABTI_task *p_task);
 void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent);
-void ABTI_task_retain(ABTI_task *p_task);
-void ABTI_task_release(ABTI_task *p_task);
 void ABTI_task_reset_id(void);
 uint64_t ABTI_task_get_id(ABTI_task *p_task);
 
