@@ -319,7 +319,6 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
 
     ABTI_CHECK_TRUE_RET(p_data->num_units != 0, ABT_ERR_POOL);
     ABTI_CHECK_TRUE_RET(p_unit->pool != ABT_POOL_NULL, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE_MSG_RET(p_unit->pool == pool, ABT_ERR_POOL, "Not my pool");
 
     ABTI_spinlock_acquire(&p_data->mutex);
     if (p_data->num_units == 1) {
@@ -353,7 +352,6 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
 
     ABTI_CHECK_TRUE_RET(p_data->num_units != 0, ABT_ERR_POOL);
     ABTI_CHECK_TRUE_RET(p_unit->pool != ABT_POOL_NULL, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE_MSG_RET(p_unit->pool == pool, ABT_ERR_POOL, "Not my pool");
 
     if (p_data->num_units == 1) {
         p_data->p_head = NULL;

@@ -216,7 +216,6 @@ static int pool_remove(ABT_pool pool, ABT_unit unit)
 
     ABTI_CHECK_TRUE_RET(p_data->num_units != 0, ABT_ERR_POOL);
     ABTI_CHECK_TRUE_RET(p_unit->pool != ABT_POOL_NULL, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE_MSG_RET(p_unit->pool == pool, ABT_ERR_POOL, "Not my pool");
 
     pthread_mutex_lock(&p_data->mutex);
     if (p_data->num_units == 1) {
