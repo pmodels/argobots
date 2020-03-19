@@ -189,9 +189,9 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
     p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
-    /* Check size if ext_signal can be stored in p_unit->pool. */
-    ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_unit->pool));
-    p_unit->pool = (ABT_pool)&ext_signal;
+    /* Check size if ext_signal can be stored in p_unit->handle.thread. */
+    ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_unit->handle.thread));
+    p_unit->handle.thread = (ABT_thread)&ext_signal;
     p_unit->type = ABT_UNIT_TYPE_EXT;
 
     ABTI_spinlock_acquire(&p_cond->lock);
@@ -305,7 +305,8 @@ int ABT_cond_signal(ABT_cond cond)
         ABTI_thread_set_ready(p_local, p_thread);
     } else {
         /* When the head is an external thread */
-        ABTD_atomic_int32 *p_ext_signal = (ABTD_atomic_int32 *)p_unit->pool;
+        ABTD_atomic_int32 *p_ext_signal =
+            (ABTD_atomic_int32 *)p_unit->handle.thread;
         ABTD_atomic_release_store_int32(p_ext_signal, 1);
     }
 
