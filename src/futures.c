@@ -151,9 +151,11 @@ int ABT_future_wait(ABT_future future)
             /* external thread */
             type = ABT_UNIT_TYPE_EXT;
             p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
-            /* Check size if ext_signal can be stored in p_unit->pool. */
-            ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_unit->pool));
-            p_unit->pool = (ABT_pool)&ext_signal;
+            /* Check size if ext_signal can be stored in p_unit->handle.thread.
+             */
+            ABTI_STATIC_ASSERT(sizeof(ext_signal) <=
+                               sizeof(p_unit->handle.thread));
+            p_unit->handle.thread = (ABT_thread)&ext_signal;
             p_unit->type = type;
         }
 
@@ -280,7 +282,7 @@ int ABT_future_set(ABT_future future, void *value)
             } else {
                 /* When the head is an external thread */
                 ABTD_atomic_int32 *p_ext_signal =
-                    (ABTD_atomic_int32 *)p_unit->pool;
+                    (ABTD_atomic_int32 *)p_unit->handle.thread;
                 ABTD_atomic_release_store_int32(p_ext_signal, 1);
             }
 
