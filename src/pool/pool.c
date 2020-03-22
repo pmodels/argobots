@@ -27,7 +27,7 @@ static inline uint64_t ABTI_pool_get_new_id(void);
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
+int ABT_pool_create(const ABT_pool_def *def, ABT_pool_config config,
                     ABT_pool *newpool)
 {
     int abt_errno = ABT_SUCCESS;
@@ -541,7 +541,7 @@ fn_fail:
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
+int ABTI_pool_create(const ABT_pool_def *def, ABT_pool_config config,
                      ABT_bool automatic, ABTI_pool **pp_newpool)
 {
     int abt_errno = ABT_SUCCESS;

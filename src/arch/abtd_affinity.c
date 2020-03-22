@@ -158,7 +158,7 @@ fn_fail:
 }
 
 int ABTD_affinity_set_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
-                             int *p_cpuset)
+                             const int *p_cpuset)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
     int abt_errno = ABT_SUCCESS;

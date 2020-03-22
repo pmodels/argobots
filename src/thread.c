@@ -179,9 +179,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_create_many(int num, ABT_pool *pool_list,
-                           void (**thread_func_list)(void *), void **arg_list,
-                           ABT_thread_attr attr, ABT_thread *newthread_list)
+int ABT_thread_create_many(int num, const ABT_pool *pool_list,
+                           void (*const *thread_func_list)(void *),
+                           void *const *arg_list, ABT_thread_attr attr,
+                           ABT_thread *newthread_list)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
@@ -397,7 +398,7 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
+int ABT_thread_join_many(int num_threads, const ABT_thread *thread_list)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();

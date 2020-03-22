@@ -230,7 +230,7 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
+int ABT_eventual_set(ABT_eventual eventual, const void *value, int nbytes)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();

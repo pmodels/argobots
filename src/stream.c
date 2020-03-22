@@ -144,7 +144,7 @@ fn_fail:
  * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
-                             ABT_pool *pools, ABT_sched_config config,
+                             const ABT_pool *pools, ABT_sched_config config,
                              ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
@@ -786,7 +786,7 @@ fn_fail:
  */
 int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
                                      ABT_sched_predef predef, int num_pools,
-                                     ABT_pool *pools)
+                                     const ABT_pool *pools)
 {
     ABTI_local *p_local = ABTI_local_get_local();
     int abt_errno = ABT_SUCCESS;
@@ -1190,7 +1190,8 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset)
+int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size,
+                             const int *cpuset)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);

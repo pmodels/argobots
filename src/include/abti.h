@@ -488,15 +488,15 @@ ABT_sched_def *ABTI_sched_get_prio_def(void);
 ABT_sched_def *ABTI_sched_get_randws_def(void);
 void ABTI_sched_finish(ABTI_sched *p_sched);
 void ABTI_sched_exit(ABTI_sched *p_sched);
-int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                      ABT_sched_config config, ABT_bool automatic,
-                      ABTI_sched **pp_newsched);
+int ABTI_sched_create(const ABT_sched_def *def, int num_pools,
+                      const ABT_pool *pools, ABT_sched_config config,
+                      ABT_bool automatic, ABTI_sched **pp_newsched);
 int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
-                            ABT_pool *pools, ABT_sched_config config,
+                            const ABT_pool *pools, ABT_sched_config config,
                             ABTI_sched **pp_newsched);
 int ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
-ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
+ABTI_sched_kind ABTI_sched_get_kind(const ABT_sched_def *def);
 ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched,
                                 ABTI_xstream *p_xstream);
 size_t ABTI_sched_get_size(ABTI_sched *p_sched);
@@ -514,7 +514,7 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
                                   ABT_pool_access *access, ABT_bool *automatic);
 
 /* Pool */
-int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
+int ABTI_pool_create(const ABT_pool_def *def, ABT_pool_config config,
                      ABT_bool automatic, ABTI_pool **pp_newpool);
 int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                            ABT_bool automatic, ABTI_pool **pp_newpool);

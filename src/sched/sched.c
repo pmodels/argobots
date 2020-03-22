@@ -33,8 +33,9 @@ static inline uint64_t ABTI_sched_get_new_id(void);
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                     ABT_sched_config config, ABT_sched *newsched)
+int ABT_sched_create(const ABT_sched_def *def, int num_pools,
+                     const ABT_pool *pools, ABT_sched_config config,
+                     ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_sched;
@@ -91,7 +92,7 @@ fn_fail:
  * @retval ABT_SUCCESS on success
  */
 int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
-                           ABT_pool *pools, ABT_sched_config config,
+                           const ABT_pool *pools, ABT_sched_config config,
                            ABT_sched *newsched)
 {
     int abt_errno = ABT_SUCCESS;
@@ -567,9 +568,9 @@ void ABTI_sched_exit(ABTI_sched *p_sched)
     ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_EXIT);
 }
 
-int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                      ABT_sched_config config, ABT_bool automatic,
-                      ABTI_sched **pp_newsched)
+int ABTI_sched_create(const ABT_sched_def *def, int num_pools,
+                      const ABT_pool *pools, ABT_sched_config config,
+                      ABT_bool automatic, ABTI_sched **pp_newsched)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_sched;
@@ -636,7 +637,7 @@ fn_fail:
 }
 
 int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
-                            ABT_pool *pools, ABT_sched_config config,
+                            const ABT_pool *pools, ABT_sched_config config,
                             ABTI_sched **pp_newsched)
 {
     int abt_errno = ABT_SUCCESS;
@@ -872,7 +873,7 @@ fn_fail:
     goto fn_exit;
 }
 
-ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
+ABTI_sched_kind ABTI_sched_get_kind(const ABT_sched_def *def)
 {
     return (ABTI_sched_kind)def;
 }
