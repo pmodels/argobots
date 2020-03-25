@@ -249,10 +249,10 @@ int ABT_future_set(ABT_future future, void *value)
 
     ABTI_spinlock_acquire(&p_future->lock);
 
+    ABTI_CHECK_TRUE(p_future->counter < p_future->compartments,
+                    ABT_ERR_FUTURE);
     p_future->array[p_future->counter] = value;
     p_future->counter++;
-    ABTI_CHECK_TRUE(p_future->counter <= p_future->compartments,
-                    ABT_ERR_FUTURE);
 
     if (p_future->counter == p_future->compartments) {
         p_future->ready = ABT_TRUE;
