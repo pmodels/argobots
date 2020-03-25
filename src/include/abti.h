@@ -420,8 +420,7 @@ struct ABTI_eventual {
 
 struct ABTI_future {
     ABTI_spinlock lock;
-    ABT_bool ready;
-    uint32_t counter;
+    ABTD_atomic_uint32 counter;
     uint32_t compartments;
     void **array;
     void (*p_callback)(void **arg);
