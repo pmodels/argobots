@@ -141,8 +141,13 @@ int ABT_future_wait(ABT_future future)
 
         if (p_local != NULL) {
             p_current = p_local->p_thread;
-            ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_FUTURE);
-
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+            if (p_current == NULL) {
+                abt_errno = ABT_ERR_FUTURE;
+                ABTI_spinlock_release(&p_future->lock);
+                goto fn_fail;
+            }
+#endif
             type = ABT_UNIT_TYPE_THREAD;
             p_unit = &p_current->unit_def;
             p_unit->handle.thread = ABTI_thread_get_handle(p_current);
@@ -249,8 +254,13 @@ int ABT_future_set(ABT_future future, void *value)
 
     ABTI_spinlock_acquire(&p_future->lock);
 
-    ABTI_CHECK_TRUE(p_future->counter < p_future->compartments,
-                    ABT_ERR_FUTURE);
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+    if (p_future->counter >= p_future->compartments) {
+        abt_errno = ABT_ERR_FUTURE;
+        ABTI_spinlock_release(&p_future->lock);
+        goto fn_fail;
+    }
+#endif
     p_future->array[p_future->counter] = value;
     p_future->counter++;
 
