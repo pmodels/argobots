@@ -7,6 +7,7 @@ TESTS = \
 	hello_world \
 	hello_world_thread \
 	fibonacci_future \
+	fibonacci_recursive \
 	fibonacci_task \
 	fibonacci_thread_task \
 	sched_predef \
@@ -26,6 +27,7 @@ include $(top_srcdir)/test/Makefile.mk
 hello_world_SOURCES = hello_world.c
 hello_world_thread_SOURCES = hello_world_thread.c
 fibonacci_future_SOURCES = fibonacci_future.c
+fibonacci_recursive_SOURCES = fibonacci_recursive.c
 fibonacci_task_SOURCES = fibonacci_task.c
 fibonacci_thread_task_SOURCES = fibonacci_thread_task.c
 sched_predef_SOURCES = sched_predef.c
@@ -41,6 +43,7 @@ testing:
 	./hello_world
 	./hello_world_thread
 	./fibonacci_future
+	./fibonacci_recursive
 	./fibonacci_task
 	./fibonacci_thread_task
 	./sched_predef
