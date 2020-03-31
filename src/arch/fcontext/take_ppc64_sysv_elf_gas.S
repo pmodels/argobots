@@ -187,7 +187,7 @@ take_fcontext:
     mtfsf  0xff, %f0  # restore FPSCR
 #ifdef __VSX__
     li    %r10, 144
-    lvx   %v19, %r10, %r1 # load VSCR vector
+    lvx   %v19, %r10, %r1 # load VSCR
     mtvscr %v19           # restore VSCR.  Only the last 32 bits are used
     li    %r14, 160
     lvx  %v20, %r14, %r1  # restore V20
