@@ -415,9 +415,14 @@ fi
 
 # --enable-perf-opt: set CFLAGS for the performance optimization
 if test "x$enable_perf_opt" = "xyes"; then
-    CFLAGS="$CFLAGS -O3 -ftls-model=initial-exec"
-    CXXFLAGS="$CXXFLAGS -O3 -ftls-model=initial-exec"
-    CCASFLAGS="$CCASFLAGS -O3 -ftls-model=initial-exec"
+    CFLAGS="$CFLAGS -O3"
+    CXXFLAGS="$CXXFLAGS -O3"
+    CCASFLAGS="$CCASFLAGS -O3"
+    if test "$CC" != "xlc"; then
+        CFLAGS="$CFLAGS -ftls-model=initial-exec"
+        CXXFLAGS="$CXXFLAGS -ftls-model=initial-exec"
+        CCASFLAGS="$CCASFLAGS -ftls-model=initial-exec"
+    fi
     if test "$CC" = "icc"; then
         CFLAGS="$CFLAGS -ipo"
         CXXFLAGS="$CFLAGS -ipo"
