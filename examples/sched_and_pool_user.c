@@ -244,7 +244,7 @@ struct example_unit {
     union {
         ABT_thread thread;
         ABT_task task;
-    };
+    } handle;
     ABT_unit_type type;
 };
 
@@ -577,7 +577,7 @@ static ABT_thread unit_get_thread(ABT_unit unit)
     ABT_thread h_thread;
     unit_t *p_unit = (unit_t *)unit;
     if (p_unit->type == ABT_UNIT_TYPE_THREAD) {
-        h_thread = p_unit->thread;
+        h_thread = p_unit->handle.thread;
     } else {
         h_thread = ABT_THREAD_NULL;
     }
@@ -589,7 +589,7 @@ static ABT_task unit_get_task(ABT_unit unit)
     ABT_task h_task;
     unit_t *p_unit = (unit_t *)unit;
     if (p_unit->type == ABT_UNIT_TYPE_TASK) {
-        h_task = p_unit->task;
+        h_task = p_unit->handle.task;
     } else {
         h_task = ABT_TASK_NULL;
     }
@@ -611,7 +611,7 @@ static ABT_unit unit_create_from_thread(ABT_thread thread)
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
     p_unit->pool = ABT_POOL_NULL;
-    p_unit->thread = thread;
+    p_unit->handle.thread = thread;
     p_unit->type = ABT_UNIT_TYPE_THREAD;
 
     return (ABT_unit)p_unit;
@@ -626,7 +626,7 @@ static ABT_unit unit_create_from_task(ABT_task task)
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
     p_unit->pool = ABT_POOL_NULL;
-    p_unit->task = task;
+    p_unit->handle.task = task;
     p_unit->type = ABT_UNIT_TYPE_TASK;
 
     return (ABT_unit)p_unit;

@@ -138,14 +138,14 @@ static int eq(double a, double b)
         return (a - b < e);
 }
 
-static int check(double *results, int n)
+static int check(double *r, int n)
 {
     int i, j;
     for (i = 0; i < n / 2; i++) {
         for (j = 0; j < n / 2; j++) {
-            if (!eq(results[i * n + j], results[i * n + (n - 1 - j)]) ||
-                !eq(results[i * n + j], results[(n - 1 - i) * n + j]) ||
-                !eq(results[i * n + j], results[(n - 1 - i) * n + (n - 1 - j)]))
+            if (!eq(r[i * n + j], r[i * n + (n - 1 - j)]) ||
+                !eq(r[i * n + j], r[(n - 1 - i) * n + j]) ||
+                !eq(r[i * n + j], r[(n - 1 - i) * n + (n - 1 - j)]))
                 return 0;
         }
     }
