@@ -120,7 +120,6 @@ int main(int argc, char *argv[])
     for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create_basic(ABT_SCHED_DEFAULT, 1, &g_pool,
                                  ABT_SCHED_CONFIG_NULL, &xstreams[i]);
-        ABT_xstream_start(xstreams[i]);
     }
 
     args.n = n;
