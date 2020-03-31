@@ -1,8 +1,6 @@
 # examples
 fibonacci_future
 fibonacci_recursive
-fibonacci_task
-fibonacci_thread_task
 hello_world
 hello_world_thread
 sched_predef
