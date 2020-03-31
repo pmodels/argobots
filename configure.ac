@@ -633,7 +633,9 @@ AC_TRY_COMPILE(
 [have_atomic_builtin=yes],
 [have_atomic_builtin=no]
 )
-if test "x$have_atomic_builtin" = "xyes" ; then
+# __atomic is broken in XLC-16.1.1, so use __sync as a fallback
+# See https://github.com/pmodels/argobots/issues/162 for details.
+if test "$CC" != "xlc" -a "x$have_atomic_builtin" = "xyes" ; then
     AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_BUILTIN, 1,
               [Define if __atomic builtins are supported])
 fi
