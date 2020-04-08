@@ -607,7 +607,15 @@ AS_IF([test "x$enable_sched_sleep" = "xyes"],
                  [Define to make the scheduler sleep when its pools are empty])])
 
 # --enable-dynamic-promotion
-AS_IF([test "x$enable_dynamic_promotion" = "xyes" -a "x$enable_fcontext" != "xno" -a "x$fctx_arch_bin" = "xx86_64_sysv_elf_gas"],
+case "x$fctx_arch_bin" in
+    xx86_64_sysv_elf_gas|xarm64_aapcs_elf_gas)
+        support_dynamic_promotion="yes"
+    ;;
+    *)
+        support_dynamic_promotion="no"
+    ;;
+esac
+AS_IF([test "x$enable_dynamic_promotion" = "xyes" -a "x$enable_fcontext" != "xno" -a "x$support_dynamic_promotion" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_THREAD_TYPE, ABT_THREAD_TYPE_DYNAMIC_PROMOTION,
                  [Define to use the dynamic promotion technique for ULT])],
       [AC_DEFINE(ABT_CONFIG_THREAD_TYPE, ABT_THREAD_TYPE_FULLY_FLEDGED)])
