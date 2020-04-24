@@ -828,5 +828,9 @@ AC_CONFIG_FILES([Makefile
                  test/basic/Makefile
                  test/benchmark/Makefile
                  test/util/Makefile
-                 examples/Makefile])
+                 examples/Makefile
+                 examples/fibonacci/Makefile
+                 examples/hello_world/Makefile
+                 examples/scheduling/Makefile
+                 examples/stencil/Makefile])
 AC_OUTPUT
