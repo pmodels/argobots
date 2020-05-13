@@ -637,7 +637,7 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_xstream_set_rank(ABT_xstream xstream, const int rank)
+int ABT_xstream_set_rank(ABT_xstream xstream, int rank)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
