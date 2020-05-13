@@ -454,7 +454,7 @@ int ABT_xstream_exit(void) ABT_API_PUBLIC;
 int ABT_xstream_cancel(ABT_xstream xstream) ABT_API_PUBLIC;
 int ABT_xstream_self(ABT_xstream *xstream) ABT_API_PUBLIC;
 int ABT_xstream_self_rank(int *rank) ABT_API_PUBLIC;
-int ABT_xstream_set_rank(ABT_xstream xstream, const int rank) ABT_API_PUBLIC;
+int ABT_xstream_set_rank(ABT_xstream xstream, int rank) ABT_API_PUBLIC;
 int ABT_xstream_get_rank(ABT_xstream xstream, int *rank) ABT_API_PUBLIC;
 int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched) ABT_API_PUBLIC;
 int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
