@@ -63,7 +63,7 @@ extern "C" {
 /* Error Classes */
 #define ABT_SUCCESS                 0  /* Successful return code */
 #define ABT_ERR_UNINITIALIZED       1  /* Uninitialized */
-#define ABT_ERR_MEM                 2  /* Memeory allocation failure */
+#define ABT_ERR_MEM                 2  /* Memory allocation failure */
 #define ABT_ERR_OTHER               3  /* Other error */
 #define ABT_ERR_INV_XSTREAM         4  /* Invalid ES */
 #define ABT_ERR_INV_XSTREAM_RANK    5  /* Invalid ES rank */
@@ -374,7 +374,7 @@ extern ABT_sched_config_var ABT_sched_basic_freq ABT_API_PUBLIC;
 extern ABT_sched_config_var ABT_sched_config_access ABT_API_PUBLIC;
   /* To configure the access type of the pools created automatically */
 extern ABT_sched_config_var ABT_sched_config_automatic ABT_API_PUBLIC;
-  /* To configure whether ths scheduler is freed automatically or not */
+  /* To configure whether the scheduler is freed automatically or not */
 
 /* Scheduler Functions */
 typedef int      (*ABT_sched_init_fn)(ABT_sched, ABT_sched_config);

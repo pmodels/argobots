@@ -117,6 +117,64 @@ jump_fcontext:
 
     ret x4
 .size   jump_fcontext,.-jump_fcontext
+
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+.text
+.globl init_and_call_fcontext
+.type init_and_call_fcontext,@function
+.align 16
+init_and_call_fcontext:
+    # save the current rsp to [sp - 0x08]
+    mov x4, sp
+    stp x30, x4, [x2, -0x10]
+
+    # save callee-saved registers
+    # prepare stack for GP + FPU
+    sub  sp, sp, #0xb0
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    # save d8 - d15
+    stp  d8,  d9,  [sp, #0x00]
+    stp  d10, d11, [sp, #0x10]
+    stp  d12, d13, [sp, #0x20]
+    stp  d14, d15, [sp, #0x30]
+#endif
+
+    # save x19-x30
+    stp  x19, x20, [sp, #0x40]
+    stp  x21, x22, [sp, #0x50]
+    stp  x23, x24, [sp, #0x60]
+    stp  x25, x26, [sp, #0x70]
+    stp  x27, x28, [sp, #0x80]
+    stp  x29, x30, [sp, #0x90]
+
+    # save LR as PC
+    str  x30, [sp, #0xa0]
+
+    # store sp in x3 (= fctx)
+    mov x4, sp
+    str x4, [x3]
+
+    # assign x2 (=p_stack) to sp
+    sub sp, x2, #0x10
+
+    # call x1 (= f_thread). x0 (= p_arg) has been already set
+    # sp is 16-byte aligned (ABI specification)
+    blr x1
+
+    # restore original LR and sp
+    ldp x30, x3, [sp]
+    mov sp, x3
+
+    # - when the thread did not yield, sp is the original one, so ret jumps to
+    #   the original control flow.
+    # - any suspension updates sp to (p_stack - 0x10). so that ret calls
+    #   (p_stack - 0x8), which is a set to a terminator function
+    # sp is 16-byte aligned (ABI specification)
+    ret
+.size init_and_call_fcontext,.-init_and_call_fcontext
+#endif
+
 # Mark that we don't need executable stack.
 .section .note.GNU-stack,"",%progbits
 

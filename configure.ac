@@ -415,9 +415,14 @@ fi
 
 # --enable-perf-opt: set CFLAGS for the performance optimization
 if test "x$enable_perf_opt" = "xyes"; then
-    CFLAGS="$CFLAGS -O3 -ftls-model=initial-exec"
-    CXXFLAGS="$CXXFLAGS -O3 -ftls-model=initial-exec"
-    CCASFLAGS="$CCASFLAGS -O3 -ftls-model=initial-exec"
+    CFLAGS="$CFLAGS -O3"
+    CXXFLAGS="$CXXFLAGS -O3"
+    CCASFLAGS="$CCASFLAGS -O3"
+    if test "$CC" != "xlc"; then
+        CFLAGS="$CFLAGS -ftls-model=initial-exec"
+        CXXFLAGS="$CXXFLAGS -ftls-model=initial-exec"
+        CCASFLAGS="$CCASFLAGS -ftls-model=initial-exec"
+    fi
     if test "$CC" = "icc"; then
         CFLAGS="$CFLAGS -ipo"
         CXXFLAGS="$CFLAGS -ipo"
@@ -602,7 +607,15 @@ AS_IF([test "x$enable_sched_sleep" = "xyes"],
                  [Define to make the scheduler sleep when its pools are empty])])
 
 # --enable-dynamic-promotion
-AS_IF([test "x$enable_dynamic_promotion" = "xyes" -a "x$enable_fcontext" != "xno" -a "x$fctx_arch_bin" = "xx86_64_sysv_elf_gas"],
+case "x$fctx_arch_bin" in
+    xx86_64_sysv_elf_gas|xarm64_aapcs_elf_gas|xppc64_sysv_elf_gas)
+        support_dynamic_promotion="yes"
+    ;;
+    *)
+        support_dynamic_promotion="no"
+    ;;
+esac
+AS_IF([test "x$enable_dynamic_promotion" = "xyes" -a "x$enable_fcontext" != "xno" -a "x$support_dynamic_promotion" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_THREAD_TYPE, ABT_THREAD_TYPE_DYNAMIC_PROMOTION,
                  [Define to use the dynamic promotion technique for ULT])],
       [AC_DEFINE(ABT_CONFIG_THREAD_TYPE, ABT_THREAD_TYPE_FULLY_FLEDGED)])
@@ -628,7 +641,9 @@ AC_TRY_COMPILE(
 [have_atomic_builtin=yes],
 [have_atomic_builtin=no]
 )
-if test "x$have_atomic_builtin" = "xyes" ; then
+# __atomic is broken in XLC-16.1.1, so use __sync as a fallback
+# See https://github.com/pmodels/argobots/issues/162 for details.
+if test "$CC" != "xlc" -a "x$have_atomic_builtin" = "xyes" ; then
     AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_BUILTIN, 1,
               [Define if __atomic builtins are supported])
 fi
@@ -813,5 +828,9 @@ AC_CONFIG_FILES([Makefile
                  test/basic/Makefile
                  test/benchmark/Makefile
                  test/util/Makefile
-                 examples/Makefile])
+                 examples/Makefile
+                 examples/fibonacci/Makefile
+                 examples/hello_world/Makefile
+                 examples/scheduling/Makefile
+                 examples/stencil/Makefile])
 AC_OUTPUT

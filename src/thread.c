@@ -1829,7 +1829,7 @@ int ABTI_thread_set_ready(ABTI_local *p_local, ABTI_thread *p_thread)
      * scheduled by another scheduler if it is pushed to a shared pool. */
     while (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
            ABTI_THREAD_REQ_BLOCK)
-        ;
+        ABTD_atomic_pause();
 
     LOG_EVENT("[U%" PRIu64 ":E%d] set ready\n", ABTI_thread_get_id(p_thread),
               p_thread->p_last_xstream->rank);

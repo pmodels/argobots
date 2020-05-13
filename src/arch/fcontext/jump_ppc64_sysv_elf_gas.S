@@ -282,7 +282,7 @@ jump_fcontext:
     mtfsf  0xff, %f0  # restore FPSCR
 #ifdef __VSX__
     li    %r10, 144
-    lvx   %v19, %r10, %r1 # load VSCR vector
+    lvx   %v19, %r10, %r1 # load VSCR
     mtvscr %v19           # restore VSCR.  Only the last 32 bits are used
     li    %r14, 160
     lvx  %v20, %r14, %r1  # restore V20
@@ -364,6 +364,210 @@ jump_fcontext:
 # endif
 #endif
 
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+.globl init_and_call_fcontext
+#if _CALL_ELF == 2
+    .text
+    .align 2
+init_and_call_fcontext:
+        addis   %r2, %r12, .TOC.-init_and_call_fcontext@ha
+        addi    %r2, %r2, .TOC.-init_and_call_fcontext@l
+        .localentry init_and_call_fcontext, . - init_and_call_fcontext
+#else
+    .section ".opd","aw"
+    .align 3
+init_and_call_fcontext:
+# ifdef _CALL_LINUX
+        .quad   .L.init_and_call_fcontext,.TOC.@tocbase,0
+        .type   init_and_call_fcontext,@function
+        .text
+        .align 2
+.L.init_and_call_fcontext:
+# else
+        .hidden .init_and_call_fcontext
+        .globl  .init_and_call_fcontext
+        .quad   .init_and_call_fcontext,.TOC.@tocbase,0
+        .size   init_and_call_fcontext,24
+        .type   .init_and_call_fcontext,@function
+        .text
+        .align 2
+.init_and_call_fcontext:
+# endif
+#endif
+    # save current LR, RSP (=R1), and TOC (=R2) in the target stack (=R5)
+    # note TOC must be saved when an external function is called.
+    # save LR
+    mflr  %r0
+    std  %r0, -16(%r5)
+    # save the current RSP + 0x10
+    addi %r10, %r1, 16
+    std  %r10, -8(%r5)
+    # save TOC
+    std  %r2, -24(%r5)
+
+    # reserve space on stack
+    subi  %r1, %r1, 528
+
+    std  %r14, 352(%r1)  # save R14
+    std  %r15, 360(%r1)  # save R15
+    std  %r16, 368(%r1)  # save R16
+    std  %r17, 376(%r1)  # save R17
+    std  %r18, 384(%r1)  # save R18
+    std  %r19, 392(%r1)  # save R19
+    std  %r20, 400(%r1)  # save R20
+    std  %r21, 408(%r1)  # save R21
+    std  %r22, 416(%r1)  # save R22
+    std  %r23, 424(%r1)  # save R23
+    std  %r24, 432(%r1)  # save R24
+    std  %r25, 440(%r1)  # save R25
+    std  %r26, 448(%r1)  # save R26
+    std  %r27, 456(%r1)  # save R27
+    std  %r28, 464(%r1)  # save R28
+    std  %r29, 472(%r1)  # save R29
+    std  %r30, 480(%r1)  # save R30
+    std  %r31, 488(%r1)  # save R31
+#if _CALL_ELF != 2
+    std  %r2,  496(%r1)  # save TOC
+#endif
+
+    # save LR; LR has been loaded to R0 at the beginning of the function
+    std  %r0, 512(%r1)
+    # save LR as PC
+    std  %r0, 520(%r1)
+    # save CR
+    mfcr  %r0
+    std  %r0, 504(%r1)
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    stfd  %f14, 0(%r1)  # save F14
+    stfd  %f15, 8(%r1)  # save F15
+    stfd  %f16, 16(%r1)  # save F16
+    stfd  %f17, 24(%r1)  # save F17
+    stfd  %f18, 32(%r1)  # save F18
+    stfd  %f19, 40(%r1)  # save F19
+    stfd  %f20, 48(%r1)  # save F20
+    stfd  %f21, 56(%r1)  # save F21
+    stfd  %f22, 64(%r1)  # save F22
+    stfd  %f23, 72(%r1)  # save F23
+    stfd  %f24, 80(%r1)  # save F24
+    stfd  %f25, 88(%r1)  # save F25
+    stfd  %f26, 96(%r1)  # save F26
+    stfd  %f27, 104(%r1)  # save F27
+    stfd  %f28, 112(%r1)  # save F28
+    stfd  %f29, 120(%r1)  # save F29
+    stfd  %f30, 128(%r1)  # save F30
+    stfd  %f31, 136(%r1)  # save F31
+#ifdef __VSX__
+    # VSCR can be loaded only to Vn.  To store VSCR as it is a vector, it must
+    # be written before saving FPSCR.
+    mfvscr %v19           # load VSCR
+    li    %r10, 144
+    stvx  %v19, %r10, %r1 # save VSCR.  Only the last 32 bits are used
+#endif
+    mffs  %f0  # load FPSCR
+    stfd  %f0, 144(%r1)  # save FPSCR
+#ifdef __VSX__
+    # OpenPOWER saves V20-V31 (vector units)
+    # note stvx cannot take an immediate value as an offset.
+    # use general caller-saved registers (r7-r10) to store immediate values
+    li    %r7, 160
+    stvx  %v20, %r7, %r1   # save V20
+    li    %r8, 176
+    stvx  %v21, %r8, %r1   # save V21
+    li    %r9, 192
+    stvx  %v22, %r9, %r1   # save V22
+    li    %r10, 208
+    stvx  %v23, %r10, %r1  # save V23
+    li    %r7, 224
+    stvx  %v24, %r7, %r1   # save V24
+    li    %r8, 240
+    stvx  %v25, %r8, %r1   # save V25
+    li    %r9, 256
+    stvx  %v26, %r9, %r1   # save V26
+    li    %r10, 272
+    stvx  %v27, %r10, %r1  # save V27
+    li    %r7, 288
+    stvx  %v28, %r7, %r1   # save V28
+    li    %r8, 304
+    stvx  %v29, %r8, %r1   # save V29
+    li    %r9, 320
+    stvx  %v30, %r9, %r1   # save V30
+    li    %r10, 336
+    stvx  %v31, %r10, %r1  # save V31
+#endif
+#endif
+
+    # store RSP (pointing to context-data) in R6 (=fctx)
+    std   %r1, 0(%r6)
+
+    # load RSP (pointing to context-data) from R5 (=p_stacktop) and add offset
+    # the following is equivalent to
+    #   %r1 <= %r5 - 0x30
+    #   (%r1) <= %r5
+    # R5 must be 16-byte aligned (ABI specification)
+    mr    %r1, %r5
+    stdu  %r1, -48(%r1)
+
+    # set R4 (=f_thread) to CTR.
+    # f_thread can be a global entry point, so R12 must be set as well
+    mr    %r12, %r4
+    mtctr %r12
+    # call CTR (=f_thread); note that arg (=R3) has been already set.
+    # note that TOC has been saved at the very beginning of the function
+    bctrl
+
+    #
+    # - when the thread did not yield, RSP is set to the original one, so ret
+    #   jumps to the original control flow.
+    #
+    #  [0x12345600] : (the original stack frame)
+    #   ...
+    #  [RSP + 0x28] : the original stack pointer (0x12345600) + 0x10
+    #  [RSP + 0x20] : the original LR pointer
+    #  [RSP + 0x18] : TOC: this TOC pointer
+    #  [RSP + 0x10] : LR: reserved
+    #  [RSP + 0x08] : CR: reserved
+    #  [RSP + 0x00] : RSP: this stack pointer
+    #  [RSP - ~~~~] : used by f_thread
+    #
+    # - any suspension updates RSP to (p_stacktop - 0x10), and calls the jump
+    #   termination function by blr.
+    #   RSP is 16-byte aligned (ABI specification).
+    #
+    #  (p_stacktop = RSP + 0x30)
+    #  [RSP + 0x28] : pointing to (p_stacktop - 0x10 (= RSP + 0x20))
+    #  [RSP + 0x20] : the address of the termination function.
+    #  [RSP + 0x18] : TOC: this TOC pointer
+    #  [RSP + 0x10] : LR: reserved
+    #  [RSP + 0x08] : CR: reserved
+    #  [RSP + 0x00] : RSP: this stack pointer
+    #  [RSP - ~~~~] : used by f_thread
+    #
+
+    # restore LR from the stack
+    # because it might call an external function, set R12 as well
+    ld    %r12, 32(%r1)
+    mtlr  %r12
+    # restore TOC from the stack
+    ld    %r2, 24(%r1)
+    # restore RSP
+    ld    %r1, 40(%r1)
+    # RSP is subtracted by 16; RSP points at the original stack pointer if the
+    # thread did not yield.  If the thread has been suspended, RSP becomes
+    # p_stacktop - 0x20 so that the callee can use 32 bytes above RSP.
+    subi  %r1, %r1, 16
+    # return
+    blr
+#if _CALL_ELF == 2
+    .size init_and_call_fcontext, .-init_and_call_fcontext
+#else
+# ifdef _CALL_LINUX
+    .size .init_and_call_fcontext, .-.L.init_and_call_fcontext
+# else
+    .size .init_and_call_fcontext, .-.init_and_call_fcontext
+# endif
+#endif
+#endif
 
 /* Mark that we don't need executable stack.  */
 .section .note.GNU-stack,"",%progbits

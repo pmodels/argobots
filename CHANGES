@@ -1,4 +1,18 @@
 ===============================================================================
+                               Changes in 1.0
+===============================================================================
+
+- Added support for restarting xstream
+- Updated the example code
+- Fixed the IBM POWER support
+- Fixed a bug in affinity management
+- Fixed a bug in future operation
+- Fixed a bug in hugepage allocation
+- Removed retain/release APIs of ULTs and tasklets
+- Removed the event interface
+- Updated the code formatting standard to use clang-format
+
+===============================================================================
                                Changes in 1.0rc2
 ===============================================================================
 

@@ -295,11 +295,11 @@ struct ABTI_pool {
 struct ABTI_unit {
     ABTI_unit *p_prev;
     ABTI_unit *p_next;
-    ABT_pool pool;
     union {
         ABT_thread thread;
         ABT_task task;
     } handle;
+    ABTD_atomic_int is_in_pool;
     ABT_unit_type type;
 };
 
@@ -420,8 +420,7 @@ struct ABTI_eventual {
 
 struct ABTI_future {
     ABTI_spinlock lock;
-    ABT_bool ready;
-    uint32_t counter;
+    ABTD_atomic_uint32 counter;
     uint32_t compartments;
     void **array;
     void (*p_callback)(void **arg);

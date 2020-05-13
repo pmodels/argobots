@@ -244,6 +244,7 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
                 }
             }
         }
+        ABTI_LOG_SET_SCHED(p_old);
         return;
     }
 #endif

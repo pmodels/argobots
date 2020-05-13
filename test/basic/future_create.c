@@ -52,7 +52,7 @@ void future_cb(void **args)
 
 int main(int argc, char *argv[])
 {
-    int i, j;
+    int i, j, r;
     int ret;
     if (argc > 1)
         num_xstreams = atoi(argv[1]);
@@ -88,22 +88,29 @@ int main(int argc, char *argv[])
     ret = ABT_future_create(1, NULL, &myfuture2);
     ATS_ERROR(ret, "ABT_future_create");
 
-    for (i = 0; i < num_xstreams; i++) {
-        for (j = 0; j < num_threads; j++) {
-            int idx = i * num_threads + j;
-            ret = ABT_thread_create(pools[i], future_wait,
-                                    (void *)(intptr_t)(idx + total_num_threads),
-                                    ABT_THREAD_ATTR_NULL, NULL);
-            ATS_ERROR(ret, "ABT_thread_create");
-            ret = ABT_thread_create(pools[i], future_set, (void *)(intptr_t)idx,
-                                    ABT_THREAD_ATTR_NULL, NULL);
-            ATS_ERROR(ret, "ABT_thread_create");
+    for (r = 0; r < 5; r++) {
+        ret = ABT_future_reset(myfuture);
+        ATS_ERROR(ret, "ABT_future_reset");
+        ret = ABT_future_reset(myfuture2);
+        ATS_ERROR(ret, "ABT_future_reset");
+        for (i = 0; i < num_xstreams; i++) {
+            for (j = 0; j < num_threads; j++) {
+                int idx = i * num_threads + j;
+                ret = ABT_thread_create(pools[i], future_wait,
+                                        (void *)(intptr_t)(idx +
+                                                           total_num_threads),
+                                        ABT_THREAD_ATTR_NULL, NULL);
+                ATS_ERROR(ret, "ABT_thread_create");
+                ret = ABT_thread_create(pools[i], future_set,
+                                        (void *)(intptr_t)idx,
+                                        ABT_THREAD_ATTR_NULL, NULL);
+                ATS_ERROR(ret, "ABT_thread_create");
+            }
         }
+        ATS_printf(1, "Thread main is waiting for future2\n");
+        ABT_future_wait(myfuture2);
+        ATS_printf(1, "Thread main returns from future2\n");
     }
-
-    ATS_printf(1, "Thread main is waiting for future2\n");
-    ABT_future_wait(myfuture2);
-    ATS_printf(1, "Thread main returns from future2\n");
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {
