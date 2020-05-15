@@ -84,7 +84,7 @@ int ABTI_xstream_create(ABTI_local **pp_local, ABTI_sched *p_sched,
     ABTI_spinlock_clear(&p_newxstream->sched_lock);
 
     /* Set the main scheduler */
-    abt_errno = ABTI_xstream_set_main_sched(pp_local, p_newxstream, p_sched);
+    abt_errno = ABTI_xstream_init_main_sched(p_newxstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     LOG_EVENT("[E%d] created\n", p_newxstream->rank);
@@ -229,7 +229,7 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     ABTI_spinlock_clear(&p_newxstream->sched_lock);
 
     /* Set the main scheduler */
-    abt_errno = ABTI_xstream_set_main_sched(&p_local, p_newxstream, p_sched);
+    abt_errno = ABTI_xstream_init_main_sched(p_newxstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     LOG_EVENT("[E%d] created\n", p_newxstream->rank);
@@ -760,7 +760,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
                         ABT_ERR_INV_SCHED);
     }
 
-    abt_errno = ABTI_xstream_set_main_sched(&p_local, p_xstream, p_sched);
+    abt_errno = ABTI_xstream_update_main_sched(&p_local, p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -799,7 +799,7 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
                                         ABT_SCHED_CONFIG_NULL, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = ABTI_xstream_set_main_sched(&p_local, p_xstream, p_sched);
+    abt_errno = ABTI_xstream_update_main_sched(&p_local, p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -1686,8 +1686,44 @@ fn_fail:
 #endif
 }
 
-int ABTI_xstream_set_main_sched(ABTI_local **pp_local, ABTI_xstream *p_xstream,
-                                ABTI_sched *p_sched)
+int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_ASSERT(p_xstream->p_main_sched == NULL);
+
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
+    int p;
+    /* We check that from the pool set of the scheduler we do not find a pool
+     * with another associated pool, and set the right value if it is okay  */
+    ABTI_native_thread_id consumer_id =
+        ABTI_xstream_get_native_thread_id(p_xstream);
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        abt_errno = ABTI_pool_set_consumer(p_pool, consumer_id);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+#endif
+
+    /* The main scheduler will to be a ULT, not a tasklet */
+    p_sched->type = ABT_SCHED_TYPE_ULT;
+
+    /* Set the scheduler as a main scheduler */
+    p_sched->used = ABTI_SCHED_MAIN;
+
+    /* Set the scheduler */
+    p_xstream->p_main_sched = p_sched;
+
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+int ABTI_xstream_update_main_sched(ABTI_local **pp_local,
+                                   ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = NULL;
