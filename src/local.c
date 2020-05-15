@@ -45,7 +45,7 @@ int ABTI_local_init(ABTI_local **pp_local)
 
     ABTI_mem_init_local(p_local);
 
-    ABTI_LOG_INIT();
+    ABTI_LOG_SET_SCHED(NULL);
     *pp_local = p_local;
 
 fn_exit:
@@ -66,8 +66,6 @@ int ABTI_local_finalize(ABTI_local **pp_local)
     lp_ABTI_local = NULL;
     *pp_local = NULL;
     ABTI_local_set_local(NULL);
-
-    ABTI_LOG_FINALIZE();
 
 fn_exit:
     return abt_errno;

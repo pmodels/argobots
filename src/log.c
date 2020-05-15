@@ -10,15 +10,6 @@
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 ABTD_XSTREAM_LOCAL ABTI_log l_ABTI_log = { NULL };
 
-void ABTI_log_init(void)
-{
-    l_ABTI_log.p_sched = NULL;
-}
-
-void ABTI_log_finalize(void)
-{
-}
-
 void ABTI_log_print(FILE *fh, const char *format, ...)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE)

@@ -15,8 +15,6 @@ typedef struct {
 
 extern ABTD_XSTREAM_LOCAL ABTI_log l_ABTI_log;
 
-void ABTI_log_init(void);
-void ABTI_log_finalize(void);
 void ABTI_log_print(FILE *fh, const char *format, ...);
 void ABTI_log_event(FILE *fh, const char *format, ...);
 void ABTI_log_debug(FILE *fh, char *path, int line, const char *format, ...);
@@ -36,8 +34,6 @@ static inline ABTI_sched *ABTI_log_get_sched(void)
     return l_ABTI_log.p_sched;
 }
 
-#define ABTI_LOG_INIT() ABTI_log_init()
-#define ABTI_LOG_FINALIZE() ABTI_log_finalize()
 #define ABTI_LOG_SET_SCHED(s) ABTI_log_set_sched(s)
 #define ABTI_LOG_GET_SCHED(ret) ret = ABTI_log_get_sched()
 #define LOG_EVENT(fmt, ...) ABTI_log_event(stderr, fmt, __VA_ARGS__)
@@ -52,8 +48,6 @@ static inline ABTI_sched *ABTI_log_get_sched(void)
 
 #else
 
-#define ABTI_LOG_INIT()
-#define ABTI_LOG_FINALIZE()
 #define ABTI_LOG_SET_SCHED(s)
 #define ABTI_LOG_GET_SCHED(ret)
 
