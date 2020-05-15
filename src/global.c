@@ -81,7 +81,7 @@ int ABT_init(int argc, char **argv)
 
     /* Create the primary ES */
     ABTI_xstream *p_newxstream;
-    abt_errno = ABTI_xstream_create_primary(&p_local, &p_newxstream);
+    abt_errno = ABTI_xstream_create_primary(&p_newxstream);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_create_primary");
     p_local->p_xstream = p_newxstream;
 

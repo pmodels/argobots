@@ -41,7 +41,7 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
                         ABT_ERR_INV_SCHED);
     }
 
-    abt_errno = ABTI_xstream_create(&p_local, p_sched, &p_newxstream);
+    abt_errno = ABTI_xstream_create(p_sched, &p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Start this ES */
@@ -60,8 +60,7 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_xstream_create(ABTI_local **pp_local, ABTI_sched *p_sched,
-                        ABTI_xstream **pp_xstream)
+int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_newxstream;
@@ -100,8 +99,7 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_xstream_create_primary(ABTI_local **pp_local,
-                                ABTI_xstream **pp_xstream)
+int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_newxstream;
@@ -112,7 +110,7 @@ int ABTI_xstream_create_primary(ABTI_local **pp_local,
                                         ABT_SCHED_CONFIG_NULL, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = ABTI_xstream_create(pp_local, p_sched, &p_newxstream);
+    abt_errno = ABTI_xstream_create(p_sched, &p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     p_newxstream->type = ABTI_XSTREAM_TYPE_PRIMARY;
@@ -156,7 +154,7 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
         ABTI_sched_create_basic(predef, num_pools, pools, config, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = ABTI_xstream_create(&p_local, p_sched, &p_newxstream);
+    abt_errno = ABTI_xstream_create(p_sched, &p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Start this ES */

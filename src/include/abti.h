@@ -456,10 +456,8 @@ int ABTI_local_init(ABTI_local **pp_local);
 int ABTI_local_finalize(ABTI_local **pp_local);
 
 /* Execution Stream (ES) */
-int ABTI_xstream_create(ABTI_local **pp_local, ABTI_sched *p_sched,
-                        ABTI_xstream **pp_xstream);
-int ABTI_xstream_create_primary(ABTI_local **pp_local,
-                                ABTI_xstream **pp_xstream);
+int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream);
+int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
 int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream);
 int ABTI_xstream_start_primary(ABTI_local **pp_local, ABTI_xstream *p_xstream,
                                ABTI_thread *p_thread);
