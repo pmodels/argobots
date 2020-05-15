@@ -8,18 +8,15 @@
 #include "abti.h"
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-ABTD_XSTREAM_LOCAL ABTI_log *lp_ABTI_log = NULL;
+ABTD_XSTREAM_LOCAL ABTI_log l_ABTI_log = { NULL };
 
 void ABTI_log_init(void)
 {
-    lp_ABTI_log = (ABTI_log *)ABTU_malloc(sizeof(ABTI_log));
-    lp_ABTI_log->p_sched = NULL;
+    l_ABTI_log.p_sched = NULL;
 }
 
 void ABTI_log_finalize(void)
 {
-    ABTU_free(lp_ABTI_log);
-    lp_ABTI_log = NULL;
 }
 
 void ABTI_log_print(FILE *fh, const char *format, ...)
@@ -66,9 +63,9 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
                 }
             } else {
                 rank = p_xstream->rank;
-                if (lp_ABTI_log->p_sched) {
+                if (l_ABTI_log.p_sched) {
                     prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                    tid = lp_ABTI_log->p_sched->id;
+                    tid = l_ABTI_log.p_sched->id;
                 } else {
                     prefix_fmt = "<U%" PRIu64 ":E%d> %s";
                     tid = ABTI_thread_get_id(p_thread);
@@ -80,9 +77,9 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
             p_xstream = p_local->p_xstream;
             rank = p_xstream->rank;
             p_task = p_local->p_task;
-            if (lp_ABTI_log->p_sched) {
+            if (l_ABTI_log.p_sched) {
                 prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                tid = lp_ABTI_log->p_sched->id;
+                tid = l_ABTI_log.p_sched->id;
             } else {
                 prefix_fmt = "<T%" PRIu64 ":E%d> %s";
                 tid = ABTI_task_get_id(p_task);

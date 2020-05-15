@@ -13,7 +13,7 @@ typedef struct {
     ABTI_sched *p_sched;
 } ABTI_log;
 
-extern ABTD_XSTREAM_LOCAL ABTI_log *lp_ABTI_log;
+extern ABTD_XSTREAM_LOCAL ABTI_log l_ABTI_log;
 
 void ABTI_log_init(void);
 void ABTI_log_finalize(void);
@@ -28,12 +28,12 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit);
 
 static inline void ABTI_log_set_sched(ABTI_sched *p_sched)
 {
-    lp_ABTI_log->p_sched = p_sched;
+    l_ABTI_log.p_sched = p_sched;
 }
 
 static inline ABTI_sched *ABTI_log_get_sched(void)
 {
-    return lp_ABTI_log->p_sched;
+    return l_ABTI_log.p_sched;
 }
 
 #define ABTI_LOG_INIT() ABTI_log_init()
