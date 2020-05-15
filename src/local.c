@@ -45,7 +45,6 @@ int ABTI_local_init(ABTI_local **pp_local)
 
     ABTI_mem_init_local(p_local);
 
-    ABTI_LOG_SET_SCHED(NULL);
     *pp_local = p_local;
 
 fn_exit:
