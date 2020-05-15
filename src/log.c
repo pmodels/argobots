@@ -8,19 +8,7 @@
 #include "abti.h"
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-ABTD_XSTREAM_LOCAL ABTI_log *lp_ABTI_log = NULL;
-
-void ABTI_log_init(void)
-{
-    lp_ABTI_log = (ABTI_log *)ABTU_malloc(sizeof(ABTI_log));
-    lp_ABTI_log->p_sched = NULL;
-}
-
-void ABTI_log_finalize(void)
-{
-    ABTU_free(lp_ABTI_log);
-    lp_ABTI_log = NULL;
-}
+ABTD_XSTREAM_LOCAL ABTI_log l_ABTI_log = { NULL };
 
 void ABTI_log_print(FILE *fh, const char *format, ...)
 {
@@ -40,7 +28,6 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
         return;
     ABTI_local *p_local = ABTI_local_get_local_uninlined();
 
-    ABT_unit_type type = ABTI_self_get_type(p_local);
     ABTI_xstream *p_xstream = NULL;
     ABTI_thread *p_thread = NULL;
     ABTI_task *p_task = NULL;
@@ -51,53 +38,60 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
     int tid_len = 0, rank_len = 0;
     size_t newfmt_len;
 
-    switch (type) {
-        case ABT_UNIT_TYPE_THREAD:
-            p_xstream = p_local->p_xstream;
-            p_thread = p_local->p_thread;
-            if (p_thread == NULL) {
-                if (p_xstream && p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
-                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
+    if (!p_local) {
+        prefix = "<UNKNOWN> ";
+        prefix_fmt = "%s%s";
+    } else {
+        ABT_unit_type type = ABTI_self_get_type(p_local);
+        switch (type) {
+            case ABT_UNIT_TYPE_THREAD:
+                p_xstream = p_local->p_xstream;
+                p_thread = p_local->p_thread;
+                if (p_thread == NULL) {
+                    if (p_xstream &&
+                        p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
+                        prefix_fmt = "<U%" PRIu64 ":E%d> %s";
+                        rank = p_xstream->rank;
+                        tid = 0;
+                    } else {
+                        prefix = "<U0:E0> ";
+                        prefix_fmt = "%s%s";
+                    }
+                } else {
                     rank = p_xstream->rank;
-                    tid = 0;
-                } else {
-                    prefix = "<U0:E0> ";
-                    prefix_fmt = "%s%s";
+                    if (l_ABTI_log.p_sched) {
+                        prefix_fmt = "<S%" PRIu64 ":E%d> %s";
+                        tid = l_ABTI_log.p_sched->id;
+                    } else {
+                        prefix_fmt = "<U%" PRIu64 ":E%d> %s";
+                        tid = ABTI_thread_get_id(p_thread);
+                    }
                 }
-            } else {
+                break;
+
+            case ABT_UNIT_TYPE_TASK:
+                p_xstream = p_local->p_xstream;
                 rank = p_xstream->rank;
-                if (lp_ABTI_log->p_sched) {
+                p_task = p_local->p_task;
+                if (l_ABTI_log.p_sched) {
                     prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                    tid = lp_ABTI_log->p_sched->id;
+                    tid = l_ABTI_log.p_sched->id;
                 } else {
-                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
-                    tid = ABTI_thread_get_id(p_thread);
+                    prefix_fmt = "<T%" PRIu64 ":E%d> %s";
+                    tid = ABTI_task_get_id(p_task);
                 }
-            }
-            break;
+                break;
 
-        case ABT_UNIT_TYPE_TASK:
-            p_xstream = p_local->p_xstream;
-            rank = p_xstream->rank;
-            p_task = p_local->p_task;
-            if (lp_ABTI_log->p_sched) {
-                prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                tid = lp_ABTI_log->p_sched->id;
-            } else {
-                prefix_fmt = "<T%" PRIu64 ":E%d> %s";
-                tid = ABTI_task_get_id(p_task);
-            }
-            break;
+            case ABT_UNIT_TYPE_EXT:
+                prefix = "<EXT> ";
+                prefix_fmt = "%s%s";
+                break;
 
-        case ABT_UNIT_TYPE_EXT:
-            prefix = "<EXT> ";
-            prefix_fmt = "%s%s";
-            break;
-
-        default:
-            prefix = "<UNKNOWN> ";
-            prefix_fmt = "%s%s";
-            break;
+            default:
+                prefix = "<UNKNOWN> ";
+                prefix_fmt = "%s%s";
+                break;
+        }
     }
 
     if (prefix == NULL) {

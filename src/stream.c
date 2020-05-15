@@ -1391,6 +1391,9 @@ void ABTI_xstream_schedule(void *p_arg)
         p_sched->run(ABTI_sched_get_handle(p_sched));
         LOG_EVENT("[S%" PRIu64 "] end\n", p_sched->id);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
+        p_local->p_task = NULL;
+        p_local->p_thread = NULL;
+        ABTI_LOG_SET_SCHED(NULL);
 
         ABTI_spinlock_release(&p_xstream->sched_lock);
 
