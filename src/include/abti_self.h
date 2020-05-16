@@ -17,7 +17,7 @@ ABTI_self_get_native_thread_id(ABTI_xstream *p_local_xstream)
         return (ABTI_native_thread_id)ABTI_local_get_local_ptr();
     }
 #endif
-    return (ABTI_native_thread_id)p_local_xstream->p_xstream;
+    return (ABTI_native_thread_id)p_local_xstream;
 }
 
 static inline ABTI_unit_id ABTI_self_get_unit_id(ABTI_xstream *p_local_xstream)

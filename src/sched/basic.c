@@ -97,7 +97,6 @@ static void sched_run(ABT_sched sched)
     ABT_pool *pools;
     int i;
 
-    ABTI_xstream *p_xstream = p_local_xstream->p_xstream;
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_ASSERT(p_sched);
 
@@ -111,14 +110,14 @@ static void sched_run(ABT_sched sched)
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pools[i]);
             ++pop_count;
             if ((unit = ABTI_pool_pop(p_pool)) != ABT_UNIT_NULL) {
-                ABTI_xstream_run_unit(&p_local_xstream, p_xstream, unit, p_pool);
+                ABTI_xstream_run_unit(&p_local_xstream, p_local_xstream, unit, p_pool);
                 break;
             }
         }
         /* if we attempted event_freq pops, check for events */
         if (pop_count >= event_freq) {
-            ABTI_xstream_check_events(p_xstream, sched);
-            if (ABTI_sched_has_to_stop(&p_local_xstream, p_sched, p_xstream) ==
+            ABTI_xstream_check_events(p_local_xstream, sched);
+            if (ABTI_sched_has_to_stop(&p_local_xstream, p_sched, p_local_xstream) ==
                 ABT_TRUE)
                 break;
             SCHED_SLEEP(unit != ABT_UNIT_NULL, p_data->sleep_time);

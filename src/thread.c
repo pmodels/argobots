@@ -739,7 +739,6 @@ int ABT_thread_yield_to(ABT_thread thread)
         goto fn_exit;
 #endif
 
-    ABTI_xstream *p_xstream = p_local_xstream->p_xstream;
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
     LOG_EVENT("[U%" PRIu64 ":E%d] yield_to -> U%" PRIu64 "\n",
@@ -776,7 +775,7 @@ int ABT_thread_yield_to(ABT_thread thread)
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Delete the last context if the ULT is a scheduler */
     if (p_cur_thread->is_sched != NULL) {
-        ABTI_xstream_pop_sched(p_xstream);
+        ABTI_xstream_pop_sched(p_local_xstream);
         p_cur_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
     }
 #endif
@@ -788,14 +787,14 @@ int ABT_thread_yield_to(ABT_thread thread)
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Add a new scheduler if the ULT is a scheduler */
     if (p_tar_thread->is_sched != NULL) {
-        p_tar_thread->is_sched->p_ctx = ABTI_xstream_get_sched_ctx(p_xstream);
-        ABTI_xstream_push_sched(p_xstream, p_tar_thread->is_sched);
+        p_tar_thread->is_sched->p_ctx = ABTI_xstream_get_sched_ctx(p_local_xstream);
+        ABTI_xstream_push_sched(p_local_xstream, p_tar_thread->is_sched);
         p_tar_thread->is_sched->state = ABT_SCHED_STATE_RUNNING;
     }
 #endif
 
     /* We set the last ES */
-    p_tar_thread->p_last_xstream = p_xstream;
+    p_tar_thread->p_last_xstream = p_local_xstream;
 
     /* Switch the context */
     ABTD_atomic_release_store_int(&p_tar_thread->state,
@@ -839,7 +838,7 @@ int ABT_thread_yield(void)
         goto fn_exit;
 #endif
 
-    ABTI_CHECK_TRUE(p_thread->p_last_xstream == p_local_xstream->p_xstream,
+    ABTI_CHECK_TRUE(p_thread->p_last_xstream == p_local_xstream,
                     ABT_ERR_THREAD);
 
     ABTI_thread_yield(&p_local_xstream, p_thread);
@@ -1800,13 +1799,12 @@ void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream, ABTI_thread *p_thread)
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_ASSERT(p_thread == p_local_xstream->p_thread);
-    ABTI_ASSERT(p_thread->p_last_xstream == p_local_xstream->p_xstream);
+    ABTI_ASSERT(p_thread->p_last_xstream == p_local_xstream);
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
-    ABTI_xstream *p_xstream = p_local_xstream->p_xstream;
-    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
+    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_local_xstream);
     LOG_EVENT("[U%" PRIu64 ":E%d] suspended\n", ABTI_thread_get_id(p_thread),
-              p_xstream->rank);
+              p_local_xstream->rank);
     ABTI_thread_context_switch_thread_to_sched(pp_local_xstream, p_thread, p_sched);
 
     /* The suspended ULT resumes its execution from here. */

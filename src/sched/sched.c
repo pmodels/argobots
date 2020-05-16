@@ -295,12 +295,10 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = p_local_xstream->p_xstream;
-
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    *stop = ABTI_sched_has_to_stop(&p_local_xstream, p_sched, p_xstream);
+    *stop = ABTI_sched_has_to_stop(&p_local_xstream, p_sched, p_local_xstream);
 
 fn_exit:
     return abt_errno;

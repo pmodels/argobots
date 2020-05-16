@@ -217,7 +217,6 @@ struct ABTI_xstream {
     ABTD_xstream_context ctx; /* ES context */
 
     __attribute__((aligned(ABT_CONFIG_STATIC_CACHELINE_SIZE)))
-    ABTI_xstream *p_xstream; /* Current ES */
     ABTI_thread *p_thread;   /* Current running ULT */
     ABTI_task *p_task;       /* Current running tasklet */
 

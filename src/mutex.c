@@ -508,7 +508,7 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
 
     p_thread = (*pp_local_xstream)->p_thread;
     p_xstream = p_thread->p_last_xstream;
-    ABTI_ASSERT(p_xstream == (*pp_local_xstream)->p_xstream);
+    ABTI_ASSERT(p_xstream == *pp_local_xstream);
     i = (int)p_xstream->rank;
     p_queue = &p_htable->queue[i];
 

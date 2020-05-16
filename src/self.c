@@ -123,7 +123,6 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTI_xstream *p_xstream;
 
     /* If Argobots has not been initialized, set flag to ABT_FALSE. */
     if (gp_ABTI_global == NULL) {
@@ -141,19 +140,12 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
     }
 #endif
 
-    p_xstream = p_local_xstream->p_xstream;
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
     /* Return value */
     *flag =
-        (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE : ABT_FALSE;
+        (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE : ABT_FALSE;
 
 fn_exit:
     return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**
