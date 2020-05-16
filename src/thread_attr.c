@@ -101,15 +101,19 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
+    p_attr->p_stack = stackaddr;
     if (stackaddr != NULL) {
         if (((uintptr_t)stackaddr & 0x7) != 0) {
             abt_errno = ABT_ERR_OTHER;
             goto fn_fail;
         }
-        p_attr->p_stack = stackaddr;
         p_attr->stacktype = ABTI_STACK_TYPE_USER;
     } else {
-        p_attr->stacktype = ABTI_STACK_TYPE_MALLOC;
+        if (stacksize == ABTI_global_get_thread_stacksize()) {
+            p_attr->stacktype = ABTI_STACK_TYPE_MEMPOOL;
+        } else {
+            p_attr->stacktype = ABTI_STACK_TYPE_MALLOC;
+        }
     }
     p_attr->stacksize = stacksize;
 
@@ -175,6 +179,11 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 
     /* Set the value */
     p_attr->stacksize = stacksize;
+    if (stacksize == ABTI_global_get_thread_stacksize()) {
+        p_attr->stacktype = ABTI_STACK_TYPE_MEMPOOL;
+    } else {
+        p_attr->stacktype = ABTI_STACK_TYPE_MALLOC;
+    }
 
 fn_exit:
     return abt_errno;
