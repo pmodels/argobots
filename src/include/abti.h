@@ -489,8 +489,7 @@ int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
 int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
 ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
-ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream, ABTI_sched *p_sched,
-                                ABTI_xstream *p_xstream);
+ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream, ABTI_sched *p_sched);
 size_t ABTI_sched_get_size(ABTI_sched *p_sched);
 size_t ABTI_sched_get_total_size(ABTI_sched *p_sched);
 size_t ABTI_sched_get_effective_size(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched);

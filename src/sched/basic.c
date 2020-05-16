@@ -117,7 +117,7 @@ static void sched_run(ABT_sched sched)
         /* if we attempted event_freq pops, check for events */
         if (pop_count >= event_freq) {
             ABTI_xstream_check_events(p_local_xstream, sched);
-            if (ABTI_sched_has_to_stop(&p_local_xstream, p_sched, p_local_xstream) ==
+            if (ABTI_sched_has_to_stop(&p_local_xstream, p_sched) ==
                 ABT_TRUE)
                 break;
             SCHED_SLEEP(unit != ABT_UNIT_NULL, p_data->sleep_time);
