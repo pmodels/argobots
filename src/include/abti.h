@@ -88,7 +88,7 @@ enum ABTI_stack_type {
 
 /* Data Types */
 typedef struct ABTI_global ABTI_global;
-typedef struct ABTI_local ABTI_local;
+#define ABTI_local ABTI_xstream
 typedef struct ABTI_local_func ABTI_local_func;
 typedef struct ABTI_xstream ABTI_xstream;
 typedef enum ABTI_xstream_type ABTI_xstream_type;
@@ -202,19 +202,6 @@ struct ABTI_local_func {
     char padding2[ABT_CONFIG_STATIC_CACHELINE_SIZE];
 };
 
-struct ABTI_local {
-    ABTI_xstream *p_xstream; /* Current ES */
-    ABTI_thread *p_thread;   /* Current running ULT */
-    ABTI_task *p_task;       /* Current running tasklet */
-
-#ifdef ABT_CONFIG_USE_MEM_POOL
-    uint32_t num_stacks;               /* Current # of stacks */
-    ABTI_stack_header *p_mem_stack;    /* Free stack list */
-    ABTI_page_header *p_mem_task_head; /* Head of page list */
-    ABTI_page_header *p_mem_task_tail; /* Tail of page list */
-#endif
-};
-
 struct ABTI_xstream {
     int rank;                 /* Rank */
     ABTI_xstream_type type;   /* Type */
@@ -229,6 +216,18 @@ struct ABTI_xstream {
     ABTI_sched *p_main_sched;   /* Main scheduler */
 
     ABTD_xstream_context ctx; /* ES context */
+
+    __attribute__((aligned(ABT_CONFIG_STATIC_CACHELINE_SIZE)))
+    ABTI_xstream *p_xstream; /* Current ES */
+    ABTI_thread *p_thread;   /* Current running ULT */
+    ABTI_task *p_task;       /* Current running tasklet */
+
+#ifdef ABT_CONFIG_USE_MEM_POOL
+    uint32_t num_stacks;               /* Current # of stacks */
+    ABTI_stack_header *p_mem_stack;    /* Free stack list */
+    ABTI_page_header *p_mem_task_head; /* Head of page list */
+    ABTI_page_header *p_mem_task_tail; /* Tail of page list */
+#endif
 };
 
 struct ABTI_sched {
@@ -450,10 +449,6 @@ extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
 
 /* Global */
 void ABTI_global_update_max_xstreams(int new_size);
-
-/* ES Local Data */
-int ABTI_local_init(ABTI_local **pp_local);
-int ABTI_local_finalize(ABTI_local **pp_local);
 
 /* Execution Stream (ES) */
 int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream);

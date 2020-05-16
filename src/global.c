@@ -74,14 +74,14 @@ int ABT_init(int argc, char **argv)
     /* Initialize a spinlock */
     ABTI_spinlock_clear(&gp_ABTI_global->xstreams_lock);
 
-    /* Init the ES local data */
-    ABTI_local *p_local = NULL;
-    abt_errno = ABTI_local_init(&p_local);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_local_init");
-
     /* Create the primary ES */
     ABTI_xstream *p_newxstream;
     abt_errno = ABTI_xstream_create_primary(&p_newxstream);
+    ABTI_local *p_local = p_newxstream;
+
+    /* Init the ES local data */
+    ABTI_local_set_local(p_local);
+
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_create_primary");
     p_local->p_xstream = p_newxstream;
 
@@ -195,8 +195,7 @@ int ABT_finalize(void)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Finalize the ES local data */
-    abt_errno = ABTI_local_finalize(&p_local);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_local_set_local(NULL);
 
     /* Free the ES array */
     ABTU_free(gp_ABTI_global->p_xstreams);

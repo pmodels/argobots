@@ -78,6 +78,10 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     ABTD_atomic_relaxed_store_uint32(&p_newxstream->request, 0);
     p_newxstream->p_req_arg = NULL;
     p_newxstream->p_main_sched = NULL;
+    p_newxstream->p_xstream = NULL;
+    p_newxstream->p_thread = NULL;
+    p_newxstream->p_task = NULL;
+    ABTI_mem_init_local(p_newxstream);
 
     /* Initialize the spinlock */
     ABTI_spinlock_clear(&p_newxstream->sched_lock);
@@ -222,6 +226,10 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     ABTD_atomic_relaxed_store_uint32(&p_newxstream->request, 0);
     p_newxstream->p_req_arg = NULL;
     p_newxstream->p_main_sched = NULL;
+    p_newxstream->p_xstream = NULL;
+    p_newxstream->p_thread = NULL;
+    p_newxstream->p_task = NULL;
+    ABTI_mem_init_local(p_newxstream);
 
     /* Initialize the spinlock */
     ABTI_spinlock_clear(&p_newxstream->sched_lock);
@@ -1338,6 +1346,8 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream)
 
     LOG_EVENT("[E%d] freed\n", p_xstream->rank);
 
+    /* Clean up memory pool. */
+    ABTI_mem_finalize_local(p_xstream);
     /* Return rank for reuse. rank must be returned prior to other free
      * functions so that other xstreams cannot refer to this xstream via
      * global->p_xstreams. */
@@ -1926,10 +1936,8 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
 
     /* Initialization of the local variables */
-    ABTI_local *p_local = NULL;
-    abt_errno = ABTI_local_init(&p_local);
+    ABTI_local *p_local = p_xstream;
     ABTI_local_set_local(p_local);
-    ABTI_CHECK_ERROR(abt_errno);
     p_local->p_xstream = p_xstream;
 
     /* Create the main sched ULT if not created yet */
@@ -1949,7 +1957,7 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
     LOG_EVENT("[E%d] end\n", p_xstream->rank);
 
     /* Reset the current ES and its local info. */
-    ABTI_local_finalize(&p_local);
+    ABTI_local_set_local(NULL);
 
 fn_exit:
     return NULL;
