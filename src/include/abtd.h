@@ -60,8 +60,8 @@ int ABTD_affinity_get_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
 
 /* ULT Context */
 #include "abtd_thread.h"
-void ABTD_thread_exit(ABTI_local *p_local, ABTI_thread *p_thread);
-void ABTD_thread_cancel(ABTI_local *p_local, ABTI_thread *p_thread);
+void ABTD_thread_exit(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
+void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
 
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
 #include <time.h>

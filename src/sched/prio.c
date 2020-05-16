@@ -65,7 +65,7 @@ fn_fail:
 
 static void sched_run(ABT_sched sched)
 {
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     uint32_t work_count = 0;
     sched_data *p_data;
     uint32_t event_freq;
@@ -74,7 +74,7 @@ static void sched_run(ABT_sched sched)
     int i;
     CNT_DECL(run_cnt);
 
-    ABTI_xstream *p_xstream = p_local->p_xstream;
+    ABTI_xstream *p_xstream = p_local_xstream->p_xstream;
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_ASSERT(p_sched);
 
@@ -96,7 +96,7 @@ static void sched_run(ABT_sched sched)
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
             ABT_unit unit = ABTI_pool_pop(p_pool);
             if (unit != ABT_UNIT_NULL) {
-                ABTI_xstream_run_unit(&p_local, p_xstream, unit, p_pool);
+                ABTI_xstream_run_unit(&p_local_xstream, p_xstream, unit, p_pool);
                 CNT_INC(run_cnt);
                 break;
             }
@@ -104,7 +104,7 @@ static void sched_run(ABT_sched sched)
 
         if (++work_count >= event_freq) {
             ABT_bool stop =
-                ABTI_sched_has_to_stop(&p_local, p_sched, p_xstream);
+                ABTI_sched_has_to_stop(&p_local_xstream, p_sched, p_xstream);
             if (stop == ABT_TRUE)
                 break;
             work_count = 0;

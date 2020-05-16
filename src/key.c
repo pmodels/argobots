@@ -114,7 +114,7 @@ fn_fail:
 int ABT_key_set(ABT_key key, void *value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
     ABTI_ktable *p_ktable;
@@ -124,10 +124,10 @@ int ABT_key_set(ABT_key key, void *value)
 
     /* We don't allow an external thread to call this routine. */
     ABTI_CHECK_INITIALIZED();
-    ABTI_CHECK_TRUE(p_local != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_XSTREAM);
 
     /* Obtain the key-value table pointer. */
-    p_thread = p_local->p_thread;
+    p_thread = p_local_xstream->p_thread;
     if (p_thread) {
         if (p_thread->p_keytable == NULL) {
             int key_table_size = gp_ABTI_global->key_table_size;
@@ -135,7 +135,7 @@ int ABT_key_set(ABT_key key, void *value)
         }
         p_ktable = p_thread->p_keytable;
     } else {
-        p_task = p_local->p_task;
+        p_task = p_local_xstream->p_task;
         ABTI_CHECK_TRUE(p_task != NULL, ABT_ERR_INV_TASK);
         if (p_task->p_keytable == NULL) {
             int key_table_size = gp_ABTI_global->key_table_size;
@@ -173,7 +173,7 @@ fn_fail:
 int ABT_key_get(ABT_key key, void **value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
     ABTI_ktable *p_ktable = NULL;
@@ -184,10 +184,10 @@ int ABT_key_get(ABT_key key, void **value)
 
     /* We don't allow an external thread to call this routine. */
     ABTI_CHECK_INITIALIZED();
-    ABTI_CHECK_TRUE(p_local != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_XSTREAM);
 
     /* Obtain the key-value table pointer */
-    p_thread = p_local->p_thread;
+    p_thread = p_local_xstream->p_thread;
     if (p_thread) {
         p_ktable = p_thread->p_keytable;
         if (p_ktable) {
@@ -195,7 +195,7 @@ int ABT_key_get(ABT_key key, void **value)
             keyval = ABTI_ktable_get(p_ktable, p_key);
         }
     } else {
-        p_task = p_local->p_task;
+        p_task = p_local_xstream->p_task;
         ABTI_CHECK_TRUE(p_task != NULL, ABT_ERR_INV_TASK);
         p_ktable = p_task->p_keytable;
         if (p_ktable) {

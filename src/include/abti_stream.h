@@ -110,7 +110,7 @@ static inline ABTI_pool *ABTI_xstream_get_main_pool(ABTI_xstream *p_xstream)
     return ABTI_pool_get_ptr(pool);
 }
 
-static inline void ABTI_xstream_terminate_thread(ABTI_local *p_local,
+static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
                                                  ABTI_thread *p_thread)
 {
     LOG_EVENT("[U%" PRIu64 ":E%d] terminated\n", ABTI_thread_get_id(p_thread),
@@ -118,13 +118,13 @@ static inline void ABTI_xstream_terminate_thread(ABTI_local *p_local,
     if (p_thread->refcount == 0) {
         ABTD_atomic_release_store_int(&p_thread->state,
                                       ABT_THREAD_STATE_TERMINATED);
-        ABTI_thread_free(p_local, p_thread);
+        ABTI_thread_free(p_local_xstream, p_thread);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     } else if (p_thread->is_sched) {
         /* NOTE: p_thread itself will be freed in ABTI_sched_free. */
         ABTD_atomic_release_store_int(&p_thread->state,
                                       ABT_THREAD_STATE_TERMINATED);
-        ABTI_sched_discard_and_free(p_local, p_thread->is_sched);
+        ABTI_sched_discard_and_free(p_local_xstream, p_thread->is_sched);
 #endif
     } else {
         /* NOTE: We set the ULT's state as TERMINATED after checking refcount
@@ -136,7 +136,7 @@ static inline void ABTI_xstream_terminate_thread(ABTI_local *p_local,
     }
 }
 
-static inline void ABTI_xstream_terminate_task(ABTI_local *p_local,
+static inline void ABTI_xstream_terminate_task(ABTI_xstream *p_local_xstream,
                                                ABTI_task *p_task)
 {
     LOG_EVENT("[T%" PRIu64 ":E%d] terminated\n", ABTI_task_get_id(p_task),
@@ -144,13 +144,13 @@ static inline void ABTI_xstream_terminate_task(ABTI_local *p_local,
     if (p_task->refcount == 0) {
         ABTD_atomic_release_store_int(&p_task->state,
                                       ABT_TASK_STATE_TERMINATED);
-        ABTI_task_free(p_local, p_task);
+        ABTI_task_free(p_local_xstream, p_task);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     } else if (p_task->is_sched) {
         /* NOTE: p_task itself will be freed in ABTI_sched_free. */
         ABTD_atomic_release_store_int(&p_task->state,
                                       ABT_TASK_STATE_TERMINATED);
-        ABTI_sched_discard_and_free(p_local, p_task->is_sched);
+        ABTI_sched_discard_and_free(p_local_xstream, p_task->is_sched);
 #endif
     } else {
         /* NOTE: We set the task's state as TERMINATED after checking refcount

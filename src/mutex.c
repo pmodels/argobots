@@ -141,19 +141,19 @@ fn_fail:
 int ABT_mutex_lock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
     if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
         /* default attributes */
-        ABTI_mutex_lock(&p_local, p_mutex);
+        ABTI_mutex_lock(&p_local_xstream, p_mutex);
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local);
+        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local_xstream);
         if (self_id != p_mutex->attr.owner_id) {
-            ABTI_mutex_lock(&p_local, p_mutex);
+            ABTI_mutex_lock(&p_local_xstream, p_mutex);
             p_mutex->attr.owner_id = self_id;
             ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
         } else {
@@ -162,7 +162,7 @@ int ABT_mutex_lock(ABT_mutex mutex)
 
     } else {
         /* unknown attributes */
-        ABTI_mutex_lock(&p_local, p_mutex);
+        ABTI_mutex_lock(&p_local_xstream, p_mutex);
     }
 
 fn_exit:
@@ -173,17 +173,17 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
+static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
                                        ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
-    ABTI_local *p_local = *pp_local;
-    ABT_unit_type type = ABTI_self_get_type(p_local);
+    ABTI_xstream *p_local_xstream = *pp_local_xstream;
+    ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock_low - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-            ABTI_thread_yield(pp_local, p_local->p_thread);
-            p_local = *pp_local;
+            ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
+            p_local_xstream = *pp_local_xstream;
         }
         LOG_EVENT("%p: lock_low - acquired\n", p_mutex);
     } else {
@@ -191,8 +191,8 @@ static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
     }
 #else
     int abt_errno;
-    ABTI_local *p_local = *pp_local;
-    ABT_unit_type type = ABTI_self_get_type(p_local);
+    ABTI_xstream *p_local_xstream = *pp_local_xstream;
+    ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
 
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
@@ -204,12 +204,12 @@ static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
          * low-mutex queue, we give the header ULT a chance to try to get
          * the mutex by context switching to it. */
         ABTI_thread_htable *p_htable = p_mutex->p_htable;
-        ABTI_thread *p_self = p_local->p_thread;
+        ABTI_thread *p_self = p_local_xstream->p_thread;
         ABTI_xstream *p_xstream = p_self->p_last_xstream;
         int rank = (int)p_xstream->rank;
         ABTI_thread_queue *p_queue = &p_htable->queue[rank];
         if (p_queue->low_num_threads > 0) {
-            ABT_bool ret = ABTI_thread_htable_switch_low(pp_local, p_queue,
+            ABT_bool ret = ABTI_thread_htable_switch_low(pp_local_xstream, p_queue,
                                                          p_self, p_htable);
             if (ret == ABT_TRUE) {
                 /* This ULT became a waiter in the mutex queue */
@@ -222,7 +222,7 @@ static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
                 c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
             }
             while (c != 0) {
-                ABTI_mutex_wait_low(pp_local, p_mutex, 2);
+                ABTI_mutex_wait_low(pp_local_xstream, p_mutex, 2);
 
             check_handover:
                 /* If the mutex has been handed over to the current ULT from
@@ -239,7 +239,7 @@ static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
                                                       ABT_THREAD_STATE_READY);
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
                                        ABTI_self_get_native_thread_id(
-                                           *pp_local));
+                                           *pp_local_xstream));
                         break;
                     }
                 }
@@ -277,19 +277,19 @@ fn_fail:
 int ABT_mutex_lock_low(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
     if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
         /* default attributes */
-        ABTI_mutex_lock_low(&p_local, p_mutex);
+        ABTI_mutex_lock_low(&p_local_xstream, p_mutex);
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local);
+        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local_xstream);
         if (self_id != p_mutex->attr.owner_id) {
-            ABTI_mutex_lock_low(&p_local, p_mutex);
+            ABTI_mutex_lock_low(&p_local_xstream, p_mutex);
             p_mutex->attr.owner_id = self_id;
             ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
         } else {
@@ -298,7 +298,7 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
 
     } else {
         /* unknown attributes */
-        ABTI_mutex_lock_low(&p_local, p_mutex);
+        ABTI_mutex_lock_low(&p_local_xstream, p_mutex);
     }
 
 fn_exit:
@@ -343,8 +343,8 @@ int ABT_mutex_trylock(ABT_mutex mutex)
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_local *p_local = ABTI_local_get_local();
-        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local);
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local_xstream);
         if (self_id != p_mutex->attr.owner_id) {
             abt_errno = ABTI_mutex_trylock(p_mutex);
             if (abt_errno == ABT_SUCCESS) {
@@ -395,8 +395,8 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_local *p_local = ABTI_local_get_local();
-        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local);
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local_xstream);
         if (self_id != p_mutex->attr.owner_id) {
             ABTI_mutex_spinlock(p_mutex);
             p_mutex->attr.owner_id = self_id;
@@ -433,29 +433,29 @@ fn_fail:
 int ABT_mutex_unlock(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
     if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
         /* default attributes */
-        ABTI_mutex_unlock(p_local, p_mutex);
+        ABTI_mutex_unlock(p_local_xstream, p_mutex);
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_CHECK_TRUE(ABTI_self_get_unit_id(p_local) ==
+        ABTI_CHECK_TRUE(ABTI_self_get_unit_id(p_local_xstream) ==
                             p_mutex->attr.owner_id,
                         ABT_ERR_INV_THREAD);
         if (p_mutex->attr.nesting_cnt == 0) {
             p_mutex->attr.owner_id = 0;
-            ABTI_mutex_unlock(p_local, p_mutex);
+            ABTI_mutex_unlock(p_local_xstream, p_mutex);
         } else {
             p_mutex->attr.nesting_cnt--;
         }
 
     } else {
         /* unknown attributes */
-        ABTI_mutex_unlock(p_local, p_mutex);
+        ABTI_mutex_unlock(p_local_xstream, p_mutex);
     }
 
 fn_exit:
@@ -467,7 +467,7 @@ fn_fail:
 }
 
 /* Hand over the mutex to other ULT on the same ES */
-static inline int ABTI_mutex_unlock_se(ABTI_local **pp_local,
+static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
                                        ABTI_mutex *p_mutex)
 {
     int abt_errno = ABT_SUCCESS;
@@ -475,12 +475,12 @@ static inline int ABTI_mutex_unlock_se(ABTI_local **pp_local,
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
     LOG_EVENT("%p: unlock_se\n", p_mutex);
-    ABTI_local *p_local = *pp_local;
+    ABTI_xstream *p_local_xstream = *pp_local_xstream;
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    if (ABTI_self_get_type(p_local) == ABT_UNIT_TYPE_THREAD)
-        ABTI_thread_yield(pp_local, p_local->p_thread);
+    if (ABTI_self_get_type(p_local_xstream) == ABT_UNIT_TYPE_THREAD)
+        ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
 #else
-    ABTI_thread_yield(pp_local, p_local->p_thread);
+    ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
 #endif
 #else
     int i;
@@ -495,10 +495,10 @@ static inline int ABTI_mutex_unlock_se(ABTI_local **pp_local,
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) == 1) {
         LOG_EVENT("%p: unlock_se\n", p_mutex);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type(*pp_local) == ABT_UNIT_TYPE_THREAD)
-            ABTI_thread_yield(pp_local, (*pp_local)->p_thread);
+        if (ABTI_self_get_type(*pp_local_xstream) == ABT_UNIT_TYPE_THREAD)
+            ABTI_thread_yield(pp_local_xstream, (*pp_local_xstream)->p_thread);
 #else
-        ABTI_thread_yield(pp_local, (*pp_local)->p_thread);
+        ABTI_thread_yield(pp_local_xstream, (*pp_local_xstream)->p_thread);
 #endif
         return abt_errno;
     }
@@ -506,9 +506,9 @@ static inline int ABTI_mutex_unlock_se(ABTI_local **pp_local,
     /* There are ULTs waiting in the mutex queue */
     ABTI_thread_htable *p_htable = p_mutex->p_htable;
 
-    p_thread = (*pp_local)->p_thread;
+    p_thread = (*pp_local_xstream)->p_thread;
     p_xstream = p_thread->p_last_xstream;
-    ABTI_ASSERT(p_xstream == (*pp_local)->p_xstream);
+    ABTI_ASSERT(p_xstream == (*pp_local_xstream)->p_xstream);
     i = (int)p_xstream->rank;
     p_queue = &p_htable->queue[i];
 
@@ -517,9 +517,9 @@ check_cond:
     if (p_queue->num_handovers >= p_mutex->attr.max_handovers) {
         ABTD_atomic_release_store_uint32(&p_mutex->val, 0); /* Unlock */
         LOG_EVENT("%p: unlock_se\n", p_mutex);
-        ABTI_mutex_wake_de(*pp_local, p_mutex);
+        ABTI_mutex_wake_de(*pp_local_xstream, p_mutex);
         p_queue->num_handovers = 0;
-        ABTI_thread_yield(pp_local, p_thread);
+        ABTI_thread_yield(pp_local_xstream, p_thread);
         return abt_errno;
     }
 
@@ -528,8 +528,8 @@ check_cond:
         if (p_htable->h_list != NULL) {
             ABTD_atomic_release_store_uint32(&p_mutex->val, 0); /* Unlock */
             LOG_EVENT("%p: unlock_se\n", p_mutex);
-            ABTI_mutex_wake_de(*pp_local, p_mutex);
-            ABTI_thread_yield(pp_local, p_thread);
+            ABTI_mutex_wake_de(*pp_local_xstream, p_mutex);
+            ABTI_thread_yield(pp_local_xstream, p_thread);
             return abt_errno;
         }
     } else {
@@ -545,8 +545,8 @@ check_cond:
     if (p_queue->low_num_threads <= 1) {
         ABTD_atomic_release_store_uint32(&p_mutex->val, 0); /* Unlock */
         LOG_EVENT("%p: unlock_se\n", p_mutex);
-        ABTI_mutex_wake_de(*pp_local, p_mutex);
-        ABTI_thread_yield(pp_local, p_thread);
+        ABTI_mutex_wake_de(*pp_local_xstream, p_mutex);
+        ABTI_thread_yield(pp_local_xstream, p_thread);
         return abt_errno;
     } else {
         p_next = ABTI_thread_htable_pop_low(p_htable, p_queue);
@@ -572,7 +572,7 @@ handover:
         ;
     ABTI_pool_dec_num_blocked(p_next->p_pool);
     ABTD_atomic_release_store_int(&p_next->state, ABT_THREAD_STATE_RUNNING);
-    ABTI_thread_context_switch_thread_to_thread(pp_local, p_thread, p_next);
+    ABTI_thread_context_switch_thread_to_thread(pp_local_xstream, p_thread, p_next);
 #endif
 
     return abt_errno;
@@ -598,29 +598,29 @@ handover:
 int ABT_mutex_unlock_se(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
     if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
         /* default attributes */
-        ABTI_mutex_unlock_se(&p_local, p_mutex);
+        ABTI_mutex_unlock_se(&p_local_xstream, p_mutex);
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_CHECK_TRUE(ABTI_self_get_unit_id(p_local) ==
+        ABTI_CHECK_TRUE(ABTI_self_get_unit_id(p_local_xstream) ==
                             p_mutex->attr.owner_id,
                         ABT_ERR_INV_THREAD);
         if (p_mutex->attr.nesting_cnt == 0) {
             p_mutex->attr.owner_id = 0;
-            ABTI_mutex_unlock_se(&p_local, p_mutex);
+            ABTI_mutex_unlock_se(&p_local_xstream, p_mutex);
         } else {
             p_mutex->attr.nesting_cnt--;
         }
 
     } else {
         /* unknown attributes */
-        ABTI_mutex_unlock_se(&p_local, p_mutex);
+        ABTI_mutex_unlock_se(&p_local_xstream, p_mutex);
     }
 
 fn_exit:
@@ -634,11 +634,11 @@ fn_fail:
 int ABT_mutex_unlock_de(ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    ABTI_mutex_unlock(p_local, p_mutex);
+    ABTI_mutex_unlock(p_local_xstream, p_mutex);
 
 fn_exit:
     return abt_errno;
@@ -671,11 +671,11 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
     return ABT_SUCCESS;
 }
 
-void ABTI_mutex_wait(ABTI_local **pp_local, ABTI_mutex *p_mutex, int val)
+void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex, int val)
 {
-    ABTI_local *p_local = *pp_local;
+    ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_htable *p_htable = p_mutex->p_htable;
-    ABTI_thread *p_self = p_local->p_thread;
+    ABTI_thread *p_self = p_local_xstream->p_thread;
     ABTI_xstream *p_xstream = p_self->p_last_xstream;
 
     int rank = (int)p_xstream->rank;
@@ -703,14 +703,14 @@ void ABTI_mutex_wait(ABTI_local **pp_local, ABTI_mutex *p_mutex, int val)
     ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
 
     /* Suspend the current ULT */
-    ABTI_thread_suspend(pp_local, p_self);
+    ABTI_thread_suspend(pp_local_xstream, p_self);
 }
 
-void ABTI_mutex_wait_low(ABTI_local **pp_local, ABTI_mutex *p_mutex, int val)
+void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex, int val)
 {
-    ABTI_local *p_local = *pp_local;
+    ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_htable *p_htable = p_mutex->p_htable;
-    ABTI_thread *p_self = p_local->p_thread;
+    ABTI_thread *p_self = p_local_xstream->p_thread;
     ABTI_xstream *p_xstream = p_self->p_last_xstream;
 
     int rank = (int)p_xstream->rank;
@@ -738,10 +738,10 @@ void ABTI_mutex_wait_low(ABTI_local **pp_local, ABTI_mutex *p_mutex, int val)
     ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
 
     /* Suspend the current ULT */
-    ABTI_thread_suspend(pp_local, p_self);
+    ABTI_thread_suspend(pp_local_xstream, p_self);
 }
 
-void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex)
+void ABTI_mutex_wake_de(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
 {
     int n;
     ABTI_thread *p_thread;
@@ -804,6 +804,6 @@ void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex)
         LOG_EVENT("%p: wake up U%" PRIu64 ":E%d\n", p_mutex,
                   ABTI_thread_get_id(p_thread),
                   ABTI_thread_get_xstream_rank(p_thread));
-        ABTI_thread_set_ready(p_local, p_thread);
+        ABTI_thread_set_ready(p_local_xstream, p_thread);
     }
 }

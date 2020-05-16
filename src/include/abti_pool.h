@@ -66,7 +66,7 @@ static inline void ABTI_pool_dec_num_migrations(ABTI_pool *p_pool)
 static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 {
     LOG_EVENT_POOL_PUSH(p_pool, unit,
-                        ABTI_self_get_native_thread_id(ABTI_local_get_local()));
+                        ABTI_self_get_native_thread_id(ABTI_local_get_xstream()));
 
     /* Push unit into pool */
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
@@ -153,7 +153,7 @@ static inline int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
 
     LOG_EVENT_POOL_REMOVE(p_pool, unit,
                           ABTI_self_get_native_thread_id(
-                              ABTI_local_get_local()));
+                              ABTI_local_get_xstream()));
 
     abt_errno = p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);
     ABTI_CHECK_ERROR(abt_errno);

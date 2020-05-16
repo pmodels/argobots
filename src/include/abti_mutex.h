@@ -69,16 +69,16 @@ static inline void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
     LOG_EVENT("%p: spinlock\n", p_mutex);
 }
 
-static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
-    ABTI_local *p_local = *pp_local;
-    ABT_unit_type type = ABTI_self_get_type(p_local);
+    ABTI_xstream *p_local_xstream = *pp_local_xstream;
+    ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
     if (type == ABT_UNIT_TYPE_THREAD) {
         LOG_EVENT("%p: lock - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-            ABTI_thread_yield(pp_local, p_local->p_thread);
-            p_local = *pp_local;
+            ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
+            p_local_xstream = *pp_local_xstream;
         }
         LOG_EVENT("%p: lock - acquired\n", p_mutex);
     } else {
@@ -86,7 +86,7 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
     }
 #else
     int abt_errno;
-    ABT_unit_type type = ABTI_self_get_type(*pp_local);
+    ABT_unit_type type = ABTI_self_get_type(*pp_local_xstream);
 
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
@@ -98,13 +98,13 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                 c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
             }
             while (c != 0) {
-                ABTI_mutex_wait(pp_local, p_mutex, 2);
+                ABTI_mutex_wait(pp_local_xstream, p_mutex, 2);
 
                 /* If the mutex has been handed over to the current ULT from
                  * other ULT on the same ES, we don't need to change the mutex
                  * state. */
                 if (p_mutex->p_handover) {
-                    ABTI_thread *p_self = (*pp_local)->p_thread;
+                    ABTI_thread *p_self = (*pp_local_xstream)->p_thread;
                     if (p_self == p_mutex->p_handover) {
                         p_mutex->p_handover = NULL;
                         ABTD_atomic_release_store_uint32(&p_mutex->val, 2);
@@ -115,7 +115,7 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                                                       ABT_THREAD_STATE_READY);
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
                                        ABTI_self_get_native_thread_id(
-                                           *pp_local));
+                                           *pp_local_xstream));
                         break;
                     }
                 }
@@ -145,7 +145,7 @@ static inline int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
     return ABT_SUCCESS;
 }
 
-static inline void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_unlock(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTD_atomic_mem_barrier();
@@ -155,7 +155,7 @@ static inline void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) != 1) {
         ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
         LOG_EVENT("%p: unlock with wake\n", p_mutex);
-        ABTI_mutex_wake_de(p_local, p_mutex);
+        ABTI_mutex_wake_de(p_local_xstream, p_mutex);
     } else {
         LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
     }

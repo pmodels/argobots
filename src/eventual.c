@@ -104,7 +104,7 @@ fn_fail:
 int ABT_eventual_wait(ABT_eventual eventual, void **value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
@@ -115,8 +115,8 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         ABT_unit_type type;
         ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
-        if (p_local != NULL) {
-            p_current = p_local->p_thread;
+        if (p_local_xstream != NULL) {
+            p_current = p_local_xstream->p_thread;
             ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_EVENTUAL);
 
             type = ABT_UNIT_TYPE_THREAD;
@@ -150,7 +150,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
             ABTI_spinlock_release(&p_eventual->lock);
 
             /* Suspend the current ULT */
-            ABTI_thread_suspend(&p_local, p_current);
+            ABTI_thread_suspend(&p_local_xstream, p_current);
 
         } else {
             ABTI_spinlock_release(&p_eventual->lock);
@@ -235,7 +235,7 @@ fn_fail:
 int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
     ABTI_CHECK_TRUE(nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);
@@ -262,7 +262,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->handle.thread);
-            ABTI_thread_set_ready(p_local, p_thread);
+            ABTI_thread_set_ready(p_local_xstream, p_thread);
         } else {
             /* When the head is an external thread */
             ABTD_atomic_int32 *p_ext_signal =

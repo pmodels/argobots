@@ -42,7 +42,7 @@
 
 static inline void ABTI_mem_free_stack_list(ABTI_stack_header *p_stack);
 static inline void ABTI_mem_free_page_list(ABTI_page_header *p_ph);
-static inline void ABTI_mem_add_page(ABTI_local *p_local,
+static inline void ABTI_mem_add_page(ABTI_xstream *p_local_xstream,
                                      ABTI_page_header *p_ph);
 static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
                                                 ABTI_page_header *p_tail);
@@ -59,15 +59,15 @@ void ABTI_mem_init(ABTI_global *p_global)
     ABTD_atomic_relaxed_store_uint64(&g_sp_id, 0);
 }
 
-void ABTI_mem_init_local(ABTI_local *p_local)
+void ABTI_mem_init_local(ABTI_xstream *p_local_xstream)
 {
     /* TODO: preallocate some stacks? */
-    p_local->num_stacks = 0;
-    p_local->p_mem_stack = NULL;
+    p_local_xstream->num_stacks = 0;
+    p_local_xstream->p_mem_stack = NULL;
 
     /* TODO: preallocate some task blocks? */
-    p_local->p_mem_task_head = NULL;
-    p_local->p_mem_task_tail = NULL;
+    p_local_xstream->p_mem_task_head = NULL;
+    p_local_xstream->p_mem_task_tail = NULL;
 }
 
 void ABTI_mem_finalize(ABTI_global *p_global)
@@ -85,17 +85,17 @@ void ABTI_mem_finalize(ABTI_global *p_global)
     p_global->p_mem_sph = NULL;
 }
 
-void ABTI_mem_finalize_local(ABTI_local *p_local)
+void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream)
 {
     /* Free all remaining stacks */
-    ABTI_mem_free_stack_list(p_local->p_mem_stack);
-    p_local->num_stacks = 0;
-    p_local->p_mem_stack = NULL;
+    ABTI_mem_free_stack_list(p_local_xstream->p_mem_stack);
+    p_local_xstream->num_stacks = 0;
+    p_local_xstream->p_mem_stack = NULL;
 
     /* Free all task block pages */
     ABTI_page_header *p_rem_head = NULL;
     ABTI_page_header *p_rem_tail = NULL;
-    ABTI_page_header *p_cur = p_local->p_mem_task_head;
+    ABTI_page_header *p_cur = p_local_xstream->p_mem_task_head;
     while (p_cur) {
         ABTI_page_header *p_tmp = p_cur;
         p_cur = p_cur->p_next;
@@ -123,11 +123,11 @@ void ABTI_mem_finalize_local(ABTI_local *p_local)
             }
         }
 
-        if (p_cur == p_local->p_mem_task_head)
+        if (p_cur == p_local_xstream->p_mem_task_head)
             break;
     }
-    p_local->p_mem_task_head = NULL;
-    p_local->p_mem_task_tail = NULL;
+    p_local_xstream->p_mem_task_head = NULL;
+    p_local_xstream->p_mem_task_tail = NULL;
 
     /* If there are pages that have not been fully freed, we move them to the
      * global task page list. */
@@ -230,23 +230,23 @@ static inline void ABTI_mem_free_page_list(ABTI_page_header *p_ph)
     }
 }
 
-static inline void ABTI_mem_add_page(ABTI_local *p_local,
+static inline void ABTI_mem_add_page(ABTI_xstream *p_local_xstream,
                                      ABTI_page_header *p_ph)
 {
-    p_ph->owner_id = ABTI_self_get_native_thread_id(p_local);
+    p_ph->owner_id = ABTI_self_get_native_thread_id(p_local_xstream);
 
     /* Add the page to the head */
-    if (p_local->p_mem_task_head != NULL) {
-        p_ph->p_prev = p_local->p_mem_task_tail;
-        p_ph->p_next = p_local->p_mem_task_head;
-        p_local->p_mem_task_head->p_prev = p_ph;
-        p_local->p_mem_task_tail->p_next = p_ph;
-        p_local->p_mem_task_head = p_ph;
+    if (p_local_xstream->p_mem_task_head != NULL) {
+        p_ph->p_prev = p_local_xstream->p_mem_task_tail;
+        p_ph->p_next = p_local_xstream->p_mem_task_head;
+        p_local_xstream->p_mem_task_head->p_prev = p_ph;
+        p_local_xstream->p_mem_task_tail->p_next = p_ph;
+        p_local_xstream->p_mem_task_head = p_ph;
     } else {
         p_ph->p_prev = p_ph;
         p_ph->p_next = p_ph;
-        p_local->p_mem_task_head = p_ph;
-        p_local->p_mem_task_tail = p_ph;
+        p_local_xstream->p_mem_task_head = p_ph;
+        p_local_xstream->p_mem_task_tail = p_ph;
     }
 }
 
@@ -262,7 +262,7 @@ static inline void ABTI_mem_add_pages_to_global(ABTI_page_header *p_head,
     ABTI_spinlock_release(&p_global->mem_task_lock);
 }
 
-char *ABTI_mem_take_global_stack(ABTI_local *p_local)
+char *ABTI_mem_take_global_stack(ABTI_xstream *p_local_xstream)
 {
     ABTI_global *p_global = gp_ABTI_global;
     ABTI_stack_header *p_sh, *p_cur;
@@ -290,9 +290,9 @@ char *ABTI_mem_take_global_stack(ABTI_local *p_local)
         cnt_stacks++;
     }
 
-    /* Return the first one and keep the rest in p_local */
-    p_local->num_stacks = cnt_stacks;
-    p_local->p_mem_stack = p_sh->p_next;
+    /* Return the first one and keep the rest in p_local_xstream */
+    p_local_xstream->num_stacks = cnt_stacks;
+    p_local_xstream->p_mem_stack = p_sh->p_next;
 
     return (char *)p_sh - sizeof(ABTI_thread);
 }
@@ -395,7 +395,7 @@ static char *ABTI_mem_alloc_large_page(int pgsize, ABT_bool *p_is_mmapped)
     return p_page;
 }
 
-ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
+ABTI_page_header *ABTI_mem_alloc_page(ABTI_xstream *p_local_xstream, size_t blk_size)
 {
     int i;
     ABTI_page_header *p_ph;
@@ -420,7 +420,7 @@ ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
     ABTD_atomic_relaxed_store_uint32(&p_ph->num_remote_free, 0);
     p_ph->p_head = (ABTI_blk_header *)(p_page + ph_size);
     p_ph->p_free = NULL;
-    ABTI_mem_add_page(p_local, p_ph);
+    ABTI_mem_add_page(p_local_xstream, p_ph);
     p_ph->is_mmapped = is_mmapped;
 
     /* Make a liked list of all free blocks */
@@ -436,10 +436,10 @@ ABTI_page_header *ABTI_mem_alloc_page(ABTI_local *p_local, size_t blk_size)
     return p_ph;
 }
 
-void ABTI_mem_free_page(ABTI_local *p_local, ABTI_page_header *p_ph)
+void ABTI_mem_free_page(ABTI_xstream *p_local_xstream, ABTI_page_header *p_ph)
 {
     /* We keep one page for future use. */
-    if (p_local->p_mem_task_head == p_local->p_mem_task_tail)
+    if (p_local_xstream->p_mem_task_head == p_local_xstream->p_mem_task_tail)
         return;
 
     uint32_t num_free_blks =
@@ -450,10 +450,10 @@ void ABTI_mem_free_page(ABTI_local *p_local, ABTI_page_header *p_ph)
         /* Remove from the list and free the page */
         p_ph->p_prev->p_next = p_ph->p_next;
         p_ph->p_next->p_prev = p_ph->p_prev;
-        if (p_ph == p_local->p_mem_task_head) {
-            p_local->p_mem_task_head = p_ph->p_next;
-        } else if (p_ph == p_local->p_mem_task_tail) {
-            p_local->p_mem_task_tail = p_ph->p_prev;
+        if (p_ph == p_local_xstream->p_mem_task_head) {
+            p_local_xstream->p_mem_task_head = p_ph->p_next;
+        } else if (p_ph == p_local_xstream->p_mem_task_tail) {
+            p_local_xstream->p_mem_task_tail = p_ph->p_prev;
         }
         if (p_ph->is_mmapped == ABT_TRUE) {
             munmap(p_ph, gp_ABTI_global->mem_page_size);
@@ -507,7 +507,7 @@ void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh)
     ABTD_atomic_fetch_add_uint32(&p_ph->num_remote_free, 1);
 }
 
-ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local)
+ABTI_page_header *ABTI_mem_take_global_page(ABTI_xstream *p_local_xstream)
 {
     ABTI_global *p_global = gp_ABTI_global;
     ABTI_page_header *p_ph = NULL;
@@ -521,7 +521,7 @@ ABTI_page_header *ABTI_mem_take_global_page(ABTI_local *p_local)
     ABTI_spinlock_release(&p_global->mem_task_lock);
 
     if (p_ph) {
-        ABTI_mem_add_page(p_local, p_ph);
+        ABTI_mem_add_page(p_local_xstream, p_ph);
         if (p_ph->p_free)
             ABTI_mem_take_free(p_ph);
         if (p_ph->p_head == NULL)
@@ -560,7 +560,7 @@ static inline void ABTI_mem_free_sph_list(ABTI_sp_header *p_sph)
 
 /* Allocate a stack page and divide it to multiple stacks by making a liked
  * list.  Then, the first stack is returned. */
-char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
+char *ABTI_mem_alloc_sp(ABTI_xstream *p_local_xstream, size_t stacksize)
 {
     char *p_sp, *p_first;
     ABTI_sp_header *p_sph;
@@ -600,8 +600,8 @@ char *ABTI_mem_alloc_sp(ABTI_local *p_local, size_t stacksize)
         /* Make a linked list with remaining stacks */
         p_sh = (ABTI_stack_header *)((char *)p_sh + header_size);
 
-        p_local->num_stacks = num_stacks - 1;
-        p_local->p_mem_stack = p_sh;
+        p_local_xstream->num_stacks = num_stacks - 1;
+        p_local_xstream->p_mem_stack = p_sh;
 
         for (i = 1; i < num_stacks; i++) {
             p_next = (i + 1) < num_stacks
