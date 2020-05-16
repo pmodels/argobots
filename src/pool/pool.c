@@ -268,9 +268,9 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     ABTI_pool_push(p_pool, unit);
 #else
     /* Save the producer ES information in the pool */
-    abt_errno =
-        ABTI_pool_push(p_pool, unit,
-                       ABTI_self_get_native_thread_id(ABTI_local_get_xstream()));
+    abt_errno = ABTI_pool_push(p_pool, unit,
+                               ABTI_self_get_native_thread_id(
+                                   ABTI_local_get_xstream()));
     ABTI_CHECK_ERROR(abt_errno);
 #endif
 
@@ -471,8 +471,10 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
             /* we need to ensure that the pool set of the scheduler does
              * not contain an ES private pool  */
             for (p = 0; p < p_sched->num_pools; p++) {
-                ABTI_pool *p_local_xstream_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-                ABTI_CHECK_TRUE(p_local_xstream_pool->access != ABT_POOL_ACCESS_PRIV &&
+                ABTI_pool *p_local_xstream_pool =
+                    ABTI_pool_get_ptr(p_sched->pools[p]);
+                ABTI_CHECK_TRUE(p_local_xstream_pool->access !=
+                                        ABT_POOL_ACCESS_PRIV &&
                                     p_local_xstream_pool->access !=
                                         ABT_POOL_ACCESS_SPSC &&
                                     p_local_xstream_pool->access !=

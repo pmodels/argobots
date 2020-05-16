@@ -102,8 +102,7 @@ static void sched_run(ABT_sched sched)
         }
 
         if (++work_count >= event_freq) {
-            ABT_bool stop =
-                ABTI_sched_has_to_stop(&p_local_xstream, p_sched);
+            ABT_bool stop = ABTI_sched_has_to_stop(&p_local_xstream, p_sched);
             if (stop == ABT_TRUE)
                 break;
             work_count = 0;

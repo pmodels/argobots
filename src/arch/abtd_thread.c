@@ -87,8 +87,8 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
                                                            p_joiner);
             } else {
 #endif
-                ABTI_thread_finish_context_thread_to_thread(p_local_xstream, p_thread,
-                                                            p_joiner);
+                ABTI_thread_finish_context_thread_to_thread(p_local_xstream,
+                                                            p_thread, p_joiner);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             }
 #endif

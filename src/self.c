@@ -141,8 +141,8 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
 #endif
 
     /* Return value */
-    *flag =
-        (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE : ABT_FALSE;
+    *flag = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE
+                                                                 : ABT_FALSE;
 
 fn_exit:
     return abt_errno;

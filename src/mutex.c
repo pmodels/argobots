@@ -209,8 +209,9 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
         int rank = (int)p_xstream->rank;
         ABTI_thread_queue *p_queue = &p_htable->queue[rank];
         if (p_queue->low_num_threads > 0) {
-            ABT_bool ret = ABTI_thread_htable_switch_low(pp_local_xstream, p_queue,
-                                                         p_self, p_htable);
+            ABT_bool ret =
+                ABTI_thread_htable_switch_low(pp_local_xstream, p_queue, p_self,
+                                              p_htable);
             if (ret == ABT_TRUE) {
                 /* This ULT became a waiter in the mutex queue */
                 goto check_handover;
@@ -572,7 +573,8 @@ handover:
         ;
     ABTI_pool_dec_num_blocked(p_next->p_pool);
     ABTD_atomic_release_store_int(&p_next->state, ABT_THREAD_STATE_RUNNING);
-    ABTI_thread_context_switch_thread_to_thread(pp_local_xstream, p_thread, p_next);
+    ABTI_thread_context_switch_thread_to_thread(pp_local_xstream, p_thread,
+                                                p_next);
 #endif
 
     return abt_errno;
@@ -671,7 +673,8 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
     return ABT_SUCCESS;
 }
 
-void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex, int val)
+void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
+                     int val)
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_htable *p_htable = p_mutex->p_htable;
@@ -706,7 +709,8 @@ void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex, int v
     ABTI_thread_suspend(pp_local_xstream, p_self);
 }
 
-void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex, int val)
+void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
+                         int val)
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_htable *p_htable = p_mutex->p_htable;

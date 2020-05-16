@@ -68,7 +68,8 @@ int ABTI_mem_check_lp_alloc(int lp_alloc);
 
 char *ABTI_mem_take_global_stack(ABTI_xstream *p_local_xstream);
 void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh);
-ABTI_page_header *ABTI_mem_alloc_page(ABTI_xstream *p_local_xstream, size_t blk_size);
+ABTI_page_header *ABTI_mem_alloc_page(ABTI_xstream *p_local_xstream,
+                                      size_t blk_size);
 void ABTI_mem_free_page(ABTI_xstream *p_local_xstream, ABTI_page_header *p_ph);
 void ABTI_mem_take_free(ABTI_page_header *p_ph);
 void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh);
@@ -313,7 +314,8 @@ static inline ABTI_task *ABTI_mem_alloc_task(ABTI_xstream *p_local_xstream)
     return p_task;
 }
 
-static inline void ABTI_mem_free_task(ABTI_xstream *p_local_xstream, ABTI_task *p_task)
+static inline void ABTI_mem_free_task(ABTI_xstream *p_local_xstream,
+                                      ABTI_task *p_task)
 {
     ABTI_blk_header *p_head;
     ABTI_page_header *p_ph;

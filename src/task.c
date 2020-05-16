@@ -80,17 +80,17 @@ int ABTI_task_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     void *arg = (void *)ABTI_sched_get_handle(p_sched);
     /* If p_sched is reused, ABTI_task_revive() can be used. */
     if (p_sched->p_task) {
-        abt_errno =
-            ABTI_task_revive(p_local_xstream, p_pool, (void (*)(void *))p_sched->run,
-                             arg, p_sched->p_task);
+        abt_errno = ABTI_task_revive(p_local_xstream, p_pool,
+                                     (void (*)(void *))p_sched->run, arg,
+                                     p_sched->p_task);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
 
     /* Allocate a task object */
-    abt_errno =
-        ABTI_task_create(p_local_xstream, p_pool, (void (*)(void *))p_sched->run, arg,
-                         p_sched, 1, &p_newtask);
+    abt_errno = ABTI_task_create(p_local_xstream, p_pool,
+                                 (void (*)(void *))p_sched->run, arg, p_sched,
+                                 1, &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -193,7 +193,8 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_task_revive(p_local_xstream, p_pool, task_func, arg, p_task);
+    abt_errno =
+        ABTI_task_revive(p_local_xstream, p_pool, task_func, arg, p_task);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:

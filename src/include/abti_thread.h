@@ -240,7 +240,8 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
                         p_link = ABTD_atomic_acquire_load_thread_context_ptr(
                             &p_ctx->p_link);
                     } while (!p_link);
-                    ABTI_thread_set_ready(p_local_xstream, (ABTI_thread *)p_link);
+                    ABTI_thread_set_ready(p_local_xstream,
+                                          (ABTI_thread *)p_link);
                 }
             }
         }
@@ -276,8 +277,9 @@ static inline void ABTI_thread_context_switch_sched_to_sched_internal(
 static inline void ABTI_thread_context_switch_thread_to_thread(
     ABTI_xstream **pp_local_xstream, ABTI_thread *p_old, ABTI_thread *p_new)
 {
-    ABTI_thread_context_switch_thread_to_thread_internal(*pp_local_xstream, p_old,
-                                                         p_new, ABT_FALSE);
+    ABTI_thread_context_switch_thread_to_thread_internal(*pp_local_xstream,
+                                                         p_old, p_new,
+                                                         ABT_FALSE);
     *pp_local_xstream = ABTI_local_get_xstream_uninlined();
 }
 
@@ -292,7 +294,8 @@ static inline void ABTI_thread_context_switch_thread_to_sched(
 static inline void ABTI_thread_context_switch_sched_to_thread(
     ABTI_xstream **pp_local_xstream, ABTI_sched *p_old, ABTI_thread *p_new)
 {
-    ABTI_thread_context_switch_sched_to_thread_internal(*pp_local_xstream, p_old, p_new,
+    ABTI_thread_context_switch_sched_to_thread_internal(*pp_local_xstream,
+                                                        p_old, p_new,
                                                         ABT_FALSE);
     *pp_local_xstream = ABTI_local_get_xstream_uninlined();
 }
@@ -308,8 +311,8 @@ ABTI_thread_context_switch_sched_to_sched(ABTI_xstream **pp_local_xstream,
 static inline void ABTI_thread_finish_context_thread_to_thread(
     ABTI_xstream *p_local_xstream, ABTI_thread *p_old, ABTI_thread *p_new)
 {
-    ABTI_thread_context_switch_thread_to_thread_internal(p_local_xstream, p_old, p_new,
-                                                         ABT_TRUE);
+    ABTI_thread_context_switch_thread_to_thread_internal(p_local_xstream, p_old,
+                                                         p_new, ABT_TRUE);
 }
 
 static inline void
@@ -322,8 +325,8 @@ ABTI_thread_finish_context_thread_to_sched(ABTI_thread *p_old,
 static inline void ABTI_thread_finish_context_sched_to_thread(
     ABTI_xstream *p_local_xstream, ABTI_sched *p_old, ABTI_thread *p_new)
 {
-    ABTI_thread_context_switch_sched_to_thread_internal(p_local_xstream, p_old, p_new,
-                                                        ABT_TRUE);
+    ABTI_thread_context_switch_sched_to_thread_internal(p_local_xstream, p_old,
+                                                        p_new, ABT_TRUE);
 }
 
 static inline void ABTI_thread_finish_context_sched_to_sched(ABTI_sched *p_old,
@@ -356,7 +359,8 @@ static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
 
     /* Switch to the top scheduler */
     p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
-    ABTI_thread_context_switch_thread_to_sched(pp_local_xstream, p_thread, p_sched);
+    ABTI_thread_context_switch_thread_to_sched(pp_local_xstream, p_thread,
+                                               p_sched);
 
     /* Back to the original thread */
     LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",

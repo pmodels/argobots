@@ -69,7 +69,8 @@ static inline void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
     LOG_EVENT("%p: spinlock\n", p_mutex);
 }
 
-static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
+                                   ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
@@ -145,7 +146,8 @@ static inline int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
     return ABT_SUCCESS;
 }
 
-static inline void ABTI_mutex_unlock(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_unlock(ABTI_xstream *p_local_xstream,
+                                     ABTI_mutex *p_mutex)
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTD_atomic_mem_barrier();

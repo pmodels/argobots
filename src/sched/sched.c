@@ -308,7 +308,8 @@ fn_fail:
     goto fn_exit;
 }
 
-ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream, ABTI_sched *p_sched)
+ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream,
+                                ABTI_sched *p_sched)
 {
     ABT_bool stop = ABT_FALSE;
     size_t size;
@@ -350,8 +351,8 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream, ABTI_sched *p_s
                 ABTI_ASSERT(p_sched->type == ABT_SCHED_TYPE_ULT);
                 ABTI_sched *p_par_sched;
                 p_par_sched = ABTI_xstream_get_parent_sched(p_local_xstream);
-                ABTI_thread_context_switch_sched_to_sched(pp_local_xstream, p_sched,
-                                                          p_par_sched);
+                ABTI_thread_context_switch_sched_to_sched(pp_local_xstream,
+                                                          p_sched, p_par_sched);
             }
         }
     }
@@ -507,13 +508,15 @@ size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
  * the caller ES is not the latest consumer. This is necessary when the ES
  * associated with the target scheduler has to be joined and the pool is shared
  * between different schedulers associated with different ESs. */
-size_t ABTI_sched_get_effective_size(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched)
+size_t ABTI_sched_get_effective_size(ABTI_xstream *p_local_xstream,
+                                     ABTI_sched *p_sched)
 {
     size_t pool_size = 0;
     int p;
 
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    ABTI_native_thread_id self_id = ABTI_self_get_native_thread_id(p_local_xstream);
+    ABTI_native_thread_id self_id =
+        ABTI_self_get_native_thread_id(p_local_xstream);
 #endif
 
     for (p = 0; p < p_sched->num_pools; p++) {

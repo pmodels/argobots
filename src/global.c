@@ -82,10 +82,10 @@ int ABT_init(int argc, char **argv)
     /* Init the ES local data */
     ABTI_local_set_xstream(p_local_xstream);
 
-
     /* Create the primary ULT, i.e., the main thread */
     ABTI_thread *p_main_thread;
-    abt_errno = ABTI_thread_create_main(p_local_xstream, p_local_xstream, &p_main_thread);
+    abt_errno = ABTI_thread_create_main(p_local_xstream, p_local_xstream,
+                                        &p_main_thread);
     /* Set as if p_local_xstream is currently running the main thread. */
     ABTD_atomic_relaxed_store_int(&p_main_thread->state,
                                   ABT_THREAD_STATE_RUNNING);
@@ -95,8 +95,8 @@ int ABT_init(int argc, char **argv)
     p_local_xstream->p_thread = p_main_thread;
 
     /* Start the primary ES */
-    abt_errno =
-        ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream, p_main_thread);
+    abt_errno = ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream,
+                                           p_main_thread);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");
 
     if (gp_ABTI_global->print_config == ABT_TRUE) {
@@ -175,7 +175,8 @@ int ABT_finalize(void)
         /* Switch to the top scheduler */
         ABTI_sched *p_sched =
             ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
-        ABTI_thread_context_switch_thread_to_sched(&p_local_xstream, p_thread, p_sched);
+        ABTI_thread_context_switch_thread_to_sched(&p_local_xstream, p_thread,
+                                                   p_sched);
 
         /* Back to the original thread */
         LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",

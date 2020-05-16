@@ -57,8 +57,8 @@ static inline ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
 #endif
 }
 
-static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream, ABTI_cond *p_cond,
-                                 ABTI_mutex *p_mutex)
+static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
+                                 ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -151,7 +151,8 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline void ABTI_cond_broadcast(ABTI_xstream *p_local_xstream, ABTI_cond *p_cond)
+static inline void ABTI_cond_broadcast(ABTI_xstream *p_local_xstream,
+                                       ABTI_cond *p_cond)
 {
     ABTI_spinlock_acquire(&p_cond->lock);
 

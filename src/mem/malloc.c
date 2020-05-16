@@ -395,7 +395,8 @@ static char *ABTI_mem_alloc_large_page(int pgsize, ABT_bool *p_is_mmapped)
     return p_page;
 }
 
-ABTI_page_header *ABTI_mem_alloc_page(ABTI_xstream *p_local_xstream, size_t blk_size)
+ABTI_page_header *ABTI_mem_alloc_page(ABTI_xstream *p_local_xstream,
+                                      size_t blk_size)
 {
     int i;
     ABTI_page_header *p_ph;

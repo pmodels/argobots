@@ -63,7 +63,8 @@ static inline int ABTI_rwlock_rdlock(ABTI_xstream **pp_local_xstream,
     ABTI_mutex_lock(pp_local_xstream, &p_rwlock->mutex);
 
     while (p_rwlock->write_flag && abt_errno == ABT_SUCCESS) {
-        abt_errno = ABTI_cond_wait(pp_local_xstream, &p_rwlock->cond, &p_rwlock->mutex);
+        abt_errno =
+            ABTI_cond_wait(pp_local_xstream, &p_rwlock->cond, &p_rwlock->mutex);
     }
 
     if (abt_errno == ABT_SUCCESS) {
@@ -82,7 +83,8 @@ static inline int ABTI_rwlock_wrlock(ABTI_xstream **pp_local_xstream,
 
     while ((p_rwlock->write_flag || p_rwlock->reader_count) &&
            abt_errno == ABT_SUCCESS) {
-        abt_errno = ABTI_cond_wait(pp_local_xstream, &p_rwlock->cond, &p_rwlock->mutex);
+        abt_errno =
+            ABTI_cond_wait(pp_local_xstream, &p_rwlock->cond, &p_rwlock->mutex);
     }
 
     if (abt_errno == ABT_SUCCESS) {
