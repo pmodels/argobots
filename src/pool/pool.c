@@ -206,7 +206,7 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     ABT_unit unit;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(ABTI_local_get_local() != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(ABTI_local_get_xstream() != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -229,7 +229,7 @@ int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
     ABT_unit unit;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(ABTI_local_get_local() != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(ABTI_local_get_xstream() != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -268,9 +268,9 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     ABTI_pool_push(p_pool, unit);
 #else
     /* Save the producer ES information in the pool */
-    abt_errno =
-        ABTI_pool_push(p_pool, unit,
-                       ABTI_self_get_native_thread_id(ABTI_local_get_local()));
+    abt_errno = ABTI_pool_push(p_pool, unit,
+                               ABTI_self_get_native_thread_id(
+                                   ABTI_local_get_xstream()));
     ABTI_CHECK_ERROR(abt_errno);
 #endif
 
@@ -296,14 +296,14 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     int abt_errno = ABT_SUCCESS;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(ABTI_local_get_local() != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(ABTI_local_get_xstream() != NULL, ABT_ERR_INV_XSTREAM);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     abt_errno = ABTI_POOL_REMOVE(p_pool, unit,
                                  ABTI_self_get_native_thread_id(
-                                     ABTI_local_get_local()));
+                                     ABTI_local_get_xstream()));
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -436,7 +436,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     return ABT_ERR_FEATURE_NA;
 #else
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -471,11 +471,13 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
             /* we need to ensure that the pool set of the scheduler does
              * not contain an ES private pool  */
             for (p = 0; p < p_sched->num_pools; p++) {
-                ABTI_pool *p_local_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-                ABTI_CHECK_TRUE(p_local_pool->access != ABT_POOL_ACCESS_PRIV &&
-                                    p_local_pool->access !=
+                ABTI_pool *p_local_xstream_pool =
+                    ABTI_pool_get_ptr(p_sched->pools[p]);
+                ABTI_CHECK_TRUE(p_local_xstream_pool->access !=
+                                        ABT_POOL_ACCESS_PRIV &&
+                                    p_local_xstream_pool->access !=
                                         ABT_POOL_ACCESS_SPSC &&
-                                    p_local_pool->access !=
+                                    p_local_xstream_pool->access !=
                                         ABT_POOL_ACCESS_MPSC,
                                 ABT_ERR_POOL);
             }
@@ -491,10 +493,10 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     p_sched->used = ABTI_SCHED_IN_POOL;
 
     if (p_sched->type == ABT_SCHED_TYPE_ULT) {
-        abt_errno = ABTI_thread_create_sched(p_local, p_pool, p_sched);
+        abt_errno = ABTI_thread_create_sched(p_local_xstream, p_pool, p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else if (p_sched->type == ABT_SCHED_TYPE_TASK) {
-        abt_errno = ABTI_task_create_sched(p_local, p_pool, p_sched);
+        abt_errno = ABTI_task_create_sched(p_local_xstream, p_pool, p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
         ABTI_CHECK_TRUE(0, ABT_ERR_SCHED);

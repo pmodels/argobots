@@ -5,9 +5,9 @@
 
 #include "abti.h"
 
-static inline void ABTD_thread_terminate_thread(ABTI_local *p_local,
+static inline void ABTD_thread_terminate_thread(ABTI_xstream *p_local_xstream,
                                                 ABTI_thread *p_thread);
-static inline void ABTD_thread_terminate_sched(ABTI_local *p_local,
+static inline void ABTD_thread_terminate_sched(ABTI_xstream *p_local_xstream,
                                                ABTI_thread *p_thread);
 
 void ABTD_thread_func_wrapper_thread(void *p_arg)
@@ -23,8 +23,8 @@ void ABTD_thread_func_wrapper_thread(void *p_arg)
     ABTI_ASSERT(p_thread->is_sched == NULL);
 #endif
 
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTD_thread_terminate_thread(p_local, p_thread);
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTD_thread_terminate_thread(p_local_xstream, p_thread);
 }
 
 void ABTD_thread_func_wrapper_sched(void *p_arg)
@@ -40,24 +40,24 @@ void ABTD_thread_func_wrapper_sched(void *p_arg)
     ABTI_ASSERT(p_thread->is_sched != NULL);
 #endif
 
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTD_thread_terminate_sched(p_local, p_thread);
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTD_thread_terminate_sched(p_local_xstream, p_thread);
 }
 
-void ABTD_thread_exit(ABTI_local *p_local, ABTI_thread *p_thread)
+void ABTD_thread_exit(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->is_sched) {
-        ABTD_thread_terminate_sched(p_local, p_thread);
+        ABTD_thread_terminate_sched(p_local_xstream, p_thread);
     } else {
 #endif
-        ABTD_thread_terminate_thread(p_local, p_thread);
+        ABTD_thread_terminate_thread(p_local_xstream, p_thread);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
 #endif
 }
 
-static inline void ABTDI_thread_terminate(ABTI_local *p_local,
+static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
                                           ABTI_thread *p_thread,
                                           ABT_bool is_sched)
 {
@@ -82,13 +82,13 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
              * non-scheduler-type ULT. */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             if (is_sched) {
-                ABTI_thread_finish_context_sched_to_thread(p_local,
+                ABTI_thread_finish_context_sched_to_thread(p_local_xstream,
                                                            p_thread->is_sched,
                                                            p_joiner);
             } else {
 #endif
-                ABTI_thread_finish_context_thread_to_thread(p_local, p_thread,
-                                                            p_joiner);
+                ABTI_thread_finish_context_thread_to_thread(p_local_xstream,
+                                                            p_thread, p_joiner);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             }
 #endif
@@ -97,7 +97,7 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
             /* If the current ULT's associated ES is different from p_joiner's,
              * we can't directly jump to p_joiner.  Instead, we wake up
              * p_joiner here so that p_joiner's scheduler can resume it. */
-            ABTI_thread_set_ready(p_local, p_joiner);
+            ABTI_thread_set_ready(p_local_xstream, p_joiner);
 
             /* We don't need to use the atomic OR operation here because the ULT
              * will be terminated regardless of other requests. */
@@ -116,7 +116,7 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
                 p_link =
                     ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link);
             } while (!p_link);
-            ABTI_thread_set_ready(p_local, (ABTI_thread *)p_link);
+            ABTI_thread_set_ready(p_local_xstream, (ABTI_thread *)p_link);
         }
     }
 
@@ -146,30 +146,30 @@ static inline void ABTDI_thread_terminate(ABTI_local *p_local,
 #endif
 }
 
-static inline void ABTD_thread_terminate_thread(ABTI_local *p_local,
+static inline void ABTD_thread_terminate_thread(ABTI_xstream *p_local_xstream,
                                                 ABTI_thread *p_thread)
 {
-    ABTDI_thread_terminate(p_local, p_thread, ABT_FALSE);
+    ABTDI_thread_terminate(p_local_xstream, p_thread, ABT_FALSE);
 }
 
-static inline void ABTD_thread_terminate_sched(ABTI_local *p_local,
+static inline void ABTD_thread_terminate_sched(ABTI_xstream *p_local_xstream,
                                                ABTI_thread *p_thread)
 {
-    ABTDI_thread_terminate(p_local, p_thread, ABT_TRUE);
+    ABTDI_thread_terminate(p_local_xstream, p_thread, ABT_TRUE);
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
 void ABTD_thread_terminate_thread_no_arg()
 {
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     /* This function is called by `return` in ABTD_thread_context_make_and_call,
      * so it cannot take the argument. We get the thread descriptor from TLS. */
-    ABTI_thread *p_thread = p_local->p_thread;
-    ABTD_thread_terminate_thread(p_local, p_thread);
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
+    ABTD_thread_terminate_thread(p_local_xstream, p_thread);
 }
 #endif
 
-void ABTD_thread_cancel(ABTI_local *p_local, ABTI_thread *p_thread)
+void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
     /* When we cancel a ULT, if other ULT is blocked to join the canceled ULT,
      * we have to wake up the joiner ULT.  However, unlike the case when the
@@ -183,7 +183,7 @@ void ABTD_thread_cancel(ABTI_local *p_local, ABTI_thread *p_thread)
         ABTI_thread *p_joiner =
             (ABTI_thread *)ABTD_atomic_relaxed_load_thread_context_ptr(
                 &p_ctx->p_link);
-        ABTI_thread_set_ready(p_local, p_joiner);
+        ABTI_thread_set_ready(p_local_xstream, p_joiner);
     } else {
         uint32_t req =
             ABTD_atomic_fetch_or_uint32(&p_thread->request,
@@ -198,7 +198,7 @@ void ABTD_thread_cancel(ABTI_local *p_local, ABTI_thread *p_thread)
             ABTI_thread *p_joiner =
                 (ABTI_thread *)ABTD_atomic_relaxed_load_thread_context_ptr(
                     &p_ctx->p_link);
-            ABTI_thread_set_ready(p_local, p_joiner);
+            ABTI_thread_set_ready(p_local_xstream, p_joiner);
         }
     }
 }

@@ -74,31 +74,29 @@ int ABT_init(int argc, char **argv)
     /* Initialize a spinlock */
     ABTI_spinlock_clear(&gp_ABTI_global->xstreams_lock);
 
-    /* Init the ES local data */
-    ABTI_local *p_local = NULL;
-    abt_errno = ABTI_local_init(&p_local);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_local_init");
-
     /* Create the primary ES */
-    ABTI_xstream *p_newxstream;
-    abt_errno = ABTI_xstream_create_primary(&p_newxstream);
+    ABTI_xstream *p_local_xstream;
+    abt_errno = ABTI_xstream_create_primary(&p_local_xstream);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_create_primary");
-    p_local->p_xstream = p_newxstream;
+
+    /* Init the ES local data */
+    ABTI_local_set_xstream(p_local_xstream);
 
     /* Create the primary ULT, i.e., the main thread */
     ABTI_thread *p_main_thread;
-    abt_errno = ABTI_thread_create_main(p_local, p_newxstream, &p_main_thread);
-    /* Set as if p_newxstream is currently running the main thread. */
+    abt_errno = ABTI_thread_create_main(p_local_xstream, p_local_xstream,
+                                        &p_main_thread);
+    /* Set as if p_local_xstream is currently running the main thread. */
     ABTD_atomic_relaxed_store_int(&p_main_thread->state,
                                   ABT_THREAD_STATE_RUNNING);
-    p_main_thread->p_last_xstream = p_newxstream;
+    p_main_thread->p_last_xstream = p_local_xstream;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
     gp_ABTI_global->p_thread_main = p_main_thread;
-    p_local->p_thread = p_main_thread;
+    p_local_xstream->p_thread = p_main_thread;
 
     /* Start the primary ES */
-    abt_errno =
-        ABTI_xstream_start_primary(&p_local, p_newxstream, p_main_thread);
+    abt_errno = ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream,
+                                           p_main_thread);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");
 
     if (gp_ABTI_global->print_config == ABT_TRUE) {
@@ -135,7 +133,7 @@ fn_fail:
 int ABT_finalize(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
     /* First, take a global lock protecting the initialization/finalization
      * process. Don't go to fn_exit before taking a lock */
@@ -151,23 +149,22 @@ int ABT_finalize(void)
         goto fn_exit;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(p_local != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_XSTREAM);
 
-    ABTI_xstream *p_xstream = p_local->p_xstream;
-    ABTI_CHECK_TRUE_MSG(p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY,
+    ABTI_CHECK_TRUE_MSG(p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY,
                         ABT_ERR_INV_XSTREAM,
                         "ABT_finalize must be called by the primary ES.");
 
-    ABTI_thread *p_thread = p_local->p_thread;
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
     ABTI_CHECK_TRUE_MSG(p_thread->type == ABTI_THREAD_TYPE_MAIN,
                         ABT_ERR_INV_THREAD,
                         "ABT_finalize must be called by the primary ULT.");
 
     /* Set the join request */
-    ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
+    ABTI_xstream_set_request(p_local_xstream, ABTI_XSTREAM_REQ_JOIN);
 
     /* We wait for the remaining jobs */
-    if (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
+    if (ABTD_atomic_acquire_load_int(&p_local_xstream->state) !=
         ABT_XSTREAM_STATE_TERMINATED) {
         /* Set the orphan request for the primary ULT */
         ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
@@ -178,7 +175,8 @@ int ABT_finalize(void)
         /* Switch to the top scheduler */
         ABTI_sched *p_sched =
             ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
-        ABTI_thread_context_switch_thread_to_sched(&p_local, p_thread, p_sched);
+        ABTI_thread_context_switch_thread_to_sched(&p_local_xstream, p_thread,
+                                                   p_sched);
 
         /* Back to the original thread */
         LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",
@@ -186,17 +184,15 @@ int ABT_finalize(void)
     }
 
     /* Remove the primary ULT */
-    ABTI_thread_free_main(p_local, p_thread);
-    p_local->p_thread = NULL;
+    ABTI_thread_free_main(p_local_xstream, p_thread);
+    p_local_xstream->p_thread = NULL;
 
     /* Free the primary ES */
-    abt_errno = ABTI_xstream_free(p_local, p_xstream);
-    p_local->p_xstream = NULL;
+    abt_errno = ABTI_xstream_free(p_local_xstream, p_local_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Finalize the ES local data */
-    abt_errno = ABTI_local_finalize(&p_local);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_local_set_xstream(NULL);
 
     /* Free the ES array */
     ABTU_free(gp_ABTI_global->p_xstreams);

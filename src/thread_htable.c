@@ -222,7 +222,7 @@ ABTI_thread *ABTI_thread_htable_pop_low(ABTI_thread_htable *p_htable,
     return p_thread;
 }
 
-ABT_bool ABTI_thread_htable_switch_low(ABTI_local **pp_local,
+ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
                                        ABTI_thread_queue *p_queue,
                                        ABTI_thread *p_thread,
                                        ABTI_thread_htable *p_htable)
@@ -254,7 +254,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_local **pp_local,
         /* Context-switch to p_target */
         ABTD_atomic_release_store_int(&p_target->state,
                                       ABT_THREAD_STATE_RUNNING);
-        ABTI_thread_context_switch_thread_to_thread(pp_local, p_thread,
+        ABTI_thread_context_switch_thread_to_thread(pp_local_xstream, p_thread,
                                                     p_target);
         return ABT_TRUE;
     } else {

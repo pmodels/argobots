@@ -38,8 +38,8 @@ int ABT_self_get_type(ABT_unit_type *type)
         goto fn_exit;
     }
 
-    ABTI_local *p_local = ABTI_local_get_local();
-    *type = ABTI_self_get_type(p_local);
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    *type = ABTI_self_get_type(p_local_xstream);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (*type == ABT_UNIT_TYPE_EXT) {
@@ -72,7 +72,7 @@ fn_exit:
 int ABT_self_is_primary(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_thread;
 
     /* If Argobots has not been initialized, set flag to ABT_FALSE. */
@@ -84,14 +84,14 @@ int ABT_self_is_primary(ABT_bool *flag)
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
-    if (p_local == NULL) {
+    if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *flag = ABT_FALSE;
         goto fn_exit;
     }
 #endif
 
-    p_thread = p_local->p_thread;
+    p_thread = p_local_xstream->p_thread;
     if (p_thread) {
         *flag =
             (p_thread->type == ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
@@ -122,8 +122,7 @@ fn_exit:
 int ABT_self_on_primary_xstream(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_xstream *p_xstream;
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
     /* If Argobots has not been initialized, set flag to ABT_FALSE. */
     if (gp_ABTI_global == NULL) {
@@ -134,26 +133,19 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
-    if (p_local == NULL) {
+    if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *flag = ABT_FALSE;
         goto fn_exit;
     }
 #endif
 
-    p_xstream = p_local->p_xstream;
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
     /* Return value */
-    *flag =
-        (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE : ABT_FALSE;
+    *flag = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE
+                                                                 : ABT_FALSE;
 
 fn_exit:
     return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**
@@ -177,7 +169,7 @@ fn_fail:
 int ABT_self_get_last_pool_id(int *pool_id)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
 
@@ -190,17 +182,17 @@ int ABT_self_get_last_pool_id(int *pool_id)
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
-    if (p_local == NULL) {
+    if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *pool_id = -1;
         goto fn_exit;
     }
 #endif
 
-    if ((p_thread = p_local->p_thread)) {
+    if ((p_thread = p_local_xstream->p_thread)) {
         ABTI_ASSERT(p_thread->p_pool);
         *pool_id = (int)(p_thread->p_pool->id);
-    } else if ((p_task = p_local->p_task)) {
+    } else if ((p_task = p_local_xstream->p_task)) {
         ABTI_ASSERT(p_task->p_pool);
         *pool_id = (int)(p_task->p_pool->id);
     } else {
@@ -231,15 +223,15 @@ fn_exit:
 int ABT_self_suspend(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
-    ABTI_thread *p_thread = p_local->p_thread;
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
 #else
     ABTI_thread *p_thread = NULL;
 
     /* If this routine is called by non-ULT, just return. */
-    if (p_local != NULL) {
-        p_thread = p_local->p_thread;
+    if (p_local_xstream != NULL) {
+        p_thread = p_local_xstream->p_thread;
     }
 #endif
     if (p_thread == NULL) {
@@ -250,7 +242,7 @@ int ABT_self_suspend(void)
     abt_errno = ABTI_thread_set_blocked(p_thread);
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_thread_suspend(&p_local, p_thread);
+    ABTI_thread_suspend(&p_local_xstream, p_thread);
 
 fn_exit:
     return abt_errno;
@@ -274,7 +266,7 @@ fn_fail:
 int ABT_self_set_arg(void *arg)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
 
@@ -285,14 +277,14 @@ int ABT_self_set_arg(void *arg)
     }
 
     /* When an external thread called this routine */
-    if (p_local == NULL) {
+    if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
 
-    if ((p_thread = p_local->p_thread)) {
+    if ((p_thread = p_local_xstream->p_thread)) {
         ABTD_thread_context_set_arg(&p_thread->ctx, arg);
-    } else if ((p_task = p_local->p_task)) {
+    } else if ((p_task = p_local_xstream->p_task)) {
         p_task->p_arg = arg;
     } else {
         abt_errno = ABT_ERR_OTHER;
@@ -324,7 +316,7 @@ fn_fail:
 int ABT_self_get_arg(void **arg)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_thread;
     ABTI_task *p_task;
 
@@ -337,16 +329,16 @@ int ABT_self_get_arg(void **arg)
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* When an external thread called this routine */
-    if (p_local == NULL) {
+    if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *arg = NULL;
         goto fn_exit;
     }
 #endif
 
-    if ((p_thread = p_local->p_thread)) {
+    if ((p_thread = p_local_xstream->p_thread)) {
         *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
-    } else if ((p_task = p_local->p_task)) {
+    } else if ((p_task = p_local_xstream->p_task)) {
         *arg = p_task->p_arg;
     } else {
         *arg = NULL;

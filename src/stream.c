@@ -27,7 +27,7 @@ static void ABTI_xstream_return_rank(ABTI_xstream *);
 int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_sched *p_sched;
     ABTI_xstream *p_newxstream;
 
@@ -45,7 +45,7 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Start this ES */
-    abt_errno = ABTI_xstream_start(p_local, p_newxstream);
+    abt_errno = ABTI_xstream_start(p_local_xstream, p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -78,6 +78,9 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     ABTD_atomic_relaxed_store_uint32(&p_newxstream->request, 0);
     p_newxstream->p_req_arg = NULL;
     p_newxstream->p_main_sched = NULL;
+    p_newxstream->p_thread = NULL;
+    p_newxstream->p_task = NULL;
+    ABTI_mem_init_local(p_newxstream);
 
     /* Initialize the spinlock */
     ABTI_spinlock_clear(&p_newxstream->sched_lock);
@@ -146,7 +149,7 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
                              ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_xstream *p_newxstream;
 
     ABTI_sched *p_sched;
@@ -158,7 +161,7 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Start this ES */
-    abt_errno = ABTI_xstream_start(p_local, p_newxstream);
+    abt_errno = ABTI_xstream_start(p_local_xstream, p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     *newxstream = ABTI_xstream_get_handle(p_newxstream);
@@ -188,7 +191,7 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
                                  ABT_xstream *newxstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_xstream *p_newxstream;
     ABTI_sched *p_sched;
 
@@ -222,6 +225,9 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     ABTD_atomic_relaxed_store_uint32(&p_newxstream->request, 0);
     p_newxstream->p_req_arg = NULL;
     p_newxstream->p_main_sched = NULL;
+    p_newxstream->p_thread = NULL;
+    p_newxstream->p_task = NULL;
+    ABTI_mem_init_local(p_newxstream);
 
     /* Initialize the spinlock */
     ABTI_spinlock_clear(&p_newxstream->sched_lock);
@@ -233,7 +239,7 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     LOG_EVENT("[E%d] created\n", p_newxstream->rank);
 
     /* Start this ES */
-    abt_errno = ABTI_xstream_start(p_local, p_newxstream);
+    abt_errno = ABTI_xstream_start(p_local_xstream, p_newxstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -248,7 +254,7 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
+int ABTI_xstream_start(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -267,7 +273,8 @@ int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
 
         /* Create the main sched ULT */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
-        abt_errno = ABTI_thread_create_main_sched(p_local, p_xstream, p_sched);
+        abt_errno =
+            ABTI_thread_create_main_sched(p_local_xstream, p_xstream, p_sched);
         ABTI_CHECK_ERROR(abt_errno);
         p_sched->p_thread->p_last_xstream = p_xstream;
 
@@ -324,8 +331,8 @@ fn_fail:
  * [in] p_xstream  the primary ES
  * [in] p_thread   the main ULT
  */
-int ABTI_xstream_start_primary(ABTI_local **pp_local, ABTI_xstream *p_xstream,
-                               ABTI_thread *p_thread)
+int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
+                               ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -348,14 +355,16 @@ int ABTI_xstream_start_primary(ABTI_local **pp_local, ABTI_xstream *p_xstream,
 
     /* Create the main sched ULT */
     ABTI_sched *p_sched = p_xstream->p_main_sched;
-    abt_errno = ABTI_thread_create_main_sched(*pp_local, p_xstream, p_sched);
+    abt_errno =
+        ABTI_thread_create_main_sched(*pp_local_xstream, p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
     p_sched->p_thread->p_last_xstream = p_xstream;
 
     /* Start the scheduler by context switching to it */
     LOG_EVENT("[U%" PRIu64 ":E%d] yield\n", ABTI_thread_get_id(p_thread),
               p_thread->p_last_xstream->rank);
-    ABTI_thread_context_switch_thread_to_sched(pp_local, p_thread, p_sched);
+    ABTI_thread_context_switch_thread_to_sched(pp_local_xstream, p_thread,
+                                               p_sched);
 
     /* Back to the main ULT */
     LOG_EVENT("[U%" PRIu64 ":E%d] resume\n", ABTI_thread_get_id(p_thread),
@@ -386,16 +395,16 @@ fn_fail:
 int ABT_xstream_free(ABT_xstream *xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABT_xstream h_xstream = *xstream;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(h_xstream);
     if (p_xstream == NULL)
         goto fn_exit;
 
-    /* We first need to check whether p_local is NULL because this
+    /* We first need to check whether p_local_xstream is NULL because this
      * routine might be called by external threads. */
-    ABTI_CHECK_TRUE_MSG(p_local == NULL || p_xstream != p_local->p_xstream,
+    ABTI_CHECK_TRUE_MSG(p_local_xstream == NULL || p_xstream != p_local_xstream,
                         ABT_ERR_INV_XSTREAM,
                         "The current xstream cannot be freed.");
 
@@ -406,12 +415,12 @@ int ABT_xstream_free(ABT_xstream *xstream)
     /* Wait until xstream terminates */
     if (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
         ABT_XSTREAM_STATE_TERMINATED) {
-        abt_errno = ABTI_xstream_join(&p_local, p_xstream);
+        abt_errno = ABTI_xstream_join(&p_local_xstream, p_xstream);
         ABTI_CHECK_ERROR(abt_errno);
     }
 
     /* Free the xstream object */
-    abt_errno = ABTI_xstream_free(p_local, p_xstream);
+    abt_errno = ABTI_xstream_free(p_local_xstream, p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -441,11 +450,11 @@ fn_fail:
 int ABT_xstream_join(ABT_xstream xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTI_xstream_join(&p_local, p_xstream);
+    abt_errno = ABTI_xstream_join(&p_local_xstream, p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -471,7 +480,7 @@ fn_fail:
 int ABT_xstream_exit(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -480,35 +489,28 @@ int ABT_xstream_exit(void)
         abt_errno = ABT_ERR_UNINITIALIZED;
         goto fn_exit;
     }
-    if (p_local == NULL) {
+    if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = p_local->p_xstream;
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
     /* Set the exit request */
-    ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_EXIT);
+    ABTI_xstream_set_request(p_local_xstream, ABTI_XSTREAM_REQ_EXIT);
 
     /* Wait until the ES terminates */
     do {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
+        if (ABTI_self_get_type(p_local_xstream) != ABT_UNIT_TYPE_THREAD) {
             ABTD_atomic_pause();
             continue;
         }
 #endif
-        ABTI_thread_yield(&p_local, p_local->p_thread);
-    } while (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
+        ABTI_thread_yield(&p_local_xstream, p_local_xstream->p_thread);
+    } while (ABTD_atomic_acquire_load_int(&p_local_xstream->state) !=
              ABT_XSTREAM_STATE_TERMINATED);
 
 fn_exit:
     return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**
@@ -555,7 +557,7 @@ fn_fail:
 int ABT_xstream_self(ABT_xstream *xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -565,24 +567,17 @@ int ABT_xstream_self(ABT_xstream *xstream)
         *xstream = ABT_XSTREAM_NULL;
         goto fn_exit;
     }
-    if (p_local == NULL) {
+    if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *xstream = ABT_XSTREAM_NULL;
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = p_local->p_xstream;
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
     /* Return value */
-    *xstream = ABTI_xstream_get_handle(p_xstream);
+    *xstream = ABTI_xstream_get_handle(p_local_xstream);
 
 fn_exit:
     return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**
@@ -598,7 +593,7 @@ fn_fail:
 int ABT_xstream_self_rank(int *rank)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -607,23 +602,16 @@ int ABT_xstream_self_rank(int *rank)
         abt_errno = ABT_ERR_UNINITIALIZED;
         goto fn_exit;
     }
-    if (p_local == NULL) {
+    if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = p_local->p_xstream;
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
     /* Return value */
-    *rank = (int)p_xstream->rank;
+    *rank = (int)p_local_xstream->rank;
 
 fn_exit:
     return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**
@@ -712,15 +700,15 @@ fn_fail:
 int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_sched *p_sched;
 
-    ABTI_CHECK_TRUE(p_local != NULL, ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_THREAD);
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    ABTI_thread *p_thread = p_local->p_thread;
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
     ABTI_CHECK_TRUE(p_thread != NULL, ABT_ERR_INV_THREAD);
 
     /* For now, if the target ES is running, we allow to change the main
@@ -741,8 +729,8 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
     if (p_xstream->p_main_sched) {
         /* We only allow to change the main scheduler when the current main
          * scheduler of p_xstream has no work unit in its associated pools. */
-        if (ABTI_sched_get_effective_size(p_local, p_xstream->p_main_sched) >
-            0) {
+        if (ABTI_sched_get_effective_size(p_local_xstream,
+                                          p_xstream->p_main_sched) > 0) {
             abt_errno = ABT_ERR_XSTREAM;
             goto fn_fail;
         }
@@ -758,7 +746,8 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
                         ABT_ERR_INV_SCHED);
     }
 
-    abt_errno = ABTI_xstream_update_main_sched(&p_local, p_xstream, p_sched);
+    abt_errno =
+        ABTI_xstream_update_main_sched(&p_local_xstream, p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -786,7 +775,7 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
                                      ABT_sched_predef predef, int num_pools,
                                      ABT_pool *pools)
 {
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     int abt_errno = ABT_SUCCESS;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
@@ -797,7 +786,8 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
                                         ABT_SCHED_CONFIG_NULL, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = ABTI_xstream_update_main_sched(&p_local, p_xstream, p_sched);
+    abt_errno =
+        ABTI_xstream_update_main_sched(&p_local_xstream, p_xstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -999,11 +989,10 @@ fn_fail:
 int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
 {
     int abt_errno;
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_xstream *p_xstream = p_local->p_xstream;
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
 
-    abt_errno = ABTI_xstream_run_unit(&p_local, p_xstream, unit, p_pool);
+    abt_errno = ABTI_xstream_run_unit(&p_local_xstream, unit, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -1014,8 +1003,8 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_xstream_run_unit(ABTI_local **pp_local, ABTI_xstream *p_xstream,
-                          ABT_unit unit, ABTI_pool *p_pool)
+int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
+                          ABTI_pool *p_pool)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1025,14 +1014,14 @@ int ABTI_xstream_run_unit(ABTI_local **pp_local, ABTI_xstream *p_xstream,
         ABT_thread thread = p_pool->u_get_thread(unit);
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
         /* Switch the context */
-        abt_errno = ABTI_xstream_schedule_thread(pp_local, p_xstream, p_thread);
+        abt_errno = ABTI_xstream_schedule_thread(pp_local_xstream, p_thread);
         ABTI_CHECK_ERROR(abt_errno);
 
     } else if (type == ABT_UNIT_TYPE_TASK) {
         ABT_task task = p_pool->u_get_task(unit);
         ABTI_task *p_task = ABTI_task_get_ptr(task);
         /* Execute the task */
-        ABTI_xstream_schedule_task(*pp_local, p_xstream, p_task);
+        ABTI_xstream_schedule_task(*pp_local_xstream, p_task);
 
     } else {
         HANDLE_ERROR("Not supported type!");
@@ -1061,7 +1050,7 @@ fn_fail:
 int ABT_xstream_check_events(ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
@@ -1070,14 +1059,12 @@ int ABT_xstream_check_events(ABT_sched sched)
         abt_errno = ABT_ERR_UNINITIALIZED;
         goto fn_exit;
     }
-    if (p_local == NULL) {
+    if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = p_local->p_xstream;
-
-    abt_errno = ABTI_xstream_check_events(p_xstream, sched);
+    abt_errno = ABTI_xstream_check_events(p_local_xstream, sched);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -1252,10 +1239,10 @@ fn_fail:
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
+int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local;
+    ABTI_xstream *p_local_xstream;
     ABTI_thread *p_thread;
     ABT_bool is_blockable = ABT_FALSE;
 
@@ -1267,8 +1254,8 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
      * mode, the ULT can be blocked. Otherwise, the access mode, if it is a
      * single-writer access mode, may be violated because another ES has to set
      * the blocked ULT ready. */
-    p_local = *pp_local;
-    p_thread = p_local ? p_local->p_thread : NULL;
+    p_local_xstream = *pp_local_xstream;
+    p_thread = p_local_xstream ? p_local_xstream->p_thread : NULL;
     if (p_thread) {
         ABT_pool_access access = p_thread->p_pool->access;
         if (access == ABT_POOL_ACCESS_MPSC || access == ABT_POOL_ACCESS_MPMC) {
@@ -1278,7 +1265,7 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
         /* The target ES must not be the same as the caller ULT's ES if the
          * access mode of the associated pool is not MPMC. */
         if (access != ABT_POOL_ACCESS_MPMC) {
-            ABTI_CHECK_TRUE_MSG(p_xstream != p_local->p_xstream,
+            ABTI_CHECK_TRUE_MSG(p_xstream != p_local_xstream,
                                 ABT_ERR_INV_XSTREAM,
                                 "The target ES should be different.");
         }
@@ -1292,7 +1279,7 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
     /* Wait until the target ES terminates */
     if (is_blockable == ABT_TRUE) {
         ABTI_POOL_SET_CONSUMER(p_thread->p_pool,
-                               ABTI_self_get_native_thread_id(p_local));
+                               ABTI_self_get_native_thread_id(p_local_xstream));
 
         /* Save the caller ULT to set it ready when the ES is terminated */
         p_xstream->p_req_arg = (void *)p_thread;
@@ -1302,7 +1289,7 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
         ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
 
         /* If the caller is a ULT, it is blocked here */
-        ABTI_thread_suspend(pp_local, p_thread);
+        ABTI_thread_suspend(pp_local_xstream, p_thread);
     } else {
         /* Set the join request */
         ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
@@ -1310,13 +1297,13 @@ int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
         while (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
                ABT_XSTREAM_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-            if (ABTI_self_get_type(p_local) != ABT_UNIT_TYPE_THREAD) {
+            if (ABTI_self_get_type(p_local_xstream) != ABT_UNIT_TYPE_THREAD) {
                 ABTD_atomic_pause();
                 continue;
             }
 #endif
-            ABTI_thread_yield(pp_local, p_local->p_thread);
-            p_local = *pp_local;
+            ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
+            p_local_xstream = *pp_local_xstream;
         }
     }
 
@@ -1332,12 +1319,14 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream)
+int ABTI_xstream_free(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream)
 {
     int abt_errno = ABT_SUCCESS;
 
     LOG_EVENT("[E%d] freed\n", p_xstream->rank);
 
+    /* Clean up memory pool. */
+    ABTI_mem_finalize_local(p_xstream);
     /* Return rank for reuse. rank must be returned prior to other free
      * functions so that other xstreams cannot refer to this xstream via
      * global->p_xstreams. */
@@ -1346,7 +1335,7 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream)
     /* Free the scheduler */
     ABTI_sched *p_cursched = p_xstream->p_main_sched;
     if (p_cursched != NULL) {
-        abt_errno = ABTI_sched_discard_and_free(p_local, p_cursched);
+        abt_errno = ABTI_sched_discard_and_free(p_local_xstream, p_cursched);
         ABTI_CHECK_ERROR(abt_errno);
     }
 
@@ -1372,7 +1361,7 @@ fn_fail:
 /* The main scheduler of each ES executes this routine. */
 void ABTI_xstream_schedule(void *p_arg)
 {
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
 
     ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
@@ -1391,8 +1380,8 @@ void ABTI_xstream_schedule(void *p_arg)
         p_sched->run(ABTI_sched_get_handle(p_sched));
         LOG_EVENT("[S%" PRIu64 "] end\n", p_sched->id);
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
-        p_local->p_task = NULL;
-        p_local->p_thread = NULL;
+        p_local_xstream->p_task = NULL;
+        p_local_xstream->p_thread = NULL;
         ABTI_LOG_SET_SCHED(NULL);
 
         ABTI_spinlock_release(&p_xstream->sched_lock);
@@ -1408,12 +1397,12 @@ void ABTI_xstream_schedule(void *p_arg)
         /* When join is requested, the ES terminates after finishing
          * execution of all work units. */
         if (request & ABTI_XSTREAM_REQ_JOIN) {
-            if (ABTI_sched_get_effective_size(p_local,
+            if (ABTI_sched_get_effective_size(p_local_xstream,
                                               p_xstream->p_main_sched) == 0) {
                 /* If a ULT has been blocked on the join call, we make it ready
                  */
                 if (p_xstream->p_req_arg) {
-                    ABTI_thread_set_ready(p_local,
+                    ABTI_thread_set_ready(p_local_xstream,
                                           (ABTI_thread *)p_xstream->p_req_arg);
                     p_xstream->p_req_arg = NULL;
                 }
@@ -1428,19 +1417,19 @@ void ABTI_xstream_schedule(void *p_arg)
     LOG_EVENT("[E%d] terminated\n", p_xstream->rank);
 }
 
-int ABTI_xstream_schedule_thread(ABTI_local **pp_local, ABTI_xstream *p_xstream,
+int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
                                  ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = *pp_local;
+    ABTI_xstream *p_local_xstream = *pp_local_xstream;
 
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     if (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
         ABTI_THREAD_REQ_CANCEL) {
         LOG_EVENT("[U%" PRIu64 ":E%d] canceled\n", ABTI_thread_get_id(p_thread),
-                  p_xstream->rank);
-        ABTD_thread_cancel(p_local, p_thread);
-        ABTI_xstream_terminate_thread(p_local, p_thread);
+                  p_local_xstream->rank);
+        ABTD_thread_cancel(p_local_xstream, p_thread);
+        ABTI_xstream_terminate_thread(p_local_xstream, p_thread);
         goto fn_exit;
     }
 #endif
@@ -1448,7 +1437,7 @@ int ABTI_xstream_schedule_thread(ABTI_local **pp_local, ABTI_xstream *p_xstream,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     if (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
         ABTI_THREAD_REQ_MIGRATE) {
-        abt_errno = ABTI_xstream_migrate_thread(p_local, p_thread);
+        abt_errno = ABTI_xstream_migrate_thread(p_local_xstream, p_thread);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
@@ -1458,53 +1447,53 @@ int ABTI_xstream_schedule_thread(ABTI_local **pp_local, ABTI_xstream *p_xstream,
     /* Add the new scheduler if the ULT is a scheduler */
     if (p_thread->is_sched != NULL) {
         p_thread->is_sched->p_ctx = &p_thread->ctx;
-        ABTI_xstream_push_sched(p_xstream, p_thread->is_sched);
+        ABTI_xstream_push_sched(p_local_xstream, p_thread->is_sched);
         p_thread->is_sched->state = ABT_SCHED_STATE_RUNNING;
     }
 #endif
 
     /* Change the last ES */
-    p_thread->p_last_xstream = p_xstream;
+    p_thread->p_last_xstream = p_local_xstream;
 
     /* Change the ULT state */
     ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_RUNNING);
 
     /* Switch the context */
     LOG_EVENT("[U%" PRIu64 ":E%d] start running\n",
-              ABTI_thread_get_id(p_thread), p_xstream->rank);
-    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
+              ABTI_thread_get_id(p_thread), p_local_xstream->rank);
+    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_local_xstream);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->is_sched != NULL) {
-        ABTI_thread_context_switch_sched_to_sched(pp_local, p_sched,
+        ABTI_thread_context_switch_sched_to_sched(pp_local_xstream, p_sched,
                                                   p_thread->is_sched);
         /* The scheduler continues from here. */
-        p_local = *pp_local;
+        p_local_xstream = *pp_local_xstream;
         /* Because of the stackable scheduler concept, the previous ULT must
          * be the same as one to which the context has been switched. */
     } else {
 #endif
-        ABTI_thread_context_switch_sched_to_thread(pp_local, p_sched, p_thread);
+        ABTI_thread_context_switch_sched_to_thread(pp_local_xstream, p_sched,
+                                                   p_thread);
         /* The scheduler continues from here. */
-        p_local = *pp_local;
+        p_local_xstream = *pp_local_xstream;
         /* The previous ULT may not be the same as one to which the
          * context has been switched. */
-        p_thread = p_local->p_thread;
+        p_thread = p_local_xstream->p_thread;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
 #endif
 
-    p_xstream = p_thread->p_last_xstream;
     LOG_EVENT("[U%" PRIu64 ":E%d] stopped\n", ABTI_thread_get_id(p_thread),
-              p_xstream->rank);
+              p_local_xstream->rank);
 
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Delete the last scheduler if the ULT was a scheduler */
     if (p_thread->is_sched != NULL) {
-        ABTI_xstream_pop_sched(p_xstream);
+        ABTI_xstream_pop_sched(p_local_xstream);
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
         p_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
-        ABTI_spinlock_release(&p_xstream->sched_lock);
+        ABTI_spinlock_release(&p_local_xstream->sched_lock);
     }
 #endif
 
@@ -1516,46 +1505,47 @@ int ABTI_xstream_schedule_thread(ABTI_local **pp_local, ABTI_xstream *p_xstream,
     if (request & ABTI_THREAD_REQ_STOP) {
         /* The ULT has completed its execution or it called the exit request. */
         LOG_EVENT("[U%" PRIu64 ":E%d] %s\n", ABTI_thread_get_id(p_thread),
-                  p_xstream->rank,
+                  p_local_xstream->rank,
                   (request & ABTI_THREAD_REQ_TERMINATE
                        ? "finished"
                        : ((request & ABTI_THREAD_REQ_EXIT) ? "exit called"
                                                            : "UNKNOWN")));
-        ABTI_xstream_terminate_thread(p_local, p_thread);
+        ABTI_xstream_terminate_thread(p_local_xstream, p_thread);
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     } else if (request & ABTI_THREAD_REQ_CANCEL) {
         LOG_EVENT("[U%" PRIu64 ":E%d] canceled\n", ABTI_thread_get_id(p_thread),
-                  p_xstream->rank);
-        ABTD_thread_cancel(p_local, p_thread);
-        ABTI_xstream_terminate_thread(p_local, p_thread);
+                  p_local_xstream->rank);
+        ABTD_thread_cancel(p_local_xstream, p_thread);
+        ABTI_xstream_terminate_thread(p_local_xstream, p_thread);
 #endif
     } else if (!(request & ABTI_THREAD_REQ_NON_YIELD)) {
         /* The ULT did not finish its execution.
          * Change the state of current running ULT and
          * add it to the pool again. */
-        ABTI_POOL_ADD_THREAD(p_thread, ABTI_self_get_native_thread_id(p_local));
+        ABTI_POOL_ADD_THREAD(p_thread,
+                             ABTI_self_get_native_thread_id(p_local_xstream));
     } else if (request & ABTI_THREAD_REQ_BLOCK) {
         LOG_EVENT("[U%" PRIu64 ":E%d] check blocked\n",
-                  ABTI_thread_get_id(p_thread), p_xstream->rank);
+                  ABTI_thread_get_id(p_thread), p_local_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     } else if (request & ABTI_THREAD_REQ_MIGRATE) {
         /* This is the case when the ULT requests migration of itself. */
-        abt_errno = ABTI_xstream_migrate_thread(p_local, p_thread);
+        abt_errno = ABTI_xstream_migrate_thread(p_local_xstream, p_thread);
         ABTI_CHECK_ERROR(abt_errno);
 #endif
     } else if (request & ABTI_THREAD_REQ_ORPHAN) {
         /* The ULT is not pushed back to the pool and is disconnected from any
          * pool. */
         LOG_EVENT("[U%" PRIu64 ":E%d] orphaned\n", ABTI_thread_get_id(p_thread),
-                  p_xstream->rank);
+                  p_local_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
         p_thread->p_pool->u_free(&p_thread->unit);
         p_thread->p_pool = NULL;
     } else if (request & ABTI_THREAD_REQ_NOPUSH) {
         /* The ULT is not pushed back to the pool */
         LOG_EVENT("[U%" PRIu64 ":E%d] not pushed\n",
-                  ABTI_thread_get_id(p_thread), p_xstream->rank);
+                  ABTI_thread_get_id(p_thread), p_local_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
     } else {
         abt_errno = ABT_ERR_THREAD;
@@ -1570,75 +1560,76 @@ fn_fail:
     goto fn_exit;
 }
 
-void ABTI_xstream_schedule_task(ABTI_local *p_local, ABTI_xstream *p_xstream,
+void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                 ABTI_task *p_task)
 {
 #ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
     if (ABTD_atomic_acquire_load_uint32(&p_task->request) &
         ABTI_TASK_REQ_CANCEL) {
-        ABTI_xstream_terminate_task(p_local, p_task);
+        ABTI_xstream_terminate_task(p_local_xstream, p_task);
         return;
     }
 #endif
 
     /* Set the current running tasklet */
-    p_local->p_task = p_task;
-    p_local->p_thread = NULL;
+    p_local_xstream->p_task = p_task;
+    p_local_xstream->p_thread = NULL;
 
     /* Change the task state */
     ABTD_atomic_release_store_int(&p_task->state, ABT_TASK_STATE_RUNNING);
 
     /* Set the associated ES */
-    p_task->p_xstream = p_xstream;
+    p_task->p_xstream = p_local_xstream;
 
 #ifdef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Execute the task function */
     LOG_EVENT("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
-              p_xstream->rank);
+              p_local_xstream->rank);
     ABTI_LOG_SET_SCHED(NULL);
     p_task->f_task(p_task->p_arg);
 #else
     /* Add a new scheduler if the task is a scheduler */
     if (p_task->is_sched != NULL) {
-        ABTI_sched *current_sched = ABTI_xstream_get_top_sched(p_xstream);
+        ABTI_sched *current_sched = ABTI_xstream_get_top_sched(p_local_xstream);
         ABTI_thread *p_last_thread = current_sched->p_thread;
 
         p_task->is_sched->p_ctx = current_sched->p_ctx;
-        ABTI_xstream_push_sched(p_xstream, p_task->is_sched);
+        ABTI_xstream_push_sched(p_local_xstream, p_task->is_sched);
         p_task->is_sched->state = ABT_SCHED_STATE_RUNNING;
         p_task->is_sched->p_thread = p_last_thread;
         LOG_EVENT("[S%" PRIu64 ":E%d] stacked sched start\n",
-                  p_task->is_sched->id, p_xstream->rank);
+                  p_task->is_sched->id, p_local_xstream->rank);
     }
 
     /* Execute the task function */
     LOG_EVENT("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
-              p_xstream->rank);
+              p_local_xstream->rank);
     ABTI_LOG_SET_SCHED(p_task->is_sched ? p_task->is_sched : NULL);
 
     p_task->f_task(p_task->p_arg);
 
     /* Delete the last scheduler if the tasklet was a scheduler */
     if (p_task->is_sched != NULL) {
-        ABTI_xstream_pop_sched(p_xstream);
+        ABTI_xstream_pop_sched(p_local_xstream);
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
-        ABTI_spinlock_release(&p_xstream->sched_lock);
-        ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
+        ABTI_spinlock_release(&p_local_xstream->sched_lock);
+        ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_local_xstream));
         LOG_EVENT("[S%" PRIu64 ":E%d] stacked sched end\n",
-                  p_task->is_sched->id, p_xstream->rank);
+                  p_task->is_sched->id, p_local_xstream->rank);
     }
 #endif
 
-    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
+    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_local_xstream));
     LOG_EVENT("[T%" PRIu64 ":E%d] stopped\n", ABTI_task_get_id(p_task),
-              p_xstream->rank);
+              p_local_xstream->rank);
 
     /* Terminate the tasklet */
-    ABTI_xstream_terminate_task(p_local, p_task);
+    ABTI_xstream_terminate_task(p_local_xstream, p_task);
 }
 
-int ABTI_xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
+int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
+                                ABTI_thread *p_thread)
 {
 #ifdef ABT_CONFIG_DISABLE_MIGRATION
     return ABT_ERR_MIGRATION_NA;
@@ -1669,7 +1660,7 @@ int ABTI_xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
 
         /* Add the unit to the scheduler's pool */
         ABTI_POOL_PUSH(p_pool, p_thread->unit,
-                       ABTI_self_get_native_thread_id(p_local));
+                       ABTI_self_get_native_thread_id(p_local_xstream));
     }
     ABTI_spinlock_release(&p_thread->lock);
 
@@ -1723,7 +1714,7 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_xstream_update_main_sched(ABTI_local **pp_local,
+int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                    ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
@@ -1759,7 +1750,7 @@ int ABTI_xstream_update_main_sched(ABTI_local **pp_local,
     }
 
     /* If the ES has a main scheduler, we have to free it */
-    p_thread = (*pp_local)->p_thread;
+    p_thread = (*pp_local_xstream)->p_thread;
     ABTI_ASSERT(p_thread != NULL);
 
     p_tar_pool = ABTI_pool_get_ptr(p_sched->pools[0]);
@@ -1782,7 +1773,8 @@ int ABTI_xstream_update_main_sched(ABTI_local **pp_local,
                         ABT_ERR_THREAD);
 
         /* Free the current main scheduler */
-        abt_errno = ABTI_sched_discard_and_free(*pp_local, p_main_sched);
+        abt_errno =
+            ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched);
         ABTI_CHECK_ERROR(abt_errno);
 
         /* Since the primary ES does not finish its execution until ABT_finalize
@@ -1791,7 +1783,7 @@ int ABTI_xstream_update_main_sched(ABTI_local **pp_local,
         p_sched->automatic = ABT_TRUE;
 
         ABTI_POOL_PUSH(p_tar_pool, p_thread->unit,
-                       ABTI_self_get_native_thread_id(*pp_local));
+                       ABTI_self_get_native_thread_id(*pp_local_xstream));
 
         /* Pop the top scheduler */
         ABTI_xstream_pop_sched(p_xstream);
@@ -1801,7 +1793,8 @@ int ABTI_xstream_update_main_sched(ABTI_local **pp_local,
 
         /* Start the primary ES again because we have to create a sched ULT for
          * the new scheduler */
-        abt_errno = ABTI_xstream_start_primary(pp_local, p_xstream, p_thread);
+        abt_errno =
+            ABTI_xstream_start_primary(pp_local_xstream, p_xstream, p_thread);
         ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start");
     } else {
         /* Finish the current main scheduler */
@@ -1818,7 +1811,7 @@ int ABTI_xstream_update_main_sched(ABTI_local **pp_local,
          * scheduler. When the current ULT resumes its execution, it will free
          * the current main scheduler (see below). */
         ABTI_POOL_PUSH(p_tar_pool, p_thread->unit,
-                       ABTI_self_get_native_thread_id(*pp_local));
+                       ABTI_self_get_native_thread_id(*pp_local_xstream));
 
         /* Set the scheduler */
         p_xstream->p_main_sched = p_sched;
@@ -1828,11 +1821,12 @@ int ABTI_xstream_update_main_sched(ABTI_local **pp_local,
 
         /* Switch to the current main scheduler */
         ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
-        ABTI_thread_context_switch_thread_to_sched(pp_local, p_thread,
+        ABTI_thread_context_switch_thread_to_sched(pp_local_xstream, p_thread,
                                                    p_main_sched);
 
         /* Now, we free the current main scheduler */
-        abt_errno = ABTI_sched_discard_and_free(*pp_local, p_main_sched);
+        abt_errno =
+            ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched);
         ABTI_CHECK_ERROR(abt_errno);
     }
 
@@ -1923,33 +1917,30 @@ fn_exit:
 void *ABTI_xstream_launch_main_sched(void *p_arg)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_xstream = (ABTI_xstream *)p_arg;
+    ABTI_xstream *p_local_xstream = (ABTI_xstream *)p_arg;
 
     /* Initialization of the local variables */
-    ABTI_local *p_local = NULL;
-    abt_errno = ABTI_local_init(&p_local);
-    ABTI_local_set_local(p_local);
-    ABTI_CHECK_ERROR(abt_errno);
-    p_local->p_xstream = p_xstream;
+    ABTI_local_set_xstream(p_local_xstream);
 
     /* Create the main sched ULT if not created yet */
-    ABTI_sched *p_sched = p_xstream->p_main_sched;
+    ABTI_sched *p_sched = p_local_xstream->p_main_sched;
     if (!p_sched->p_thread) {
-        abt_errno = ABTI_thread_create_main_sched(p_local, p_xstream, p_sched);
+        abt_errno = ABTI_thread_create_main_sched(p_local_xstream,
+                                                  p_local_xstream, p_sched);
         ABTI_CHECK_ERROR(abt_errno);
-        p_sched->p_thread->p_last_xstream = p_xstream;
+        p_sched->p_thread->p_last_xstream = p_local_xstream;
     }
 
     /* Set the sched ULT as the current ULT */
-    p_local->p_thread = p_sched->p_thread;
+    p_local_xstream->p_thread = p_sched->p_thread;
 
     /* Execute the main scheduler of this ES */
-    LOG_EVENT("[E%d] start\n", p_xstream->rank);
+    LOG_EVENT("[E%d] start\n", p_local_xstream->rank);
     ABTI_xstream_schedule(p_arg);
-    LOG_EVENT("[E%d] end\n", p_xstream->rank);
+    LOG_EVENT("[E%d] end\n", p_local_xstream->rank);
 
     /* Reset the current ES and its local info. */
-    ABTI_local_finalize(&p_local);
+    ABTI_local_set_xstream(NULL);
 
 fn_exit:
     return NULL;
