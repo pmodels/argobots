@@ -95,7 +95,7 @@ static void sched_run(ABT_sched sched)
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
             ABT_unit unit = ABTI_pool_pop(p_pool);
             if (unit != ABT_UNIT_NULL) {
-                ABTI_xstream_run_unit(&p_local_xstream, p_local_xstream, unit, p_pool);
+                ABTI_xstream_run_unit(&p_local_xstream, unit, p_pool);
                 CNT_INC(run_cnt);
                 break;
             }

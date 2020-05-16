@@ -109,7 +109,7 @@ static void sched_run(ABT_sched sched)
             /* Pop one work unit */
             ABT_unit unit = ABTI_pool_pop(p_pool);
             if (unit != ABT_UNIT_NULL) {
-                ABTI_xstream_run_unit(&p_local_xstream, p_local_xstream, unit, p_pool);
+                ABTI_xstream_run_unit(&p_local_xstream, unit, p_pool);
                 run_cnt_nowait++;
                 break;
             }
@@ -124,7 +124,7 @@ static void sched_run(ABT_sched sched)
             ABT_unit unit =
                 ABTI_pool_pop_timedwait(ABTI_pool_get_ptr(pools[0]), abstime);
             if (unit != ABT_UNIT_NULL) {
-                ABTI_xstream_run_unit(&p_local_xstream, p_local_xstream, unit,
+                ABTI_xstream_run_unit(&p_local_xstream, unit,
                                       ABTI_pool_get_ptr(pools[0]));
                 break;
             }

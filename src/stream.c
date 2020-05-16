@@ -987,7 +987,7 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
 
-    abt_errno = ABTI_xstream_run_unit(&p_local_xstream, p_local_xstream, unit, p_pool);
+    abt_errno = ABTI_xstream_run_unit(&p_local_xstream, unit, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -998,7 +998,7 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream,
+int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream,
                           ABT_unit unit, ABTI_pool *p_pool)
 {
     int abt_errno = ABT_SUCCESS;
@@ -1009,14 +1009,14 @@ int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstre
         ABT_thread thread = p_pool->u_get_thread(unit);
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
         /* Switch the context */
-        abt_errno = ABTI_xstream_schedule_thread(pp_local_xstream, p_xstream, p_thread);
+        abt_errno = ABTI_xstream_schedule_thread(pp_local_xstream, p_thread);
         ABTI_CHECK_ERROR(abt_errno);
 
     } else if (type == ABT_UNIT_TYPE_TASK) {
         ABT_task task = p_pool->u_get_task(unit);
         ABTI_task *p_task = ABTI_task_get_ptr(task);
         /* Execute the task */
-        ABTI_xstream_schedule_task(*pp_local_xstream, p_xstream, p_task);
+        ABTI_xstream_schedule_task(*pp_local_xstream, p_task);
 
     } else {
         HANDLE_ERROR("Not supported type!");
@@ -1412,7 +1412,7 @@ void ABTI_xstream_schedule(void *p_arg)
     LOG_EVENT("[E%d] terminated\n", p_xstream->rank);
 }
 
-int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream,
+int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
                                  ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
@@ -1422,7 +1422,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream, ABTI_xstream *
     if (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
         ABTI_THREAD_REQ_CANCEL) {
         LOG_EVENT("[U%" PRIu64 ":E%d] canceled\n", ABTI_thread_get_id(p_thread),
-                  p_xstream->rank);
+                  p_local_xstream->rank);
         ABTD_thread_cancel(p_local_xstream, p_thread);
         ABTI_xstream_terminate_thread(p_local_xstream, p_thread);
         goto fn_exit;
@@ -1442,21 +1442,21 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream, ABTI_xstream *
     /* Add the new scheduler if the ULT is a scheduler */
     if (p_thread->is_sched != NULL) {
         p_thread->is_sched->p_ctx = &p_thread->ctx;
-        ABTI_xstream_push_sched(p_xstream, p_thread->is_sched);
+        ABTI_xstream_push_sched(p_local_xstream, p_thread->is_sched);
         p_thread->is_sched->state = ABT_SCHED_STATE_RUNNING;
     }
 #endif
 
     /* Change the last ES */
-    p_thread->p_last_xstream = p_xstream;
+    p_thread->p_last_xstream = p_local_xstream;
 
     /* Change the ULT state */
     ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_RUNNING);
 
     /* Switch the context */
     LOG_EVENT("[U%" PRIu64 ":E%d] start running\n",
-              ABTI_thread_get_id(p_thread), p_xstream->rank);
-    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
+              ABTI_thread_get_id(p_thread), p_local_xstream->rank);
+    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_local_xstream);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->is_sched != NULL) {
         ABTI_thread_context_switch_sched_to_sched(pp_local_xstream, p_sched,
@@ -1477,18 +1477,17 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream, ABTI_xstream *
     }
 #endif
 
-    p_xstream = p_thread->p_last_xstream;
     LOG_EVENT("[U%" PRIu64 ":E%d] stopped\n", ABTI_thread_get_id(p_thread),
-              p_xstream->rank);
+              p_local_xstream->rank);
 
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Delete the last scheduler if the ULT was a scheduler */
     if (p_thread->is_sched != NULL) {
-        ABTI_xstream_pop_sched(p_xstream);
+        ABTI_xstream_pop_sched(p_local_xstream);
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
         p_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
-        ABTI_spinlock_release(&p_xstream->sched_lock);
+        ABTI_spinlock_release(&p_local_xstream->sched_lock);
     }
 #endif
 
@@ -1500,7 +1499,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream, ABTI_xstream *
     if (request & ABTI_THREAD_REQ_STOP) {
         /* The ULT has completed its execution or it called the exit request. */
         LOG_EVENT("[U%" PRIu64 ":E%d] %s\n", ABTI_thread_get_id(p_thread),
-                  p_xstream->rank,
+                  p_local_xstream->rank,
                   (request & ABTI_THREAD_REQ_TERMINATE
                        ? "finished"
                        : ((request & ABTI_THREAD_REQ_EXIT) ? "exit called"
@@ -1509,7 +1508,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream, ABTI_xstream *
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     } else if (request & ABTI_THREAD_REQ_CANCEL) {
         LOG_EVENT("[U%" PRIu64 ":E%d] canceled\n", ABTI_thread_get_id(p_thread),
-                  p_xstream->rank);
+                  p_local_xstream->rank);
         ABTD_thread_cancel(p_local_xstream, p_thread);
         ABTI_xstream_terminate_thread(p_local_xstream, p_thread);
 #endif
@@ -1520,7 +1519,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream, ABTI_xstream *
         ABTI_POOL_ADD_THREAD(p_thread, ABTI_self_get_native_thread_id(p_local_xstream));
     } else if (request & ABTI_THREAD_REQ_BLOCK) {
         LOG_EVENT("[U%" PRIu64 ":E%d] check blocked\n",
-                  ABTI_thread_get_id(p_thread), p_xstream->rank);
+                  ABTI_thread_get_id(p_thread), p_local_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     } else if (request & ABTI_THREAD_REQ_MIGRATE) {
@@ -1532,14 +1531,14 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream, ABTI_xstream *
         /* The ULT is not pushed back to the pool and is disconnected from any
          * pool. */
         LOG_EVENT("[U%" PRIu64 ":E%d] orphaned\n", ABTI_thread_get_id(p_thread),
-                  p_xstream->rank);
+                  p_local_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
         p_thread->p_pool->u_free(&p_thread->unit);
         p_thread->p_pool = NULL;
     } else if (request & ABTI_THREAD_REQ_NOPUSH) {
         /* The ULT is not pushed back to the pool */
         LOG_EVENT("[U%" PRIu64 ":E%d] not pushed\n",
-                  ABTI_thread_get_id(p_thread), p_xstream->rank);
+                  ABTI_thread_get_id(p_thread), p_local_xstream->rank);
         ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
     } else {
         abt_errno = ABT_ERR_THREAD;
@@ -1554,7 +1553,7 @@ fn_fail:
     goto fn_exit;
 }
 
-void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream,
+void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                 ABTI_task *p_task)
 {
 #ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
@@ -1573,50 +1572,50 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream, ABTI_xstream *p_x
     ABTD_atomic_release_store_int(&p_task->state, ABT_TASK_STATE_RUNNING);
 
     /* Set the associated ES */
-    p_task->p_xstream = p_xstream;
+    p_task->p_xstream = p_local_xstream;
 
 #ifdef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Execute the task function */
     LOG_EVENT("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
-              p_xstream->rank);
+              p_local_xstream->rank);
     ABTI_LOG_SET_SCHED(NULL);
     p_task->f_task(p_task->p_arg);
 #else
     /* Add a new scheduler if the task is a scheduler */
     if (p_task->is_sched != NULL) {
-        ABTI_sched *current_sched = ABTI_xstream_get_top_sched(p_xstream);
+        ABTI_sched *current_sched = ABTI_xstream_get_top_sched(p_local_xstream);
         ABTI_thread *p_last_thread = current_sched->p_thread;
 
         p_task->is_sched->p_ctx = current_sched->p_ctx;
-        ABTI_xstream_push_sched(p_xstream, p_task->is_sched);
+        ABTI_xstream_push_sched(p_local_xstream, p_task->is_sched);
         p_task->is_sched->state = ABT_SCHED_STATE_RUNNING;
         p_task->is_sched->p_thread = p_last_thread;
         LOG_EVENT("[S%" PRIu64 ":E%d] stacked sched start\n",
-                  p_task->is_sched->id, p_xstream->rank);
+                  p_task->is_sched->id, p_local_xstream->rank);
     }
 
     /* Execute the task function */
     LOG_EVENT("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
-              p_xstream->rank);
+              p_local_xstream->rank);
     ABTI_LOG_SET_SCHED(p_task->is_sched ? p_task->is_sched : NULL);
 
     p_task->f_task(p_task->p_arg);
 
     /* Delete the last scheduler if the tasklet was a scheduler */
     if (p_task->is_sched != NULL) {
-        ABTI_xstream_pop_sched(p_xstream);
+        ABTI_xstream_pop_sched(p_local_xstream);
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
-        ABTI_spinlock_release(&p_xstream->sched_lock);
-        ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
+        ABTI_spinlock_release(&p_local_xstream->sched_lock);
+        ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_local_xstream));
         LOG_EVENT("[S%" PRIu64 ":E%d] stacked sched end\n",
-                  p_task->is_sched->id, p_xstream->rank);
+                  p_task->is_sched->id, p_local_xstream->rank);
     }
 #endif
 
-    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_xstream));
+    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_local_xstream));
     LOG_EVENT("[T%" PRIu64 ":E%d] stopped\n", ABTI_task_get_id(p_task),
-              p_xstream->rank);
+              p_local_xstream->rank);
 
     /* Terminate the tasklet */
     ABTI_xstream_terminate_task(p_local_xstream, p_task);

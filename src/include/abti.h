@@ -457,11 +457,11 @@ int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_
 int ABTI_xstream_free(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream);
 int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream);
 void ABTI_xstream_schedule(void *p_arg);
-int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream,
+int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream,
                           ABT_unit unit, ABTI_pool *p_pool);
-int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream,
+int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
                                  ABTI_thread *p_thread);
-void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream,
+void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                 ABTI_task *p_task);
 int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
 int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
