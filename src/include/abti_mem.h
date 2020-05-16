@@ -178,6 +178,12 @@ static inline ABTI_thread *ABTI_mem_alloc_thread(ABTI_xstream *p_local_xstream,
              * we use ABTU_malloc. */
             return ABTI_mem_alloc_thread_with_stacksize(stacksize, p_attr);
         }
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+        /* If an external thread allocates a stack, we use ABTU_malloc. */
+        if (p_local_xstream == NULL) {
+            return ABTI_mem_alloc_thread_with_stacksize(stacksize, p_attr);
+        }
+#endif
     }
 
     /* Use the stack pool */
