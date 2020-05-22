@@ -31,7 +31,7 @@ struct ABTI_sp_header {
     ABTD_atomic_uint32 num_empty_stacks; /* Number of empty stacks */
     size_t stacksize;                    /* Stack size */
     uint64_t id;                         /* ID */
-    ABT_bool is_mmapped;                 /* ABT_TRUE if it is mmapped */
+    ABTU_MEM_LARGEPAGE_TYPE lp_type;     /* Large page type */
     void *p_sp;             /* Pointer to the allocated stack page */
     ABTI_sp_header *p_next; /* Next stack page header */
 };
@@ -52,7 +52,7 @@ struct ABTI_page_header {
     ABTI_native_thread_id owner_id;     /* Owner's ID */
     ABTI_page_header *p_prev;           /* Prev page header */
     ABTI_page_header *p_next;           /* Next page header */
-    ABT_bool is_mmapped;                /* ABT_TRUE if it is mmapped */
+    ABTU_MEM_LARGEPAGE_TYPE lp_type;    /* Large page type */
 };
 
 struct ABTI_blk_header {
