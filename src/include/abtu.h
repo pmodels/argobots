@@ -81,6 +81,22 @@ static inline void *ABTU_realloc(void *ptr, size_t old_size, size_t new_size)
 
 #endif /* !ABT_CONFIG_USE_ALIGNED_ALLOC */
 
+typedef enum ABTU_MEM_LARGEPAGE_TYPE {
+    ABTU_MEM_LARGEPAGE_MALLOC,   /* ABTU_malloc(). */
+    ABTU_MEM_LARGEPAGE_MEMALIGN, /* memalign() */
+    ABTU_MEM_LARGEPAGE_MMAP,     /* normal private memory obtained by mmap() */
+    ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE, /* hugepage obtained by mmap() */
+} ABTU_MEM_LARGEPAGE_TYPE;
+
+/* Returns 1 if a given large page type is supported. */
+int ABTU_is_supported_largepage_type(size_t size, size_t alignment_hint,
+                                     ABTU_MEM_LARGEPAGE_TYPE requested);
+void *ABTU_alloc_largepage(size_t size, size_t alignment_hint,
+                           const ABTU_MEM_LARGEPAGE_TYPE *requested_types,
+                           int num_requested_types,
+                           ABTU_MEM_LARGEPAGE_TYPE *p_actual);
+void ABTU_free_largepage(void *ptr, size_t size, ABTU_MEM_LARGEPAGE_TYPE type);
+
 #define ABTU_strcpy(d, s) strcpy(d, s)
 #define ABTU_strncpy(d, s, n) strncpy(d, s, n)
 
