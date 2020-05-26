@@ -206,13 +206,14 @@ struct ABTI_xstream {
     ABTI_xstream_type type;   /* Type */
     ABTD_atomic_int state;    /* State (ABT_xstream_state) */
     ABTI_sched **scheds;      /* Stack of running schedulers */
-    int max_scheds;           /* Allocation size of the array scheds */
-    int num_scheds;           /* Number of scheds */
     ABTI_spinlock sched_lock; /* Lock for the scheduler management */
+    ABTI_sched *p_main_sched; /* Main scheduler, which is the bottom of the
+                               * linked list of schedulers */
+    ABTI_sched *p_sched_top;  /* The currently running scheduler. This is the
+                               * top of the linked list of schedulers. */
 
     ABTD_atomic_uint32 request; /* Request */
     void *p_req_arg;            /* Request argument */
-    ABTI_sched *p_main_sched;   /* Main scheduler */
 
     ABTD_xstream_context ctx; /* ES context */
 
@@ -241,6 +242,10 @@ struct ABTI_sched {
     ABTI_task *p_task;          /* Associated tasklet */
     ABTD_thread_context *p_ctx; /* Context */
     void *data;                 /* Data for a specific scheduler */
+
+    /* Pointers for a scheduler linked list. */
+    ABTI_sched *p_parent_sched;
+    ABTI_sched *p_child_sched;
 
     /* Scheduler functions */
     ABT_sched_init_fn init;
@@ -318,7 +323,7 @@ struct ABTI_thread {
     ABTD_atomic_uint32 request;   /* Request */
     ABTI_xstream *p_last_xstream; /* Last ES where it ran */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_sched *is_sched; /* If it is a scheduler, its ptr */
+    ABTI_sched *p_sched; /* Scheduler */
 #endif
     ABT_unit unit;         /* Unit enclosing this thread */
     ABTI_pool *p_pool;     /* Associated pool */
@@ -359,7 +364,7 @@ struct ABTI_task {
     void (*f_task)(void *);     /* Task function */
     void *p_arg;                /* Task arguments */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_sched *is_sched; /* If it is a scheduler, its ptr */
+    ABTI_sched *p_sched; /* Scheduler */
 #endif
     ABTI_pool *p_pool;       /* Associated pool */
     ABT_unit unit;           /* Unit enclosing this task */

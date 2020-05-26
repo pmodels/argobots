@@ -778,9 +778,9 @@ int ABT_thread_yield_to(ABT_thread thread)
 
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Delete the last context if the ULT is a scheduler */
-    if (p_cur_thread->is_sched != NULL) {
+    if (p_cur_thread->p_sched != NULL) {
         ABTI_xstream_pop_sched(p_local_xstream);
-        p_cur_thread->is_sched->state = ABT_SCHED_STATE_STOPPED;
+        p_cur_thread->p_sched->state = ABT_SCHED_STATE_STOPPED;
     }
 #endif
 
@@ -790,11 +790,11 @@ int ABT_thread_yield_to(ABT_thread thread)
 
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Add a new scheduler if the ULT is a scheduler */
-    if (p_tar_thread->is_sched != NULL) {
-        p_tar_thread->is_sched->p_ctx =
-            ABTI_xstream_get_sched_ctx(p_local_xstream);
-        ABTI_xstream_push_sched(p_local_xstream, p_tar_thread->is_sched);
-        p_tar_thread->is_sched->state = ABT_SCHED_STATE_RUNNING;
+    if (p_tar_thread->p_sched != NULL) {
+        p_tar_thread->p_sched->p_ctx =
+            ABTI_xstream_get_top_sched(p_local_xstream)->p_ctx;
+        ABTI_xstream_push_sched(p_local_xstream, p_tar_thread->p_sched);
+        p_tar_thread->p_sched->state = ABT_SCHED_STATE_RUNNING;
     }
 #endif
 
@@ -1466,7 +1466,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABTD_atomic_release_store_uint32(&p_newthread->request, 0);
     p_newthread->p_last_xstream = NULL;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    p_newthread->is_sched = p_sched;
+    p_newthread->p_sched = p_sched;
 #endif
     p_newthread->p_pool = p_pool;
     p_newthread->refcount = refcount;
@@ -1936,7 +1936,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             "%sstate   : %s\n"
             "%slast_ES : %p (%d)\n"
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            "%sis_sched: %p\n"
+            "%sp_sched : %p\n"
 #endif
             "%spool    : %p\n"
             "%srefcount: %u\n"
@@ -1950,7 +1950,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             prefix, type, prefix, state, prefix, (void *)p_xstream,
             xstream_rank,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            prefix, (void *)p_thread->is_sched,
+            prefix, (void *)p_thread->p_sched,
 #endif
             prefix, (void *)p_thread->p_pool, prefix, p_thread->refcount,
             prefix, ABTD_atomic_acquire_load_uint32(&p_thread->request),
@@ -2173,7 +2173,7 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     /* Create a ULT context */
     stacksize = p_thread->attr.stacksize;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    if (p_thread->is_sched) {
+    if (p_thread->p_sched) {
         abt_errno =
             ABTD_thread_context_create_sched(NULL, thread_func, arg, stacksize,
                                              p_thread->attr.p_stack,

@@ -349,8 +349,7 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream,
                 stop = ABT_TRUE;
             } else {
                 ABTI_ASSERT(p_sched->type == ABT_SCHED_TYPE_ULT);
-                ABTI_sched *p_par_sched;
-                p_par_sched = ABTI_xstream_get_parent_sched(p_local_xstream);
+                ABTI_sched *p_par_sched = p_sched->p_parent_sched;
                 ABTI_thread_context_switch_sched_to_sched(pp_local_xstream,
                                                           p_sched, p_par_sched);
             }
@@ -610,6 +609,8 @@ int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->p_thread = NULL;
     p_sched->p_task = NULL;
     p_sched->p_ctx = NULL;
+    p_sched->p_parent_sched = NULL;
+    p_sched->p_child_sched = NULL;
 
     p_sched->init = def->init;
     p_sched->run = def->run;
