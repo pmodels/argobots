@@ -792,7 +792,7 @@ int ABT_thread_yield_to(ABT_thread thread)
     /* Add a new scheduler if the ULT is a scheduler */
     if (p_tar_thread->is_sched != NULL) {
         p_tar_thread->is_sched->p_ctx =
-            ABTI_xstream_get_sched_ctx(p_local_xstream);
+            ABTI_xstream_get_top_sched(p_local_xstream)->p_ctx;
         ABTI_xstream_push_sched(p_local_xstream, p_tar_thread->is_sched);
         p_tar_thread->is_sched->state = ABT_SCHED_STATE_RUNNING;
     }

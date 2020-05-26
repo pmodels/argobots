@@ -50,57 +50,40 @@ static inline void ABTI_xstream_unset_request(ABTI_xstream *p_xstream,
     ABTD_atomic_fetch_and_uint32(&p_xstream->request, ~req);
 }
 
-/* Get the top scheduler from the sched stack (field scheds) */
+/* Get the top scheduler from the sched list */
 static inline ABTI_sched *ABTI_xstream_get_top_sched(ABTI_xstream *p_xstream)
 {
-    return p_xstream->scheds[p_xstream->num_scheds - 1];
+    return p_xstream->p_sched_top;
 }
 
-/* Get the parent scheduler of the current scheduler */
-static inline ABTI_sched *ABTI_xstream_get_parent_sched(ABTI_xstream *p_xstream)
-{
-    ABTI_ASSERT(p_xstream->num_scheds >= 2);
-    return p_xstream->scheds[p_xstream->num_scheds - 2];
-}
-
-/* Get the scheduling context */
-static inline ABTD_thread_context *
-ABTI_xstream_get_sched_ctx(ABTI_xstream *p_xstream)
-{
-    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_xstream);
-    return p_sched->p_ctx;
-}
-
-/* Remove the top scheduler from the sched stack (field scheds) */
+/* Remove the top scheduler from the sched list */
 static inline void ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
 {
-    p_xstream->num_scheds--;
-    ABTI_ASSERT(p_xstream->num_scheds >= 0);
+    ABTI_ASSERT(p_xstream->p_sched_top);
+    ABTI_sched *p_cur_sched = p_xstream->p_sched_top;
+    p_xstream->p_sched_top = p_cur_sched->p_parent_sched;
+    p_cur_sched->p_parent_sched = NULL;
+    if (p_xstream->p_sched_top) {
+        p_xstream->p_sched_top->p_child_sched = NULL;
+    } else {
+        /* There is no scheduler. */
+        p_xstream->p_main_sched = NULL;
+    }
 }
 
-/* Replace the top scheduler of the sched stack (field scheds) with the target
- * scheduler */
-static inline void ABTI_xstream_replace_top_sched(ABTI_xstream *p_xstream,
-                                                  ABTI_sched *p_sched)
-{
-    p_xstream->scheds[p_xstream->num_scheds - 1] = p_sched;
-}
-
-/* Add the specified scheduler to the sched stack (field scheds) */
+/* Add the specified scheduler to the sched list */
 static inline void ABTI_xstream_push_sched(ABTI_xstream *p_xstream,
                                            ABTI_sched *p_sched)
 {
-    if (p_xstream->num_scheds == p_xstream->max_scheds) {
-        int cur_size = p_xstream->max_scheds;
-        int new_size = cur_size + 10;
-        void *temp;
-        temp = ABTU_realloc(p_xstream->scheds, cur_size * sizeof(ABTI_sched *),
-                            new_size * sizeof(ABTI_sched *));
-        p_xstream->scheds = (ABTI_sched **)temp;
-        p_xstream->max_scheds = new_size;
+    p_sched->p_parent_sched = p_xstream->p_sched_top;
+    if (p_xstream->p_sched_top) {
+        p_xstream->p_sched_top->p_child_sched = p_sched;
+        p_xstream->p_sched_top = p_sched;
+    } else {
+        /* This is the first scheduler. */
+        p_xstream->p_main_sched = p_sched;
+        p_xstream->p_sched_top = p_sched;
     }
-
-    p_xstream->scheds[p_xstream->num_scheds++] = p_sched;
 }
 
 /* Get the first pool of the main scheduler. */

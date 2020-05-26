@@ -73,11 +73,10 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     ABTD_atomic_relaxed_store_int(&p_newxstream->state,
                                   ABT_XSTREAM_STATE_RUNNING);
     p_newxstream->scheds = NULL;
-    p_newxstream->num_scheds = 0;
-    p_newxstream->max_scheds = 0;
+    p_newxstream->p_main_sched = NULL;
+    p_newxstream->p_sched_top = NULL;
     ABTD_atomic_relaxed_store_uint32(&p_newxstream->request, 0);
     p_newxstream->p_req_arg = NULL;
-    p_newxstream->p_main_sched = NULL;
     p_newxstream->p_thread = NULL;
     p_newxstream->p_task = NULL;
     ABTI_mem_init_local(p_newxstream);
@@ -220,11 +219,10 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     ABTD_atomic_relaxed_store_int(&p_newxstream->state,
                                   ABT_XSTREAM_STATE_RUNNING);
     p_newxstream->scheds = NULL;
-    p_newxstream->num_scheds = 0;
-    p_newxstream->max_scheds = 0;
+    p_newxstream->p_main_sched = NULL;
+    p_newxstream->p_sched_top = NULL;
     ABTD_atomic_relaxed_store_uint32(&p_newxstream->request, 0);
     p_newxstream->p_req_arg = NULL;
-    p_newxstream->p_main_sched = NULL;
     p_newxstream->p_thread = NULL;
     p_newxstream->p_task = NULL;
     ABTI_mem_init_local(p_newxstream);
@@ -262,8 +260,8 @@ int ABTI_xstream_start(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream)
     ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
                 ABT_XSTREAM_STATE_RUNNING);
 
-    /* Add the main scheduler to the stack of schedulers */
-    ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
+    /* The main scheduler must be the current scheduler */
+    ABTI_ASSERT(p_xstream->p_main_sched == p_xstream->p_sched_top);
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         LOG_EVENT("[E%d] start\n", p_xstream->rank);
@@ -336,8 +334,8 @@ int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
 {
     int abt_errno = ABT_SUCCESS;
 
-    /* Add the main scheduler to the stack of schedulers */
-    ABTI_xstream_push_sched(p_xstream, p_xstream->p_main_sched);
+    /* The main scheduler should be the current scheduler */
+    ABTI_ASSERT(p_xstream->p_main_sched == p_xstream->p_sched_top);
 
     /* The ES's state must be running here. */
     ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
@@ -1705,6 +1703,7 @@ int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 
     /* Set the scheduler */
     p_xstream->p_main_sched = p_sched;
+    p_xstream->p_sched_top = p_sched;
 
 fn_exit:
     return abt_errno;
@@ -1772,11 +1771,6 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         ABTI_CHECK_TRUE(p_thread->type == ABTI_THREAD_TYPE_MAIN,
                         ABT_ERR_THREAD);
 
-        /* Free the current main scheduler */
-        abt_errno =
-            ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched);
-        ABTI_CHECK_ERROR(abt_errno);
-
         /* Since the primary ES does not finish its execution until ABT_finalize
          * is called, its main scheduler needs to be automatically freed when
          * it is freed in ABT_finalize. */
@@ -1785,11 +1779,14 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         ABTI_POOL_PUSH(p_tar_pool, p_thread->unit,
                        ABTI_self_get_native_thread_id(*pp_local_xstream));
 
-        /* Pop the top scheduler */
+        /* Replace the top scheduler with the new scheduler */
         ABTI_xstream_pop_sched(p_xstream);
+        ABTI_xstream_push_sched(p_xstream, p_sched);
 
-        /* Set the scheduler */
-        p_xstream->p_main_sched = p_sched;
+        /* Free the current main scheduler */
+        abt_errno =
+            ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched);
+        ABTI_CHECK_ERROR(abt_errno);
 
         /* Start the primary ES again because we have to create a sched ULT for
          * the new scheduler */
@@ -1817,7 +1814,8 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         p_xstream->p_main_sched = p_sched;
 
         /* Replace the top scheduler with the new scheduler */
-        ABTI_xstream_replace_top_sched(p_xstream, p_sched);
+        ABTI_xstream_pop_sched(p_xstream);
+        ABTI_xstream_push_sched(p_xstream, p_sched);
 
         /* Switch to the current main scheduler */
         ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
@@ -1849,9 +1847,6 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
     }
 
     char *type, *state;
-    char *scheds_str;
-    int i;
-    size_t size, pos;
 
     switch (p_xstream->type) {
         case ABTI_XSTREAM_TYPE_PRIMARY:
@@ -1876,33 +1871,19 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
             break;
     }
 
-    size = sizeof(char) * (p_xstream->num_scheds * 20 + 4);
-    scheds_str = (char *)ABTU_calloc(size, 1);
-    scheds_str[0] = '[';
-    scheds_str[1] = ' ';
-    pos = 2;
-    for (i = 0; i < p_xstream->num_scheds; i++) {
-        sprintf(&scheds_str[pos], "%p ", (void *)p_xstream->scheds[i]);
-        pos = strlen(scheds_str);
-    }
-    scheds_str[pos] = ']';
-
     fprintf(p_os,
             "%s== ES (%p) ==\n"
             "%srank      : %d\n"
             "%stype      : %s\n"
             "%sstate     : %s\n"
             "%srequest   : 0x%x\n"
-            "%smax_scheds: %d\n"
-            "%snum_scheds: %d\n"
-            "%sscheds    : %s\n"
+            "%ssched_top : %p\n"
             "%smain_sched: %p\n",
             prefix, (void *)p_xstream, prefix, p_xstream->rank, prefix, type,
             prefix, state, prefix,
             ABTD_atomic_acquire_load_uint32(&p_xstream->request), prefix,
-            p_xstream->max_scheds, prefix, p_xstream->num_scheds, prefix,
-            scheds_str, prefix, (void *)p_xstream->p_main_sched);
-    ABTU_free(scheds_str);
+            (void *)p_xstream->p_sched_top, prefix,
+            (void *)p_xstream->p_main_sched);
 
     if (print_sub == ABT_TRUE) {
         ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT,

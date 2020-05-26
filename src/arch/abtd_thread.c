@@ -128,7 +128,7 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
     if (p_thread->is_sched) {
         /* If p_thread is a scheduler ULT, we have to context switch to
          * the parent scheduler. */
-        p_sched = ABTI_xstream_get_parent_sched(p_thread->p_last_xstream);
+        p_sched = p_thread->is_sched->p_parent_sched;
     } else {
 #endif
         p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
