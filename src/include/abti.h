@@ -323,7 +323,7 @@ struct ABTI_thread {
     ABTD_atomic_uint32 request;   /* Request */
     ABTI_xstream *p_last_xstream; /* Last ES where it ran */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_sched *is_sched; /* If it is a scheduler, its ptr */
+    ABTI_sched *p_sched; /* Scheduler */
 #endif
     ABT_unit unit;         /* Unit enclosing this thread */
     ABTI_pool *p_pool;     /* Associated pool */
@@ -364,7 +364,7 @@ struct ABTI_task {
     void (*f_task)(void *);     /* Task function */
     void *p_arg;                /* Task arguments */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_sched *is_sched; /* If it is a scheduler, its ptr */
+    ABTI_sched *p_sched; /* Scheduler */
 #endif
     ABTI_pool *p_pool;       /* Associated pool */
     ABT_unit unit;           /* Unit enclosing this task */

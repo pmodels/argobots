@@ -701,7 +701,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newtask->f_task = task_func;
     p_newtask->p_arg = arg;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    p_newtask->is_sched = p_sched;
+    p_newtask->p_sched = p_sched;
 #endif
     p_newtask->p_pool = p_pool;
     p_newtask->refcount = refcount;
@@ -836,7 +836,7 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
             "%sstate     : %s\n"
             "%sES        : %p (%d)\n"
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            "%sis_sched  : %p\n"
+            "%sp_sched   : %p\n"
 #endif
             "%spool      : %p\n"
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
@@ -849,7 +849,7 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
             prefix, (void *)p_task, prefix, ABTI_task_get_id(p_task), prefix,
             state, prefix, (void *)p_task->p_xstream, xstream_rank,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            prefix, (void *)p_task->is_sched,
+            prefix, (void *)p_task->p_sched,
 #endif
             prefix, (void *)p_task->p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION

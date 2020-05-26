@@ -20,7 +20,7 @@ void ABTD_thread_func_wrapper_thread(void *p_arg)
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_ASSERT(p_thread->is_sched == NULL);
+    ABTI_ASSERT(p_thread->p_sched == NULL);
 #endif
 
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
@@ -37,7 +37,7 @@ void ABTD_thread_func_wrapper_sched(void *p_arg)
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_ASSERT(p_thread->is_sched != NULL);
+    ABTI_ASSERT(p_thread->p_sched != NULL);
 #endif
 
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
@@ -47,7 +47,7 @@ void ABTD_thread_func_wrapper_sched(void *p_arg)
 void ABTD_thread_exit(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    if (p_thread->is_sched) {
+    if (p_thread->p_sched) {
         ABTD_thread_terminate_sched(p_local_xstream, p_thread);
     } else {
 #endif
@@ -83,7 +83,7 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             if (is_sched) {
                 ABTI_thread_finish_context_sched_to_thread(p_local_xstream,
-                                                           p_thread->is_sched,
+                                                           p_thread->p_sched,
                                                            p_joiner);
             } else {
 #endif
@@ -125,10 +125,10 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
      * to the scheduler. */
     ABTI_sched *p_sched;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    if (p_thread->is_sched) {
+    if (p_thread->p_sched) {
         /* If p_thread is a scheduler ULT, we have to context switch to
          * the parent scheduler. */
-        p_sched = p_thread->is_sched->p_parent_sched;
+        p_sched = p_thread->p_sched->p_parent_sched;
     } else {
 #endif
         p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
@@ -137,7 +137,7 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
 #endif
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (is_sched) {
-        ABTI_thread_finish_context_sched_to_sched(p_thread->is_sched, p_sched);
+        ABTI_thread_finish_context_sched_to_sched(p_thread->p_sched, p_sched);
     } else {
 #endif
         ABTI_thread_finish_context_thread_to_sched(p_thread, p_sched);
