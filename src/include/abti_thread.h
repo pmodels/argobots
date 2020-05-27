@@ -343,13 +343,6 @@ ABTI_thread_finish_context_thread_to_sched(ABTI_thread *p_old,
     ABTI_thread_context_switch_thread_to_sched_internal(p_old, p_new, ABT_TRUE);
 }
 
-static inline void ABTI_thread_finish_context_sched_to_thread(
-    ABTI_xstream *p_local_xstream, ABTI_sched *p_old, ABTI_thread *p_new)
-{
-    ABTI_thread_context_switch_sched_to_thread_internal(p_local_xstream, p_old,
-                                                        p_new, ABT_TRUE);
-}
-
 static inline void
 ABTI_thread_finish_context_sched_to_parent_sched(ABTI_sched *p_old,
                                                  ABTI_sched *p_new)
@@ -359,11 +352,17 @@ ABTI_thread_finish_context_sched_to_parent_sched(ABTI_sched *p_old,
 }
 
 static inline void
-ABTI_thread_finish_context_sched_to_child_sched(ABTI_sched *p_old,
-                                                ABTI_sched *p_new)
+ABTI_thread_finish_context_sched_to_main_thread(ABTI_sched *p_main_sched)
 {
-    ABTI_thread_context_switch_sched_to_child_sched_internal(p_old, p_new,
-                                                             ABT_TRUE);
+    /* The main thread is stored in p_link. */
+    ABTI_thread *p_sched_thread = p_main_sched->p_thread;
+    ABTI_ASSERT(p_sched_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED);
+    ABTD_thread_context *p_ctx = &p_sched_thread->ctx;
+    ABTI_thread *p_main_thread =
+        (ABTI_thread *)ABTD_atomic_acquire_load_thread_context_ptr(
+            &p_ctx->p_link);
+    ABTI_ASSERT(p_main_thread && p_main_thread->type == ABTI_THREAD_TYPE_MAIN);
+    ABTD_thread_finish_context(&p_sched_thread->ctx, &p_main_thread->ctx);
 }
 
 static inline void ABTI_thread_set_request(ABTI_thread *p_thread, uint32_t req)

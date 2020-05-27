@@ -1408,6 +1408,12 @@ void ABTI_xstream_schedule(void *p_arg)
     ABTD_atomic_release_store_int(&p_xstream->state,
                                   ABT_XSTREAM_STATE_TERMINATED);
     LOG_EVENT("[E%d] terminated\n", p_xstream->rank);
+
+    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
+        /* Let us jump back to the main thread. */
+        ABTI_thread_finish_context_sched_to_main_thread(
+            p_xstream->p_main_sched);
+    }
 }
 
 int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,

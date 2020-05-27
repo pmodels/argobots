@@ -80,18 +80,9 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
              * type ULT would be a joiner (=suspend), no scheduler is available
              * when a running ULT needs suspension. Hence, it always jumps to a
              * non-scheduler-type ULT. */
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            if (is_sched) {
-                ABTI_thread_finish_context_sched_to_thread(p_local_xstream,
-                                                           p_thread->p_sched,
-                                                           p_joiner);
-            } else {
-#endif
-                ABTI_thread_finish_context_thread_to_thread(p_local_xstream,
-                                                            p_thread, p_joiner);
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            }
-#endif
+            ABTI_ASSERT(!is_sched);
+            ABTI_thread_finish_context_thread_to_thread(p_local_xstream,
+                                                        p_thread, p_joiner);
             return;
         } else {
             /* If the current ULT's associated ES is different from p_joiner's,
