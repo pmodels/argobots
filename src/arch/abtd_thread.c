@@ -15,15 +15,22 @@ void ABTD_thread_func_wrapper_thread(void *p_arg)
     ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
     void (*thread_func)(void *) = p_ctx->f_thread;
 
-    thread_func(p_ctx->p_arg);
-
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
+    ABTI_xstream *p_local_xstream = p_thread->p_last_xstream;
+    p_local_xstream->p_task = NULL; /* A tasklet scheduler can invoke ULT. */
+    p_local_xstream->p_thread = p_thread;
+
+    thread_func(p_ctx->p_arg);
+
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(p_thread->p_sched == NULL);
 #endif
 
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    /* This ABTI_local_get_xstream() is controversial since it is called after
+     * the context-switchable function (i.e., thread_func()).  We assume that
+     * the compiler does not load TLS offset etc before thread_func(). */
+    p_local_xstream = ABTI_local_get_xstream();
     ABTD_thread_terminate_thread(p_local_xstream, p_thread);
 }
 
@@ -32,15 +39,22 @@ void ABTD_thread_func_wrapper_sched(void *p_arg)
     ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
     void (*thread_func)(void *) = p_ctx->f_thread;
 
-    thread_func(p_ctx->p_arg);
-
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
+    ABTI_xstream *p_local_xstream = p_thread->p_last_xstream;
+    p_local_xstream->p_task = NULL; /* A tasklet scheduler can invoke ULT. */
+    p_local_xstream->p_thread = p_thread;
+
+    thread_func(p_ctx->p_arg);
+
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(p_thread->p_sched != NULL);
 #endif
 
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    /* This ABTI_local_get_xstream() is controversial since it is called after
+     * the context-switchable function (i.e., thread_func()).  We assume that
+     * the compiler does not load TLS offset etc before thread_func(). */
+    p_local_xstream = ABTI_local_get_xstream();
     ABTD_thread_terminate_sched(p_local_xstream, p_thread);
 }
 
@@ -128,11 +142,13 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
 #endif
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (is_sched) {
-        ABTI_thread_finish_context_sched_to_parent_sched(p_thread->p_sched,
+        ABTI_thread_finish_context_sched_to_parent_sched(p_local_xstream,
+                                                         p_thread->p_sched,
                                                          p_sched);
     } else {
 #endif
-        ABTI_thread_finish_context_thread_to_sched(p_thread, p_sched);
+        ABTI_thread_finish_context_thread_to_sched(p_local_xstream, p_thread,
+                                                   p_sched);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
 #endif

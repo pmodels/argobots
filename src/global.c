@@ -184,8 +184,10 @@ int ABT_finalize(void)
     }
 
     /* Remove the primary ULT */
-    ABTI_thread_free_main(p_local_xstream, p_thread);
+    ABTI_ASSERT(p_local_xstream->p_thread == p_thread);
+    ABTI_ASSERT(p_local_xstream->p_task == NULL);
     p_local_xstream->p_thread = NULL;
+    ABTI_thread_free_main(p_local_xstream, p_thread);
 
     /* Free the primary ES */
     abt_errno = ABTI_xstream_free(p_local_xstream, p_local_xstream);
