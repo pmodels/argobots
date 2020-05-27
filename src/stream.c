@@ -1799,7 +1799,6 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
          * current main scheduler and keep it in the new scheduler. */
         p_sched->p_thread = p_main_sched->p_thread;
         p_sched->p_ctx = p_main_sched->p_ctx;
-        p_main_sched->p_thread = NULL;
 
         /* The current ULT is pushed to the new scheduler's pool so that when
          * the new scheduler starts (see below), it can be scheduled by the new
@@ -1820,7 +1819,9 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         ABTI_thread_context_switch_thread_to_sched(pp_local_xstream, p_thread,
                                                    p_main_sched);
 
-        /* Now, we free the current main scheduler */
+        /* Now, we free the current main scheduler. p_main_sched->p_thread must
+         * be NULL to avoid freeing it in ABTI_sched_discard_and_free(). */
+        p_main_sched->p_thread = NULL;
         abt_errno =
             ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched);
         ABTI_CHECK_ERROR(abt_errno);
