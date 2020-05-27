@@ -492,15 +492,11 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED, ABT_ERR_INV_SCHED);
     p_sched->used = ABTI_SCHED_IN_POOL;
 
-    if (p_sched->type == ABT_SCHED_TYPE_ULT) {
-        abt_errno = ABTI_thread_create_sched(p_local_xstream, p_pool, p_sched);
-        ABTI_CHECK_ERROR(abt_errno);
-    } else if (p_sched->type == ABT_SCHED_TYPE_TASK) {
-        abt_errno = ABTI_task_create_sched(p_local_xstream, p_pool, p_sched);
-        ABTI_CHECK_ERROR(abt_errno);
-    } else {
-        ABTI_CHECK_TRUE(0, ABT_ERR_SCHED);
-    }
+    /* In both ABT_SCHED_TYPE_ULT and ABT_SCHED_TYPE_TASK cases, we use ULT-type
+     * scheduler to reduce the code maintenance cost.  ABT_SCHED_TYPE_TASK
+     * should be removed in the future. */
+    abt_errno = ABTI_thread_create_sched(p_local_xstream, p_pool, p_sched);
+    ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
     return abt_errno;

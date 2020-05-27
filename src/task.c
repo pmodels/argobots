@@ -70,37 +70,6 @@ fn_fail:
     goto fn_exit;
 }
 
-/* This routine is to create a tasklet for the scheduler. */
-int ABTI_task_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
-                           ABTI_sched *p_sched)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_task *p_newtask;
-
-    void *arg = (void *)ABTI_sched_get_handle(p_sched);
-    /* If p_sched is reused, ABTI_task_revive() can be used. */
-    if (p_sched->p_task) {
-        abt_errno = ABTI_task_revive(p_local_xstream, p_pool,
-                                     (void (*)(void *))p_sched->run, arg,
-                                     p_sched->p_task);
-        ABTI_CHECK_ERROR(abt_errno);
-        goto fn_exit;
-    }
-
-    /* Allocate a task object */
-    abt_errno = ABTI_task_create(p_local_xstream, p_pool,
-                                 (void (*)(void *))p_sched->run, arg, p_sched,
-                                 1, &p_newtask);
-    ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
 /**
  * @ingroup TASK
  * @brief   Create a new tasklet associated with the target ES (\c xstream).
@@ -700,9 +669,6 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABTD_atomic_relaxed_store_uint32(&p_newtask->request, 0);
     p_newtask->f_task = task_func;
     p_newtask->p_arg = arg;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    p_newtask->p_sched = p_sched;
-#endif
     p_newtask->p_pool = p_pool;
     p_newtask->refcount = refcount;
     p_newtask->p_keytable = NULL;
@@ -835,9 +801,6 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
             "%sid        : %" PRIu64 "\n"
             "%sstate     : %s\n"
             "%sES        : %p (%d)\n"
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            "%sp_sched   : %p\n"
-#endif
             "%spool      : %p\n"
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
             "%smigratable: %s\n"
@@ -847,11 +810,8 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
             "%sp_arg     : %p\n"
             "%skeytable  : %p\n",
             prefix, (void *)p_task, prefix, ABTI_task_get_id(p_task), prefix,
-            state, prefix, (void *)p_task->p_xstream, xstream_rank,
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            prefix, (void *)p_task->p_sched,
-#endif
-            prefix, (void *)p_task->p_pool,
+            state, prefix, (void *)p_task->p_xstream, xstream_rank, prefix,
+            (void *)p_task->p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
             prefix, (p_task->migratable == ABT_TRUE) ? "TRUE" : "FALSE",
 #endif

@@ -16,7 +16,7 @@ void ABTD_thread_func_wrapper(void *p_arg)
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
     ABTI_xstream *p_local_xstream = p_thread->p_last_xstream;
-    p_local_xstream->p_task = NULL; /* A tasklet scheduler can invoke ULT. */
+    ABTI_ASSERT(p_local_xstream->p_task == NULL);
     p_local_xstream->p_thread = p_thread;
 
     thread_func(p_ctx->p_arg);
