@@ -254,8 +254,8 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
         /* Context-switch to p_target */
         ABTD_atomic_release_store_int(&p_target->state,
                                       ABT_THREAD_STATE_RUNNING);
-        ABTI_thread_context_switch_thread_to_thread(pp_local_xstream, p_thread,
-                                                    p_target);
+        ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_thread,
+                                              p_target);
         return ABT_TRUE;
     } else {
         return ABT_FALSE;

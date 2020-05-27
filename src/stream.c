@@ -361,8 +361,8 @@ int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
     /* Start the scheduler by context switching to it */
     LOG_EVENT("[U%" PRIu64 ":E%d] yield\n", ABTI_thread_get_id(p_thread),
               p_thread->p_last_xstream->rank);
-    ABTI_thread_context_switch_thread_to_sched(pp_local_xstream, p_thread,
-                                               p_sched);
+    ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread,
+                                         p_sched->p_thread);
 
     /* Back to the main ULT */
     LOG_EVENT("[U%" PRIu64 ":E%d] resume\n", ABTI_thread_get_id(p_thread),
@@ -1462,27 +1462,14 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
     /* Switch the context */
     LOG_EVENT("[U%" PRIu64 ":E%d] start running\n",
               ABTI_thread_get_id(p_thread), p_local_xstream->rank);
+
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_local_xstream);
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    if (p_thread->p_sched != NULL) {
-        p_thread =
-            ABTI_thread_context_switch_sched_to_child_sched(pp_local_xstream,
-                                                            p_sched,
-                                                            p_thread->p_sched);
-        /* The scheduler continues from here. */
-        p_local_xstream = *pp_local_xstream;
-    } else {
-#endif
-        p_thread =
-            ABTI_thread_context_switch_sched_to_thread(pp_local_xstream,
-                                                       p_sched, p_thread);
-        /* The previous ULT (p_thread) may not be the same as one to which the
-         * context has been switched. */
-        /* The scheduler continues from here. */
-        p_local_xstream = *pp_local_xstream;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    }
-#endif
+    p_thread = ABTI_thread_context_switch_to_child(pp_local_xstream,
+                                                   p_sched->p_thread, p_thread);
+    /* The previous ULT (p_thread) may not be the same as one to which the
+     * context has been switched. */
+    /* The scheduler continues from here. */
+    p_local_xstream = *pp_local_xstream;
 
     LOG_EVENT("[U%" PRIu64 ":E%d] stopped\n", ABTI_thread_get_id(p_thread),
               p_local_xstream->rank);
@@ -1831,8 +1818,8 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
 
         /* Switch to the current main scheduler */
         ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
-        ABTI_thread_context_switch_thread_to_sched(pp_local_xstream, p_thread,
-                                                   p_main_sched);
+        ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread,
+                                             p_main_sched->p_thread);
 
         /* Now, we free the current main scheduler. p_main_sched->p_thread must
          * be NULL to avoid freeing it in ABTI_sched_discard_and_free(). */
