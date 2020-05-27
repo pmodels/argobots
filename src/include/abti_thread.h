@@ -166,7 +166,6 @@ static inline void ABTI_thread_context_switch_thread_to_sched_internal(
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(!p_old->p_sched);
 #endif
-    ABTI_LOG_SET_SCHED(p_new);
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     /* Dynamic promotion is unnecessary if p_old is discarded. */
     if (!is_finish && !ABTI_thread_is_dynamic_promoted(p_old))
@@ -189,7 +188,6 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_ASSERT(!p_new->p_sched);
 #endif
-    ABTI_LOG_SET_SCHED(NULL);
     p_local_xstream->p_thread = p_new;
     p_local_xstream->p_task = NULL; /* A tasklet scheduler can invoke ULT. */
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
@@ -245,7 +243,6 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
                 }
             }
         }
-        ABTI_LOG_SET_SCHED(p_old);
         return;
     }
 #endif
@@ -259,7 +256,6 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
 static inline void ABTI_thread_context_switch_sched_to_sched_internal(
     ABTI_sched *p_old, ABTI_sched *p_new, ABT_bool is_finish)
 {
-    ABTI_LOG_SET_SCHED(p_new);
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     /* Schedulers' contexts must be initialized eagerly. */
     ABTI_ASSERT(!p_old->p_thread ||

@@ -1369,10 +1369,6 @@ void ABTI_xstream_schedule(void *p_arg)
 
         /* Execute the run function of scheduler */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
-        /* This function can be invoked without user-level context switches
-         * (e.g., directly called on top of Pthreads), so ABTI_LOG_SET_SCHED
-         * must be called manually here. */
-        ABTI_LOG_SET_SCHED(p_sched);
         p_sched->state = ABT_SCHED_STATE_RUNNING;
         LOG_EVENT("[S%" PRIu64 "] start\n", p_sched->id);
         p_sched->run(ABTI_sched_get_handle(p_sched));
@@ -1380,7 +1376,6 @@ void ABTI_xstream_schedule(void *p_arg)
         p_sched->state = ABT_SCHED_STATE_TERMINATED;
         p_local_xstream->p_task = NULL;
         p_local_xstream->p_thread = NULL;
-        ABTI_LOG_SET_SCHED(NULL);
 
         ABTI_spinlock_release(&p_xstream->sched_lock);
 
@@ -1583,7 +1578,6 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
     /* Execute the task function */
     LOG_EVENT("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
               p_local_xstream->rank);
-    ABTI_LOG_SET_SCHED(NULL);
     p_task->f_task(p_task->p_arg);
 #else
     /* Add a new scheduler if the task is a scheduler */
@@ -1602,7 +1596,6 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
     /* Execute the task function */
     LOG_EVENT("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
               p_local_xstream->rank);
-    ABTI_LOG_SET_SCHED(p_task->p_sched ? p_task->p_sched : NULL);
 
     p_task->f_task(p_task->p_arg);
 
@@ -1612,13 +1605,11 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
         /* If a migration is trying to read the state of the scheduler, we need
          * to let it finish before freeing the scheduler */
         ABTI_spinlock_release(&p_local_xstream->sched_lock);
-        ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_local_xstream));
         LOG_EVENT("[S%" PRIu64 ":E%d] stacked sched end\n", p_task->p_sched->id,
                   p_local_xstream->rank);
     }
 #endif
 
-    ABTI_LOG_SET_SCHED(ABTI_xstream_get_top_sched(p_local_xstream));
     LOG_EVENT("[T%" PRIu64 ":E%d] stopped\n", ABTI_task_get_id(p_task),
               p_local_xstream->rank);
 

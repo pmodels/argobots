@@ -8,7 +8,6 @@
 #include "abti.h"
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-ABTD_XSTREAM_LOCAL ABTI_log l_ABTI_log = { NULL };
 
 void ABTI_log_print(FILE *fh, const char *format, ...)
 {
@@ -56,26 +55,16 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
                     }
                 } else {
                     rank = p_local_xstream->rank;
-                    if (l_ABTI_log.p_sched) {
-                        prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                        tid = l_ABTI_log.p_sched->id;
-                    } else {
-                        prefix_fmt = "<U%" PRIu64 ":E%d> %s";
-                        tid = ABTI_thread_get_id(p_thread);
-                    }
+                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
+                    tid = ABTI_thread_get_id(p_thread);
                 }
                 break;
 
             case ABT_UNIT_TYPE_TASK:
                 rank = p_local_xstream->rank;
                 p_task = p_local_xstream->p_task;
-                if (l_ABTI_log.p_sched) {
-                    prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                    tid = l_ABTI_log.p_sched->id;
-                } else {
-                    prefix_fmt = "<T%" PRIu64 ":E%d> %s";
-                    tid = ABTI_task_get_id(p_task);
-                }
+                prefix_fmt = "<T%" PRIu64 ":E%d> %s";
+                tid = p_task ? ABTI_task_get_id(p_task) : 0;
                 break;
 
             case ABT_UNIT_TYPE_EXT:
