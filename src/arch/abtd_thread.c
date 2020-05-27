@@ -5,61 +5,36 @@
 
 #include "abti.h"
 
-static inline void ABTD_thread_terminate_thread(ABTI_xstream *p_local_xstream,
-                                                ABTI_thread *p_thread);
-static inline void ABTD_thread_terminate_sched(ABTI_xstream *p_local_xstream,
-                                               ABTI_thread *p_thread);
+static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
+                                         ABTI_thread *p_thread);
 
-void ABTD_thread_func_wrapper_thread(void *p_arg)
+void ABTD_thread_func_wrapper(void *p_arg)
 {
     ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
     void (*thread_func)(void *) = p_ctx->f_thread;
 
-    thread_func(p_ctx->p_arg);
-
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_ASSERT(p_thread->p_sched == NULL);
-#endif
-
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTD_thread_terminate_thread(p_local_xstream, p_thread);
-}
-
-void ABTD_thread_func_wrapper_sched(void *p_arg)
-{
-    ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
-    void (*thread_func)(void *) = p_ctx->f_thread;
+    ABTI_xstream *p_local_xstream = p_thread->p_last_xstream;
+    p_local_xstream->p_task = NULL; /* A tasklet scheduler can invoke ULT. */
+    p_local_xstream->p_thread = p_thread;
 
     thread_func(p_ctx->p_arg);
 
-    /* NOTE: ctx is located in the beginning of ABTI_thread */
-    ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_ASSERT(p_thread->p_sched != NULL);
-#endif
-
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTD_thread_terminate_sched(p_local_xstream, p_thread);
+    /* This ABTI_local_get_xstream() is controversial since it is called after
+     * the context-switchable function (i.e., thread_func()).  We assume that
+     * the compiler does not load TLS offset etc before thread_func(). */
+    p_local_xstream = ABTI_local_get_xstream();
+    ABTD_thread_terminate(p_local_xstream, p_thread);
 }
 
 void ABTD_thread_exit(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    if (p_thread->p_sched) {
-        ABTD_thread_terminate_sched(p_local_xstream, p_thread);
-    } else {
-#endif
-        ABTD_thread_terminate_thread(p_local_xstream, p_thread);
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    }
-#endif
+    ABTD_thread_terminate(p_local_xstream, p_thread);
 }
 
-static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
-                                          ABTI_thread *p_thread,
-                                          ABT_bool is_sched)
+static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
+                                         ABTI_thread *p_thread)
 {
     ABTD_thread_context *p_ctx = &p_thread->ctx;
     ABTD_thread_context *p_link =
@@ -76,22 +51,9 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
                       ABTI_thread_get_id(p_thread),
                       p_thread->p_last_xstream->rank);
 
-            /* Note that a scheduler-type ULT cannot be a joiner. If a scheduler
-             * type ULT would be a joiner (=suspend), no scheduler is available
-             * when a running ULT needs suspension. Hence, it always jumps to a
-             * non-scheduler-type ULT. */
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            if (is_sched) {
-                ABTI_thread_finish_context_sched_to_thread(p_local_xstream,
-                                                           p_thread->p_sched,
-                                                           p_joiner);
-            } else {
-#endif
-                ABTI_thread_finish_context_thread_to_thread(p_local_xstream,
-                                                            p_thread, p_joiner);
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            }
-#endif
+            /* Note that a parent ULT cannot be a joiner. */
+            ABTI_thread_finish_context_to_sibling(p_local_xstream, p_thread,
+                                                  p_joiner);
             return;
         } else {
             /* If the current ULT's associated ES is different from p_joiner's,
@@ -135,37 +97,18 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
 #endif
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    if (is_sched) {
-        ABTI_thread_finish_context_sched_to_sched(p_thread->p_sched, p_sched);
-    } else {
-#endif
-        ABTI_thread_finish_context_thread_to_sched(p_thread, p_sched);
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    }
-#endif
-}
-
-static inline void ABTD_thread_terminate_thread(ABTI_xstream *p_local_xstream,
-                                                ABTI_thread *p_thread)
-{
-    ABTDI_thread_terminate(p_local_xstream, p_thread, ABT_FALSE);
-}
-
-static inline void ABTD_thread_terminate_sched(ABTI_xstream *p_local_xstream,
-                                               ABTI_thread *p_thread)
-{
-    ABTDI_thread_terminate(p_local_xstream, p_thread, ABT_TRUE);
+    ABTI_thread_finish_context_to_parent(p_local_xstream, p_thread,
+                                         p_sched->p_thread);
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-void ABTD_thread_terminate_thread_no_arg()
+void ABTD_thread_terminate_no_arg()
 {
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     /* This function is called by `return` in ABTD_thread_context_make_and_call,
      * so it cannot take the argument. We get the thread descriptor from TLS. */
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    ABTD_thread_terminate_thread(p_local_xstream, p_thread);
+    ABTD_thread_terminate(p_local_xstream, p_thread);
 }
 #endif
 

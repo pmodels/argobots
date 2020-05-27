@@ -175,8 +175,8 @@ int ABT_finalize(void)
         /* Switch to the top scheduler */
         ABTI_sched *p_sched =
             ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
-        ABTI_thread_context_switch_thread_to_sched(&p_local_xstream, p_thread,
-                                                   p_sched);
+        ABTI_thread_context_switch_to_parent(&p_local_xstream, p_thread,
+                                             p_sched->p_thread);
 
         /* Back to the original thread */
         LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",
@@ -184,8 +184,10 @@ int ABT_finalize(void)
     }
 
     /* Remove the primary ULT */
-    ABTI_thread_free_main(p_local_xstream, p_thread);
+    ABTI_ASSERT(p_local_xstream->p_thread == p_thread);
+    ABTI_ASSERT(p_local_xstream->p_task == NULL);
     p_local_xstream->p_thread = NULL;
+    ABTI_thread_free_main(p_local_xstream, p_thread);
 
     /* Free the primary ES */
     abt_errno = ABTI_xstream_free(p_local_xstream, p_local_xstream);

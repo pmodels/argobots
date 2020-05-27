@@ -573,8 +573,7 @@ handover:
         ;
     ABTI_pool_dec_num_blocked(p_next->p_pool);
     ABTD_atomic_release_store_int(&p_next->state, ABT_THREAD_STATE_RUNNING);
-    ABTI_thread_context_switch_thread_to_thread(pp_local_xstream, p_thread,
-                                                p_next);
+    ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_thread, p_next);
 #endif
 
     return abt_errno;
