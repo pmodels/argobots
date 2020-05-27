@@ -1457,8 +1457,9 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_local_xstream);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_thread->p_sched != NULL) {
-        ABTI_thread_context_switch_sched_to_sched(pp_local_xstream, p_sched,
-                                                  p_thread->p_sched);
+        ABTI_thread_context_switch_sched_to_child_sched(pp_local_xstream,
+                                                        p_sched,
+                                                        p_thread->p_sched);
         /* The scheduler continues from here. */
         p_local_xstream = *pp_local_xstream;
         /* Because of the stackable scheduler concept, the previous ULT must

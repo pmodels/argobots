@@ -253,7 +253,24 @@ static inline void ABTI_thread_context_switch_sched_to_thread_internal(
     }
 }
 
-static inline void ABTI_thread_context_switch_sched_to_sched_internal(
+static inline void ABTI_thread_context_switch_sched_to_parent_sched_internal(
+    ABTI_sched *p_old, ABTI_sched *p_new, ABT_bool is_finish)
+{
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+    /* Schedulers' contexts must be initialized eagerly. */
+    ABTI_ASSERT(!p_old->p_thread ||
+                ABTI_thread_is_dynamic_promoted(p_old->p_thread));
+    ABTI_ASSERT(!p_new->p_thread ||
+                ABTI_thread_is_dynamic_promoted(p_new->p_thread));
+#endif
+    if (is_finish) {
+        ABTD_thread_finish_context(p_old->p_ctx, p_new->p_ctx);
+    } else {
+        ABTD_thread_context_switch(p_old->p_ctx, p_new->p_ctx);
+    }
+}
+
+static inline void ABTI_thread_context_switch_sched_to_child_sched_internal(
     ABTI_sched *p_old, ABTI_sched *p_new, ABT_bool is_finish)
 {
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
@@ -296,11 +313,19 @@ static inline void ABTI_thread_context_switch_sched_to_thread(
     *pp_local_xstream = ABTI_local_get_xstream_uninlined();
 }
 
-static inline void
-ABTI_thread_context_switch_sched_to_sched(ABTI_xstream **pp_local_xstream,
-                                          ABTI_sched *p_old, ABTI_sched *p_new)
+static inline void ABTI_thread_context_switch_sched_to_parent_sched(
+    ABTI_xstream **pp_local_xstream, ABTI_sched *p_old, ABTI_sched *p_new)
 {
-    ABTI_thread_context_switch_sched_to_sched_internal(p_old, p_new, ABT_FALSE);
+    ABTI_thread_context_switch_sched_to_parent_sched_internal(p_old, p_new,
+                                                              ABT_FALSE);
+    *pp_local_xstream = ABTI_local_get_xstream_uninlined();
+}
+
+static inline void ABTI_thread_context_switch_sched_to_child_sched(
+    ABTI_xstream **pp_local_xstream, ABTI_sched *p_old, ABTI_sched *p_new)
+{
+    ABTI_thread_context_switch_sched_to_child_sched_internal(p_old, p_new,
+                                                             ABT_FALSE);
     *pp_local_xstream = ABTI_local_get_xstream_uninlined();
 }
 
@@ -325,10 +350,20 @@ static inline void ABTI_thread_finish_context_sched_to_thread(
                                                         p_new, ABT_TRUE);
 }
 
-static inline void ABTI_thread_finish_context_sched_to_sched(ABTI_sched *p_old,
-                                                             ABTI_sched *p_new)
+static inline void
+ABTI_thread_finish_context_sched_to_parent_sched(ABTI_sched *p_old,
+                                                 ABTI_sched *p_new)
 {
-    ABTI_thread_context_switch_sched_to_sched_internal(p_old, p_new, ABT_TRUE);
+    ABTI_thread_context_switch_sched_to_parent_sched_internal(p_old, p_new,
+                                                              ABT_TRUE);
+}
+
+static inline void
+ABTI_thread_finish_context_sched_to_child_sched(ABTI_sched *p_old,
+                                                ABTI_sched *p_new)
+{
+    ABTI_thread_context_switch_sched_to_child_sched_internal(p_old, p_new,
+                                                             ABT_TRUE);
 }
 
 static inline void ABTI_thread_set_request(ABTI_thread *p_thread, uint32_t req)

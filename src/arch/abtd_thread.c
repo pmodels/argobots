@@ -137,7 +137,8 @@ static inline void ABTDI_thread_terminate(ABTI_xstream *p_local_xstream,
 #endif
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (is_sched) {
-        ABTI_thread_finish_context_sched_to_sched(p_thread->p_sched, p_sched);
+        ABTI_thread_finish_context_sched_to_parent_sched(p_thread->p_sched,
+                                                         p_sched);
     } else {
 #endif
         ABTI_thread_finish_context_thread_to_sched(p_thread, p_sched);
