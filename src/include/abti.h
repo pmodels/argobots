@@ -240,7 +240,6 @@ struct ABTI_sched {
     int num_pools;              /* Number of work unit pools */
     ABTI_thread *p_thread;      /* Associated ULT */
     ABTI_task *p_task;          /* Associated tasklet */
-    ABTD_thread_context *p_ctx; /* Context */
     void *data;                 /* Data for a specific scheduler */
 
     /* Pointers for a scheduler linked list. */

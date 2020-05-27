@@ -791,8 +791,6 @@ int ABT_thread_yield_to(ABT_thread thread)
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Add a new scheduler if the ULT is a scheduler */
     if (p_tar_thread->p_sched != NULL) {
-        p_tar_thread->p_sched->p_ctx =
-            ABTI_xstream_get_top_sched(p_local_xstream)->p_ctx;
         ABTI_xstream_push_sched(p_local_xstream, p_tar_thread->p_sched);
         p_tar_thread->p_sched->state = ABT_SCHED_STATE_RUNNING;
     }
@@ -1669,7 +1667,6 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_local_xstream,
 
     /* Return value */
     p_sched->p_thread = p_newthread;
-    p_sched->p_ctx = &p_newthread->ctx;
 
 fn_exit:
     return abt_errno;

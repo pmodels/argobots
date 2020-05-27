@@ -1445,7 +1445,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Add the new scheduler if the ULT is a scheduler */
     if (p_thread->p_sched != NULL) {
-        p_thread->p_sched->p_ctx = &p_thread->ctx;
         ABTI_xstream_push_sched(p_local_xstream, p_thread->p_sched);
         p_thread->p_sched->state = ABT_SCHED_STATE_RUNNING;
     }
@@ -1592,7 +1591,6 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
         ABTI_sched *current_sched = ABTI_xstream_get_top_sched(p_local_xstream);
         ABTI_thread *p_last_thread = current_sched->p_thread;
 
-        p_task->p_sched->p_ctx = current_sched->p_ctx;
         ABTI_xstream_push_sched(p_local_xstream, p_task->p_sched);
         p_task->p_sched->state = ABT_SCHED_STATE_RUNNING;
         p_task->p_sched->p_thread = p_last_thread;
@@ -1798,7 +1796,6 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         /* If the ES is secondary, we should take the associated ULT of the
          * current main scheduler and keep it in the new scheduler. */
         p_sched->p_thread = p_main_sched->p_thread;
-        p_sched->p_ctx = p_main_sched->p_ctx;
 
         /* The current ULT is pushed to the new scheduler's pool so that when
          * the new scheduler starts (see below), it can be scheduled by the new

@@ -608,7 +608,6 @@ int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->type = def->type;
     p_sched->p_thread = NULL;
     p_sched->p_task = NULL;
-    p_sched->p_ctx = NULL;
     p_sched->p_parent_sched = NULL;
     p_sched->p_child_sched = NULL;
 
