@@ -1801,7 +1801,6 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         /* If the ES is secondary, we should take the associated ULT of the
          * current main scheduler and keep it in the new scheduler. */
         p_sched->p_thread = p_main_sched->p_thread;
-
         /* The current ULT is pushed to the new scheduler's pool so that when
          * the new scheduler starts (see below), it can be scheduled by the new
          * scheduler. When the current ULT resumes its execution, it will free
@@ -1824,6 +1823,9 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         /* Now, we free the current main scheduler. p_main_sched->p_thread must
          * be NULL to avoid freeing it in ABTI_sched_discard_and_free(). */
         p_main_sched->p_thread = NULL;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+        p_sched->p_thread->p_sched = p_sched;
+#endif
         abt_errno =
             ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched);
         ABTI_CHECK_ERROR(abt_errno);

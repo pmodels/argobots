@@ -810,6 +810,9 @@ int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched)
     /* Free the associated work unit */
     if (p_sched->type == ABT_SCHED_TYPE_ULT) {
         if (p_sched->p_thread) {
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+            p_sched->p_thread->p_sched = NULL;
+#endif
             if (p_sched->p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
                 ABTI_thread_free_main_sched(p_local_xstream, p_sched->p_thread);
             } else {
@@ -818,6 +821,9 @@ int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched)
         }
     } else if (p_sched->type == ABT_SCHED_TYPE_TASK) {
         if (p_sched->p_task) {
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+            p_sched->p_task->p_sched = NULL;
+#endif
             ABTI_task_free(p_local_xstream, p_sched->p_task);
         }
     }
