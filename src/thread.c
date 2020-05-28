@@ -1681,7 +1681,6 @@ int ABTI_thread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                              ABTI_sched *p_sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_newthread;
     ABTI_thread_attr attr;
 
     /* If p_sched is reused, ABTI_thread_revive() can be used. */
@@ -1702,7 +1701,7 @@ int ABTI_thread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                                     (void (*)(void *))p_sched->run,
                                     (void *)ABTI_sched_get_handle(p_sched),
                                     &attr, ABTI_THREAD_TYPE_USER, p_sched, 1,
-                                    NULL, ABT_TRUE, &p_newthread);
+                                    NULL, ABT_TRUE, &p_sched->p_thread);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:

@@ -72,17 +72,8 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
             case ABT_UNIT_TYPE_TASK:
                 rank = p_local_xstream->rank;
                 p_task = p_local_xstream->p_task;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-                if (p_task->p_sched) {
-                    prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                    tid = p_task->p_sched->id;
-                } else {
-#endif
-                    prefix_fmt = "<T%" PRIu64 ":E%d> %s";
-                    tid = p_task ? ABTI_task_get_id(p_task) : 0;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-                }
-#endif
+                prefix_fmt = "<T%" PRIu64 ":E%d> %s";
+                tid = p_task ? ABTI_task_get_id(p_task) : 0;
                 break;
 
             case ABT_UNIT_TYPE_EXT:

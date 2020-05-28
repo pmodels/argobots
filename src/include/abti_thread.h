@@ -202,8 +202,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
         LOG_EVENT("[U%" PRIu64 "] run ULT (dynamic promotion)\n",
                   ABTI_thread_get_id(p_new));
         p_local_xstream = *pp_local_xstream;
-        p_local_xstream->p_task =
-            NULL; /* A tasklet scheduler can invoke ULT. */
+        ABTI_ASSERT(p_local_xstream->p_task == NULL);
         p_local_xstream->p_thread = p_new;
         ABTD_thread_context_make_and_call(&p_old->ctx, p_new->ctx.f_thread,
                                           p_new->ctx.p_arg, p_stacktop);

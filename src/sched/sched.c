@@ -608,7 +608,6 @@ int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->num_pools = num_pools;
     p_sched->type = def->type;
     p_sched->p_thread = NULL;
-    p_sched->p_task = NULL;
     p_sched->p_parent_sched = NULL;
     p_sched->p_child_sched = NULL;
 
@@ -820,11 +819,12 @@ int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched)
             }
         }
     } else if (p_sched->type == ABT_SCHED_TYPE_TASK) {
-        if (p_sched->p_task) {
+        /* The underlying implementation is ULT. */
+        if (p_sched->p_thread) {
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            p_sched->p_task->p_sched = NULL;
+            p_sched->p_thread->p_sched = NULL;
 #endif
-            ABTI_task_free(p_local_xstream, p_sched->p_task);
+            ABTI_thread_free(p_local_xstream, p_sched->p_thread);
         }
     }
 

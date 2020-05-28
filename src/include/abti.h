@@ -239,7 +239,6 @@ struct ABTI_sched {
     ABT_pool *pools;            /* Work unit pools */
     int num_pools;              /* Number of work unit pools */
     ABTI_thread *p_thread;      /* Associated ULT */
-    ABTI_task *p_task;          /* Associated tasklet */
     void *data;                 /* Data for a specific scheduler */
 
     /* Pointers for a scheduler linked list. */
@@ -362,14 +361,11 @@ struct ABTI_task {
     ABTD_atomic_uint32 request; /* Request */
     void (*f_task)(void *);     /* Task function */
     void *p_arg;                /* Task arguments */
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_sched *p_sched; /* Scheduler */
-#endif
-    ABTI_pool *p_pool;       /* Associated pool */
-    ABT_unit unit;           /* Unit enclosing this task */
-    ABTI_unit unit_def;      /* Internal unit definition */
-    uint32_t refcount;       /* Reference count */
-    ABTI_ktable *p_keytable; /* Tasklet-specific data */
+    ABTI_pool *p_pool;          /* Associated pool */
+    ABT_unit unit;              /* Unit enclosing this task */
+    ABTI_unit unit_def;         /* Internal unit definition */
+    uint32_t refcount;          /* Reference count */
+    ABTI_ktable *p_keytable;    /* Tasklet-specific data */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABT_bool migratable; /* Migratability */
 #endif
@@ -593,8 +589,6 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
                                        ABTI_thread_htable *p_htable);
 
 /* Tasklet */
-int ABTI_task_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
-                           ABTI_sched *p_sched);
 void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_task *p_task);
 void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent);
 void ABTI_task_reset_id(void);

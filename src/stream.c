@@ -1445,14 +1445,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
     }
 #endif
 
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    /* Add the new scheduler if the ULT is a scheduler */
-    if (p_thread->p_sched != NULL) {
-        ABTI_xstream_push_sched(p_local_xstream, p_thread->p_sched);
-        p_thread->p_sched->state = ABT_SCHED_STATE_RUNNING;
-    }
-#endif
-
     /* Change the last ES */
     p_thread->p_last_xstream = p_local_xstream;
 
@@ -1464,6 +1456,14 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
               ABTI_thread_get_id(p_thread), p_local_xstream->rank);
 
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_local_xstream);
+
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+    /* Add the new scheduler if the ULT is a scheduler */
+    if (p_thread->p_sched != NULL) {
+        ABTI_xstream_push_sched(p_local_xstream, p_thread->p_sched);
+        p_thread->p_sched->state = ABT_SCHED_STATE_RUNNING;
+    }
+#endif
     p_thread = ABTI_thread_context_switch_to_child(pp_local_xstream,
                                                    p_sched->p_thread, p_thread);
     /* The previous ULT (p_thread) may not be the same as one to which the
@@ -1565,63 +1565,24 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
     /* Set the associated ES */
     p_task->p_xstream = p_local_xstream;
 
-#ifdef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     /* Execute the task function */
     LOG_EVENT("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
               p_local_xstream->rank);
 
-    ABTI_task *p_sched_task = p_local_xstream->p_task;
     ABTI_thread *p_sched_thread = p_local_xstream->p_thread;
     p_local_xstream->p_task = p_task;
     p_local_xstream->p_thread = NULL;
-
-    p_task->f_task(p_task->p_arg);
-
-    /* Set the current running scheduler's task/thread */
-    p_local_xstream->p_task = p_sched_task;
-    p_local_xstream->p_thread = p_sched_thread;
-#else
-    /* Add a new scheduler if the task is a scheduler */
-    if (p_task->p_sched != NULL) {
-        ABTI_sched *current_sched = ABTI_xstream_get_top_sched(p_local_xstream);
-        ABTI_thread *p_last_thread = current_sched->p_thread;
-
-        ABTI_xstream_push_sched(p_local_xstream, p_task->p_sched);
-        p_task->p_sched->state = ABT_SCHED_STATE_RUNNING;
-        p_task->p_sched->p_thread = p_last_thread;
-        LOG_EVENT("[S%" PRIu64 ":E%d] stacked sched start\n",
-                  p_task->p_sched->id, p_local_xstream->rank);
-    }
 
     /* Execute the task function */
     LOG_EVENT("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
               p_local_xstream->rank);
-
-    /* Set the current running tasklet */
-    ABTI_task *p_sched_task = p_local_xstream->p_task;
-    ABTI_thread *p_sched_thread = p_local_xstream->p_thread;
-    p_local_xstream->p_task = p_task;
-    p_local_xstream->p_thread = NULL;
-
     p_task->f_task(p_task->p_arg);
-
-    /* Set the current running scheduler's task/thread */
-    p_local_xstream->p_task = p_sched_task;
-    p_local_xstream->p_thread = p_sched_thread;
-
-    /* Delete the last scheduler if the tasklet was a scheduler */
-    if (p_task->p_sched != NULL) {
-        ABTI_xstream_pop_sched(p_local_xstream);
-        /* If a migration is trying to read the state of the scheduler, we need
-         * to let it finish before freeing the scheduler */
-        ABTI_spinlock_release(&p_local_xstream->sched_lock);
-        LOG_EVENT("[S%" PRIu64 ":E%d] stacked sched end\n", p_task->p_sched->id,
-                  p_local_xstream->rank);
-    }
-#endif
-
     LOG_EVENT("[T%" PRIu64 ":E%d] stopped\n", ABTI_task_get_id(p_task),
               p_local_xstream->rank);
+
+    /* Set the current running scheduler's thread */
+    p_local_xstream->p_task = NULL;
+    p_local_xstream->p_thread = p_sched_thread;
 
     /* Terminate the tasklet */
     ABTI_xstream_terminate_task(p_local_xstream, p_task);
