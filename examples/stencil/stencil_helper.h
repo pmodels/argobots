@@ -106,13 +106,11 @@ static int read_args(int argc, char **argv, int *p_num_blocksX,
 static void init_values(double *values, int num_blocksX, int num_blocksY,
                         int blocksize)
 {
-    const int width = num_blocksX * blocksize + 2;
-    const int height = num_blocksY * blocksize + 2;
     const double coeff = 1.0 / RAND_MAX;
-    srand(width * height);
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            values[x + y * width] = rand() * coeff;
+    srand(WIDTH * HEIGHT);
+    for (int y = 0; y < HEIGHT; y++) {
+        for (int x = 0; x < WIDTH; x++) {
+            values[x + y * WIDTH] = rand() * coeff;
         }
     }
 }
@@ -120,21 +118,20 @@ static void init_values(double *values, int num_blocksX, int num_blocksY,
 static int validate_values(const double *values, int num_blocksX,
                            int num_blocksY, int blocksize, int num_iters)
 {
-    const int width = num_blocksX * blocksize + 2;
-    const int height = num_blocksY * blocksize + 2;
+    const int width = num_blocksX * blocksize;
+    const int height = num_blocksY * blocksize;
     /* Compute the answer in a sequential manner. */
-    double *ans_old = (double *)malloc(sizeof(double) * width * height);
-    double *ans_new = (double *)malloc(sizeof(double) * width * height);
+    double *ans_old = (double *)malloc(sizeof(double) * WIDTH * HEIGHT);
+    double *ans_new = (double *)malloc(sizeof(double) * WIDTH * HEIGHT);
     init_values(ans_old, num_blocksX, num_blocksY, blocksize);
     for (int t = 0; t < num_iters; t++) {
-        for (int y = 1; y < height - 1; y++) {
-            for (int x = 1; x < width - 1; x++) {
-                ans_new[x + y * width] = ans_old[x + y * width] * (1.0 / 2.0) +
-                                         (ans_old[(x + 1) + y * width] +
-                                          ans_old[(x - 1) + y * width] +
-                                          ans_old[x + (y + 1) * width] +
-                                          ans_old[x + (y - 1) * width]) *
-                                             (1.0 / 8.0);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                ans_new[INDEX(x, y)] =
+                    ans_old[INDEX(x, y)] * (1.0 / 2.0) +
+                    (ans_old[INDEX(x + 1, y)] + ans_old[INDEX(x - 1, y)] +
+                     ans_old[INDEX(x, y + 1)] + ans_old[INDEX(x, y - 1)]) *
+                        (1.0 / 8.0);
             }
         }
         double *ans_tmp = ans_new;
@@ -145,8 +142,8 @@ static int validate_values(const double *values, int num_blocksX,
     int num_failures = 0;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            double value = values[x + y * width];
-            double ans = ans_old[x + y * width];
+            double value = values[INDEX(x, y)];
+            double ans = ans_old[INDEX(x, y)];
             double diff = value - ans;
             if (diff > ERROR_TRESHOLD || diff < -ERROR_TRESHOLD) {
                 printf("value[%d, %d] (= %f) != ans[%d, %d] (= %f)\n", x, y,
