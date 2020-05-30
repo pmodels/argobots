@@ -13,7 +13,7 @@
 
 #define WIDTH (num_blocksX * blocksize + 2)
 #define HEIGHT (num_blocksY * blocksize + 2)
-#define INDEX(_X, _Y) ((_X) + 1 + WIDTH * (_Y + 1))
+#define INDEX(_X, _Y) ((_X) + 1 + WIDTH * ((_Y) + 1))
 
 #define DEFAULT_NUM_BLOCKSX 8
 #define DEFAULT_NUM_BLOCKSY 8
