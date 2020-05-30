@@ -119,7 +119,7 @@ int main(int argc, char **argv)
         sizeof(kernel_arg_t) * num_blocksX * num_blocksY);
 
     /* Initialize grid values. */
-    init_values(values_old, num_blocksX, num_blocksY, blocksize);
+    init_values(values_old, values_new, num_blocksX, num_blocksY, blocksize);
 
     /* Initialize Argobots and atomic functionality. */
     ABT_init(argc, argv);

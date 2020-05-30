@@ -21,10 +21,6 @@
 #include <abt.h>
 #include "stencil_helper.h"
 
-#define WIDTH (num_blocksX * blocksize + 2)
-#define HEIGHT (num_blocksY * blocksize + 2)
-#define INDEX(_X, _Y) ((_X) + 1 + WIDTH * (_Y + 1))
-
 /* Global variables. */
 int num_blocksX, num_blocksY;
 int blocksize;
@@ -79,7 +75,7 @@ int main(int argc, char **argv)
         sizeof(kernel_arg_t) * num_blocksX * num_blocksY);
 
     /* Initialize grids values. */
-    init_values(values_old, num_blocksX, num_blocksY, blocksize);
+    init_values(values_old, values_new, num_blocksX, num_blocksY, blocksize);
 
     /* Initialize Argobots. */
     ABT_init(argc, argv);

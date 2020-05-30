@@ -148,7 +148,7 @@ int main(int argc, char **argv)
     double *values_new = (double *)malloc(sizeof(double) * WIDTH * HEIGHT);
 
     /* Initialize grid values. */
-    init_values(values_old, num_blocksX, num_blocksY, blocksize);
+    init_values(values_old, values_new, num_blocksX, num_blocksY, blocksize);
 
     /* Initialize Argobots. */
     ABT_init(argc, argv);

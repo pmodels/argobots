@@ -13,7 +13,7 @@
 
 #define WIDTH (num_blocksX * blocksize + 2)
 #define HEIGHT (num_blocksY * blocksize + 2)
-#define INDEX(_X, _Y) ((_X) + 1 + WIDTH * (_Y + 1))
+#define INDEX(_X, _Y) ((_X) + 1 + WIDTH * ((_Y) + 1))
 
 #define DEFAULT_NUM_BLOCKSX 8
 #define DEFAULT_NUM_BLOCKSY 8
@@ -28,8 +28,8 @@ static int read_args(int argc, char **argv, int *p_num_blocksX,
                      int *p_num_blocksY, int *p_blocksize, int *p_num_iters,
                      int *p_num_xstreams, int *p_validate);
 /* Initialize grid values. */
-static void init_values(double *values, int num_blocksX, int num_blocksY,
-                        int blocksize);
+static void init_values(double *values1, double *values2, int num_blocksX,
+                        int num_blocksY, int blocksize);
 /* Validate results.  Return non-zero value if failed.*/
 static int validate_values(const double *values, int num_blocksX,
                            int num_blocksY, int blocksize, int num_iters);
@@ -103,14 +103,17 @@ static int read_args(int argc, char **argv, int *p_num_blocksX,
     return 0;
 }
 
-static void init_values(double *values, int num_blocksX, int num_blocksY,
-                        int blocksize)
+static void init_values(double *values1, double *values2, int num_blocksX,
+                        int num_blocksY, int blocksize)
 {
     const double coeff = 1.0 / RAND_MAX;
     srand(WIDTH * HEIGHT);
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
-            values[x + y * WIDTH] = rand() * coeff;
+            values1[x + y * WIDTH] = rand() * coeff;
+            /* The boundary of values2 must be initialized to the same as
+             * values1. */
+            values2[x + y * WIDTH] = values1[x + y * WIDTH];
         }
     }
 }
@@ -123,7 +126,7 @@ static int validate_values(const double *values, int num_blocksX,
     /* Compute the answer in a sequential manner. */
     double *ans_old = (double *)malloc(sizeof(double) * WIDTH * HEIGHT);
     double *ans_new = (double *)malloc(sizeof(double) * WIDTH * HEIGHT);
-    init_values(ans_old, num_blocksX, num_blocksY, blocksize);
+    init_values(ans_old, ans_new, num_blocksX, num_blocksY, blocksize);
     for (int t = 0; t < num_iters; t++) {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {

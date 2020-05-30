@@ -1667,12 +1667,16 @@ int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     p_xstream->p_main_sched = p_sched;
     p_xstream->p_sched_top = p_sched;
 
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
 fn_exit:
     return abt_errno;
 
 fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#else
+    return abt_errno;
+#endif
 }
 
 int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
