@@ -10,7 +10,6 @@
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 
-void ABTI_log_print(FILE *fh, const char *format, ...);
 void ABTI_log_debug(FILE *fh, const char *format, ...);
 void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
                         ABTI_native_thread_id producer_id);

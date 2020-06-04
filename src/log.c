@@ -9,18 +9,6 @@
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 
-void ABTI_log_print(FILE *fh, const char *format, ...)
-{
-    if (gp_ABTI_global->use_logging == ABT_FALSE)
-        return;
-
-    va_list list;
-    va_start(list, format);
-    vfprintf(fh, format, list);
-    va_end(list);
-    fflush(fh);
-}
-
 void ABTI_log_debug(FILE *fh, const char *format, ...)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE)
