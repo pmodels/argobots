@@ -125,7 +125,7 @@ static inline ABT_bool ABTI_thread_is_dynamic_promoted(ABTI_thread *p_thread)
 
 static inline void ABTI_thread_dynamic_promote_thread(ABTI_thread *p_thread)
 {
-    LOG_EVENT("[U%" PRIu64 "] dynamic-promote ULT\n",
+    LOG_DEBUG("[U%" PRIu64 "] dynamic-promote ULT\n",
               ABTI_thread_get_id(p_thread));
     void *p_stack = p_thread->attr.p_stack;
     size_t stacksize = p_thread->attr.stacksize;
@@ -199,7 +199,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
     if (!ABTI_thread_is_dynamic_promoted(p_new)) {
         void *p_stacktop =
             ((char *)p_new->attr.p_stack) + p_new->attr.stacksize;
-        LOG_EVENT("[U%" PRIu64 "] run ULT (dynamic promotion)\n",
+        LOG_DEBUG("[U%" PRIu64 "] run ULT (dynamic promotion)\n",
                   ABTI_thread_get_id(p_new));
         p_local_xstream = *pp_local_xstream;
         ABTI_ASSERT(p_local_xstream->p_task == NULL);
@@ -339,7 +339,7 @@ static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
 {
     ABTI_sched *p_sched;
 
-    LOG_EVENT("[U%" PRIu64 ":E%d] yield\n", ABTI_thread_get_id(p_thread),
+    LOG_DEBUG("[U%" PRIu64 ":E%d] yield\n", ABTI_thread_get_id(p_thread),
               p_thread->p_last_xstream->rank);
 
     /* Change the state of current running thread */
@@ -351,7 +351,7 @@ static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
                                          p_sched->p_thread);
 
     /* Back to the original thread */
-    LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",
+    LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 }
 

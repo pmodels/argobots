@@ -96,7 +96,7 @@ static inline ABTI_pool *ABTI_xstream_get_main_pool(ABTI_xstream *p_xstream)
 static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
                                                  ABTI_thread *p_thread)
 {
-    LOG_EVENT("[U%" PRIu64 ":E%d] terminated\n", ABTI_thread_get_id(p_thread),
+    LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n", ABTI_thread_get_id(p_thread),
               p_thread->p_last_xstream->rank);
     if (p_thread->refcount == 0) {
         ABTD_atomic_release_store_int(&p_thread->state,
@@ -122,7 +122,7 @@ static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
 static inline void ABTI_xstream_terminate_task(ABTI_xstream *p_local_xstream,
                                                ABTI_task *p_task)
 {
-    LOG_EVENT("[T%" PRIu64 ":E%d] terminated\n", ABTI_task_get_id(p_task),
+    LOG_DEBUG("[T%" PRIu64 ":E%d] terminated\n", ABTI_task_get_id(p_task),
               p_task->p_xstream->rank);
     if (p_task->refcount == 0) {
         ABTD_atomic_release_store_int(&p_task->state,

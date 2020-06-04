@@ -23,20 +23,20 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit);
 #define LOG_DEBUG(fmt, ...)                                                    \
     ABTI_log_debug(stderr, __FILE__, __LINE__, fmt, __VA_ARGS__)
 
-#define LOG_EVENT_POOL_PUSH(p_pool, unit, produer_id)                          \
+#define LOG_DEBUG_POOL_PUSH(p_pool, unit, produer_id)                          \
     ABTI_log_pool_push(p_pool, unit, produer_id)
-#define LOG_EVENT_POOL_REMOVE(p_pool, unit, consumer_id)                       \
+#define LOG_DEBUG_POOL_REMOVE(p_pool, unit, consumer_id)                       \
     ABTI_log_pool_remove(p_pool, unit, consumer_id)
-#define LOG_EVENT_POOL_POP(p_pool, unit) ABTI_log_pool_pop(p_pool, unit)
+#define LOG_DEBUG_POOL_POP(p_pool, unit) ABTI_log_pool_pop(p_pool, unit)
 
 #else
 
 #define LOG_EVENT(fmt, ...)
 #define LOG_DEBUG(fmt, ...)
 
-#define LOG_EVENT_POOL_PUSH(p_pool, unit, produer_id)
-#define LOG_EVENT_POOL_REMOVE(p_pool, unit, consumer_id)
-#define LOG_EVENT_POOL_POP(p_pool, unit)
+#define LOG_DEBUG_POOL_PUSH(p_pool, unit, produer_id)
+#define LOG_DEBUG_POOL_REMOVE(p_pool, unit, consumer_id)
+#define LOG_DEBUG_POOL_POP(p_pool, unit)
 
 #endif /* ABT_CONFIG_USE_DEBUG_LOG */
 

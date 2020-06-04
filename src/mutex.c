@@ -180,12 +180,12 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
     if (type == ABT_UNIT_TYPE_THREAD) {
-        LOG_EVENT("%p: lock_low - try\n", p_mutex);
+        LOG_DEBUG("%p: lock_low - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
             ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
             p_local_xstream = *pp_local_xstream;
         }
-        LOG_EVENT("%p: lock_low - acquired\n", p_mutex);
+        LOG_DEBUG("%p: lock_low - acquired\n", p_mutex);
     } else {
         ABTI_mutex_spinlock(p_mutex);
     }
@@ -197,7 +197,7 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
     if (type == ABT_UNIT_TYPE_THREAD) {
-        LOG_EVENT("%p: lock_low - try\n", p_mutex);
+        LOG_DEBUG("%p: lock_low - try\n", p_mutex);
         int c;
 
         /* If other ULTs associated with the same ES are waiting on the
@@ -248,7 +248,7 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
                 c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
             }
         }
-        LOG_EVENT("%p: lock_low - acquired\n", p_mutex);
+        LOG_DEBUG("%p: lock_low - acquired\n", p_mutex);
     } else {
         ABTI_mutex_spinlock(p_mutex);
     }
@@ -475,7 +475,7 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
 
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
-    LOG_EVENT("%p: unlock_se\n", p_mutex);
+    LOG_DEBUG("%p: unlock_se\n", p_mutex);
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     if (ABTI_self_get_type(p_local_xstream) == ABT_UNIT_TYPE_THREAD)
@@ -494,7 +494,7 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
     /* If p_mutex->val is 1 before decreasing it, it means there is no any
      * waiter in the mutex queue.  We can just return. */
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) == 1) {
-        LOG_EVENT("%p: unlock_se\n", p_mutex);
+        LOG_DEBUG("%p: unlock_se\n", p_mutex);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (ABTI_self_get_type(*pp_local_xstream) == ABT_UNIT_TYPE_THREAD)
             ABTI_thread_yield(pp_local_xstream, (*pp_local_xstream)->p_thread);
@@ -517,7 +517,7 @@ check_cond:
     /* Check whether the mutex handover is possible */
     if (p_queue->num_handovers >= p_mutex->attr.max_handovers) {
         ABTD_atomic_release_store_uint32(&p_mutex->val, 0); /* Unlock */
-        LOG_EVENT("%p: unlock_se\n", p_mutex);
+        LOG_DEBUG("%p: unlock_se\n", p_mutex);
         ABTI_mutex_wake_de(*pp_local_xstream, p_mutex);
         p_queue->num_handovers = 0;
         ABTI_thread_yield(pp_local_xstream, p_thread);
@@ -528,7 +528,7 @@ check_cond:
     if (p_queue->num_threads <= 1) {
         if (p_htable->h_list != NULL) {
             ABTD_atomic_release_store_uint32(&p_mutex->val, 0); /* Unlock */
-            LOG_EVENT("%p: unlock_se\n", p_mutex);
+            LOG_DEBUG("%p: unlock_se\n", p_mutex);
             ABTI_mutex_wake_de(*pp_local_xstream, p_mutex);
             ABTI_thread_yield(pp_local_xstream, p_thread);
             return abt_errno;
@@ -545,7 +545,7 @@ check_cond:
      * we hand over the mutex to low-priority ULTs. */
     if (p_queue->low_num_threads <= 1) {
         ABTD_atomic_release_store_uint32(&p_mutex->val, 0); /* Unlock */
-        LOG_EVENT("%p: unlock_se\n", p_mutex);
+        LOG_DEBUG("%p: unlock_se\n", p_mutex);
         ABTI_mutex_wake_de(*pp_local_xstream, p_mutex);
         ABTI_thread_yield(pp_local_xstream, p_thread);
         return abt_errno;
@@ -564,7 +564,7 @@ handover:
     p_mutex->p_handover = p_next;
     p_mutex->p_giver = p_thread;
 
-    LOG_EVENT("%p: handover -> U%" PRIu64 "\n", p_mutex,
+    LOG_DEBUG("%p: handover -> U%" PRIu64 "\n", p_mutex,
               ABTI_thread_get_id(p_next));
 
     /* yield_to the next ULT */
@@ -797,14 +797,14 @@ void ABTI_mutex_wake_de(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
 
         /* Nothing to wake up */
         ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
-        LOG_EVENT("%p: nothing to wake up\n", p_mutex);
+        LOG_DEBUG("%p: nothing to wake up\n", p_mutex);
         break;
 
     done:
         ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
 
         /* Push p_thread to the scheduler's pool */
-        LOG_EVENT("%p: wake up U%" PRIu64 ":E%d\n", p_mutex,
+        LOG_DEBUG("%p: wake up U%" PRIu64 ":E%d\n", p_mutex,
                   ABTI_thread_get_id(p_thread),
                   ABTI_thread_get_xstream_rank(p_thread));
         ABTI_thread_set_ready(p_local_xstream, p_thread);
