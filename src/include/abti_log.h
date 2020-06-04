@@ -11,17 +11,14 @@
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 
 void ABTI_log_print(FILE *fh, const char *format, ...);
-void ABTI_log_event(FILE *fh, const char *format, ...);
-void ABTI_log_debug(FILE *fh, char *path, int line, const char *format, ...);
+void ABTI_log_debug(FILE *fh, const char *format, ...);
 void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
                         ABTI_native_thread_id producer_id);
 void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
                           ABTI_native_thread_id consumer_id);
 void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit);
 
-#define LOG_EVENT(fmt, ...) ABTI_log_event(stderr, fmt, __VA_ARGS__)
-#define LOG_DEBUG(fmt, ...)                                                    \
-    ABTI_log_debug(stderr, __FILE__, __LINE__, fmt, __VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) ABTI_log_debug(stderr, fmt, __VA_ARGS__)
 
 #define LOG_DEBUG_POOL_PUSH(p_pool, unit, produer_id)                          \
     ABTI_log_pool_push(p_pool, unit, produer_id)
@@ -31,7 +28,6 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit);
 
 #else
 
-#define LOG_EVENT(fmt, ...)
 #define LOG_DEBUG(fmt, ...)
 
 #define LOG_DEBUG_POOL_PUSH(p_pool, unit, produer_id)

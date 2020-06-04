@@ -21,7 +21,7 @@ void ABTI_log_print(FILE *fh, const char *format, ...)
     fflush(fh);
 }
 
-void ABTI_log_event(FILE *fh, const char *format, ...)
+void ABTI_log_debug(FILE *fh, const char *format, ...)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE)
         return;
@@ -99,29 +99,6 @@ void ABTI_log_event(FILE *fh, const char *format, ...)
         newfmt = (char *)ABTU_malloc(newfmt_len + 1);
         sprintf(newfmt, prefix_fmt, prefix, format);
     }
-
-    va_list list;
-    va_start(list, format);
-    vfprintf(fh, newfmt, list);
-    va_end(list);
-    fflush(fh);
-
-    ABTU_free(newfmt);
-}
-
-void ABTI_log_debug(FILE *fh, char *path, int line, const char *format, ...)
-{
-    if (gp_ABTI_global->use_debug == ABT_FALSE)
-        return;
-
-    int line_len;
-    size_t newfmt_len;
-    char *newfmt;
-
-    line_len = ABTU_get_int_len(line);
-    newfmt_len = strlen(path) + line_len + 4 + strlen(format);
-    newfmt = (char *)ABTU_malloc(newfmt_len + 1);
-    sprintf(newfmt, "[%s:%d] %s", path, line, format);
 
     va_list list;
     va_start(list, format);
