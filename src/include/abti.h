@@ -139,6 +139,9 @@ typedef struct ABTI_unit_id_opaque *ABTI_unit_id;
 typedef struct ABTI_spinlock ABTI_spinlock;
 #include "abti_spinlock.h"
 
+/* Basic data structure */
+#include "abti_sync_lifo.h"
+
 /* Definitions */
 struct ABTI_mutex_attr {
     uint32_t attrs;         /* bit-or'ed attributes */
