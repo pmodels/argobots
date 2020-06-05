@@ -119,11 +119,6 @@ typedef struct ABTI_eventual ABTI_eventual;
 typedef struct ABTI_future ABTI_future;
 typedef struct ABTI_barrier ABTI_barrier;
 typedef struct ABTI_timer ABTI_timer;
-#ifdef ABT_CONFIG_USE_MEM_POOL
-typedef struct ABTI_stack_header ABTI_stack_header;
-typedef struct ABTI_page_header ABTI_page_header;
-typedef struct ABTI_sp_header ABTI_sp_header;
-#endif
 /* ID associated with native thread (e.g, Pthreads), which can distinguish
  * execution streams and external threads */
 struct ABTI_native_thread_id_opaque;
@@ -184,11 +179,10 @@ struct ABTI_global {
     uint32_t os_page_size;        /* OS page size */
     uint32_t huge_page_size;      /* Huge page size */
 #ifdef ABT_CONFIG_USE_MEM_POOL
-    ABTI_spinlock mem_task_lock; /* Spinlock protecting p_mem_task */
-    uint32_t mem_page_size;      /* Page size for memory allocation */
-    uint32_t mem_sp_size;        /* Stack page size */
-    uint32_t mem_max_stacks;     /* Max. # of stacks kept in each ES */
-    int mem_lp_alloc;            /* How to allocate large pages */
+    uint32_t mem_page_size;  /* Page size for memory allocation */
+    uint32_t mem_sp_size;    /* Stack page size */
+    uint32_t mem_max_stacks; /* Max. # of stacks kept in each ES */
+    int mem_lp_alloc;        /* How to allocate large pages */
 
     ABTI_mem_pool_global_pool mem_pool_stack; /* Pool of stack (default size) */
     ABTI_mem_pool_global_pool mem_pool_task_desc; /* Pool of task descriptors */
@@ -199,10 +193,6 @@ struct ABTI_global {
     ABTI_spinlock mem_pool_task_desc_lock;
     ABTI_mem_pool_local_pool mem_pool_task_desc_ext;
 #endif
-
-    ABTI_stack_header *p_mem_stack; /* List of ULT stack */
-    ABTI_page_header *p_mem_task;   /* List of task block pages */
-    ABTI_sp_header *p_mem_sph;      /* List of stack pages */
 #endif
 
     ABT_bool print_config; /* Whether to print config on ABT_init */
@@ -239,11 +229,6 @@ struct ABTI_xstream {
 #ifdef ABT_CONFIG_USE_MEM_POOL
     ABTI_mem_pool_local_pool mem_pool_stack;
     ABTI_mem_pool_local_pool mem_pool_task_desc;
-
-    uint32_t num_stacks;               /* Current # of stacks */
-    ABTI_stack_header *p_mem_stack;    /* Free stack list */
-    ABTI_page_header *p_mem_task_head; /* Head of page list */
-    ABTI_page_header *p_mem_task_tail; /* Tail of page list */
 #endif
 };
 

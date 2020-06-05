@@ -8,16 +8,7 @@
 
 /* Memory allocation */
 
-/* Header size should be a multiple of cache line size. It is constant. */
-#define ABTI_MEM_SH_SIZE                                                       \
-    (((sizeof(ABTI_thread) + sizeof(ABTI_stack_header) +                       \
-       ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) /                                 \
-      ABT_CONFIG_STATIC_CACHELINE_SIZE) *                                      \
-     ABT_CONFIG_STATIC_CACHELINE_SIZE)
-
 #ifdef ABT_CONFIG_USE_MEM_POOL
-typedef struct ABTI_blk_header ABTI_blk_header;
-
 enum {
     ABTI_MEM_LP_MALLOC = 0,
     ABTI_MEM_LP_MMAP_RP,
@@ -26,73 +17,11 @@ enum {
     ABTI_MEM_LP_THP
 };
 
-struct ABTI_sp_header {
-    uint32_t num_total_stacks;           /* Number of total stacks */
-    ABTD_atomic_uint32 num_empty_stacks; /* Number of empty stacks */
-    size_t stacksize;                    /* Stack size */
-    uint64_t id;                         /* ID */
-    ABTU_MEM_LARGEPAGE_TYPE lp_type;     /* Large page type */
-    void *p_sp;             /* Pointer to the allocated stack page */
-    ABTI_sp_header *p_next; /* Next stack page header */
-};
-
-struct ABTI_stack_header {
-    ABTI_stack_header *p_next;
-    ABTI_sp_header *p_sph;
-    void *p_stack;
-};
-
-struct ABTI_page_header {
-    uint32_t blk_size;                  /* Block size in bytes */
-    uint32_t num_total_blks;            /* Number of total blocks */
-    uint32_t num_empty_blks;            /* Number of empty blocks */
-    ABTD_atomic_uint32 num_remote_free; /* Number of remote free blocks */
-    ABTI_blk_header *p_head;            /* First empty block */
-    ABTI_blk_header *p_free;            /* For remote free */
-    ABTI_native_thread_id owner_id;     /* Owner's ID */
-    ABTI_page_header *p_prev;           /* Prev page header */
-    ABTI_page_header *p_next;           /* Next page header */
-    ABTU_MEM_LARGEPAGE_TYPE lp_type;    /* Large page type */
-};
-
-struct ABTI_blk_header {
-    ABTI_page_header *p_ph;  /* Page header */
-    ABTI_blk_header *p_next; /* Next block header */
-};
-
 void ABTI_mem_init(ABTI_global *p_global);
 void ABTI_mem_init_local(ABTI_xstream *p_local_xstream);
 void ABTI_mem_finalize(ABTI_global *p_global);
 void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream);
 int ABTI_mem_check_lp_alloc(int lp_alloc);
-
-char *ABTI_mem_take_global_stack(ABTI_xstream *p_local_xstream);
-void ABTI_mem_add_stack_to_global(ABTI_stack_header *p_sh);
-ABTI_page_header *ABTI_mem_alloc_page(ABTI_xstream *p_local_xstream,
-                                      size_t blk_size);
-void ABTI_mem_free_page(ABTI_xstream *p_local_xstream, ABTI_page_header *p_ph);
-void ABTI_mem_take_free(ABTI_page_header *p_ph);
-void ABTI_mem_free_remote(ABTI_page_header *p_ph, ABTI_blk_header *p_bh);
-ABTI_page_header *ABTI_mem_take_global_page(ABTI_xstream *p_local_xstream);
-
-char *ABTI_mem_alloc_sp(ABTI_xstream *p_local_xstream, size_t stacksize);
-
-/******************************************************************************
- * Unless the stack is given by the user, we allocate a stack first and then
- * use the beginning of the allocated stack for allocating ABTI_thread and
- * ABTI_stack_header.  This way we need only one memory allocation call (e.g.,
- * ABTU_malloc).  The memory layout of the allocated stack will look like
- *  |-------------------|
- *  | ABTI_thread       |
- *  |-------------------|
- *  | ABTI_stack_header |
- *  |-------------------|
- *  | actual stack area |
- *  |-------------------|
- * Thus, the actual size of stack becomes
- * (requested stack size) - sizeof(ABTI_thread) - sizeof(ABTI_stack_header)
- * and it is set in the attribute field of ABTI_thread.
- *****************************************************************************/
 
 /* Inline functions */
 static inline void
