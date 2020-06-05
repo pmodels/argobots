@@ -184,11 +184,22 @@ struct ABTI_global {
     uint32_t os_page_size;        /* OS page size */
     uint32_t huge_page_size;      /* Huge page size */
 #ifdef ABT_CONFIG_USE_MEM_POOL
-    ABTI_spinlock mem_task_lock;    /* Spinlock protecting p_mem_task */
-    uint32_t mem_page_size;         /* Page size for memory allocation */
-    uint32_t mem_sp_size;           /* Stack page size */
-    uint32_t mem_max_stacks;        /* Max. # of stacks kept in each ES */
-    int mem_lp_alloc;               /* How to allocate large pages */
+    ABTI_spinlock mem_task_lock; /* Spinlock protecting p_mem_task */
+    uint32_t mem_page_size;      /* Page size for memory allocation */
+    uint32_t mem_sp_size;        /* Stack page size */
+    uint32_t mem_max_stacks;     /* Max. # of stacks kept in each ES */
+    int mem_lp_alloc;            /* How to allocate large pages */
+
+    ABTI_mem_pool_global_pool mem_pool_stack; /* Pool of stack (default size) */
+    ABTI_mem_pool_global_pool mem_pool_task_desc; /* Pool of task descriptors */
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* They are used for external threads. */
+    ABTI_spinlock mem_pool_stack_lock;
+    ABTI_mem_pool_local_pool mem_pool_stack_ext;
+    ABTI_spinlock mem_pool_task_desc_lock;
+    ABTI_mem_pool_local_pool mem_pool_task_desc_ext;
+#endif
+
     ABTI_stack_header *p_mem_stack; /* List of ULT stack */
     ABTI_page_header *p_mem_task;   /* List of task block pages */
     ABTI_sp_header *p_mem_sph;      /* List of stack pages */
@@ -226,6 +237,9 @@ struct ABTI_xstream {
     ABTI_task *p_task;     /* Current running tasklet */
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
+    ABTI_mem_pool_local_pool mem_pool_stack;
+    ABTI_mem_pool_local_pool mem_pool_task_desc;
+
     uint32_t num_stacks;               /* Current # of stacks */
     ABTI_stack_header *p_mem_stack;    /* Free stack list */
     ABTI_page_header *p_mem_task_head; /* Head of page list */

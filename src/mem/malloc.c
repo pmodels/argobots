@@ -30,6 +30,74 @@ void ABTI_mem_init(ABTI_global *p_global)
     p_global->p_mem_sph = NULL;
 
     ABTD_atomic_relaxed_store_uint64(&g_sp_id, 0);
+
+    int num_requested_types = 0;
+    ABTU_MEM_LARGEPAGE_TYPE requested_types[3];
+    switch (gp_ABTI_global->mem_lp_alloc) {
+        case ABTI_MEM_LP_MMAP_RP:
+            requested_types[num_requested_types++] = ABTU_MEM_LARGEPAGE_MMAP;
+            requested_types[num_requested_types++] = ABTU_MEM_LARGEPAGE_MALLOC;
+            break;
+        case ABTI_MEM_LP_MMAP_HP_RP:
+            requested_types[num_requested_types++] =
+                ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE;
+            requested_types[num_requested_types++] = ABTU_MEM_LARGEPAGE_MMAP;
+            requested_types[num_requested_types++] = ABTU_MEM_LARGEPAGE_MALLOC;
+            break;
+        case ABTI_MEM_LP_MMAP_HP_THP:
+            requested_types[num_requested_types++] =
+                ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE;
+            requested_types[num_requested_types++] =
+                ABTU_MEM_LARGEPAGE_MEMALIGN;
+            requested_types[num_requested_types++] = ABTU_MEM_LARGEPAGE_MALLOC;
+            break;
+        case ABTI_MEM_LP_THP:
+            requested_types[num_requested_types++] =
+                ABTU_MEM_LARGEPAGE_MEMALIGN;
+            requested_types[num_requested_types++] = ABTU_MEM_LARGEPAGE_MALLOC;
+            break;
+        default:
+            requested_types[num_requested_types++] = ABTU_MEM_LARGEPAGE_MALLOC;
+            break;
+    }
+    size_t thread_stacksize = p_global->thread_stacksize;
+    ABTI_ASSERT((thread_stacksize & (ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) ==
+                0);
+    size_t stacksize = (thread_stacksize + sizeof(ABTI_thread) +
+                        ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
+                       (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
+    if ((stacksize & (2 * ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0) {
+        /* Avoid a multiple of 2 * cacheline size to avoid cache bank conflict.
+         */
+        stacksize += ABT_CONFIG_STATIC_CACHELINE_SIZE;
+    }
+    ABTI_mem_pool_init_global_pool(&p_global->mem_pool_stack,
+                                   p_global->mem_max_stacks /
+                                       ABT_MEM_POOL_MAX_LOCAL_BUCKETS,
+                                   stacksize, thread_stacksize,
+                                   p_global->mem_sp_size, requested_types,
+                                   num_requested_types,
+                                   gp_ABTI_global->mem_page_size);
+    /* Round desc_size up to the cacheline size.  The last four bytes will be
+     * used to determine whether the descriptor is allocated externally (i.e.,
+     * malloc()) or taken from a memory pool. */
+    size_t task_desc_size =
+        (sizeof(ABTI_task) + 4 + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
+        (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
+    ABTI_mem_pool_init_global_pool(&p_global->mem_pool_task_desc,
+                                   p_global->mem_max_stacks /
+                                       ABT_MEM_POOL_MAX_LOCAL_BUCKETS,
+                                   task_desc_size, 0, p_global->mem_page_size,
+                                   requested_types, num_requested_types,
+                                   gp_ABTI_global->mem_page_size);
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    ABTI_spinlock_clear(&p_global->mem_pool_stack_lock);
+    ABTI_mem_pool_init_local_pool(&p_global->mem_pool_stack_ext,
+                                  &p_global->mem_pool_stack);
+    ABTI_spinlock_clear(&p_global->mem_pool_task_desc_lock);
+    ABTI_mem_pool_init_local_pool(&p_global->mem_pool_task_desc_ext,
+                                  &p_global->mem_pool_task_desc);
+#endif
 }
 
 void ABTI_mem_init_local(ABTI_xstream *p_local_xstream)
@@ -41,6 +109,11 @@ void ABTI_mem_init_local(ABTI_xstream *p_local_xstream)
     /* TODO: preallocate some task blocks? */
     p_local_xstream->p_mem_task_head = NULL;
     p_local_xstream->p_mem_task_tail = NULL;
+
+    ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_stack,
+                                  &gp_ABTI_global->mem_pool_stack);
+    ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_task_desc,
+                                  &gp_ABTI_global->mem_pool_task_desc);
 }
 
 void ABTI_mem_finalize(ABTI_global *p_global)
@@ -56,6 +129,13 @@ void ABTI_mem_finalize(ABTI_global *p_global)
     /* Free all stack pages */
     ABTI_mem_free_sph_list(p_global->p_mem_sph);
     p_global->p_mem_sph = NULL;
+
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    ABTI_mem_pool_destroy_local_pool(&p_global->mem_pool_stack_ext);
+    ABTI_mem_pool_destroy_local_pool(&p_global->mem_pool_task_desc_ext);
+#endif
+    ABTI_mem_pool_destroy_global_pool(&p_global->mem_pool_stack);
+    ABTI_mem_pool_destroy_global_pool(&p_global->mem_pool_task_desc);
 }
 
 void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream)
@@ -104,6 +184,9 @@ void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream)
     if (p_rem_head) {
         ABTI_mem_add_pages_to_global(p_rem_head, p_rem_tail);
     }
+
+    ABTI_mem_pool_destroy_local_pool(&p_local_xstream->mem_pool_stack);
+    ABTI_mem_pool_destroy_local_pool(&p_local_xstream->mem_pool_task_desc);
 }
 
 int ABTI_mem_check_lp_alloc(int lp_alloc)
