@@ -169,7 +169,7 @@ int ABT_finalize(void)
         /* Set the orphan request for the primary ULT */
         ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
 
-        LOG_EVENT("[U%" PRIu64 ":E%d] yield to scheduler\n",
+        LOG_DEBUG("[U%" PRIu64 ":E%d] yield to scheduler\n",
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
         /* Switch to the top scheduler */
@@ -179,7 +179,7 @@ int ABT_finalize(void)
                                              p_sched->p_thread);
 
         /* Back to the original thread */
-        LOG_EVENT("[U%" PRIu64 ":E%d] resume after yield\n",
+        LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
     }
 

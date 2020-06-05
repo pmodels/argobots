@@ -745,7 +745,7 @@ int ABT_thread_yield_to(ABT_thread thread)
 
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
-    LOG_EVENT("[U%" PRIu64 ":E%d] yield_to -> U%" PRIu64 "\n",
+    LOG_DEBUG("[U%" PRIu64 ":E%d] yield_to -> U%" PRIu64 "\n",
               ABTI_thread_get_id(p_cur_thread),
               p_cur_thread->p_last_xstream->rank,
               ABTI_thread_get_id(p_tar_thread));
@@ -1483,13 +1483,13 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_thread_id thread_id = ABTI_thread_get_id(p_newthread);
     if (thread_type == ABTI_THREAD_TYPE_MAIN) {
-        LOG_EVENT("[U%" PRIu64 ":E%d] main ULT created\n", thread_id,
+        LOG_DEBUG("[U%" PRIu64 ":E%d] main ULT created\n", thread_id,
                   p_parent_xstream ? p_parent_xstream->rank : 0);
     } else if (thread_type == ABTI_THREAD_TYPE_MAIN_SCHED) {
-        LOG_EVENT("[U%" PRIu64 ":E%d] main sched ULT created\n", thread_id,
+        LOG_DEBUG("[U%" PRIu64 ":E%d] main sched ULT created\n", thread_id,
                   p_parent_xstream ? p_parent_xstream->rank : 0);
     } else {
-        LOG_EVENT("[U%" PRIu64 "] created\n", thread_id);
+        LOG_DEBUG("[U%" PRIu64 "] created\n", thread_id);
     }
 #endif
 
@@ -1735,7 +1735,7 @@ void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
     ABTI_spinlock_acquire(&p_thread->lock);
 #endif
 
-    LOG_EVENT("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
+    LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
               p_thread->p_last_xstream->rank);
 
     ABTI_thread_free_internal(p_thread);
@@ -1746,7 +1746,7 @@ void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 
 void ABTI_thread_free_main(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
-    LOG_EVENT("[U%" PRIu64 ":E%d] main ULT freed\n",
+    LOG_DEBUG("[U%" PRIu64 ":E%d] main ULT freed\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     /* Free the key-value table */
@@ -1760,7 +1760,7 @@ void ABTI_thread_free_main(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
                                  ABTI_thread *p_thread)
 {
-    LOG_EVENT("[U%" PRIu64 ":E%d] main sched ULT freed\n",
+    LOG_DEBUG("[U%" PRIu64 ":E%d] main sched ULT freed\n",
               ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     /* Free the context */
@@ -1792,7 +1792,7 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     ABTI_pool *p_pool = p_thread->p_pool;
     ABTI_pool_inc_num_blocked(p_pool);
 
-    LOG_EVENT("[U%" PRIu64 ":E%d] blocked\n", ABTI_thread_get_id(p_thread),
+    LOG_DEBUG("[U%" PRIu64 ":E%d] blocked\n", ABTI_thread_get_id(p_thread),
               p_thread->p_last_xstream->rank);
 
 fn_exit:
@@ -1812,13 +1812,13 @@ void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream, ABTI_thread *p_thread)
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
     ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_local_xstream);
-    LOG_EVENT("[U%" PRIu64 ":E%d] suspended\n", ABTI_thread_get_id(p_thread),
+    LOG_DEBUG("[U%" PRIu64 ":E%d] suspended\n", ABTI_thread_get_id(p_thread),
               p_local_xstream->rank);
     ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread,
                                          p_sched->p_thread);
 
     /* The suspended ULT resumes its execution from here. */
-    LOG_EVENT("[U%" PRIu64 ":E%d] resumed\n", ABTI_thread_get_id(p_thread),
+    LOG_DEBUG("[U%" PRIu64 ":E%d] resumed\n", ABTI_thread_get_id(p_thread),
               p_thread->p_last_xstream->rank);
 }
 
@@ -1838,7 +1838,7 @@ int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
            ABTI_THREAD_REQ_BLOCK)
         ABTD_atomic_pause();
 
-    LOG_EVENT("[U%" PRIu64 ":E%d] set ready\n", ABTI_thread_get_id(p_thread),
+    LOG_DEBUG("[U%" PRIu64 ":E%d] set ready\n", ABTI_thread_get_id(p_thread),
               p_thread->p_last_xstream->rank);
 
     /* p_thread->p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
@@ -2191,7 +2191,7 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
         p_thread->unit = p_pool->u_create_from_thread(h_thread);
     }
 
-    LOG_EVENT("[U%" PRIu64 "] revived\n", ABTI_thread_get_id(p_thread));
+    LOG_DEBUG("[U%" PRIu64 "] revived\n", ABTI_thread_get_id(p_thread));
 
     /* Add this thread to the pool */
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
@@ -2273,10 +2273,10 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
         /* Make the current ULT BLOCKED */
         ABTD_atomic_release_store_int(&p_self->state, ABT_THREAD_STATE_BLOCKED);
 
-        LOG_EVENT("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
+        LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
                   ABTI_thread_get_id(p_thread));
-        LOG_EVENT("[U%" PRIu64 ":E%d] start running\n",
+        LOG_DEBUG("[U%" PRIu64 ":E%d] start running\n",
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
         /* Switch the context */
@@ -2302,7 +2302,7 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
             goto yield_based;
 
         ABTI_thread_set_blocked(p_self);
-        LOG_EVENT("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
+        LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
                   ABTI_thread_get_id(p_thread));
 
@@ -2327,7 +2327,7 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
         ABT_THREAD_STATE_BLOCKED) {
         ABTD_atomic_release_store_int(&p_self->state, ABT_THREAD_STATE_RUNNING);
         ABTI_pool_dec_num_blocked(p_self->p_pool);
-        LOG_EVENT("[U%" PRIu64 ":E%d] resume after join\n",
+        LOG_DEBUG("[U%" PRIu64 ":E%d] resume after join\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
         return abt_errno;
     }

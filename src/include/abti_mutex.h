@@ -66,7 +66,7 @@ static inline void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
         while (ABTD_atomic_acquire_load_uint32(&p_mutex->val) != 0)
             ;
     }
-    LOG_EVENT("%p: spinlock\n", p_mutex);
+    LOG_DEBUG("%p: spinlock\n", p_mutex);
 }
 
 static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
@@ -76,12 +76,12 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
     if (type == ABT_UNIT_TYPE_THREAD) {
-        LOG_EVENT("%p: lock - try\n", p_mutex);
+        LOG_DEBUG("%p: lock - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
             ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
             p_local_xstream = *pp_local_xstream;
         }
-        LOG_EVENT("%p: lock - acquired\n", p_mutex);
+        LOG_DEBUG("%p: lock - acquired\n", p_mutex);
     } else {
         ABTI_mutex_spinlock(p_mutex);
     }
@@ -92,7 +92,7 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
     if (type == ABT_UNIT_TYPE_THREAD) {
-        LOG_EVENT("%p: lock - try\n", p_mutex);
+        LOG_DEBUG("%p: lock - try\n", p_mutex);
         int c;
         if ((c = ABTD_atomic_val_cas_strong_uint32(&p_mutex->val, 0, 1)) != 0) {
             if (c != 2) {
@@ -124,7 +124,7 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
                 c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
             }
         }
-        LOG_EVENT("%p: lock - acquired\n", p_mutex);
+        LOG_DEBUG("%p: lock - acquired\n", p_mutex);
     } else {
         ABTI_mutex_spinlock(p_mutex);
     }
@@ -152,14 +152,14 @@ static inline void ABTI_mutex_unlock(ABTI_xstream *p_local_xstream,
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTD_atomic_mem_barrier();
     ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
-    LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
+    LOG_DEBUG("%p: unlock w/o wake\n", p_mutex);
 #else
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) != 1) {
         ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
-        LOG_EVENT("%p: unlock with wake\n", p_mutex);
+        LOG_DEBUG("%p: unlock with wake\n", p_mutex);
         ABTI_mutex_wake_de(p_local_xstream, p_mutex);
     } else {
-        LOG_EVENT("%p: unlock w/o wake\n", p_mutex);
+        LOG_DEBUG("%p: unlock w/o wake\n", p_mutex);
     }
 #endif
 }

@@ -681,7 +681,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     h_newtask = ABTI_task_get_handle(p_newtask);
     p_newtask->unit = p_pool->u_create_from_task(h_newtask);
 
-    LOG_EVENT("[T%" PRIu64 "] created\n", ABTI_task_get_id(p_newtask));
+    LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_task_get_id(p_newtask));
 
     /* Add this task to the scheduler's pool */
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
@@ -736,7 +736,7 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
         p_task->unit = p_pool->u_create_from_task(task);
     }
 
-    LOG_EVENT("[T%" PRIu64 "] revived\n", ABTI_task_get_id(p_task));
+    LOG_DEBUG("[T%" PRIu64 "] revived\n", ABTI_task_get_id(p_task));
 
     /* Add this task to the scheduler's pool */
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
@@ -757,7 +757,7 @@ fn_fail:
 
 void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_task *p_task)
 {
-    LOG_EVENT("[T%" PRIu64 "] freed\n", ABTI_task_get_id(p_task));
+    LOG_DEBUG("[T%" PRIu64 "] freed\n", ABTI_task_get_id(p_task));
 
     /* Free the unit */
     p_task->p_pool->u_free(&p_task->unit);

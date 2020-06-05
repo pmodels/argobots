@@ -65,7 +65,7 @@ static inline void ABTI_pool_dec_num_migrations(ABTI_pool *p_pool)
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
 static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 {
-    LOG_EVENT_POOL_PUSH(p_pool, unit,
+    LOG_DEBUG_POOL_PUSH(p_pool, unit,
                         ABTI_self_get_native_thread_id(
                             ABTI_local_get_xstream()));
 
@@ -95,7 +95,7 @@ static inline int ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit,
 {
     int abt_errno = ABT_SUCCESS;
 
-    LOG_EVENT_POOL_PUSH(p_pool, unit, producer_id);
+    LOG_DEBUG_POOL_PUSH(p_pool, unit, producer_id);
 
     /* Save the producer ES information in the pool */
     abt_errno = ABTI_pool_set_producer(p_pool, producer_id);
@@ -152,7 +152,7 @@ static inline int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
 {
     int abt_errno = ABT_SUCCESS;
 
-    LOG_EVENT_POOL_REMOVE(p_pool, unit,
+    LOG_DEBUG_POOL_REMOVE(p_pool, unit,
                           ABTI_self_get_native_thread_id(
                               ABTI_local_get_xstream()));
 
@@ -178,7 +178,7 @@ static inline int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
 {
     int abt_errno = ABT_SUCCESS;
 
-    LOG_EVENT_POOL_REMOVE(p_pool, unit, consumer_id);
+    LOG_DEBUG_POOL_REMOVE(p_pool, unit, consumer_id);
 
     abt_errno = ABTI_pool_set_consumer(p_pool, consumer_id);
     ABTI_CHECK_ERROR(abt_errno);
@@ -210,7 +210,7 @@ static inline ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool,
     ABT_unit unit;
 
     unit = p_pool->p_pop_timedwait(ABTI_pool_get_handle(p_pool), abstime_secs);
-    LOG_EVENT_POOL_POP(p_pool, unit);
+    LOG_DEBUG_POOL_POP(p_pool, unit);
 
     return unit;
 }
@@ -220,7 +220,7 @@ static inline ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)
     ABT_unit unit;
 
     unit = p_pool->p_pop(ABTI_pool_get_handle(p_pool));
-    LOG_EVENT_POOL_POP(p_pool, unit);
+    LOG_DEBUG_POOL_POP(p_pool, unit);
 
     return unit;
 }
