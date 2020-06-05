@@ -182,6 +182,7 @@ struct ABTI_global {
     uint32_t mem_page_size;  /* Page size for memory allocation */
     uint32_t mem_sp_size;    /* Stack page size */
     uint32_t mem_max_stacks; /* Max. # of stacks kept in each ES */
+    uint32_t mem_max_descs;  /* Max. # of descriptors kept in each ES */
     int mem_lp_alloc;        /* How to allocate large pages */
 
     ABTI_mem_pool_global_pool mem_pool_stack; /* Pool of stack (default size) */

@@ -17,7 +17,9 @@
 #define ABTD_HUGE_PAGE_SIZE (2 * 1024 * 1024)
 #define ABTD_MEM_PAGE_SIZE (2 * 1024 * 1024)
 #define ABTD_MEM_STACK_PAGE_SIZE (8 * 1024 * 1024)
-#define ABTD_MEM_MAX_NUM_STACKS 65536
+#define ABTD_MEM_MAX_NUM_STACKS 1024
+#define ABTD_MEM_MAX_TOTAL_STACK_SIZE (64 * 1024 * 1024)
+#define ABTD_MEM_MAX_NUM_DESCS 4096
 
 void ABTD_env_init(ABTI_global *p_global)
 {
@@ -104,6 +106,10 @@ void ABTD_env_init(ABTI_global *p_global)
     } else {
         p_global->thread_stacksize = ABTD_THREAD_DEFAULT_STACKSIZE;
     }
+    /* Stack size must be a multiple of cacheline size. */
+    p_global->thread_stacksize =
+        (p_global->thread_stacksize + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
+        (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
 
     /* Default stack size for scheduler */
     env = getenv("ABT_SCHED_STACKSIZE");
@@ -207,8 +213,36 @@ void ABTD_env_init(ABTI_global *p_global)
     if (env != NULL) {
         p_global->mem_max_stacks = (uint32_t)atol(env);
     } else {
-        p_global->mem_max_stacks = ABTD_MEM_MAX_NUM_STACKS;
+        if (p_global->thread_stacksize * ABTD_MEM_MAX_NUM_STACKS >
+            ABTD_MEM_MAX_TOTAL_STACK_SIZE) {
+            /* Each execution stream caches too many stacks in total. Let's
+             * reduce the max # of stacks. */
+            p_global->mem_max_stacks =
+                ABTD_MEM_MAX_TOTAL_STACK_SIZE / p_global->thread_stacksize;
+        } else {
+            p_global->mem_max_stacks = ABTD_MEM_MAX_NUM_STACKS;
+        }
     }
+    /* The value must be a multiple of ABT_MEM_POOL_MAX_LOCAL_BUCKETS. */
+    p_global->mem_max_stacks =
+        ((p_global->mem_max_stacks + ABT_MEM_POOL_MAX_LOCAL_BUCKETS - 1) /
+         ABT_MEM_POOL_MAX_LOCAL_BUCKETS) *
+        ABT_MEM_POOL_MAX_LOCAL_BUCKETS;
+
+    /* Maximum number of descriptors that each ES can keep during execution */
+    env = getenv("ABT_MEM_MAX_NUM_DESCS");
+    if (env == NULL)
+        env = getenv("ABT_ENV_MEM_MAX_NUM_DESCS");
+    if (env != NULL) {
+        p_global->mem_max_descs = (uint32_t)atol(env);
+    } else {
+        p_global->mem_max_descs = ABTD_MEM_MAX_NUM_DESCS;
+    }
+    /* The value must be a multiple of ABT_MEM_POOL_MAX_LOCAL_BUCKETS. */
+    p_global->mem_max_descs =
+        ((p_global->mem_max_descs + ABT_MEM_POOL_MAX_LOCAL_BUCKETS - 1) /
+         ABT_MEM_POOL_MAX_LOCAL_BUCKETS) *
+        ABT_MEM_POOL_MAX_LOCAL_BUCKETS;
 
     /* How to allocate large pages.  The default is to use mmap() for huge
      * pages and then to fall back to allocate regular pages using mmap() when

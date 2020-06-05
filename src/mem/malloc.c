@@ -69,7 +69,7 @@ void ABTI_mem_init(ABTI_global *p_global)
         (sizeof(ABTI_task) + 4 + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
         (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
     ABTI_mem_pool_init_global_pool(&p_global->mem_pool_task_desc,
-                                   p_global->mem_max_stacks /
+                                   p_global->mem_max_descs /
                                        ABT_MEM_POOL_MAX_LOCAL_BUCKETS,
                                    task_desc_size, 0, p_global->mem_page_size,
                                    requested_types, num_requested_types,
