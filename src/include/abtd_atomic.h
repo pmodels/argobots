@@ -1036,4 +1036,139 @@ static inline void ABTD_atomic_pause(void)
 #endif
 }
 
+/*
+ * Declare an atomic tagged pointer here.  This atomic type supports very few
+ * functions, which are basically for the lock-free LIFO implementation.
+ *
+ * If ABTD_ATOMIC_SUPPORT_TAGGED_PTR is not defined, this atomic type is
+ * disabled.
+ */
+#undef ABTD_ATOMIC_SUPPORT_TAGGED_PTR
+
+#if SIZEOF_VOID_P == 4 || (SIZEOF_VOID_P == 8 && ABT_CONFIG_HAVE_ATOMIC_INT128)
+
+#define ABTD_ATOMIC_SUPPORT_TAGGED_PTR 1
+
+typedef struct ABTD_atomic_tagged_ptr {
+    void *ptr;
+    size_t tag;
+} ABTD_atomic_tagged_ptr;
+
+#define ABTD_ATOMIC_TAGGED_PTR_STATIC_INITIALIZER(ptr, tag)                    \
+    {                                                                          \
+        (ptr), (tag)                                                           \
+    }
+
+#if SIZEOF_VOID_P == 8
+#include "asm/abtd_asm_int128_cas.h"
+#endif
+
+static inline int
+ABTD_atomic_bool_cas_weak_tagged_ptr(ABTD_atomic_tagged_ptr *tagged_ptr,
+                                     void *old_ptr, size_t old_tag,
+                                     void *new_ptr, size_t new_tag)
+{
+#if SIZEOF_VOID_P == 4
+
+    ABTI_STATIC_ASSERT(sizeof(ABTD_atomic_tagged_ptr) == 8);
+    /* Use uint64_t for this. */
+    typedef union {
+        ABTD_atomic_tagged_ptr tagged_ptr;
+        uint64_t val;
+    } atomic_tagged_ptr_t;
+    atomic_tagged_ptr_t oldv = {
+        ABTD_ATOMIC_TAGGED_PTR_STATIC_INITIALIZER(old_ptr, old_tag)
+    };
+    atomic_tagged_ptr_t newv = {
+        ABTD_ATOMIC_TAGGED_PTR_STATIC_INITIALIZER(new_ptr, new_tag)
+    };
+    uint64_t *p_val = (uint64_t *)tagged_ptr;
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    return __atomic_compare_exchange_n(p_val, &oldv.val, newv.val, 1,
+                                       __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+#else
+    return __sync_bool_compare_and_swap(&p_ptr, oldv, newv);
+#endif
+
+#elif SIZEOF_VOID_P == 8
+
+    ABTI_STATIC_ASSERT(sizeof(ABTD_atomic_tagged_ptr) == 16);
+    typedef union {
+        ABTD_atomic_tagged_ptr tagged_ptr;
+        __int128 val;
+    } atomic_tagged_ptr_t;
+    __int128 *p_val = (__int128 *)tagged_ptr;
+    atomic_tagged_ptr_t oldv = {
+        ABTD_ATOMIC_TAGGED_PTR_STATIC_INITIALIZER(old_ptr, old_tag)
+    };
+    atomic_tagged_ptr_t newv = {
+        ABTD_ATOMIC_TAGGED_PTR_STATIC_INITIALIZER(new_ptr, new_tag)
+    };
+
+    return ABTD_asm_bool_cas_weak_int128(p_val, oldv.val, newv.val);
+
+#else /* SIZEOF_VOID_P */
+
+#error "Unsupported pointer size."
+
+#endif
+}
+
+/* The following loads and stores follow relaxed/acquire/release semantics, but
+ * these operations are not "atomic" as a pair of a pointer and a tag (i.e.,
+ * ptr and tag are accessed in a non-atomic manner). */
+static inline void ABTD_atomic_relaxed_load_non_atomic_tagged_ptr(
+    const ABTD_atomic_tagged_ptr *tagged_ptr, void **p_ptr, size_t *p_tag)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    *p_ptr = __atomic_load_n(&tagged_ptr->ptr, __ATOMIC_RELAXED);
+    *p_tag = __atomic_load_n(&tagged_ptr->tag, __ATOMIC_RELAXED);
+#else
+    *p_ptr = *(void *volatile *)&tagged_ptr->ptr;
+    *p_tag = *(volatile size_t *)&tagged_ptr->tag;
+#endif
+}
+
+static inline void ABTD_atomic_relaxed_store_non_atomic_tagged_ptr(
+    ABTD_atomic_tagged_ptr *tagged_ptr, void *ptr, size_t tag)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    __atomic_store_n(&tagged_ptr->ptr, ptr, __ATOMIC_RELAXED);
+    __atomic_store_n(&tagged_ptr->tag, tag, __ATOMIC_RELAXED);
+#else
+    *(void *volatile *)&tagged_ptr->ptr = ptr;
+    *(volatile size_t *)&tagged_ptr->tag = tag;
+#endif
+}
+
+static inline void ABTD_atomic_acquire_load_non_atomic_tagged_ptr(
+    const ABTD_atomic_tagged_ptr *tagged_ptr, void **p_ptr, size_t *p_tag)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    *p_ptr = __atomic_load_n(&tagged_ptr->ptr, __ATOMIC_ACQUIRE);
+    *p_tag = __atomic_load_n(&tagged_ptr->tag, __ATOMIC_ACQUIRE);
+#else
+    __sync_synchronize();
+    *p_ptr = *(void *volatile *)&tagged_ptr->ptr;
+    *p_tag = *(volatile size_t *)&tagged_ptr->tag;
+    __sync_synchronize();
+#endif
+}
+
+static inline void ABTD_atomic_release_store_non_atomic_tagged_ptr(
+    ABTD_atomic_tagged_ptr *tagged_ptr, void *ptr, size_t tag)
+{
+#ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+    __atomic_store_n(&tagged_ptr->ptr, ptr, __ATOMIC_RELEASE);
+    __atomic_store_n(&tagged_ptr->tag, tag, __ATOMIC_RELEASE);
+#else
+    __sync_synchronize();
+    *(void *volatile *)&tagged_ptr->ptr = ptr;
+    *(volatile size_t *)&tagged_ptr->tag = tag;
+    __sync_synchronize();
+#endif
+}
+
+#endif /* ABTD_ATOMIC_SUPPORT_TAGGED_PTR */
+
 #endif /* ABTD_ATOMIC_H_INCLUDED */
