@@ -130,6 +130,8 @@
  *                                                     *
  *******************************************************/
 
+#include "abt_config.h"
+
 .globl make_fcontext
 #if _CALL_ELF == 2
 	.text
@@ -182,6 +184,18 @@ make_fcontext:
     # save TOC of context-function
     ld   %r4, 8(%r5)
     std  %r4, 496(%r3)
+#endif
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+#ifdef __VSX__
+    # VSCR can be loaded only to Vn.  To store VSCR as it is a vector, it must
+    # be written before saving FPSCR.
+    mfvscr %v19           # load VSCR
+    li    %r10, 144
+    stvx  %v19, %r10, %r3 # save VSCR.  Only the last 32 bits are used
+#endif
+    mffs  %f0  # load FPSCR
+    stfd  %f0, 144(%r3)  # save FPSCR
 #endif
 
     # load LR
