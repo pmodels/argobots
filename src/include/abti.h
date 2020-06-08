@@ -329,16 +329,21 @@ struct ABTI_thread {
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_sched *p_sched; /* Scheduler */
 #endif
-    ABT_unit unit;         /* Unit enclosing this thread */
-    ABTI_pool *p_pool;     /* Associated pool */
-    uint32_t refcount;     /* Reference count */
-    ABTI_thread_type type; /* Type */
+    ABT_unit unit;             /* Unit enclosing this thread */
+    ABTI_pool *p_pool;         /* Associated pool */
+    uint32_t refcount;         /* Reference count */
+    ABTI_thread_type type;     /* Type */
+    void *p_stack;             /* Stack address */
+    size_t stacksize;          /* Stack size (in bytes) */
+    ABTI_stack_type stacktype; /* Stack type */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    ABTI_thread_req_arg *p_req_arg; /* Request argument */
-    ABTI_spinlock lock;             /* Spinlock */
+    ABT_bool migratable;                        /* Migratability */
+    void (*f_migration_cb)(ABT_thread, void *); /* Callback function */
+    void *p_migration_cb_arg;                   /* Callback function argument */
+    ABTI_thread_req_arg *p_req_arg;             /* Request argument */
+    ABTI_spinlock lock;                         /* Spinlock */
 #endif
     ABTI_ktable *p_keytable; /* ULT-specific data */
-    ABTI_thread_attr attr;   /* Attributes */
     ABT_unit_id id;          /* ID */
 };
 

@@ -127,8 +127,8 @@ static inline void ABTI_thread_dynamic_promote_thread(ABTI_thread *p_thread)
 {
     LOG_DEBUG("[U%" PRIu64 "] dynamic-promote ULT\n",
               ABTI_thread_get_id(p_thread));
-    void *p_stack = p_thread->attr.p_stack;
-    size_t stacksize = p_thread->attr.stacksize;
+    void *p_stack = p_thread->p_stack;
+    size_t stacksize = p_thread->stacksize;
     void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
     ABTD_thread_context_dynamic_promote_thread(p_stacktop);
 }
@@ -145,8 +145,8 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_sibling_internal(
     }
     if (!ABTI_thread_is_dynamic_promoted(p_new)) {
         /* p_new does not have a context, so we first need to make it. */
-        ABTD_thread_context_arm_thread(p_new->attr.stacksize,
-                                       p_new->attr.p_stack, &p_new->ctx);
+        ABTD_thread_context_arm_thread(p_new->stacksize, p_new->p_stack,
+                                       &p_new->ctx);
     }
 #endif
     if (is_finish) {
@@ -197,8 +197,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
         ABTI_thread_dynamic_promote_thread(p_old);
     }
     if (!ABTI_thread_is_dynamic_promoted(p_new)) {
-        void *p_stacktop =
-            ((char *)p_new->attr.p_stack) + p_new->attr.stacksize;
+        void *p_stacktop = ((char *)p_new->p_stack) + p_new->stacksize;
         LOG_DEBUG("[U%" PRIu64 "] run ULT (dynamic promotion)\n",
                   ABTI_thread_get_id(p_new));
         p_local_xstream = *pp_local_xstream;

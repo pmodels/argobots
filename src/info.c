@@ -521,7 +521,7 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
         fprintf(fp,
                 "stack     : %p\n"
                 "stacksize : %" PRIu64 "\n",
-                p_thread->attr.p_stack, (uint64_t)p_thread->attr.stacksize);
+                p_thread->p_stack, (uint64_t)p_thread->stacksize);
         int abt_errno = ABTI_thread_print_stack(p_thread, fp);
         if (abt_errno != ABT_SUCCESS)
             fprintf(fp, "Failed to print stack.\n");

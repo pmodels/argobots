@@ -1598,9 +1598,9 @@ int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
     ABTI_pool *p_pool;
 
     /* callback function */
-    if (p_thread->attr.f_cb) {
+    if (p_thread->f_migration_cb) {
         ABT_thread thread = ABTI_thread_get_handle(p_thread);
-        p_thread->attr.f_cb(thread, p_thread->attr.p_cb_arg);
+        p_thread->f_migration_cb(thread, p_thread->p_migration_cb_arg);
     }
 
     ABTI_spinlock_acquire(&p_thread->lock); // TODO: mutex useful?

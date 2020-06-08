@@ -1122,8 +1122,8 @@ int ABT_thread_set_callback(ABT_thread thread,
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    p_thread->attr.f_cb = cb_func;
-    p_thread->attr.p_cb_arg = cb_arg;
+    p_thread->f_migration_cb = cb_func;
+    p_thread->p_migration_cb_arg = cb_arg;
 
 fn_exit:
     return abt_errno;
@@ -1159,7 +1159,7 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     if (p_thread->type == ABTI_THREAD_TYPE_USER) {
-        p_thread->attr.migratable = flag;
+        p_thread->migratable = flag;
     }
 
 fn_exit:
@@ -1194,7 +1194,7 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag = p_thread->attr.migratable;
+    *flag = p_thread->migratable;
 
 fn_exit:
     return abt_errno;
@@ -1283,7 +1283,7 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
-    *stacksize = p_thread->attr.stacksize;
+    *stacksize = p_thread->stacksize;
 
 fn_exit:
     return abt_errno;
@@ -1401,8 +1401,16 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_thread_attr *p_attr;
-    p_attr = ABTI_thread_attr_dup(&p_thread->attr);
+    ABTI_thread_attr thread_attr, *p_attr;
+    thread_attr.p_stack = p_thread->p_stack;
+    thread_attr.stacksize = p_thread->stacksize;
+    thread_attr.stacktype = p_thread->stacktype;
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+    thread_attr.migratable = p_thread->migratable;
+    thread_attr.f_cb = p_thread->f_migration_cb;
+    thread_attr.p_cb_arg = p_thread->p_migration_cb_arg;
+#endif
+    p_attr = ABTI_thread_attr_dup(&thread_attr);
 
     *attr = ABTI_thread_attr_get_handle(p_attr);
 
@@ -1434,15 +1442,15 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newthread = ABTI_mem_alloc_thread(p_local_xstream, p_attr);
     if ((thread_type == ABTI_THREAD_TYPE_MAIN ||
          thread_type == ABTI_THREAD_TYPE_MAIN_SCHED) &&
-        p_newthread->attr.p_stack == NULL) {
+        p_newthread->p_stack == NULL) {
         /* We don't need to initialize the context of 1. the main thread, and
          * 2. the main scheduler thread which runs on OS-level threads
          * (p_stack == NULL). Invalidate the context here. */
         abt_errno = ABTD_thread_context_invalidate(&p_newthread->ctx);
     } else if (p_sched == NULL) {
 #if ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-        size_t stack_size = p_newthread->attr.stacksize;
-        void *p_stack = p_newthread->attr.p_stack;
+        size_t stack_size = p_newthread->stacksize;
+        void *p_stack = p_newthread->p_stack;
         abt_errno = ABTD_thread_context_create(NULL, stack_size, p_stack,
                                                &p_newthread->ctx);
 #else
@@ -1450,8 +1458,8 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
         abt_errno = ABTD_thread_context_init(NULL, &p_newthread->ctx);
 #endif
     } else {
-        size_t stack_size = p_newthread->attr.stacksize;
-        void *p_stack = p_newthread->attr.p_stack;
+        size_t stack_size = p_newthread->stacksize;
+        void *p_stack = p_newthread->p_stack;
         abt_errno = ABTD_thread_context_create(NULL, stack_size, p_stack,
                                                &p_newthread->ctx);
     }
@@ -1889,7 +1897,6 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     ABTI_xstream *p_xstream = p_thread->p_last_xstream;
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *type, *state;
-    char attr[100];
 
     switch (p_thread->type) {
         case ABTI_THREAD_TYPE_MAIN:
@@ -1922,7 +1929,6 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             state = "UNKNOWN";
             break;
     }
-    ABTI_thread_attr_get_str(&p_thread->attr, attr);
 
     fprintf(p_os,
             "%s== ULT (%p) ==\n"
@@ -1940,8 +1946,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
             "%sreq_arg : %p\n"
 #endif
-            "%skeytable: %p\n"
-            "%sattr    : %s\n",
+            "%skeytable: %p\n",
             prefix, (void *)p_thread, prefix, ABTI_thread_get_id(p_thread),
             prefix, type, prefix, state, prefix, (void *)p_xstream,
             xstream_rank,
@@ -1954,7 +1959,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
             prefix, (void *)p_thread->p_req_arg,
 #endif
-            prefix, (void *)p_thread->p_keytable, prefix, attr);
+            prefix, (void *)p_thread->p_keytable);
 
 fn_exit:
     fflush(p_os);
@@ -1963,8 +1968,8 @@ fn_exit:
 
 int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os)
 {
-    void *p_stack = p_thread->attr.p_stack;
-    size_t i, j, stacksize = p_thread->attr.stacksize;
+    void *p_stack = p_thread->p_stack;
+    size_t i, j, stacksize = p_thread->stacksize;
     if (stacksize == 0 || p_stack == NULL) {
         /* Some threads do not have p_stack (e.g., the main thread) */
         return ABT_ERR_THREAD;
@@ -2168,10 +2173,9 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                     ABT_ERR_INV_THREAD);
 
     /* Create a ULT context */
-    stacksize = p_thread->attr.stacksize;
-    abt_errno =
-        ABTD_thread_context_create(NULL, stacksize, p_thread->attr.p_stack,
-                                   &p_thread->ctx);
+    stacksize = p_thread->stacksize;
+    abt_errno = ABTD_thread_context_create(NULL, stacksize, p_thread->p_stack,
+                                           &p_thread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
     p_thread->f_thread = thread_func;
