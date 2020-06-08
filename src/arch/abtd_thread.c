@@ -11,15 +11,13 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
 void ABTD_thread_func_wrapper(void *p_arg)
 {
     ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
-    void (*thread_func)(void *) = p_ctx->f_thread;
-
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
     ABTI_xstream *p_local_xstream = p_thread->p_last_xstream;
     ABTI_ASSERT(p_local_xstream->p_task == NULL);
     p_local_xstream->p_thread = p_thread;
 
-    thread_func(p_ctx->p_arg);
+    p_thread->f_thread(p_thread->p_arg);
 
     /* This ABTI_local_get_xstream() is controversial since it is called after
      * the context-switchable function (i.e., thread_func()).  We assume that
@@ -151,7 +149,6 @@ void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent)
     char *prefix = ABTU_get_indent_str(indent);
     ABTD_thread_context *p_ctx = &p_thread->ctx;
     fprintf(p_os, "%sp_ctx    : %p\n", prefix, p_ctx->p_ctx);
-    fprintf(p_os, "%sp_arg    : %p\n", prefix, p_ctx->p_arg);
     fprintf(p_os, "%sp_link   : %p\n", prefix,
             (void *)ABTD_atomic_acquire_load_thread_context_ptr(
                 &p_ctx->p_link));

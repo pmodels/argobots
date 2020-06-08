@@ -324,6 +324,8 @@ struct ABTI_thread {
     ABTD_atomic_int state;        /* State (ABT_thread_state) */
     ABTD_atomic_uint32 request;   /* Request */
     ABTI_xstream *p_last_xstream; /* Last ES where it ran */
+    void (*f_thread)(void *);     /* ULT function */
+    void *p_arg;                  /* ULT function argument */
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     ABTI_sched *p_sched; /* Scheduler */
 #endif

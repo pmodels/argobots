@@ -204,8 +204,8 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
         p_local_xstream = *pp_local_xstream;
         ABTI_ASSERT(p_local_xstream->p_task == NULL);
         p_local_xstream->p_thread = p_new;
-        ABTD_thread_context_make_and_call(&p_old->ctx, p_new->ctx.f_thread,
-                                          p_new->ctx.p_arg, p_stacktop);
+        ABTD_thread_context_make_and_call(&p_old->ctx, p_new->f_thread,
+                                          p_new->p_arg, p_stacktop);
         /* The scheduler continues from here. If the previous thread has not
          * run dynamic promotion, ABTI_thread_context_make_and_call took the
          * fast path. In this case, the request handling has not been done,

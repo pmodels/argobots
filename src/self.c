@@ -283,7 +283,7 @@ int ABT_self_set_arg(void *arg)
     }
 
     if ((p_thread = p_local_xstream->p_thread)) {
-        ABTD_thread_context_set_arg(&p_thread->ctx, arg);
+        p_thread->p_arg = arg;
     } else if ((p_task = p_local_xstream->p_task)) {
         p_task->p_arg = arg;
     } else {
@@ -337,7 +337,7 @@ int ABT_self_get_arg(void **arg)
 #endif
 
     if ((p_thread = p_local_xstream->p_thread)) {
-        *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
+        *arg = p_thread->p_arg;
     } else if ((p_task = p_local_xstream->p_task)) {
         *arg = p_task->p_arg;
     } else {

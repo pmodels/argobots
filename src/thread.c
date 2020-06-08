@@ -1339,7 +1339,7 @@ int ABT_thread_set_arg(ABT_thread thread, void *arg)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTD_thread_context_set_arg(&p_thread->ctx, arg);
+    p_thread->p_arg = arg;
 
 fn_exit:
     return abt_errno;
@@ -1369,7 +1369,7 @@ int ABT_thread_get_arg(ABT_thread thread, void **arg)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *arg = ABTD_thread_context_get_arg(&p_thread->ctx);
+    *arg = p_thread->p_arg;
 
 fn_exit:
     return abt_errno;
@@ -1443,22 +1443,21 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #if ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION
         size_t stack_size = p_newthread->attr.stacksize;
         void *p_stack = p_newthread->attr.p_stack;
-        abt_errno =
-            ABTD_thread_context_create(NULL, thread_func, arg, stack_size,
-                                       p_stack, &p_newthread->ctx);
+        abt_errno = ABTD_thread_context_create(NULL, stack_size, p_stack,
+                                               &p_newthread->ctx);
 #else
         /* The context is not fully created now. */
-        abt_errno =
-            ABTD_thread_context_init(NULL, thread_func, arg, &p_newthread->ctx);
+        abt_errno = ABTD_thread_context_init(NULL, &p_newthread->ctx);
 #endif
     } else {
         size_t stack_size = p_newthread->attr.stacksize;
         void *p_stack = p_newthread->attr.p_stack;
-        abt_errno =
-            ABTD_thread_context_create(NULL, thread_func, arg, stack_size,
-                                       p_stack, &p_newthread->ctx);
+        abt_errno = ABTD_thread_context_create(NULL, stack_size, p_stack,
+                                               &p_newthread->ctx);
     }
     ABTI_CHECK_ERROR(abt_errno);
+    p_newthread->f_thread = thread_func;
+    p_newthread->p_arg = arg;
 
     ABTD_atomic_release_store_int(&p_newthread->state, ABT_THREAD_STATE_READY);
     ABTD_atomic_release_store_uint32(&p_newthread->request, 0);
@@ -1934,6 +1933,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             "%sp_sched : %p\n"
 #endif
+            "%sp_arg   : %p\n"
             "%spool    : %p\n"
             "%srefcount: %u\n"
             "%srequest : 0x%x\n"
@@ -1948,8 +1948,9 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             prefix, (void *)p_thread->p_sched,
 #endif
-            prefix, (void *)p_thread->p_pool, prefix, p_thread->refcount,
-            prefix, ABTD_atomic_acquire_load_uint32(&p_thread->request),
+            prefix, p_thread->p_arg, prefix, (void *)p_thread->p_pool, prefix,
+            p_thread->refcount, prefix,
+            ABTD_atomic_acquire_load_uint32(&p_thread->request),
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
             prefix, (void *)p_thread->p_req_arg,
 #endif
@@ -2169,9 +2170,12 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     /* Create a ULT context */
     stacksize = p_thread->attr.stacksize;
     abt_errno =
-        ABTD_thread_context_create(NULL, thread_func, arg, stacksize,
-                                   p_thread->attr.p_stack, &p_thread->ctx);
+        ABTD_thread_context_create(NULL, stacksize, p_thread->attr.p_stack,
+                                   &p_thread->ctx);
     ABTI_CHECK_ERROR(abt_errno);
+
+    p_thread->f_thread = thread_func;
+    p_thread->p_arg = arg;
 
     ABTD_atomic_relaxed_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_thread->request, 0);
