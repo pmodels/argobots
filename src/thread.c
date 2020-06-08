@@ -452,7 +452,7 @@ int ABT_thread_exit(void)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Set the exit request */
-    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_EXIT);
+    ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_EXIT);
 
     /* Terminate this ULT */
     ABTD_thread_exit(p_local_xstream, p_thread);
@@ -488,7 +488,7 @@ int ABT_thread_cancel(ABT_thread thread)
                         "The main thread cannot be canceled.");
 
     /* Set the cancel request */
-    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_CANCEL);
+    ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_CANCEL);
 
 fn_exit:
     return abt_errno;
@@ -1576,9 +1576,9 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
 
     /* adding request to the thread */
     ABTI_spinlock_acquire(&p_thread->lock);
-    ABTI_thread_add_req_arg(p_thread, ABTI_THREAD_REQ_MIGRATE, p_pool);
+    ABTI_thread_add_req_arg(p_thread, ABTI_UNIT_REQ_MIGRATE, p_pool);
     ABTI_spinlock_release(&p_thread->lock);
-    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
+    ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
     if (p_local_xstream != NULL && p_thread == p_local_xstream->p_thread) {
@@ -1794,7 +1794,7 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
                     ABT_ERR_THREAD);
 
     /* To prevent the scheduler from adding the ULT to the pool */
-    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_BLOCK);
+    ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_BLOCK);
 
     /* Change the ULT's state to BLOCKED */
     ABTD_atomic_release_store_int(&p_thread->state, ABTI_UNIT_STATE_BLOCKED);
@@ -1846,7 +1846,7 @@ int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
      * request. Otherwise, the ULT can be pushed to a pool here and be
      * scheduled by another scheduler if it is pushed to a shared pool. */
     while (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
-           ABTI_THREAD_REQ_BLOCK)
+           ABTI_UNIT_REQ_BLOCK)
         ABTD_atomic_pause();
 
     LOG_DEBUG("[U%" PRIu64 ":E%d] set ready\n", ABTI_thread_get_id(p_thread),
@@ -2306,11 +2306,11 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
 
     } else {
         /* Tell p_thread that there has been a join request. */
-        /* If request already has ABTI_THREAD_REQ_JOIN, p_thread is terminating.
+        /* If request already has ABTI_UNIT_REQ_JOIN, p_thread is terminating.
          * We can't block p_self in this case. */
-        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
-                                                   ABTI_THREAD_REQ_JOIN);
-        if (req & ABTI_THREAD_REQ_JOIN)
+        uint32_t req =
+            ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_UNIT_REQ_JOIN);
+        if (req & ABTI_UNIT_REQ_JOIN)
             goto yield_based;
 
         ABTI_thread_set_blocked(p_self);

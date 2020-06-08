@@ -62,14 +62,13 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
             /* We don't need to use the atomic OR operation here because the ULT
              * will be terminated regardless of other requests. */
             ABTD_atomic_release_store_uint32(&p_thread->request,
-                                             ABTI_THREAD_REQ_TERMINATE);
+                                             ABTI_UNIT_REQ_TERMINATE);
         }
     } else {
-        uint32_t req =
-            ABTD_atomic_fetch_or_uint32(&p_thread->request,
-                                        ABTI_THREAD_REQ_JOIN |
-                                            ABTI_THREAD_REQ_TERMINATE);
-        if (req & ABTI_THREAD_REQ_JOIN) {
+        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
+                                                   ABTI_UNIT_REQ_JOIN |
+                                                       ABTI_UNIT_REQ_TERMINATE);
+        if (req & ABTI_UNIT_REQ_JOIN) {
             /* This case means there has been a join request and the joiner has
              * blocked.  We have to wake up the joiner ULT. */
             do {
@@ -126,11 +125,10 @@ void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
                 &p_ctx->p_link);
         ABTI_thread_set_ready(p_local_xstream, p_joiner);
     } else {
-        uint32_t req =
-            ABTD_atomic_fetch_or_uint32(&p_thread->request,
-                                        ABTI_THREAD_REQ_JOIN |
-                                            ABTI_THREAD_REQ_TERMINATE);
-        if (req & ABTI_THREAD_REQ_JOIN) {
+        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
+                                                   ABTI_UNIT_REQ_JOIN |
+                                                       ABTI_UNIT_REQ_TERMINATE);
+        if (req & ABTI_UNIT_REQ_JOIN) {
             /* This case means there has been a join request and the joiner has
              * blocked.  We have to wake up the joiner ULT. */
             while (ABTD_atomic_acquire_load_thread_context_ptr(

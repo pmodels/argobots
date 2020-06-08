@@ -232,13 +232,13 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
                 /* We don't need to use the atomic OR operation here because
                  * the ULT will be terminated regardless of other requests. */
                 ABTD_atomic_release_store_uint32(&p_prev->request,
-                                                 ABTI_THREAD_REQ_TERMINATE);
+                                                 ABTI_UNIT_REQ_TERMINATE);
             } else {
                 uint32_t req =
                     ABTD_atomic_fetch_or_uint32(&p_prev->request,
-                                                ABTI_THREAD_REQ_JOIN |
-                                                    ABTI_THREAD_REQ_TERMINATE);
-                if (req & ABTI_THREAD_REQ_JOIN) {
+                                                ABTI_UNIT_REQ_JOIN |
+                                                    ABTI_UNIT_REQ_TERMINATE);
+                if (req & ABTI_UNIT_REQ_JOIN) {
                     /* This case means there has been a join request and the
                      * joiner has blocked.  We have to wake up the joiner ULT.
                      */

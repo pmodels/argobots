@@ -569,7 +569,7 @@ handover:
 
     /* yield_to the next ULT */
     while (ABTD_atomic_acquire_load_uint32(&p_next->request) &
-           ABTI_THREAD_REQ_BLOCK)
+           ABTI_UNIT_REQ_BLOCK)
         ;
     ABTI_pool_dec_num_blocked(p_next->p_pool);
     ABTD_atomic_release_store_int(&p_next->state, ABTI_UNIT_STATE_RUNNING);
