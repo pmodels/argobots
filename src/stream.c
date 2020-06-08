@@ -1612,9 +1612,7 @@ int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
     ABTI_spinlock_acquire(&p_thread->lock); // TODO: mutex useful?
     {
         /* extracting argument in migration request */
-        p_pool =
-            (ABTI_pool *)ABTI_thread_extract_req_arg(p_thread,
-                                                     ABTI_UNIT_REQ_MIGRATE);
+        p_pool = p_thread->p_migration_pool;
         ABTI_thread_unset_request(p_thread, ABTI_UNIT_REQ_MIGRATE);
 
         LOG_DEBUG("[U%" PRIu64 "] migration: E%d -> NT %p\n",
