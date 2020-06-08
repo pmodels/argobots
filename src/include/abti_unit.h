@@ -65,4 +65,14 @@ static inline ABT_unit_type ABTI_unit_type_get_type(ABTI_unit_type type)
     }
 }
 
+static inline ABTI_thread *ABTI_unit_get_thread(ABTI_unit *p_unit)
+{
+    return (ABTI_thread *)(((char *)p_unit) - offsetof(ABTI_thread, unit_def));
+}
+
+static inline ABTI_task *ABTI_unit_get_task(ABTI_unit *p_unit)
+{
+    return (ABTI_task *)(((char *)p_unit) - offsetof(ABTI_task, unit_def));
+}
+
 #endif /* ABTI_UNIT_H_INCLUDED */

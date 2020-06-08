@@ -307,10 +307,6 @@ struct ABTI_pool {
 struct ABTI_unit {
     ABTI_unit *p_prev;
     ABTI_unit *p_next;
-    union {
-        ABT_thread thread;
-        ABT_task task;
-    } handle;
     ABTD_atomic_int is_in_pool;   /* Whether this unit is in a pool or not. */
     ABTI_unit_type type;          /* Unit type */
     ABT_unit unit;                /* Unit enclosing this thread */
