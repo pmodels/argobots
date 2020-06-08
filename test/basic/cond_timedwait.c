@@ -23,7 +23,7 @@ void cond_test(void *arg)
     struct timespec ts;
     struct timeval tv;
     int eid;
-    ABT_thread_id tid;
+    ABT_unit_id tid;
 
     ret = ABT_xstream_self_rank(&eid);
     ATS_ERROR(ret, "ABT_xstream_self_rank");
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     int num_threads;
     int ret, i, pidx = 0;
     int eid;
-    ABT_thread_id tid;
+    ABT_unit_id tid;
 
     /* Initialize */
     ATS_read_args(argc, argv);

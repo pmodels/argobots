@@ -24,55 +24,43 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
     int tid_len = 0, rank_len = 0;
     size_t newfmt_len;
 
-    if (!p_local_xstream) {
+    if (!p_local_xstream || !p_local_xstream->p_unit) {
         prefix = "<UNKNOWN> ";
         prefix_fmt = "%s%s";
     } else {
-        ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
-        switch (type) {
-            case ABT_UNIT_TYPE_THREAD:
-                p_thread = p_local_xstream->p_thread;
-                if (p_thread == NULL) {
-                    if (p_local_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
-                        prefix_fmt = "<U%" PRIu64 ":E%d> %s";
-                        rank = p_local_xstream->rank;
-                        tid = 0;
-                    } else {
-                        prefix = "<U0:E0> ";
-                        prefix_fmt = "%s%s";
-                    }
-                } else {
+        ABTI_unit_type type = ABTI_self_get_type(p_local_xstream);
+        if (ABTI_unit_type_is_thread(type)) {
+            p_thread = ABTI_unit_get_thread(p_local_xstream->p_unit);
+            if (p_thread == NULL) {
+                if (p_local_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
+                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
                     rank = p_local_xstream->rank;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-                    if (p_thread->p_sched) {
-                        prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                        tid = p_thread->p_sched->id;
-                    } else {
-#endif
-                        prefix_fmt = "<U%" PRIu64 ":E%d> %s";
-                        tid = ABTI_thread_get_id(p_thread);
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-                    }
-#endif
+                    tid = 0;
+                } else {
+                    prefix = "<U0:E0> ";
+                    prefix_fmt = "%s%s";
                 }
-                break;
-
-            case ABT_UNIT_TYPE_TASK:
+            } else {
                 rank = p_local_xstream->rank;
-                p_task = p_local_xstream->p_task;
-                prefix_fmt = "<T%" PRIu64 ":E%d> %s";
-                tid = p_task ? ABTI_task_get_id(p_task) : 0;
-                break;
-
-            case ABT_UNIT_TYPE_EXT:
-                prefix = "<EXT> ";
-                prefix_fmt = "%s%s";
-                break;
-
-            default:
-                prefix = "<UNKNOWN> ";
-                prefix_fmt = "%s%s";
-                break;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+                if (p_thread->p_sched) {
+                    prefix_fmt = "<S%" PRIu64 ":E%d> %s";
+                    tid = p_thread->p_sched->id;
+                } else
+#endif
+                {
+                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
+                    tid = ABTI_thread_get_id(p_thread);
+                }
+            }
+        } else if (type == ABTI_UNIT_TYPE_TASK) {
+            rank = p_local_xstream->rank;
+            p_task = ABTI_unit_get_task(p_local_xstream->p_unit);
+            prefix_fmt = "<T%" PRIu64 ":E%d> %s";
+            tid = ABTI_task_get_id(p_task);
+        } else {
+            prefix = "<EXT> ";
+            prefix_fmt = "%s%s";
         }
     }
 
@@ -108,11 +96,11 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:
             p_thread = ABTI_thread_get_ptr(p_pool->u_get_thread(unit));
-            if (p_thread->p_last_xstream) {
+            if (p_thread->unit_def.p_last_xstream) {
                 LOG_DEBUG("[U%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
                           "(producer: NT %p)\n",
                           ABTI_thread_get_id(p_thread),
-                          p_thread->p_last_xstream->rank, p_pool->id,
+                          p_thread->unit_def.p_last_xstream->rank, p_pool->id,
                           (void *)producer_id);
             } else {
                 LOG_DEBUG("[U%" PRIu64 "] pushed to P%" PRIu64 " "
@@ -124,11 +112,12 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
 
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
-            if (p_task->p_xstream) {
+            if (p_task->unit_def.p_last_xstream) {
                 LOG_DEBUG("[T%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
                           "(producer: NT %p)\n",
-                          ABTI_task_get_id(p_task), p_task->p_xstream->rank,
-                          p_pool->id, (void *)producer_id);
+                          ABTI_task_get_id(p_task),
+                          p_task->unit_def.p_last_xstream->rank, p_pool->id,
+                          (void *)producer_id);
             } else {
                 LOG_DEBUG("[T%" PRIu64 "] pushed to P%" PRIu64 " "
                           "(producer: NT %p)\n",
@@ -154,11 +143,11 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:
             p_thread = ABTI_thread_get_ptr(p_pool->u_get_thread(unit));
-            if (p_thread->p_last_xstream) {
+            if (p_thread->unit_def.p_last_xstream) {
                 LOG_DEBUG("[U%" PRIu64 ":E%d] removed from "
                           "P%" PRIu64 " (consumer: NT %p)\n",
                           ABTI_thread_get_id(p_thread),
-                          p_thread->p_last_xstream->rank, p_pool->id,
+                          p_thread->unit_def.p_last_xstream->rank, p_pool->id,
                           (void *)consumer_id);
             } else {
                 LOG_DEBUG("[U%" PRIu64 "] removed from P%" PRIu64 " "
@@ -170,11 +159,12 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
 
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
-            if (p_task->p_xstream) {
+            if (p_task->unit_def.p_last_xstream) {
                 LOG_DEBUG("[T%" PRIu64 ":E%d] removed from "
                           "P%" PRIu64 " (consumer: NT %p)\n",
-                          ABTI_task_get_id(p_task), p_task->p_xstream->rank,
-                          p_pool->id, (void *)consumer_id);
+                          ABTI_task_get_id(p_task),
+                          p_task->unit_def.p_last_xstream->rank, p_pool->id,
+                          (void *)consumer_id);
             } else {
                 LOG_DEBUG("[T%" PRIu64 "] removed from P%" PRIu64 " "
                           "(consumer: NT %p)\n",
@@ -201,11 +191,11 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:
             p_thread = ABTI_thread_get_ptr(p_pool->u_get_thread(unit));
-            if (p_thread->p_last_xstream) {
+            if (p_thread->unit_def.p_last_xstream) {
                 LOG_DEBUG("[U%" PRIu64 ":E%d] popped from "
                           "P%" PRIu64 "\n",
                           ABTI_thread_get_id(p_thread),
-                          p_thread->p_last_xstream->rank, p_pool->id);
+                          p_thread->unit_def.p_last_xstream->rank, p_pool->id);
             } else {
                 LOG_DEBUG("[U%" PRIu64 "] popped from P%" PRIu64 "\n",
                           ABTI_thread_get_id(p_thread), p_pool->id);
@@ -214,11 +204,11 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
 
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
-            if (p_task->p_xstream) {
+            if (p_task->unit_def.p_last_xstream) {
                 LOG_DEBUG("[T%" PRIu64 ":E%d] popped from "
                           "P%" PRIu64 "\n",
-                          ABTI_task_get_id(p_task), p_task->p_xstream->rank,
-                          p_pool->id);
+                          ABTI_task_get_id(p_task),
+                          p_task->unit_def.p_last_xstream->rank, p_pool->id);
             } else {
                 LOG_DEBUG("[T%" PRIu64 "] popped from P%" PRIu64 "\n",
                           ABTI_task_get_id(p_task), p_pool->id);

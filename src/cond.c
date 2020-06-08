@@ -185,14 +185,9 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
 
     double tar_time = convert_timespec_to_sec(abstime);
 
-    ABTI_unit *p_unit;
-    ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
-
-    p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
-    /* Check size if ext_signal can be stored in p_unit->handle.thread. */
-    ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_unit->handle.thread));
-    p_unit->handle.thread = (ABT_thread)&ext_signal;
-    p_unit->type = ABT_UNIT_TYPE_EXT;
+    ABTI_unit *p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
+    p_unit->type = ABTI_UNIT_TYPE_EXT;
+    ABTD_atomic_relaxed_store_int(&p_unit->state, ABTI_UNIT_STATE_BLOCKED);
 
     ABTI_spinlock_acquire(&p_cond->lock);
 
@@ -228,7 +223,8 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     /* Unlock the mutex that the calling ULT is holding */
     ABTI_mutex_unlock(p_local_xstream, p_mutex);
 
-    while (!ABTD_atomic_acquire_load_int32(&ext_signal)) {
+    while (ABTD_atomic_acquire_load_int(&p_unit->state) !=
+           ABTI_UNIT_STATE_READY) {
         double cur_time = ABTI_get_wtime();
         if (cur_time >= tar_time) {
             remove_unit(p_cond, p_unit);
@@ -236,12 +232,13 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             break;
         }
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type(p_local_xstream) != ABT_UNIT_TYPE_THREAD) {
+        if (!ABTI_unit_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
             ABTD_atomic_pause();
             continue;
         }
 #endif
-        ABTI_thread_yield(&p_local_xstream, p_local_xstream->p_thread);
+        ABTI_thread_yield(&p_local_xstream,
+                          ABTI_unit_get_thread(p_local_xstream->p_unit));
     }
     ABTU_free(p_unit);
 
@@ -300,14 +297,12 @@ int ABT_cond_signal(ABT_cond cond)
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
 
-    if (p_unit->type == ABT_UNIT_TYPE_THREAD) {
-        ABTI_thread *p_thread = ABTI_thread_get_ptr(p_unit->handle.thread);
+    if (ABTI_unit_type_is_thread(p_unit->type)) {
+        ABTI_thread *p_thread = ABTI_unit_get_thread(p_unit);
         ABTI_thread_set_ready(p_local_xstream, p_thread);
     } else {
         /* When the head is an external thread */
-        ABTD_atomic_int32 *p_ext_signal =
-            (ABTD_atomic_int32 *)p_unit->handle.thread;
-        ABTD_atomic_release_store_int32(p_ext_signal, 1);
+        ABTD_atomic_release_store_int(&p_unit->state, ABTI_UNIT_STATE_READY);
     }
 
     ABTI_spinlock_release(&p_cond->lock);

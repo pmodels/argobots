@@ -97,16 +97,16 @@ static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
                                                  ABTI_thread *p_thread)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n", ABTI_thread_get_id(p_thread),
-              p_thread->p_last_xstream->rank);
-    if (p_thread->refcount == 0) {
-        ABTD_atomic_release_store_int(&p_thread->state,
-                                      ABT_THREAD_STATE_TERMINATED);
+              p_thread->unit_def.p_last_xstream->rank);
+    if (p_thread->unit_def.refcount == 0) {
+        ABTD_atomic_release_store_int(&p_thread->unit_def.state,
+                                      ABTI_UNIT_STATE_TERMINATED);
         ABTI_thread_free(p_local_xstream, p_thread);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     } else if (p_thread->p_sched) {
         /* NOTE: p_thread itself will be freed in ABTI_sched_free. */
-        ABTD_atomic_release_store_int(&p_thread->state,
-                                      ABT_THREAD_STATE_TERMINATED);
+        ABTD_atomic_release_store_int(&p_thread->unit_def.state,
+                                      ABTI_UNIT_STATE_TERMINATED);
         ABTI_sched_discard_and_free(p_local_xstream, p_thread->p_sched);
 #endif
     } else {
@@ -114,8 +114,8 @@ static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
          * because the ULT can be freed on a different ES.  In other words, we
          * must not access any field of p_thead after changing the state to
          * TERMINATED. */
-        ABTD_atomic_release_store_int(&p_thread->state,
-                                      ABT_THREAD_STATE_TERMINATED);
+        ABTD_atomic_release_store_int(&p_thread->unit_def.state,
+                                      ABTI_UNIT_STATE_TERMINATED);
     }
 }
 
@@ -123,18 +123,18 @@ static inline void ABTI_xstream_terminate_task(ABTI_xstream *p_local_xstream,
                                                ABTI_task *p_task)
 {
     LOG_DEBUG("[T%" PRIu64 ":E%d] terminated\n", ABTI_task_get_id(p_task),
-              p_task->p_xstream->rank);
-    if (p_task->refcount == 0) {
-        ABTD_atomic_release_store_int(&p_task->state,
-                                      ABT_TASK_STATE_TERMINATED);
+              p_task->unit_def.p_last_xstream->rank);
+    if (p_task->unit_def.refcount == 0) {
+        ABTD_atomic_release_store_int(&p_task->unit_def.state,
+                                      ABTI_UNIT_STATE_TERMINATED);
         ABTI_task_free(p_local_xstream, p_task);
     } else {
         /* NOTE: We set the task's state as TERMINATED after checking refcount
          * because the task can be freed on a different ES.  In other words, we
          * must not access any field of p_task after changing the state to
          * TERMINATED. */
-        ABTD_atomic_release_store_int(&p_task->state,
-                                      ABT_TASK_STATE_TERMINATED);
+        ABTD_atomic_release_store_int(&p_task->unit_def.state,
+                                      ABTI_UNIT_STATE_TERMINATED);
     }
 }
 

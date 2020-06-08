@@ -42,7 +42,7 @@ void thread_func(void *arg)
 {
     int i;
     int rank;
-    ABT_thread_id id;
+    ABT_unit_id id;
     ABT_thread self;
     thread_arg_t *t_arg = (thread_arg_t *)arg;
 

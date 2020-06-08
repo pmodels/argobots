@@ -18,7 +18,7 @@ static void thread_hello(void *arg)
     ATS_UNUSED(arg);
     int rank;
     ABT_thread self;
-    ABT_thread_id id;
+    ABT_unit_id id;
 
     ABT_xstream_self_rank(&rank);
     ABT_thread_self(&self);
@@ -33,7 +33,7 @@ static void thread_func(void *arg)
     int rank, ret;
     ABT_xstream xstream;
     ABT_thread self;
-    ABT_thread_id id;
+    ABT_unit_id id;
     ABT_sched sched;
     ABT_pool pool;
     ABT_thread *threads;

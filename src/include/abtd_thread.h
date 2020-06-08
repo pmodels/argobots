@@ -18,9 +18,7 @@ void ABTD_thread_terminate_no_arg();
 #endif
 
 static inline int ABTD_thread_context_create(ABTD_thread_context *p_link,
-                                             void (*f_thread)(void *),
-                                             void *p_arg, size_t stacksize,
-                                             void *p_stack,
+                                             size_t stacksize, void *p_stack,
                                              ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
@@ -32,8 +30,6 @@ static inline int ABTD_thread_context_create(ABTD_thread_context *p_link,
 
     ABTD_thread_context_make(p_newctx, p_stacktop, stacksize,
                              ABTD_thread_func_wrapper);
-    p_newctx->f_thread = f_thread;
-    p_newctx->p_arg = p_arg;
     ABTD_atomic_relaxed_store_thread_context_ptr(&p_newctx->p_link, p_link);
 
     return abt_errno;
@@ -49,22 +45,16 @@ static inline int ABTD_thread_context_invalidate(ABTD_thread_context *p_newctx)
 #else
     p_newctx->p_ctx = NULL;
 #endif
-    p_newctx->f_thread = NULL;
-    p_newctx->p_arg = NULL;
     ABTD_atomic_relaxed_store_thread_context_ptr(&p_newctx->p_link, NULL);
     return abt_errno;
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
 static inline int ABTD_thread_context_init(ABTD_thread_context *p_link,
-                                           void (*f_thread)(void *),
-                                           void *p_arg,
                                            ABTD_thread_context *p_newctx)
 {
     int abt_errno = ABT_SUCCESS;
     p_newctx->p_ctx = NULL;
-    p_newctx->f_thread = f_thread;
-    p_newctx->p_arg = p_arg;
     ABTD_atomic_relaxed_store_thread_context_ptr(&p_newctx->p_link, p_link);
     return abt_errno;
 }
@@ -140,16 +130,5 @@ static inline void ABTD_thread_context_dynamic_promote_thread(void *p_stacktop)
     ABTDI_thread_context_dynamic_promote(p_stacktop, jump_f);
 }
 #endif
-
-static inline void ABTD_thread_context_set_arg(ABTD_thread_context *p_ctx,
-                                               void *arg)
-{
-    p_ctx->p_arg = arg;
-}
-
-static inline void *ABTD_thread_context_get_arg(ABTD_thread_context *p_ctx)
-{
-    return p_ctx->p_arg;
-}
 
 #endif /* ABTD_THREAD_H_INCLUDED */

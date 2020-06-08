@@ -94,7 +94,7 @@ void cond_test(void *arg)
     thread_arg_t *my_arg = (thread_arg_t *)arg;
     int i;
 
-    ABT_thread_id tid;
+    ABT_unit_id tid;
     ABT_thread thread;
     ABT_thread_self(&thread);
     ABT_thread_get_id(thread, &tid);

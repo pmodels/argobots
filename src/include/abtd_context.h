@@ -46,8 +46,6 @@ static inline void ABTD_atomic_release_store_thread_context_ptr(
 struct ABTD_thread_context {
     void *p_ctx;                           /* actual context of fcontext, or a
                                             * pointer to uctx */
-    void (*f_thread)(void *);              /* ULT function */
-    void *p_arg;                           /* ULT function argument */
     ABTD_thread_context_atomic_ptr p_link; /* pointer to scheduler context */
 #ifndef ABT_CONFIG_USE_FCONTEXT
     ucontext_t uctx;               /* ucontext entity pointed by p_ctx */
