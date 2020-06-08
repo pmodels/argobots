@@ -219,7 +219,6 @@ struct ABTI_xstream {
     ABTI_xstream_type type;   /* Type */
     ABTD_atomic_int state;    /* State (ABT_xstream_state) */
     ABTI_sched **scheds;      /* Stack of running schedulers */
-    ABTI_spinlock sched_lock; /* Lock for the scheduler management */
     ABTI_sched *p_main_sched; /* Main scheduler, which is the bottom of the
                                * linked list of schedulers */
     ABTI_sched *p_sched_top;  /* The currently running scheduler. This is the
@@ -244,7 +243,6 @@ struct ABTI_sched {
     ABT_bool automatic;         /* To know if automatic data free */
     ABTI_sched_kind kind;       /* Kind of the scheduler  */
     ABT_sched_type type;        /* Can yield or not (ULT or task) */
-    ABT_sched_state state;      /* State */
     ABTD_atomic_uint32 request; /* Request */
     ABT_pool *pools;            /* Work unit pools */
     int num_pools;              /* Number of work unit pools */

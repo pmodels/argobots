@@ -318,8 +318,6 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream,
     /* Check exit request */
     if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
         ABTI_SCHED_REQ_EXIT) {
-        ABTI_spinlock_acquire(&p_local_xstream->sched_lock);
-        p_sched->state = ABT_SCHED_STATE_TERMINATED;
         stop = ABT_TRUE;
         goto fn_exit;
     }
@@ -329,15 +327,9 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream,
         if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
             ABTI_SCHED_REQ_FINISH) {
             /* Check join request */
-            /* We need to lock in case someone wants to migrate to this
-             * scheduler */
-            ABTI_spinlock_acquire(&p_local_xstream->sched_lock);
             size = ABTI_sched_get_effective_size(p_local_xstream, p_sched);
             if (size == 0) {
-                p_sched->state = ABT_SCHED_STATE_TERMINATED;
                 stop = ABT_TRUE;
-            } else {
-                ABTI_spinlock_release(&p_local_xstream->sched_lock);
             }
         } else if (p_sched->used == ABTI_SCHED_IN_POOL) {
             /* If the scheduler is a stacked one, we have to escape from the
@@ -345,7 +337,6 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream,
              * tasklet type. However, if the scheduler is a ULT type, we
              * context switch to the parent scheduler. */
             if (p_sched->type == ABT_SCHED_TYPE_TASK) {
-                p_sched->state = ABT_SCHED_STATE_TERMINATED;
                 stop = ABT_TRUE;
             } else {
                 ABTI_ASSERT(p_sched->type == ABT_SCHED_TYPE_ULT);
@@ -602,7 +593,6 @@ int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->used = ABTI_SCHED_NOT_USED;
     p_sched->automatic = automatic;
     p_sched->kind = ABTI_sched_get_kind(def);
-    p_sched->state = ABT_SCHED_STATE_READY;
     ABTD_atomic_relaxed_store_uint32(&p_sched->request, 0);
     p_sched->pools = pool_list;
     p_sched->num_pools = num_pools;
@@ -852,11 +842,7 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
     ABT_sched sched = ABTI_sched_get_handle(p_sched);
     ABTI_pool *p_pool;
 
-    ABTI_CHECK_TRUE(p_sched->state != ABT_SCHED_STATE_TERMINATED,
-                    ABT_ERR_INV_SCHED);
-
-    /* Find a pool */
-    /* If get_migr_pool is not defined, we pick the first pool */
+    /* Find a pool.  If get_migr_pool is not defined, we pick the first pool */
     if (p_sched->get_migr_pool == NULL) {
         if (p_sched->num_pools == 0)
             p_pool = NULL;
@@ -897,7 +883,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
     }
 
     ABTI_sched_kind kind;
-    char *kind_str, *type, *state, *used;
+    char *kind_str, *type, *used;
     char *pools_str;
     int i;
     size_t size, pos;
@@ -922,23 +908,6 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
             break;
         default:
             type = "UNKNOWN";
-            break;
-    }
-    switch (p_sched->state) {
-        case ABT_SCHED_STATE_READY:
-            state = "READY";
-            break;
-        case ABT_SCHED_STATE_RUNNING:
-            state = "RUNNING";
-            break;
-        case ABT_SCHED_STATE_STOPPED:
-            state = "STOPPED";
-            break;
-        case ABT_SCHED_STATE_TERMINATED:
-            state = "TERMINATED";
-            break;
-        default:
-            state = "UNKNOWN";
             break;
     }
     switch (p_sched->used) {
@@ -975,7 +944,6 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
 #endif
             "%skind     : %" PRIxPTR " (%s)\n"
             "%stype     : %s\n"
-            "%sstate    : %s\n"
             "%sused     : %s\n"
             "%sautomatic: %s\n"
             "%srequest  : 0x%x\n"
@@ -988,8 +956,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
             prefix, p_sched->id,
 #endif
-            prefix, p_sched->kind, kind_str, prefix, type, prefix, state,
-            prefix, used, prefix,
+            prefix, p_sched->kind, kind_str, prefix, type, prefix, used, prefix,
             (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE", prefix,
             ABTD_atomic_acquire_load_uint32(&p_sched->request), prefix,
             p_sched->num_pools, prefix, pools_str, prefix,
