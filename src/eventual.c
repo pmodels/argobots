@@ -114,9 +114,10 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         ABTI_unit *p_unit;
 
         if (p_local_xstream != NULL) {
-            p_current = p_local_xstream->p_thread;
-            ABTI_CHECK_TRUE(p_current != NULL, ABT_ERR_EVENTUAL);
-            p_unit = &p_current->unit_def;
+            p_unit = p_local_xstream->p_unit;
+            ABTI_CHECK_TRUE(ABTI_unit_type_is_thread(p_unit->type),
+                            ABT_ERR_EVENTUAL);
+            p_current = ABTI_unit_get_thread(p_unit);
         } else {
             /* external thread */
             p_current = NULL;

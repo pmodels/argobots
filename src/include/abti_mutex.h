@@ -78,7 +78,8 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
     if (ABTI_unit_type_is_thread(type)) {
         LOG_DEBUG("%p: lock - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-            ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
+            ABTI_thread_yield(pp_local_xstream,
+                              ABTI_unit_get_thread(p_local_xstream->p_unit));
             p_local_xstream = *pp_local_xstream;
         }
         LOG_DEBUG("%p: lock - acquired\n", p_mutex);
@@ -105,7 +106,8 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
                  * other ULT on the same ES, we don't need to change the mutex
                  * state. */
                 if (p_mutex->p_handover) {
-                    ABTI_thread *p_self = (*pp_local_xstream)->p_thread;
+                    ABTI_thread *p_self =
+                        ABTI_unit_get_thread((*pp_local_xstream)->p_unit);
                     if (p_self == p_mutex->p_handover) {
                         p_mutex->p_handover = NULL;
                         ABTD_atomic_release_store_uint32(&p_mutex->val, 2);

@@ -138,15 +138,15 @@ int ABT_future_wait(ABT_future future)
         ABTI_unit *p_unit;
 
         if (p_local_xstream != NULL) {
-            p_current = p_local_xstream->p_thread;
+            p_unit = p_local_xstream->p_unit;
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
-            if (p_current == NULL) {
+            if (!ABTI_unit_type_is_thread(p_unit->type)) {
                 abt_errno = ABT_ERR_FUTURE;
                 ABTI_spinlock_release(&p_future->lock);
                 goto fn_fail;
             }
 #endif
-            p_unit = &p_current->unit_def;
+            p_current = ABTI_unit_get_thread(p_unit);
         } else {
             /* external thread */
             p_current = NULL;

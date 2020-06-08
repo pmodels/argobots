@@ -162,10 +162,10 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_sibling_internal(
         ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
-        ABTI_thread *p_prev = p_local_xstream->p_thread;
-        ABTI_ASSERT(p_local_xstream->p_task == NULL);
-        p_local_xstream->p_thread = p_old;
-        return p_prev;
+        ABTI_unit *p_prev = p_local_xstream->p_unit;
+        p_local_xstream->p_unit = &p_old->unit_def;
+        ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev->type));
+        return ABTI_unit_get_thread(p_prev);
     }
 }
 
@@ -187,10 +187,10 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_parent_internal(
         ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
-        ABTI_thread *p_prev = p_local_xstream->p_thread;
-        ABTI_ASSERT(p_local_xstream->p_task == NULL);
-        p_local_xstream->p_thread = p_old;
-        return p_prev;
+        ABTI_unit *p_prev = p_local_xstream->p_unit;
+        p_local_xstream->p_unit = &p_old->unit_def;
+        ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev->type));
+        return ABTI_unit_get_thread(p_prev);
     }
 }
 
@@ -207,8 +207,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
         LOG_DEBUG("[U%" PRIu64 "] run ULT (dynamic promotion)\n",
                   ABTI_thread_get_id(p_new));
         p_local_xstream = *pp_local_xstream;
-        ABTI_ASSERT(p_local_xstream->p_task == NULL);
-        p_local_xstream->p_thread = p_new;
+        p_local_xstream->p_unit = &p_new->unit_def;
         ABTD_thread_context_make_and_call(&p_old->ctx, p_new->unit_def.f_unit,
                                           p_new->unit_def.p_arg, p_stacktop);
         /* The scheduler continues from here. If the previous thread has not
@@ -217,9 +216,10 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
          * so it must be done here. */
         p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
-        ABTI_thread *p_prev = p_local_xstream->p_thread;
-        ABTI_ASSERT(p_local_xstream->p_task == NULL);
-        p_local_xstream->p_thread = p_old;
+        ABTI_unit *p_prev_unit = p_local_xstream->p_unit;
+        ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev_unit->type));
+        ABTI_thread *p_prev = ABTI_unit_get_thread(p_prev_unit);
+        p_local_xstream->p_unit = &p_old->unit_def;
         if (!ABTI_thread_is_dynamic_promoted(p_prev)) {
             ABTI_ASSERT(p_prev == p_new);
             /* See ABTDI_thread_terminate for details.
@@ -265,10 +265,10 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
         ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
         p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
-        ABTI_thread *p_prev = p_local_xstream->p_thread;
-        ABTI_ASSERT(p_local_xstream->p_task == NULL);
-        p_local_xstream->p_thread = p_old;
-        return p_prev;
+        ABTI_unit *p_prev = p_local_xstream->p_unit;
+        p_local_xstream->p_unit = &p_old->unit_def;
+        ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev->type));
+        return ABTI_unit_get_thread(p_prev);
     }
 }
 

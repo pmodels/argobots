@@ -204,7 +204,8 @@ int ABT_task_free(ABT_task *task)
             continue;
         }
 #endif
-        ABTI_thread_yield(&p_local_xstream, p_local_xstream->p_thread);
+        ABTI_thread_yield(&p_local_xstream,
+                          ABTI_unit_get_thread(p_local_xstream->p_unit));
     }
 
     /* Free the ABTI_task structure */
@@ -250,7 +251,8 @@ int ABT_task_join(ABT_task task)
             continue;
         }
 #endif
-        ABTI_thread_yield(&p_local_xstream, p_local_xstream->p_thread);
+        ABTI_thread_yield(&p_local_xstream,
+                          ABTI_unit_get_thread(p_local_xstream->p_unit));
     }
 
 fn_exit:
@@ -325,9 +327,9 @@ int ABT_task_self(ABT_task *task)
     }
 #endif
 
-    ABTI_task *p_task = p_local_xstream->p_task;
-    if (p_task != NULL) {
-        *task = ABTI_task_get_handle(p_task);
+    ABTI_unit *p_unit = p_local_xstream->p_unit;
+    if (p_unit->type == ABTI_UNIT_TYPE_TASK) {
+        *task = ABTI_task_get_handle(ABTI_unit_get_task(p_unit));
     } else {
         abt_errno = ABT_ERR_INV_TASK;
         *task = ABT_TASK_NULL;
@@ -368,13 +370,12 @@ int ABT_task_self_id(ABT_unit_id *id)
     }
 #endif
 
-    ABTI_task *p_task = p_local_xstream->p_task;
-    if (p_task != NULL) {
-        *id = ABTI_task_get_id(p_task);
+    ABTI_unit *p_unit = p_local_xstream->p_unit;
+    if (p_unit->type == ABTI_UNIT_TYPE_TASK) {
+        *id = ABTI_task_get_id(ABTI_unit_get_task(p_unit));
     } else {
         abt_errno = ABT_ERR_INV_TASK;
     }
-
     return abt_errno;
 }
 

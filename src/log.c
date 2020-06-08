@@ -24,13 +24,13 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
     int tid_len = 0, rank_len = 0;
     size_t newfmt_len;
 
-    if (!p_local_xstream) {
+    if (!p_local_xstream || !p_local_xstream->p_unit) {
         prefix = "<UNKNOWN> ";
         prefix_fmt = "%s%s";
     } else {
         ABTI_unit_type type = ABTI_self_get_type(p_local_xstream);
         if (ABTI_unit_type_is_thread(type)) {
-            p_thread = p_local_xstream->p_thread;
+            p_thread = ABTI_unit_get_thread(p_local_xstream->p_unit);
             if (p_thread == NULL) {
                 if (p_local_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
                     prefix_fmt = "<U%" PRIu64 ":E%d> %s";
@@ -55,9 +55,9 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
             }
         } else if (type == ABTI_UNIT_TYPE_TASK) {
             rank = p_local_xstream->rank;
-            p_task = p_local_xstream->p_task;
+            p_task = ABTI_unit_get_task(p_local_xstream->p_unit);
             prefix_fmt = "<T%" PRIu64 ":E%d> %s";
-            tid = p_task ? ABTI_task_get_id(p_task) : 0;
+            tid = ABTI_task_get_id(p_task);
         } else {
             prefix = "<EXT> ";
             prefix_fmt = "%s%s";
