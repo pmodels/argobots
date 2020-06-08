@@ -39,7 +39,8 @@ int ABT_self_get_type(ABT_unit_type *type)
     }
 
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    *type = ABTI_self_get_type(p_local_xstream);
+    ABTI_unit_type raw_type = ABTI_self_get_type(p_local_xstream);
+    *type = ABTI_unit_type_get_type(raw_type);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (*type == ABT_UNIT_TYPE_EXT) {
@@ -93,8 +94,9 @@ int ABT_self_is_primary(ABT_bool *flag)
 
     p_thread = p_local_xstream->p_thread;
     if (p_thread) {
-        *flag = (p_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN) ? ABT_TRUE
-                                                               : ABT_FALSE;
+        *flag = (p_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_MAIN)
+                    ? ABT_TRUE
+                    : ABT_FALSE;
     } else {
         abt_errno = ABT_ERR_INV_THREAD;
         *flag = ABT_FALSE;
@@ -173,8 +175,8 @@ int ABT_self_get_last_pool_id(int *pool_id)
     ABTI_thread *p_thread;
     ABTI_task *p_task;
 
-    /* If Argobots has not been initialized, set type to ABT_UNIT_TYPE_EXIT. */
     if (gp_ABTI_global == NULL) {
+        /* Argobots has not been initialized. */
         abt_errno = ABT_ERR_UNINITIALIZED;
         *pool_id = -1;
         goto fn_exit;

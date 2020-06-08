@@ -313,13 +313,14 @@ ABTI_thread_finish_context_sched_to_main_thread(ABTI_sched *p_main_sched)
 {
     /* The main thread is stored in p_link. */
     ABTI_thread *p_sched_thread = p_main_sched->p_thread;
-    ABTI_ASSERT(p_sched_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN_SCHED);
+    ABTI_ASSERT(p_sched_thread->unit_def.type ==
+                ABTI_UNIT_TYPE_THREAD_MAIN_SCHED);
     ABTD_thread_context *p_ctx = &p_sched_thread->ctx;
     ABTI_thread *p_main_thread =
         (ABTI_thread *)ABTD_atomic_acquire_load_thread_context_ptr(
             &p_ctx->p_link);
     ABTI_ASSERT(p_main_thread &&
-                p_main_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN);
+                p_main_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_MAIN);
     ABTD_thread_finish_context(&p_sched_thread->ctx, &p_main_thread->ctx);
 }
 

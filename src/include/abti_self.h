@@ -43,24 +43,26 @@ static inline ABTI_unit_id ABTI_self_get_unit_id(ABTI_xstream *p_local_xstream)
     return id;
 }
 
-static inline ABT_unit_type ABTI_self_get_type(ABTI_xstream *p_local_xstream)
+static inline ABTI_unit_type ABTI_self_get_type(ABTI_xstream *p_local_xstream)
 {
     ABTI_ASSERT(gp_ABTI_global);
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
     if (p_local_xstream == NULL) {
-        return ABT_UNIT_TYPE_EXT;
+        return ABTI_UNIT_TYPE_EXT;
     }
 #endif
 
-    if (p_local_xstream->p_task != NULL) {
-        return ABT_UNIT_TYPE_TASK;
+    if (p_local_xstream->p_thread) {
+        return p_local_xstream->p_thread->unit_def.type;
+    } else if (p_local_xstream->p_task) {
+        return ABTI_UNIT_TYPE_TASK;
     } else {
         /* Since p_local_xstream->p_thread can return NULL during executing
          * ABTI_init(), it should always be safe to say that the type of caller
          * is ULT if the control reaches here. */
-        return ABT_UNIT_TYPE_THREAD;
+        return ABTI_UNIT_TYPE_THREAD_MAIN;
     }
 }
 

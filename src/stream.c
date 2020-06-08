@@ -498,7 +498,7 @@ int ABT_xstream_exit(void)
     /* Wait until the ES terminates */
     do {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type(p_local_xstream) != ABT_UNIT_TYPE_THREAD) {
+        if (!ABTI_unit_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
             ABTD_atomic_pause();
             continue;
         }
@@ -1295,7 +1295,8 @@ int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream)
         while (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
                ABT_XSTREAM_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-            if (ABTI_self_get_type(p_local_xstream) != ABT_UNIT_TYPE_THREAD) {
+            if (!ABTI_unit_type_is_thread(
+                    ABTI_self_get_type(p_local_xstream))) {
                 ABTD_atomic_pause();
                 continue;
             }
@@ -1734,7 +1735,7 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
     }
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        ABTI_CHECK_TRUE(p_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN,
+        ABTI_CHECK_TRUE(p_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_MAIN,
                         ABT_ERR_THREAD);
 
         /* Since the primary ES does not finish its execution until ABT_finalize

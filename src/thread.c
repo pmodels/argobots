@@ -311,8 +311,9 @@ int ABT_thread_free(ABT_thread *thread)
                         ABT_ERR_INV_THREAD,
                         "The current thread cannot be freed.");
 
-    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                            p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE_MSG(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                            p_thread->unit_def.type !=
+                                ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                         ABT_ERR_INV_THREAD,
                         "The main thread cannot be freed explicitly.");
 
@@ -482,8 +483,9 @@ int ABT_thread_cancel(ABT_thread thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                            p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE_MSG(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                            p_thread->unit_def.type !=
+                                ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                         ABT_ERR_INV_THREAD,
                         "The main thread cannot be canceled.");
 
@@ -965,8 +967,9 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
     /* checking for cases when migration is not allowed */
     ABTI_CHECK_TRUE(p_sched->state == ABT_SCHED_STATE_RUNNING,
                     ABT_ERR_INV_XSTREAM);
-    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                        p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                        p_thread->unit_def.type !=
+                            ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABTI_UNIT_STATE_TERMINATED,
@@ -1159,7 +1162,7 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (p_thread->type == ABTI_UNIT_TYPE_THREAD_USER) {
+    if (p_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_USER) {
         p_thread->migratable = flag;
     }
 
@@ -1232,8 +1235,8 @@ int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag)
     p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag =
-        (p_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN) ? ABT_TRUE : ABT_FALSE;
+    *flag = (p_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_MAIN) ? ABT_TRUE
+                                                                    : ABT_FALSE;
 
 fn_exit:
     return abt_errno;
@@ -1477,7 +1480,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #endif
     p_newthread->p_pool = p_pool;
     p_newthread->refcount = refcount;
-    p_newthread->type = unit_type;
+    p_newthread->unit_def.type = unit_type;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newthread->p_req_arg = NULL;
 #endif
@@ -1564,8 +1567,9 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
     ABTI_CHECK_TRUE(ABTI_pool_accept_migration(p_pool, p_thread->p_pool) ==
                         ABT_TRUE,
                     ABT_ERR_INV_POOL);
-    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                        p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                        p_thread->unit_def.type !=
+                            ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABTI_UNIT_STATE_TERMINATED,
@@ -1790,7 +1794,7 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     int abt_errno = ABT_SUCCESS;
 
     /* The main sched cannot be blocked */
-    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_THREAD);
 
     /* To prevent the scheduler from adding the ULT to the pool */
@@ -1902,7 +1906,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *type, *state;
 
-    switch (p_thread->type) {
+    switch (p_thread->unit_def.type) {
         case ABTI_UNIT_TYPE_THREAD_MAIN:
             type = "MAIN";
             break;
@@ -2189,7 +2193,7 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABTD_atomic_relaxed_store_uint32(&p_thread->request, 0);
     p_thread->p_last_xstream = NULL;
     p_thread->refcount = 1;
-    p_thread->type = ABTI_UNIT_TYPE_THREAD_USER;
+    p_thread->unit_def.type = ABTI_UNIT_TYPE_THREAD_USER;
 
     if (p_thread->p_pool != p_pool) {
         /* Free the unit for the old pool */
@@ -2231,14 +2235,15 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
         ABTI_UNIT_STATE_TERMINATED)
         return abt_errno;
 
-    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                            p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE_MSG(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                            p_thread->unit_def.type !=
+                                ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                         ABT_ERR_INV_THREAD, "The main ULT cannot be joined.");
 
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
-    if (type != ABT_UNIT_TYPE_THREAD)
+    ABTI_unit_type type = ABTI_self_get_type(p_local_xstream);
+    if (!ABTI_unit_type_is_thread(type))
         goto busywait_based;
 #endif
 
@@ -2379,8 +2384,9 @@ static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_xstream->state) !=
                         ABT_XSTREAM_STATE_TERMINATED,
                     ABT_ERR_INV_XSTREAM);
-    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                        p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                        p_thread->unit_def.type !=
+                            ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABTI_UNIT_STATE_TERMINATED,

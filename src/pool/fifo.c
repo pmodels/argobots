@@ -409,14 +409,14 @@ static int pool_print_all(ABT_pool pool, void *arg,
 static ABT_unit_type unit_get_type(ABT_unit unit)
 {
     unit_t *p_unit = (unit_t *)unit;
-    return p_unit->type;
+    return ABTI_unit_type_get_type(p_unit->type);
 }
 
 static ABT_thread unit_get_thread(ABT_unit unit)
 {
     ABT_thread h_thread;
     unit_t *p_unit = (unit_t *)unit;
-    if (p_unit->type == ABT_UNIT_TYPE_THREAD) {
+    if (ABTI_unit_type_is_thread(p_unit->type)) {
         h_thread = p_unit->handle.thread;
     } else {
         h_thread = ABT_THREAD_NULL;
@@ -428,7 +428,7 @@ static ABT_task unit_get_task(ABT_unit unit)
 {
     ABT_task h_task;
     unit_t *p_unit = (unit_t *)unit;
-    if (p_unit->type == ABT_UNIT_TYPE_TASK) {
+    if (p_unit->type == ABTI_UNIT_TYPE_TASK) {
         h_task = p_unit->handle.task;
     } else {
         h_task = ABT_TASK_NULL;
@@ -451,7 +451,7 @@ static ABT_unit unit_create_from_thread(ABT_thread thread)
     p_unit->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_unit->is_in_pool, 0);
     p_unit->handle.thread = thread;
-    p_unit->type = ABT_UNIT_TYPE_THREAD;
+    ABTI_ASSERT(ABTI_unit_type_is_thread(p_unit->type));
 
     return (ABT_unit)p_unit;
 }
@@ -464,7 +464,7 @@ static ABT_unit unit_create_from_task(ABT_task task)
     p_unit->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_unit->is_in_pool, 0);
     p_unit->handle.task = task;
-    p_unit->type = ABT_UNIT_TYPE_TASK;
+    ABTI_ASSERT(p_unit->type == ABTI_UNIT_TYPE_TASK);
 
     return (ABT_unit)p_unit;
 }

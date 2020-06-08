@@ -64,9 +64,11 @@ enum ABTI_sched_used {
 };
 
 enum ABTI_unit_type {
-    ABTI_UNIT_TYPE_THREAD_MAIN,
-    ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
-    ABTI_UNIT_TYPE_THREAD_USER,
+    ABTI_UNIT_TYPE_TASK = 0x0,
+    ABTI_UNIT_TYPE_THREAD_USER = 0x1 + (0x0 << 2),
+    ABTI_UNIT_TYPE_THREAD_MAIN_SCHED = 0x1 + (0x1 << 2),
+    ABTI_UNIT_TYPE_THREAD_MAIN = 0x1 + (0x2 << 2),
+    ABTI_UNIT_TYPE_EXT = 0x2,
 };
 
 enum ABTI_unit_state {
@@ -310,7 +312,7 @@ struct ABTI_unit {
         ABT_task task;
     } handle;
     ABTD_atomic_int is_in_pool;
-    ABT_unit_type type;
+    ABTI_unit_type type;
 };
 
 struct ABTI_thread_attr {
@@ -338,7 +340,6 @@ struct ABTI_thread {
     ABT_unit unit;             /* Unit enclosing this thread */
     ABTI_pool *p_pool;         /* Associated pool */
     uint32_t refcount;         /* Reference count */
-    ABTI_unit_type type;       /* Type */
     void *p_stack;             /* Stack address */
     size_t stacksize;          /* Stack size (in bytes) */
     ABTI_stack_type stacktype; /* Stack type */

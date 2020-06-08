@@ -199,7 +199,7 @@ int ABT_task_free(ABT_task *task)
     while (ABTD_atomic_acquire_load_int(&p_task->state) !=
            ABTI_UNIT_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type(p_local_xstream) != ABT_UNIT_TYPE_THREAD) {
+        if (!ABTI_unit_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
             ABTD_atomic_pause();
             continue;
         }
@@ -245,7 +245,7 @@ int ABT_task_join(ABT_task task)
     while (ABTD_atomic_acquire_load_int(&p_task->state) !=
            ABTI_UNIT_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type(p_local_xstream) != ABT_UNIT_TYPE_THREAD) {
+        if (!ABTI_unit_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
             ABTD_atomic_pause();
             continue;
         }
@@ -680,6 +680,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 
     /* Create a wrapper work unit */
     h_newtask = ABTI_task_get_handle(p_newtask);
+    p_newtask->unit_def.type = ABTI_UNIT_TYPE_TASK;
     p_newtask->unit = p_pool->u_create_from_task(h_newtask);
 
     LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_task_get_id(p_newtask));

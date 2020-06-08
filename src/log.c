@@ -28,51 +28,39 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
         prefix = "<UNKNOWN> ";
         prefix_fmt = "%s%s";
     } else {
-        ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
-        switch (type) {
-            case ABT_UNIT_TYPE_THREAD:
-                p_thread = p_local_xstream->p_thread;
-                if (p_thread == NULL) {
-                    if (p_local_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
-                        prefix_fmt = "<U%" PRIu64 ":E%d> %s";
-                        rank = p_local_xstream->rank;
-                        tid = 0;
-                    } else {
-                        prefix = "<U0:E0> ";
-                        prefix_fmt = "%s%s";
-                    }
-                } else {
+        ABTI_unit_type type = ABTI_self_get_type(p_local_xstream);
+        if (ABTI_unit_type_is_thread(type)) {
+            p_thread = p_local_xstream->p_thread;
+            if (p_thread == NULL) {
+                if (p_local_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
+                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
                     rank = p_local_xstream->rank;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-                    if (p_thread->p_sched) {
-                        prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                        tid = p_thread->p_sched->id;
-                    } else {
-#endif
-                        prefix_fmt = "<U%" PRIu64 ":E%d> %s";
-                        tid = ABTI_thread_get_id(p_thread);
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-                    }
-#endif
+                    tid = 0;
+                } else {
+                    prefix = "<U0:E0> ";
+                    prefix_fmt = "%s%s";
                 }
-                break;
-
-            case ABT_UNIT_TYPE_TASK:
+            } else {
                 rank = p_local_xstream->rank;
-                p_task = p_local_xstream->p_task;
-                prefix_fmt = "<T%" PRIu64 ":E%d> %s";
-                tid = p_task ? ABTI_task_get_id(p_task) : 0;
-                break;
-
-            case ABT_UNIT_TYPE_EXT:
-                prefix = "<EXT> ";
-                prefix_fmt = "%s%s";
-                break;
-
-            default:
-                prefix = "<UNKNOWN> ";
-                prefix_fmt = "%s%s";
-                break;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+                if (p_thread->p_sched) {
+                    prefix_fmt = "<S%" PRIu64 ":E%d> %s";
+                    tid = p_thread->p_sched->id;
+                } else
+#endif
+                {
+                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
+                    tid = ABTI_thread_get_id(p_thread);
+                }
+            }
+        } else if (type == ABTI_UNIT_TYPE_TASK) {
+            rank = p_local_xstream->rank;
+            p_task = p_local_xstream->p_task;
+            prefix_fmt = "<T%" PRIu64 ":E%d> %s";
+            tid = p_task ? ABTI_task_get_id(p_task) : 0;
+        } else {
+            prefix = "<EXT> ";
+            prefix_fmt = "%s%s";
         }
     }
 

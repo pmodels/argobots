@@ -178,8 +178,8 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
-    if (type == ABT_UNIT_TYPE_THREAD) {
+    ABTI_unit_type type = ABTI_self_get_type(p_local_xstream);
+    if (ABTI_unit_type_is_thread(type)) {
         LOG_DEBUG("%p: lock_low - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
             ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
@@ -192,11 +192,11 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
 #else
     int abt_errno;
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABT_unit_type type = ABTI_self_get_type(p_local_xstream);
+    ABTI_unit_type type = ABTI_self_get_type(p_local_xstream);
 
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
-    if (type == ABT_UNIT_TYPE_THREAD) {
+    if (ABTI_unit_type_is_thread(type)) {
         LOG_DEBUG("%p: lock_low - try\n", p_mutex);
         int c;
 
@@ -478,7 +478,7 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
     LOG_DEBUG("%p: unlock_se\n", p_mutex);
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    if (ABTI_self_get_type(p_local_xstream) == ABT_UNIT_TYPE_THREAD)
+    if (ABTI_unit_type_is_thread(ABTI_self_get_type(p_local_xstream)))
         ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
 #else
     ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
@@ -496,7 +496,7 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) == 1) {
         LOG_DEBUG("%p: unlock_se\n", p_mutex);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (ABTI_self_get_type(*pp_local_xstream) == ABT_UNIT_TYPE_THREAD)
+        if (ABTI_unit_type_is_thread(ABTI_self_get_type(*pp_local_xstream)))
             ABTI_thread_yield(pp_local_xstream, (*pp_local_xstream)->p_thread);
 #else
         ABTI_thread_yield(pp_local_xstream, (*pp_local_xstream)->p_thread);
