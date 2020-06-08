@@ -17,7 +17,7 @@ void task_func(void *arg)
 {
     int rank, ret;
     ABT_task self;
-    uint64_t id;
+    ABT_unit_id id;
 
     assert((size_t)arg == 1);
 
@@ -35,7 +35,7 @@ void task_func2(void *arg)
 {
     int rank, ret;
     ABT_task self;
-    uint64_t id;
+    ABT_unit_id id;
 
     assert((size_t)arg == 2);
 
@@ -53,7 +53,7 @@ void task_create(void *arg)
 {
     int rank, i, ret;
     ABT_thread self;
-    ABT_thread_id id;
+    ABT_unit_id id;
     ABT_pool my_pool;
     ABT_task *tasks;
 

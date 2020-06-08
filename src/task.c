@@ -349,7 +349,7 @@ int ABT_task_self(ABT_task *task)
  * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
  * @retval ABT_ERR_INV_TASK      called by a ULT
  */
-int ABT_task_self_id(uint64_t *id)
+int ABT_task_self_id(ABT_unit_id *id)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
@@ -601,7 +601,7 @@ int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_get_id(ABT_task task, uint64_t *task_id)
+int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -842,7 +842,7 @@ uint64_t ABTI_task_get_id(ABTI_task *p_task)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static inline uint64_t ABTI_task_get_new_id(void)
+static inline ABT_unit_id ABTI_task_get_new_id(void)
 {
     return ABTD_atomic_fetch_add_uint64(&g_task_id, 1);
 }

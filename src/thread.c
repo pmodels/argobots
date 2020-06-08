@@ -24,7 +24,7 @@ static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
 #endif
 static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
 static inline void ABTI_thread_free_internal(ABTI_thread *p_thread);
-static inline ABT_thread_id ABTI_thread_get_new_id(void);
+static inline ABT_unit_id ABTI_thread_get_new_id(void);
 
 /** @defgroup ULT User-level Thread (ULT)
  * This group is for User-level Thread (ULT).
@@ -560,7 +560,7 @@ int ABT_thread_self(ABT_thread *thread)
  * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
  * @retval ABT_ERR_INV_THREAD    called by a tasklet
  */
-int ABT_thread_self_id(ABT_thread_id *id)
+int ABT_thread_self_id(ABT_unit_id *id)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
@@ -1304,7 +1304,7 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id)
+int ABT_thread_get_id(ABT_thread thread, ABT_unit_id *thread_id)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1481,7 +1481,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #endif
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-    ABT_thread_id thread_id = ABTI_thread_get_id(p_newthread);
+    ABT_unit_id thread_id = ABTI_thread_get_id(p_newthread);
     if (thread_type == ABTI_THREAD_TYPE_MAIN) {
         LOG_DEBUG("[U%" PRIu64 ":E%d] main ULT created\n", thread_id,
                   p_parent_xstream ? p_parent_xstream->rank : 0);
@@ -2112,7 +2112,7 @@ void ABTI_thread_reset_id(void)
     ABTD_atomic_release_store_uint64(&g_thread_id, 0);
 }
 
-ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread)
+ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread)
 {
     if (p_thread == NULL)
         return ABTI_THREAD_INIT_ID;
@@ -2123,7 +2123,7 @@ ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread)
     return p_thread->id;
 }
 
-ABT_thread_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream)
+ABT_unit_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream)
 {
     ABTI_thread *p_self = NULL;
     if (p_local_xstream)
@@ -2430,7 +2430,7 @@ fn_fail:
 }
 #endif
 
-static inline ABT_thread_id ABTI_thread_get_new_id(void)
+static inline ABT_unit_id ABTI_thread_get_new_id(void)
 {
-    return (ABT_thread_id)ABTD_atomic_fetch_add_uint64(&g_thread_id, 1);
+    return (ABT_unit_id)ABTD_atomic_fetch_add_uint64(&g_thread_id, 1);
 }

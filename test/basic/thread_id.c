@@ -15,7 +15,7 @@ void thread_func(void *arg)
 {
     ATS_UNUSED(arg);
     ABT_thread thread;
-    ABT_thread_id thread_id;
+    ABT_unit_id thread_id;
     ABT_thread_self(&thread);
     ABT_thread_get_id(thread, &thread_id);
     ATS_printf(1, "My thread id is %lu\n", thread_id);

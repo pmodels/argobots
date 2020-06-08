@@ -337,7 +337,7 @@ struct ABTI_thread {
 #endif
     ABTI_ktable *p_keytable; /* ULT-specific data */
     ABTI_thread_attr attr;   /* Attributes */
-    ABT_thread_id id;        /* ID */
+    ABT_unit_id id;          /* ID */
 };
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
@@ -373,7 +373,7 @@ struct ABTI_task {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABT_bool migratable; /* Migratability */
 #endif
-    uint64_t id; /* ID */
+    ABT_unit_id id; /* ID */
 };
 
 struct ABTI_key {
@@ -562,8 +562,8 @@ void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
 void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
 #endif
 void ABTI_thread_reset_id(void);
-ABT_thread_id ABTI_thread_get_id(ABTI_thread *p_thread);
-ABT_thread_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream);
+ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
+ABT_unit_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream);
 int ABTI_thread_get_xstream_rank(ABTI_thread *p_thread);
 int ABTI_thread_self_xstream_rank(ABTI_xstream *p_local_xstream);
 
@@ -596,7 +596,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
 void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_task *p_task);
 void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent);
 void ABTI_task_reset_id(void);
-uint64_t ABTI_task_get_id(ABTI_task *p_task);
+ABT_unit_id ABTI_task_get_id(ABTI_task *p_task);
 
 /* Key */
 ABTI_ktable *ABTI_ktable_alloc(int size);

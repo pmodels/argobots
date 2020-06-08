@@ -44,7 +44,7 @@ void thread_hello(void *arg)
     ABT_xstream xstream;
     ABT_pool pool;
     ABT_thread thread;
-    ABT_thread_id my_id;
+    ABT_unit_id my_id;
     ABT_task task;
     ABT_unit_type type;
     ABT_bool flag;
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     ABT_pool pools[2];
     ABT_thread threads[2];
     ABT_thread my_thread;
-    ABT_thread_id my_thread_id;
+    ABT_unit_id my_thread_id;
     ABT_task my_task;
     ABT_unit_type type;
     ABT_bool flag;

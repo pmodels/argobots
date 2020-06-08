@@ -275,6 +275,8 @@ typedef enum ABT_pool_access                ABT_pool_access;
 typedef struct ABT_unit_opaque *            ABT_unit;
 /* Unit type */
 typedef enum ABT_unit_type                  ABT_unit_type;
+/* Unit id */
+typedef uint64_t                            ABT_unit_id;
 /* User-Level Thread (ULT) */
 typedef struct ABT_thread_opaque *          ABT_thread;
 /* ULT attribute */
@@ -283,8 +285,8 @@ typedef struct ABT_thread_attr_opaque *     ABT_thread_attr;
 typedef enum ABT_thread_state               ABT_thread_state;
 /* Tasklet state */
 typedef enum ABT_task_state                 ABT_task_state;
-/* ULT id */
-typedef uint64_t                            ABT_thread_id;
+/* ULT id (alias to keep backward compatibility) */
+typedef ABT_unit_id                         ABT_thread_id;
 /* Tasklet */
 typedef struct ABT_task_opaque *            ABT_task;
 /* WU-specific data key */
@@ -548,7 +550,7 @@ int ABT_thread_join_many(int num_threads, ABT_thread *thread_list) ABT_API_PUBLI
 int ABT_thread_exit(void) ABT_API_PUBLIC;
 int ABT_thread_cancel(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_thread_self(ABT_thread *thread) ABT_API_PUBLIC;
-int ABT_thread_self_id(ABT_thread_id *id) ABT_API_PUBLIC;
+int ABT_thread_self_id(ABT_unit_id *id) ABT_API_PUBLIC;
 int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state) ABT_API_PUBLIC;
 int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool) ABT_API_PUBLIC;
 int ABT_thread_get_last_pool_id(ABT_thread thread, int *id) ABT_API_PUBLIC;
@@ -568,7 +570,7 @@ int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag) ABT_API_PUBLIC;
 int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
                      ABT_API_PUBLIC;
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize) ABT_API_PUBLIC;
-int ABT_thread_get_id(ABT_thread thread, ABT_thread_id *thread_id) ABT_API_PUBLIC;
+int ABT_thread_get_id(ABT_thread thread, ABT_unit_id *thread_id) ABT_API_PUBLIC;
 int ABT_thread_set_arg(ABT_thread thread, void *arg) ABT_API_PUBLIC;
 int ABT_thread_get_arg(ABT_thread thread, void **arg) ABT_API_PUBLIC;
 int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr) ABT_API_PUBLIC;
@@ -597,7 +599,7 @@ int ABT_task_free(ABT_task *task) ABT_API_PUBLIC;
 int ABT_task_join(ABT_task task) ABT_API_PUBLIC;
 int ABT_task_cancel(ABT_task task) ABT_API_PUBLIC;
 int ABT_task_self(ABT_task *task) ABT_API_PUBLIC;
-int ABT_task_self_id(uint64_t *id) ABT_API_PUBLIC;
+int ABT_task_self_id(ABT_unit_id *id) ABT_API_PUBLIC;
 int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream) ABT_API_PUBLIC;
 int ABT_task_get_state(ABT_task task, ABT_task_state *state) ABT_API_PUBLIC;
 int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool) ABT_API_PUBLIC;
@@ -605,7 +607,7 @@ int ABT_task_get_last_pool_id(ABT_task task, int *id) ABT_API_PUBLIC;
 int ABT_task_set_migratable(ABT_task task, ABT_bool flag) ABT_API_PUBLIC;
 int ABT_task_is_migratable(ABT_task task, ABT_bool *flag) ABT_API_PUBLIC;
 int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result) ABT_API_PUBLIC;
-int ABT_task_get_id(ABT_task task, uint64_t *task_id) ABT_API_PUBLIC;
+int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id) ABT_API_PUBLIC;
 int ABT_task_get_arg(ABT_task task, void **arg) ABT_API_PUBLIC;
 
 /* Self */

@@ -512,7 +512,7 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
         fprintf(fp, "=== ULT (%p) ===\n", (void *)unit);
         ABT_thread thread = p_pool->u_get_thread(unit);
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-        ABT_thread_id thread_id = ABTI_thread_get_id(p_thread);
+        ABT_unit_id thread_id = ABTI_thread_get_id(p_thread);
         fprintf(fp,
                 "id        : %" PRIu64 "\n"
                 "ctx       : %p\n",

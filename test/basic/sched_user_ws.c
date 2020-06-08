@@ -192,7 +192,7 @@ static void thread_func(void *arg)
     ATS_UNUSED(arg);
     int old_rank, cur_rank;
     ABT_thread self;
-    ABT_thread_id id;
+    ABT_unit_id id;
     char *msg;
 
     ABT_xstream_self_rank(&cur_rank);
@@ -232,7 +232,7 @@ static void create_threads(void *arg)
     ABT_pool pool;
     ABT_thread self;
     ABT_thread *threads;
-    ABT_thread_id id;
+    ABT_unit_id id;
 
     ret = ABT_xstream_self(&xstream);
     ATS_ERROR(ret, "ABT_xstream_self");
