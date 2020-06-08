@@ -87,9 +87,9 @@ int ABT_init(int argc, char **argv)
     abt_errno = ABTI_thread_create_main(p_local_xstream, p_local_xstream,
                                         &p_main_thread);
     /* Set as if p_local_xstream is currently running the main thread. */
-    ABTD_atomic_relaxed_store_int(&p_main_thread->state,
+    ABTD_atomic_relaxed_store_int(&p_main_thread->unit_def.state,
                                   ABTI_UNIT_STATE_RUNNING);
-    p_main_thread->p_last_xstream = p_local_xstream;
+    p_main_thread->unit_def.p_last_xstream = p_local_xstream;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
     gp_ABTI_global->p_thread_main = p_main_thread;
     p_local_xstream->p_thread = p_main_thread;
@@ -170,17 +170,19 @@ int ABT_finalize(void)
         ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_ORPHAN);
 
         LOG_DEBUG("[U%" PRIu64 ":E%d] yield to scheduler\n",
-                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+                  ABTI_thread_get_id(p_thread),
+                  p_thread->unit_def.p_last_xstream->rank);
 
         /* Switch to the top scheduler */
         ABTI_sched *p_sched =
-            ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
+            ABTI_xstream_get_top_sched(p_thread->unit_def.p_last_xstream);
         ABTI_thread_context_switch_to_parent(&p_local_xstream, p_thread,
                                              p_sched->p_thread);
 
         /* Back to the original thread */
         LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
-                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+                  ABTI_thread_get_id(p_thread),
+                  p_thread->unit_def.p_last_xstream->rank);
     }
 
     /* Remove the primary ULT */

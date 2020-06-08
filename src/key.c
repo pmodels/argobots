@@ -129,19 +129,19 @@ int ABT_key_set(ABT_key key, void *value)
     /* Obtain the key-value table pointer. */
     p_thread = p_local_xstream->p_thread;
     if (p_thread) {
-        if (p_thread->p_keytable == NULL) {
+        if (p_thread->unit_def.p_keytable == NULL) {
             int key_table_size = gp_ABTI_global->key_table_size;
-            p_thread->p_keytable = ABTI_ktable_alloc(key_table_size);
+            p_thread->unit_def.p_keytable = ABTI_ktable_alloc(key_table_size);
         }
-        p_ktable = p_thread->p_keytable;
+        p_ktable = p_thread->unit_def.p_keytable;
     } else {
         p_task = p_local_xstream->p_task;
         ABTI_CHECK_TRUE(p_task != NULL, ABT_ERR_INV_TASK);
-        if (p_task->p_keytable == NULL) {
+        if (p_task->unit_def.p_keytable == NULL) {
             int key_table_size = gp_ABTI_global->key_table_size;
-            p_task->p_keytable = ABTI_ktable_alloc(key_table_size);
+            p_task->unit_def.p_keytable = ABTI_ktable_alloc(key_table_size);
         }
-        p_ktable = p_task->p_keytable;
+        p_ktable = p_task->unit_def.p_keytable;
     }
 
     /* Save the value in the key-value table */
@@ -189,7 +189,7 @@ int ABT_key_get(ABT_key key, void **value)
     /* Obtain the key-value table pointer */
     p_thread = p_local_xstream->p_thread;
     if (p_thread) {
-        p_ktable = p_thread->p_keytable;
+        p_ktable = p_thread->unit_def.p_keytable;
         if (p_ktable) {
             /* Retrieve the value from the key-value table */
             keyval = ABTI_ktable_get(p_ktable, p_key);
@@ -197,7 +197,7 @@ int ABT_key_get(ABT_key key, void **value)
     } else {
         p_task = p_local_xstream->p_task;
         ABTI_CHECK_TRUE(p_task != NULL, ABT_ERR_INV_TASK);
-        p_ktable = p_task->p_keytable;
+        p_ktable = p_task->unit_def.p_keytable;
         if (p_ktable) {
             /* Retrieve the value from the key-value table */
             keyval = ABTI_ktable_get(p_ktable, p_key);

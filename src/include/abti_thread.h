@@ -203,8 +203,8 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
         p_local_xstream = *pp_local_xstream;
         ABTI_ASSERT(p_local_xstream->p_task == NULL);
         p_local_xstream->p_thread = p_new;
-        ABTD_thread_context_make_and_call(&p_old->ctx, p_new->f_thread,
-                                          p_new->p_arg, p_stacktop);
+        ABTD_thread_context_make_and_call(&p_old->ctx, p_new->unit_def.f_unit,
+                                          p_new->unit_def.p_arg, p_stacktop);
         /* The scheduler continues from here. If the previous thread has not
          * run dynamic promotion, ABTI_thread_context_make_and_call took the
          * fast path. In this case, the request handling has not been done,
@@ -231,11 +231,11 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
 
                 /* We don't need to use the atomic OR operation here because
                  * the ULT will be terminated regardless of other requests. */
-                ABTD_atomic_release_store_uint32(&p_prev->request,
+                ABTD_atomic_release_store_uint32(&p_prev->unit_def.request,
                                                  ABTI_UNIT_REQ_TERMINATE);
             } else {
                 uint32_t req =
-                    ABTD_atomic_fetch_or_uint32(&p_prev->request,
+                    ABTD_atomic_fetch_or_uint32(&p_prev->unit_def.request,
                                                 ABTI_UNIT_REQ_JOIN |
                                                     ABTI_UNIT_REQ_TERMINATE);
                 if (req & ABTI_UNIT_REQ_JOIN) {
@@ -326,13 +326,13 @@ ABTI_thread_finish_context_sched_to_main_thread(ABTI_sched *p_main_sched)
 
 static inline void ABTI_thread_set_request(ABTI_thread *p_thread, uint32_t req)
 {
-    ABTD_atomic_fetch_or_uint32(&p_thread->request, req);
+    ABTD_atomic_fetch_or_uint32(&p_thread->unit_def.request, req);
 }
 
 static inline void ABTI_thread_unset_request(ABTI_thread *p_thread,
                                              uint32_t req)
 {
-    ABTD_atomic_fetch_and_uint32(&p_thread->request, ~req);
+    ABTD_atomic_fetch_and_uint32(&p_thread->unit_def.request, ~req);
 }
 
 static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
@@ -341,19 +341,21 @@ static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
     ABTI_sched *p_sched;
 
     LOG_DEBUG("[U%" PRIu64 ":E%d] yield\n", ABTI_thread_get_id(p_thread),
-              p_thread->p_last_xstream->rank);
+              p_thread->unit_def.p_last_xstream->rank);
 
     /* Change the state of current running thread */
-    ABTD_atomic_release_store_int(&p_thread->state, ABTI_UNIT_STATE_READY);
+    ABTD_atomic_release_store_int(&p_thread->unit_def.state,
+                                  ABTI_UNIT_STATE_READY);
 
     /* Switch to the top scheduler */
-    p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
+    p_sched = ABTI_xstream_get_top_sched(p_thread->unit_def.p_last_xstream);
     ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread,
                                          p_sched->p_thread);
 
     /* Back to the original thread */
     LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
-              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+              ABTI_thread_get_id(p_thread),
+              p_thread->unit_def.p_last_xstream->rank);
 }
 
 #endif /* ABTI_THREAD_H_INCLUDED */

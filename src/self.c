@@ -192,11 +192,11 @@ int ABT_self_get_last_pool_id(int *pool_id)
 #endif
 
     if ((p_thread = p_local_xstream->p_thread)) {
-        ABTI_ASSERT(p_thread->p_pool);
-        *pool_id = (int)(p_thread->p_pool->id);
+        ABTI_ASSERT(p_thread->unit_def.p_pool);
+        *pool_id = (int)(p_thread->unit_def.p_pool->id);
     } else if ((p_task = p_local_xstream->p_task)) {
-        ABTI_ASSERT(p_task->p_pool);
-        *pool_id = (int)(p_task->p_pool->id);
+        ABTI_ASSERT(p_task->unit_def.p_pool);
+        *pool_id = (int)(p_task->unit_def.p_pool->id);
     } else {
         abt_errno = ABT_ERR_OTHER;
         *pool_id = -1;
@@ -285,9 +285,9 @@ int ABT_self_set_arg(void *arg)
     }
 
     if ((p_thread = p_local_xstream->p_thread)) {
-        p_thread->p_arg = arg;
+        p_thread->unit_def.p_arg = arg;
     } else if ((p_task = p_local_xstream->p_task)) {
-        p_task->p_arg = arg;
+        p_task->unit_def.p_arg = arg;
     } else {
         abt_errno = ABT_ERR_OTHER;
         goto fn_fail;
@@ -339,9 +339,9 @@ int ABT_self_get_arg(void **arg)
 #endif
 
     if ((p_thread = p_local_xstream->p_thread)) {
-        *arg = p_thread->p_arg;
+        *arg = p_thread->unit_def.p_arg;
     } else if ((p_task = p_local_xstream->p_task)) {
-        *arg = p_task->p_arg;
+        *arg = p_task->unit_def.p_arg;
     } else {
         *arg = NULL;
         abt_errno = ABT_ERR_OTHER;

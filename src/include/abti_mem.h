@@ -71,7 +71,7 @@ ABTI_mem_alloc_thread_default(ABTI_xstream *p_local_xstream)
     p_thread->p_stack = p_stack;
     p_thread->stacksize = stacksize;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->migratable = ABT_TRUE;
+    p_thread->unit_def.migratable = ABT_TRUE;
     p_thread->f_migration_cb = NULL;
     p_thread->p_migration_cb_arg = NULL;
 #endif
@@ -102,7 +102,7 @@ ABTI_mem_alloc_thread_mempool(ABTI_xstream *p_local_xstream,
     p_thread->p_stack = p_stack;
     p_thread->stacksize = stacksize;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->migratable = p_attr->migratable;
+    p_thread->unit_def.migratable = p_attr->migratable;
     p_thread->f_migration_cb = p_attr->f_cb;
     p_thread->p_migration_cb_arg = p_attr->p_cb_arg;
 #endif
@@ -122,7 +122,7 @@ ABTI_mem_alloc_thread_malloc(ABTI_thread_attr *p_attr)
     p_thread->stacksize = stacksize;
     p_thread->p_stack = p_stack;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->migratable = p_attr->migratable;
+    p_thread->unit_def.migratable = p_attr->migratable;
     p_thread->f_migration_cb = p_attr->f_cb;
     p_thread->p_migration_cb_arg = p_attr->p_cb_arg;
 #endif
@@ -139,7 +139,7 @@ static inline ABTI_thread *ABTI_mem_alloc_thread_user(ABTI_thread_attr *p_attr)
     p_thread->stacksize = p_attr->stacksize;
     p_thread->p_stack = p_attr->p_stack;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->migratable = p_attr->migratable;
+    p_thread->unit_def.migratable = p_attr->migratable;
     p_thread->f_migration_cb = p_attr->f_cb;
     p_thread->p_migration_cb_arg = p_attr->p_cb_arg;
 #endif
@@ -156,7 +156,7 @@ static inline ABTI_thread *ABTI_mem_alloc_thread_main(ABTI_thread_attr *p_attr)
     p_thread->stacksize = p_attr->stacksize;
     p_thread->p_stack = p_attr->p_stack;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->migratable = p_attr->migratable;
+    p_thread->unit_def.migratable = p_attr->migratable;
     p_thread->f_migration_cb = p_attr->f_cb;
     p_thread->p_migration_cb_arg = p_attr->p_cb_arg;
 #endif

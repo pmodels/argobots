@@ -234,7 +234,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
         p_target = p_queue->low_head;
 
         /* Push p_thread to the queue */
-        ABTD_atomic_release_store_int(&p_thread->state,
+        ABTD_atomic_release_store_int(&p_thread->unit_def.state,
                                       ABTI_UNIT_STATE_BLOCKED);
         if (p_queue->low_head == p_queue->low_tail) {
             p_queue->low_head = p_thread;
@@ -252,7 +252,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
         LOG_DEBUG("switch -> U%" PRIu64 "\n", ABTI_thread_get_id(p_target));
 
         /* Context-switch to p_target */
-        ABTD_atomic_release_store_int(&p_target->state,
+        ABTD_atomic_release_store_int(&p_target->unit_def.state,
                                       ABTI_UNIT_STATE_RUNNING);
         ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_thread,
                                               p_target);

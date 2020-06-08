@@ -13,11 +13,11 @@ void ABTD_thread_func_wrapper(void *p_arg)
     ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
     /* NOTE: ctx is located in the beginning of ABTI_thread */
     ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
-    ABTI_xstream *p_local_xstream = p_thread->p_last_xstream;
+    ABTI_xstream *p_local_xstream = p_thread->unit_def.p_last_xstream;
     ABTI_ASSERT(p_local_xstream->p_task == NULL);
     p_local_xstream->p_thread = p_thread;
 
-    p_thread->f_thread(p_thread->p_arg);
+    p_thread->unit_def.f_unit(p_thread->unit_def.p_arg);
 
     /* This ABTI_local_get_xstream() is controversial since it is called after
      * the context-switchable function (i.e., thread_func()).  We assume that
@@ -40,14 +40,15 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
     if (p_link) {
         /* If p_link is set, it means that other ULT has called the join. */
         ABTI_thread *p_joiner = (ABTI_thread *)p_link;
-        if (p_thread->p_last_xstream == p_joiner->p_last_xstream) {
+        if (p_thread->unit_def.p_last_xstream ==
+            p_joiner->unit_def.p_last_xstream) {
             /* Only when the current ULT is on the same ES as p_joiner's,
              * we can jump to the joiner ULT. */
-            ABTD_atomic_release_store_int(&p_thread->state,
+            ABTD_atomic_release_store_int(&p_thread->unit_def.state,
                                           ABTI_UNIT_STATE_TERMINATED);
             LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n",
                       ABTI_thread_get_id(p_thread),
-                      p_thread->p_last_xstream->rank);
+                      p_thread->unit_def.p_last_xstream->rank);
 
             /* Note that a parent ULT cannot be a joiner. */
             ABTI_thread_finish_context_to_sibling(p_local_xstream, p_thread,
@@ -61,11 +62,11 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
 
             /* We don't need to use the atomic OR operation here because the ULT
              * will be terminated regardless of other requests. */
-            ABTD_atomic_release_store_uint32(&p_thread->request,
+            ABTD_atomic_release_store_uint32(&p_thread->unit_def.request,
                                              ABTI_UNIT_REQ_TERMINATE);
         }
     } else {
-        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
+        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->unit_def.request,
                                                    ABTI_UNIT_REQ_JOIN |
                                                        ABTI_UNIT_REQ_TERMINATE);
         if (req & ABTI_UNIT_REQ_JOIN) {
@@ -90,7 +91,7 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
         p_sched = p_thread->p_sched->p_parent_sched;
     } else {
 #endif
-        p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);
+        p_sched = ABTI_xstream_get_top_sched(p_thread->unit_def.p_last_xstream);
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     }
 #endif
@@ -125,7 +126,7 @@ void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
                 &p_ctx->p_link);
         ABTI_thread_set_ready(p_local_xstream, p_joiner);
     } else {
-        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->request,
+        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->unit_def.request,
                                                    ABTI_UNIT_REQ_JOIN |
                                                        ABTI_UNIT_REQ_TERMINATE);
         if (req & ABTI_UNIT_REQ_JOIN) {
