@@ -110,7 +110,6 @@ typedef struct ABTI_thread ABTI_thread;
 typedef enum ABTI_stack_type ABTI_stack_type;
 typedef enum ABTI_unit_type ABTI_unit_type;
 typedef enum ABTI_unit_state ABTI_unit_state;
-typedef struct ABTI_thread_req_arg ABTI_thread_req_arg;
 typedef struct ABTI_thread_list ABTI_thread_list;
 typedef struct ABTI_thread_entry ABTI_thread_entry;
 typedef struct ABTI_thread_htable ABTI_thread_htable;
@@ -346,18 +345,10 @@ struct ABTI_thread {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     void (*f_migration_cb)(ABT_thread, void *); /* Callback function */
     void *p_migration_cb_arg;                   /* Callback function argument */
-    ABTI_thread_req_arg *p_req_arg;             /* Request argument */
-    ABTI_spinlock lock;                         /* Spinlock */
+    ABTD_atomic_ptr
+        p_migration_pool; /* Destination of migration (ABTI_pool *) */
 #endif
 };
-
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-struct ABTI_thread_req_arg {
-    uint32_t request;
-    void *p_arg;
-    ABTI_thread_req_arg *next;
-};
-#endif
 
 struct ABTI_thread_list {
     ABTI_thread_entry *head;
@@ -555,10 +546,6 @@ void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream,
 int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os);
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg);
-void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req);
-#endif
 void ABTI_thread_reset_id(void);
 ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
 ABT_unit_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream);

@@ -1486,15 +1486,10 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newthread->unit_def.refcount = refcount;
     p_newthread->unit_def.type = unit_type;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_newthread->p_req_arg = NULL;
+    ABTD_atomic_relaxed_store_ptr(&p_newthread->p_migration_pool, NULL);
 #endif
     p_newthread->unit_def.p_keytable = NULL;
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
-
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    /* Initialize a spinlock */
-    ABTI_spinlock_clear(&p_newthread->lock);
-#endif
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_unit_id thread_id = ABTI_thread_get_id(p_newthread);
@@ -1584,10 +1579,12 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
     ABTI_CHECK_TRUE(p_thread->unit_def.p_pool != p_pool,
                     ABT_ERR_MIGRATION_TARGET);
 
-    /* adding request to the thread */
-    ABTI_spinlock_acquire(&p_thread->lock);
-    ABTI_thread_add_req_arg(p_thread, ABTI_UNIT_REQ_MIGRATE, p_pool);
-    ABTI_spinlock_release(&p_thread->lock);
+    /* adding request to the thread.  p_migration_pool must be updated before
+     * setting the request since the target thread would read p_migration_pool
+     * after ABTI_UNIT_REQ_MIGRATE.  The update must be "atomic" (but does not
+     * require acq-rel) since two threads can update the pointer value
+     * simultaneously. */
+    ABTD_atomic_relaxed_store_ptr(&p_thread->p_migration_pool, (void *)p_pool);
     ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
@@ -1751,12 +1748,6 @@ static inline void ABTI_thread_free_internal(ABTI_thread *p_thread)
 
 void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    /* p_thread's lock may have been acquired somewhere. We free p_thread when
-       the lock can be acquired here. */
-    ABTI_spinlock_acquire(&p_thread->lock);
-#endif
-
     LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
               p_thread->unit_def.p_last_xstream->rank);
 
@@ -1961,9 +1952,6 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             "%spool    : %p\n"
             "%srefcount: %u\n"
             "%srequest : 0x%x\n"
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-            "%sreq_arg : %p\n"
-#endif
             "%skeytable: %p\n",
             prefix, (void *)p_thread, prefix, ABTI_thread_get_id(p_thread),
             prefix, type, prefix, state, prefix, (void *)p_xstream,
@@ -1975,9 +1963,6 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             (void *)p_thread->unit_def.p_pool, prefix,
             p_thread->unit_def.refcount, prefix,
             ABTD_atomic_acquire_load_uint32(&p_thread->unit_def.request),
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-            prefix, (void *)p_thread->p_req_arg,
-#endif
             prefix, (void *)p_thread->unit_def.p_keytable);
 
 fn_exit:
@@ -2034,101 +2019,6 @@ int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os)
     }
     return ABT_SUCCESS;
 }
-
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-void ABTI_thread_add_req_arg(ABTI_thread *p_thread, uint32_t req, void *arg)
-{
-    ABTI_thread_req_arg *new;
-    ABTI_thread_req_arg *p_head = p_thread->p_req_arg;
-
-    /* Overwrite the previous same request if exists */
-    while (p_head != NULL) {
-        if (p_head->request == req) {
-            p_head->p_arg = arg;
-            return;
-        }
-    }
-
-    new = (ABTI_thread_req_arg *)ABTU_malloc(sizeof(ABTI_thread_req_arg));
-
-    /* filling the new argument data structure */
-    new->request = req;
-    new->p_arg = arg;
-    new->next = NULL;
-
-    if (p_head == NULL) {
-        p_thread->p_req_arg = new;
-    } else {
-        while (p_head->next != NULL)
-            p_head = p_head->next;
-        p_head->next = new;
-    }
-}
-
-void *ABTI_thread_extract_req_arg(ABTI_thread *p_thread, uint32_t req)
-{
-    void *result = NULL;
-    ABTI_thread_req_arg *p_last = NULL, *p_head = p_thread->p_req_arg;
-
-    while (p_head != NULL) {
-        if (p_head->request == req) {
-            result = p_head->p_arg;
-            if (p_last == NULL)
-                p_thread->p_req_arg = p_head->next;
-            else
-                p_last->next = p_head->next;
-            ABTU_free(p_head);
-            break;
-        }
-        p_last = p_head;
-        p_head = p_head->next;
-    }
-
-    return result;
-}
-
-void ABTI_thread_put_req_arg(ABTI_thread *p_thread,
-                             ABTI_thread_req_arg *p_req_arg)
-{
-    ABTI_spinlock_acquire(&p_thread->lock);
-    ABTI_thread_req_arg *p_head = p_thread->p_req_arg;
-
-    if (p_head == NULL) {
-        p_thread->p_req_arg = p_req_arg;
-    } else {
-        while (p_head->next != NULL) {
-            p_head = p_head->next;
-        }
-        p_head->next = p_req_arg;
-    }
-    ABTI_spinlock_release(&p_thread->lock);
-}
-
-ABTI_thread_req_arg *ABTI_thread_get_req_arg(ABTI_thread *p_thread,
-                                             uint32_t req)
-{
-    ABTI_thread_req_arg *p_result = NULL;
-    ABTI_thread_req_arg *p_last = NULL;
-
-    ABTI_spinlock_acquire(&p_thread->lock);
-    ABTI_thread_req_arg *p_head = p_thread->p_req_arg;
-    while (p_head != NULL) {
-        if (p_head->request == req) {
-            p_result = p_head;
-            if (p_last == NULL)
-                p_thread->p_req_arg = p_head->next;
-            else
-                p_last->next = p_head->next;
-            break;
-        }
-        p_last = p_head;
-        p_head = p_head->next;
-    }
-    ABTI_spinlock_release(&p_thread->lock);
-
-    return p_result;
-}
-#endif /* ABT_CONFIG_DISABLE_MIGRATION */
 
 static ABTD_atomic_uint64 g_thread_id =
     ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);

@@ -1609,27 +1609,25 @@ int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
         p_thread->f_migration_cb(thread, p_thread->p_migration_cb_arg);
     }
 
-    ABTI_spinlock_acquire(&p_thread->lock); // TODO: mutex useful?
-    {
-        /* extracting argument in migration request */
-        p_pool =
-            (ABTI_pool *)ABTI_thread_extract_req_arg(p_thread,
-                                                     ABTI_UNIT_REQ_MIGRATE);
-        ABTI_thread_unset_request(p_thread, ABTI_UNIT_REQ_MIGRATE);
+    /* If request is set, p_migration_pool has a valid pool pointer. */
+    ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&p_thread->unit_def.request) &
+                ABTI_UNIT_REQ_MIGRATE);
 
-        LOG_DEBUG("[U%" PRIu64 "] migration: E%d -> NT %p\n",
-                  ABTI_thread_get_id(p_thread),
-                  p_thread->unit_def.p_last_xstream->rank,
-                  (void *)p_pool->consumer_id);
+    /* Extracting argument in migration request. */
+    p_pool = ABTD_atomic_relaxed_load_ptr(&p_thread->p_migration_pool);
+    ABTI_thread_unset_request(p_thread, ABTI_UNIT_REQ_MIGRATE);
 
-        /* Change the associated pool */
-        p_thread->unit_def.p_pool = p_pool;
+    LOG_DEBUG("[U%" PRIu64 "] migration: E%d -> NT %p\n",
+              ABTI_thread_get_id(p_thread),
+              p_thread->unit_def.p_last_xstream->rank,
+              (void *)p_pool->consumer_id);
 
-        /* Add the unit to the scheduler's pool */
-        ABTI_POOL_PUSH(p_pool, p_thread->unit_def.unit,
-                       ABTI_self_get_native_thread_id(p_local_xstream));
-    }
-    ABTI_spinlock_release(&p_thread->lock);
+    /* Change the associated pool */
+    p_thread->unit_def.p_pool = p_pool;
+
+    /* Add the unit to the scheduler's pool */
+    ABTI_POOL_PUSH(p_pool, p_thread->unit_def.unit,
+                   ABTI_self_get_native_thread_id(p_local_xstream));
 
     ABTI_pool_dec_num_migrations(p_pool);
 
