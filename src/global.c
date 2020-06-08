@@ -88,7 +88,7 @@ int ABT_init(int argc, char **argv)
                                         &p_main_thread);
     /* Set as if p_local_xstream is currently running the main thread. */
     ABTD_atomic_relaxed_store_int(&p_main_thread->state,
-                                  ABT_THREAD_STATE_RUNNING);
+                                  ABTI_UNIT_STATE_RUNNING);
     p_main_thread->p_last_xstream = p_local_xstream;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
     gp_ABTI_global->p_thread_main = p_main_thread;

@@ -44,7 +44,7 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
             /* Only when the current ULT is on the same ES as p_joiner's,
              * we can jump to the joiner ULT. */
             ABTD_atomic_release_store_int(&p_thread->state,
-                                          ABT_THREAD_STATE_TERMINATED);
+                                          ABTI_UNIT_STATE_TERMINATED);
             LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n",
                       ABTI_thread_get_id(p_thread),
                       p_thread->p_last_xstream->rank);

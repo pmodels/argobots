@@ -237,7 +237,7 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
                         /* Push the previous ULT to its pool */
                         ABTI_thread *p_giver = p_mutex->p_giver;
                         ABTD_atomic_release_store_int(&p_giver->state,
-                                                      ABT_THREAD_STATE_READY);
+                                                      ABTI_UNIT_STATE_READY);
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
                                        ABTI_self_get_native_thread_id(
                                            *pp_local_xstream));
@@ -572,7 +572,7 @@ handover:
            ABTI_THREAD_REQ_BLOCK)
         ;
     ABTI_pool_dec_num_blocked(p_next->p_pool);
-    ABTD_atomic_release_store_int(&p_next->state, ABT_THREAD_STATE_RUNNING);
+    ABTD_atomic_release_store_int(&p_next->state, ABTI_UNIT_STATE_RUNNING);
     ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_thread, p_next);
 #endif
 

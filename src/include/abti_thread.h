@@ -343,7 +343,7 @@ static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
               p_thread->p_last_xstream->rank);
 
     /* Change the state of current running thread */
-    ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
+    ABTD_atomic_release_store_int(&p_thread->state, ABTI_UNIT_STATE_READY);
 
     /* Switch to the top scheduler */
     p_sched = ABTI_xstream_get_top_sched(p_thread->p_last_xstream);

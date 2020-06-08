@@ -318,7 +318,7 @@ int ABT_thread_free(ABT_thread *thread)
 
     /* Wait until the thread terminates */
     if (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-        ABT_THREAD_STATE_TERMINATED) {
+        ABTI_UNIT_STATE_TERMINATED) {
         ABTI_thread_join(&p_local_xstream, p_thread);
     }
 
@@ -606,7 +606,8 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
-    *state = (ABT_thread_state)ABTD_atomic_acquire_load_int(&p_thread->state);
+    *state = ABTI_unit_state_get_thread_state(
+        (ABTI_unit_state)ABTD_atomic_acquire_load_int(&p_thread->state));
 
 fn_exit:
     return abt_errno;
@@ -755,7 +756,7 @@ int ABT_thread_yield_to(ABT_thread thread)
                         "The caller and target ULTs are the same.");
 
     ABTI_CHECK_TRUE_MSG(ABTD_atomic_relaxed_load_int(&p_tar_thread->state) !=
-                            ABT_THREAD_STATE_TERMINATED,
+                            ABTI_UNIT_STATE_TERMINATED,
                         ABT_ERR_INV_THREAD,
                         "Cannot yield to the terminated thread");
 
@@ -770,7 +771,7 @@ int ABT_thread_yield_to(ABT_thread thread)
         goto fn_exit;
     }
 
-    ABTD_atomic_release_store_int(&p_cur_thread->state, ABT_THREAD_STATE_READY);
+    ABTD_atomic_release_store_int(&p_cur_thread->state, ABTI_UNIT_STATE_READY);
 
     /* Add the current thread to the pool again */
     ABTI_POOL_PUSH(p_cur_thread->p_pool, p_cur_thread->unit,
@@ -801,7 +802,7 @@ int ABT_thread_yield_to(ABT_thread thread)
 
     /* Switch the context */
     ABTD_atomic_release_store_int(&p_tar_thread->state,
-                                  ABT_THREAD_STATE_RUNNING);
+                                  ABTI_UNIT_STATE_RUNNING);
     ABTI_thread_context_switch_to_sibling(&p_local_xstream, p_cur_thread,
                                           p_tar_thread);
 
@@ -968,7 +969,7 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
                         p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                        ABT_THREAD_STATE_TERMINATED,
+                        ABTI_UNIT_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
     /* Find a pool */
@@ -1468,7 +1469,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newthread->f_thread = thread_func;
     p_newthread->p_arg = arg;
 
-    ABTD_atomic_release_store_int(&p_newthread->state, ABT_THREAD_STATE_READY);
+    ABTD_atomic_release_store_int(&p_newthread->state, ABTI_UNIT_STATE_READY);
     ABTD_atomic_release_store_uint32(&p_newthread->request, 0);
     p_newthread->p_last_xstream = NULL;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
@@ -1567,7 +1568,7 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
                         p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                        ABT_THREAD_STATE_TERMINATED,
+                        ABTI_UNIT_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
     /* checking for migration to the same pool */
@@ -1796,7 +1797,7 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_BLOCK);
 
     /* Change the ULT's state to BLOCKED */
-    ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_BLOCKED);
+    ABTD_atomic_release_store_int(&p_thread->state, ABTI_UNIT_STATE_BLOCKED);
 
     /* Increase the number of blocked ULTs */
     ABTI_pool *p_pool = p_thread->p_pool;
@@ -1838,7 +1839,7 @@ int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 
     /* The ULT should be in BLOCKED state. */
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) ==
-                        ABT_THREAD_STATE_BLOCKED,
+                        ABTI_UNIT_STATE_BLOCKED,
                     ABT_ERR_THREAD);
 
     /* We should wait until the scheduler of the blocked ULT resets the BLOCK
@@ -1881,7 +1882,7 @@ static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread)
     ABTI_pool *p_pool = p_thread->p_pool;
     if (p_pool->u_is_in_pool(p_thread->unit) == ABT_TRUE &&
         ABTD_atomic_acquire_load_int(&p_thread->state) ==
-            ABT_THREAD_STATE_READY) {
+            ABTI_UNIT_STATE_READY) {
         return ABT_TRUE;
     }
 
@@ -1916,16 +1917,16 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             break;
     }
     switch (ABTD_atomic_acquire_load_int(&p_thread->state)) {
-        case ABT_THREAD_STATE_READY:
+        case ABTI_UNIT_STATE_READY:
             state = "READY";
             break;
-        case ABT_THREAD_STATE_RUNNING:
+        case ABTI_UNIT_STATE_RUNNING:
             state = "RUNNING";
             break;
-        case ABT_THREAD_STATE_BLOCKED:
+        case ABTI_UNIT_STATE_BLOCKED:
             state = "BLOCKED";
             break;
-        case ABT_THREAD_STATE_TERMINATED:
+        case ABTI_UNIT_STATE_TERMINATED:
             state = "TERMINATED";
             break;
         default:
@@ -2172,7 +2173,7 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     size_t stacksize;
 
     ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_thread->state) ==
-                        ABT_THREAD_STATE_TERMINATED,
+                        ABTI_UNIT_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
     /* Create a ULT context */
@@ -2184,7 +2185,7 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_thread->f_thread = thread_func;
     p_thread->p_arg = arg;
 
-    ABTD_atomic_relaxed_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_thread->state, ABTI_UNIT_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_thread->request, 0);
     p_thread->p_last_xstream = NULL;
     p_thread->refcount = 1;
@@ -2227,7 +2228,7 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
     int abt_errno = ABT_SUCCESS;
 
     if (ABTD_atomic_acquire_load_int(&p_thread->state) ==
-        ABT_THREAD_STATE_TERMINATED)
+        ABTI_UNIT_STATE_TERMINATED)
         return abt_errno;
 
     ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
@@ -2252,7 +2253,7 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
         (access == ABT_POOL_ACCESS_PRIV || access == ABT_POOL_ACCESS_MPSC ||
          access == ABT_POOL_ACCESS_SPSC) &&
         (ABTD_atomic_acquire_load_int(&p_thread->state) ==
-         ABT_THREAD_STATE_READY)) {
+         ABTI_UNIT_STATE_READY)) {
 
         ABTI_xstream *p_xstream = p_self->p_last_xstream;
 
@@ -2279,10 +2280,10 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
         /* Set the last ES */
         p_thread->p_last_xstream = p_xstream;
         ABTD_atomic_release_store_int(&p_thread->state,
-                                      ABT_THREAD_STATE_RUNNING);
+                                      ABTI_UNIT_STATE_RUNNING);
 
         /* Make the current ULT BLOCKED */
-        ABTD_atomic_release_store_int(&p_self->state, ABT_THREAD_STATE_BLOCKED);
+        ABTD_atomic_release_store_int(&p_self->state, ABTI_UNIT_STATE_BLOCKED);
 
         LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
@@ -2335,8 +2336,8 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
      * has been resumed by p_self's scheduler.  In the latter case, we don't
      * need to change p_self's state. */
     if (ABTD_atomic_relaxed_load_int(&p_self->state) ==
-        ABT_THREAD_STATE_BLOCKED) {
-        ABTD_atomic_release_store_int(&p_self->state, ABT_THREAD_STATE_RUNNING);
+        ABTI_UNIT_STATE_BLOCKED) {
+        ABTD_atomic_release_store_int(&p_self->state, ABTI_UNIT_STATE_RUNNING);
         ABTI_pool_dec_num_blocked(p_self->p_pool);
         LOG_DEBUG("[U%" PRIu64 ":E%d] resume after join\n",
                   ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
@@ -2345,7 +2346,7 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
 
 yield_based:
     while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-           ABT_THREAD_STATE_TERMINATED) {
+           ABTI_UNIT_STATE_TERMINATED) {
         ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread);
         p_local_xstream = *pp_local_xstream;
     }
@@ -2355,7 +2356,7 @@ yield_based:
 busywait_based:
 #endif
     while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-           ABT_THREAD_STATE_TERMINATED) {
+           ABTI_UNIT_STATE_TERMINATED) {
         ABTD_atomic_pause();
     }
 
@@ -2382,7 +2383,7 @@ static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
                         p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                        ABT_THREAD_STATE_TERMINATED,
+                        ABTI_UNIT_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
     /* We need to find the target scheduler */

@@ -71,6 +71,13 @@ enum ABTI_unit_type {
     ABTI_UNIT_TYPE_THREAD_USER,
 };
 
+enum ABTI_unit_state {
+    ABTI_UNIT_STATE_READY,
+    ABTI_UNIT_STATE_RUNNING,
+    ABTI_UNIT_STATE_BLOCKED,
+    ABTI_UNIT_STATE_TERMINATED,
+};
+
 enum ABTI_mutex_attr_val {
     ABTI_MUTEX_ATTR_NONE = 0,
     ABTI_MUTEX_ATTR_RECURSIVE = 1 << 0
@@ -102,6 +109,7 @@ typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_thread ABTI_thread;
 typedef enum ABTI_stack_type ABTI_stack_type;
 typedef enum ABTI_unit_type ABTI_unit_type;
+typedef enum ABTI_unit_state ABTI_unit_state;
 typedef struct ABTI_thread_req_arg ABTI_thread_req_arg;
 typedef struct ABTI_thread_list ABTI_thread_list;
 typedef struct ABTI_thread_entry ABTI_thread_entry;
@@ -321,7 +329,7 @@ struct ABTI_thread_attr {
 struct ABTI_thread {
     ABTD_thread_context ctx;      /* Context */
     ABTI_unit unit_def;           /* Internal unit definition */
-    ABTD_atomic_int state;        /* State (ABT_thread_state) */
+    ABTD_atomic_int state;        /* State (ABTI_unit_state) */
     ABTD_atomic_uint32 request;   /* Request */
     ABTI_xstream *p_last_xstream; /* Last ES where it ran */
     void (*f_thread)(void *);     /* ULT function */
@@ -368,7 +376,7 @@ struct ABTI_thread_entry {
 
 struct ABTI_task {
     ABTI_xstream *p_xstream;    /* Associated ES */
-    ABTD_atomic_int state;      /* State (ABT_task_state) */
+    ABTD_atomic_int state;      /* State (ABTI_unit_state) */
     ABTD_atomic_uint32 request; /* Request */
     void (*f_task)(void *);     /* Task function */
     void *p_arg;                /* Task arguments */
@@ -631,6 +639,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_pool.h"
 #include "abti_sched.h"
 #include "abti_config.h"
+#include "abti_unit.h"
 #include "abti_stream.h"
 #include "abti_self.h"
 #include "abti_thread.h"

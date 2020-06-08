@@ -40,6 +40,7 @@ noinst_HEADERS = \
 	include/abti_thread.h \
 	include/abti_thread_attr.h \
 	include/abti_thread_htable.h \
+	include/abti_unit.h \
 	include/abti_valgrind.h \
 	include/abtu.h
 

@@ -197,7 +197,7 @@ int ABT_task_free(ABT_task *task)
 
     /* Wait until the task terminates */
     while (ABTD_atomic_acquire_load_int(&p_task->state) !=
-           ABT_TASK_STATE_TERMINATED) {
+           ABTI_UNIT_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (ABTI_self_get_type(p_local_xstream) != ABT_UNIT_TYPE_THREAD) {
             ABTD_atomic_pause();
@@ -243,7 +243,7 @@ int ABT_task_join(ABT_task task)
 
     /* TODO: better implementation */
     while (ABTD_atomic_acquire_load_int(&p_task->state) !=
-           ABT_TASK_STATE_TERMINATED) {
+           ABTI_UNIT_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (ABTI_self_get_type(p_local_xstream) != ABT_UNIT_TYPE_THREAD) {
             ABTD_atomic_pause();
@@ -425,7 +425,8 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Return value */
-    *state = (ABT_task_state)ABTD_atomic_acquire_load_int(&p_task->state);
+    *state = ABTI_unit_state_get_task_state(
+        (ABTI_unit_state)ABTD_atomic_acquire_load_int(&p_task->state));
 
 fn_exit:
     return abt_errno;
@@ -665,7 +666,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newtask = ABTI_mem_alloc_task(p_local_xstream);
 
     p_newtask->p_xstream = NULL;
-    ABTD_atomic_relaxed_store_int(&p_newtask->state, ABT_TASK_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_newtask->state, ABTI_UNIT_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_newtask->request, 0);
     p_newtask->f_task = task_func;
     p_newtask->p_arg = arg;
@@ -713,11 +714,11 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     int abt_errno = ABT_SUCCESS;
 
     ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_task->state) ==
-                        ABT_TASK_STATE_TERMINATED,
+                        ABTI_UNIT_STATE_TERMINATED,
                     ABT_ERR_INV_TASK);
 
     p_task->p_xstream = NULL;
-    ABTD_atomic_relaxed_store_int(&p_task->state, ABT_TASK_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_task->state, ABTI_UNIT_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_task->request, 0);
     p_task->f_task = task_func;
     p_task->p_arg = arg;
@@ -783,13 +784,13 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *state;
     switch (ABTD_atomic_acquire_load_int(&p_task->state)) {
-        case ABT_TASK_STATE_READY:
+        case ABTI_UNIT_STATE_READY:
             state = "READY";
             break;
-        case ABT_TASK_STATE_RUNNING:
+        case ABTI_UNIT_STATE_RUNNING:
             state = "RUNNING";
             break;
-        case ABT_TASK_STATE_TERMINATED:
+        case ABTI_UNIT_STATE_TERMINATED:
             state = "TERMINATED";
             break;
         default:
