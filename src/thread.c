@@ -8,10 +8,10 @@
 static inline int
 ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                             void (*thread_func)(void *), void *arg,
-                            ABTI_thread_attr *p_attr,
-                            ABTI_thread_type thread_type, ABTI_sched *p_sched,
-                            int refcount, ABTI_xstream *p_parent_xstream,
-                            ABT_bool push_pool, ABTI_thread **pp_newthread);
+                            ABTI_thread_attr *p_attr, ABTI_unit_type unit_type,
+                            ABTI_sched *p_sched, int refcount,
+                            ABTI_xstream *p_parent_xstream, ABT_bool push_pool,
+                            ABTI_thread **pp_newthread);
 static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                               void (*thread_func)(void *), void *arg,
                               ABTI_thread *p_thread);
@@ -66,8 +66,8 @@ int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
     abt_errno =
         ABTI_thread_create_internal(p_local_xstream, p_pool, thread_func, arg,
                                     ABTI_thread_attr_get_ptr(attr),
-                                    ABTI_THREAD_TYPE_USER, NULL, refcount, NULL,
-                                    ABT_TRUE, &p_newthread);
+                                    ABTI_UNIT_TYPE_THREAD_USER, NULL, refcount,
+                                    NULL, ABT_TRUE, &p_newthread);
 
     /* Return value */
     if (newthread)
@@ -140,8 +140,8 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
     abt_errno =
         ABTI_thread_create_internal(p_local_xstream, p_pool, thread_func, arg,
                                     ABTI_thread_attr_get_ptr(attr),
-                                    ABTI_THREAD_TYPE_USER, NULL, refcount, NULL,
-                                    ABT_TRUE, &p_newthread);
+                                    ABTI_UNIT_TYPE_THREAD_USER, NULL, refcount,
+                                    NULL, ABT_TRUE, &p_newthread);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -207,7 +207,7 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
             abt_errno =
                 ABTI_thread_create_internal(p_local_xstream, p_pool, thread_f,
                                             arg, ABTI_thread_attr_get_ptr(attr),
-                                            ABTI_THREAD_TYPE_USER, NULL, 0,
+                                            ABTI_UNIT_TYPE_THREAD_USER, NULL, 0,
                                             NULL, ABT_TRUE, NULL);
             ABTI_CHECK_ERROR(abt_errno);
         }
@@ -223,7 +223,7 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
             abt_errno =
                 ABTI_thread_create_internal(p_local_xstream, p_pool, thread_f,
                                             arg, ABTI_thread_attr_get_ptr(attr),
-                                            ABTI_THREAD_TYPE_USER, NULL, 1,
+                                            ABTI_UNIT_TYPE_THREAD_USER, NULL, 1,
                                             NULL, ABT_TRUE, &p_newthread);
             newthread_list[i] = ABTI_thread_get_handle(p_newthread);
             /* TODO: Release threads that have been already created. */
@@ -311,8 +311,8 @@ int ABT_thread_free(ABT_thread *thread)
                         ABT_ERR_INV_THREAD,
                         "The current thread cannot be freed.");
 
-    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
-                            p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                            p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                         ABT_ERR_INV_THREAD,
                         "The main thread cannot be freed explicitly.");
 
@@ -482,8 +482,8 @@ int ABT_thread_cancel(ABT_thread thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
-                            p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                            p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                         ABT_ERR_INV_THREAD,
                         "The main thread cannot be canceled.");
 
@@ -964,8 +964,8 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
     /* checking for cases when migration is not allowed */
     ABTI_CHECK_TRUE(p_sched->state == ABT_SCHED_STATE_RUNNING,
                     ABT_ERR_INV_XSTREAM);
-    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
-                        p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                        p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABT_THREAD_STATE_TERMINATED,
@@ -1158,7 +1158,7 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (p_thread->type == ABTI_THREAD_TYPE_USER) {
+    if (p_thread->type == ABTI_UNIT_TYPE_THREAD_USER) {
         p_thread->migratable = flag;
     }
 
@@ -1231,7 +1231,8 @@ int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag)
     p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag = (p_thread->type == ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
+    *flag =
+        (p_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN) ? ABT_TRUE : ABT_FALSE;
 
 fn_exit:
     return abt_errno;
@@ -1429,10 +1430,10 @@ fn_fail:
 static inline int
 ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                             void (*thread_func)(void *), void *arg,
-                            ABTI_thread_attr *p_attr,
-                            ABTI_thread_type thread_type, ABTI_sched *p_sched,
-                            int refcount, ABTI_xstream *p_parent_xstream,
-                            ABT_bool push_pool, ABTI_thread **pp_newthread)
+                            ABTI_thread_attr *p_attr, ABTI_unit_type unit_type,
+                            ABTI_sched *p_sched, int refcount,
+                            ABTI_xstream *p_parent_xstream, ABT_bool push_pool,
+                            ABTI_thread **pp_newthread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
@@ -1440,8 +1441,8 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 
     /* Allocate a ULT object and its stack, then create a thread context. */
     p_newthread = ABTI_mem_alloc_thread(p_local_xstream, p_attr);
-    if ((thread_type == ABTI_THREAD_TYPE_MAIN ||
-         thread_type == ABTI_THREAD_TYPE_MAIN_SCHED) &&
+    if ((unit_type == ABTI_UNIT_TYPE_THREAD_MAIN ||
+         unit_type == ABTI_UNIT_TYPE_THREAD_MAIN_SCHED) &&
         p_newthread->p_stack == NULL) {
         /* We don't need to initialize the context of 1. the main thread, and
          * 2. the main scheduler thread which runs on OS-level threads
@@ -1475,7 +1476,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #endif
     p_newthread->p_pool = p_pool;
     p_newthread->refcount = refcount;
-    p_newthread->type = thread_type;
+    p_newthread->type = unit_type;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newthread->p_req_arg = NULL;
 #endif
@@ -1489,10 +1490,10 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_unit_id thread_id = ABTI_thread_get_id(p_newthread);
-    if (thread_type == ABTI_THREAD_TYPE_MAIN) {
+    if (unit_type == ABTI_UNIT_TYPE_THREAD_MAIN) {
         LOG_DEBUG("[U%" PRIu64 ":E%d] main ULT created\n", thread_id,
                   p_parent_xstream ? p_parent_xstream->rank : 0);
-    } else if (thread_type == ABTI_THREAD_TYPE_MAIN_SCHED) {
+    } else if (unit_type == ABTI_UNIT_TYPE_THREAD_MAIN_SCHED) {
         LOG_DEBUG("[U%" PRIu64 ":E%d] main sched ULT created\n", thread_id,
                   p_parent_xstream ? p_parent_xstream->rank : 0);
     } else {
@@ -1512,9 +1513,9 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
             ABTI_pool_push(p_pool, p_newthread->unit,
                            ABTI_self_get_native_thread_id(p_local_xstream));
         if (abt_errno != ABT_SUCCESS) {
-            if (thread_type == ABTI_THREAD_TYPE_MAIN) {
+            if (unit_type == ABTI_UNIT_TYPE_THREAD_MAIN) {
                 ABTI_thread_free_main(p_local_xstream, p_newthread);
-            } else if (thread_type == ABTI_THREAD_TYPE_MAIN_SCHED) {
+            } else if (unit_type == ABTI_UNIT_TYPE_THREAD_MAIN_SCHED) {
                 ABTI_thread_free_main_sched(p_local_xstream, p_newthread);
             } else {
                 ABTI_thread_free(p_local_xstream, p_newthread);
@@ -1546,7 +1547,7 @@ int ABTI_thread_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     int refcount = (pp_newthread != NULL) ? 1 : 0;
     abt_errno =
         ABTI_thread_create_internal(p_local_xstream, p_pool, thread_func, arg,
-                                    p_attr, ABTI_THREAD_TYPE_USER, NULL,
+                                    p_attr, ABTI_UNIT_TYPE_THREAD_USER, NULL,
                                     refcount, NULL, ABT_TRUE, pp_newthread);
     return abt_errno;
 }
@@ -1562,8 +1563,8 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
     ABTI_CHECK_TRUE(ABTI_pool_accept_migration(p_pool, p_thread->p_pool) ==
                         ABT_TRUE,
                     ABT_ERR_INV_POOL);
-    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
-                        p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                        p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABT_THREAD_STATE_TERMINATED,
@@ -1617,8 +1618,8 @@ int ABTI_thread_create_main(ABTI_xstream *p_local_xstream,
     ABT_bool push_pool = ABT_TRUE;
     abt_errno =
         ABTI_thread_create_internal(p_local_xstream, p_pool, NULL, NULL, &attr,
-                                    ABTI_THREAD_TYPE_MAIN, NULL, 0, p_xstream,
-                                    push_pool, &p_newthread);
+                                    ABTI_UNIT_TYPE_THREAD_MAIN, NULL, 0,
+                                    p_xstream, push_pool, &p_newthread);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -1651,8 +1652,9 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_local_xstream,
             ABTI_thread_create_internal(p_local_xstream, NULL,
                                         ABTI_xstream_schedule,
                                         (void *)p_xstream, &attr,
-                                        ABTI_THREAD_TYPE_MAIN_SCHED, p_sched, 0,
-                                        p_xstream, ABT_FALSE, &p_newthread);
+                                        ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+                                        p_sched, 0, p_xstream, ABT_FALSE,
+                                        &p_newthread);
         ABTI_CHECK_ERROR(abt_errno);
         /* When the main scheduler is terminated, the control will jump to the
          * primary ULT. */
@@ -1667,8 +1669,9 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_local_xstream,
             ABTI_thread_create_internal(p_local_xstream, NULL,
                                         ABTI_xstream_schedule,
                                         (void *)p_xstream, &attr,
-                                        ABTI_THREAD_TYPE_MAIN_SCHED, p_sched, 0,
-                                        p_xstream, ABT_FALSE, &p_newthread);
+                                        ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+                                        p_sched, 0, p_xstream, ABT_FALSE,
+                                        &p_newthread);
         ABTI_CHECK_ERROR(abt_errno);
     }
 
@@ -1707,8 +1710,8 @@ int ABTI_thread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
         ABTI_thread_create_internal(p_local_xstream, p_pool,
                                     (void (*)(void *))p_sched->run,
                                     (void *)ABTI_sched_get_handle(p_sched),
-                                    &attr, ABTI_THREAD_TYPE_USER, p_sched, 1,
-                                    NULL, ABT_TRUE, &p_sched->p_thread);
+                                    &attr, ABTI_UNIT_TYPE_THREAD_USER, p_sched,
+                                    1, NULL, ABT_TRUE, &p_sched->p_thread);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -1786,7 +1789,7 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     int abt_errno = ABT_SUCCESS;
 
     /* The main sched cannot be blocked */
-    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_THREAD);
 
     /* To prevent the scheduler from adding the ULT to the pool */
@@ -1899,13 +1902,13 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     char *type, *state;
 
     switch (p_thread->type) {
-        case ABTI_THREAD_TYPE_MAIN:
+        case ABTI_UNIT_TYPE_THREAD_MAIN:
             type = "MAIN";
             break;
-        case ABTI_THREAD_TYPE_MAIN_SCHED:
+        case ABTI_UNIT_TYPE_THREAD_MAIN_SCHED:
             type = "MAIN_SCHED";
             break;
-        case ABTI_THREAD_TYPE_USER:
+        case ABTI_UNIT_TYPE_THREAD_USER:
             type = "USER";
             break;
         default:
@@ -2185,7 +2188,7 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABTD_atomic_relaxed_store_uint32(&p_thread->request, 0);
     p_thread->p_last_xstream = NULL;
     p_thread->refcount = 1;
-    p_thread->type = ABTI_THREAD_TYPE_USER;
+    p_thread->type = ABTI_UNIT_TYPE_THREAD_USER;
 
     if (p_thread->p_pool != p_pool) {
         /* Free the unit for the old pool */
@@ -2227,8 +2230,8 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
         ABT_THREAD_STATE_TERMINATED)
         return abt_errno;
 
-    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
-                            p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                            p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                         ABT_ERR_INV_THREAD, "The main ULT cannot be joined.");
 
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
@@ -2375,8 +2378,8 @@ static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_xstream->state) !=
                         ABT_XSTREAM_STATE_TERMINATED,
                     ABT_ERR_INV_XSTREAM);
-    ABTI_CHECK_TRUE(p_thread->type != ABTI_THREAD_TYPE_MAIN &&
-                        p_thread->type != ABTI_THREAD_TYPE_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                        p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABT_THREAD_STATE_TERMINATED,

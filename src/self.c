@@ -93,8 +93,8 @@ int ABT_self_is_primary(ABT_bool *flag)
 
     p_thread = p_local_xstream->p_thread;
     if (p_thread) {
-        *flag =
-            (p_thread->type == ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
+        *flag = (p_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN) ? ABT_TRUE
+                                                               : ABT_FALSE;
     } else {
         abt_errno = ABT_ERR_INV_THREAD;
         *flag = ABT_FALSE;

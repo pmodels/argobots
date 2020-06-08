@@ -812,7 +812,7 @@ int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched)
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             p_sched->p_thread->p_sched = NULL;
 #endif
-            if (p_sched->p_thread->type == ABTI_THREAD_TYPE_MAIN_SCHED) {
+            if (p_sched->p_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN_SCHED) {
                 ABTI_thread_free_main_sched(p_local_xstream, p_sched->p_thread);
             } else {
                 ABTI_thread_free(p_local_xstream, p_sched->p_thread);

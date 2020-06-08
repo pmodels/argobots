@@ -65,10 +65,10 @@ enum ABTI_sched_used {
     ABTI_SCHED_IN_POOL
 };
 
-enum ABTI_thread_type {
-    ABTI_THREAD_TYPE_MAIN,
-    ABTI_THREAD_TYPE_MAIN_SCHED,
-    ABTI_THREAD_TYPE_USER
+enum ABTI_unit_type {
+    ABTI_UNIT_TYPE_THREAD_MAIN,
+    ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_UNIT_TYPE_THREAD_USER,
 };
 
 enum ABTI_mutex_attr_val {
@@ -100,8 +100,8 @@ typedef struct ABTI_pool ABTI_pool;
 typedef struct ABTI_unit ABTI_unit;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_thread ABTI_thread;
-typedef enum ABTI_thread_type ABTI_thread_type;
 typedef enum ABTI_stack_type ABTI_stack_type;
+typedef enum ABTI_unit_type ABTI_unit_type;
 typedef struct ABTI_thread_req_arg ABTI_thread_req_arg;
 typedef struct ABTI_thread_list ABTI_thread_list;
 typedef struct ABTI_thread_entry ABTI_thread_entry;
@@ -332,7 +332,7 @@ struct ABTI_thread {
     ABT_unit unit;             /* Unit enclosing this thread */
     ABTI_pool *p_pool;         /* Associated pool */
     uint32_t refcount;         /* Reference count */
-    ABTI_thread_type type;     /* Type */
+    ABTI_unit_type type;       /* Type */
     void *p_stack;             /* Stack address */
     size_t stacksize;          /* Stack size (in bytes) */
     ABTI_stack_type stacktype; /* Stack type */
