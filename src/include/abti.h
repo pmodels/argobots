@@ -345,8 +345,8 @@ struct ABTI_thread {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     void (*f_migration_cb)(ABT_thread, void *); /* Callback function */
     void *p_migration_cb_arg;                   /* Callback function argument */
-    ABTI_pool *p_migration_pool;                /* Destination of migration */
-    ABTI_spinlock lock;                         /* Spinlock */
+    ABTD_atomic_ptr
+        p_migration_pool; /* Destination of migration (ABTI_pool *) */
 #endif
 };
 

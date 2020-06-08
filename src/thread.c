@@ -1486,15 +1486,10 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newthread->unit_def.refcount = refcount;
     p_newthread->unit_def.type = unit_type;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_newthread->p_migration_pool = NULL;
+    ABTD_atomic_relaxed_store_ptr(&p_newthread->p_migration_pool, NULL);
 #endif
     p_newthread->unit_def.p_keytable = NULL;
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
-
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    /* Initialize a spinlock */
-    ABTI_spinlock_clear(&p_newthread->lock);
-#endif
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_unit_id thread_id = ABTI_thread_get_id(p_newthread);
@@ -1584,10 +1579,12 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
     ABTI_CHECK_TRUE(p_thread->unit_def.p_pool != p_pool,
                     ABT_ERR_MIGRATION_TARGET);
 
-    /* adding request to the thread */
-    ABTI_spinlock_acquire(&p_thread->lock);
-    p_thread->p_migration_pool = p_pool;
-    ABTI_spinlock_release(&p_thread->lock);
+    /* adding request to the thread.  p_migration_pool must be updated before
+     * setting the request since the target thread would read p_migration_pool
+     * after ABTI_UNIT_REQ_MIGRATE.  The update must be "atomic" (but does not
+     * require acq-rel) since two threads can update the pointer value
+     * simultaneously. */
+    ABTD_atomic_relaxed_store_ptr(&p_thread->p_migration_pool, (void *)p_pool);
     ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
@@ -1751,12 +1748,6 @@ static inline void ABTI_thread_free_internal(ABTI_thread *p_thread)
 
 void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    /* p_thread's lock may have been acquired somewhere. We free p_thread when
-       the lock can be acquired here. */
-    ABTI_spinlock_acquire(&p_thread->lock);
-#endif
-
     LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
               p_thread->unit_def.p_last_xstream->rank);
 
