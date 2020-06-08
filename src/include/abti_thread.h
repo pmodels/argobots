@@ -38,6 +38,12 @@ static inline ABT_thread ABTI_thread_get_handle(ABTI_thread *p_thread)
 #endif
 }
 
+static inline ABTI_thread *
+ABTI_thread_context_get_thread(ABTD_thread_context *p_ctx)
+{
+    return (ABTI_thread *)(((char *)p_ctx) - offsetof(ABTI_thread, ctx));
+}
+
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
 static inline ABT_bool ABTI_thread_is_dynamic_promoted(ABTI_thread *p_thread)
 {
@@ -224,7 +230,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
             if (p_link) {
                 /* If p_link is set, it means that other ULT has called the
                  * join. */
-                ABTI_thread *p_joiner = (ABTI_thread *)p_link;
+                ABTI_thread *p_joiner = ABTI_thread_context_get_thread(p_link);
                 /* The scheduler may not use a bypass mechanism, so just makes
                  * p_joiner ready. */
                 ABTI_thread_set_ready(p_local_xstream, p_joiner);
@@ -247,7 +253,8 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
                             &p_ctx->p_link);
                     } while (!p_link);
                     ABTI_thread_set_ready(p_local_xstream,
-                                          (ABTI_thread *)p_link);
+                                          ABTI_thread_context_get_thread(
+                                              p_link));
                 }
             }
         }
@@ -316,9 +323,8 @@ ABTI_thread_finish_context_sched_to_main_thread(ABTI_sched *p_main_sched)
     ABTI_ASSERT(p_sched_thread->unit_def.type ==
                 ABTI_UNIT_TYPE_THREAD_MAIN_SCHED);
     ABTD_thread_context *p_ctx = &p_sched_thread->ctx;
-    ABTI_thread *p_main_thread =
-        (ABTI_thread *)ABTD_atomic_acquire_load_thread_context_ptr(
-            &p_ctx->p_link);
+    ABTI_thread *p_main_thread = ABTI_thread_context_get_thread(
+        ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link));
     ABTI_ASSERT(p_main_thread &&
                 p_main_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_MAIN);
     ABTD_thread_finish_context(&p_sched_thread->ctx, &p_main_thread->ctx);

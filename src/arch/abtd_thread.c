@@ -11,8 +11,7 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
 void ABTD_thread_func_wrapper(void *p_arg)
 {
     ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
-    /* NOTE: ctx is located in the beginning of ABTI_thread */
-    ABTI_thread *p_thread = (ABTI_thread *)p_ctx;
+    ABTI_thread *p_thread = ABTI_thread_context_get_thread(p_ctx);
     ABTI_xstream *p_local_xstream = p_thread->unit_def.p_last_xstream;
     ABTI_ASSERT(p_local_xstream->p_task == NULL);
     p_local_xstream->p_thread = p_thread;
@@ -39,7 +38,7 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
         ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link);
     if (p_link) {
         /* If p_link is set, it means that other ULT has called the join. */
-        ABTI_thread *p_joiner = (ABTI_thread *)p_link;
+        ABTI_thread *p_joiner = ABTI_thread_context_get_thread(p_link);
         if (p_thread->unit_def.p_last_xstream ==
             p_joiner->unit_def.p_last_xstream) {
             /* Only when the current ULT is on the same ES as p_joiner's,
@@ -76,7 +75,8 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
                 p_link =
                     ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link);
             } while (!p_link);
-            ABTI_thread_set_ready(p_local_xstream, (ABTI_thread *)p_link);
+            ABTI_thread_set_ready(p_local_xstream,
+                                  ABTI_thread_context_get_thread(p_link));
         }
     }
 
@@ -121,9 +121,8 @@ void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 
     if (ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link)) {
         /* If p_link is set, it means that other ULT has called the join. */
-        ABTI_thread *p_joiner =
-            (ABTI_thread *)ABTD_atomic_relaxed_load_thread_context_ptr(
-                &p_ctx->p_link);
+        ABTI_thread *p_joiner = ABTI_thread_context_get_thread(
+            ABTD_atomic_relaxed_load_thread_context_ptr(&p_ctx->p_link));
         ABTI_thread_set_ready(p_local_xstream, p_joiner);
     } else {
         uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->unit_def.request,
@@ -135,9 +134,8 @@ void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
             while (ABTD_atomic_acquire_load_thread_context_ptr(
                        &p_ctx->p_link) == NULL)
                 ;
-            ABTI_thread *p_joiner =
-                (ABTI_thread *)ABTD_atomic_relaxed_load_thread_context_ptr(
-                    &p_ctx->p_link);
+            ABTI_thread *p_joiner = ABTI_thread_context_get_thread(
+                ABTD_atomic_relaxed_load_thread_context_ptr(&p_ctx->p_link));
             ABTI_thread_set_ready(p_local_xstream, p_joiner);
         }
     }
