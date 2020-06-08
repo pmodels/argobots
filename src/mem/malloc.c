@@ -157,4 +157,22 @@ int ABTI_mem_check_lp_alloc(int lp_alloc)
     }
 }
 
-#endif /* ABT_CONFIG_USE_MEM_POOL */
+#else /* !ABT_CONFIG_USE_MEM_POOL */
+
+void ABTI_mem_init(ABTI_global *p_global)
+{
+}
+
+void ABTI_mem_init_local(ABTI_xstream *p_local_xstream)
+{
+}
+
+void ABTI_mem_finalize(ABTI_global *p_global)
+{
+}
+
+void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream)
+{
+}
+
+#endif /* !ABT_CONFIG_USE_MEM_POOL */
