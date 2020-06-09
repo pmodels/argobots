@@ -80,9 +80,6 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     p_newxstream->p_unit = NULL;
     ABTI_mem_init_local(p_newxstream);
 
-    /* Initialize the spinlock */
-    ABTI_spinlock_clear(&p_newxstream->sched_lock);
-
     /* Set the main scheduler */
     abt_errno = ABTI_xstream_init_main_sched(p_newxstream, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
@@ -224,9 +221,6 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     p_newxstream->p_req_arg = NULL;
     p_newxstream->p_unit = NULL;
     ABTI_mem_init_local(p_newxstream);
-
-    /* Initialize the spinlock */
-    ABTI_spinlock_clear(&p_newxstream->sched_lock);
 
     /* Set the main scheduler */
     abt_errno = ABTI_xstream_init_main_sched(p_newxstream, p_sched);
@@ -1376,13 +1370,9 @@ void ABTI_xstream_schedule(void *p_arg)
         /* Execute the run function of scheduler */
         ABTI_sched *p_sched = p_xstream->p_main_sched;
         ABTI_ASSERT(p_local_xstream->p_unit == &p_sched->p_thread->unit_def);
-        p_sched->state = ABT_SCHED_STATE_RUNNING;
         LOG_DEBUG("[S%" PRIu64 "] start\n", p_sched->id);
         p_sched->run(ABTI_sched_get_handle(p_sched));
         LOG_DEBUG("[S%" PRIu64 "] end\n", p_sched->id);
-        p_sched->state = ABT_SCHED_STATE_TERMINATED;
-
-        ABTI_spinlock_release(&p_xstream->sched_lock);
 
         request = ABTD_atomic_acquire_load_uint32(&p_xstream->request);
 
@@ -1467,7 +1457,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
     /* Add the new scheduler if the ULT is a scheduler */
     if (p_thread->p_sched != NULL) {
         ABTI_xstream_push_sched(p_local_xstream, p_thread->p_sched);
-        p_thread->p_sched->state = ABT_SCHED_STATE_RUNNING;
     }
 #endif
     p_thread = ABTI_thread_context_switch_to_child(pp_local_xstream,
@@ -1484,10 +1473,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
     /* Delete the last scheduler if the ULT was a scheduler */
     if (p_thread->p_sched != NULL) {
         ABTI_xstream_pop_sched(p_local_xstream);
-        /* If a migration is trying to read the state of the scheduler, we need
-         * to let it finish before freeing the scheduler */
-        p_thread->p_sched->state = ABT_SCHED_STATE_STOPPED;
-        ABTI_spinlock_release(&p_local_xstream->sched_lock);
     }
 #endif
 

@@ -788,7 +788,6 @@ int ABT_thread_yield_to(ABT_thread thread)
     /* Delete the last context if the ULT is a scheduler */
     if (p_cur_thread->p_sched != NULL) {
         ABTI_xstream_pop_sched(p_local_xstream);
-        p_cur_thread->p_sched->state = ABT_SCHED_STATE_STOPPED;
     }
 #endif
 
@@ -800,7 +799,6 @@ int ABT_thread_yield_to(ABT_thread thread)
     /* Add a new scheduler if the ULT is a scheduler */
     if (p_tar_thread->p_sched != NULL) {
         ABTI_xstream_push_sched(p_local_xstream, p_tar_thread->p_sched);
-        p_tar_thread->p_sched->state = ABT_SCHED_STATE_RUNNING;
     }
 #endif
 
@@ -899,14 +897,19 @@ fn_fail:
  * @ingroup ULT
  * @brief   Migrate a thread to a specific ES.
  *
- * The actual migration occurs asynchronously with this function call.
- * In other words, this function may return immediately without the thread
- * being migrated. The migration request will be posted on the thread, such that
- * next time a scheduler picks it up, migration will happen.
- * The target pool is chosen by the running scheduler of the target ES.
+ * The actual migration occurs asynchronously with this function call.  In other
+ * words, this function may return immediately without the thread being
+ * migrated.  The migration request will be posted on the thread, such that next
+ * time a scheduler picks it up, migration will happen.  The target pool is
+ * chosen by the running scheduler of the target ES.
+ *
+ * Note that users must be responsible for keeping the target execution stream,
+ * its main scheduler, and the associated pools available during this function
+ * and, if this function returns ABT_SUCCESS, until the migration process
+ * completes.
+ *
  * The migration will fail if the running scheduler has no pool available for
  * migration.
- *
  *
  * @param[in] thread   handle to the thread to migrate
  * @param[in] xstream  handle to the ES to migrate the thread to
@@ -942,14 +945,18 @@ fn_fail:
  * @ingroup ULT
  * @brief   Migrate a thread to a specific scheduler.
  *
- * The actual migration occurs asynchronously with this function call.
- * In other words, this function may return immediately without the thread
- * being migrated. The migration request will be posted on the thread, such that
- * next time a scheduler picks it up, migration will happen.
- * The target pool is chosen by the scheduler itself.
+ * The actual migration occurs asynchronously with this function call.  In other
+ * words, this function may return immediately without the thread being
+ * migrated.  The migration request will be posted on the thread, such that next
+ * time a scheduler picks it up, migration will happen.  The target pool is
+ * chosen by the scheduler itself.
+ *
+ * Note that users must be responsible for keeping the target scheduler and its
+ * associated pools available during this function and, if this function returns
+ * ABT_SUCCESS, until the migration process completes.
+ *
  * The migration will fail if the target scheduler has no pool available for
  * migration.
- *
  *
  * @param[in] thread handle to the thread to migrate
  * @param[in] sched  handle to the sched to migrate the thread to
@@ -967,8 +974,6 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* checking for cases when migration is not allowed */
-    ABTI_CHECK_TRUE(p_sched->state == ABT_SCHED_STATE_RUNNING,
-                    ABT_ERR_INV_XSTREAM);
     ABTI_CHECK_TRUE(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
                         p_thread->unit_def.type !=
                             ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
@@ -1006,6 +1011,10 @@ fn_fail:
  * In other words, this function may return immediately without the thread
  * being migrated. The migration request will be posted on the thread, such that
  * next time a scheduler picks it up, migration will happen.
+ *
+ * Note that users must be responsible for keeping the target pool available
+ * during this function and, if this function returns ABT_SUCCESS, until the
+ * migration process completes.
  *
  * @param[in] thread handle to the thread to migrate
  * @param[in] pool   handle to the pool to migrate the thread to
@@ -1046,7 +1055,12 @@ fn_fail:
  * ABT_thread_migrate requests migration of the thread but does not specify
  * the target ES. The target ES will be determined among available ESs by the
  * runtime. Other semantics of this routine are the same as those of
- * \c ABT_thread_migrate_to_xstream()
+ * \c ABT_thread_migrate_to_xstream().
+ *
+ * Note that users must be responsible for keeping all the execution streams,
+ * their main schedulers, and the associated pools available (i.e., not freed)
+ * during this function and, if this function returns ABT_SUCCESS, until the
+ * whole migration process completes.
  *
  * NOTE: This function may have some bugs.
  *
@@ -2299,42 +2313,29 @@ static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
     ABTI_pool *p_pool = NULL;
     ABTI_sched *p_sched = NULL;
     do {
-        ABTI_spinlock_acquire(&p_xstream->sched_lock);
-
         /* We check the state of the ES */
         if (ABTD_atomic_acquire_load_int(&p_xstream->state) ==
             ABT_XSTREAM_STATE_TERMINATED) {
             abt_errno = ABT_ERR_INV_XSTREAM;
-            ABTI_spinlock_release(&p_xstream->sched_lock);
             goto fn_fail;
 
-        } else if (ABTD_atomic_acquire_load_int(&p_xstream->state) ==
-                   ABT_XSTREAM_STATE_RUNNING) {
-            p_sched = ABTI_xstream_get_top_sched(p_xstream);
-
         } else {
+            /* The migration target should be the main scheduler since it is
+             * hard to guarantee the lifetime of the stackable scheduler. */
             p_sched = p_xstream->p_main_sched;
         }
 
         /* We check the state of the sched */
-        if (p_sched->state == ABT_SCHED_STATE_TERMINATED) {
-            abt_errno = ABT_ERR_INV_XSTREAM;
-            ABTI_spinlock_release(&p_xstream->sched_lock);
+        /* Find a pool */
+        ABTI_sched_get_migration_pool(p_sched, p_thread->unit_def.p_pool,
+                                      &p_pool);
+        if (p_pool == NULL) {
+            abt_errno = ABT_ERR_INV_POOL;
             goto fn_fail;
-        } else {
-            /* Find a pool */
-            ABTI_sched_get_migration_pool(p_sched, p_thread->unit_def.p_pool,
-                                          &p_pool);
-            if (p_pool == NULL) {
-                abt_errno = ABT_ERR_INV_POOL;
-                ABTI_spinlock_release(&p_xstream->sched_lock);
-                goto fn_fail;
-            }
-            /* We set the migration counter to prevent the scheduler from
-             * stopping */
-            ABTI_pool_inc_num_migrations(p_pool);
         }
-        ABTI_spinlock_release(&p_xstream->sched_lock);
+        /* We set the migration counter to prevent the scheduler from
+         * stopping */
+        ABTI_pool_inc_num_migrations(p_pool);
     } while (p_pool == NULL);
 
     abt_errno = ABTI_thread_migrate_to_pool(pp_local_xstream, p_thread, p_pool);
