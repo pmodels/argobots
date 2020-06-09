@@ -964,6 +964,9 @@ fn_fail:
  * This function can be called by a scheduler after picking one unit. So a user
  * will use it for his own defined scheduler.
  *
+ * EXPERIMENTAL: this function can be called by a normal ULT, too.  The function
+ * name could be changed in the future.
+ *
  * @param[in] unit handle to the unit to run
  * @param[in] pool pool where unit is from
  * @return Error code
