@@ -30,6 +30,7 @@ TESTS = \
 	thread_task_num \
 	sched_basic \
 	sched_basic_wait \
+	sched_on_thread \
 	sched_prio \
 	sched_randws \
 	sched_set_main \
@@ -100,6 +101,7 @@ thread_task_arg_SOURCES = thread_task_arg.c
 thread_task_num_SOURCES = thread_task_num.c
 sched_basic_SOURCES = sched_basic.c
 sched_basic_wait_SOURCES = sched_basic_wait.c
+sched_on_thread_SOURCES = sched_on_thread.c
 sched_prio_SOURCES = sched_prio.c
 sched_randws_SOURCES = sched_randws.c
 sched_set_main_SOURCES = sched_set_main.c
@@ -158,6 +160,7 @@ testing:
 	./thread_task_num
 	./sched_basic
 	./sched_basic_wait
+	./sched_on_thread
 	./sched_prio
 	./sched_randws
 	./sched_set_main

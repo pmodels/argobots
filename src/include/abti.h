@@ -221,8 +221,6 @@ struct ABTI_xstream {
     ABTI_sched **scheds;      /* Stack of running schedulers */
     ABTI_sched *p_main_sched; /* Main scheduler, which is the bottom of the
                                * linked list of schedulers */
-    ABTI_sched *p_sched_top;  /* The currently running scheduler. This is the
-                               * top of the linked list of schedulers. */
 
     ABTD_atomic_uint32 request; /* Request */
     void *p_req_arg;            /* Request argument */
@@ -248,10 +246,6 @@ struct ABTI_sched {
     int num_pools;              /* Number of work unit pools */
     ABTI_thread *p_thread;      /* Associated ULT */
     void *data;                 /* Data for a specific scheduler */
-
-    /* Pointers for a scheduler linked list. */
-    ABTI_sched *p_parent_sched;
-    ABTI_sched *p_child_sched;
 
     /* Scheduler functions */
     ABT_sched_init_fn init;
@@ -307,6 +301,7 @@ struct ABTI_unit {
     ABTI_unit_type type;          /* Unit type */
     ABT_unit unit;                /* Unit enclosing this thread */
     ABTI_xstream *p_last_xstream; /* Last ES where it ran */
+    ABTI_unit *p_parent;          /* Parent unit */
     void (*f_unit)(void *);       /* Work unit function */
     void *p_arg;                  /* Work unit function argument */
     ABTD_atomic_int state;        /* State (ABTI_unit_state) */
