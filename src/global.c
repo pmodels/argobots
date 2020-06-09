@@ -175,8 +175,6 @@ int ABT_finalize(void)
                   p_thread->unit_def.p_last_xstream->rank);
 
         /* Switch to the parent */
-        ABTI_sched *p_sched =
-            ABTI_xstream_get_top_sched(p_thread->unit_def.p_last_xstream);
         ABTI_thread_context_switch_to_parent(&p_local_xstream, p_thread);
 
         /* Back to the original thread */

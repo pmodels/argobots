@@ -784,23 +784,9 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_POOL_PUSH(p_cur_thread->unit_def.p_pool, p_cur_thread->unit_def.unit,
                    ABTI_self_get_native_thread_id(p_local_xstream));
 
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    /* Delete the last context if the ULT is a scheduler */
-    if (p_cur_thread->p_sched != NULL) {
-        ABTI_xstream_pop_sched(p_local_xstream);
-    }
-#endif
-
     /* Remove the target ULT from the pool */
     ABTI_POOL_REMOVE(p_tar_thread->unit_def.p_pool, p_tar_thread->unit_def.unit,
                      ABTI_self_get_native_thread_id(p_local_xstream));
-
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    /* Add a new scheduler if the ULT is a scheduler */
-    if (p_tar_thread->p_sched != NULL) {
-        ABTI_xstream_push_sched(p_local_xstream, p_tar_thread->p_sched);
-    }
-#endif
 
     /* We set the last ES */
     p_tar_thread->unit_def.p_last_xstream = p_local_xstream;

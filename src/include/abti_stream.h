@@ -53,37 +53,18 @@ static inline void ABTI_xstream_unset_request(ABTI_xstream *p_xstream,
 /* Get the top scheduler from the sched list */
 static inline ABTI_sched *ABTI_xstream_get_top_sched(ABTI_xstream *p_xstream)
 {
-    return p_xstream->p_sched_top;
-}
-
-/* Remove the top scheduler from the sched list */
-static inline void ABTI_xstream_pop_sched(ABTI_xstream *p_xstream)
-{
-    ABTI_ASSERT(p_xstream->p_sched_top);
-    ABTI_sched *p_cur_sched = p_xstream->p_sched_top;
-    p_xstream->p_sched_top = p_cur_sched->p_parent_sched;
-    p_cur_sched->p_parent_sched = NULL;
-    if (p_xstream->p_sched_top) {
-        p_xstream->p_sched_top->p_child_sched = NULL;
-    } else {
-        /* There is no scheduler. */
-        p_xstream->p_main_sched = NULL;
+#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
+    ABTI_unit *p_unit = p_xstream->p_unit;
+    while (p_unit) {
+        if (ABTI_unit_type_is_thread(p_unit->type)) {
+            ABTI_sched *p_sched = ABTI_unit_get_thread(p_unit)->p_sched;
+            if (p_sched)
+                return p_sched;
+        }
+        p_unit = p_unit->p_parent;
     }
-}
-
-/* Add the specified scheduler to the sched list */
-static inline void ABTI_xstream_push_sched(ABTI_xstream *p_xstream,
-                                           ABTI_sched *p_sched)
-{
-    p_sched->p_parent_sched = p_xstream->p_sched_top;
-    if (p_xstream->p_sched_top) {
-        p_xstream->p_sched_top->p_child_sched = p_sched;
-        p_xstream->p_sched_top = p_sched;
-    } else {
-        /* This is the first scheduler. */
-        p_xstream->p_main_sched = p_sched;
-        p_xstream->p_sched_top = p_sched;
-    }
+#endif
+    return p_xstream->p_main_sched;
 }
 
 /* Get the first pool of the main scheduler. */

@@ -74,7 +74,6 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
                                   ABT_XSTREAM_STATE_RUNNING);
     p_newxstream->scheds = NULL;
     p_newxstream->p_main_sched = NULL;
-    p_newxstream->p_sched_top = NULL;
     ABTD_atomic_relaxed_store_uint32(&p_newxstream->request, 0);
     p_newxstream->p_req_arg = NULL;
     p_newxstream->p_unit = NULL;
@@ -216,7 +215,6 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
                                   ABT_XSTREAM_STATE_RUNNING);
     p_newxstream->scheds = NULL;
     p_newxstream->p_main_sched = NULL;
-    p_newxstream->p_sched_top = NULL;
     ABTD_atomic_relaxed_store_uint32(&p_newxstream->request, 0);
     p_newxstream->p_req_arg = NULL;
     p_newxstream->p_unit = NULL;
@@ -251,9 +249,6 @@ int ABTI_xstream_start(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream)
     /* The ES's state must be RUNNING */
     ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
                 ABT_XSTREAM_STATE_RUNNING);
-
-    /* The main scheduler must be the current scheduler */
-    ABTI_ASSERT(p_xstream->p_main_sched == p_xstream->p_sched_top);
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         LOG_DEBUG("[E%d] start\n", p_xstream->rank);
@@ -325,9 +320,6 @@ int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
                                ABTI_xstream *p_xstream, ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
-
-    /* The main scheduler should be the current scheduler */
-    ABTI_ASSERT(p_xstream->p_main_sched == p_xstream->p_sched_top);
 
     /* The ES's state must be running here. */
     ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
@@ -1451,13 +1443,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
     LOG_DEBUG("[U%" PRIu64 ":E%d] start running\n",
               ABTI_thread_get_id(p_thread), p_local_xstream->rank);
 
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    /* Add the new scheduler if the ULT is a scheduler */
-    if (p_thread->p_sched != NULL) {
-        ABTI_xstream_push_sched(p_local_xstream, p_thread->p_sched);
-    }
-#endif
-
     ABTI_thread *p_self = ABTI_unit_get_thread(p_local_xstream->p_unit);
     p_thread =
         ABTI_thread_context_switch_to_child(pp_local_xstream, p_self, p_thread);
@@ -1468,13 +1453,6 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
 
     LOG_DEBUG("[U%" PRIu64 ":E%d] stopped\n", ABTI_thread_get_id(p_thread),
               p_local_xstream->rank);
-
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    /* Delete the last scheduler if the ULT was a scheduler */
-    if (p_thread->p_sched != NULL) {
-        ABTI_xstream_pop_sched(p_local_xstream);
-    }
-#endif
 
     /* Request handling. */
     /* We do not need to acquire-load request since all critical requests
@@ -1656,7 +1634,6 @@ int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 
     /* Set the scheduler */
     p_xstream->p_main_sched = p_sched;
-    p_xstream->p_sched_top = p_sched;
 
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
 fn_exit:
@@ -1737,8 +1714,7 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                        ABTI_self_get_native_thread_id(*pp_local_xstream));
 
         /* Replace the top scheduler with the new scheduler */
-        ABTI_xstream_pop_sched(p_xstream);
-        ABTI_xstream_push_sched(p_xstream, p_sched);
+        p_xstream->p_main_sched = p_sched;
 
         /* Free the current main scheduler */
         abt_errno =
@@ -1766,10 +1742,6 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
 
         /* Set the scheduler */
         p_xstream->p_main_sched = p_sched;
-
-        /* Replace the top scheduler with the new scheduler */
-        ABTI_xstream_pop_sched(p_xstream);
-        ABTI_xstream_push_sched(p_xstream, p_sched);
 
         /* Switch to the current main scheduler */
         ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_NOPUSH);
@@ -1835,12 +1807,10 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
             "%stype      : %s\n"
             "%sstate     : %s\n"
             "%srequest   : 0x%x\n"
-            "%ssched_top : %p\n"
             "%smain_sched: %p\n",
             prefix, (void *)p_xstream, prefix, p_xstream->rank, prefix, type,
             prefix, state, prefix,
             ABTD_atomic_acquire_load_uint32(&p_xstream->request), prefix,
-            (void *)p_xstream->p_sched_top, prefix,
             (void *)p_xstream->p_main_sched);
 
     if (print_sub == ABT_TRUE) {
