@@ -1493,6 +1493,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                                   ABTI_UNIT_STATE_READY);
     ABTD_atomic_release_store_uint32(&p_newthread->unit_def.request, 0);
     p_newthread->unit_def.p_last_xstream = NULL;
+    p_newthread->unit_def.p_parent = NULL;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->p_sched = p_sched;
 #endif
@@ -1841,11 +1842,9 @@ void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream, ABTI_thread *p_thread)
     ABTI_ASSERT(p_thread->unit_def.p_last_xstream == p_local_xstream);
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
-    ABTI_sched *p_sched = ABTI_xstream_get_top_sched(p_local_xstream);
     LOG_DEBUG("[U%" PRIu64 ":E%d] suspended\n", ABTI_thread_get_id(p_thread),
               p_local_xstream->rank);
-    ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread,
-                                         p_sched->p_thread);
+    ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread);
 
     /* The suspended ULT resumes its execution from here. */
     LOG_DEBUG("[U%" PRIu64 ":E%d] resumed\n", ABTI_thread_get_id(p_thread),
@@ -2103,6 +2102,7 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                                   ABTI_UNIT_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_thread->unit_def.request, 0);
     p_thread->unit_def.p_last_xstream = NULL;
+    p_thread->unit_def.p_parent = NULL;
     p_thread->unit_def.refcount = 1;
     p_thread->unit_def.type = ABTI_UNIT_TYPE_THREAD_USER;
 

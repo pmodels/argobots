@@ -307,6 +307,7 @@ struct ABTI_unit {
     ABTI_unit_type type;          /* Unit type */
     ABT_unit unit;                /* Unit enclosing this thread */
     ABTI_xstream *p_last_xstream; /* Last ES where it ran */
+    ABTI_unit *p_parent;          /* Parent unit */
     void (*f_unit)(void *);       /* Work unit function */
     void *p_arg;                  /* Work unit function argument */
     ABTD_atomic_int state;        /* State (ABTI_unit_state) */

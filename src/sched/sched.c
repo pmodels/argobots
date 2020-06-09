@@ -340,10 +340,8 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream,
                 stop = ABT_TRUE;
             } else {
                 ABTI_ASSERT(p_sched->type == ABT_SCHED_TYPE_ULT);
-                ABTI_sched *p_par_sched = p_sched->p_parent_sched;
                 ABTI_thread_context_switch_to_parent(pp_local_xstream,
-                                                     p_sched->p_thread,
-                                                     p_par_sched->p_thread);
+                                                     p_sched->p_thread);
             }
         }
     }

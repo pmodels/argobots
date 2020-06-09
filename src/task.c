@@ -667,6 +667,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newtask = ABTI_mem_alloc_task(p_local_xstream);
 
     p_newtask->unit_def.p_last_xstream = NULL;
+    p_newtask->unit_def.p_parent = NULL;
     ABTD_atomic_relaxed_store_int(&p_newtask->unit_def.state,
                                   ABTI_UNIT_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_newtask->unit_def.request, 0);
@@ -721,6 +722,7 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                     ABT_ERR_INV_TASK);
 
     p_task->unit_def.p_last_xstream = NULL;
+    p_task->unit_def.p_parent = NULL;
     ABTD_atomic_relaxed_store_int(&p_task->unit_def.state,
                                   ABTI_UNIT_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_task->unit_def.request, 0);

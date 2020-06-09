@@ -81,21 +81,8 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
 
     /* No other ULT is waiting or blocked for this ULT. Since a context does not
      * switch to another context when it finishes, we need to explicitly switch
-     * to the scheduler. */
-    ABTI_sched *p_sched;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    if (p_thread->p_sched) {
-        /* If p_thread is a scheduler ULT, we have to context switch to
-         * the parent scheduler. */
-        p_sched = p_thread->p_sched->p_parent_sched;
-    } else {
-#endif
-        p_sched = ABTI_xstream_get_top_sched(p_thread->unit_def.p_last_xstream);
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    }
-#endif
-    ABTI_thread_finish_context_to_parent(p_local_xstream, p_thread,
-                                         p_sched->p_thread);
+     * to the parent. */
+    ABTI_thread_finish_context_to_parent(p_local_xstream, p_thread);
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
