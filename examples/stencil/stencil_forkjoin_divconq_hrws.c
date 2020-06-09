@@ -39,7 +39,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <alloca.h>
 #include <time.h>
 #include <abt.h>
 #include "stencil_helper.h"
@@ -63,7 +62,7 @@ void sched_run(ABT_sched sched)
     unsigned seed = time(NULL);
 
     ABT_sched_get_num_pools(sched, &num_pools);
-    pools = (ABT_pool *)alloca(num_pools * sizeof(ABT_pool));
+    pools = (ABT_pool *)malloc(num_pools * sizeof(ABT_pool));
     ABT_sched_get_pools(sched, num_pools, 0, pools);
 
     while (1) {
@@ -108,6 +107,7 @@ void sched_run(ABT_sched sched)
             }
         }
     }
+    free(pools);
 }
 
 int sched_free(ABT_sched sched)
