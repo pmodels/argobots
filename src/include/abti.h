@@ -360,7 +360,6 @@ struct ABTI_ktelem {
 
 struct ABTI_ktable {
     int size;              /* size of the table */
-    int num;               /* number of elements stored */
     ABTI_ktelem **p_elems; /* element array */
 };
 

@@ -185,7 +185,6 @@ ABTI_ktable *ABTI_ktable_alloc(int size)
     /* size must be a power of 2. */
     ABTI_ASSERT((size & (size - 1)) == 0);
     p_ktable->size = size;
-    p_ktable->num = 0;
     p_ktable->p_elems =
         (ABTI_ktelem **)ABTU_calloc(size, sizeof(ABTI_ktelem *));
 
@@ -244,8 +243,6 @@ static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
     p_elem->value = value;
     p_elem->p_next = p_ktable->p_elems[idx];
     p_ktable->p_elems[idx] = p_elem;
-
-    p_ktable->num++;
 }
 
 static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key)
