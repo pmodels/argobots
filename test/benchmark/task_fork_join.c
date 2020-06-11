@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
     }
     ABT_xstream_barrier_free(&g_xbarrier);
 
-    ABT_finalize();
+    ATS_finalize(0);
 
     free(pools);
     free(xstreams);
