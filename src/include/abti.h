@@ -110,8 +110,6 @@ typedef struct ABTI_thread ABTI_thread;
 typedef enum ABTI_stack_type ABTI_stack_type;
 typedef enum ABTI_unit_type ABTI_unit_type;
 typedef enum ABTI_unit_state ABTI_unit_state;
-typedef struct ABTI_thread_list ABTI_thread_list;
-typedef struct ABTI_thread_entry ABTI_thread_entry;
 typedef struct ABTI_thread_htable ABTI_thread_htable;
 typedef struct ABTI_thread_queue ABTI_thread_queue;
 typedef struct ABTI_task ABTI_task;
@@ -341,17 +339,6 @@ struct ABTI_thread {
     ABTD_atomic_ptr
         p_migration_pool; /* Destination of migration (ABTI_pool *) */
 #endif
-};
-
-struct ABTI_thread_list {
-    ABTI_thread_entry *head;
-    ABTI_thread_entry *tail;
-};
-
-struct ABTI_thread_entry {
-    ABTI_thread *current;
-    struct ABTI_thread_entry *next;
-    ABT_unit_type type;
 };
 
 struct ABTI_task {
