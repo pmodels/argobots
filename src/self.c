@@ -16,11 +16,14 @@
  * \c ABT_self_get_type() returns the type of calling work unit, e.g.,
  * \c ABT_UNIT_TYPE_THREAD for ULT and \c ABT_UNIT_TYPE_TASK for tasklet,
  * through \c type.
- * If this routine is called when Argobots has not been initialized, \c type
- * will be set to \c ABT_UNIT_TYPE_EXT, and \c ABT_ERR_UNINITIALIZED will be
- * returned.
- * If this routine is called by an external thread, e.g., pthread, \c type will
- * be set to \c ABT_UNIT_TYPE_EXT, and \c ABT_ERR_INV_XSTREAM will be returned.
+ * If this routine is called when Argobots has not been initialized,
+ * \c ABT_ERR_UNINITIALIZED will be returned.
+ * If this routine is called by an external thread, e.g., pthread,
+ * \c ABT_ERR_INV_XSTREAM will be returned.
+ *
+ * Now \c type will be set to \c ABT_UNIT_TYPE_EXT when it returns an
+ * error, but this behavior is deprecated; the user should check the error code
+ * to check if this routine is called by a thread not managed by Argobots.
  *
  * @param[out] type  work unit type.
  * @return Error code
