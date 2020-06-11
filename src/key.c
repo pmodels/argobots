@@ -192,6 +192,8 @@ ABTI_ktable *ABTI_ktable_alloc(int size)
     ABTI_ktable *p_ktable;
 
     p_ktable = (ABTI_ktable *)ABTU_malloc(sizeof(ABTI_ktable));
+    /* size must be a power of 2. */
+    ABTI_ASSERT((size & (size - 1)) == 0);
     p_ktable->size = size;
     p_ktable->num = 0;
     p_ktable->p_elems =
@@ -232,7 +234,7 @@ void ABTI_ktable_free(ABTI_ktable *p_ktable)
 
 static inline uint32_t ABTI_ktable_get_idx(ABTI_key *p_key, int size)
 {
-    return p_key->id % size;
+    return p_key->id & (size - 1);
 }
 
 static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
