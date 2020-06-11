@@ -264,7 +264,7 @@ typedef struct ABT_sched_config_opaque *    ABT_sched_config;
 /* Predefined scheduler */
 typedef enum ABT_sched_predef               ABT_sched_predef;
 /* Scheduler state */
-typedef enum ABT_sched_state                ABT_sched_state;
+typedef enum ABT_sched_state                ABT_sched_state ABT_DEPRECATED;
 /* Scheduler type */
 typedef enum ABT_sched_type                 ABT_sched_type;
 /* Pool */
