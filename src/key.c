@@ -13,7 +13,6 @@
 static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
                                    void *value);
 static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key);
-void ABTI_ktable_delete(ABTI_ktable *p_ktable, ABTI_key *p_key);
 
 static ABTD_atomic_uint32 g_key_id = ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
 
@@ -279,30 +278,4 @@ static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key)
     }
 
     return NULL;
-}
-
-void ABTI_ktable_delete(ABTI_ktable *p_ktable, ABTI_key *p_key)
-{
-    uint32_t idx;
-    ABTI_ktelem *p_prev = NULL;
-    ABTI_ktelem *p_elem;
-
-    idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
-    p_elem = p_ktable->p_elems[idx];
-    while (p_elem) {
-        if (p_elem->p_key == p_key) {
-            if (p_prev) {
-                p_prev->p_next = p_elem->p_next;
-            } else {
-                p_ktable->p_elems[idx] = p_elem->p_next;
-            }
-            p_ktable->num--;
-
-            ABTU_free(p_elem);
-            return;
-        }
-
-        p_prev = p_elem;
-        p_elem = p_elem->p_next;
-    }
 }
