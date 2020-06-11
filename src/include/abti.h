@@ -354,6 +354,9 @@ struct ABTI_key {
 
 struct ABTI_ktelem {
     ABTI_key *p_key;
+    /* information of ABTI_key */
+    void (*f_destructor)(void *value);
+    uint32_t key_id;
     void *value;
     struct ABTI_ktelem *p_next;
 };

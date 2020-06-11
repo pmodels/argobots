@@ -214,8 +214,8 @@ void ABTI_ktable_free(ABTI_ktable *p_ktable)
         while (p_elem) {
             /* Call the destructor if it exists and the value is not null. */
             p_key = p_elem->p_key;
-            if (p_key->f_destructor && p_elem->value) {
-                p_key->f_destructor(p_elem->value);
+            if (p_elem->f_destructor && p_elem->value) {
+                p_elem->f_destructor(p_elem->value);
             }
             refcount = ABTD_atomic_fetch_sub_uint32(&p_key->refcount, 1);
             if (refcount == 1 && p_key->freed == ABT_TRUE) {
@@ -246,8 +246,9 @@ static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
     /* Look for the same key */
     idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
     p_elem = p_ktable->p_elems[idx];
+    uint32_t key_id = p_key->id;
     while (p_elem) {
-        if (p_elem->p_key == p_key) {
+        if (p_elem->key_id == key_id) {
             p_elem->value = value;
             return;
         }
@@ -257,6 +258,8 @@ static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
     /* The table does not have the same key */
     p_elem = (ABTI_ktelem *)ABTU_malloc(sizeof(ABTI_ktelem));
     p_elem->p_key = p_key;
+    p_elem->f_destructor = p_key->f_destructor;
+    p_elem->key_id = p_key->id;
     p_elem->value = value;
     p_elem->p_next = p_ktable->p_elems[idx];
     ABTD_atomic_fetch_add_uint32(&p_key->refcount, 1);
@@ -272,8 +275,9 @@ static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key)
 
     idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
     p_elem = p_ktable->p_elems[idx];
+    uint32_t key_id = p_key->id;
     while (p_elem) {
-        if (p_elem->p_key == p_key) {
+        if (p_elem->key_id == key_id) {
             return p_elem->value;
         }
         p_elem = p_elem->p_next;
