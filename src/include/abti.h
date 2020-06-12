@@ -360,8 +360,11 @@ struct ABTI_ktelem {
 };
 
 struct ABTI_ktable {
-    int size;              /* size of the table */
-    ABTI_ktelem **p_elems; /* element array */
+    int size; /* size of the table */
+    void *p_used_mem;
+    void *p_extra_mem;
+    size_t extra_mem_size;
+    ABTI_ktelem *p_elems[1]; /* element array */
 };
 
 struct ABTI_cond {
@@ -564,8 +567,8 @@ void ABTI_task_reset_id(void);
 ABT_unit_id ABTI_task_get_id(ABTI_task *p_task);
 
 /* Key */
-ABTI_ktable *ABTI_ktable_alloc(int size);
-void ABTI_ktable_free(ABTI_ktable *p_ktable);
+ABTI_ktable *ABTI_ktable_alloc(ABTI_xstream *p_local_xstream, int size);
+void ABTI_ktable_free(ABTI_xstream *p_local_xstream, ABTI_ktable *p_ktable);
 
 /* Mutex */
 void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
