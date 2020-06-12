@@ -8,6 +8,14 @@
 
 /* Memory allocation */
 
+/* Round desc_size up to the cacheline size.  The last four bytes will be
+ * used to determine whether the descriptor is allocated externally (i.e.,
+ * malloc()) or taken from a memory pool. */
+#define ABTI_MEM_POOL_DESC_SIZE                                                \
+    (((sizeof(ABTI_task) + 4 + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &         \
+      (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1))) -                             \
+     4)
+
 enum {
     ABTI_MEM_LP_MALLOC = 0,
     ABTI_MEM_LP_MMAP_RP,
@@ -226,50 +234,61 @@ static inline void ABTI_mem_free_thread(ABTI_xstream *p_local_xstream,
     }
 }
 
-static inline ABTI_task *ABTI_mem_alloc_task(ABTI_xstream *p_local_xstream)
+static inline void *ABTI_mem_alloc_desc(ABTI_xstream *p_local_xstream)
 {
 #ifndef ABT_CONFIG_USE_MEM_POOL
-    return (ABTI_task *)ABTU_malloc(sizeof(ABTI_task));
+    return ABTU_malloc(ABTI_MEM_POOL_DESC_SIZE);
 #else
-    ABTI_task *p_task;
+    void *p_desc;
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     if (p_local_xstream == NULL) {
         /* For external threads */
-        p_task = (ABTI_task *)ABTU_malloc(sizeof(ABTI_task) + 4);
-        *(uint32_t *)(((char *)p_task) + sizeof(ABTI_task)) = 1;
-        return p_task;
+        p_desc = ABTU_malloc(ABTI_MEM_POOL_DESC_SIZE);
+        *(uint32_t *)(((char *)p_desc) + ABTI_MEM_POOL_DESC_SIZE) = 1;
+        return p_desc;
     }
 #endif
 
     /* Find the page that has an empty block */
-    p_task = (ABTI_task *)ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc);
+    p_desc = ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc);
     /* To distinguish it from a malloc'ed case, assign non-NULL value. */
-    *(uint32_t *)(((char *)p_task) + sizeof(ABTI_task)) = 0;
-    return p_task;
+    *(uint32_t *)(((char *)p_desc) + ABTI_MEM_POOL_DESC_SIZE) = 0;
+    return p_desc;
 #endif
+}
+
+static inline void ABTI_mem_free_desc(ABTI_xstream *p_local_xstream,
+                                      void *p_desc)
+{
+#ifndef ABT_CONFIG_USE_MEM_POOL
+    ABTU_free(p_desc);
+#else
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    if (*(uint32_t *)(((char *)p_desc) + ABTI_MEM_POOL_DESC_SIZE)) {
+        /* This was allocated by an external thread. */
+        ABTU_free(p_desc);
+        return;
+    } else if (!p_local_xstream) {
+        /* Return a stack and a descriptor to their global pools. */
+        ABTI_spinlock_acquire(&gp_ABTI_global->mem_pool_desc_lock);
+        ABTI_mem_pool_free(&gp_ABTI_global->mem_pool_desc_ext, p_desc);
+        ABTI_spinlock_release(&gp_ABTI_global->mem_pool_desc_lock);
+        return;
+    }
+#endif
+    ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_desc);
+#endif
+}
+
+static inline ABTI_task *ABTI_mem_alloc_task(ABTI_xstream *p_local_xstream)
+{
+    return (ABTI_task *)ABTI_mem_alloc_desc(p_local_xstream);
 }
 
 static inline void ABTI_mem_free_task(ABTI_xstream *p_local_xstream,
                                       ABTI_task *p_task)
 {
-#ifndef ABT_CONFIG_USE_MEM_POOL
-    ABTU_free(p_task);
-#else
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    if (*(uint32_t *)(((char *)p_task) + sizeof(ABTI_task))) {
-        /* This was allocated by an external thread. */
-        ABTU_free(p_task);
-        return;
-    } else if (!p_local_xstream) {
-        /* Return a stack and a descriptor to their global pools. */
-        ABTI_spinlock_acquire(&gp_ABTI_global->mem_pool_desc_lock);
-        ABTI_mem_pool_free(&gp_ABTI_global->mem_pool_desc_ext, p_task);
-        ABTI_spinlock_release(&gp_ABTI_global->mem_pool_desc_lock);
-        return;
-    }
-#endif
-    ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_task);
-#endif
+    ABTI_mem_free_desc(p_local_xstream, (void *)p_task);
 }
 
 #endif /* ABTI_MEM_H_INCLUDED */

@@ -62,17 +62,15 @@ void ABTI_mem_init(ABTI_global *p_global)
                                    p_global->mem_sp_size, requested_types,
                                    num_requested_types,
                                    gp_ABTI_global->mem_page_size);
-    /* Round desc_size up to the cacheline size.  The last four bytes will be
-     * used to determine whether the descriptor is allocated externally (i.e.,
-     * malloc()) or taken from a memory pool. */
-    size_t task_desc_size =
-        (sizeof(ABTI_task) + 4 + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
-        (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
+    /* The last four bytes will be used to store a mempool flag */
+    ABTI_STATIC_ASSERT(((ABTI_MEM_POOL_DESC_SIZE + 4) &
+                        (ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0);
     ABTI_mem_pool_init_global_pool(&p_global->mem_pool_desc,
                                    p_global->mem_max_descs /
                                        ABT_MEM_POOL_MAX_LOCAL_BUCKETS,
-                                   task_desc_size, 0, p_global->mem_page_size,
-                                   requested_types, num_requested_types,
+                                   ABTI_MEM_POOL_DESC_SIZE + 4, 0,
+                                   p_global->mem_page_size, requested_types,
+                                   num_requested_types,
                                    gp_ABTI_global->mem_page_size);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     ABTI_spinlock_clear(&p_global->mem_pool_stack_lock);
