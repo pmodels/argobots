@@ -10,7 +10,7 @@
 
 #define DEFAULT_NUM_XSTREAMS 4
 #define DEFAULT_NUM_THREADS 4
-#define NUM_TLS 4
+#define NUM_TLS 128
 
 static ABT_key tls[NUM_TLS];
 static int num_threads;
