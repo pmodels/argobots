@@ -191,13 +191,14 @@ struct ABTI_global {
     int mem_lp_alloc;        /* How to allocate large pages */
 
     ABTI_mem_pool_global_pool mem_pool_stack; /* Pool of stack (default size) */
-    ABTI_mem_pool_global_pool mem_pool_task_desc; /* Pool of task descriptors */
+    ABTI_mem_pool_global_pool mem_pool_desc;  /* Pool of descriptors that can
+                                               * store ABTI_task. */
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* They are used for external threads. */
     ABTI_spinlock mem_pool_stack_lock;
     ABTI_mem_pool_local_pool mem_pool_stack_ext;
-    ABTI_spinlock mem_pool_task_desc_lock;
-    ABTI_mem_pool_local_pool mem_pool_task_desc_ext;
+    ABTI_spinlock mem_pool_desc_lock;
+    ABTI_mem_pool_local_pool mem_pool_desc_ext;
 #endif
 #endif
 
@@ -230,7 +231,7 @@ struct ABTI_xstream {
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
     ABTI_mem_pool_local_pool mem_pool_stack;
-    ABTI_mem_pool_local_pool mem_pool_task_desc;
+    ABTI_mem_pool_local_pool mem_pool_desc;
 #endif
 };
 
@@ -359,8 +360,11 @@ struct ABTI_ktelem {
 };
 
 struct ABTI_ktable {
-    int size;              /* size of the table */
-    ABTI_ktelem **p_elems; /* element array */
+    int size; /* size of the table */
+    void *p_used_mem;
+    void *p_extra_mem;
+    size_t extra_mem_size;
+    ABTI_ktelem *p_elems[1]; /* element array */
 };
 
 struct ABTI_cond {
@@ -563,8 +567,8 @@ void ABTI_task_reset_id(void);
 ABT_unit_id ABTI_task_get_id(ABTI_task *p_task);
 
 /* Key */
-ABTI_ktable *ABTI_ktable_alloc(int size);
-void ABTI_ktable_free(ABTI_ktable *p_ktable);
+ABTI_ktable *ABTI_ktable_alloc(ABTI_xstream *p_local_xstream, int size);
+void ABTI_ktable_free(ABTI_xstream *p_local_xstream, ABTI_ktable *p_ktable);
 
 /* Mutex */
 void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,

@@ -751,6 +751,20 @@ AS_IF([test "x$have_builtin_expect" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_HAVE___BUILTIN_EXPECT, 1,
                  [Define to 1 if you have the `__builtin_expect' function.])])
 
+# check __alignof__
+AC_TRY_COMPILE([], [int a = __alignof__(double); (void)a;],
+               [have_alignof=gcc],
+               [AC_TRY_COMPILE([], [int a = alignof(double); (void)a;],
+                               [have_alignof=c11],
+                               [have_alignof=no])]
+)
+AS_IF([test "x$have_alignof" = "xgcc"],
+      [AC_DEFINE(ABT_CONFIG_HAVE_ALIGNOF_GCC, 1,
+                 [Define to 1 if you have the `__alignof__' operator.])])
+AS_IF([test "x$have_alignof" = "xc11"],
+      [AC_DEFINE(ABT_CONFIG_HAVE_ALIGNOF_C11, 1,
+                 [Define to 1 if you have the `alignof' operator.])])
+
 # check math library
 AC_CHECK_LIB([m], [log10])
 

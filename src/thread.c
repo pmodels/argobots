@@ -23,7 +23,8 @@ static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
                                           ABTI_xstream *p_xstream);
 #endif
 static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread);
-static inline void ABTI_thread_free_internal(ABTI_thread *p_thread);
+static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
+                                             ABTI_thread *p_thread);
 static inline ABT_unit_id ABTI_thread_get_new_id(void);
 
 /** @defgroup ULT User-level Thread (ULT)
@@ -1733,7 +1734,8 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline void ABTI_thread_free_internal(ABTI_thread *p_thread)
+static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
+                                             ABTI_thread *p_thread)
 {
     /* Free the unit */
     p_thread->unit_def.p_pool->u_free(&p_thread->unit_def.unit);
@@ -1743,7 +1745,7 @@ static inline void ABTI_thread_free_internal(ABTI_thread *p_thread)
 
     /* Free the key-value table */
     if (p_thread->unit_def.p_keytable) {
-        ABTI_ktable_free(p_thread->unit_def.p_keytable);
+        ABTI_ktable_free(p_local_xstream, p_thread->unit_def.p_keytable);
     }
 }
 
@@ -1752,7 +1754,7 @@ void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
     LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
               p_thread->unit_def.p_last_xstream->rank);
 
-    ABTI_thread_free_internal(p_thread);
+    ABTI_thread_free_internal(p_local_xstream, p_thread);
 
     /* Free ABTI_thread (stack will also be freed) */
     ABTI_mem_free_thread(p_local_xstream, p_thread);
@@ -1766,7 +1768,7 @@ void ABTI_thread_free_main(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 
     /* Free the key-value table */
     if (p_thread->unit_def.p_keytable) {
-        ABTI_ktable_free(p_thread->unit_def.p_keytable);
+        ABTI_ktable_free(p_local_xstream, p_thread->unit_def.p_keytable);
     }
 
     ABTI_mem_free_thread(p_local_xstream, p_thread);
@@ -1784,7 +1786,7 @@ void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
 
     /* Free the key-value table */
     if (p_thread->unit_def.p_keytable) {
-        ABTI_ktable_free(p_thread->unit_def.p_keytable);
+        ABTI_ktable_free(p_local_xstream, p_thread->unit_def.p_keytable);
     }
 
     ABTI_mem_free_thread(p_local_xstream, p_thread);

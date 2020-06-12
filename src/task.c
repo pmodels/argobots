@@ -771,7 +771,7 @@ void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_task *p_task)
 
     /* Free the key-value table */
     if (p_task->unit_def.p_keytable) {
-        ABTI_ktable_free(p_task->unit_def.p_keytable);
+        ABTI_ktable_free(p_local_xstream, p_task->unit_def.p_keytable);
     }
 
     ABTI_mem_free_task(p_local_xstream, p_task);

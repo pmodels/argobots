@@ -20,6 +20,18 @@
 #define ABTU_unlikely(cond) (cond)
 #endif
 
+#ifdef ABT_CONFIG_HAVE_ALIGNOF_GCC
+#define ABTU_alignof(type) (__alignof__(type))
+#elif defined(ABT_CONFIG_HAVE_ALIGNOF_C11)
+#define ABTU_alignof(type) (alignof(type))
+#else
+#define ABTU_alignof(type) 16 /* 16 bytes would be a good guess. */
+#endif
+#define ABTU_MAX_ALIGNMENT                                                     \
+    (ABTU_alignof(long double) > ABTU_alignof(long long)                       \
+         ? ABTU_alignof(long double)                                           \
+         : ABTU_alignof(long long))
+
 /* Utility Functions */
 
 static inline void *ABTU_memalign(size_t alignment, size_t size)
