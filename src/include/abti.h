@@ -191,13 +191,14 @@ struct ABTI_global {
     int mem_lp_alloc;        /* How to allocate large pages */
 
     ABTI_mem_pool_global_pool mem_pool_stack; /* Pool of stack (default size) */
-    ABTI_mem_pool_global_pool mem_pool_task_desc; /* Pool of task descriptors */
+    ABTI_mem_pool_global_pool mem_pool_desc;  /* Pool of descriptors that can
+                                               * store ABTI_task. */
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* They are used for external threads. */
     ABTI_spinlock mem_pool_stack_lock;
     ABTI_mem_pool_local_pool mem_pool_stack_ext;
-    ABTI_spinlock mem_pool_task_desc_lock;
-    ABTI_mem_pool_local_pool mem_pool_task_desc_ext;
+    ABTI_spinlock mem_pool_desc_lock;
+    ABTI_mem_pool_local_pool mem_pool_desc_ext;
 #endif
 #endif
 
@@ -230,7 +231,7 @@ struct ABTI_xstream {
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
     ABTI_mem_pool_local_pool mem_pool_stack;
-    ABTI_mem_pool_local_pool mem_pool_task_desc;
+    ABTI_mem_pool_local_pool mem_pool_desc;
 #endif
 };
 

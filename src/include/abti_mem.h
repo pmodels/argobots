@@ -242,8 +242,7 @@ static inline ABTI_task *ABTI_mem_alloc_task(ABTI_xstream *p_local_xstream)
 #endif
 
     /* Find the page that has an empty block */
-    p_task =
-        (ABTI_task *)ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_task_desc);
+    p_task = (ABTI_task *)ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc);
     /* To distinguish it from a malloc'ed case, assign non-NULL value. */
     *(uint32_t *)(((char *)p_task) + sizeof(ABTI_task)) = 0;
     return p_task;
@@ -263,13 +262,13 @@ static inline void ABTI_mem_free_task(ABTI_xstream *p_local_xstream,
         return;
     } else if (!p_local_xstream) {
         /* Return a stack and a descriptor to their global pools. */
-        ABTI_spinlock_acquire(&gp_ABTI_global->mem_pool_task_desc_lock);
-        ABTI_mem_pool_free(&gp_ABTI_global->mem_pool_task_desc_ext, p_task);
-        ABTI_spinlock_release(&gp_ABTI_global->mem_pool_task_desc_lock);
+        ABTI_spinlock_acquire(&gp_ABTI_global->mem_pool_desc_lock);
+        ABTI_mem_pool_free(&gp_ABTI_global->mem_pool_desc_ext, p_task);
+        ABTI_spinlock_release(&gp_ABTI_global->mem_pool_desc_lock);
         return;
     }
 #endif
-    ABTI_mem_pool_free(&p_local_xstream->mem_pool_task_desc, p_task);
+    ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_task);
 #endif
 }
 

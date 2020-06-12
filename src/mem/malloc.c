@@ -68,7 +68,7 @@ void ABTI_mem_init(ABTI_global *p_global)
     size_t task_desc_size =
         (sizeof(ABTI_task) + 4 + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
         (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
-    ABTI_mem_pool_init_global_pool(&p_global->mem_pool_task_desc,
+    ABTI_mem_pool_init_global_pool(&p_global->mem_pool_desc,
                                    p_global->mem_max_descs /
                                        ABT_MEM_POOL_MAX_LOCAL_BUCKETS,
                                    task_desc_size, 0, p_global->mem_page_size,
@@ -78,9 +78,9 @@ void ABTI_mem_init(ABTI_global *p_global)
     ABTI_spinlock_clear(&p_global->mem_pool_stack_lock);
     ABTI_mem_pool_init_local_pool(&p_global->mem_pool_stack_ext,
                                   &p_global->mem_pool_stack);
-    ABTI_spinlock_clear(&p_global->mem_pool_task_desc_lock);
-    ABTI_mem_pool_init_local_pool(&p_global->mem_pool_task_desc_ext,
-                                  &p_global->mem_pool_task_desc);
+    ABTI_spinlock_clear(&p_global->mem_pool_desc_lock);
+    ABTI_mem_pool_init_local_pool(&p_global->mem_pool_desc_ext,
+                                  &p_global->mem_pool_desc);
 #endif
 }
 
@@ -88,24 +88,24 @@ void ABTI_mem_init_local(ABTI_xstream *p_local_xstream)
 {
     ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_stack,
                                   &gp_ABTI_global->mem_pool_stack);
-    ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_task_desc,
-                                  &gp_ABTI_global->mem_pool_task_desc);
+    ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_desc,
+                                  &gp_ABTI_global->mem_pool_desc);
 }
 
 void ABTI_mem_finalize(ABTI_global *p_global)
 {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     ABTI_mem_pool_destroy_local_pool(&p_global->mem_pool_stack_ext);
-    ABTI_mem_pool_destroy_local_pool(&p_global->mem_pool_task_desc_ext);
+    ABTI_mem_pool_destroy_local_pool(&p_global->mem_pool_desc_ext);
 #endif
     ABTI_mem_pool_destroy_global_pool(&p_global->mem_pool_stack);
-    ABTI_mem_pool_destroy_global_pool(&p_global->mem_pool_task_desc);
+    ABTI_mem_pool_destroy_global_pool(&p_global->mem_pool_desc);
 }
 
 void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream)
 {
     ABTI_mem_pool_destroy_local_pool(&p_local_xstream->mem_pool_stack);
-    ABTI_mem_pool_destroy_local_pool(&p_local_xstream->mem_pool_task_desc);
+    ABTI_mem_pool_destroy_local_pool(&p_local_xstream->mem_pool_desc);
 }
 
 int ABTI_mem_check_lp_alloc(int lp_alloc)
