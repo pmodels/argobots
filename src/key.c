@@ -13,7 +13,6 @@
 static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
                                    void *value);
 static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key);
-void ABTI_ktable_delete(ABTI_ktable *p_ktable, ABTI_key *p_key);
 
 static ABTD_atomic_uint32 g_key_id = ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
 
@@ -51,9 +50,6 @@ int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
     p_newkey = (ABTI_key *)ABTU_malloc(sizeof(ABTI_key));
     p_newkey->f_destructor = destructor;
     p_newkey->id = ABTD_atomic_fetch_add_uint32(&g_key_id, 1);
-    ABTD_atomic_relaxed_store_uint32(&p_newkey->refcount, 1);
-    p_newkey->freed = ABT_FALSE;
-
     /* Return value */
     *newkey = ABTI_key_get_handle(p_newkey);
 
@@ -79,14 +75,7 @@ int ABT_key_free(ABT_key *key)
     ABT_key h_key = *key;
     ABTI_key *p_key = ABTI_key_get_ptr(h_key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
-
-    uint32_t refcount;
-
-    p_key->freed = ABT_TRUE;
-    refcount = ABTD_atomic_fetch_sub_uint32(&p_key->refcount, 1);
-    if (refcount == 1) {
-        ABTU_free(p_key);
-    }
+    ABTU_free(p_key);
 
     /* Return value */
     *key = ABT_KEY_NULL;
@@ -193,8 +182,9 @@ ABTI_ktable *ABTI_ktable_alloc(int size)
     ABTI_ktable *p_ktable;
 
     p_ktable = (ABTI_ktable *)ABTU_malloc(sizeof(ABTI_ktable));
+    /* size must be a power of 2. */
+    ABTI_ASSERT((size & (size - 1)) == 0);
     p_ktable->size = size;
-    p_ktable->num = 0;
     p_ktable->p_elems =
         (ABTI_ktelem **)ABTU_calloc(size, sizeof(ABTI_ktelem *));
 
@@ -204,23 +194,15 @@ ABTI_ktable *ABTI_ktable_alloc(int size)
 void ABTI_ktable_free(ABTI_ktable *p_ktable)
 {
     ABTI_ktelem *p_elem, *p_next;
-    ABTI_key *p_key;
     int i;
-    uint32_t refcount;
 
     for (i = 0; i < p_ktable->size; i++) {
         p_elem = p_ktable->p_elems[i];
         while (p_elem) {
             /* Call the destructor if it exists and the value is not null. */
-            p_key = p_elem->p_key;
-            if (p_key->f_destructor && p_elem->value) {
-                p_key->f_destructor(p_elem->value);
+            if (p_elem->f_destructor && p_elem->value) {
+                p_elem->f_destructor(p_elem->value);
             }
-            refcount = ABTD_atomic_fetch_sub_uint32(&p_key->refcount, 1);
-            if (refcount == 1 && p_key->freed == ABT_TRUE) {
-                ABTU_free(p_key);
-            }
-
             p_next = p_elem->p_next;
             ABTU_free(p_elem);
             p_elem = p_next;
@@ -233,7 +215,7 @@ void ABTI_ktable_free(ABTI_ktable *p_ktable)
 
 static inline uint32_t ABTI_ktable_get_idx(ABTI_key *p_key, int size)
 {
-    return p_key->id % size;
+    return p_key->id & (size - 1);
 }
 
 static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
@@ -245,8 +227,9 @@ static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
     /* Look for the same key */
     idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
     p_elem = p_ktable->p_elems[idx];
+    uint32_t key_id = p_key->id;
     while (p_elem) {
-        if (p_elem->p_key == p_key) {
+        if (p_elem->key_id == key_id) {
             p_elem->value = value;
             return;
         }
@@ -255,13 +238,11 @@ static inline void ABTI_ktable_set(ABTI_ktable *p_ktable, ABTI_key *p_key,
 
     /* The table does not have the same key */
     p_elem = (ABTI_ktelem *)ABTU_malloc(sizeof(ABTI_ktelem));
-    p_elem->p_key = p_key;
+    p_elem->f_destructor = p_key->f_destructor;
+    p_elem->key_id = p_key->id;
     p_elem->value = value;
     p_elem->p_next = p_ktable->p_elems[idx];
-    ABTD_atomic_fetch_add_uint32(&p_key->refcount, 1);
     p_ktable->p_elems[idx] = p_elem;
-
-    p_ktable->num++;
 }
 
 static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key)
@@ -271,38 +252,13 @@ static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key)
 
     idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
     p_elem = p_ktable->p_elems[idx];
+    uint32_t key_id = p_key->id;
     while (p_elem) {
-        if (p_elem->p_key == p_key) {
+        if (p_elem->key_id == key_id) {
             return p_elem->value;
         }
         p_elem = p_elem->p_next;
     }
 
     return NULL;
-}
-
-void ABTI_ktable_delete(ABTI_ktable *p_ktable, ABTI_key *p_key)
-{
-    uint32_t idx;
-    ABTI_ktelem *p_prev = NULL;
-    ABTI_ktelem *p_elem;
-
-    idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
-    p_elem = p_ktable->p_elems[idx];
-    while (p_elem) {
-        if (p_elem->p_key == p_key) {
-            if (p_prev) {
-                p_prev->p_next = p_elem->p_next;
-            } else {
-                p_ktable->p_elems[idx] = p_elem->p_next;
-            }
-            p_ktable->num--;
-
-            ABTU_free(p_elem);
-            return;
-        }
-
-        p_prev = p_elem;
-        p_elem = p_elem->p_next;
-    }
 }

@@ -348,19 +348,18 @@ struct ABTI_task {
 struct ABTI_key {
     void (*f_destructor)(void *value);
     uint32_t id;
-    ABTD_atomic_uint32 refcount; /* Reference count */
-    ABT_bool freed;              /* TRUE: freed, FALSE: not */
 };
 
 struct ABTI_ktelem {
-    ABTI_key *p_key;
+    /* information of ABTI_key */
+    void (*f_destructor)(void *value);
+    uint32_t key_id;
     void *value;
     struct ABTI_ktelem *p_next;
 };
 
 struct ABTI_ktable {
     int size;              /* size of the table */
-    int num;               /* number of elements stored */
     ABTI_ktelem **p_elems; /* element array */
 };
 

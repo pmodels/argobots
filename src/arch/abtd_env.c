@@ -95,6 +95,15 @@ void ABTD_env_init(ABTI_global *p_global)
     } else {
         p_global->key_table_size = ABTD_KEY_TABLE_DEFAULT_SIZE;
     }
+    /* key_table_size must be a power of 2. */
+    {
+        int i;
+        for (i = 0; i < sizeof(int) * 8; i++) {
+            if ((p_global->key_table_size - 1) >> i == 0)
+                break;
+        }
+        p_global->key_table_size = 1 << i;
+    }
 
     /* Default stack size for ULT */
     env = getenv("ABT_THREAD_STACKSIZE");
