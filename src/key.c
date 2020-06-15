@@ -257,7 +257,7 @@ static inline void *ABTI_ktable_alloc_elem(ABTI_xstream *p_local_xstream,
 {
     ABTI_ASSERT((size & (ABTU_MAX_ALIGNMENT - 1)) == 0);
     size_t extra_mem_size = p_ktable->extra_mem_size;
-    if (extra_mem_size <= size) {
+    if (size <= extra_mem_size) {
         /* Use the extra memory. */
         void *p_ret = p_ktable->p_extra_mem;
         p_ktable->p_extra_mem = (void *)(((char *)p_ret) + size);
