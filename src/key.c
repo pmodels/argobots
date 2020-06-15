@@ -109,17 +109,8 @@ int ABT_key_set(ABT_key key, void *value)
     ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_XSTREAM);
 
     /* Obtain the key-value table pointer. */
-    ABTI_unit *p_self = p_local_xstream->p_unit;
-    ABTI_ASSERT(p_self);
-
-    if (p_self->p_keytable == NULL) {
-        int key_table_size = gp_ABTI_global->key_table_size;
-        p_self->p_keytable = ABTI_ktable_alloc(p_local_xstream, key_table_size);
-    }
-
-    /* Save the value in the key-value table */
-    ABTI_ktable_set(p_local_xstream, p_self->p_keytable, p_key, value);
-
+    ABTI_unit_set_specific(p_local_xstream, p_local_xstream->p_unit, p_key,
+                           value);
 fn_exit:
     return abt_errno;
 
@@ -147,7 +138,6 @@ int ABT_key_get(ABT_key key, void **value)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    void *keyval = NULL;
 
     ABTI_key *p_key = ABTI_key_get_ptr(key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
@@ -157,13 +147,7 @@ int ABT_key_get(ABT_key key, void **value)
     ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_XSTREAM);
 
     /* Obtain the key-value table pointer */
-    ABTI_unit *p_self = p_local_xstream->p_unit;
-    ABTI_ktable *p_ktable = p_self->p_keytable;
-    if (p_ktable) {
-        /* Retrieve the value from the key-value table */
-        keyval = ABTI_ktable_get(p_ktable, p_key);
-    }
-    *value = keyval;
+    *value = ABTI_unit_get_specific(p_local_xstream->p_unit, p_key);
 
 fn_exit:
     return abt_errno;

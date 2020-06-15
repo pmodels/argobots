@@ -8,6 +8,13 @@
 
 /* Inlined functions for ABTI_unit */
 
+static inline ABTI_ktable *ABTI_ktable_alloc(ABTI_xstream *p_local_xstream,
+                                             int size);
+static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
+                                   ABTI_ktable *p_ktable, ABTI_key *p_key,
+                                   void *value);
+static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key);
+
 static inline ABT_thread_state
 ABTI_unit_state_get_thread_state(ABTI_unit_state state)
 {
@@ -73,6 +80,29 @@ static inline ABTI_thread *ABTI_unit_get_thread(ABTI_unit *p_unit)
 static inline ABTI_task *ABTI_unit_get_task(ABTI_unit *p_unit)
 {
     return (ABTI_task *)(((char *)p_unit) - offsetof(ABTI_task, unit_def));
+}
+
+static inline void ABTI_unit_set_specific(ABTI_xstream *p_local_xstream,
+                                          ABTI_unit *p_unit, ABTI_key *p_key,
+                                          void *value)
+{
+    if (p_unit->p_keytable == NULL) {
+        int key_table_size = gp_ABTI_global->key_table_size;
+        p_unit->p_keytable = ABTI_ktable_alloc(p_local_xstream, key_table_size);
+    }
+
+    /* Save the value in the key-value table */
+    ABTI_ktable_set(p_local_xstream, p_unit->p_keytable, p_key, value);
+}
+
+static inline void *ABTI_unit_get_specific(ABTI_unit *p_unit, ABTI_key *p_key)
+{
+    ABTI_ktable *p_ktable = p_unit->p_keytable;
+    if (p_ktable) {
+        /* Retrieve the value from the key-value table */
+        return ABTI_ktable_get(p_ktable, p_key);
+    }
+    return NULL;
 }
 
 #endif /* ABTI_UNIT_H_INCLUDED */
