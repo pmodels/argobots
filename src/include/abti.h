@@ -567,7 +567,6 @@ void ABTI_task_reset_id(void);
 ABT_unit_id ABTI_task_get_id(ABTI_task *p_task);
 
 /* Key */
-ABTI_ktable *ABTI_ktable_alloc(ABTI_xstream *p_local_xstream, int size);
 void ABTI_ktable_free(ABTI_xstream *p_local_xstream, ABTI_ktable *p_ktable);
 
 /* Mutex */
@@ -598,7 +597,6 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_thread.h"
 #include "abti_thread_attr.h"
 #include "abti_task.h"
-#include "abti_key.h"
 #include "abti_mutex.h"
 #include "abti_mutex_attr.h"
 #include "abti_cond.h"
@@ -608,5 +606,6 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_barrier.h"
 #include "abti_timer.h"
 #include "abti_mem.h"
+#include "abti_key.h"
 
 #endif /* ABTI_H_INCLUDED */
