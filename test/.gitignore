@@ -15,11 +15,13 @@ basic/thread_yield_to
 basic/thread_self_suspend_resume
 basic/thread_migrate
 basic/thread_data
+basic/thread_data2
 basic/thread_id
 basic/task_create
 basic/task_create_on_xstream
 basic/task_revive
 basic/task_data
+basic/task_data2
 basic/thread_task
 basic/thread_task_arg
 basic/thread_task_num
