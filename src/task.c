@@ -744,7 +744,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newtask->unit_def.p_arg = arg;
     p_newtask->unit_def.p_pool = p_pool;
     p_newtask->unit_def.refcount = refcount;
-    p_newtask->unit_def.p_keytable = NULL;
+    ABTD_atomic_relaxed_store_ptr(&p_newtask->unit_def.p_keytable, NULL);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newtask->unit_def.migratable = ABT_TRUE;
 #endif
@@ -798,7 +798,7 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_task->unit_def.f_unit = task_func;
     p_task->unit_def.p_arg = arg;
     p_task->unit_def.refcount = 1;
-    p_task->unit_def.p_keytable = NULL;
+    ABTD_atomic_relaxed_store_ptr(&p_task->unit_def.p_keytable, NULL);
 
     if (p_task->unit_def.p_pool != p_pool) {
         /* Free the unit for the old pool */
@@ -839,8 +839,12 @@ void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_task *p_task)
     p_task->unit_def.p_pool->u_free(&p_task->unit_def.unit);
 
     /* Free the key-value table */
-    if (p_task->unit_def.p_keytable) {
-        ABTI_ktable_free(p_local_xstream, p_task->unit_def.p_keytable);
+    ABTI_ktable *p_ktable =
+        ABTD_atomic_acquire_load_ptr(&p_task->unit_def.p_keytable);
+    /* No parallel access to TLS is allowed. */
+    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
+    if (p_ktable) {
+        ABTI_ktable_free(p_local_xstream, p_ktable);
     }
 
     ABTI_mem_free_task(p_local_xstream, p_task);
@@ -895,7 +899,7 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
             prefix, p_task->unit_def.refcount, prefix,
             ABTD_atomic_acquire_load_uint32(&p_task->unit_def.request), prefix,
             p_task->unit_def.p_arg, prefix,
-            (void *)p_task->unit_def.p_keytable);
+            ABTD_atomic_acquire_load_ptr(&p_task->unit_def.p_keytable));
 
 fn_exit:
     fflush(p_os);

@@ -306,7 +306,7 @@ struct ABTI_unit {
     ABTD_atomic_int state;        /* State (ABTI_unit_state) */
     ABTD_atomic_uint32 request;   /* Request */
     ABTI_pool *p_pool;            /* Associated pool */
-    ABTI_ktable *p_keytable;      /* Work unit-specific data */
+    ABTD_atomic_ptr p_keytable;   /* Work unit-specific data (ABTI_ktable *) */
     ABT_unit_id id;               /* ID */
     uint32_t refcount;            /* Reference count */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION

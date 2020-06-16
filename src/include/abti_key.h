@@ -46,18 +46,54 @@ typedef struct ABTI_ktable_mem_header {
 #define ABTI_KTABLE_DESC_SIZE                                                  \
     (ABTI_MEM_POOL_DESC_SIZE - sizeof(ABTI_ktable_mem_header))
 
-static inline ABTI_ktable *ABTI_ktable_alloc(ABTI_xstream *p_local_xstream,
-                                             int size)
+#define ABTI_KTABLE_LOCKED ((ABTI_ktable *)0x1)
+static inline int ABTI_ktable_is_valid(ABTI_ktable *p_ktable)
 {
+    /* Only 0x0 and 0x1 (=ABTI_KTABLE_LOCKED) are special */
+    return (((uintptr_t)(void *)p_ktable) & (~((uintptr_t)(void *)0x1))) !=
+           ((uintptr_t)(void *)0x0);
+}
+
+static inline ABTI_ktable *
+ABTI_ktable_ensure_allocation(ABTI_xstream *p_local_xstream,
+                              ABTD_atomic_ptr *pp_ktable)
+{
+    ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(pp_ktable);
+    if (ABTU_likely(ABTI_ktable_is_valid(p_ktable))) {
+        return p_ktable;
+    } else {
+        /* Spinlock pp_ktable */
+        while (1) {
+            if (ABTD_atomic_bool_cas_weak_ptr(pp_ktable, NULL,
+                                              ABTI_KTABLE_LOCKED)) {
+                /* The lock was acquired, so let's allocate this table. */
+                break;
+            } else {
+                /* Failed to take a lock. Check if the value to see if it should
+                 * try to take a lock again. */
+                p_ktable = ABTD_atomic_acquire_load_ptr(pp_ktable);
+                if (p_ktable == NULL) {
+                    /* Try once more. */
+                    continue;
+                }
+                /* It has been locked by another. */
+                while (p_ktable == ABTI_KTABLE_LOCKED) {
+                    ABTD_atomic_pause();
+                    p_ktable = ABTD_atomic_acquire_load_ptr(pp_ktable);
+                }
+                return p_ktable;
+            }
+        }
+    }
+    int key_table_size = gp_ABTI_global->key_table_size;
     /* size must be a power of 2. */
-    ABTI_ASSERT((size & (size - 1)) == 0);
+    ABTI_ASSERT((key_table_size & (key_table_size - 1)) == 0);
     /* max alignment must be a power of 2. */
     ABTI_STATIC_ASSERT((ABTU_MAX_ALIGNMENT & (ABTU_MAX_ALIGNMENT - 1)) == 0);
     size_t ktable_size =
-        (offsetof(ABTI_ktable, p_elems) + sizeof(ABTD_atomic_ptr) * size +
-         ABTU_MAX_ALIGNMENT - 1) &
+        (offsetof(ABTI_ktable, p_elems) +
+         sizeof(ABTD_atomic_ptr) * key_table_size + ABTU_MAX_ALIGNMENT - 1) &
         (~(ABTU_MAX_ALIGNMENT - 1));
-    ABTI_ktable *p_ktable;
     /* Since only one ES can access the memory pool on creation, this uses an
      * unsafe memory pool without taking a lock. */
     if (ABTU_likely(ktable_size <= ABTI_KTABLE_DESC_SIZE)) {
@@ -83,8 +119,10 @@ static inline ABTI_ktable *ABTI_ktable_alloc(ABTI_xstream *p_local_xstream,
         p_ktable->p_extra_mem = NULL;
         p_ktable->extra_mem_size = 0;
     }
-    p_ktable->size = size;
-    memset(p_ktable->p_elems, 0, sizeof(ABTD_atomic_ptr) * size);
+    p_ktable->size = key_table_size;
+    memset(p_ktable->p_elems, 0, sizeof(ABTD_atomic_ptr) * key_table_size);
+    /* Write down the value.  The lock is released here. */
+    ABTD_atomic_release_store_ptr(pp_ktable, p_ktable);
     return p_ktable;
 }
 

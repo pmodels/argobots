@@ -1559,7 +1559,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTD_atomic_relaxed_store_ptr(&p_newthread->p_migration_pool, NULL);
 #endif
-    p_newthread->unit_def.p_keytable = NULL;
+    ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable, NULL);
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
@@ -1813,8 +1813,12 @@ static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
     ABTD_thread_context_free(&p_thread->ctx);
 
     /* Free the key-value table */
-    if (p_thread->unit_def.p_keytable) {
-        ABTI_ktable_free(p_local_xstream, p_thread->unit_def.p_keytable);
+    ABTI_ktable *p_ktable =
+        ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable);
+    /* No parallel access to TLS is allowed. */
+    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
+    if (p_ktable) {
+        ABTI_ktable_free(p_local_xstream, p_ktable);
     }
 }
 
@@ -1836,8 +1840,12 @@ void ABTI_thread_free_main(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
               p_thread->unit_def.p_last_xstream->rank);
 
     /* Free the key-value table */
-    if (p_thread->unit_def.p_keytable) {
-        ABTI_ktable_free(p_local_xstream, p_thread->unit_def.p_keytable);
+    ABTI_ktable *p_ktable =
+        ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable);
+    /* No parallel access to TLS is allowed. */
+    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
+    if (p_ktable) {
+        ABTI_ktable_free(p_local_xstream, p_ktable);
     }
 
     ABTI_mem_free_thread(p_local_xstream, p_thread);
@@ -1854,8 +1862,12 @@ void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
     ABTD_thread_context_free(&p_thread->ctx);
 
     /* Free the key-value table */
-    if (p_thread->unit_def.p_keytable) {
-        ABTI_ktable_free(p_local_xstream, p_thread->unit_def.p_keytable);
+    ABTI_ktable *p_ktable =
+        ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable);
+    /* No parallel access to TLS is allowed. */
+    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
+    if (p_ktable) {
+        ABTI_ktable_free(p_local_xstream, p_ktable);
     }
 
     ABTI_mem_free_thread(p_local_xstream, p_thread);
@@ -2033,7 +2045,8 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             (void *)p_thread->unit_def.p_pool, prefix,
             p_thread->unit_def.refcount, prefix,
             ABTD_atomic_acquire_load_uint32(&p_thread->unit_def.request),
-            prefix, (void *)p_thread->unit_def.p_keytable);
+            prefix,
+            ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable));
 
 fn_exit:
     fflush(p_os);
