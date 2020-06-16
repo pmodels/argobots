@@ -210,7 +210,7 @@ void eventual_test(void *arg)
 int main(int argc, char *argv[])
 {
     ABT_xstream *xstreams;
-    ABT_thread *masters;
+    ABT_thread *main_threads;
     int i, ret;
 
     /* Initialize */
@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    masters = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
+    main_threads = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
 
     /* Create Execution Streams */
     ret = ABT_xstream_self(&xstreams[0]);
@@ -251,18 +251,18 @@ int main(int argc, char *argv[])
         ATS_ERROR(ret, "ABT_xstream_get_main_pools");
     }
 
-    /* Create a master ULT for each ES */
+    /* Create a main ULT for each ES */
     for (i = 1; i < num_xstreams; i++) {
         ret = ABT_thread_create(pools[i], eventual_test, (void *)(size_t)i,
-                                ABT_THREAD_ATTR_NULL, &masters[i]);
+                                ABT_THREAD_ATTR_NULL, &main_threads[i]);
         ATS_ERROR(ret, "ABT_thread_create");
     }
 
     eventual_test((void *)0);
 
-    /* Join master ULTs */
+    /* Join main ULTs */
     for (i = 1; i < num_xstreams; i++) {
-        ret = ABT_thread_free(&masters[i]);
+        ret = ABT_thread_free(&main_threads[i]);
         ATS_ERROR(ret, "ABT_thread_free");
     }
 
@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
 
     free(xstreams);
     free(pools);
-    free(masters);
+    free(main_threads);
 
     return ret;
 }
