@@ -356,15 +356,16 @@ struct ABTI_ktelem {
     void (*f_destructor)(void *value);
     uint32_t key_id;
     void *value;
-    struct ABTI_ktelem *p_next;
+    ABTD_atomic_ptr p_next; /* Next element (ABTI_ktelem *) */
 };
 
 struct ABTI_ktable {
-    int size; /* size of the table */
+    int size;           /* size of the table */
+    ABTI_spinlock lock; /* Protects any new entry creation. */
     void *p_used_mem;
     void *p_extra_mem;
     size_t extra_mem_size;
-    ABTI_ktelem *p_elems[1]; /* element array */
+    ABTD_atomic_ptr p_elems[1]; /* element array (ABTI_ktelem *) */
 };
 
 struct ABTI_cond {

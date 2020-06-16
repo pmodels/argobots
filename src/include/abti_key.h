@@ -120,6 +120,7 @@ ABTI_ktable_ensure_allocation(ABTI_xstream *p_local_xstream,
         p_ktable->extra_mem_size = 0;
     }
     p_ktable->size = key_table_size;
+    ABTI_spinlock_clear(&p_ktable->lock);
     memset(p_ktable->p_elems, 0, sizeof(ABTD_atomic_ptr) * key_table_size);
     /* Write down the value.  The lock is released here. */
     ABTD_atomic_release_store_ptr(pp_ktable, p_ktable);
@@ -170,12 +171,13 @@ static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
                                    void *value)
 {
     uint32_t idx;
-    ABTI_ktelem *p_elem, **pp_elem;
+    ABTD_atomic_ptr *pp_elem;
+    ABTI_ktelem *p_elem;
 
     /* Look for the same key */
     idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
     pp_elem = &p_ktable->p_elems[idx];
-    p_elem = *pp_elem;
+    p_elem = (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(pp_elem);
     uint32_t key_id = p_key->id;
     while (p_elem) {
         if (p_elem->key_id == key_id) {
@@ -183,10 +185,23 @@ static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
             return;
         }
         pp_elem = &p_elem->p_next;
-        p_elem = *pp_elem;
+        p_elem = (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(pp_elem);
     }
 
     /* The table does not have the same key */
+    ABTI_spinlock_acquire(&p_ktable->lock);
+    /* The linked list might have been extended. */
+    p_elem = (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(pp_elem);
+    while (p_elem) {
+        if (p_elem->key_id == key_id) {
+            ABTI_spinlock_release(&p_ktable->lock);
+            p_elem->value = value;
+            return;
+        }
+        pp_elem = &p_elem->p_next;
+        p_elem = (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(pp_elem);
+    }
+    /* Now the pp_elem points to the tail of the list.  Add a new element. */
     ABTI_STATIC_ASSERT((ABTU_MAX_ALIGNMENT & (ABTU_MAX_ALIGNMENT - 1)) == 0);
     size_t ktelem_size = (sizeof(ABTI_ktelem) + ABTU_MAX_ALIGNMENT - 1) &
                          (~(ABTU_MAX_ALIGNMENT - 1));
@@ -195,8 +210,9 @@ static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
     p_elem->f_destructor = p_key->f_destructor;
     p_elem->key_id = p_key->id;
     p_elem->value = value;
-    p_elem->p_next = NULL;
-    *pp_elem = p_elem;
+    ABTD_atomic_relaxed_store_ptr(&p_elem->p_next, NULL);
+    ABTD_atomic_release_store_ptr(pp_elem, p_elem);
+    ABTI_spinlock_release(&p_ktable->lock);
 }
 
 static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key)
@@ -205,13 +221,14 @@ static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key)
     ABTI_ktelem *p_elem;
 
     idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
-    p_elem = p_ktable->p_elems[idx];
+    p_elem =
+        (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(&p_ktable->p_elems[idx]);
     uint32_t key_id = p_key->id;
     while (p_elem) {
         if (p_elem->key_id == key_id) {
             return p_elem->value;
         }
-        p_elem = p_elem->p_next;
+        p_elem = (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(&p_elem->p_next);
     }
 
     return NULL;

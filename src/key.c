@@ -163,13 +163,15 @@ void ABTI_ktable_free(ABTI_xstream *p_local_xstream, ABTI_ktable *p_ktable)
     int i;
 
     for (i = 0; i < p_ktable->size; i++) {
-        p_elem = p_ktable->p_elems[i];
+        p_elem =
+            (ABTI_ktelem *)ABTD_atomic_relaxed_load_ptr(&p_ktable->p_elems[i]);
         while (p_elem) {
             /* Call the destructor if it exists and the value is not null. */
             if (p_elem->f_destructor && p_elem->value) {
                 p_elem->f_destructor(p_elem->value);
             }
-            p_elem = p_elem->p_next;
+            p_elem =
+                (ABTI_ktelem *)ABTD_atomic_relaxed_load_ptr(&p_elem->p_next);
         }
     }
     ABTI_ktable_mem_header *p_header =
