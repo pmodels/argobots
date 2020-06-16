@@ -1390,6 +1390,75 @@ fn_fail:
 
 /**
  * @ingroup ULT
+ * @brief  Set the ULT-specific value associated with the key
+ *
+ * \c ABT_thread_set_specific() associates a value, \c value, with a work
+ * unit-specific data key, \c key.  The target work unit is \c thread.
+ *
+ * @param[in] thread  handle to the target ULT
+ * @param[in] key     handle to the target key
+ * @param[in] value   value for the key
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    ABTI_key *p_key = ABTI_key_get_ptr(key);
+    ABTI_CHECK_NULL_KEY_PTR(p_key);
+
+    /* Set the value. */
+    ABTI_unit_set_specific(p_local_xstream, &p_thread->unit_def, p_key, value);
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Get the ULT-specific value associated with the key
+ *
+ * \c ABT_thread_get_specific() returns the value associated with a target work
+ * unit-specific data key, \c key, through \c value.  The target work unit is
+ * \c thread.  If \c thread has never set a value for the key, this routine
+ * returns \c NULL to \c value.
+ *
+ * @param[in]  thread  handle to the target ULT
+ * @param[in]  key     handle to the target key
+ * @param[out] value   value for the key
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    ABTI_key *p_key = ABTI_key_get_ptr(key);
+    ABTI_CHECK_NULL_KEY_PTR(p_key);
+
+    /* Get the value. */
+    *value = ABTI_unit_get_specific(&p_thread->unit_def, p_key);
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Get attributes of the target ULT
  *
  * \c ABT_thread_get_attr() returns the attributes of the ULT \c thread to
@@ -1490,7 +1559,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTD_atomic_relaxed_store_ptr(&p_newthread->p_migration_pool, NULL);
 #endif
-    p_newthread->unit_def.p_keytable = NULL;
+    ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable, NULL);
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
@@ -1744,8 +1813,12 @@ static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
     ABTD_thread_context_free(&p_thread->ctx);
 
     /* Free the key-value table */
-    if (p_thread->unit_def.p_keytable) {
-        ABTI_ktable_free(p_local_xstream, p_thread->unit_def.p_keytable);
+    ABTI_ktable *p_ktable =
+        ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable);
+    /* No parallel access to TLS is allowed. */
+    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
+    if (p_ktable) {
+        ABTI_ktable_free(p_local_xstream, p_ktable);
     }
 }
 
@@ -1767,8 +1840,12 @@ void ABTI_thread_free_main(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
               p_thread->unit_def.p_last_xstream->rank);
 
     /* Free the key-value table */
-    if (p_thread->unit_def.p_keytable) {
-        ABTI_ktable_free(p_local_xstream, p_thread->unit_def.p_keytable);
+    ABTI_ktable *p_ktable =
+        ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable);
+    /* No parallel access to TLS is allowed. */
+    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
+    if (p_ktable) {
+        ABTI_ktable_free(p_local_xstream, p_ktable);
     }
 
     ABTI_mem_free_thread(p_local_xstream, p_thread);
@@ -1785,8 +1862,12 @@ void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
     ABTD_thread_context_free(&p_thread->ctx);
 
     /* Free the key-value table */
-    if (p_thread->unit_def.p_keytable) {
-        ABTI_ktable_free(p_local_xstream, p_thread->unit_def.p_keytable);
+    ABTI_ktable *p_ktable =
+        ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable);
+    /* No parallel access to TLS is allowed. */
+    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
+    if (p_ktable) {
+        ABTI_ktable_free(p_local_xstream, p_ktable);
     }
 
     ABTI_mem_free_thread(p_local_xstream, p_thread);
@@ -1964,7 +2045,8 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             (void *)p_thread->unit_def.p_pool, prefix,
             p_thread->unit_def.refcount, prefix,
             ABTD_atomic_acquire_load_uint32(&p_thread->unit_def.request),
-            prefix, (void *)p_thread->unit_def.p_keytable);
+            prefix,
+            ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable));
 
 fn_exit:
     fflush(p_os);

@@ -20,11 +20,13 @@ TESTS = \
 	thread_self_suspend_resume \
 	thread_migrate \
 	thread_data \
+	thread_data2 \
 	thread_id \
 	task_create \
 	task_create_on_xstream \
 	task_revive \
 	task_data \
+	task_data2 \
 	thread_task \
 	thread_task_arg \
 	thread_task_num \
@@ -91,11 +93,13 @@ thread_yield_to_SOURCES = thread_yield_to.c
 thread_self_suspend_resume_SOURCES = thread_self_suspend_resume.c
 thread_migrate_SOURCES = thread_migrate.c
 thread_data_SOURCES = thread_data.c
+thread_data2_SOURCES = thread_data2.c
 thread_id_SOURCES = thread_id.c
 task_create_SOURCES = task_create.c
 task_create_on_xstream_SOURCES = task_create_on_xstream.c
 task_revive_SOURCES = task_revive.c
 task_data_SOURCES = task_data.c
+task_data2_SOURCES = task_data2.c
 thread_task_SOURCES = thread_task.c
 thread_task_arg_SOURCES = thread_task_arg.c
 thread_task_num_SOURCES = thread_task_num.c
@@ -150,11 +154,13 @@ testing:
 	./thread_self_suspend_resume
 	./thread_migrate
 	./thread_data
+	./thread_data2
 	./thread_id
 	./task_create
 	./task_create_on_xstream
 	./task_revive
 	./task_data
+	./task_data2
 	./thread_task
 	./thread_task_arg
 	./thread_task_num

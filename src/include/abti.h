@@ -306,7 +306,7 @@ struct ABTI_unit {
     ABTD_atomic_int state;        /* State (ABTI_unit_state) */
     ABTD_atomic_uint32 request;   /* Request */
     ABTI_pool *p_pool;            /* Associated pool */
-    ABTI_ktable *p_keytable;      /* Work unit-specific data */
+    ABTD_atomic_ptr p_keytable;   /* Work unit-specific data (ABTI_ktable *) */
     ABT_unit_id id;               /* ID */
     uint32_t refcount;            /* Reference count */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
@@ -356,15 +356,16 @@ struct ABTI_ktelem {
     void (*f_destructor)(void *value);
     uint32_t key_id;
     void *value;
-    struct ABTI_ktelem *p_next;
+    ABTD_atomic_ptr p_next; /* Next element (ABTI_ktelem *) */
 };
 
 struct ABTI_ktable {
-    int size; /* size of the table */
+    int size;           /* size of the table */
+    ABTI_spinlock lock; /* Protects any new entry creation. */
     void *p_used_mem;
     void *p_extra_mem;
     size_t extra_mem_size;
-    ABTI_ktelem *p_elems[1]; /* element array */
+    ABTD_atomic_ptr p_elems[1]; /* element array (ABTI_ktelem *) */
 };
 
 struct ABTI_cond {
@@ -567,7 +568,6 @@ void ABTI_task_reset_id(void);
 ABT_unit_id ABTI_task_get_id(ABTI_task *p_task);
 
 /* Key */
-ABTI_ktable *ABTI_ktable_alloc(ABTI_xstream *p_local_xstream, int size);
 void ABTI_ktable_free(ABTI_xstream *p_local_xstream, ABTI_ktable *p_ktable);
 
 /* Mutex */
@@ -598,7 +598,6 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_thread.h"
 #include "abti_thread_attr.h"
 #include "abti_task.h"
-#include "abti_key.h"
 #include "abti_mutex.h"
 #include "abti_mutex_attr.h"
 #include "abti_cond.h"
@@ -608,5 +607,6 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_barrier.h"
 #include "abti_timer.h"
 #include "abti_mem.h"
+#include "abti_key.h"
 
 #endif /* ABTI_H_INCLUDED */
