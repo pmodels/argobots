@@ -1390,6 +1390,75 @@ fn_fail:
 
 /**
  * @ingroup ULT
+ * @brief  Set the ULT-specific value associated with the key
+ *
+ * \c ABT_thread_set_specific() associates a value, \c value, with a work
+ * unit-specific data key, \c key.  The target work unit is \c thread.
+ *
+ * @param[in] thread  handle to the target ULT
+ * @param[in] key     handle to the target key
+ * @param[in] value   value for the key
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    ABTI_key *p_key = ABTI_key_get_ptr(key);
+    ABTI_CHECK_NULL_KEY_PTR(p_key);
+
+    /* Set the value. */
+    ABTI_unit_set_specific(p_local_xstream, &p_thread->unit_def, p_key, value);
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Get the ULT-specific value associated with the key
+ *
+ * \c ABT_thread_get_specific() returns the value associated with a target work
+ * unit-specific data key, \c key, through \c value.  The target work unit is
+ * \c thread.  If \c thread has never set a value for the key, this routine
+ * returns \c NULL to \c value.
+ *
+ * @param[in]  thread  handle to the target ULT
+ * @param[in]  key     handle to the target key
+ * @param[out] value   value for the key
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    ABTI_key *p_key = ABTI_key_get_ptr(key);
+    ABTI_CHECK_NULL_KEY_PTR(p_key);
+
+    /* Get the value. */
+    *value = ABTI_unit_get_specific(&p_thread->unit_def, p_key);
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Get attributes of the target ULT
  *
  * \c ABT_thread_get_attr() returns the attributes of the ULT \c thread to

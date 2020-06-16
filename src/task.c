@@ -649,6 +649,75 @@ fn_fail:
     goto fn_exit;
 }
 
+/**
+ * @ingroup TASK
+ * @brief  Set the tasklet-specific value associated with the key
+ *
+ * \c ABT_task_set_specific() associates a value, \c value, with a work
+ * unit-specific data key, \c key.  The target work unit is \c task.
+ *
+ * @param[in] task   handle to the target tasklet
+ * @param[in] key    handle to the target key
+ * @param[in] value  value for the key
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_set_specific(ABT_task task, ABT_key key, void *value)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    ABTI_key *p_key = ABTI_key_get_ptr(key);
+    ABTI_CHECK_NULL_KEY_PTR(p_key);
+
+    /* Set the value. */
+    ABTI_unit_set_specific(p_local_xstream, &p_task->unit_def, p_key, value);
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
+ * @brief   Get the tasklet-specific value associated with the key
+ *
+ * \c ABT_task_get_specific() returns the value associated with a target work
+ * unit-specific data key, \c key, through \c value.  The target work unit is
+ * \c task.  If \c task has never set a value for the key, this routine returns
+ * \c NULL to \c value.
+ *
+ * @param[in]  task   handle to the target tasklet
+ * @param[in]  key    handle to the target key
+ * @param[out] value  value for the key
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_task_get_specific(ABT_task task, ABT_key key, void **value)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    ABTI_key *p_key = ABTI_key_get_ptr(key);
+    ABTI_CHECK_NULL_KEY_PTR(p_key);
+
+    /* Get the value. */
+    *value = ABTI_unit_get_specific(&p_task->unit_def, p_key);
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
