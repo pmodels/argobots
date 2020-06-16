@@ -170,18 +170,20 @@ static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
                                    void *value)
 {
     uint32_t idx;
-    ABTI_ktelem *p_elem;
+    ABTI_ktelem *p_elem, **pp_elem;
 
     /* Look for the same key */
     idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
-    p_elem = p_ktable->p_elems[idx];
+    pp_elem = &p_ktable->p_elems[idx];
+    p_elem = *pp_elem;
     uint32_t key_id = p_key->id;
     while (p_elem) {
         if (p_elem->key_id == key_id) {
             p_elem->value = value;
             return;
         }
-        p_elem = p_elem->p_next;
+        pp_elem = &p_elem->p_next;
+        p_elem = *pp_elem;
     }
 
     /* The table does not have the same key */
@@ -193,8 +195,8 @@ static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
     p_elem->f_destructor = p_key->f_destructor;
     p_elem->key_id = p_key->id;
     p_elem->value = value;
-    p_elem->p_next = p_ktable->p_elems[idx];
-    p_ktable->p_elems[idx] = p_elem;
+    p_elem->p_next = NULL;
+    *pp_elem = p_elem;
 }
 
 static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key)
