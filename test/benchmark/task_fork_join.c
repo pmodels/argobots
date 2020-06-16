@@ -67,7 +67,7 @@ static void task_func(void *arg)
     ATS_UNUSED(arg);
 }
 
-static void master_thread_func(void *arg)
+static void main_thread_func(void *arg)
 {
     int my_es = (int)(size_t)arg;
     int t, ntasks;
@@ -180,11 +180,11 @@ int main(int argc, char *argv[])
     }
 
     for (i = 1; i < ness; i++) {
-        ABT_thread_create(pools[i], master_thread_func, (void *)(size_t)i,
+        ABT_thread_create(pools[i], main_thread_func, (void *)(size_t)i,
                           ABT_THREAD_ATTR_NULL, NULL);
     }
 
-    master_thread_func((void *)(size_t)0);
+    main_thread_func((void *)(size_t)0);
 #else
     /* Create pools */
     for (i = 0; i < ness; i++) {
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
     }
 
     for (i = 1; i < ness; i++) {
-        ABT_thread_create(pools[i], master_thread_func, (void *)(size_t)i,
+        ABT_thread_create(pools[i], main_thread_func, (void *)(size_t)i,
                           ABT_THREAD_ATTR_NULL, NULL);
     }
 
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
                                  ABT_SCHED_CONFIG_NULL, &xstreams[i]);
     }
 
-    master_thread_func((void *)(size_t)0);
+    main_thread_func((void *)(size_t)0);
 #endif
 
     for (i = 1; i < ness; i++) {

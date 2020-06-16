@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     ABT_xstream *xstreams;
     ABT_sched *scheds;
     ABT_pool *pools, *my_pools;
-    ABT_thread *masters;
+    ABT_thread *main_threads;
     int i, k, ret;
 
     /* Initialize */
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     scheds = (ABT_sched *)malloc(num_xstreams * sizeof(ABT_sched));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    masters = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
+    main_threads = (ABT_thread *)malloc(num_xstreams * sizeof(ABT_thread));
 
     /* Create a mutex */
     ret = ABT_mutex_create(&g_mutex);
@@ -154,16 +154,16 @@ int main(int argc, char *argv[])
         ATS_ERROR(ret, "ABT_xstream_create");
     }
 
-    /* Create master ULTs */
+    /* Create main ULTs */
     for (i = 0; i < num_xstreams; i++) {
         ret = ABT_thread_create(pools[i], create_threads, NULL,
-                                ABT_THREAD_ATTR_NULL, &masters[i]);
+                                ABT_THREAD_ATTR_NULL, &main_threads[i]);
         ATS_ERROR(ret, "ABT_thread_create");
     }
 
-    /* Join and free master ULTs */
+    /* Join and free main ULTs */
     for (i = 0; i < num_xstreams; i++) {
-        ret = ABT_thread_free(&masters[i]);
+        ret = ABT_thread_free(&main_threads[i]);
         ATS_ERROR(ret, "ABT_thread_free");
     }
 
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
     free(xstreams);
     free(scheds);
     free(pools);
-    free(masters);
+    free(main_threads);
 
     return ret;
 }

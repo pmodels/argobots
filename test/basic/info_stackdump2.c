@@ -72,7 +72,7 @@ void thread_func(void *arg)
         ATS_printf(1, "[U%d:E%d] Raise SIGUSR1\n", t_arg->id, rank);
         g_stop = 1;
         while (g_counter < t_arg->num_xstreams - 2) {
-            /* ensure that all the non-master execution streams are waiting in
+            /* ensure that all the secondary execution streams are waiting in
              * the following busy loop. */
             __sync_synchronize();
         }

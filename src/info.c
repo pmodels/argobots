@@ -712,7 +712,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
     /* Wait for the other execution streams using a barrier mechanism. */
     uint32_t self_value = ABTD_atomic_fetch_add_uint32(&print_stack_barrier, 1);
     if (self_value == 0) {
-        /* This ES becomes a master. */
+        /* This ES becomes the main ES. */
         double start_time = ABTI_get_wtime();
         ABT_bool force_print = ABT_FALSE;
 
@@ -778,7 +778,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
         ABTD_atomic_release_store_uint32(&print_stack_flag,
                                          PRINT_STACK_FLAG_FINALIZE);
     } else {
-        /* Wait for the master's work. */
+        /* Wait for the main ES's work. */
         while (ABTD_atomic_acquire_load_uint32(&print_stack_flag) !=
                PRINT_STACK_FLAG_FINALIZE)
             ABTD_atomic_pause();
