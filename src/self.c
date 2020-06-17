@@ -318,3 +318,38 @@ int ABT_self_get_arg(void **arg)
 fn_exit:
     return abt_errno;
 }
+
+/**
+ * @ingroup SELF
+ * @brief   Check if the running work unit is unnamed
+ *
+ * \c ABT_self_is_unnamed() returns whether the current work units is unnamed or
+ * not.  If the caller is an external thread, it sets ABT_FALSE and returns
+ * ABT_ERR_INV_XSTREAM.
+ *
+ * @param[out] flag  result (<tt>ABT_TRUE</tt> if unnamed)
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS  on success
+ */
+int ABT_self_is_unnamed(ABT_bool *flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* When an external thread called this routine */
+    if (p_local_xstream == NULL) {
+        abt_errno = ABT_ERR_INV_XSTREAM;
+        *flag = ABT_FALSE;
+        goto fn_exit;
+    }
+#endif
+
+    *flag = (p_local_xstream->p_unit->refcount == 0) ? ABT_TRUE : ABT_FALSE;
+
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+fn_exit:
+#endif
+    return abt_errno;
+}

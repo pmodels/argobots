@@ -1252,6 +1252,36 @@ fn_fail:
 
 /**
  * @ingroup ULT
+ * @brief   Check if the target ULT is unnamed
+ *
+ * \c ABT_thread_is_unnamed() returns whether the target ULT, \c thread, is
+ * unnamed or not.  Note that a handle of an unnamed ULT can be obtained by, for
+ * example, running \c ABT_thread_self() on an unnamed ULT.
+ *
+ * @param[in]  thread  handle to the target ULT
+ * @param[out] flag    result (<tt>ABT_TRUE</tt> if unnamed)
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS  on success
+ */
+int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    *flag = (p_thread->unit_def.refcount == 0) ? ABT_TRUE : ABT_FALSE;
+
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Compare two ULT handles for equality.
  *
  * \c ABT_thread_equal() compares two ULT handles for equality. If two handles
