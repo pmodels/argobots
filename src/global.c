@@ -65,6 +65,21 @@ int ABT_init(int argc, char **argv)
     ABTI_sched_reset_id();
     ABTI_pool_reset_id();
 
+#ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+    /* Initialize the tool interface */
+    ABTI_spinlock_clear(&gp_ABTI_global->tool_writer_lock);
+    gp_ABTI_global->tool_thread_cb_f = NULL;
+    gp_ABTI_global->tool_thread_user_arg = NULL;
+    ABTD_atomic_relaxed_store_uint64(&gp_ABTI_global
+                                          ->tool_thread_event_mask_tagged,
+                                     0);
+    gp_ABTI_global->tool_task_cb_f = NULL;
+    gp_ABTI_global->tool_task_user_arg = NULL;
+    ABTD_atomic_relaxed_store_uint64(&gp_ABTI_global
+                                          ->tool_task_event_mask_tagged,
+                                     0);
+#endif
+
     /* Initialize the ES array */
     gp_ABTI_global->p_xstreams =
         (ABTI_xstream **)ABTU_calloc(gp_ABTI_global->max_xstreams,
@@ -160,6 +175,13 @@ int ABT_finalize(void)
                         ABT_ERR_INV_THREAD,
                         "ABT_finalize must be called by the primary ULT.");
     ABTI_thread *p_thread = ABTI_unit_get_thread(p_self);
+
+#ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+    /* Turns off the tool interface */
+    ABTI_tool_event_thread_update_callback(NULL, ABT_TOOL_EVENT_THREAD_NONE,
+                                           NULL);
+    ABTI_tool_event_task_update_callback(NULL, ABT_TOOL_EVENT_TASK_NONE, NULL);
+#endif
 
     /* Set the join request */
     ABTI_xstream_set_request(p_local_xstream, ABTI_XSTREAM_REQ_JOIN);

@@ -90,6 +90,7 @@ extern "C" {
 #define ABT_ERR_INV_BARRIER        26  /* Invalid barrier */
 #define ABT_ERR_INV_TIMER          27  /* Invalid timer */
 #define ABT_ERR_INV_QUERY_KIND     28  /* Invalid query kind */
+#define ABT_ERR_INV_TOOL_CONTEXT   52  /* Invalid tool context */
 #define ABT_ERR_XSTREAM            29  /* ES-related error */
 #define ABT_ERR_XSTREAM_STATE      30  /* ES state error */
 #define ABT_ERR_XSTREAM_BARRIER    31  /* ES barrier-related error */
@@ -225,6 +226,62 @@ enum ABT_info_query_kind {
     ABT_INFO_QUERY_KIND_ENABLED_TOOL,
 };
 
+enum ABT_tool_query_kind {
+    ABT_TOOL_QUERY_KIND_POOL,
+    ABT_TOOL_QUERY_KIND_STACK_DEPTH,
+    ABT_TOOL_QUERY_KIND_CALLER_TYPE,
+    ABT_TOOL_QUERY_KIND_CALLER_HANDLE,
+    ABT_TOOL_QUERY_KIND_SYNC_OBJECT_TYPE,
+    ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE,
+};
+
+/* Execution entity */
+enum ABT_exec_entity_type {
+    ABT_EXEC_ENTITY_TYPE_EXT, /* External thread */
+    ABT_EXEC_ENTITY_TYPE_THREAD,
+    ABT_EXEC_ENTITY_TYPE_TASK,
+};
+
+/* Synchronization event */
+enum ABT_sync_event_type {
+    ABT_SYNC_EVENT_TYPE_UNKNOWN = 0,
+    ABT_SYNC_EVENT_TYPE_USER,
+    ABT_SYNC_EVENT_TYPE_OTHER,
+    ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
+    ABT_SYNC_EVENT_TYPE_THREAD_JOIN,
+    ABT_SYNC_EVENT_TYPE_TASK_JOIN,
+    ABT_SYNC_EVENT_TYPE_MUTEX,
+    ABT_SYNC_EVENT_TYPE_COND,
+    ABT_SYNC_EVENT_TYPE_RWLOCK,
+    ABT_SYNC_EVENT_TYPE_EVENTUAL,
+    ABT_SYNC_EVENT_TYPE_FUTURE,
+    ABT_SYNC_EVENT_TYPE_BARRIER,
+};
+
+/* Tool event masks */
+#define ABT_TOOL_EVENT_THREAD_NONE    (0)
+#define ABT_TOOL_EVENT_THREAD_CREATE  (1 << 0)
+#define ABT_TOOL_EVENT_THREAD_JOIN    (1 << 1)
+#define ABT_TOOL_EVENT_THREAD_FREE    (1 << 2)
+#define ABT_TOOL_EVENT_THREAD_REVIVE  (1 << 3)
+#define ABT_TOOL_EVENT_THREAD_RUN     (1 << 4)
+#define ABT_TOOL_EVENT_THREAD_FINISH  (1 << 5)
+#define ABT_TOOL_EVENT_THREAD_CANCEL  (1 << 6)
+#define ABT_TOOL_EVENT_THREAD_YIELD   (1 << 7)
+#define ABT_TOOL_EVENT_THREAD_SUSPEND (1 << 8)
+#define ABT_TOOL_EVENT_THREAD_RESUME  (1 << 9)
+#define ABT_TOOL_EVENT_THREAD_ALL     ((uint64_t)(0xFFFFFFFFFFFFFFFF))
+
+#define ABT_TOOL_EVENT_TASK_NONE   (0)
+#define ABT_TOOL_EVENT_TASK_CREATE (1 << 0)
+#define ABT_TOOL_EVENT_TASK_JOIN   (1 << 1)
+#define ABT_TOOL_EVENT_TASK_FREE   (1 << 2)
+#define ABT_TOOL_EVENT_TASK_REVIVE (1 << 3)
+#define ABT_TOOL_EVENT_TASK_RUN    (1 << 4)
+#define ABT_TOOL_EVENT_TASK_FINISH (1 << 5)
+#define ABT_TOOL_EVENT_TASK_CANCEL (1 << 6)
+#define ABT_TOOL_EVENT_TASK_ALL    ((uint64_t)(0xFFFFFFFFFFFFFFFF))
+
 /* Constants for ABT_bool */
 #define ABT_TRUE    1
 #define ABT_FALSE   0
@@ -252,6 +309,7 @@ struct ABT_eventual_opaque;
 struct ABT_future_opaque;
 struct ABT_barrier_opaque;
 struct ABT_timer_opaque;
+struct ABT_tool_context_opaque;
 
 /* Execution Stream */
 typedef struct ABT_xstream_opaque *         ABT_xstream;
@@ -317,6 +375,14 @@ typedef struct ABT_timer_opaque *           ABT_timer;
 typedef int                                 ABT_bool;
 /* Query kind */
 typedef enum ABT_info_query_kind            ABT_info_query_kind;
+/* Tool context */
+typedef struct ABT_tool_context_opaque *    ABT_tool_context;
+/* Tool query kind */
+typedef enum ABT_tool_query_kind            ABT_tool_query_kind;
+/* Type of execution entity */
+typedef enum ABT_exec_entity_type           ABT_exec_entity_type;
+/* Type of synchronization event */
+typedef enum ABT_sync_event_type            ABT_sync_event_type;
 
 
 /* Null Object Handles */
@@ -341,6 +407,7 @@ typedef enum ABT_info_query_kind            ABT_info_query_kind;
 #define ABT_FUTURE_NULL          ((ABT_future)         NULL)
 #define ABT_BARRIER_NULL         ((ABT_barrier)        NULL)
 #define ABT_TIMER_NULL           ((ABT_timer)          NULL)
+#define ABT_TOOL_CONTEXT_NULL    ((ABT_tool_context)   NULL)
 #else
 #define ABT_XSTREAM_NULL         ((ABT_xstream)        (0x01))
 #define ABT_XSTREAM_BARRIER_NULL ((ABT_xstream_barrier)(0x02))
@@ -361,6 +428,7 @@ typedef enum ABT_info_query_kind            ABT_info_query_kind;
 #define ABT_FUTURE_NULL          ((ABT_future)         (0x11))
 #define ABT_BARRIER_NULL         ((ABT_barrier)        (0x12))
 #define ABT_TIMER_NULL           ((ABT_timer)          (0x13))
+#define ABT_TOOL_CONTEXT_NULL    ((ABT_tool_context)   (0x14))
 #endif
 
 /* Scheduler config */
@@ -442,6 +510,11 @@ typedef struct {
     ABT_pool_print_all_fn     p_print_all;
 } ABT_pool_def;
 
+/* Tool callback type. */
+typedef void (*ABT_tool_thread_callback_fn)(ABT_thread, ABT_xstream, uint64_t event,
+                                            ABT_tool_context context, void *user_arg);
+typedef void (*ABT_tool_task_callback_fn)(ABT_task, ABT_xstream, uint64_t event,
+                                          ABT_tool_context context, void *user_arg);
 
 /* Init & Finalize */
 int ABT_init(int argc, char **argv) ABT_API_PUBLIC;
@@ -729,6 +802,18 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool) ABT_API_PUBLIC
 int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
                                              void (*cb_func)(ABT_bool, void *),
                                              void *arg) ABT_API_PUBLIC;
+
+/* Tool Functions */
+int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
+                                      uint64_t event_mask_thread,
+                                      void *user_arg) ABT_API_PUBLIC;
+int ABT_tool_register_task_callback(ABT_tool_task_callback_fn cb_func,
+                                    uint64_t event_mask_task,
+                                    void *user_arg) ABT_API_PUBLIC;
+int ABT_tool_query_thread(ABT_tool_context context, uint64_t event_thread,
+                          ABT_tool_query_kind query_kind, void *val) ABT_API_PUBLIC;
+int ABT_tool_query_task(ABT_tool_context context, uint64_t event_task,
+                        ABT_tool_query_kind query_kind, void *val) ABT_API_PUBLIC;
 
 #if defined(__cplusplus)
 }
