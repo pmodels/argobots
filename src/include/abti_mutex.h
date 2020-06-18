@@ -79,7 +79,8 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
         LOG_DEBUG("%p: lock - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
             ABTI_thread_yield(pp_local_xstream,
-                              ABTI_unit_get_thread(p_local_xstream->p_unit));
+                              ABTI_unit_get_thread(p_local_xstream->p_unit),
+                              ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             p_local_xstream = *pp_local_xstream;
         }
         LOG_DEBUG("%p: lock - acquired\n", p_mutex);

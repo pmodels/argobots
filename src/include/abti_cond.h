@@ -121,7 +121,8 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
         ABTI_mutex_unlock(p_local_xstream, p_mutex);
 
         /* Suspend the current ULT */
-        ABTI_thread_suspend(pp_local_xstream, p_thread);
+        ABTI_thread_suspend(pp_local_xstream, p_thread,
+                            ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
 
     } else {
         ABTI_spinlock_release(&p_cond->lock);

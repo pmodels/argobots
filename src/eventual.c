@@ -143,7 +143,9 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
             ABTI_spinlock_release(&p_eventual->lock);
 
             /* Suspend the current ULT */
-            ABTI_thread_suspend(&p_local_xstream, p_current);
+            ABTI_thread_suspend(&p_local_xstream, p_current,
+                                ABT_SYNC_EVENT_TYPE_EVENTUAL,
+                                (void *)p_eventual);
 
         } else {
             ABTI_spinlock_release(&p_eventual->lock);

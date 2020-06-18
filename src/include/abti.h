@@ -550,8 +550,8 @@ void ABTI_thread_free_main(ABTI_xstream *p_local_xstream,
 void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
                                  ABTI_thread *p_thread);
 int ABTI_thread_set_blocked(ABTI_thread *p_thread);
-void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream,
-                         ABTI_thread *p_thread);
+void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream, ABTI_thread *p_thread,
+                         ABT_sync_event_type sync_event_type, void *p_sync);
 int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os);
@@ -584,7 +584,9 @@ ABTI_thread *ABTI_thread_htable_pop_low(ABTI_thread_htable *p_htable,
 ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
                                        ABTI_thread_queue *p_queue,
                                        ABTI_thread *p_thread,
-                                       ABTI_thread_htable *p_htable);
+                                       ABTI_thread_htable *p_htable,
+                                       ABT_sync_event_type sync_event_type,
+                                       void *p_sync);
 
 /* Tasklet */
 void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_task *p_task);

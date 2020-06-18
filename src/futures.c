@@ -172,7 +172,8 @@ int ABT_future_wait(ABT_future future)
             ABTI_spinlock_release(&p_future->lock);
 
             /* Suspend the current ULT */
-            ABTI_thread_suspend(&p_local_xstream, p_current);
+            ABTI_thread_suspend(&p_local_xstream, p_current,
+                                ABT_SYNC_EVENT_TYPE_FUTURE, (void *)p_future);
 
         } else {
             ABTI_spinlock_release(&p_future->lock);

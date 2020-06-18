@@ -197,7 +197,9 @@ int ABT_finalize(void)
                   p_thread->unit_def.p_last_xstream->rank);
 
         /* Switch to the parent */
-        ABTI_thread_context_switch_to_parent(&p_local_xstream, p_thread);
+        ABTI_thread_context_switch_to_parent(&p_local_xstream, p_thread,
+                                             ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
+                                             (void *)p_local_xstream);
 
         /* Back to the original thread */
         LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
