@@ -97,6 +97,9 @@
  * - ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC
  *   \c val must be a pointer to a variable of the type uint64_t.  The default
  *   sleep time (nanoseconds) of predefined schedulers is set to \c *val.
+ * - ABT_INFO_QUERY_KIND_ENABLED_TOOL
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the tool is enabled.  Otherwise, ABT_FALSE is set.
  *
  * @param[in]  query_kind  query kind
  * @param[out] val         a pointer to a result
@@ -221,6 +224,13 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC:
             *((uint64_t *)val) = gp_ABTI_global->sched_sleep_nsec;
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_TOOL:
+#ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
             break;
         default:
             abt_errno = ABT_ERR_INV_QUERY_KIND;

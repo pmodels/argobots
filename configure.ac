@@ -196,6 +196,11 @@ AC_ARG_ENABLE([dynamic-promotion],
                    [use the dynamic promotion threading technique that performs
                     better if a ULT does not yield.]))
 
+# --enable-tool
+AC_ARG_ENABLE([tool],
+    AS_HELP_STRING([--enable-tool],
+                   [enable the tool interface, which is disabled by default.]))
+
 # --disable-simple-mutex
 AC_ARG_ENABLE([simple-mutex],
     AS_HELP_STRING([--disable-simple-mutex], [use an experimental mutex implementation]),,
@@ -620,6 +625,10 @@ AS_IF([test "x$enable_dynamic_promotion" = "xyes" -a "x$enable_fcontext" != "xno
                  [Define to use the dynamic promotion technique for ULT])],
       [AC_DEFINE(ABT_CONFIG_THREAD_TYPE, ABT_THREAD_TYPE_FULLY_FLEDGED)])
 
+# --enable-tool
+AS_IF([test "x$enable_tool" != "xyes"],
+      [AC_DEFINE(ABT_CONFIG_DISABLE_TOOL_INTERFACE, 1,
+                 [Define to use the tool interface])])
 
 # check if __atomic builtins are supported
 AC_TRY_COMPILE(

@@ -221,6 +221,8 @@ enum ABT_info_query_kind {
     ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ,
     /* Default sleep time of a predefined scheduler */
     ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC,
+    /* Whether the tool interface is enabled or not */
+    ABT_INFO_QUERY_KIND_ENABLED_TOOL,
 };
 
 /* Constants for ABT_bool */
