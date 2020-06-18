@@ -571,6 +571,36 @@ fn_fail:
 
 /**
  * @ingroup TASK
+ * @brief   Check if the target task is unnamed
+ *
+ * \c ABT_task_is_unnamed() returns whether the target tasklet, \c task, is
+ * unnamed or not.  Note that a handle of an unnamed tasklet can be obtained by,
+ * for example, running \c ABT_task_self() on an unnamed tasklet.
+ *
+ * @param[in]  task  handle to the target tasklet
+ * @param[out] flag  result (<tt>ABT_TRUE</tt> if unnamed)
+ *
+ * @return Error code
+ * @retval ABT_SUCCESS  on success
+ */
+int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_CHECK_NULL_TASK_PTR(p_task);
+
+    *flag = (p_task->unit_def.refcount == 0) ? ABT_TRUE : ABT_FALSE;
+
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup TASK
  * @brief   Compare two tasklet handles for equality.
  *
  * \c ABT_task_equal() compares two tasklet handles for equality. If two handles
