@@ -124,6 +124,9 @@ typedef struct ABTI_eventual ABTI_eventual;
 typedef struct ABTI_future ABTI_future;
 typedef struct ABTI_barrier ABTI_barrier;
 typedef struct ABTI_timer ABTI_timer;
+#ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+typedef struct ABTI_tool_context ABTI_tool_context;
+#endif
 /* ID associated with native thread (e.g, Pthreads), which can distinguish
  * execution streams and external threads */
 struct ABTI_native_thread_id_opaque;
@@ -203,6 +206,18 @@ struct ABTI_global {
 #endif
 
     ABT_bool print_config; /* Whether to print config on ABT_init */
+
+#ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+    ABTI_spinlock tool_writer_lock;
+
+    ABT_tool_thread_callback_fn tool_thread_cb_f;
+    void *tool_thread_user_arg;
+    ABTD_atomic_uint64 tool_thread_event_mask_tagged;
+
+    ABT_tool_task_callback_fn tool_task_cb_f;
+    void *tool_task_user_arg;
+    ABTD_atomic_uint64 tool_task_event_mask_tagged;
+#endif
 };
 
 struct ABTI_local_func {
@@ -415,6 +430,16 @@ struct ABTI_timer {
     ABTD_time end;
 };
 
+#ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+struct ABTI_tool_context {
+    ABTI_unit *p_caller;
+    ABTI_pool *p_pool;
+    ABTI_unit *p_parent; /* Parent of the target unit.  Used to get the depth */
+    ABT_sync_event_type sync_event_type;
+    void *p_sync_object; /* ABTI type */
+};
+#endif
+
 /* Global Data */
 extern ABTI_global *gp_ABTI_global;
 extern ABTI_local_func gp_ABTI_local_func;
@@ -525,8 +550,8 @@ void ABTI_thread_free_main(ABTI_xstream *p_local_xstream,
 void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
                                  ABTI_thread *p_thread);
 int ABTI_thread_set_blocked(ABTI_thread *p_thread);
-void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream,
-                         ABTI_thread *p_thread);
+void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream, ABTI_thread *p_thread,
+                         ABT_sync_event_type sync_event_type, void *p_sync);
 int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os);
@@ -559,7 +584,9 @@ ABTI_thread *ABTI_thread_htable_pop_low(ABTI_thread_htable *p_htable,
 ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
                                        ABTI_thread_queue *p_queue,
                                        ABTI_thread *p_thread,
-                                       ABTI_thread_htable *p_htable);
+                                       ABTI_thread_htable *p_htable,
+                                       ABT_sync_event_type sync_event_type,
+                                       void *p_sync);
 
 /* Tasklet */
 void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_task *p_task);
@@ -595,6 +622,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_unit.h"
 #include "abti_stream.h"
 #include "abti_self.h"
+#include "abti_tool.h"
 #include "abti_thread.h"
 #include "abti_thread_attr.h"
 #include "abti_task.h"

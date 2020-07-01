@@ -187,7 +187,8 @@ int ABT_barrier_wait(ABT_barrier barrier)
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             /* Suspend the current ULT */
-            ABTI_thread_suspend(&p_local_xstream, p_thread);
+            ABTI_thread_suspend(&p_local_xstream, p_thread,
+                                ABT_SYNC_EVENT_TYPE_BARRIER, (void *)p_barrier);
         } else {
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */

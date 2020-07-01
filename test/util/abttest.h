@@ -126,6 +126,7 @@ int ATS_get_arg_val(ATS_arg arg);
  */
 void ATS_print_line(FILE *fp, char c, int len);
 
+#define ATS_ERROR_IF(cond) ATS_error_if(cond, #cond, __FILE__, __LINE__)
 #define ATS_ERROR(e, m) ATS_error(e, m, __FILE__, __LINE__)
 #define ATS_UNUSED(a) (void)(a)
 

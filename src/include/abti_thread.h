@@ -157,6 +157,8 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_sibling_internal(
 #endif
     p_new->unit_def.p_parent = p_old->unit_def.p_parent;
     if (is_finish) {
+        ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
+                                      p_old->unit_def.p_parent);
         ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
         return NULL; /* Unreachable. */
     } else {
@@ -171,7 +173,8 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_sibling_internal(
 }
 
 static inline ABTI_thread *ABTI_thread_context_switch_to_parent_internal(
-    ABTI_xstream **pp_local_xstream, ABTI_thread *p_old, ABT_bool is_finish)
+    ABTI_xstream **pp_local_xstream, ABTI_thread *p_old, ABT_bool is_finish,
+    ABT_sync_event_type sync_event_type, void *p_sync)
 {
     ABTI_ASSERT(ABTI_unit_type_is_thread(p_old->unit_def.type));
     ABTI_thread *p_new = ABTI_unit_get_thread(p_old->unit_def.p_parent);
@@ -183,15 +186,23 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_parent_internal(
     ABTI_ASSERT(ABTI_thread_is_dynamic_promoted(p_new));
 #endif
     if (is_finish) {
+        ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
+                                      p_old->unit_def.p_parent);
         ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
         return NULL; /* Unreachable. */
     } else {
+        ABTI_tool_event_thread_yield(*pp_local_xstream, p_old,
+                                     p_old->unit_def.p_parent, sync_event_type,
+                                     p_sync);
         ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
         ABTI_unit *p_prev = p_local_xstream->p_unit;
         p_local_xstream->p_unit = &p_old->unit_def;
         ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev->type));
+        /* Invoke an event of thread run. */
+        ABTI_tool_event_thread_run(p_local_xstream, p_old, p_prev,
+                                   p_old->unit_def.p_parent);
         return ABTI_unit_get_thread(p_prev);
     }
 }
@@ -211,6 +222,9 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
                   ABTI_thread_get_id(p_new));
         p_local_xstream = *pp_local_xstream;
         p_local_xstream->p_unit = &p_new->unit_def;
+        /* Invoke an event of thread run. */
+        ABTI_tool_event_thread_run(p_local_xstream, p_new, &p_old->unit_def,
+                                   &p_old->unit_def);
         ABTD_thread_context_make_and_call(&p_old->ctx, p_new->unit_def.f_unit,
                                           p_new->unit_def.p_arg, p_stacktop);
         /* The scheduler continues from here. If the previous thread has not
@@ -225,6 +239,9 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
         p_local_xstream->p_unit = &p_old->unit_def;
         if (!ABTI_thread_is_dynamic_promoted(p_prev)) {
             ABTI_ASSERT(p_prev == p_new);
+            /* Invoke a thread-finish event of the previous thread. */
+            ABTI_tool_event_thread_finish(p_local_xstream, p_prev,
+                                          &p_old->unit_def);
             /* See ABTDI_thread_terminate for details.
              * TODO: avoid making a copy of the code. */
             ABTD_thread_context *p_ctx = &p_prev->ctx;
@@ -271,6 +288,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
         ABTI_unit *p_prev = p_local_xstream->p_unit;
         p_local_xstream->p_unit = &p_old->unit_def;
         ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev->type));
+        /* p_old keeps running as a parent, so no thread-run event incurs. */
         return ABTI_unit_get_thread(p_prev);
     }
 }
@@ -285,12 +303,14 @@ ABTI_thread_context_switch_to_sibling(ABTI_xstream **pp_local_xstream,
                                                           ABT_FALSE);
 }
 
-static inline ABTI_thread *
-ABTI_thread_context_switch_to_parent(ABTI_xstream **pp_local_xstream,
-                                     ABTI_thread *p_old)
+static inline ABTI_thread *ABTI_thread_context_switch_to_parent(
+    ABTI_xstream **pp_local_xstream, ABTI_thread *p_old,
+    ABT_sync_event_type sync_event_type, void *p_sync)
 {
     return ABTI_thread_context_switch_to_parent_internal(pp_local_xstream,
-                                                         p_old, ABT_FALSE);
+                                                         p_old, ABT_FALSE,
+                                                         sync_event_type,
+                                                         p_sync);
 }
 
 static inline ABTI_thread *
@@ -314,7 +334,9 @@ ABTI_thread_finish_context_to_parent(ABTI_xstream *p_local_xstream,
                                      ABTI_thread *p_old)
 {
     ABTI_thread_context_switch_to_parent_internal(&p_local_xstream, p_old,
-                                                  ABT_TRUE);
+                                                  ABT_TRUE,
+                                                  ABT_SYNC_EVENT_TYPE_UNKNOWN,
+                                                  NULL);
 }
 
 static inline void
@@ -344,7 +366,9 @@ static inline void ABTI_thread_unset_request(ABTI_thread *p_thread,
 }
 
 static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
-                                     ABTI_thread *p_thread)
+                                     ABTI_thread *p_thread,
+                                     ABT_sync_event_type sync_event_type,
+                                     void *p_sync)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] yield\n", ABTI_thread_get_id(p_thread),
               p_thread->unit_def.p_last_xstream->rank);
@@ -354,7 +378,8 @@ static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
                                   ABTI_UNIT_STATE_READY);
 
     /* Switch to the top scheduler */
-    ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread);
+    ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread,
+                                         sync_event_type, p_sync);
 
     /* Back to the original thread */
     LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",

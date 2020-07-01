@@ -211,6 +211,14 @@
         }                                                                      \
     } while (0)
 
+#define ABTI_CHECK_NULL_TOOL_CONTEXT_PTR(p)                                    \
+    do {                                                                       \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_tool_context *)NULL) {   \
+            abt_errno = ABT_ERR_INV_TOOL_CONTEXT;                              \
+            goto fn_fail;                                                      \
+        }                                                                      \
+    } while (0)
+
 #ifdef ABT_CONFIG_PRINT_ABT_ERRNO
 #define ABTI_IS_PRINT_ABT_ERRNO_ENABLED 1
 #else
