@@ -873,6 +873,7 @@ AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  examples/fibonacci/Makefile
                  examples/hello_world/Makefile
+                 examples/profiling/Makefile
                  examples/scheduling/Makefile
                  examples/stencil/Makefile])
 AC_OUTPUT
