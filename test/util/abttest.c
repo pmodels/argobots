@@ -238,9 +238,9 @@ typedef struct ATS_tool_unit_entry {
 /* ABT_tool_unit_entry_table_index() assumes the following constant is 256. */
 #define ATS_TOOL_UNIT_ENTRY_TABLE_NUM_ENTIRES 256
 typedef struct {
-    /* The simplest hast table with a spinlock.  Since we cannot use Argobots
-     * locks in a callback handler, the following uses pthread_spinlock. */
-    pthread_spinlock_t lock;
+    /* The simplest hast table with a lock.  Since we cannot use Argobots
+     * locks in a callback handler, the following uses pthread_mutex. */
+    pthread_mutex_t lock;
     ATS_tool_unit_entry *entries[ATS_TOOL_UNIT_ENTRY_TABLE_NUM_ENTIRES];
 } ATS_tool_unit_entry_table;
 static ATS_tool_unit_entry_table g_tool_unit_entry_table;
@@ -267,7 +267,7 @@ static ATS_tool_unit_entry *ATS_tool_get_unit_entry(const void *unit)
 {
     ATS_tool_unit_entry_table *p_table = &g_tool_unit_entry_table;
     ATS_tool_unit_entry *p_ret = NULL;
-    pthread_spin_lock(&p_table->lock);
+    pthread_mutex_lock(&p_table->lock);
     size_t index = ABT_tool_unit_entry_table_index(unit);
     ATS_tool_unit_entry *p_cur = p_table->entries[index];
     if (!p_cur) {
@@ -291,14 +291,14 @@ static ATS_tool_unit_entry *ATS_tool_get_unit_entry(const void *unit)
             p_cur = p_cur->p_next;
         } while (1);
     }
-    pthread_spin_unlock(&p_table->lock);
+    pthread_mutex_unlock(&p_table->lock);
     return p_ret;
 }
 
 static void ATS_tool_remove_unit_entry(const void *unit)
 {
     ATS_tool_unit_entry_table *p_table = &g_tool_unit_entry_table;
-    pthread_spin_lock(&g_tool_unit_entry_table.lock);
+    pthread_mutex_lock(&g_tool_unit_entry_table.lock);
     size_t index = ABT_tool_unit_entry_table_index(unit);
     ATS_tool_unit_entry *p_cur = p_table->entries[index];
     if (p_cur == NULL) {
@@ -322,7 +322,7 @@ static void ATS_tool_remove_unit_entry(const void *unit)
             p_cur = p_next;
         }
     }
-    pthread_spin_unlock(&g_tool_unit_entry_table.lock);
+    pthread_mutex_unlock(&g_tool_unit_entry_table.lock);
 }
 
 static void ATS_tool_thread_callback(ABT_thread thread, ABT_xstream xstream,
@@ -463,7 +463,7 @@ static void ATS_tool_init()
     /* Initialize the hash table. */
     int ret, i;
     ATS_tool_unit_entry_table *p_table = &g_tool_unit_entry_table;
-    pthread_spin_init(&p_table->lock, 0);
+    pthread_mutex_init(&p_table->lock, NULL);
     for (i = 0; i < ATS_TOOL_UNIT_ENTRY_TABLE_NUM_ENTIRES; i++) {
         p_table->entries[i] = NULL;
     }
@@ -499,7 +499,7 @@ static void ATS_tool_finialize()
         }
         p_table->entries[i] = NULL;
     }
-    pthread_spin_destroy(&p_table->lock);
+    pthread_mutex_destroy(&p_table->lock);
 
     ret = ABT_tool_register_thread_callback(NULL, ABT_TOOL_EVENT_THREAD_NONE,
                                             NULL);
