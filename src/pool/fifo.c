@@ -31,6 +31,7 @@ static void pool_push_shared(ABT_pool pool, ABT_unit unit);
 static void pool_push_private(ABT_pool pool, ABT_unit unit);
 static ABT_unit pool_pop_shared(ABT_pool pool);
 static ABT_unit pool_pop_private(ABT_pool pool);
+static ABT_unit pool_pop_wait(ABT_pool pool, double time_secs);
 static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs);
 static int pool_remove_shared(ABT_pool pool, ABT_unit unit);
 static int pool_remove_private(ABT_pool pool, ABT_unit unit);
@@ -91,6 +92,7 @@ int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def)
     p_def->p_init = pool_init;
     p_def->p_free = pool_free;
     p_def->p_get_size = pool_get_size;
+    p_def->p_pop_wait = pool_pop_wait;
     p_def->p_pop_timedwait = pool_pop_timedwait;
     p_def->p_print_all = pool_print_all;
     p_def->u_get_type = unit_get_type;
@@ -204,6 +206,54 @@ static void pool_push_private(ABT_pool pool, ABT_unit unit)
     p_data->num_units++;
 
     ABTD_atomic_release_store_int(&p_unit->is_in_pool, 1);
+}
+
+static ABT_unit pool_pop_wait(ABT_pool pool, double time_secs)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    data_t *p_data = pool_get_data_ptr(p_pool->data);
+    unit_t *p_unit = NULL;
+    ABT_unit h_unit = ABT_UNIT_NULL;
+
+    double time_start = 0.0;
+
+    do {
+        ABTI_spinlock_acquire(&p_data->mutex);
+        if (p_data->num_units > 0) {
+            p_unit = p_data->p_head;
+            if (p_data->num_units == 1) {
+                p_data->p_head = NULL;
+                p_data->p_tail = NULL;
+            } else {
+                p_unit->p_prev->p_next = p_unit->p_next;
+                p_unit->p_next->p_prev = p_unit->p_prev;
+                p_data->p_head = p_unit->p_next;
+            }
+            p_data->num_units--;
+
+            p_unit->p_prev = NULL;
+            p_unit->p_next = NULL;
+            ABTD_atomic_release_store_int(&p_unit->is_in_pool, 0);
+
+            h_unit = (ABT_unit)p_unit;
+            ABTI_spinlock_release(&p_data->mutex);
+        } else {
+            ABTI_spinlock_release(&p_data->mutex);
+            if (time_start == 0.0) {
+                time_start = ABTI_get_wtime();
+            } else {
+                double elapsed = ABTI_get_wtime() - time_start;
+                if (elapsed > time_secs)
+                    break;
+            }
+            /* Sleep. */
+            const int sleep_nsecs = 100;
+            struct timespec ts = { 0, sleep_nsecs };
+            nanosleep(&ts, NULL);
+        }
+    } while (h_unit == ABT_UNIT_NULL);
+
+    return h_unit;
 }
 
 static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
