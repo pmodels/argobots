@@ -6,22 +6,6 @@
 #include "abti.h"
 #include <time.h>
 
-static inline double get_cur_time(void)
-{
-#if defined(HAVE_CLOCK_GETTIME)
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    return ((double)ts.tv_sec) + 1.0e-9 * ((double)ts.tv_nsec);
-#elif defined(HAVE_GETTIMEOFDAY)
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return ((double)tv.tv_sec) + 1.0e-6 * ((double)tv.tv_usec);
-#else
-#error "No timer function available"
-    return 0.0;
-#endif
-}
-
 /* FIFO pool implementation */
 
 static int pool_init(ABT_pool pool, ABT_pool_config config);
@@ -263,8 +247,6 @@ static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
     unit_t *p_unit = NULL;
     ABT_unit h_unit = ABT_UNIT_NULL;
 
-    double time_start = get_cur_time();
-
     do {
         ABTI_spinlock_acquire(&p_data->mutex);
         if (p_data->num_units > 0) {
@@ -292,8 +274,7 @@ static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
             struct timespec ts = { 0, sleep_nsecs };
             nanosleep(&ts, NULL);
 
-            double elapsed = get_cur_time() - time_start;
-            if (elapsed > abstime_secs)
+            if (ABTI_get_wtime() > abstime_secs)
                 break;
         }
     } while (h_unit == ABT_UNIT_NULL);
