@@ -115,14 +115,11 @@ static void sched_run(ABT_sched sched)
             }
         }
 
-        /* Block briefly on pop_timedwait() if we didn't find work to do in
-         * main loop above.
-         */
+        /* Block briefly on pop_wait() if we didn't find work to do in main loop
+         * above. */
         if (!run_cnt_nowait) {
-            double abstime = ABTI_get_wtime();
-            abstime += 0.1;
             ABT_unit unit =
-                ABTI_pool_pop_timedwait(ABTI_pool_get_ptr(pools[0]), abstime);
+                ABTI_pool_pop_wait(ABTI_pool_get_ptr(pools[0]), 0.1);
             if (unit != ABT_UNIT_NULL) {
                 ABTI_xstream_run_unit(&p_local_xstream, unit,
                                       ABTI_pool_get_ptr(pools[0]));
@@ -130,12 +127,10 @@ static void sched_run(ABT_sched sched)
             }
         }
 
-        /* If run_cnt_nowait is zero, that means that no units were
-         * found in first pass through pools and we must have called
-         * pop_timedwait above. We should check events regardless of
-         * work_count in that case for them to be processed in a timely
-         * manner
-         */
+        /* If run_cnt_nowait is zero, that means that no units were found in
+         * first pass through pools and we must have called pop_wait above.  We
+         * should check events regardless of work_count in that case for them to
+         * be processed in a timely manner. */
         if (!run_cnt_nowait || (++work_count >= event_freq)) {
             ABTI_xstream_check_events(p_local_xstream, sched);
             ABT_bool stop = ABTI_sched_has_to_stop(&p_local_xstream, p_sched);
