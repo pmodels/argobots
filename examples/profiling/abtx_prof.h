@@ -1910,12 +1910,13 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             }
             table.row_names[++row] = "Approx. ULT/tasklet throughput [/s]";
             for (i = 0; i < num_ranks; i++) {
-                double granularity =
-                    table.values[(row - 1) * table.num_columns + i + 1];
-                table.values[row * table.num_columns] =
-                    ABTXI_prof_div_s(1.0, granularity) / num_ranks;
+                int num_finishes =
+                    summaries[i].num_events[ABTXI_PROF_EVENT_THREAD_FINISH] +
+                    summaries[i].num_events[ABTXI_PROF_EVENT_TASK_FINISH];
+                table.values[row * table.num_columns] +=
+                    ABTXI_prof_div_s(num_finishes, elapsed_time) / num_ranks;
                 table.values[row * table.num_columns + i + 1] =
-                    ABTXI_prof_div_s(1.0, granularity);
+                    ABTXI_prof_div_s(num_finishes, elapsed_time);
             }
             table.row_names[++row] = "Non-main scheduling ratio [%]";
             for (i = 0; i < num_ranks; i++) {
