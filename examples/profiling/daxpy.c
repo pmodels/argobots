@@ -198,7 +198,7 @@ int main(int argc, char **argv)
     /* Check the results (only 100 points). */
     int ret = 0;
     for (i = 0; i < 100; i++) {
-        int idx = (int)((((double)n) * i) / (100 - 1));
+        int idx = (int)(n / 100.0 * i);
         double ans = x[idx] * a * NUM_REPEATS;
         if (y[idx] != ans) {
             printf("y[%d] = %f (ans: %f)\n", idx, y[idx], ans);
