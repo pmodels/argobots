@@ -1909,10 +1909,12 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                 table.values[row * table.num_columns + i + 1] = granularity;
             }
             table.row_names[++row] = "Approx. ULT/tasklet throughput [/s]";
-            for (i = 0; i < table.num_columns; i++) {
+            for (i = 0; i < num_ranks; i++) {
                 double granularity =
-                    table.values[(row - 1) * table.num_columns + i];
-                table.values[row * table.num_columns + i] =
+                    table.values[(row - 1) * table.num_columns + i + 1];
+                table.values[row * table.num_columns] =
+                    ABTXI_prof_div_s(1.0, granularity) / num_ranks;
+                table.values[row * table.num_columns + i + 1] =
                     ABTXI_prof_div_s(1.0, granularity);
             }
             table.row_names[++row] = "Non-main scheduling ratio [%]";
