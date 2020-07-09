@@ -216,7 +216,7 @@ static inline uint64_t ABTXI_prof_get_cycles()
 #define ABTXI_PROF_T_ZERO ((int64_t)0)
 #define ABTXI_prof_get_time() ABTXI_prof_get_cycles()
 #define ABTXI_PROF_T_STRING "HW cycles"
-static inline double ABTXI_prof_get_time_to_sec()
+static double ABTXI_prof_get_time_to_sec()
 {
     double t_sec1 = ABT_get_wtime();
     ABTXI_PROF_T t_start = ABTXI_prof_get_cycles();
@@ -594,8 +594,8 @@ static inline void ABTXI_prof_wu_time_add(ABTXI_prof_wu_time *p_wu_time,
     p_wu_time->cnt += 1;
 }
 
-static inline void ABTXI_prof_wu_time_merge(ABTXI_prof_wu_time *p_dest,
-                                            const ABTXI_prof_wu_time *p_src)
+static void ABTXI_prof_wu_time_merge(ABTXI_prof_wu_time *p_dest,
+                                     const ABTXI_prof_wu_time *p_src)
 {
     if (p_dest->cnt == 0) {
         p_dest->max_val = p_src->max_val;
@@ -626,8 +626,8 @@ static inline void ABTXI_prof_wu_count_add(ABTXI_prof_wu_count *p_wu_count,
     p_wu_count->cnt += 1;
 }
 
-static inline void ABTXI_prof_wu_count_merge(ABTXI_prof_wu_count *p_dest,
-                                             const ABTXI_prof_wu_count *p_src)
+static void ABTXI_prof_wu_count_merge(ABTXI_prof_wu_count *p_dest,
+                                      const ABTXI_prof_wu_count *p_src)
 {
     if (p_dest->cnt == 0) {
         p_dest->max_val = p_src->max_val;
@@ -683,7 +683,7 @@ static void ABTXI_prof_str_mem_free(ABTXI_prof_str_mem *p_str)
     }
 }
 
-static inline void ABTXI_prof_xstream_info_alloc_thread_info(
+static void ABTXI_prof_xstream_info_alloc_thread_info(
     ABTXI_prof_xstream_info *p_xstream_info)
 {
     void *p_memblock = calloc(1, ABTXI_PROF_MEM_BLOCK_SIZE);
@@ -712,7 +712,7 @@ static inline void ABTXI_prof_xstream_info_alloc_thread_info(
                                         (void *)p_head_all);
 }
 
-static inline void
+static void
 ABTXI_prof_xstream_info_alloc_task_info(ABTXI_prof_xstream_info *p_xstream_info)
 {
     void *p_memblock = calloc(1, ABTXI_PROF_MEM_BLOCK_SIZE);
@@ -753,15 +753,14 @@ static inline void ABTXI_prof_init_task_info(ABTXI_prof_task_info *p_task_info)
     memset(&p_task_info->d, 0, sizeof(ABTXI_prof_task_data));
 }
 
-static inline void
-ABTXI_prof_reset_thread_info(ABTXI_prof_thread_info *p_thread_info)
+static void ABTXI_prof_reset_thread_info(ABTXI_prof_thread_info *p_thread_info)
 {
     /* Basically zero clear. */
     memset(&p_thread_info->d, 0, sizeof(ABTXI_prof_thread_data));
     p_thread_info->p_next_unused = p_thread_info->p_next_all;
 }
 
-static inline void ABTXI_prof_reset_task_info(ABTXI_prof_task_info *p_task_info)
+static void ABTXI_prof_reset_task_info(ABTXI_prof_task_info *p_task_info)
 {
     /* Basically zero clear. */
     memset(&p_task_info->d, 0, sizeof(ABTXI_prof_task_data));
@@ -945,7 +944,7 @@ ABTXI_prof_release_task_info(ABTXI_prof_xstream_info *p_xstream_info,
     p_xstream_info->p_task_unused = p_task_info;
 }
 
-static inline void
+static void
 ABTXI_prof_init_xstream_info(ABTXI_prof_global *p_global,
                              ABTXI_prof_xstream_info *p_xstream_info, int rank)
 {
@@ -955,7 +954,7 @@ ABTXI_prof_init_xstream_info(ABTXI_prof_global *p_global,
     p_xstream_info->rank = rank;
 }
 
-static inline void
+static void
 ABTXI_prof_reset_xstream_info(ABTXI_prof_xstream_info *p_xstream_info)
 {
     /* Basically zero clear. */
@@ -980,7 +979,7 @@ ABTXI_prof_reset_xstream_info(ABTXI_prof_xstream_info *p_xstream_info)
     p_xstream_info->p_task_unused = p_task_all;
 }
 
-static inline void
+static void
 ABTXI_prof_destroy_xstream_info(ABTXI_prof_xstream_info *p_xstream_info)
 {
     /* Memory blocks must be freed when all the xstream_infos are freed. */
@@ -1075,7 +1074,7 @@ ABTXI_prof_get_xstream_info(ABTXI_prof_global *p_global, ABT_xstream xstream)
     }
 }
 
-static int ABTXI_prof_xstream_info_get_depth_thread(
+static inline int ABTXI_prof_xstream_info_get_depth_thread(
     ABTXI_prof_xstream_info *p_xstream_info, uint64_t event,
     ABT_tool_context context, int force_update)
 {
@@ -1092,7 +1091,7 @@ static int ABTXI_prof_xstream_info_get_depth_thread(
     return cur_depth - 1;
 }
 
-static int
+static inline int
 ABTXI_prof_xstream_info_get_depth_task(ABTXI_prof_xstream_info *p_xstream_info,
                                        uint64_t event, ABT_tool_context context,
                                        int force_update)
