@@ -437,6 +437,7 @@ struct ABTXI_prof_thread_data {
     ABTXI_PROF_T time_last_finish;
     ABTXI_PROF_T time_elapsed;
     ABT_xstream prev_xstream;
+    ABT_thread owner;
 };
 
 struct ABTXI_prof_thread_info {
@@ -452,6 +453,7 @@ struct ABTXI_prof_task_data {
     ABTXI_PROF_T time_last_run;
     ABTXI_PROF_T time_last_finish;
     ABTXI_PROF_T time_elapsed;
+    ABT_task owner;
 };
 
 struct ABTXI_prof_task_info {
@@ -776,7 +778,10 @@ ABTXI_prof_get_thread_info(ABTXI_prof_global *p_global,
     ABTXI_prof_thread_info *p_thread_info;
     ABT_key prof_key = p_global->prof_key;
     ABT_thread_get_specific(thread, prof_key, (void **)&p_thread_info);
-    if (ABTXI_prof_likely(p_thread_info)) {
+    /* owner can be changed if thread_info has been reset by restarting the
+     * profiler.  If it is the case, this p_thread_info is no longer belonging
+     * to this thread, so a new one must be allocated. */
+    if (ABTXI_prof_likely(p_thread_info && p_thread_info->d.owner == thread)) {
         return p_thread_info;
     } else {
         if (!p_xstream_info->p_thread_unused) {
@@ -786,6 +791,7 @@ ABTXI_prof_get_thread_info(ABTXI_prof_global *p_global,
         /* This p_thread_info has been already initialized. */
         p_xstream_info->p_thread_unused = p_thread_info->p_next_unused;
         ABT_thread_set_specific(thread, prof_key, (void *)p_thread_info);
+        p_thread_info->d.owner = thread;
         return p_thread_info;
     }
 }
@@ -798,7 +804,10 @@ ABTXI_prof_get_task_info(ABTXI_prof_global *p_global,
     ABTXI_prof_task_info *p_task_info;
     ABT_key prof_key = p_global->prof_key;
     ABT_task_get_specific(task, prof_key, (void **)&p_task_info);
-    if (ABTXI_prof_likely(p_task_info)) {
+    /* owner can be changed if task_info has been reset by restarting the
+     * profiler.  If it is the case, this p_task_info is no longer belonging to
+     * this task, so a new one must be allocated. */
+    if (ABTXI_prof_likely(p_task_info && p_task_info->d.owner == task)) {
         return p_task_info;
     } else {
         if (!p_xstream_info->p_task_unused) {
@@ -808,6 +817,7 @@ ABTXI_prof_get_task_info(ABTXI_prof_global *p_global,
         /* This p_task_info has been already initialized. */
         p_xstream_info->p_task_unused = p_task_info->p_next_unused;
         ABT_task_set_specific(task, prof_key, (void *)p_task_info);
+        p_task_info->d.owner = task;
         return p_task_info;
     }
 }
