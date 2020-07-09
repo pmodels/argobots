@@ -2058,7 +2058,7 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                 wu_counts[ABTXI_PROF_WU_COUNT_THREAD_NUM_XSTREAM_CHANGES]
                     .max_val;
             table.row_names[++row] = "Active time per ULT/tasklet (last finish "
-                                     "time - first excution time) [s]";
+                                     "time - first execution time) [s]";
             ABTXI_prof_wu_time t_active;
             memcpy(&t_active,
                    &wu_times[ABTXI_PROF_WU_TIME_THREAD_FIRST_RUN_LAST_FINISH],
@@ -2071,7 +2071,7 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             table.values[row * 3 + 1] = t_active.min_val * to_sec;
             table.values[row * 3 + 2] = t_active.max_val * to_sec;
             table.row_names[++row] = "Execution delay per ULT/tasklet (first "
-                                     "excution time - creation time) [s]";
+                                     "execution time - creation time) [s]";
             ABTXI_prof_wu_time t_delay;
             memcpy(&t_delay,
                    &wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_FIRST_RUN],
