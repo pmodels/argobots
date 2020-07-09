@@ -1396,7 +1396,7 @@ ABTXI_prof_task_callback_impl(ABT_task task, ABT_xstream xstream,
                 if (p_task_info->d.time_first_run == ABTXI_PROF_T_ZERO) {
                     p_task_info->d.time_first_run = cur_time;
                 }
-                p_task_info->d.time_first_run = cur_time;
+                p_task_info->d.time_last_run = cur_time;
             }
             break;
         }
