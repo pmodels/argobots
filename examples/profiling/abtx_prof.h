@@ -115,10 +115,20 @@ static int ABTX_prof_finalize(ABTX_prof_context context);
  *   This attribute should be supported by sufficiently new GCC, Clang, ICC, and
  *   XLC compilers.
  *
+ * - ABTX_PROF_ASSUME_SCHED_ALWAYS_ACTIVE
+ *   Set 0 if schedulers might be not scheduled in your program because of
+ *   oversubscription of OS-level threads (=Pthreads) or scheduler sleep.
+ *   Although many applications create as many execution streams as a number of
+ *   cores and let them burn all the CPU resources, this assumption does not
+ *   hold in some cases.  for example, if Argobots is used as a backend event
+ *   engine, Argobots should avoid wasting CPU cores if there is no work.
+ *   Setting 0 enables the profiler to use a heavy per-thread timer.
+ *
  * - ABTX_PROF_USE_HARDWARE_CYCLES
  *   Set 0 if your compiler does not support assembly code that gets
  *   architecture-dependent hardware clock.  This code should work with
  *   sufficiently new GCC, Clang, ICC, and XLC compilers.
+ *
  */
 
 #ifndef ABTX_PROF_USE_BUILTIN_EXPECT
@@ -127,6 +137,10 @@ static int ABTX_prof_finalize(ABTX_prof_context context);
 
 #ifndef ABTX_PROF_USE_ALWAYS_INLINE
 #define ABTX_PROF_USE_ALWAYS_INLINE 1
+#endif
+
+#ifndef ABTX_PROF_ASSUME_SCHED_ALWAYS_ACTIVE
+#define ABTX_PROF_ASSUME_SCHED_ALWAYS_ACTIVE 1
 #endif
 
 #ifndef ABTX_PROF_USE_HARDWARE_CYCLES
@@ -140,6 +154,7 @@ static int ABTX_prof_finalize(ABTX_prof_context context);
 #include <stdint.h>
 #include <pthread.h>
 #include <string.h>
+#include <time.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <abt.h>
@@ -242,6 +257,28 @@ static double ABTXI_prof_get_time_to_sec()
 
 #endif
 
+#if ABTX_PROF_ASSUME_SCHED_ALWAYS_ACTIVE
+
+#define ABTXI_PROF_USE_TIME_LOCAL 0
+
+#else
+
+#define ABTXI_PROF_USE_TIME_LOCAL 1
+#define ABTXI_PROF_LOCAL_T_INVALID ((double)-1.0)
+#define ABTXI_PROF_LOCAL_T_ZERO ((double)0.0)
+#define ABTXI_PROF_LOCAL_T double
+static ABTXI_PROF_LOCAL_T ABTXI_prof_get_time_local()
+{
+    /* Return a per-thread timer. */
+    struct timespec t;
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t);
+    return t.tv_sec + t.tv_nsec * 1.0e-9;
+}
+#define ABTXI_PROF_LOCAL_T_STRING "s"
+#define ABTXI_prof_get_local_time_to_sec() 1.0
+
+#endif
+
 #define ABTXI_PROF_EVENT_THREAD_CREATE 0
 #define ABTXI_PROF_EVENT_THREAD_JOIN 1
 #define ABTXI_PROF_EVENT_THREAD_FREE 2
@@ -273,6 +310,10 @@ static double ABTXI_prof_get_time_to_sec()
 #define ABTXI_PROF_WU_TIME_TASK_CREATE_FREE 9
 #define ABTXI_PROF_WU_TIME_END_ 10
 
+#define ABTXI_PROF_WU_LOCAL_TIME_THREAD_ELAPSED 0
+#define ABTXI_PROF_WU_LOCAL_TIME_TASK_ELAPSED 1
+#define ABTXI_PROF_WU_LOCAL_TIME_END_ 2
+
 #define ABTXI_PROF_WU_COUNT_THREAD_NUM_REVIVALS 0
 #define ABTXI_PROF_WU_COUNT_THREAD_NUM_YIELDS 1
 #define ABTXI_PROF_WU_COUNT_THREAD_NUM_SUSPENSIONS 2
@@ -281,6 +322,7 @@ static double ABTXI_prof_get_time_to_sec()
 #define ABTXI_PROF_WU_COUNT_END_ 5
 
 #define ABTXI_PROF_TIME_LAST_RUN_INVALID ABTXI_PROF_T_INVALID
+#define ABTXI_PROF_TIME_LAST_RUN_LOCAL_INVALID ABTXI_PROF_LOCAL_T_INVALID
 
 static const char *ABTXI_get_prof_event_name(int event)
 {
@@ -352,6 +394,20 @@ static const char *ABTXI_get_prof_wu_time_name(int wu_time)
     }
 }
 
+#if ABTXI_PROF_USE_TIME_LOCAL
+static const char *ABTXI_get_prof_wu_local_time_name(int wu_local_time)
+{
+    switch (wu_local_time) {
+        case ABTXI_PROF_WU_LOCAL_TIME_THREAD_ELAPSED:
+            return "ULT/actual_elapsed";
+        case ABTXI_PROF_WU_LOCAL_TIME_TASK_ELAPSED:
+            return "tasklet/actual_elapsed";
+        default:
+            return "ERR";
+    }
+}
+#endif
+
 static const char *ABTXI_get_prof_wu_count_name(int wu_count)
 {
     switch (wu_count) {
@@ -401,6 +457,9 @@ static inline int ABTXI_prof_digit(double val)
 
 typedef struct ABTXI_prof_wu_time ABTXI_prof_wu_time;
 typedef struct ABTXI_prof_wu_count ABTXI_prof_wu_count;
+#if ABTXI_PROF_USE_TIME_LOCAL
+typedef struct ABTXI_prof_wu_local_time ABTXI_prof_wu_local_time;
+#endif
 typedef struct ABTXI_prof_thread_info ABTXI_prof_thread_info;
 typedef struct ABTXI_prof_thread_data ABTXI_prof_thread_data;
 typedef struct ABTXI_prof_task_info ABTXI_prof_task_info;
@@ -426,6 +485,13 @@ struct ABTXI_prof_wu_count {
     uint64_t cnt;
 };
 
+#if ABTXI_PROF_USE_TIME_LOCAL
+struct ABTXI_prof_wu_local_time {
+    ABTXI_PROF_LOCAL_T max_val, min_val, sum;
+    uint64_t cnt;
+};
+#endif
+
 struct ABTXI_prof_thread_data {
     int num_revivals;
     int num_yields;
@@ -434,8 +500,14 @@ struct ABTXI_prof_thread_data {
     ABTXI_PROF_T time_created;
     ABTXI_PROF_T time_first_run;
     ABTXI_PROF_T time_last_run;
+#if ABTXI_PROF_USE_TIME_LOCAL
+    ABTXI_PROF_LOCAL_T time_last_run_local;
+#endif
     ABTXI_PROF_T time_last_finish;
     ABTXI_PROF_T time_elapsed;
+#if ABTXI_PROF_USE_TIME_LOCAL
+    ABTXI_PROF_LOCAL_T time_elapsed_local;
+#endif
     ABT_xstream prev_xstream;
     ABT_thread owner;
 };
@@ -451,8 +523,14 @@ struct ABTXI_prof_task_data {
     ABTXI_PROF_T time_created;
     ABTXI_PROF_T time_first_run;
     ABTXI_PROF_T time_last_run;
+#if ABTXI_PROF_USE_TIME_LOCAL
+    ABTXI_PROF_LOCAL_T time_last_run_local;
+#endif
     ABTXI_PROF_T time_last_finish;
     ABTXI_PROF_T time_elapsed;
+#if ABTXI_PROF_USE_TIME_LOCAL
+    ABTXI_PROF_LOCAL_T time_elapsed_local;
+#endif
     ABT_task owner;
 };
 
@@ -465,10 +543,24 @@ struct ABTXI_prof_task_info {
 struct ABTXI_prof_xstream_data {
     int cur_depth; /* Stack depth value "+1" (0: uninitialized) */
     uint64_t num_events[ABTXI_PROF_EVENT_END_];
+#if !ABTXI_PROF_USE_TIME_LOCAL
     ABTXI_PROF_T times_last_run[ABTXI_PROF_MAX_DEPTH];
+#else
+    /* First and last values of ABTXI_prof_get_time_local() */
+    ABTXI_PROF_LOCAL_T time_first_run_local;
+    ABTXI_PROF_LOCAL_T time_last_run_local;
+    ABTXI_PROF_LOCAL_T times_last_run_local[ABTXI_PROF_MAX_DEPTH];
+#endif
+#if !ABTXI_PROF_USE_TIME_LOCAL
     ABTXI_PROF_T times_elapsed[ABTXI_PROF_MAX_DEPTH]; /* index = depth */
+#else
+    ABTXI_PROF_LOCAL_T times_elapsed_local[ABTXI_PROF_MAX_DEPTH];
+#endif
     ABTXI_prof_wu_time wu_times[ABTXI_PROF_WU_TIME_END_];
     ABTXI_prof_wu_count wu_counts[ABTXI_PROF_WU_COUNT_END_];
+#if ABTXI_PROF_USE_TIME_LOCAL
+    ABTXI_prof_wu_local_time wu_local_times[ABTXI_PROF_WU_LOCAL_TIME_END_];
+#endif
 };
 
 struct ABTXI_prof_xstream_info {
@@ -643,6 +735,42 @@ static void ABTXI_prof_wu_count_merge(ABTXI_prof_wu_count *p_dest,
     p_dest->sum += p_src->sum;
     p_dest->cnt += p_src->cnt;
 }
+
+#if ABTXI_PROF_USE_TIME_LOCAL
+static inline void
+ABTXI_prof_wu_local_time_add(ABTXI_prof_wu_local_time *p_wu_local_time,
+                             ABTXI_PROF_LOCAL_T val)
+{
+    if (ABTXI_prof_unlikely(p_wu_local_time->cnt == 0)) {
+        p_wu_local_time->max_val = val;
+        p_wu_local_time->min_val = val;
+    } else {
+        if (p_wu_local_time->max_val < val)
+            p_wu_local_time->max_val = val;
+        if (p_wu_local_time->min_val > val)
+            p_wu_local_time->min_val = val;
+    }
+    p_wu_local_time->sum += val;
+    p_wu_local_time->cnt += 1;
+}
+
+static void
+ABTXI_prof_wu_local_time_merge(ABTXI_prof_wu_local_time *p_dest,
+                               const ABTXI_prof_wu_local_time *p_src)
+{
+    if (p_dest->cnt == 0) {
+        p_dest->max_val = p_src->max_val;
+        p_dest->min_val = p_src->min_val;
+    } else if (p_src->cnt != 0) {
+        if (p_dest->max_val < p_src->max_val)
+            p_dest->max_val = p_src->max_val;
+        if (p_dest->min_val > p_src->min_val)
+            p_dest->min_val = p_src->min_val;
+    }
+    p_dest->sum += p_src->sum;
+    p_dest->cnt += p_src->cnt;
+}
+#endif
 
 static ABTXI_prof_str_mem *ABTXI_prof_str_mem_alloc(int reserved)
 {
@@ -878,6 +1006,16 @@ ABTXI_prof_merge_thread_data(ABTXI_prof_xstream_data *p_xstream_data,
                                     [ABTXI_PROF_WU_TIME_THREAD_CREATE_FREE],
                                time_freed - time_created);
     }
+#if ABTXI_PROF_USE_TIME_LOCAL
+    /* Update statistics (local times) */
+    ABTXI_PROF_LOCAL_T time_elapsed_local = p_thread_data->time_elapsed_local;
+    if (ABTXI_prof_likely(time_elapsed_local != ABTXI_PROF_LOCAL_T_ZERO)) {
+        ABTXI_prof_wu_local_time_add(
+            &p_xstream_data
+                 ->wu_local_times[ABTXI_PROF_WU_LOCAL_TIME_THREAD_ELAPSED],
+            time_elapsed_local);
+    }
+#endif
 }
 
 static inline void
@@ -925,6 +1063,16 @@ ABTXI_prof_merge_task_data(ABTXI_prof_xstream_data *p_xstream_data,
                                     [ABTXI_PROF_WU_TIME_TASK_CREATE_FREE],
                                time_freed - time_created);
     }
+#if ABTXI_PROF_USE_TIME_LOCAL
+    /* Update statistics (local times) */
+    ABTXI_PROF_LOCAL_T time_elapsed_local = p_task_data->time_elapsed_local;
+    if (ABTXI_prof_likely(time_elapsed_local != ABTXI_PROF_LOCAL_T_ZERO)) {
+        ABTXI_prof_wu_local_time_add(
+            &p_xstream_data
+                 ->wu_local_times[ABTXI_PROF_WU_LOCAL_TIME_TASK_ELAPSED],
+            time_elapsed_local);
+    }
+#endif
 }
 
 static inline void
@@ -1174,20 +1322,39 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
         case ABT_TOOL_EVENT_THREAD_RUN: {
             p_xstream_info->d.num_events[ABTXI_PROF_EVENT_THREAD_RUN]++;
 
+#if !ABTXI_PROF_USE_TIME_LOCAL
             ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#else
+            ABTXI_PROF_LOCAL_T cur_time_local = ABTXI_prof_get_time_local();
+            p_xstream_info->d.time_last_run_local = cur_time_local;
+            if (ABTXI_prof_unlikely(p_xstream_info->d.time_first_run_local ==
+                                    ABTXI_PROF_LOCAL_T_ZERO)) {
+                p_xstream_info->d.time_first_run_local = cur_time_local;
+            }
+#endif
 
             int depth =
                 ABTXI_prof_xstream_info_get_depth_thread(p_xstream_info, event,
                                                          context, 1);
             if (depth < ABTXI_PROF_MAX_DEPTH) {
+#if !ABTXI_PROF_USE_TIME_LOCAL
                 p_xstream_info->d.times_last_run[depth] = cur_time;
+#else
+                p_xstream_info->d.times_last_run_local[depth] = cur_time_local;
+#endif
             }
 
             if (prof_mode == ABTX_PROF_MODE_DETAILED) {
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#endif
                 if (p_thread_info->d.time_first_run == ABTXI_PROF_T_ZERO) {
                     p_thread_info->d.time_first_run = cur_time;
                 }
                 p_thread_info->d.time_last_run = cur_time;
+#if ABTXI_PROF_USE_TIME_LOCAL
+                p_thread_info->d.time_last_run_local = cur_time_local;
+#endif
 
                 if (p_thread_info->d.prev_xstream != xstream) {
                     p_thread_info->d.num_xstream_changes++;
@@ -1199,12 +1366,22 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
         case ABT_TOOL_EVENT_THREAD_FINISH: {
             p_xstream_info->d.num_events[ABTXI_PROF_EVENT_THREAD_FINISH]++;
 
+#if !ABTXI_PROF_USE_TIME_LOCAL
             ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#else
+            ABTXI_PROF_LOCAL_T cur_time_local = ABTXI_prof_get_time_local();
+            p_xstream_info->d.time_last_run_local = cur_time_local;
+            if (ABTXI_prof_unlikely(p_xstream_info->d.time_first_run_local ==
+                                    ABTXI_PROF_LOCAL_T_ZERO)) {
+                p_xstream_info->d.time_first_run_local = cur_time_local;
+            }
+#endif
 
             int depth =
                 ABTXI_prof_xstream_info_get_depth_thread(p_xstream_info, event,
                                                          context, 0);
             if (depth < ABTXI_PROF_MAX_DEPTH) {
+#if !ABTXI_PROF_USE_TIME_LOCAL
                 ABTXI_PROF_T xstream_time_last_run =
                     p_xstream_info->d.times_last_run[depth];
                 if (ABTXI_prof_unlikely(xstream_time_last_run ==
@@ -1218,9 +1395,27 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
                     cur_time - xstream_time_last_run;
                 p_xstream_info->d.times_last_run[depth] =
                     ABTXI_PROF_TIME_LAST_RUN_INVALID;
+#else
+                ABTXI_PROF_LOCAL_T xstream_time_last_run_local =
+                    p_xstream_info->d.times_last_run_local[depth];
+                if (ABTXI_prof_unlikely(xstream_time_last_run_local ==
+                                        ABTXI_PROF_LOCAL_T_ZERO)) {
+                    /* Adjustment */
+                    xstream_time_last_run_local = cur_time_local;
+                    p_xstream_info->d.times_last_run_local[depth] =
+                        cur_time_local;
+                }
+                p_xstream_info->d.times_elapsed_local[depth] +=
+                    cur_time_local - xstream_time_last_run_local;
+                p_xstream_info->d.times_last_run_local[depth] =
+                    ABTXI_PROF_TIME_LAST_RUN_LOCAL_INVALID;
+#endif
             }
 
             if (prof_mode == ABTX_PROF_MODE_DETAILED) {
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#endif
                 ABTXI_PROF_T thread_time_last_run =
                     p_thread_info->d.time_last_run;
                 if (ABTXI_prof_unlikely(thread_time_last_run ==
@@ -1231,6 +1426,18 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
                 }
                 p_thread_info->d.time_elapsed +=
                     cur_time - thread_time_last_run;
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_LOCAL_T thread_time_last_run_local =
+                    p_thread_info->d.time_last_run_local;
+                if (ABTXI_prof_unlikely(thread_time_last_run_local ==
+                                        ABTXI_PROF_LOCAL_T_ZERO)) {
+                    /* Adjustment */
+                    thread_time_last_run_local = cur_time_local;
+                    p_thread_info->d.time_last_run_local = cur_time_local;
+                }
+                p_thread_info->d.time_elapsed_local +=
+                    cur_time_local - thread_time_last_run_local;
+#endif
                 p_thread_info->d.time_last_finish = cur_time;
             }
             break;
@@ -1242,12 +1449,22 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
         case ABT_TOOL_EVENT_THREAD_YIELD: {
             p_xstream_info->d.num_events[ABTXI_PROF_EVENT_THREAD_YIELD]++;
 
+#if !ABTXI_PROF_USE_TIME_LOCAL
             ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#else
+            ABTXI_PROF_LOCAL_T cur_time_local = ABTXI_prof_get_time_local();
+            p_xstream_info->d.time_last_run_local = cur_time_local;
+            if (ABTXI_prof_unlikely(p_xstream_info->d.time_first_run_local ==
+                                    ABTXI_PROF_LOCAL_T_ZERO)) {
+                p_xstream_info->d.time_first_run_local = cur_time_local;
+            }
+#endif
 
             int depth =
                 ABTXI_prof_xstream_info_get_depth_thread(p_xstream_info, event,
                                                          context, 0);
             if (depth < ABTXI_PROF_MAX_DEPTH) {
+#if !ABTXI_PROF_USE_TIME_LOCAL
                 ABTXI_PROF_T xstream_time_last_run =
                     p_xstream_info->d.times_last_run[depth];
                 if (ABTXI_prof_unlikely(xstream_time_last_run ==
@@ -1261,9 +1478,27 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
                     cur_time - xstream_time_last_run;
                 p_xstream_info->d.times_last_run[depth] =
                     ABTXI_PROF_TIME_LAST_RUN_INVALID;
+#else
+                ABTXI_PROF_LOCAL_T xstream_time_last_run_local =
+                    p_xstream_info->d.times_last_run_local[depth];
+                if (ABTXI_prof_unlikely(xstream_time_last_run_local ==
+                                        ABTXI_PROF_LOCAL_T_ZERO)) {
+                    /* Adjustment */
+                    xstream_time_last_run_local = cur_time_local;
+                    p_xstream_info->d.times_last_run_local[depth] =
+                        cur_time_local;
+                }
+                p_xstream_info->d.times_elapsed_local[depth] +=
+                    cur_time_local - xstream_time_last_run_local;
+                p_xstream_info->d.times_last_run_local[depth] =
+                    ABTXI_PROF_TIME_LAST_RUN_LOCAL_INVALID;
+#endif
             }
 
             if (prof_mode == ABTX_PROF_MODE_DETAILED) {
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#endif
                 ABTXI_PROF_T thread_time_last_run =
                     p_thread_info->d.time_last_run;
                 if (ABTXI_prof_unlikely(thread_time_last_run ==
@@ -1274,7 +1509,18 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
                 }
                 p_thread_info->d.time_elapsed +=
                     cur_time - thread_time_last_run;
-
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_LOCAL_T thread_time_last_run_local =
+                    p_thread_info->d.time_last_run_local;
+                if (ABTXI_prof_unlikely(thread_time_last_run_local ==
+                                        ABTXI_PROF_LOCAL_T_ZERO)) {
+                    /* Adjustment */
+                    thread_time_last_run_local = cur_time_local;
+                    p_thread_info->d.time_last_run_local = cur_time_local;
+                }
+                p_thread_info->d.time_elapsed_local +=
+                    cur_time_local - thread_time_last_run_local;
+#endif
                 p_thread_info->d.num_yields++;
             }
             break;
@@ -1282,12 +1528,22 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
         case ABT_TOOL_EVENT_THREAD_SUSPEND: {
             p_xstream_info->d.num_events[ABTXI_PROF_EVENT_THREAD_SUSPEND]++;
 
+#if !ABTXI_PROF_USE_TIME_LOCAL
             ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#else
+            ABTXI_PROF_LOCAL_T cur_time_local = ABTXI_prof_get_time_local();
+            p_xstream_info->d.time_last_run_local = cur_time_local;
+            if (ABTXI_prof_unlikely(p_xstream_info->d.time_first_run_local ==
+                                    ABTXI_PROF_LOCAL_T_ZERO)) {
+                p_xstream_info->d.time_first_run_local = cur_time_local;
+            }
+#endif
 
             int depth =
                 ABTXI_prof_xstream_info_get_depth_thread(p_xstream_info, event,
                                                          context, 0);
             if (depth < ABTXI_PROF_MAX_DEPTH) {
+#if !ABTXI_PROF_USE_TIME_LOCAL
                 ABTXI_PROF_T xstream_time_last_run =
                     p_xstream_info->d.times_last_run[depth];
                 if (ABTXI_prof_unlikely(xstream_time_last_run ==
@@ -1301,9 +1557,27 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
                     cur_time - xstream_time_last_run;
                 p_xstream_info->d.times_last_run[depth] =
                     ABTXI_PROF_TIME_LAST_RUN_INVALID;
+#else
+                ABTXI_PROF_LOCAL_T xstream_time_last_run_local =
+                    p_xstream_info->d.times_last_run_local[depth];
+                if (ABTXI_prof_unlikely(xstream_time_last_run_local ==
+                                        ABTXI_PROF_LOCAL_T_ZERO)) {
+                    /* Adjustment */
+                    xstream_time_last_run_local = cur_time_local;
+                    p_xstream_info->d.times_last_run_local[depth] =
+                        cur_time_local;
+                }
+                p_xstream_info->d.times_elapsed_local[depth] +=
+                    cur_time_local - xstream_time_last_run_local;
+                p_xstream_info->d.times_last_run_local[depth] =
+                    ABTXI_PROF_TIME_LAST_RUN_LOCAL_INVALID;
+#endif
             }
 
             if (prof_mode == ABTX_PROF_MODE_DETAILED) {
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#endif
                 ABTXI_PROF_T thread_time_last_run =
                     p_thread_info->d.time_last_run;
                 if (ABTXI_prof_unlikely(thread_time_last_run ==
@@ -1314,7 +1588,18 @@ ABTXI_prof_thread_callback_impl(ABT_thread thread, ABT_xstream xstream,
                 }
                 p_thread_info->d.time_elapsed +=
                     cur_time - thread_time_last_run;
-
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_LOCAL_T thread_time_last_run_local =
+                    p_thread_info->d.time_last_run_local;
+                if (ABTXI_prof_unlikely(thread_time_last_run_local ==
+                                        ABTXI_PROF_LOCAL_T_ZERO)) {
+                    /* Adjustment */
+                    thread_time_last_run_local = cur_time_local;
+                    p_thread_info->d.time_last_run_local = cur_time_local;
+                }
+                p_thread_info->d.time_elapsed_local +=
+                    cur_time_local - thread_time_last_run_local;
+#endif
                 p_thread_info->d.num_suspensions++;
             }
             break;
@@ -1383,32 +1668,61 @@ ABTXI_prof_task_callback_impl(ABT_task task, ABT_xstream xstream,
         case ABT_TOOL_EVENT_TASK_RUN: {
             p_xstream_info->d.num_events[ABTXI_PROF_EVENT_TASK_RUN]++;
 
+#if !ABTXI_PROF_USE_TIME_LOCAL
             ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#else
+            ABTXI_PROF_LOCAL_T cur_time_local = ABTXI_prof_get_time_local();
+            p_xstream_info->d.time_last_run_local = cur_time_local;
+            if (ABTXI_prof_unlikely(p_xstream_info->d.time_first_run_local ==
+                                    ABTXI_PROF_LOCAL_T_ZERO)) {
+                p_xstream_info->d.time_first_run_local = cur_time_local;
+            }
+#endif
 
             int depth =
                 ABTXI_prof_xstream_info_get_depth_task(p_xstream_info, event,
                                                        context, 1);
             if (depth < ABTXI_PROF_MAX_DEPTH) {
+#if !ABTXI_PROF_USE_TIME_LOCAL
                 p_xstream_info->d.times_last_run[depth] = cur_time;
+#else
+                p_xstream_info->d.times_last_run_local[depth] = cur_time_local;
+#endif
             }
 
             if (prof_mode == ABTX_PROF_MODE_DETAILED) {
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#endif
                 if (p_task_info->d.time_first_run == ABTXI_PROF_T_ZERO) {
                     p_task_info->d.time_first_run = cur_time;
                 }
                 p_task_info->d.time_last_run = cur_time;
+#if ABTXI_PROF_USE_TIME_LOCAL
+                p_task_info->d.time_last_run_local = cur_time_local;
+#endif
             }
             break;
         }
         case ABT_TOOL_EVENT_TASK_FINISH: {
             p_xstream_info->d.num_events[ABTXI_PROF_EVENT_TASK_FINISH]++;
 
+#if !ABTXI_PROF_USE_TIME_LOCAL
             ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#else
+            ABTXI_PROF_LOCAL_T cur_time_local = ABTXI_prof_get_time_local();
+            p_xstream_info->d.time_last_run_local = cur_time_local;
+            if (ABTXI_prof_unlikely(p_xstream_info->d.time_first_run_local ==
+                                    ABTXI_PROF_LOCAL_T_ZERO)) {
+                p_xstream_info->d.time_first_run_local = cur_time_local;
+            }
+#endif
 
             int depth =
                 ABTXI_prof_xstream_info_get_depth_task(p_xstream_info, event,
                                                        context, 0);
             if (depth < ABTXI_PROF_MAX_DEPTH) {
+#if !ABTXI_PROF_USE_TIME_LOCAL
                 ABTXI_PROF_T xstream_time_last_run =
                     p_xstream_info->d.times_last_run[depth];
                 if (ABTXI_prof_unlikely(xstream_time_last_run ==
@@ -1422,9 +1736,27 @@ ABTXI_prof_task_callback_impl(ABT_task task, ABT_xstream xstream,
                     cur_time - xstream_time_last_run;
                 p_xstream_info->d.times_last_run[depth] =
                     ABTXI_PROF_TIME_LAST_RUN_INVALID;
+#else
+                ABTXI_PROF_LOCAL_T xstream_time_last_run_local =
+                    p_xstream_info->d.times_last_run_local[depth];
+                if (ABTXI_prof_unlikely(xstream_time_last_run_local ==
+                                        ABTXI_PROF_LOCAL_T_ZERO)) {
+                    /* Adjustment */
+                    xstream_time_last_run_local = cur_time_local;
+                    p_xstream_info->d.times_last_run_local[depth] =
+                        xstream_time_last_run_local;
+                }
+                p_xstream_info->d.times_elapsed_local[depth] +=
+                    cur_time_local - xstream_time_last_run_local;
+                p_xstream_info->d.times_last_run_local[depth] =
+                    ABTXI_PROF_TIME_LAST_RUN_LOCAL_INVALID;
+#endif
             }
 
             if (prof_mode == ABTX_PROF_MODE_DETAILED) {
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_T cur_time = ABTXI_prof_get_time();
+#endif
                 ABTXI_PROF_T task_time_last_run = p_task_info->d.time_last_run;
                 if (ABTXI_prof_unlikely(task_time_last_run ==
                                         ABTXI_PROF_T_ZERO)) {
@@ -1433,6 +1765,19 @@ ABTXI_prof_task_callback_impl(ABT_task task, ABT_xstream xstream,
                     p_task_info->d.time_last_run = task_time_last_run;
                 }
                 p_task_info->d.time_elapsed += cur_time - task_time_last_run;
+#if ABTXI_PROF_USE_TIME_LOCAL
+                ABTXI_PROF_LOCAL_T task_time_last_run_local =
+                    p_task_info->d.time_last_run_local;
+                if (ABTXI_prof_unlikely(task_time_last_run_local ==
+                                        ABTXI_PROF_LOCAL_T_ZERO)) {
+                    /* Adjustment */
+                    task_time_last_run_local = cur_time_local;
+                    p_task_info->d.time_last_run_local =
+                        task_time_last_run_local;
+                }
+                p_task_info->d.time_elapsed_local +=
+                    cur_time_local - task_time_last_run_local;
+#endif
                 p_task_info->d.time_last_finish = cur_time;
             }
             break;
@@ -1614,6 +1959,7 @@ ABTXI_prof_merge_xstream_info(const ABTXI_prof_global *p_global,
         p_task_head = p_task_head->p_next_all;
     }
 
+#if !ABTXI_PROF_USE_TIME_LOCAL
     ABTXI_PROF_T times_last_run[ABTXI_PROF_MAX_DEPTH];
     ABTXI_PROF_T times_elapsed[ABTXI_PROF_MAX_DEPTH];
     memcpy(times_last_run, &p_xstream_info->d.times_last_run,
@@ -1654,6 +2000,51 @@ ABTXI_prof_merge_xstream_info(const ABTXI_prof_global *p_global,
         p_out->times_last_run[i] += times_last_run[i];
     for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++)
         p_out->times_elapsed[i] += times_elapsed[i];
+#else
+    /* No adjustment because this thread cannot access another ES's timers. */
+    ABTXI_PROF_LOCAL_T times_last_run_local[ABTXI_PROF_MAX_DEPTH];
+    ABTXI_PROF_LOCAL_T times_elapsed_local[ABTXI_PROF_MAX_DEPTH];
+    memcpy(times_last_run_local, &p_xstream_info->d.times_last_run_local,
+           sizeof(ABTXI_PROF_LOCAL_T) * ABTXI_PROF_MAX_DEPTH);
+    memcpy(times_elapsed_local, &p_xstream_info->d.times_elapsed_local,
+           sizeof(ABTXI_PROF_LOCAL_T) * ABTXI_PROF_MAX_DEPTH);
+    if (p_xstream_info->rank != -1) {
+        /* Adjust times_elapsed.  We do not measure the execution time of
+         * external threads, so adjustment is unnecessary. */
+        if (p_xstream_info->d.time_first_run_local == ABTXI_PROF_LOCAL_T_ZERO) {
+            /* The xstream did not really run anything, possibly because there
+             * was no event on this xstream.  Let's think that at least the main
+             * scheduler was sleeping during that time. */
+            times_elapsed_local[0] = 1.0e-9;
+        } else {
+            for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++) {
+                if (times_last_run_local[i] == ABTXI_PROF_LOCAL_T_ZERO &&
+                    i < p_xstream_info->d.cur_depth) {
+                    /* It means that this depth has not been executed, but the
+                     * deeper level has been executed, implying this depth was
+                     * active during this time frame. */
+                    times_elapsed_local[i] =
+                        p_xstream_info->d.time_last_run_local -
+                        p_xstream_info->d.time_first_run_local;
+                } else if (times_last_run_local[i] != ABTXI_PROF_LOCAL_T_ZERO &&
+                           times_last_run_local[i] !=
+                               ABTXI_PROF_TIME_LAST_RUN_LOCAL_INVALID) {
+                    /* It means that the last thread/task is still running on
+                     * this xstream.  Let's add it. */
+                    times_elapsed_local[i] +=
+                        p_xstream_info->d.time_last_run_local -
+                        times_last_run_local[i];
+                } else {
+                    /* times_elapsed should be correct. */
+                }
+            }
+        }
+    }
+    for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++)
+        p_out->times_last_run_local[i] += times_last_run_local[i];
+    for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++)
+        p_out->times_elapsed_local[i] += times_elapsed_local[i];
+#endif
 
     for (i = 0; i < ABTXI_PROF_EVENT_END_; i++)
         p_out->num_events[i] += p_xstream_info->d.num_events[i];
@@ -1663,6 +2054,11 @@ ABTXI_prof_merge_xstream_info(const ABTXI_prof_global *p_global,
     for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++)
         ABTXI_prof_wu_count_merge(&p_out->wu_counts[i],
                                   &p_xstream_info->d.wu_counts[i]);
+#if ABTXI_PROF_USE_TIME_LOCAL
+    for (i = 0; i < ABTXI_PROF_WU_LOCAL_TIME_END_; i++)
+        ABTXI_prof_wu_local_time_merge(&p_out->wu_local_times[i],
+                                       &p_xstream_info->d.wu_local_times[i]);
+#endif
 }
 
 static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
@@ -1761,12 +2157,22 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
     ABTXI_prof_wu_count wu_counts[ABTXI_PROF_WU_COUNT_END_];
     memset(&wu_counts, 0,
            sizeof(ABTXI_prof_wu_count) * ABTXI_PROF_WU_COUNT_END_);
+#if ABTXI_PROF_USE_TIME_LOCAL
+    ABTXI_prof_wu_local_time wu_local_times[ABTXI_PROF_WU_LOCAL_TIME_END_];
+    memset(&wu_local_times, 0,
+           sizeof(ABTXI_prof_wu_local_time) * ABTXI_PROF_WU_LOCAL_TIME_END_);
+#endif
     for (i = 0; i < num_ranks; i++) {
         for (j = 0; j < ABTXI_PROF_WU_TIME_END_; j++)
             ABTXI_prof_wu_time_merge(&wu_times[j], &summaries[i].wu_times[j]);
         for (j = 0; j < ABTXI_PROF_WU_COUNT_END_; j++)
             ABTXI_prof_wu_count_merge(&wu_counts[j],
                                       &summaries[i].wu_counts[j]);
+#if ABTXI_PROF_USE_TIME_LOCAL
+        for (j = 0; j < ABTXI_PROF_WU_LOCAL_TIME_END_; j++)
+            ABTXI_prof_wu_local_time_merge(&wu_local_times[j],
+                                           &summaries[i].wu_local_times[j]);
+#endif
     }
 
     /* Print it. */
@@ -1793,10 +2199,18 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                 table.row_names[i] =
                     ABTXI_prof_sprintf(p_str, 1024, "# of events of %s",
                                        ABTXI_get_prof_event_name(i));
+#if !ABTXI_PROF_USE_TIME_LOCAL
+            for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++)
+                table.row_names[ABTXI_PROF_EVENT_END_ + i] =
+                    ABTXI_prof_sprintf(p_str, 1024,
+                                       "Level %d elapsed (approx.) [%s]", i,
+                                       ABTXI_PROF_T_STRING);
+#else
             for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++)
                 table.row_names[ABTXI_PROF_EVENT_END_ + i] =
                     ABTXI_prof_sprintf(p_str, 1024, "Level %d elapsed [%s]", i,
-                                       ABTXI_PROF_T_STRING);
+                                       ABTXI_PROF_LOCAL_T_STRING);
+#endif
             /* Set the data. */
             for (i = 0; i < num_ranks + 1; i++) {
                 for (j = 0; j < ABTXI_PROF_EVENT_END_; j++) {
@@ -1805,8 +2219,13 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                 }
                 for (j = 0; j < ABTXI_PROF_MAX_DEPTH; j++) {
                     int row = j + ABTXI_PROF_EVENT_END_;
+#if !ABTXI_PROF_USE_TIME_LOCAL
                     table.values[row * table.num_columns + i] =
                         summaries[i].times_elapsed[j];
+#else
+                    table.values[row * table.num_columns + i] =
+                        summaries[i].times_elapsed_local[j];
+#endif
                 }
             }
             if (print_mode & ABTX_PRINT_MODE_CSV) {
@@ -1825,6 +2244,9 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             ABTXI_prof_str_mem *p_str = ABTXI_prof_str_mem_alloc(4096);
             table.num_columns = 4; /* Sum / Avg / Min / Max */
             table.num_rows = ABTXI_PROF_WU_TIME_END_ + ABTXI_PROF_WU_COUNT_END_;
+#if ABTXI_PROF_USE_TIME_LOCAL
+            table.num_rows += ABTXI_PROF_WU_LOCAL_TIME_END_;
+#endif
             table.values =
                 (double *)malloc(sizeof(double) * 4 * table.num_rows);
             table.column_names = (const char **)malloc(sizeof(char *) * 4);
@@ -1839,6 +2261,10 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             int row = 0;
             for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++, row++)
                 table.row_names[row] = ABTXI_get_prof_wu_time_name(i);
+#if ABTXI_PROF_USE_TIME_LOCAL
+            for (i = 0; i < ABTXI_PROF_WU_LOCAL_TIME_END_; i++, row++)
+                table.row_names[row] = ABTXI_get_prof_wu_local_time_name(i);
+#endif
             for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++, row++)
                 table.row_names[row] =
                     ABTXI_prof_sprintf(p_str, 1024, "# of events of %s",
@@ -1852,6 +2278,16 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                 table.values[row * 4 + 2] = wu_times[i].min_val;
                 table.values[row * 4 + 3] = wu_times[i].max_val;
             }
+#if ABTXI_PROF_USE_TIME_LOCAL
+            for (i = 0; i < ABTXI_PROF_WU_LOCAL_TIME_END_; i++, row++) {
+                table.values[row * 4 + 0] = wu_local_times[i].sum;
+                table.values[row * 4 + 1] =
+                    ABTXI_prof_div_s(wu_local_times[i].sum,
+                                     wu_local_times[i].cnt);
+                table.values[row * 4 + 2] = wu_local_times[i].min_val;
+                table.values[row * 4 + 3] = wu_local_times[i].max_val;
+            }
+#endif
             for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++, row++) {
                 table.values[row * 4 + 0] = wu_counts[i].sum;
                 table.values[row * 4 + 1] =
@@ -1901,9 +2337,15 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                 int num_finishes =
                     summaries[i].num_events[ABTXI_PROF_EVENT_THREAD_FINISH] +
                     summaries[i].num_events[ABTXI_PROF_EVENT_TASK_FINISH];
+#if !ABTXI_PROF_USE_TIME_LOCAL
                 double granularity =
                     ABTXI_prof_div_s(summaries[i].times_elapsed[1] * to_sec,
                                      num_finishes);
+#else
+                double granularity =
+                    ABTXI_prof_div_s(summaries[i].times_elapsed_local[1],
+                                     num_finishes);
+#endif
                 table.values[row * table.num_columns] +=
                     granularity / num_ranks;
                 table.values[row * table.num_columns + i + 1] = granularity;
@@ -1918,10 +2360,19 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                 table.values[row * table.num_columns + i + 1] =
                     ABTXI_prof_div_s(num_finishes, elapsed_time);
             }
+#if !ABTXI_PROF_USE_TIME_LOCAL
+            table.row_names[++row] = "Approx. non-main scheduling ratio [%]";
+#else
             table.row_names[++row] = "Non-main scheduling ratio [%]";
+#endif
             for (i = 0; i < num_ranks; i++) {
+#if !ABTXI_PROF_USE_TIME_LOCAL
                 double ratio = summaries[i].times_elapsed[1] * to_sec /
                                elapsed_time * 100.0;
+#else
+                double ratio = summaries[i].times_elapsed_local[1] /
+                               summaries[i].times_elapsed_local[0] * 100.0;
+#endif
                 table.values[row * table.num_columns] += ratio / num_ranks;
                 table.values[row * table.num_columns + i + 1] = ratio;
             }
@@ -2002,6 +2453,9 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             ABTXI_prof_str_mem *p_str = ABTXI_prof_str_mem_alloc(4096);
             table.num_columns = 3; /* Avg / Min / Max */
             table.num_rows = 8;
+#if ABTXI_PROF_USE_TIME_LOCAL
+            table.num_rows += 1;
+#endif
             table.values = (double *)malloc(sizeof(double) * table.num_columns *
                                             table.num_rows);
             table.column_names =
@@ -2013,7 +2467,7 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             table.column_names[1] = "Min";
             table.column_names[2] = "Max";
             /* Set the row names */
-            table.row_names[++row] = "Precise ULT/tasklet granularity [s]";
+            table.row_names[++row] = "ULT/tasklet execution time [s]";
             ABTXI_prof_wu_time t_elapsed;
             memcpy(&t_elapsed, &wu_times[ABTXI_PROF_WU_TIME_THREAD_ELAPSED],
                    sizeof(ABTXI_prof_wu_time));
@@ -2024,6 +2478,21 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                 ABTXI_prof_div_s(t_elapsed.sum, t_elapsed.cnt) * to_sec;
             table.values[row * 3 + 1] = t_elapsed.min_val * to_sec;
             table.values[row * 3 + 2] = t_elapsed.max_val * to_sec;
+#if ABTXI_PROF_USE_TIME_LOCAL
+            table.row_names[++row] = "ULT/tasklet granularity (execution time "
+                                     "- ES unscheduled time) [s]";
+            ABTXI_prof_wu_local_time t_elapsed_local;
+            memcpy(&t_elapsed_local,
+                   &wu_local_times[ABTXI_PROF_WU_LOCAL_TIME_THREAD_ELAPSED],
+                   sizeof(ABTXI_prof_wu_local_time));
+            ABTXI_prof_wu_local_time_merge(
+                &t_elapsed_local,
+                &wu_local_times[ABTXI_PROF_WU_LOCAL_TIME_TASK_ELAPSED]);
+            table.values[row * 3 + 0] =
+                ABTXI_prof_div_s(t_elapsed_local.sum, t_elapsed_local.cnt);
+            table.values[row * 3 + 1] = t_elapsed_local.min_val;
+            table.values[row * 3 + 2] = t_elapsed_local.max_val;
+#endif
             table.row_names[++row] = "# of yield events per ULT";
             table.values[row * 3 + 0] =
                 ABTXI_prof_div_s((double)wu_counts
