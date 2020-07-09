@@ -1594,8 +1594,6 @@ ABTXI_prof_merge_xstream_info(const ABTXI_prof_global *p_global,
                               ABTXI_prof_xstream_data *p_out)
 {
     int i;
-    ABTXI_PROF_T start_prof_time = p_global->start_prof_time;
-    ABTXI_PROF_T stop_prof_time = p_global->stop_prof_time;
     /* Copy thread_info and task_info and reduce it.  Note that unused _info
      * are initialized, so reducing them do not affect the results.  These
      * p_{thread/task}_all are managed so that so list traversal always
@@ -1623,6 +1621,8 @@ ABTXI_prof_merge_xstream_info(const ABTXI_prof_global *p_global,
     memcpy(times_elapsed, &p_xstream_info->d.times_elapsed,
            sizeof(ABTXI_PROF_T) * ABTXI_PROF_MAX_DEPTH);
     if (p_xstream_info->rank != -1) {
+        ABTXI_PROF_T start_prof_time = p_global->start_prof_time;
+        ABTXI_PROF_T stop_prof_time = p_global->stop_prof_time;
         /* Adjust times_elapsed.  We do not measure the execution time of
          * external threads, so adjustment is unnecessary. */
         if (p_out->cur_depth == 0) {
@@ -1650,13 +1650,13 @@ ABTXI_prof_merge_xstream_info(const ABTXI_prof_global *p_global,
             }
         }
     }
-
-    for (i = 0; i < ABTXI_PROF_EVENT_END_; i++)
-        p_out->num_events[i] += p_xstream_info->d.num_events[i];
     for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++)
         p_out->times_last_run[i] += times_last_run[i];
     for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++)
         p_out->times_elapsed[i] += times_elapsed[i];
+
+    for (i = 0; i < ABTXI_PROF_EVENT_END_; i++)
+        p_out->num_events[i] += p_xstream_info->d.num_events[i];
     for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++)
         ABTXI_prof_wu_time_merge(&p_out->wu_times[i],
                                  &p_xstream_info->d.wu_times[i]);
@@ -1757,8 +1757,8 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
 
     /* Reduce thread/task information. */
     ABTXI_prof_wu_time wu_times[ABTXI_PROF_WU_TIME_END_];
-    ABTXI_prof_wu_count wu_counts[ABTXI_PROF_WU_COUNT_END_];
     memset(&wu_times, 0, sizeof(ABTXI_prof_wu_time) * ABTXI_PROF_WU_TIME_END_);
+    ABTXI_prof_wu_count wu_counts[ABTXI_PROF_WU_COUNT_END_];
     memset(&wu_counts, 0,
            sizeof(ABTXI_prof_wu_count) * ABTXI_PROF_WU_COUNT_END_);
     for (i = 0; i < num_ranks; i++) {
@@ -1836,23 +1836,23 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             table.column_names[2] = "Min";
             table.column_names[3] = "Max";
             /* Set the row names */
-            for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++)
-                table.row_names[i] = ABTXI_get_prof_wu_time_name(i);
-            for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++)
-                table.row_names[ABTXI_PROF_WU_TIME_END_ + i] =
+            int row = 0;
+            for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++, row++)
+                table.row_names[row] = ABTXI_get_prof_wu_time_name(i);
+            for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++, row++)
+                table.row_names[row] =
                     ABTXI_prof_sprintf(p_str, 1024, "# of events of %s",
                                        ABTXI_get_prof_wu_count_name(i));
             /* Set the data. */
-            for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++) {
-                int row = i;
+            row = 0;
+            for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++, row++) {
                 table.values[row * 4 + 0] = wu_times[i].sum;
                 table.values[row * 4 + 1] =
                     ABTXI_prof_div_s(wu_times[i].sum, wu_times[i].cnt);
                 table.values[row * 4 + 2] = wu_times[i].min_val;
                 table.values[row * 4 + 3] = wu_times[i].max_val;
             }
-            for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++) {
-                int row = i + ABTXI_PROF_WU_TIME_END_;
+            for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++, row++) {
                 table.values[row * 4 + 0] = wu_counts[i].sum;
                 table.values[row * 4 + 1] =
                     ABTXI_prof_div_s((double)wu_counts[i].sum,
