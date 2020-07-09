@@ -44,7 +44,7 @@
 
 #define DEFAULT_NUM_XSTREAMS 4
 #define DEFAULT_N (8 * 1024 * 1024)
-#define DEFAULT_CUTOFF 64
+#define DEFAULT_CUTOFF 1024
 #define NUM_REPEATS 4
 
 ABT_pool *pools;
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
         daxpy(&arg);
         double end_time = ABT_get_wtime();
 
-        if (prof_mode == 1 || prof_mode == 2) {
+        if (prof_init == ABT_SUCCESS && (prof_mode == 1 || prof_mode == 2)) {
             ABTX_prof_stop(prof_context);
         }
 
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
     /* Check the results (only 100 points). */
     int ret = 0;
     for (i = 0; i < 100; i++) {
-        int idx = (int)((((double)n) * i) / (100 - 1));
+        int idx = (int)(n / 100.0 * i);
         double ans = x[idx] * a * NUM_REPEATS;
         if (y[idx] != ans) {
             printf("y[%d] = %f (ans: %f)\n", idx, y[idx], ans);

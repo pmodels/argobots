@@ -216,7 +216,7 @@ static inline uint64_t ABTXI_prof_get_cycles()
 #define ABTXI_PROF_T_ZERO ((int64_t)0)
 #define ABTXI_prof_get_time() ABTXI_prof_get_cycles()
 #define ABTXI_PROF_T_STRING "HW cycles"
-static inline double ABTXI_prof_get_time_to_sec()
+static double ABTXI_prof_get_time_to_sec()
 {
     double t_sec1 = ABT_get_wtime();
     ABTXI_PROF_T t_start = ABTXI_prof_get_cycles();
@@ -389,7 +389,7 @@ static inline int ABTXI_prof_digit(double val)
 {
     if (-1.0e-10 < val && val < 1.0e-10) {
         /* Too small.  This is zero. */
-        return 0;
+        return -99;
     } else if (-1.0 < val && val < 1.0) {
         return -1 + ABTXI_prof_digit(val * 10.0);
     } else if (val < -10.0 || 10.0 < val) {
@@ -437,6 +437,7 @@ struct ABTXI_prof_thread_data {
     ABTXI_PROF_T time_last_finish;
     ABTXI_PROF_T time_elapsed;
     ABT_xstream prev_xstream;
+    ABT_thread owner;
 };
 
 struct ABTXI_prof_thread_info {
@@ -452,6 +453,7 @@ struct ABTXI_prof_task_data {
     ABTXI_PROF_T time_last_run;
     ABTXI_PROF_T time_last_finish;
     ABTXI_PROF_T time_elapsed;
+    ABT_task owner;
 };
 
 struct ABTXI_prof_task_info {
@@ -594,8 +596,8 @@ static inline void ABTXI_prof_wu_time_add(ABTXI_prof_wu_time *p_wu_time,
     p_wu_time->cnt += 1;
 }
 
-static inline void ABTXI_prof_wu_time_merge(ABTXI_prof_wu_time *p_dest,
-                                            const ABTXI_prof_wu_time *p_src)
+static void ABTXI_prof_wu_time_merge(ABTXI_prof_wu_time *p_dest,
+                                     const ABTXI_prof_wu_time *p_src)
 {
     if (p_dest->cnt == 0) {
         p_dest->max_val = p_src->max_val;
@@ -626,8 +628,8 @@ static inline void ABTXI_prof_wu_count_add(ABTXI_prof_wu_count *p_wu_count,
     p_wu_count->cnt += 1;
 }
 
-static inline void ABTXI_prof_wu_count_merge(ABTXI_prof_wu_count *p_dest,
-                                             const ABTXI_prof_wu_count *p_src)
+static void ABTXI_prof_wu_count_merge(ABTXI_prof_wu_count *p_dest,
+                                      const ABTXI_prof_wu_count *p_src)
 {
     if (p_dest->cnt == 0) {
         p_dest->max_val = p_src->max_val;
@@ -683,7 +685,7 @@ static void ABTXI_prof_str_mem_free(ABTXI_prof_str_mem *p_str)
     }
 }
 
-static inline void ABTXI_prof_xstream_info_alloc_thread_info(
+static void ABTXI_prof_xstream_info_alloc_thread_info(
     ABTXI_prof_xstream_info *p_xstream_info)
 {
     void *p_memblock = calloc(1, ABTXI_PROF_MEM_BLOCK_SIZE);
@@ -712,7 +714,7 @@ static inline void ABTXI_prof_xstream_info_alloc_thread_info(
                                         (void *)p_head_all);
 }
 
-static inline void
+static void
 ABTXI_prof_xstream_info_alloc_task_info(ABTXI_prof_xstream_info *p_xstream_info)
 {
     void *p_memblock = calloc(1, ABTXI_PROF_MEM_BLOCK_SIZE);
@@ -753,15 +755,14 @@ static inline void ABTXI_prof_init_task_info(ABTXI_prof_task_info *p_task_info)
     memset(&p_task_info->d, 0, sizeof(ABTXI_prof_task_data));
 }
 
-static inline void
-ABTXI_prof_reset_thread_info(ABTXI_prof_thread_info *p_thread_info)
+static void ABTXI_prof_reset_thread_info(ABTXI_prof_thread_info *p_thread_info)
 {
     /* Basically zero clear. */
     memset(&p_thread_info->d, 0, sizeof(ABTXI_prof_thread_data));
     p_thread_info->p_next_unused = p_thread_info->p_next_all;
 }
 
-static inline void ABTXI_prof_reset_task_info(ABTXI_prof_task_info *p_task_info)
+static void ABTXI_prof_reset_task_info(ABTXI_prof_task_info *p_task_info)
 {
     /* Basically zero clear. */
     memset(&p_task_info->d, 0, sizeof(ABTXI_prof_task_data));
@@ -777,7 +778,10 @@ ABTXI_prof_get_thread_info(ABTXI_prof_global *p_global,
     ABTXI_prof_thread_info *p_thread_info;
     ABT_key prof_key = p_global->prof_key;
     ABT_thread_get_specific(thread, prof_key, (void **)&p_thread_info);
-    if (ABTXI_prof_likely(p_thread_info)) {
+    /* owner can be changed if thread_info has been reset by restarting the
+     * profiler.  If it is the case, this p_thread_info is no longer belonging
+     * to this thread, so a new one must be allocated. */
+    if (ABTXI_prof_likely(p_thread_info && p_thread_info->d.owner == thread)) {
         return p_thread_info;
     } else {
         if (!p_xstream_info->p_thread_unused) {
@@ -787,6 +791,7 @@ ABTXI_prof_get_thread_info(ABTXI_prof_global *p_global,
         /* This p_thread_info has been already initialized. */
         p_xstream_info->p_thread_unused = p_thread_info->p_next_unused;
         ABT_thread_set_specific(thread, prof_key, (void *)p_thread_info);
+        p_thread_info->d.owner = thread;
         return p_thread_info;
     }
 }
@@ -799,7 +804,10 @@ ABTXI_prof_get_task_info(ABTXI_prof_global *p_global,
     ABTXI_prof_task_info *p_task_info;
     ABT_key prof_key = p_global->prof_key;
     ABT_task_get_specific(task, prof_key, (void **)&p_task_info);
-    if (ABTXI_prof_likely(p_task_info)) {
+    /* owner can be changed if task_info has been reset by restarting the
+     * profiler.  If it is the case, this p_task_info is no longer belonging to
+     * this task, so a new one must be allocated. */
+    if (ABTXI_prof_likely(p_task_info && p_task_info->d.owner == task)) {
         return p_task_info;
     } else {
         if (!p_xstream_info->p_task_unused) {
@@ -809,6 +817,7 @@ ABTXI_prof_get_task_info(ABTXI_prof_global *p_global,
         /* This p_task_info has been already initialized. */
         p_xstream_info->p_task_unused = p_task_info->p_next_unused;
         ABT_task_set_specific(task, prof_key, (void *)p_task_info);
+        p_task_info->d.owner = task;
         return p_task_info;
     }
 }
@@ -945,7 +954,7 @@ ABTXI_prof_release_task_info(ABTXI_prof_xstream_info *p_xstream_info,
     p_xstream_info->p_task_unused = p_task_info;
 }
 
-static inline void
+static void
 ABTXI_prof_init_xstream_info(ABTXI_prof_global *p_global,
                              ABTXI_prof_xstream_info *p_xstream_info, int rank)
 {
@@ -955,7 +964,7 @@ ABTXI_prof_init_xstream_info(ABTXI_prof_global *p_global,
     p_xstream_info->rank = rank;
 }
 
-static inline void
+static void
 ABTXI_prof_reset_xstream_info(ABTXI_prof_xstream_info *p_xstream_info)
 {
     /* Basically zero clear. */
@@ -980,7 +989,7 @@ ABTXI_prof_reset_xstream_info(ABTXI_prof_xstream_info *p_xstream_info)
     p_xstream_info->p_task_unused = p_task_all;
 }
 
-static inline void
+static void
 ABTXI_prof_destroy_xstream_info(ABTXI_prof_xstream_info *p_xstream_info)
 {
     /* Memory blocks must be freed when all the xstream_infos are freed. */
@@ -1075,7 +1084,7 @@ ABTXI_prof_get_xstream_info(ABTXI_prof_global *p_global, ABT_xstream xstream)
     }
 }
 
-static int ABTXI_prof_xstream_info_get_depth_thread(
+static inline int ABTXI_prof_xstream_info_get_depth_thread(
     ABTXI_prof_xstream_info *p_xstream_info, uint64_t event,
     ABT_tool_context context, int force_update)
 {
@@ -1092,7 +1101,7 @@ static int ABTXI_prof_xstream_info_get_depth_thread(
     return cur_depth - 1;
 }
 
-static int
+static inline int
 ABTXI_prof_xstream_info_get_depth_task(ABTXI_prof_xstream_info *p_xstream_info,
                                        uint64_t event, ABT_tool_context context,
                                        int force_update)
@@ -1387,7 +1396,7 @@ ABTXI_prof_task_callback_impl(ABT_task task, ABT_xstream xstream,
                 if (p_task_info->d.time_first_run == ABTXI_PROF_T_ZERO) {
                     p_task_info->d.time_first_run = cur_time;
                 }
-                p_task_info->d.time_first_run = cur_time;
+                p_task_info->d.time_last_run = cur_time;
             }
             break;
         }
@@ -1585,8 +1594,6 @@ ABTXI_prof_merge_xstream_info(const ABTXI_prof_global *p_global,
                               ABTXI_prof_xstream_data *p_out)
 {
     int i;
-    ABTXI_PROF_T start_prof_time = p_global->start_prof_time;
-    ABTXI_PROF_T stop_prof_time = p_global->stop_prof_time;
     /* Copy thread_info and task_info and reduce it.  Note that unused _info
      * are initialized, so reducing them do not affect the results.  These
      * p_{thread/task}_all are managed so that so list traversal always
@@ -1614,6 +1621,8 @@ ABTXI_prof_merge_xstream_info(const ABTXI_prof_global *p_global,
     memcpy(times_elapsed, &p_xstream_info->d.times_elapsed,
            sizeof(ABTXI_PROF_T) * ABTXI_PROF_MAX_DEPTH);
     if (p_xstream_info->rank != -1) {
+        ABTXI_PROF_T start_prof_time = p_global->start_prof_time;
+        ABTXI_PROF_T stop_prof_time = p_global->stop_prof_time;
         /* Adjust times_elapsed.  We do not measure the execution time of
          * external threads, so adjustment is unnecessary. */
         if (p_out->cur_depth == 0) {
@@ -1641,13 +1650,13 @@ ABTXI_prof_merge_xstream_info(const ABTXI_prof_global *p_global,
             }
         }
     }
-
-    for (i = 0; i < ABTXI_PROF_EVENT_END_; i++)
-        p_out->num_events[i] += p_xstream_info->d.num_events[i];
     for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++)
         p_out->times_last_run[i] += times_last_run[i];
     for (i = 0; i < ABTXI_PROF_MAX_DEPTH; i++)
         p_out->times_elapsed[i] += times_elapsed[i];
+
+    for (i = 0; i < ABTXI_PROF_EVENT_END_; i++)
+        p_out->num_events[i] += p_xstream_info->d.num_events[i];
     for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++)
         ABTXI_prof_wu_time_merge(&p_out->wu_times[i],
                                  &p_xstream_info->d.wu_times[i]);
@@ -1748,8 +1757,8 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
 
     /* Reduce thread/task information. */
     ABTXI_prof_wu_time wu_times[ABTXI_PROF_WU_TIME_END_];
-    ABTXI_prof_wu_count wu_counts[ABTXI_PROF_WU_COUNT_END_];
     memset(&wu_times, 0, sizeof(ABTXI_prof_wu_time) * ABTXI_PROF_WU_TIME_END_);
+    ABTXI_prof_wu_count wu_counts[ABTXI_PROF_WU_COUNT_END_];
     memset(&wu_counts, 0,
            sizeof(ABTXI_prof_wu_count) * ABTXI_PROF_WU_COUNT_END_);
     for (i = 0; i < num_ranks; i++) {
@@ -1827,23 +1836,23 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             table.column_names[2] = "Min";
             table.column_names[3] = "Max";
             /* Set the row names */
-            for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++)
-                table.row_names[i] = ABTXI_get_prof_wu_time_name(i);
-            for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++)
-                table.row_names[ABTXI_PROF_WU_TIME_END_ + i] =
+            int row = 0;
+            for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++, row++)
+                table.row_names[row] = ABTXI_get_prof_wu_time_name(i);
+            for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++, row++)
+                table.row_names[row] =
                     ABTXI_prof_sprintf(p_str, 1024, "# of events of %s",
                                        ABTXI_get_prof_wu_count_name(i));
             /* Set the data. */
-            for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++) {
-                int row = i;
+            row = 0;
+            for (i = 0; i < ABTXI_PROF_WU_TIME_END_; i++, row++) {
                 table.values[row * 4 + 0] = wu_times[i].sum;
                 table.values[row * 4 + 1] =
                     ABTXI_prof_div_s(wu_times[i].sum, wu_times[i].cnt);
                 table.values[row * 4 + 2] = wu_times[i].min_val;
                 table.values[row * 4 + 3] = wu_times[i].max_val;
             }
-            for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++) {
-                int row = i + ABTXI_PROF_WU_TIME_END_;
+            for (i = 0; i < ABTXI_PROF_WU_COUNT_END_; i++, row++) {
                 table.values[row * 4 + 0] = wu_counts[i].sum;
                 table.values[row * 4 + 1] =
                     ABTXI_prof_div_s((double)wu_counts[i].sum,
@@ -1889,19 +1898,23 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             for (i = 0; i < num_ranks; i++) {
                 /* Assume that no ULT/tasklet revived and no stackable
                  * scheduler. */
+                int num_finishes =
+                    summaries[i].num_events[ABTXI_PROF_EVENT_THREAD_FINISH] +
+                    summaries[i].num_events[ABTXI_PROF_EVENT_TASK_FINISH];
                 double granularity =
                     ABTXI_prof_div_s(summaries[i].times_elapsed[1] * to_sec,
-                                     summaries[i].num_events
-                                         [ABTXI_PROF_EVENT_THREAD_FINISH]);
+                                     num_finishes);
                 table.values[row * table.num_columns] +=
                     granularity / num_ranks;
                 table.values[row * table.num_columns + i + 1] = granularity;
             }
             table.row_names[++row] = "Approx. ULT/tasklet throughput [/s]";
-            for (i = 0; i < table.num_columns; i++) {
+            for (i = 0; i < num_ranks; i++) {
                 double granularity =
-                    table.values[(row - 1) * table.num_columns + i];
-                table.values[row * table.num_columns + i] =
+                    table.values[(row - 1) * table.num_columns + i + 1];
+                table.values[row * table.num_columns] =
+                    ABTXI_prof_div_s(1.0, granularity) / num_ranks;
+                table.values[row * table.num_columns + i + 1] =
                     ABTXI_prof_div_s(1.0, granularity);
             }
             table.row_names[++row] = "Non-main scheduling ratio [%]";
@@ -2000,26 +2013,16 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             table.column_names[2] = "Max";
             /* Set the row names */
             table.row_names[++row] = "Precise ULT/tasklet granularity [s]";
-            ABTXI_PROF_T elapsed_sum =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_ELAPSED].sum +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_ELAPSED].sum;
-            uint64_t elapsed_cnt =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_ELAPSED].cnt +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_ELAPSED].cnt;
+            ABTXI_prof_wu_time t_elapsed;
+            memcpy(&t_elapsed, &wu_times[ABTXI_PROF_WU_TIME_THREAD_ELAPSED],
+                   sizeof(ABTXI_prof_wu_time));
+            ABTXI_prof_wu_time_merge(&t_elapsed,
+                                     &wu_times
+                                         [ABTXI_PROF_WU_TIME_TASK_ELAPSED]);
             table.values[row * 3 + 0] =
-                ABTXI_prof_div_s(elapsed_sum, elapsed_cnt) * to_sec;
-            table.values[row * 3 + 1] =
-                ABTXI_prof_min(wu_times[ABTXI_PROF_WU_TIME_THREAD_ELAPSED]
-                                   .min_val,
-                               wu_times[ABTXI_PROF_WU_TIME_TASK_ELAPSED]
-                                   .min_val) *
-                to_sec;
-            table.values[row * 3 + 2] =
-                ABTXI_prof_max(wu_times[ABTXI_PROF_WU_TIME_THREAD_ELAPSED]
-                                   .max_val,
-                               wu_times[ABTXI_PROF_WU_TIME_TASK_ELAPSED]
-                                   .max_val) *
-                to_sec;
+                ABTXI_prof_div_s(t_elapsed.sum, t_elapsed.cnt) * to_sec;
+            table.values[row * 3 + 1] = t_elapsed.min_val * to_sec;
+            table.values[row * 3 + 2] = t_elapsed.max_val * to_sec;
             table.row_names[++row] = "# of yield events per ULT";
             table.values[row * 3 + 0] =
                 ABTXI_prof_div_s((double)wu_counts
@@ -2055,100 +2058,53 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                     .max_val;
             table.row_names[++row] = "Active time per ULT/tasklet (last finish "
                                      "time - first excution time) [s]";
-            ABTXI_PROF_T active_sum =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_FIRST_RUN_LAST_FINISH].sum +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_FIRST_RUN_LAST_FINISH].sum;
-            uint64_t active_cnt =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_FIRST_RUN_LAST_FINISH].cnt +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_FIRST_RUN_LAST_FINISH].cnt;
+            ABTXI_prof_wu_time t_active;
+            memcpy(&t_active,
+                   &wu_times[ABTXI_PROF_WU_TIME_THREAD_FIRST_RUN_LAST_FINISH],
+                   sizeof(ABTXI_prof_wu_time));
+            ABTXI_prof_wu_time_merge(
+                &t_active,
+                &wu_times[ABTXI_PROF_WU_TIME_TASK_FIRST_RUN_LAST_FINISH]);
             table.values[row * 3 + 0] =
-                ABTXI_prof_div_s(active_sum, active_cnt) * to_sec;
-            table.values[row * 3 + 1] =
-                ABTXI_prof_min(
-                    wu_times[ABTXI_PROF_WU_TIME_THREAD_FIRST_RUN_LAST_FINISH]
-                        .min_val,
-                    wu_times[ABTXI_PROF_WU_TIME_TASK_FIRST_RUN_LAST_FINISH]
-                        .min_val) *
-                to_sec;
-            table.values[row * 3 + 2] =
-                ABTXI_prof_max(
-                    wu_times[ABTXI_PROF_WU_TIME_THREAD_FIRST_RUN_LAST_FINISH]
-                        .max_val,
-                    wu_times[ABTXI_PROF_WU_TIME_TASK_FIRST_RUN_LAST_FINISH]
-                        .max_val) *
-                to_sec;
+                ABTXI_prof_div_s(t_active.sum, t_active.cnt) * to_sec;
+            table.values[row * 3 + 1] = t_active.min_val * to_sec;
+            table.values[row * 3 + 2] = t_active.max_val * to_sec;
             table.row_names[++row] = "Execution delay per ULT/tasklet (first "
                                      "excution time - creation time) [s]";
-            ABTXI_PROF_T delay_sum =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_FIRST_RUN].sum +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_FIRST_RUN].sum;
-            uint64_t delay_cnt =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_FIRST_RUN].cnt +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_FIRST_RUN].cnt;
+            ABTXI_prof_wu_time t_delay;
+            memcpy(&t_delay,
+                   &wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_FIRST_RUN],
+                   sizeof(ABTXI_prof_wu_time));
+            ABTXI_prof_wu_time_merge(
+                &t_delay, &wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_FIRST_RUN]);
             table.values[row * 3 + 0] =
-                ABTXI_prof_div_s(delay_sum, delay_cnt) * to_sec;
-            table.values[row * 3 + 1] =
-                ABTXI_prof_min(wu_times
-                                   [ABTXI_PROF_WU_TIME_THREAD_CREATE_FIRST_RUN]
-                                       .min_val,
-                               wu_times
-                                   [ABTXI_PROF_WU_TIME_TASK_CREATE_FIRST_RUN]
-                                       .min_val) *
-                to_sec;
-            table.values[row * 3 + 2] =
-                ABTXI_prof_max(wu_times
-                                   [ABTXI_PROF_WU_TIME_THREAD_CREATE_FIRST_RUN]
-                                       .max_val,
-                               wu_times
-                                   [ABTXI_PROF_WU_TIME_TASK_CREATE_FIRST_RUN]
-                                       .max_val) *
-                to_sec;
+                ABTXI_prof_div_s(t_delay.sum, t_delay.cnt) * to_sec;
+            table.values[row * 3 + 1] = t_delay.min_val * to_sec;
+            table.values[row * 3 + 2] = t_delay.max_val * to_sec;
             table.row_names[++row] = "Completion time per ULT/tasklet (last "
                                      "finish time - creation time) [s]";
-            ABTXI_PROF_T comp_sum =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_LAST_FINISH].sum +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_LAST_FINISH].sum;
-            uint64_t comp_cnt =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_LAST_FINISH].cnt +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_LAST_FINISH].cnt;
+            ABTXI_prof_wu_time t_comp;
+            memcpy(&t_comp,
+                   &wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_LAST_FINISH],
+                   sizeof(ABTXI_prof_wu_time));
+            ABTXI_prof_wu_time_merge(
+                &t_comp, &wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_LAST_FINISH]);
             table.values[row * 3 + 0] =
-                ABTXI_prof_div_s(comp_sum, comp_cnt) * to_sec;
-            table.values[row * 3 + 1] =
-                ABTXI_prof_min(
-                    wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_LAST_FINISH]
-                        .min_val,
-                    wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_LAST_FINISH]
-                        .min_val) *
-                to_sec;
-            table.values[row * 3 + 2] =
-                ABTXI_prof_max(
-                    wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_LAST_FINISH]
-                        .max_val,
-                    wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_LAST_FINISH]
-                        .max_val) *
-                to_sec;
+                ABTXI_prof_div_s(t_comp.sum, t_comp.cnt) * to_sec;
+            table.values[row * 3 + 1] = t_comp.min_val * to_sec;
+            table.values[row * 3 + 2] = t_comp.max_val * to_sec;
             table.row_names[++row] =
                 "Lifetime per ULT/tasklet (free time - create time) [s]";
-            ABTXI_PROF_T life_sum =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_FREE].sum +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_FREE].sum;
-            uint64_t life_cnt =
-                wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_FREE].cnt +
-                wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_FREE].cnt;
+            ABTXI_prof_wu_time t_life;
+            memcpy(&t_life, &wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_FREE],
+                   sizeof(ABTXI_prof_wu_time));
+            ABTXI_prof_wu_time_merge(&t_life,
+                                     &wu_times
+                                         [ABTXI_PROF_WU_TIME_TASK_CREATE_FREE]);
             table.values[row * 3 + 0] =
-                ABTXI_prof_div_s(life_sum, life_cnt) * to_sec;
-            table.values[row * 3 + 1] =
-                ABTXI_prof_min(wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_FREE]
-                                   .min_val,
-                               wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_FREE]
-                                   .min_val) *
-                to_sec;
-            table.values[row * 3 + 2] =
-                ABTXI_prof_max(wu_times[ABTXI_PROF_WU_TIME_THREAD_CREATE_FREE]
-                                   .max_val,
-                               wu_times[ABTXI_PROF_WU_TIME_TASK_CREATE_FREE]
-                                   .max_val) *
-                to_sec;
+                ABTXI_prof_div_s(t_life.sum, t_life.cnt) * to_sec;
+            table.values[row * 3 + 1] = t_life.min_val * to_sec;
+            table.values[row * 3 + 2] = t_life.max_val * to_sec;
             if (print_mode & ABTX_PRINT_MODE_CSV) {
                 ABTXI_prof_print_table_dsv(&table, ", ", stream);
             } else {
