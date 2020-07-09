@@ -223,6 +223,49 @@ fn_fail:
     goto fn_exit;
 }
 
+/**
+ * @ingroup POOL
+ * @brief   Pop a unit from the target pool with wait
+ *
+ * \c ABT_pool_pop_wait pops a unit from a pool \c pool if a unit is in a pool;
+ * otherwise, it suspends an underlying execution stream and waits in a pool.
+ * \c time_secs directs how long \c ABT_pool_pop_wait suspends the underlying
+ * execution stream.  A work unit successfully popped from \c pool is returned
+ * via \c p_unit.  If no work unit is available, it returns ABT_UNIT_NULL.
+ *
+ * In most cases, \c ABT_pool_pop() is more efficient, but \c ABT_pool_pop_wait
+ * is useful in cases where users want to make execution streams active only
+ * when is available.
+ *
+ * @param[in]  pool       handle to the pool
+ * @param[out] p_unit     handle to the unit
+ * @param[in]  time_secs  duration of waiting time (seconds)
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABT_unit unit;
+
+    /* If called by an external thread, return an error. */
+    ABTI_CHECK_TRUE(ABTI_local_get_xstream() != NULL, ABT_ERR_INV_XSTREAM);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    unit = ABTI_pool_pop_wait(p_pool, time_secs);
+
+fn_exit:
+    *p_unit = unit;
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    unit = ABT_UNIT_NULL;
+    goto fn_exit;
+}
+
 int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
 {
     int abt_errno = ABT_SUCCESS;
@@ -571,6 +614,7 @@ int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->p_get_size = def->p_get_size;
     p_pool->p_push = def->p_push;
     p_pool->p_pop = def->p_pop;
+    p_pool->p_pop_wait = def->p_pop_wait;
     p_pool->p_pop_timedwait = def->p_pop_timedwait;
     p_pool->p_remove = def->p_remove;
     p_pool->p_free = def->p_free;

@@ -207,6 +207,16 @@ fn_fail:
 
 #endif /* ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK */
 
+static inline ABT_unit ABTI_pool_pop_wait(ABTI_pool *p_pool, double time_secs)
+{
+    ABT_unit unit;
+
+    unit = p_pool->p_pop_wait(ABTI_pool_get_handle(p_pool), time_secs);
+    LOG_DEBUG_POOL_POP(p_pool, unit);
+
+    return unit;
+}
+
 static inline ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool,
                                                double abstime_secs)
 {

@@ -12,6 +12,7 @@ static int pool_free(ABT_pool pool);
 static size_t pool_get_size(ABT_pool pool);
 static void pool_push(ABT_pool pool, ABT_unit unit);
 static ABT_unit pool_pop(ABT_pool pool);
+static ABT_unit pool_pop_wait(ABT_pool pool, double time_secs);
 static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs);
 static int pool_remove(ABT_pool pool, ABT_unit unit);
 static int pool_print_all(ABT_pool pool, void *arg,
@@ -48,6 +49,7 @@ int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def)
     p_def->p_get_size = pool_get_size;
     p_def->p_push = pool_push;
     p_def->p_pop = pool_pop;
+    p_def->p_pop_wait = pool_pop_wait;
     p_def->p_pop_timedwait = pool_pop_timedwait;
     p_def->p_remove = pool_remove;
     p_def->p_print_all = pool_print_all;
@@ -130,6 +132,65 @@ static void pool_push(ABT_pool pool, ABT_unit unit)
     ABTD_atomic_release_store_int(&p_unit->is_in_pool, 1);
     pthread_cond_signal(&p_data->cond);
     pthread_mutex_unlock(&p_data->mutex);
+}
+
+static ABT_unit pool_pop_wait(ABT_pool pool, double time_secs)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    data_t *p_data = pool_get_data_ptr(p_pool->data);
+    unit_t *p_unit = NULL;
+    ABT_unit h_unit = ABT_UNIT_NULL;
+
+    pthread_mutex_lock(&p_data->mutex);
+
+    if (!p_data->num_units) {
+#if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_sec += (time_t)time_secs;
+        ts.tv_nsec += (long)((time_secs - (time_t)time_secs) * 1e9);
+        if (ts.tv_nsec > 1e9) {
+            ts.tv_sec += 1;
+            ts.tv_nsec -= 1e9;
+        }
+        pthread_cond_timedwait(&p_data->cond, &p_data->mutex, &ts);
+#else
+        /* We cannot use pthread_cond_timedwait().  Let's use nanosleep()
+         * instead */
+        double start_time = ABTI_get_wtime();
+        while (ABTI_get_wtime() - start_time < time_secs) {
+            pthread_mutex_unlock(&p_data->mutex);
+            const int sleep_nsecs = 100;
+            struct timespec ts = { 0, sleep_nsecs };
+            nanosleep(&ts, NULL);
+            pthread_mutex_lock(&p_data->mutex);
+            if (p_data->num_units > 0)
+                break;
+        }
+#endif
+    }
+
+    if (p_data->num_units > 0) {
+        p_unit = p_data->p_head;
+        if (p_data->num_units == 1) {
+            p_data->p_head = NULL;
+            p_data->p_tail = NULL;
+        } else {
+            p_unit->p_prev->p_next = p_unit->p_next;
+            p_unit->p_next->p_prev = p_unit->p_prev;
+            p_data->p_head = p_unit->p_next;
+        }
+        p_data->num_units--;
+
+        p_unit->p_prev = NULL;
+        p_unit->p_next = NULL;
+        ABTD_atomic_release_store_int(&p_unit->is_in_pool, 0);
+
+        h_unit = (ABT_unit)p_unit;
+    }
+    pthread_mutex_unlock(&p_data->mutex);
+
+    return h_unit;
 }
 
 static inline void convert_double_sec_to_timespec(struct timespec *ts_out,
