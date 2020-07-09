@@ -389,7 +389,7 @@ static inline int ABTXI_prof_digit(double val)
 {
     if (-1.0e-10 < val && val < 1.0e-10) {
         /* Too small.  This is zero. */
-        return 0;
+        return -99;
     } else if (-1.0 < val && val < 1.0) {
         return -1 + ABTXI_prof_digit(val * 10.0);
     } else if (val < -10.0 || 10.0 < val) {
