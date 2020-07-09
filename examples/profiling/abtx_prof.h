@@ -1898,10 +1898,12 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             for (i = 0; i < num_ranks; i++) {
                 /* Assume that no ULT/tasklet revived and no stackable
                  * scheduler. */
+                int num_finishes =
+                    summaries[i].num_events[ABTXI_PROF_EVENT_THREAD_FINISH] +
+                    summaries[i].num_events[ABTXI_PROF_EVENT_TASK_FINISH];
                 double granularity =
                     ABTXI_prof_div_s(summaries[i].times_elapsed[1] * to_sec,
-                                     summaries[i].num_events
-                                         [ABTXI_PROF_EVENT_THREAD_FINISH]);
+                                     num_finishes);
                 table.values[row * table.num_columns] +=
                     granularity / num_ranks;
                 table.values[row * table.num_columns + i + 1] = granularity;
