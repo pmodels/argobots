@@ -44,7 +44,7 @@
 
 #define DEFAULT_NUM_XSTREAMS 4
 #define DEFAULT_N (8 * 1024 * 1024)
-#define DEFAULT_CUTOFF 64
+#define DEFAULT_CUTOFF 1024
 #define NUM_REPEATS 4
 
 ABT_pool *pools;
