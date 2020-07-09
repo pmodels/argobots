@@ -183,7 +183,7 @@ int main(int argc, char **argv)
         daxpy(&arg);
         double end_time = ABT_get_wtime();
 
-        if (prof_mode == 1 || prof_mode == 2) {
+        if (prof_init == ABT_SUCCESS && (prof_mode == 1 || prof_mode == 2)) {
             ABTX_prof_stop(prof_context);
         }
 
