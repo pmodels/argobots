@@ -58,17 +58,17 @@ typedef struct ABTI_mem_pool_global_pool {
                                  */
     ABTU_MEM_LARGEPAGE_TYPE
     lp_type_requests[4]; /* Requests for large page allocation */
-    __attribute__((aligned(ABT_CONFIG_STATIC_CACHELINE_SIZE)))
-    ABTI_sync_lifo bucket_lifo; /* LIFO of available buckets. */
-    __attribute__((aligned(ABT_CONFIG_STATIC_CACHELINE_SIZE)))
-    ABTI_sync_lifo mem_page_lifo; /* LIFO of non-empty pages. */
-    __attribute__((aligned(ABT_CONFIG_STATIC_CACHELINE_SIZE)))
-    ABTD_atomic_ptr p_mem_page_empty; /* List of empty pages. */
-    __attribute__((aligned(ABT_CONFIG_STATIC_CACHELINE_SIZE)))
-    /* List of the remaining headers that are not enough to create one
-     * complete bucket. This is protected by a spinlock. The number of headers
-     * is stored in partial_bucket.bucket_info.num_headers. */
-    ABTI_spinlock partial_bucket_lock;
+    ABTU_align_member_var(ABT_CONFIG_STATIC_CACHELINE_SIZE)
+        ABTI_sync_lifo bucket_lifo; /* LIFO of available buckets. */
+    ABTU_align_member_var(ABT_CONFIG_STATIC_CACHELINE_SIZE)
+        ABTI_sync_lifo mem_page_lifo; /* LIFO of non-empty pages. */
+    ABTU_align_member_var(ABT_CONFIG_STATIC_CACHELINE_SIZE)
+        ABTD_atomic_ptr p_mem_page_empty; /* List of empty pages. */
+    ABTU_align_member_var(ABT_CONFIG_STATIC_CACHELINE_SIZE)
+        /* List of the remaining headers that are not enough to create one
+         * complete bucket. This is protected by a spinlock. The number of
+         * headers is stored in partial_bucket.bucket_info.num_headers. */
+        ABTI_spinlock partial_bucket_lock;
     ABTI_mem_pool_header *partial_bucket;
 } ABTI_mem_pool_global_pool;
 

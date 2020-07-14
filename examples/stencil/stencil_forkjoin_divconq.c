@@ -61,9 +61,9 @@ void thread(void *arg)
 
     if (blockX_to - blockX_from == 1 && blockY_to - blockY_from == 1) {
         /* Run the stencil kernel. */
-        for (int y = blockY_from * blocksize; y < blockY_to * blocksize; y++) {
-            for (int x = blockX_from * blocksize; x < blockX_to * blocksize;
-                 x++) {
+        int x, y;
+        for (y = blockY_from * blocksize; y < blockY_to * blocksize; y++) {
+            for (x = blockX_from * blocksize; x < blockX_to * blocksize; x++) {
                 values_new[INDEX(x, y)] =
                     values_old[INDEX(x, y)] * (1.0 / 2.0) +
                     (values_old[INDEX(x + 1, y)] + values_old[INDEX(x - 1, y)] +
@@ -76,8 +76,9 @@ void thread(void *arg)
         /* Divide the region and create child threads (maximum four). */
         ABT_thread threads[4];
         thread_arg_t thread_args[4];
-        for (int ydiv = 0; ydiv < 2; ydiv++) {
-            for (int xdiv = 0; xdiv < 2; xdiv++) {
+        int xdiv, ydiv;
+        for (ydiv = 0; ydiv < 2; ydiv++) {
+            for (xdiv = 0; xdiv < 2; xdiv++) {
                 int index = xdiv + ydiv * 2;
                 thread_args[index].values_old = values_old;
                 thread_args[index].values_new = values_new;
@@ -119,8 +120,8 @@ void thread(void *arg)
             }
         }
         /* Join child threads. */
-        for (int ydiv = 0; ydiv < 2; ydiv++) {
-            for (int xdiv = 0; xdiv < 2; xdiv++) {
+        for (ydiv = 0; ydiv < 2; ydiv++) {
+            for (xdiv = 0; xdiv < 2; xdiv++) {
                 int index = xdiv + ydiv * 2;
                 if (thread_args[index].blockX_to -
                             thread_args[index].blockX_from !=
@@ -137,6 +138,7 @@ void thread(void *arg)
 
 int main(int argc, char **argv)
 {
+    int i, t;
     /* Read arguments. */
     int read_arg_ret =
         read_args(argc, argv, &num_blocksX, &num_blocksY, &blocksize,
@@ -162,17 +164,17 @@ int main(int argc, char **argv)
     ABT_xstream_self(&xstreams[0]);
 
     /* Create secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
     }
 
     /* Get default pools. */
-    for (int i = 0; i < num_xstreams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
     }
 
     /* Iterates stencil computation. */
-    for (int t = 0; t < num_iters; t++) {
+    for (t = 0; t < num_iters; t++) {
         thread_arg_t thread_arg;
         thread_arg.values_old = values_old;
         thread_arg.values_new = values_new;
@@ -190,7 +192,7 @@ int main(int argc, char **argv)
     }
 
     /* Join secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_join(xstreams[i]);
         ABT_xstream_free(&xstreams[i]);
     }

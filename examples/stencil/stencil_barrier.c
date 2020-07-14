@@ -37,6 +37,7 @@ typedef struct {
 
 void kernel(void *arg)
 {
+    int t;
     double *values_old = ((kernel_arg_t *)arg)->values_old;
     double *values_new = ((kernel_arg_t *)arg)->values_new;
     int blockX = ((kernel_arg_t *)arg)->blockX;
@@ -44,10 +45,10 @@ void kernel(void *arg)
     ABT_barrier barrier = ((kernel_arg_t *)arg)->barrier;
 
     /* Iterates stencil computation. */
-    for (int t = 0; t < num_iters; t++) {
-        for (int y = blockY * blocksize; y < (blockY + 1) * blocksize; y++) {
-            for (int x = blockX * blocksize; x < (blockX + 1) * blocksize;
-                 x++) {
+    for (t = 0; t < num_iters; t++) {
+        int x, y;
+        for (y = blockY * blocksize; y < (blockY + 1) * blocksize; y++) {
+            for (x = blockX * blocksize; x < (blockX + 1) * blocksize; x++) {
                 values_new[INDEX(x, y)] =
                     values_old[INDEX(x, y)] * (1.0 / 2.0) +
                     (values_old[INDEX(x + 1, y)] + values_old[INDEX(x - 1, y)] +
@@ -66,6 +67,7 @@ void kernel(void *arg)
 
 int main(int argc, char **argv)
 {
+    int i, blockX, blockY;
     /* Read arguments. */
     int read_arg_ret =
         read_args(argc, argv, &num_blocksX, &num_blocksY, &blocksize,
@@ -95,12 +97,12 @@ int main(int argc, char **argv)
     ABT_xstream_self(&xstreams[0]);
 
     /* Create secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
     }
 
     /* Get default pools. */
-    for (int i = 0; i < num_xstreams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
     }
 
@@ -109,8 +111,8 @@ int main(int argc, char **argv)
     ABT_barrier_create(num_blocksX * num_blocksY, &barrier);
 
     /* Create ULTs. */
-    for (int blockX = 0; blockX < num_blocksX; blockX++) {
-        for (int blockY = 0; blockY < num_blocksY; blockY++) {
+    for (blockX = 0; blockX < num_blocksX; blockX++) {
+        for (blockY = 0; blockY < num_blocksY; blockY++) {
             int index = blockX + blockY * num_blocksX;
             kernel_arg_t *p_kernel_arg = &kernel_args[index];
             p_kernel_arg->values_old = values_old;
@@ -125,8 +127,8 @@ int main(int argc, char **argv)
     }
 
     /* Join and free ULTs. */
-    for (int blockX = 0; blockX < num_blocksX; blockX++) {
-        for (int blockY = 0; blockY < num_blocksY; blockY++) {
+    for (blockX = 0; blockX < num_blocksX; blockX++) {
+        for (blockY = 0; blockY < num_blocksY; blockY++) {
             int index = blockX + blockY * num_blocksX;
             ABT_thread_free(&threads[index]);
         }
@@ -145,7 +147,7 @@ int main(int argc, char **argv)
     ABT_barrier_free(&barrier);
 
     /* Join secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_join(xstreams[i]);
         ABT_xstream_free(&xstreams[i]);
     }

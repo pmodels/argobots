@@ -215,7 +215,6 @@ void *pthread_test(void *arg)
     ATS_printf(1, "g_counter=%d\n", g_counter);
     assert(g_counter == 3);
 
-    pthread_exit(NULL);
     return NULL;
 }
 

@@ -194,9 +194,6 @@ void ATS_read_args(int argc, char **argv)
             case 'h':
                 ATS_print_help(argv[0]);
                 exit(EXIT_SUCCESS);
-                break;
-            default:
-                break;
         }
     }
 }

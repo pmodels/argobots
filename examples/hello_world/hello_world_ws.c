@@ -34,6 +34,7 @@ void hello_world(void *arg)
 
 int main(int argc, char **argv)
 {
+    int i, j;
     /* Read arguments. */
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
@@ -70,15 +71,15 @@ int main(int argc, char **argv)
     ABT_init(argc, argv);
 
     /* Create pools. */
-    for (int i = 0; i < num_xstreams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE,
                               &pools[i]);
     }
 
     /* Create schedulers. */
-    for (int i = 0; i < num_xstreams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         ABT_pool *tmp = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
-        for (int j = 0; j < num_xstreams; j++) {
+        for (j = 0; j < num_xstreams; j++) {
             tmp[j] = pools[(i + j) % num_xstreams];
         }
         ABT_sched_create_basic(ABT_SCHED_DEFAULT, num_xstreams, tmp,
@@ -91,12 +92,12 @@ int main(int argc, char **argv)
     ABT_xstream_set_main_sched(xstreams[0], scheds[0]);
 
     /* Create secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create(scheds[i], &xstreams[i]);
     }
 
     /* Create ULTs. */
-    for (int i = 0; i < num_threads; i++) {
+    for (i = 0; i < num_threads; i++) {
         int pool_id = i % num_xstreams;
         thread_args[i].tid = i;
         ABT_thread_create(pools[pool_id], hello_world, &thread_args[i],
@@ -104,12 +105,12 @@ int main(int argc, char **argv)
     }
 
     /* Join and free ULTs. */
-    for (int i = 0; i < num_threads; i++) {
+    for (i = 0; i < num_threads; i++) {
         ABT_thread_free(&threads[i]);
     }
 
     /* Join secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_join(xstreams[i]);
         ABT_xstream_free(&xstreams[i]);
     }

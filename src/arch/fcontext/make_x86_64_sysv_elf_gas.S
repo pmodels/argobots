@@ -72,4 +72,8 @@ finish:
 .size make_fcontext,.-make_fcontext
 
 /* Mark that we don't need executable stack. */
+#ifndef __SUNPRO_C
 .section .note.GNU-stack,"",%progbits
+#else
+/* Solaris assembler does not recognize it.  Let's ignore so far. */
+#endif

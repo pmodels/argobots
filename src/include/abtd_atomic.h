@@ -646,7 +646,13 @@ static inline ABT_bool
 ABTD_atomic_relaxed_load_bool(const ABTD_atomic_bool *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED) ? ABT_TRUE : ABT_FALSE;
+#else
+    /* __atomic_load_n() takes a non-const pointer. */
+    return __atomic_load_n((uint8_t *)&ptr->val, __ATOMIC_RELAXED) ? ABT_TRUE
+                                                                   : ABT_FALSE;
+#endif
 #else
     return (*(volatile uint8_t *)&ptr->val) ? ABT_TRUE : ABT_FALSE;
 #endif
@@ -655,7 +661,11 @@ ABTD_atomic_relaxed_load_bool(const ABTD_atomic_bool *ptr)
 static inline int ABTD_atomic_relaxed_load_int(const ABTD_atomic_int *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
+#else
+    return __atomic_load_n((int *)&ptr->val, __ATOMIC_RELAXED);
+#endif
 #else
     return *(volatile int *)&ptr->val;
 #endif
@@ -665,7 +675,11 @@ static inline int32_t
 ABTD_atomic_relaxed_load_int32(const ABTD_atomic_int32 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
+#else
+    return __atomic_load_n((int32_t *)&ptr->val, __ATOMIC_RELAXED);
+#endif
 #else
     return *(volatile int32_t *)&ptr->val;
 #endif
@@ -675,7 +689,11 @@ static inline uint32_t
 ABTD_atomic_relaxed_load_uint32(const ABTD_atomic_uint32 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
+#else
+    return __atomic_load_n((uint32_t *)&ptr->val, __ATOMIC_RELAXED);
+#endif
 #else
     return *(volatile uint32_t *)&ptr->val;
 #endif
@@ -685,7 +703,11 @@ static inline int64_t
 ABTD_atomic_relaxed_load_int64(const ABTD_atomic_int64 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
+#else
+    return __atomic_load_n((int64_t *)&ptr->val, __ATOMIC_RELAXED);
+#endif
 #else
     return *(volatile int64_t *)&ptr->val;
 #endif
@@ -696,7 +718,11 @@ ABTD_atomic_relaxed_load_uint64(const ABTD_atomic_uint64 *ptr)
 {
     /* return 0 if this test_and_set succeeds to set a value. */
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
+#else
+    return __atomic_load_n((uint64_t *)&ptr->val, __ATOMIC_RELAXED);
+#endif
 #else
     return *(volatile uint64_t *)&ptr->val;
 #endif
@@ -706,7 +732,11 @@ static inline void *ABTD_atomic_relaxed_load_ptr(const ABTD_atomic_ptr *ptr)
 {
     /* return 0 if this test_and_set succeeds to set a value. */
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_RELAXED);
+#else
+    return __atomic_load_n((void **)&ptr->val, __ATOMIC_RELAXED);
+#endif
 #else
     return *(void *volatile *)&ptr->val;
 #endif
@@ -716,7 +746,12 @@ static inline ABT_bool
 ABTD_atomic_acquire_load_bool(const ABTD_atomic_bool *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE) ? ABT_TRUE : ABT_FALSE;
+#else
+    return __atomic_load_n((uint8_t *)&ptr->val, __ATOMIC_ACQUIRE) ? ABT_TRUE
+                                                                   : ABT_FALSE;
+#endif
 #else
     __sync_synchronize();
     ABT_bool val = *(volatile uint8_t *)&ptr->val ? ABT_TRUE : ABT_FALSE;
@@ -728,7 +763,11 @@ ABTD_atomic_acquire_load_bool(const ABTD_atomic_bool *ptr)
 static inline int ABTD_atomic_acquire_load_int(const ABTD_atomic_int *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
+#else
+    return __atomic_load_n((int *)&ptr->val, __ATOMIC_ACQUIRE);
+#endif
 #else
     __sync_synchronize();
     int val = *(volatile int *)&ptr->val;
@@ -741,7 +780,11 @@ static inline int32_t
 ABTD_atomic_acquire_load_int32(const ABTD_atomic_int32 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
+#else
+    return __atomic_load_n((int32_t *)&ptr->val, __ATOMIC_ACQUIRE);
+#endif
 #else
     __sync_synchronize();
     int32_t val = *(volatile int32_t *)&ptr->val;
@@ -754,7 +797,11 @@ static inline uint32_t
 ABTD_atomic_acquire_load_uint32(const ABTD_atomic_uint32 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
+#else
+    return __atomic_load_n((uint32_t *)&ptr->val, __ATOMIC_ACQUIRE);
+#endif
 #else
     __sync_synchronize();
     uint32_t val = *(volatile uint32_t *)&ptr->val;
@@ -767,7 +814,11 @@ static inline int64_t
 ABTD_atomic_acquire_load_int64(const ABTD_atomic_int64 *ptr)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
+#else
+    return __atomic_load_n((int64_t *)&ptr->val, __ATOMIC_ACQUIRE);
+#endif
 #else
     __sync_synchronize();
     int64_t val = *(volatile int64_t *)&ptr->val;
@@ -781,7 +832,11 @@ ABTD_atomic_acquire_load_uint64(const ABTD_atomic_uint64 *ptr)
 {
     /* return 0 if this test_and_set succeeds to set a value. */
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
+#else
+    return __atomic_load_n((uint64_t *)&ptr->val, __ATOMIC_ACQUIRE);
+#endif
 #else
     __sync_synchronize();
     uint64_t val = *(volatile uint64_t *)&ptr->val;
@@ -794,7 +849,11 @@ static inline void *ABTD_atomic_acquire_load_ptr(const ABTD_atomic_ptr *ptr)
 {
     /* return 0 if this test_and_set succeeds to set a value. */
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     return __atomic_load_n(&ptr->val, __ATOMIC_ACQUIRE);
+#else
+    return __atomic_load_n((void **)&ptr->val, __ATOMIC_ACQUIRE);
+#endif
 #else
     __sync_synchronize();
     void *val = *(void *volatile *)&ptr->val;
@@ -1121,8 +1180,13 @@ static inline void ABTD_atomic_relaxed_load_non_atomic_tagged_ptr(
     const ABTD_atomic_tagged_ptr *tagged_ptr, void **p_ptr, size_t *p_tag)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     *p_ptr = __atomic_load_n(&tagged_ptr->ptr, __ATOMIC_RELAXED);
     *p_tag = __atomic_load_n(&tagged_ptr->tag, __ATOMIC_RELAXED);
+#else
+    *p_ptr = __atomic_load_n((void **)&tagged_ptr->ptr, __ATOMIC_RELAXED);
+    *p_tag = __atomic_load_n((size_t *)&tagged_ptr->tag, __ATOMIC_RELAXED);
+#endif
 #else
     *p_ptr = *(void *volatile *)&tagged_ptr->ptr;
     *p_tag = *(volatile size_t *)&tagged_ptr->tag;
@@ -1145,8 +1209,13 @@ static inline void ABTD_atomic_acquire_load_non_atomic_tagged_ptr(
     const ABTD_atomic_tagged_ptr *tagged_ptr, void **p_ptr, size_t *p_tag)
 {
 #ifdef ABT_CONFIG_HAVE_ATOMIC_BUILTIN
+#ifndef __SUNPRO_C
     *p_ptr = __atomic_load_n(&tagged_ptr->ptr, __ATOMIC_ACQUIRE);
     *p_tag = __atomic_load_n(&tagged_ptr->tag, __ATOMIC_ACQUIRE);
+#else
+    *p_ptr = __atomic_load_n((void **)&tagged_ptr->ptr, __ATOMIC_ACQUIRE);
+    *p_tag = __atomic_load_n((size_t *)&tagged_ptr->tag, __ATOMIC_ACQUIRE);
+#endif
 #else
     __sync_synchronize();
     *p_ptr = *(void *volatile *)&tagged_ptr->ptr;

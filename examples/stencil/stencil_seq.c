@@ -33,12 +33,13 @@ typedef struct {
 
 void kernel(void *arg)
 {
+    int x, y;
     double *values_old = ((kernel_arg_t *)arg)->values_old;
     double *values_new = ((kernel_arg_t *)arg)->values_new;
     int blockX = ((kernel_arg_t *)arg)->blockX;
     int blockY = ((kernel_arg_t *)arg)->blockY;
-    for (int y = blockY * blocksize; y < (blockY + 1) * blocksize; y++) {
-        for (int x = blockX * blocksize; x < (blockX + 1) * blocksize; x++) {
+    for (y = blockY * blocksize; y < (blockY + 1) * blocksize; y++) {
+        for (x = blockX * blocksize; x < (blockX + 1) * blocksize; x++) {
             values_new[INDEX(x, y)] =
                 values_old[INDEX(x, y)] * (1.0 / 2.0) +
                 (values_old[INDEX(x + 1, y)] + values_old[INDEX(x - 1, y)] +
@@ -50,6 +51,7 @@ void kernel(void *arg)
 
 int main(int argc, char **argv)
 {
+    int t;
     /* Read arguments. */
     int read_arg_ret =
         read_args(argc, argv, &num_blocksX, &num_blocksY, &blocksize,
@@ -68,9 +70,10 @@ int main(int argc, char **argv)
     init_values(values_old, values_new, num_blocksX, num_blocksY, blocksize);
 
     /* Main iteration loop. */
-    for (int t = 0; t < num_iters; t++) {
-        for (int blockX = 0; blockX < num_blocksX; blockX++) {
-            for (int blockY = 0; blockY < num_blocksY; blockY++) {
+    for (t = 0; t < num_iters; t++) {
+        int blockX, blockY;
+        for (blockX = 0; blockX < num_blocksX; blockX++) {
+            for (blockY = 0; blockY < num_blocksY; blockY++) {
                 kernel_arg_t *p_kernel_arg =
                     &kernel_args[blockX + blockY * num_blocksX];
                 p_kernel_arg->values_old = values_old;

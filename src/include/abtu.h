@@ -32,6 +32,21 @@
          ? ABTU_alignof(long double)                                           \
          : ABTU_alignof(long long))
 
+/*
+ * An attribute to hint an alignment of a member variable.
+ * Usage:
+ * struct X {
+ *   void *obj_1;
+ *   ABTU_align_member_var(64)
+ *   void *obj_2;
+ * };
+ */
+#ifndef __SUNPRO_C
+#define ABTU_align_member_var(size) __attribute__((aligned(size)))
+#else
+/* Sun Studio does not support it. */
+#define ABTU_align_member_var(size)
+#endif
 /* Utility Functions */
 
 static inline void *ABTU_memalign(size_t alignment, size_t size)
