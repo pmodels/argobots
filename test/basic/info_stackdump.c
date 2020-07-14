@@ -54,7 +54,8 @@ void thread_func(void *arg)
     ATS_printf(1, "[U%d:E%d] START\n", t_arg->id, rank);
 
     /* Write data into a stack */
-    t_arg->dummy_ptr = (int *)alloca(sizeof(int) * 128);
+    int stack_data[128];
+    t_arg->dummy_ptr = stack_data;
     for (i = 0; i < 128; i += 2) {
         t_arg->dummy_ptr[i + 0] = id;
         t_arg->dummy_ptr[i + 1] = rank;
