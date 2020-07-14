@@ -4,7 +4,7 @@
 #
 
 AM_CPPFLAGS = $(DEPS_CPPFLAGS)
-AM_CPPFLAGS += -I$(top_builddir)/src/include -std=gnu99
+AM_CPPFLAGS += -I$(top_builddir)/src/include
 AM_LDFLAGS = $(DEPS_LDFLAGS)
 
 libabt = $(top_builddir)/src/libabt.la

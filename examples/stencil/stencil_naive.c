@@ -24,6 +24,7 @@ int validate;
 
 int main(int argc, char **argv)
 {
+    int t;
     /* Read arguments. */
     int read_arg_ret =
         read_args(argc, argv, &num_blocksX, &num_blocksY, &blocksize,
@@ -40,9 +41,10 @@ int main(int argc, char **argv)
     init_values(values_old, values_new, num_blocksX, num_blocksY, blocksize);
 
     /* Main iteration loop. */
-    for (int t = 0; t < num_iters; t++) {
-        for (int y = 0; y < num_blocksY * blocksize; y++) {
-            for (int x = 0; x < num_blocksX * blocksize; x++) {
+    for (t = 0; t < num_iters; t++) {
+        int x, y;
+        for (y = 0; y < num_blocksY * blocksize; y++) {
+            for (x = 0; x < num_blocksX * blocksize; x++) {
                 values_new[INDEX(x, y)] =
                     values_old[INDEX(x, y)] * (1.0 / 2.0) +
                     (values_old[INDEX(x + 1, y)] + values_old[INDEX(x - 1, y)] +

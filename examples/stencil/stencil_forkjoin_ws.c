@@ -37,12 +37,13 @@ typedef struct {
 
 void kernel(void *arg)
 {
+    int x, y;
     double *values_old = ((kernel_arg_t *)arg)->values_old;
     double *values_new = ((kernel_arg_t *)arg)->values_new;
     int blockX = ((kernel_arg_t *)arg)->blockX;
     int blockY = ((kernel_arg_t *)arg)->blockY;
-    for (int y = blockY * blocksize; y < (blockY + 1) * blocksize; y++) {
-        for (int x = blockX * blocksize; x < (blockX + 1) * blocksize; x++) {
+    for (y = blockY * blocksize; y < (blockY + 1) * blocksize; y++) {
+        for (x = blockX * blocksize; x < (blockX + 1) * blocksize; x++) {
             values_new[INDEX(x, y)] =
                 values_old[INDEX(x, y)] * (1.0 / 2.0) +
                 (values_old[INDEX(x + 1, y)] + values_old[INDEX(x - 1, y)] +
@@ -54,6 +55,7 @@ void kernel(void *arg)
 
 int main(int argc, char **argv)
 {
+    int i, j, t;
     /* Read arguments. */
     int read_arg_ret =
         read_args(argc, argv, &num_blocksX, &num_blocksY, &blocksize,
@@ -81,15 +83,15 @@ int main(int argc, char **argv)
     ABT_init(argc, argv);
 
     /* Create pools. */
-    for (int i = 0; i < num_xstreams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE,
                               &pools[i]);
     }
 
     /* Create schedulers. */
-    for (int i = 0; i < num_xstreams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         ABT_pool *tmp = (ABT_pool *)malloc(sizeof(ABT_pool) * num_xstreams);
-        for (int j = 0; j < num_xstreams; j++) {
+        for (j = 0; j < num_xstreams; j++) {
             tmp[j] = pools[(i + j) % num_xstreams];
         }
         ABT_sched_create_basic(ABT_SCHED_DEFAULT, num_xstreams, tmp,
@@ -102,15 +104,16 @@ int main(int argc, char **argv)
     ABT_xstream_set_main_sched(xstreams[0], scheds[0]);
 
     /* Create secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create(scheds[i], &xstreams[i]);
     }
 
     /* Iterates stencil computation. */
-    for (int t = 0; t < num_iters; t++) {
+    for (t = 0; t < num_iters; t++) {
         /* Create ULTs. */
-        for (int blockX = 0; blockX < num_blocksX; blockX++) {
-            for (int blockY = 0; blockY < num_blocksY; blockY++) {
+        int blockX, blockY;
+        for (blockX = 0; blockX < num_blocksX; blockX++) {
+            for (blockY = 0; blockY < num_blocksY; blockY++) {
                 int index = blockX + blockY * num_blocksX;
                 kernel_arg_t *p_kernel_arg = &kernel_args[index];
                 p_kernel_arg->values_old = values_old;
@@ -123,8 +126,8 @@ int main(int argc, char **argv)
             }
         }
         /* Join and free ULTs. */
-        for (int blockX = 0; blockX < num_blocksX; blockX++) {
-            for (int blockY = 0; blockY < num_blocksY; blockY++) {
+        for (blockX = 0; blockX < num_blocksX; blockX++) {
+            for (blockY = 0; blockY < num_blocksY; blockY++) {
                 int index = blockX + blockY * num_blocksX;
                 ABT_thread_free(&threads[index]);
             }
@@ -137,7 +140,7 @@ int main(int argc, char **argv)
     }
 
     /* Join secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_join(xstreams[i]);
         ABT_xstream_free(&xstreams[i]);
     }

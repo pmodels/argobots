@@ -30,6 +30,7 @@ void hello_world(void *arg)
 
 int main(int argc, char **argv)
 {
+    int i;
     /* Read arguments. */
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int num_threads = DEFAULT_NUM_THREADS;
@@ -68,17 +69,17 @@ int main(int argc, char **argv)
     ABT_xstream_self(&xstreams[0]);
 
     /* Create secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
     }
 
     /* Get default pools. */
-    for (int i = 0; i < num_xstreams; i++) {
+    for (i = 0; i < num_xstreams; i++) {
         ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
     }
 
     /* Create ULTs. */
-    for (int i = 0; i < num_threads; i++) {
+    for (i = 0; i < num_threads; i++) {
         int pool_id = i % num_xstreams;
         thread_args[i].tid = i;
         ABT_thread_create(pools[pool_id], hello_world, &thread_args[i],
@@ -86,12 +87,12 @@ int main(int argc, char **argv)
     }
 
     /* Join and free ULTs. */
-    for (int i = 0; i < num_threads; i++) {
+    for (i = 0; i < num_threads; i++) {
         ABT_thread_free(&threads[i]);
     }
 
     /* Join and free secondary execution streams. */
-    for (int i = 1; i < num_xstreams; i++) {
+    for (i = 1; i < num_xstreams; i++) {
         ABT_xstream_join(xstreams[i]);
         ABT_xstream_free(&xstreams[i]);
     }
