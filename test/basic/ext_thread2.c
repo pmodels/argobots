@@ -52,14 +52,12 @@ void create_threads()
 void *pthread_join_threads(void *arg)
 {
     join_threads();
-    pthread_exit(NULL);
     return NULL;
 }
 
 void *pthread_create_threads(void *arg)
 {
     create_threads();
-    pthread_exit(NULL);
     return NULL;
 }
 

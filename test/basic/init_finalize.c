@@ -30,7 +30,6 @@ static void *init_test(void *arg)
     ret = ABT_initialized();
     ATS_ERROR(ret, "ABT_initialized");
 
-    pthread_exit(NULL);
     return NULL;
 }
 

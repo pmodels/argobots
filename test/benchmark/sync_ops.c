@@ -109,7 +109,6 @@ void launch_test(void *arg)
         default:
             fprintf(stderr, "Unknown test kind!\n");
             exit(EXIT_FAILURE);
-            break;
     }
 
     threads = (ABT_thread *)malloc(num_threads * sizeof(ABT_thread));

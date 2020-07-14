@@ -115,7 +115,6 @@ void *pthread_hello(void *arg)
 
     ATS_printf(1, "pthread: external thread\n");
 
-    pthread_exit(NULL);
     return NULL;
 }
 
