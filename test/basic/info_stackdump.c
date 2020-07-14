@@ -12,7 +12,7 @@
 #define DEFAULT_NUM_XSTREAMS 4
 #define DEFAULT_NUM_THREADS 4
 
-int g_go = 0;
+volatile int g_go = 0;
 
 void callback_f(ABT_bool timeout, void *arg)
 {

@@ -12,8 +12,8 @@
 #define DEFAULT_NUM_XSTREAMS 4
 #define DEFAULT_NUM_THREADS 8
 
-int g_counter = 0;
-int g_stop = 0;
+volatile int g_counter = 0;
+volatile int g_stop = 0;
 
 void callback_f(ABT_bool timeout, void *arg)
 {
