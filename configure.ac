@@ -423,7 +423,7 @@ if test "x$enable_perf_opt" = "xyes"; then
     CFLAGS="$CFLAGS -O3"
     CXXFLAGS="$CXXFLAGS -O3"
     CCASFLAGS="$CCASFLAGS -O3"
-    if test "$CC" != "xlc" -a "$CC" != "suncc"; then
+    if test "$CC" != "xlc" -a "$CC" != "suncc" -a "$CC" != "pgcc" ; then
         CFLAGS="$CFLAGS -ftls-model=initial-exec"
         CXXFLAGS="$CXXFLAGS -ftls-model=initial-exec"
         CCASFLAGS="$CCASFLAGS -ftls-model=initial-exec"
