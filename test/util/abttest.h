@@ -153,4 +153,42 @@ static inline uint64_t ATS_get_cycles()
 }
 #endif
 
+#if defined(__PGIC__) || defined(__ibmxl__)
+
+/* Those two compilers have implementation issues in __atomic built-ins. */
+static inline int ATS_atomic_load(volatile int *p_val)
+{
+    __sync_synchronize();
+    int val = *p_val;
+    __sync_synchronize();
+    return val;
+}
+static inline void ATS_atomic_store(volatile int *p_val, int val)
+{
+    __sync_synchronize();
+    *p_val = val;
+    __sync_synchronize();
+}
+static inline int ATS_atomic_fetch_add(volatile int *p_val, int val)
+{
+    return __sync_fetch_and_add(p_val, val);
+}
+
+#else
+
+static inline int ATS_atomic_load(volatile int *p_val)
+{
+    return __atomic_load_n(p_val, __ATOMIC_ACQUIRE);
+}
+static inline void ATS_atomic_store(volatile int *p_val, int val)
+{
+    __atomic_store_n(p_val, val, __ATOMIC_RELEASE);
+}
+static inline int ATS_atomic_fetch_add(volatile int *p_val, int val)
+{
+    return __atomic_fetch_add(p_val, val, __ATOMIC_ACQ_REL);
+}
+
+#endif
+
 #endif /* ABTTEST_H_INCLUDED */

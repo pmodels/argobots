@@ -18,8 +18,7 @@ void callback_f(ABT_bool timeout, void *arg)
 {
     assert(timeout == ABT_FALSE);
     assert((intptr_t)arg == (intptr_t)1);
-    g_go = 1;
-    __sync_synchronize();
+    ATS_atomic_store(&g_go, 1);
 }
 
 void signal_handler(int sig)
@@ -70,8 +69,7 @@ void thread_func(void *arg)
         raise(SIGUSR1);
     }
 
-    while (g_go == 0) {
-        __sync_synchronize();
+    while (ATS_atomic_load(&g_go) == 0) {
         ABT_thread_yield();
     }
 }

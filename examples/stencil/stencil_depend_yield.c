@@ -47,8 +47,6 @@ typedef struct {
     int *neighbor_progress_flags[4];
 } kernel_arg_t;
 
-void atomic_init(void);
-void atomic_finalize(void);
 int atomic_acquire_load(int *ptr);
 void atomic_release_store(int *ptr, int val);
 
@@ -125,7 +123,6 @@ int main(int argc, char **argv)
 
     /* Initialize Argobots and atomic functionality. */
     ABT_init(argc, argv);
-    atomic_init();
 
     /* Get a primary execution stream. */
     ABT_xstream_self(&xstreams[0]);
@@ -195,7 +192,6 @@ int main(int argc, char **argv)
     }
 
     /* Finalize Argobots and atomic functionality. */
-    atomic_finalize();
     ABT_finalize();
 
     /* Validate results.  values_old has the latest values. */
@@ -223,33 +219,17 @@ int main(int argc, char **argv)
     return 0;
 }
 
-#if !(defined(__GNUC__) && defined(__GNUC_MINOR__) &&                          \
-      (__GNUC__ * 100 + __GNUC_MINOR__ >= 407))
-/* GCC version is >= 4.7, so it supports __atomic. */
-#define USE_ABT_MUTEX
-ABT_mutex atomic_mutex;
+#if defined(__PGIC__) || defined(__ibmxl__)
+#define USE_SYNC_BUILTIN
 #endif
-
-void atomic_init(void)
-{
-#ifdef USE_ABT_MUTEX
-    ABT_mutex_create(&atomic_mutex);
-#endif
-}
-
-void atomic_finalize(void)
-{
-#ifdef USE_ABT_MUTEX
-    ABT_mutex_free(&atomic_mutex);
-#endif
-}
 
 int atomic_acquire_load(int *ptr)
 {
-#ifdef USE_ABT_MUTEX
-    ABT_mutex_spinlock(atomic_mutex);
-    int ret = *ptr;
-    ABT_mutex_unlock(atomic_mutex);
+#ifdef USE_SYNC_BUILTIN
+    int ret;
+    __sync_synchronize();
+    ret = *(volatile int *)ptr;
+    __sync_synchronize();
     return ret;
 #else
     return __atomic_load_n(ptr, __ATOMIC_ACQUIRE);
@@ -258,10 +238,10 @@ int atomic_acquire_load(int *ptr)
 
 void atomic_release_store(int *ptr, int val)
 {
-#ifdef USE_ABT_MUTEX
-    ABT_mutex_spinlock(atomic_mutex);
-    *ptr = val;
-    ABT_mutex_unlock(atomic_mutex);
+#ifdef USE_SYNC_BUILTIN
+    __sync_synchronize();
+    *(volatile int *)ptr = val;
+    __sync_synchronize();
 #else
     __atomic_store_n(ptr, val, __ATOMIC_RELEASE);
 #endif

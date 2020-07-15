@@ -20,7 +20,8 @@ int num_threads;
 #define DEFAULT_NUM_THREADS 4
 #define NUM_LEAF_THREADS 8
 ABT_pool *pools;
-int atomic_val = 0;
+
+volatile int atomic_val = 0;
 #define ATOMIC_VAL_SUM (num_threads * num_xstreams * NUM_LEAF_THREADS)
 
 void leaf_func(void *arg)
@@ -28,7 +29,7 @@ void leaf_func(void *arg)
     /* Meaningless yield to check the robustness. */
     int ret = ABT_thread_yield();
     ATS_ERROR(ret, "ABT_thread_yield");
-    __atomic_fetch_add(&atomic_val, 1, __ATOMIC_ACQ_REL);
+    ATS_atomic_fetch_add(&atomic_val, 1);
 }
 
 void root_func(void *arg)
@@ -40,7 +41,7 @@ void root_func(void *arg)
                                 (void *)(size_t)i, ABT_THREAD_ATTR_NULL, NULL);
         ATS_ERROR(ret, "ABT_thread_create");
     }
-    while (__atomic_load_n(&atomic_val, __ATOMIC_ACQUIRE) != ATOMIC_VAL_SUM) {
+    while (ATS_atomic_load(&atomic_val) != ATOMIC_VAL_SUM) {
         int rank = 0;
         ret = ABT_xstream_self_rank(&rank);
         ATS_ERROR(ret, "ABT_xstream_self_rank");

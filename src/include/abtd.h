@@ -6,7 +6,7 @@
 #ifndef ABTD_H_INCLUDED
 #define ABTD_H_INCLUDED
 
-#define __USE_GNU
+#define __USE_GNU 1
 #include <pthread.h>
 #include "abtd_atomic.h"
 #include "abtd_context.h"

@@ -423,7 +423,7 @@ if test "x$enable_perf_opt" = "xyes"; then
     CFLAGS="$CFLAGS -O3"
     CXXFLAGS="$CXXFLAGS -O3"
     CCASFLAGS="$CCASFLAGS -O3"
-    if test "$CC" != "xlc" -a "$CC" != "suncc"; then
+    if test "$CC" != "xlc" -a "$CC" != "suncc" -a "$CC" != "pgcc" ; then
         CFLAGS="$CFLAGS -ftls-model=initial-exec"
         CXXFLAGS="$CXXFLAGS -ftls-model=initial-exec"
         CCASFLAGS="$CCASFLAGS -ftls-model=initial-exec"
@@ -652,7 +652,9 @@ AC_TRY_COMPILE(
 )
 # __atomic is broken in XLC-16.1.1, so use __sync as a fallback
 # See https://github.com/pmodels/argobots/issues/162 for details.
-if test "$CC" != "xlc" -a "x$have_atomic_builtin" = "xyes" ; then
+# __atomic is broken in PGI-20.1-0, so use __sunc as a fallback
+# See https://github.com/pmodels/argobots/issues/211 for details
+if test "$CC" != "xlc" -a "$CC" != "pgcc" -a "x$have_atomic_builtin" = "xyes" ; then
     AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_BUILTIN, 1,
               [Define if __atomic builtins are supported])
 fi
@@ -829,6 +831,13 @@ int main() {
 ], [AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_INT128, 1, [Define if 128-bit CAS is supported.])])
 
 AM_CONDITIONAL([ABT_USE_INT128_ATOMIC], [test "x$ABT_CONFIG_HAVE_ATOMIC_INT128" != "x"])
+
+# set compiler-specific flags
+if test x"$CC" = x"pgcc" ; then
+  # Suppress PGI warning
+  # #546-D: transfer of control bypasses initialization
+  PAC_APPEND_FLAG([--diag_suppress=546], [CFLAGS])
+fi
 
 dnl ----------------------------------------------------------------------------
 
