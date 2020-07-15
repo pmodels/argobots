@@ -19,8 +19,7 @@ void callback_f(ABT_bool timeout, void *arg)
 {
     assert(timeout == ABT_TRUE);
     assert((intptr_t)arg == (intptr_t)1);
-    g_stop = 0;
-    __sync_synchronize();
+    ATS_atomic_store(&g_stop, 0);
 }
 
 void signal_handler(int sig)
@@ -71,20 +70,18 @@ void thread_func(void *arg)
 
     if (t_arg->issue_signal) {
         ATS_printf(1, "[U%d:E%d] Raise SIGUSR1\n", t_arg->id, rank);
-        g_stop = 1;
-        while (g_counter < t_arg->num_xstreams - 2) {
+        ATS_atomic_store(&g_stop, 1);
+        while (ATS_atomic_load(&g_counter) < t_arg->num_xstreams - 2) {
             /* ensure that all the secondary execution streams are waiting in
              * the following busy loop. */
-            __sync_synchronize();
         }
         raise(SIGUSR1);
     }
 
     if (t_arg->stop) {
-        __sync_add_and_fetch(&g_counter, 1);
-        while (g_stop == 1) {
-            __sync_synchronize();
-        }
+        ATS_atomic_fetch_add(&g_counter, 1);
+        while (ATS_atomic_load(&g_stop) == 1)
+            ;
     }
 }
 

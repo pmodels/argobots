@@ -173,6 +173,12 @@ static int ABTX_prof_finalize(ABTX_prof_context context);
 #define ABTXI_prof_always_inline inline
 #endif
 
+#undef ABTXI_PROF_USE_SYNC_BUILTIN
+#if defined(__PGIC__) || defined(__ibmxl__)
+/* Their __atomic implementations are not trustworthy.  See #162 and #211. */
+#define ABTXI_PROF_USE_SYNC_BUILTIN
+#endif
+
 #ifndef ABTXI_PROF_MEM_BLOCK_SIZE
 #define ABTXI_PROF_MEM_BLOCK_SIZE (32 * 1024) /* bytes */
 #endif
@@ -472,7 +478,7 @@ typedef struct ABTXI_prof_str_mem ABTXI_prof_str_mem;
 typedef struct ABTXI_prof_spinlock ABTXI_prof_spinlock;
 
 struct ABTXI_prof_spinlock {
-    int val;
+    volatile int val;
 };
 
 struct ABTXI_prof_wu_time {
@@ -613,63 +619,124 @@ struct ABTXI_prof_global {
 
 static inline void ABTXI_prof_spin_init(ABTXI_prof_spinlock *p_lock)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     __atomic_clear(&p_lock->val, __ATOMIC_RELAXED);
+#else
+    p_lock->val = 0;
+#endif
 }
 
 static inline void ABTXI_prof_spin_destroy(ABTXI_prof_spinlock *p_lock)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     __atomic_clear(&p_lock->val, __ATOMIC_RELAXED);
+#else
+    p_lock->val = 0;
+#endif
 }
 
 static inline void ABTXI_prof_spin_lock(ABTXI_prof_spinlock *p_lock)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     while (__atomic_test_and_set(&p_lock->val, __ATOMIC_ACQUIRE))
         ;
+#else
+    while (__sync_lock_test_and_set(&p_lock->val, 1))
+        __sync_synchronize();
+#endif
 }
 
 static inline void ABTXI_prof_spin_unlock(ABTXI_prof_spinlock *p_lock)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     __atomic_clear(&p_lock->val, __ATOMIC_RELEASE);
+#else
+    __sync_lock_release(&p_lock->val);
+#endif
 }
 
 static inline int ABTXI_prof_atomic_relaxed_load_int(int *p_int)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     return __atomic_load_n(p_int, __ATOMIC_RELAXED);
+#else
+    return *((volatile int *)p_int);
+#endif
 }
 
 static inline int ABTXI_prof_atomic_acquire_load_int(int *p_int)
 {
-    return __atomic_load_n(p_int, __ATOMIC_ACQUIRE);
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
+    return __atomic_load_n(p_int, __ATOMIC_RELAXED);
+#else
+    int ret;
+    __sync_synchronize();
+    ret = *((volatile int *)p_int);
+    __sync_synchronize();
+    return ret;
+#endif
 }
 
 static inline void ABTXI_prof_atomic_relaxed_store_int(int *p_int, int val)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     __atomic_store_n(p_int, val, __ATOMIC_RELAXED);
+#else
+    *((volatile int *)p_int) = val;
+#endif
 }
 
 static inline void ABTXI_prof_atomic_release_store_int(int *p_int, int val)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     __atomic_store_n(p_int, val, __ATOMIC_RELEASE);
+#else
+    __sync_synchronize();
+    *((volatile int *)p_int) = val;
+    __sync_synchronize();
+#endif
 }
 
 static inline void *ABTXI_prof_atomic_relaxed_load_ptr(void **p_ptr)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     return __atomic_load_n(p_ptr, __ATOMIC_RELAXED);
+#else
+    return *((void *volatile *)p_ptr);
+#endif
 }
 
 static inline void *ABTXI_prof_atomic_acquire_load_ptr(void **p_ptr)
 {
-    return __atomic_load_n(p_ptr, __ATOMIC_ACQUIRE);
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
+    return __atomic_load_n(p_ptr, __ATOMIC_RELAXED);
+#else
+    void *ret;
+    __sync_synchronize();
+    ret = *((void *volatile *)p_ptr);
+    __sync_synchronize();
+    return ret;
+#endif
 }
 
 static inline void ABTXI_prof_atomic_relaxed_store_ptr(void **p_ptr, void *val)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     __atomic_store_n(p_ptr, val, __ATOMIC_RELAXED);
+#else
+    *((void *volatile *)p_ptr) = val;
+#endif
 }
 
 static inline void ABTXI_prof_atomic_release_store_ptr(void **p_ptr, void *val)
 {
+#ifndef ABTXI_PROF_USE_SYNC_BUILTIN
     __atomic_store_n(p_ptr, val, __ATOMIC_RELEASE);
+#else
+    __sync_synchronize();
+    *((void *volatile *)p_ptr) = val;
+    __sync_synchronize();
+#endif
 }
 
 static inline void ABTXI_prof_wu_time_add(ABTXI_prof_wu_time *p_wu_time,
