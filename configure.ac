@@ -291,14 +291,32 @@ AS_IF([test "x$enable_affinity" != "xno"], [
 # strip off multiple options, separated by commas
 save_IFS="$IFS"
 IFS=","
+debug_flags=no
+debug_log=no
+debug_log_print=no
+debug_err=no
 for option in $enable_debug ; do
     case "$option" in
         yes)
             debug_flags=yes
         ;;
+        log-discard)
+            # This option is for testing: printing all events creates a giant
+            # log file and slows down testing.  With debug_log_print=discard,
+            # log will be discarded.
+            debug_log=yes
+            debug_log_print=discard
+            debug_err=yes
+        ;;
         log)
             debug_log=yes
             debug_log_print=yes
+            debug_err=yes
+        ;;
+        all-discard)
+            debug_flags=yes
+            debug_log=yes
+            debug_log_print=discard
             debug_err=yes
         ;;
         all)
@@ -340,9 +358,12 @@ if test "x$debug_flags" = "xyes" ; then
 fi
 AS_IF([test "x$debug_log" = "xyes"],
     [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG, 1, [Define to enable debug logging])])
-AS_IF([test "x$debug_log_print" = "xyes"],
+AS_IF([test "x$debug_log_print" = "xyes" -o "x$debug_log_print" = "xdiscard"],
     [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG_PRINT, 1,
         [Define to enable printing debug log messages])])
+AS_IF([test "x$debug_log_print" = "xdiscard"],
+    [AC_DEFINE(ABT_CONFIG_USE_DEBUG_LOG_DISCARD, 1,
+        [Define to discard debug log messages])])
 AS_IF([test "x$debug_err" = "xyes"],
     [AC_DEFINE(ABT_CONFIG_PRINT_ABT_ERRNO, 1,
         [Define to enable printing abt_errno upon abt call error])])

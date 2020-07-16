@@ -76,11 +76,17 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
         sprintf(newfmt, prefix_fmt, prefix, format);
     }
 
+#ifndef ABT_CONFIG_USE_DEBUG_LOG_DISCARD
     va_list list;
     va_start(list, format);
     vfprintf(fh, newfmt, list);
     va_end(list);
     fflush(fh);
+#else
+    /* Discard the log message.  This option is used to check if the logging
+     * function works correct (i.e., without any SEGV) but a tester does not
+     * need an actual log since the output can be extremely large. */
+#endif
 
     ABTU_free(newfmt);
 }
