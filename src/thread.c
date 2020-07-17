@@ -2124,9 +2124,10 @@ int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os)
         return ABT_ERR_THREAD;
     }
 
+    char buffer[32];
     const size_t value_width = 8;
-    const int num_bytes = 32;
-    char *buffer = (char *)alloca(num_bytes);
+    const int num_bytes = sizeof(buffer);
+
     for (i = 0; i < stacksize; i += num_bytes) {
         if (stacksize >= i + num_bytes) {
             memcpy(buffer, &((uint8_t *)p_stack)[i], num_bytes);
