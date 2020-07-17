@@ -13,7 +13,10 @@
 
 static int num_iter = DEFAULT_NUM_ITER;
 static ABT_xstream_barrier barrier = ABT_XSTREAM_BARRIER_NULL;
-static int value;
+/* Neither volatile nor atomic operation is necessary for value, but PGI-20.1 is
+ * broken so we need a workaround to make PGI pass this test.
+ * See https://github.com/pmodels/argobots/issues/213 for details. */
+volatile int value;
 
 void test_xstream_barrier(void *arg)
 {
@@ -22,11 +25,11 @@ void test_xstream_barrier(void *arg)
 
     for (i = 0; i < num_iter; i++) {
         if (rank == 0)
-            value = i;
+            ATS_atomic_store(&value, i);
         ret = ABT_xstream_barrier_wait(barrier);
         ATS_ERROR(ret, "ABT_xstream_barrier_wait");
 
-        assert(value == i);
+        assert(ATS_atomic_load(&value) == i);
         ret = ABT_xstream_barrier_wait(barrier);
         ATS_ERROR(ret, "ABT_xstream_barrier_wait");
     }
