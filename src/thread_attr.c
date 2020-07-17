@@ -300,23 +300,6 @@ fn_fail:
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-/** @defgroup ULT_ATTR_PRIVATE ULT Attributes (Private)
- * This group combines private APIs for ULT attributes.
- */
-
-/**
- * @ingroup ULT_ATTR_PRIVATE
- * @brief   Print field values of ABTI_thread_attr.
- *
- * \c ABTI_thread_attr_print() prints out values of all fields in
- * \c ABTI_thread_attr struct.
- *
- * @param[in] p_attr  pointer to ABTI_thread_attr
- * @param[in] p_os    pointer to a FILE object (output stream)
- * @param[in] indent  amount of space to indent
- * @return Error code
- * @retval ABT_SUCCESS on success
- */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
 {
     char *prefix = ABTU_get_indent_str(indent);
