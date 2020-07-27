@@ -199,6 +199,7 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
 
     if (newthread_list == NULL) {
         for (i = 0; i < num; i++) {
+            ABTI_thread *p_newthread;
             ABT_pool pool = pool_list[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
             ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -209,7 +210,7 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
                 ABTI_thread_create_internal(p_local_xstream, p_pool, thread_f,
                                             arg, ABTI_thread_attr_get_ptr(attr),
                                             ABTI_UNIT_TYPE_THREAD_USER, NULL, 0,
-                                            NULL, ABT_TRUE, NULL);
+                                            NULL, ABT_TRUE, &p_newthread);
             ABTI_CHECK_ERROR(abt_errno);
         }
     } else {
