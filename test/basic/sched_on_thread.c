@@ -113,6 +113,7 @@ int main(int argc, char *argv[])
         ret = ABT_thread_free(&threads[i]);
         ATS_ERROR(ret, "ABT_thread_free");
     }
+    free(threads);
 
     /* Join Execution Streams */
     for (i = 1; i < num_xstreams; i++) {

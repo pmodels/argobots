@@ -160,6 +160,10 @@ int main(int argc, char *argv[])
     ret = ABT_rwlock_free(&targ.rwlock);
     ATS_ERROR(ret, "ABT_rwlock_free");
 
+    /* Free the barrier */
+    ret = ABT_barrier_free(&targ.barrier);
+    ATS_ERROR(ret, "ABT_barrier_free");
+
     /* Free Execution Streams */
     for (i = 1; i < targ.num_xstreams; i++) {
         ret = ABT_xstream_free(&xstreams[i]);
