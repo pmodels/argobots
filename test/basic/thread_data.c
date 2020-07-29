@@ -108,6 +108,7 @@ static void thread_create(void *arg)
         ret = ABT_thread_free(&threads[i]);
         ATS_ERROR(ret, "ABT_thread_free");
     }
+    free(threads);
 }
 
 int main(int argc, char *argv[])

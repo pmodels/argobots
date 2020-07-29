@@ -101,6 +101,7 @@ static void task_create(void *arg)
         ret = ABT_task_free(&tasks[i]);
         ATS_ERROR(ret, "ABT_task_free");
     }
+    free(tasks);
 }
 
 int main(int argc, char *argv[])

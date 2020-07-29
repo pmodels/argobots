@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
         ret = pthread_join(threads[i], NULL);
         assert(ret == 0);
     }
+    free(threads);
 
     /* Finalize */
     ret = ATS_finalize(0);

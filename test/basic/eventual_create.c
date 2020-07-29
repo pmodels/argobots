@@ -18,7 +18,7 @@ void fn1(void *args)
 {
     ATS_UNUSED(args);
     int i = 0;
-    void *data = malloc(EVENTUAL_SIZE);
+    void *data;
     ATS_printf(1, "Thread 1 iteration %d waiting for eventual\n", i);
     ABT_eventual_wait(myeventual, &data);
     ATS_printf(1,
@@ -31,7 +31,7 @@ void fn2(void *args)
 {
     ATS_UNUSED(args);
     int i = 0, is_ready = 0;
-    void *data = malloc(EVENTUAL_SIZE);
+    void *data;
     ATS_printf(1, "Thread 2 iteration %d waiting from eventual\n", i);
     ABT_eventual_test(myeventual, &data, &is_ready);
     while (!is_ready) {
@@ -52,6 +52,7 @@ void fn3(void *args)
     ATS_printf(1, "Thread 3 iteration %d signal eventual \n", i);
     char *data = (char *)malloc(EVENTUAL_SIZE);
     ABT_eventual_set(myeventual, data, EVENTUAL_SIZE);
+    free(data);
     ATS_printf(1, "Thread 3 continue iteration %d \n", i);
 }
 
@@ -101,6 +102,9 @@ int main(int argc, char *argv[])
     ATS_ERROR(ret, "ABT_thread_free");
 
     ATS_printf(1, "END\n");
+
+    ret = ABT_eventual_free(&myeventual);
+    ATS_ERROR(ret, "ABT_eventual_free");
 
     ret = ATS_finalize(0);
 
