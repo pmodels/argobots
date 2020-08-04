@@ -47,6 +47,45 @@
 /* Sun Studio does not support it. */
 #define ABTU_align_member_var(size)
 #endif
+
+/*
+ * An attribute to suppress address sanitizer warning.
+ */
+#if defined(__GNUC__) && defined(__SANITIZE_ADDRESS__)
+/*
+ * Older GCC cannot combine no_sanitize_address + always_inline (e.g., builtin
+ * memcpy on some platforms), which causes *a compilation error*.  Let's accept
+ * false-positive warning if used GCC is old.  This issue seems fixed between
+ * GCC 7.4.0 and GCC 8.3.0 as far as I checked.
+ * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=59600
+ */
+#if __GNUC__ >= 8
+#define ABTU_no_sanitize_address __attribute__((no_sanitize_address))
+#endif
+#elif __clang__
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#if __clang_major__ >= 4 || (__clang_major__ >= 3 && __clang_minor__ >= 7)
+/* >= Clang 3.7.0 */
+#define ABTU_no_sanitize_address __attribute__((no_sanitize("address")))
+#elif (__clang_major__ >= 3 && __clang_minor__ >= 3)
+/* >= Clang 3.3.0 */
+#define ABTU_no_sanitize_address __attribute__((no_sanitize_address))
+#elif (__clang_major__ >= 3 && __clang_minor__ >= 1)
+/* >= Clang 3.1.0 */
+#define ABTU_no_sanitize_address __attribute__((no_address_safety_analysis))
+#else /* Too old clang. */
+#define ABTU_no_sanitize_address
+#endif
+#endif /* __has_feature(address_sanitizer) */
+#endif /* defined(__has_feature) */
+#endif
+
+#ifndef ABTU_no_sanitize_address
+/* We do not support other address sanitizers. */
+#define ABTU_no_sanitize_address
+#endif
+
 /* Utility Functions */
 
 static inline void *ABTU_memalign(size_t alignment, size_t size)

@@ -2116,7 +2116,8 @@ fn_exit:
     ABTU_free(prefix);
 }
 
-int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os)
+ABTU_no_sanitize_address int ABTI_thread_print_stack(ABTI_thread *p_thread,
+                                                     FILE *p_os)
 {
     void *p_stack = p_thread->p_stack;
     size_t i, j, stacksize = p_thread->stacksize;
