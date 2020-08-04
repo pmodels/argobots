@@ -145,7 +145,7 @@ static void create_scheds_and_xstreams(void)
             /* If the predefined scheduler is associated with PW pools,
                we will stack it so that the primary ULT can add the initial
                work unit. */
-            if (accesses[i] == ABT_POOL_ACCESS_PRIV ||
+            if (i == num_scheds - 1 || accesses[i] == ABT_POOL_ACCESS_PRIV ||
                 accesses[i] == ABT_POOL_ACCESS_SPSC ||
                 accesses[i] == ABT_POOL_ACCESS_SPMC) {
                 ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
@@ -262,7 +262,7 @@ static void gen_work(void *arg)
     ret = ABT_self_on_primary_xstream(&flag);
     ATS_ERROR(ret, "ABT_self_on_primary_stream");
     if (flag == ABT_FALSE) {
-        if (accesses[idx] == ABT_POOL_ACCESS_PRIV ||
+        if (idx == num_scheds - 1 || accesses[idx] == ABT_POOL_ACCESS_PRIV ||
             accesses[idx] == ABT_POOL_ACCESS_SPSC ||
             accesses[idx] == ABT_POOL_ACCESS_SPMC) {
             ABT_pool main_pool;
