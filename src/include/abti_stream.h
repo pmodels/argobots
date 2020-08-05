@@ -85,7 +85,8 @@ static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
             /* NOTE: p_thread itself will be freed in ABTI_sched_free. */
             ABTD_atomic_release_store_int(&p_thread->unit_def.state,
                                           ABTI_UNIT_STATE_TERMINATED);
-            ABTI_sched_discard_and_free(p_local_xstream, p_thread->p_sched);
+            ABTI_sched_discard_and_free(p_local_xstream, p_thread->p_sched,
+                                        ABT_FALSE);
         } else
 #endif
         {

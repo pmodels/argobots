@@ -403,7 +403,7 @@ int ABT_xstream_free(ABT_xstream *xstream)
     }
 
     /* Free the xstream object */
-    abt_errno = ABTI_xstream_free(p_local_xstream, p_xstream);
+    abt_errno = ABTI_xstream_free(p_local_xstream, p_xstream, ABT_FALSE);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -1318,7 +1318,8 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_xstream_free(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream)
+int ABTI_xstream_free(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream,
+                      ABT_bool force_free)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -1334,7 +1335,8 @@ int ABTI_xstream_free(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream)
     /* Free the scheduler */
     ABTI_sched *p_cursched = p_xstream->p_main_sched;
     if (p_cursched != NULL) {
-        abt_errno = ABTI_sched_discard_and_free(p_local_xstream, p_cursched);
+        abt_errno = ABTI_sched_discard_and_free(p_local_xstream, p_cursched,
+                                                force_free);
         ABTI_CHECK_ERROR(abt_errno);
     }
 
@@ -1730,8 +1732,8 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         p_xstream->p_main_sched = p_sched;
 
         /* Free the current main scheduler */
-        abt_errno =
-            ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched);
+        abt_errno = ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched,
+                                                ABT_FALSE);
         ABTI_CHECK_ERROR(abt_errno);
 
         /* Start the primary ES again because we have to create a sched ULT for
@@ -1767,8 +1769,8 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
         p_sched->p_thread->p_sched = p_sched;
 #endif
-        abt_errno =
-            ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched);
+        abt_errno = ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched,
+                                                ABT_FALSE);
         ABTI_CHECK_ERROR(abt_errno);
     }
 
