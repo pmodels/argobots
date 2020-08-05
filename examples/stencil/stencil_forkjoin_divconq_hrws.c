@@ -305,6 +305,13 @@ int main(int argc, char **argv)
         ABT_xstream_free(&xstreams[i]);
     }
 
+    /* Free secondary schedulers: the scheduler of the primary execution stream
+     * may not be freed since it is now scheduling this main ULT (a thread that
+     * calls ABT_initialize() at this point. */
+    for (i = 1; i < num_xstreams; i++) {
+        ABT_sched_free(&scheds[i]);
+    }
+
     /* Finalize Argobots */
     ABT_finalize();
 

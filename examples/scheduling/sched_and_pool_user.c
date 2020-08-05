@@ -337,6 +337,7 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
 
     ABT_pool_get_access(pool, &access);
 
+    p_data->mutex = ABT_MUTEX_NULL;
     if (access != ABT_POOL_ACCESS_PRIV) {
         /* Initialize the mutex */
         ABT_mutex_create(&p_data->mutex);
@@ -357,6 +358,9 @@ static int pool_free(ABT_pool pool)
     void *data;
     ABT_pool_get_data(pool, &data);
     data_t *p_data = pool_get_data_ptr(data);
+    if (p_data->mutex != ABT_MUTEX_NULL) {
+        ABT_mutex_free(&p_data->mutex);
+    }
 
     free(p_data);
 
