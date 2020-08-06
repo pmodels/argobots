@@ -213,7 +213,7 @@ int ABT_finalize(void)
     ABTI_thread_free_main(p_local_xstream, p_thread);
 
     /* Free the primary ES */
-    abt_errno = ABTI_xstream_free(p_local_xstream, p_local_xstream);
+    abt_errno = ABTI_xstream_free(p_local_xstream, p_local_xstream, ABT_TRUE);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Finalize the ES local data */

@@ -132,7 +132,7 @@ int ABT_sched_free(ABT_sched *sched)
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* Free the scheduler */
-    abt_errno = ABTI_sched_free(p_local_xstream, p_sched);
+    abt_errno = ABTI_sched_free(p_local_xstream, p_sched, ABT_FALSE);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -771,7 +771,8 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched)
+int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched,
+                    ABT_bool force_free)
 {
     int abt_errno = ABT_SUCCESS;
     int p;
@@ -787,7 +788,7 @@ int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched)
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
         int32_t num_scheds = ABTI_pool_release(p_pool);
-        if (p_pool->automatic == ABT_TRUE && num_scheds == 0) {
+        if ((p_pool->automatic == ABT_TRUE && num_scheds == 0) || force_free) {
             ABTI_CHECK_NULL_POOL_PTR(p_pool);
             ABTI_pool_free(p_pool);
         }

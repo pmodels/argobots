@@ -1909,7 +1909,7 @@ void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] main sched ULT freed\n",
               ABTI_thread_get_id(p_thread),
-              p_thread->unit_def.p_last_xstream->rank);
+              p_local_xstream ? p_local_xstream->rank : -1);
 
     /* Invoke a thread freeing event. */
     ABTI_tool_event_thread_free(p_local_xstream, p_thread,
@@ -2116,7 +2116,8 @@ fn_exit:
     ABTU_free(prefix);
 }
 
-int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os)
+ABTU_no_sanitize_address int ABTI_thread_print_stack(ABTI_thread *p_thread,
+                                                     FILE *p_os)
 {
     void *p_stack = p_thread->p_stack;
     size_t i, j, stacksize = p_thread->stacksize;

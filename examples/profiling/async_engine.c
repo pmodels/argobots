@@ -343,6 +343,13 @@ int main(int argc, char *argv[])
         ABTX_prof_finalize(prof_context);
     }
 
+    /* Free schedulers */
+    /* Note that we do not need to free the scheduler for the primary ES,
+     * because its scheduler will be automatically freed in ABT_finalize(). */
+    for (i = 0; i < num_xstreams - 1; i++) {
+        ABT_sched_free(&engine_scheds[i]);
+    }
+
     /* Finalize Argobots. */
     ABT_finalize();
 
