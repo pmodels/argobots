@@ -37,9 +37,9 @@ static inline void ABTD_thread_context_jump(ABTD_thread_context *p_old,
     jump_fcontext(&p_old->p_ctx, p_new->p_ctx, arg);
 }
 
-static inline void ABTD_thread_context_take(ABTD_thread_context *p_old,
-                                            ABTD_thread_context *p_new,
-                                            void *arg)
+ABTU_noreturn static inline void
+ABTD_thread_context_take(ABTD_thread_context *p_old, ABTD_thread_context *p_new,
+                         void *arg)
 {
     take_fcontext(&p_old->p_ctx, p_new->p_ctx, arg);
     ABTU_unreachable();

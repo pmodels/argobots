@@ -58,9 +58,9 @@ static inline void ABTD_thread_context_jump(ABTD_thread_context *p_old,
     swapcontext(&p_old->uctx, &p_new->uctx);
 }
 
-static inline void ABTD_thread_context_take(ABTD_thread_context *p_old,
-                                            ABTD_thread_context *p_new,
-                                            void *arg)
+ABTU_noreturn static inline void
+ABTD_thread_context_take(ABTD_thread_context *p_old, ABTD_thread_context *p_new,
+                         void *arg)
 {
     p_new->p_uctx_arg = arg;
     setcontext(&p_new->uctx);

@@ -272,6 +272,8 @@ else
   ABT_DEPRECATED=""
 fi
 AC_SUBST([ABT_DEPRECATED])
+# check __attribute__((noreturn))
+AX_GCC_FUNC_ATTRIBUTE(noreturn)
 
 dnl ----------------------------------------------------------------------------
 

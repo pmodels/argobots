@@ -86,8 +86,9 @@ static inline void ABTD_thread_context_switch(ABTD_thread_context *p_old,
     ABTD_thread_context_jump(p_old, p_new, p_new);
 }
 
-static inline void ABTD_thread_finish_context(ABTD_thread_context *p_old,
-                                              ABTD_thread_context *p_new)
+ABTU_noreturn static inline void
+ABTD_thread_finish_context(ABTD_thread_context *p_old,
+                           ABTD_thread_context *p_new)
 {
     ABTD_thread_context_take(p_old, p_new, p_new);
 }

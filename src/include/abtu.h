@@ -27,6 +27,12 @@
 #define ABTU_unreachable()
 #endif
 
+#ifdef HAVE_FUNC_ATTRIBUTE_NORETURN
+#define ABTU_noreturn __attribute__((noreturn))
+#else
+#define ABTU_noreturn
+#endif
+
 #ifdef ABT_CONFIG_HAVE_ALIGNOF_GCC
 #define ABTU_alignof(type) (__alignof__(type))
 #elif defined(ABT_CONFIG_HAVE_ALIGNOF_C11)
