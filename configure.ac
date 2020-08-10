@@ -777,22 +777,10 @@ fi
 AC_MSG_NOTICE([Timer type selected is $timer_type])
 
 # check __builtin_expect
-AC_TRY_COMPILE(
-[], [int cond = 0; if (__builtin_expect(cond, 1)) cond = 2;],
-[have_builtin_expect=yes], [have_builtin_expect=no]
-)
-AS_IF([test "x$have_builtin_expect" = "xyes"],
-      [AC_DEFINE(ABT_CONFIG_HAVE___BUILTIN_EXPECT, 1,
-                 [Define to 1 if you have the `__builtin_expect' function.])])
+AX_GCC_BUILTIN(__builtin_expect)
 
 # check __builtin_unreachable()
-AC_TRY_COMPILE(
-[], [__builtin_unreachable();],
-[have_builtin_unreachable=yes], [have_builtin_unreachable=no]
-)
-AS_IF([test "x$have_builtin_unreachable" = "xyes"],
-      [AC_DEFINE(ABT_CONFIG_HAVE___BUILTIN_UNREACHABLE, 1,
-                 [Define to 1 if you have the `__builtin_unreachable' function.])])
+AX_GCC_BUILTIN(__builtin_unreachable)
 
 # check __alignof__
 AC_TRY_COMPILE([], [int a = __alignof__(double); (void)a;],

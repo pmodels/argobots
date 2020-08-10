@@ -13,7 +13,7 @@
 
 /* Utility feature */
 
-#ifdef ABT_CONFIG_HAVE___BUILTIN_EXPECT
+#ifdef HAVE___BUILTIN_EXPECT
 #define ABTU_likely(cond) __builtin_expect(!!(cond), 1)
 #define ABTU_unlikely(cond) __builtin_expect(!!(cond), 0)
 #else
@@ -21,7 +21,7 @@
 #define ABTU_unlikely(cond) (cond)
 #endif
 
-#ifdef ABT_CONFIG_HAVE___BUILTIN_UNREACHABLE
+#ifdef HAVE___BUILTIN_UNREACHABLE
 #define ABTU_unreachable() __builtin_unreachable()
 #else
 #define ABTU_unreachable()
