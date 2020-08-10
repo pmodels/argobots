@@ -21,6 +21,7 @@ static void ABTD_ucontext_wrapper(int arg1, int arg2)
     /* ABTD_thread_context_jump or take must be called at the end of
      * f_uctx_thread, */
     ABTI_ASSERT(0);
+    ABTU_unreachable();
 }
 
 static inline void ABTD_thread_context_make(ABTD_thread_context *p_ctx,
@@ -63,7 +64,7 @@ static inline void ABTD_thread_context_take(ABTD_thread_context *p_old,
 {
     p_new->p_uctx_arg = arg;
     setcontext(&p_new->uctx);
-    /* Unreachable. */
+    ABTU_unreachable();
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION

@@ -783,6 +783,15 @@ AS_IF([test "x$have_builtin_expect" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_HAVE___BUILTIN_EXPECT, 1,
                  [Define to 1 if you have the `__builtin_expect' function.])])
 
+# check __builtin_unreachable()
+AC_TRY_COMPILE(
+[], [__builtin_unreachable();],
+[have_builtin_unreachable=yes], [have_builtin_unreachable=no]
+)
+AS_IF([test "x$have_builtin_unreachable" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_HAVE___BUILTIN_UNREACHABLE, 1,
+                 [Define to 1 if you have the `__builtin_unreachable' function.])])
+
 # check __alignof__
 AC_TRY_COMPILE([], [int a = __alignof__(double); (void)a;],
                [have_alignof=gcc],

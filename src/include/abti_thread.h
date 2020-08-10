@@ -160,7 +160,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_sibling_internal(
         ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
                                       p_old->unit_def.p_parent);
         ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
-        return NULL; /* Unreachable. */
+        ABTU_unreachable();
     } else {
         ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
@@ -189,7 +189,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_parent_internal(
         ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
                                       p_old->unit_def.p_parent);
         ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
-        return NULL; /* Unreachable. */
+        ABTU_unreachable();
     } else {
         ABTI_tool_event_thread_yield(*pp_local_xstream, p_old,
                                      p_old->unit_def.p_parent, sync_event_type,

@@ -134,7 +134,7 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
 
         default:
             ABTI_ASSERT(0);
-            break;
+            ABTU_unreachable();
     }
 }
 
@@ -181,7 +181,7 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
 
         default:
             ABTI_ASSERT(0);
-            break;
+            ABTU_unreachable();
     }
 }
 
@@ -223,7 +223,7 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
 
         default:
             ABTI_ASSERT(0);
-            break;
+            ABTU_unreachable();
     }
 }
 

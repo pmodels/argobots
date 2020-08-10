@@ -42,6 +42,7 @@ static inline void ABTD_thread_context_take(ABTD_thread_context *p_old,
                                             void *arg)
 {
     take_fcontext(&p_old->p_ctx, p_new->p_ctx, arg);
+    ABTU_unreachable();
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION

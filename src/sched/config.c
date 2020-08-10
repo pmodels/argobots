@@ -215,7 +215,7 @@ size_t ABTI_sched_config_type_size(ABT_sched_config_type type)
             return sizeof(void *);
         default:
             ABTI_ASSERT(0);
-            return 0;
+            ABTU_unreachable();
     }
 }
 
