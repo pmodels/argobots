@@ -156,7 +156,7 @@ static int pool_get_access_num(ABT_pool *p_pool)
             break;
         default:
             ABTI_ASSERT(0);
-            break;
+            ABTU_unreachable();
     }
 
     return num;

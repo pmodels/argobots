@@ -59,6 +59,8 @@ void ABTI_thread_htable_push(ABTI_thread_htable *p_htable, int idx,
 
     if (idx >= p_htable->num_rows) {
         ABTI_ASSERT(0);
+        ABTU_unreachable();
+#if 0
         /* Increase the hash table */
         uint32_t cur_size, new_size;
         cur_size = p_htable->num_rows;
@@ -69,6 +71,7 @@ void ABTI_thread_htable_push(ABTI_thread_htable *p_htable, int idx,
         memset(&p_htable->queue[cur_size], 0,
                (new_size - cur_size) * sizeof(ABTI_thread_queue));
         p_htable->num_rows = new_size;
+#endif
     }
 
     /* Add p_thread to the end of the idx-th row */
@@ -120,6 +123,8 @@ void ABTI_thread_htable_push_low(ABTI_thread_htable *p_htable, int idx,
 
     if (idx >= p_htable->num_rows) {
         ABTI_ASSERT(0);
+        ABTU_unreachable();
+#if 0
         /* Increase the hash table */
         uint32_t cur_size, new_size;
         cur_size = p_htable->num_rows;
@@ -130,6 +135,7 @@ void ABTI_thread_htable_push_low(ABTI_thread_htable *p_htable, int idx,
         memset(&p_htable->queue[cur_size], 0,
                (new_size - cur_size) * sizeof(ABTI_thread_queue));
         p_htable->num_rows = new_size;
+#endif
     }
 
     /* Add p_thread to the end of the idx-th row */

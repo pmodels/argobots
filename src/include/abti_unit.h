@@ -31,7 +31,7 @@ ABTI_unit_state_get_thread_state(ABTI_unit_state state)
             return ABT_THREAD_STATE_TERMINATED;
         default:
             ABTI_ASSERT(0);
-            return (ABT_thread_state)-1;
+            ABTU_unreachable();
     }
 }
 
@@ -48,7 +48,7 @@ ABTI_unit_state_get_task_state(ABTI_unit_state state)
         case ABTI_UNIT_STATE_BLOCKED:
         default:
             ABTI_ASSERT(0);
-            return (ABT_task_state)-1;
+            ABTU_unreachable();
     }
 }
 

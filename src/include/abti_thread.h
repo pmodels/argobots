@@ -160,7 +160,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_sibling_internal(
         ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
                                       p_old->unit_def.p_parent);
         ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
-        return NULL; /* Unreachable. */
+        ABTU_unreachable();
     } else {
         ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
@@ -189,7 +189,7 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_parent_internal(
         ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
                                       p_old->unit_def.p_parent);
         ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
-        return NULL; /* Unreachable. */
+        ABTU_unreachable();
     } else {
         ABTI_tool_event_thread_yield(*pp_local_xstream, p_old,
                                      p_old->unit_def.p_parent, sync_event_type,
@@ -321,15 +321,16 @@ ABTI_thread_context_switch_to_child(ABTI_xstream **pp_local_xstream,
                                                         p_new);
 }
 
-static inline void
+ABTU_noreturn static inline void
 ABTI_thread_finish_context_to_sibling(ABTI_xstream *p_local_xstream,
                                       ABTI_thread *p_old, ABTI_thread *p_new)
 {
     ABTI_thread_context_switch_to_sibling_internal(&p_local_xstream, p_old,
                                                    p_new, ABT_TRUE);
+    ABTU_unreachable();
 }
 
-static inline void
+ABTU_noreturn static inline void
 ABTI_thread_finish_context_to_parent(ABTI_xstream *p_local_xstream,
                                      ABTI_thread *p_old)
 {
@@ -337,9 +338,10 @@ ABTI_thread_finish_context_to_parent(ABTI_xstream *p_local_xstream,
                                                   ABT_TRUE,
                                                   ABT_SYNC_EVENT_TYPE_UNKNOWN,
                                                   NULL);
+    ABTU_unreachable();
 }
 
-static inline void
+ABTU_noreturn static inline void
 ABTI_thread_finish_context_sched_to_main_thread(ABTI_sched *p_main_sched)
 {
     /* The main thread is stored in p_link. */
