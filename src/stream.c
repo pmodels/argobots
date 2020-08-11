@@ -273,7 +273,7 @@ int ABTI_xstream_start(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream)
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(&p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_cpuset_apply_default(&p_xstream->ctx, p_xstream->rank);
     }
 
 fn_exit:
@@ -332,7 +332,7 @@ int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(&p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_cpuset_apply_default(&p_xstream->ctx, p_xstream->rank);
     }
 
     /* Create the main sched ULT */
@@ -618,7 +618,7 @@ int ABT_xstream_set_rank(ABT_xstream xstream, int rank)
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_set(&p_xstream->ctx, p_xstream->rank);
+        ABTD_affinity_cpuset_apply_default(&p_xstream->ctx, p_xstream->rank);
     }
 
 fn_exit:
@@ -1108,7 +1108,11 @@ int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTD_affinity_set_cpuset(&p_xstream->ctx, 1, &cpuid);
+    ABTD_affinity_cpuset cpuset;
+    cpuset.num_cpuids = 1;
+    cpuset.cpuids = &cpuid;
+    abt_errno = ABTD_affinity_cpuset_apply(&p_xstream->ctx, &cpuset);
+    /* Do not free cpuset since cpuids points to a user pointer. */
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -1138,7 +1142,18 @@ int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTD_affinity_get_cpuset(&p_xstream->ctx, 1, cpuid, NULL);
+    ABTD_affinity_cpuset cpuset;
+    cpuset.num_cpuids = 0;
+    cpuset.cpuids = NULL;
+    abt_errno = ABTD_affinity_cpuset_read(&p_xstream->ctx, &cpuset);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    if (cpuset.num_cpuids != 0) {
+        *cpuid = cpuset.cpuids[0];
+    } else {
+        abt_errno = ABT_ERR_FEATURE_NA;
+    }
+    ABTD_affinity_cpuset_destroy(&cpuset);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -1169,7 +1184,11 @@ int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset)
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTD_affinity_set_cpuset(&p_xstream->ctx, cpuset_size, cpuset);
+    ABTD_affinity_cpuset affinity;
+    affinity.num_cpuids = cpuset_size;
+    affinity.cpuids = cpuset;
+    abt_errno = ABTD_affinity_cpuset_apply(&p_xstream->ctx, &affinity);
+    /* Do not free affinity since cpuids may not be freed. */
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -1211,9 +1230,17 @@ int ABT_xstream_get_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset,
         goto fn_exit;
     }
 
-    abt_errno = ABTD_affinity_get_cpuset(&p_xstream->ctx, cpuset_size, cpuset,
-                                         num_cpus);
+    ABTD_affinity_cpuset affinity;
+    abt_errno = ABTD_affinity_cpuset_read(&p_xstream->ctx, &affinity);
     ABTI_CHECK_ERROR(abt_errno);
+
+    int i, n;
+    n = affinity.num_cpuids > cpuset_size ? cpuset_size : affinity.num_cpuids;
+    *num_cpus = n;
+    for (i = 0; i < n; i++) {
+        cpuset[i] = affinity.cpuids[i];
+    }
+    ABTD_affinity_cpuset_destroy(&affinity);
 
 fn_exit:
     return abt_errno;

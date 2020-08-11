@@ -7,222 +7,179 @@
 #include <unistd.h>
 
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
-#if defined(__FreeBSD__)
+#ifdef __FreeBSD__
+
 #include <sys/param.h>
 #include <sys/cpuset.h>
 #include <pthread_np.h>
-
 typedef cpuset_t cpu_set_t;
 
-static inline int ABTD_CPU_COUNT(cpu_set_t *p_cpuset)
-{
-    int i, num_cpus = 0;
-    for (i = 0; i < CPU_SETSIZE; i++) {
-        if (CPU_ISSET(i, p_cpuset)) {
-            num_cpus++;
-        }
-    }
-    return num_cpus;
-}
+#else /* !__FreeBSD__ */
 
-#else
 #define _GNU_SOURCE
 #include <sched.h>
-#define ABTD_CPU_COUNT CPU_COUNT
+
 #endif
+#endif /* HAVE_PTHREAD_SETAFFINITY_NP */
 
-enum {
-    ABTI_ES_AFFINITY_CHAMELEON,
-    ABTI_ES_AFFINITY_KNC,
-    ABTI_ES_AFFINITY_DEFAULT
-};
-static int g_affinity_type = ABTI_ES_AFFINITY_DEFAULT;
-static cpu_set_t g_cpusets[CPU_SETSIZE];
-static cpu_set_t g_initial_cpuset;
+typedef struct {
+    ABTD_affinity_cpuset initial_cpuset;
+    size_t num_cpusets;
+    ABTD_affinity_cpuset *cpusets;
+} global_affinity;
 
-static inline cpu_set_t ABTD_affinity_get_cpuset_for_rank(int rank)
+static global_affinity g_affinity;
+
+static inline int int_rem(int a, unsigned int b)
 {
-    int num_cores = gp_ABTI_global->num_cores;
-
-    if (g_affinity_type == ABTI_ES_AFFINITY_CHAMELEON) {
-        int num_threads_per_socket = num_cores / 2;
-        int rem = rank % 2;
-        int socket_id = rank / num_threads_per_socket;
-        int target =
-            (rank - num_threads_per_socket * socket_id - rem + socket_id) +
-            num_threads_per_socket * rem;
-        return g_cpusets[target % num_cores];
-
-    } else if (g_affinity_type == ABTI_ES_AFFINITY_KNC) {
-        /* NOTE: This is an experimental affinity mapping for Intel Xeon Phi
-         * (KNC).  It seems that the OS kernel on KNC numbers contiguous CPU
-         * IDs at a single physical core and then moves to the next physical
-         * core.  This numbering causes worse performance when we use a small
-         * number of physical cores.  So, we set the ES affinity in a
-         * round-robin manner from the view of physical cores, not logical
-         * cores. */
-        const int NUM_HTHREAD = 4;
-        int NUM_PHYSICAL_CORES = num_cores / NUM_HTHREAD;
-        int target;
-        if (rank < NUM_PHYSICAL_CORES) {
-            target = NUM_HTHREAD * rank;
-        } else if (rank < NUM_PHYSICAL_CORES * 2) {
-            target = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES) + 1;
-        } else if (rank < NUM_PHYSICAL_CORES * 3) {
-            target = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES * 2) + 2;
-        } else {
-            target = NUM_HTHREAD * (rank - NUM_PHYSICAL_CORES * 3) + 3;
-        }
-        return g_cpusets[target % num_cores];
-
-    } else {
-        return g_cpusets[rank % num_cores];
-    }
+    /* Return x where a = n * b + x and 0 <= x < b */
+    /* Because of ambiguity in the C specification, it uses a branch to check if
+     * the result is positive. */
+    int ret = (a % b) + b;
+    return ret >= b ? (ret - b) : ret;
 }
-#endif
 
-void ABTD_affinity_init(void)
+static int get_num_cores(pthread_t native_thread, int *p_num_cores)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    int i;
-    int num_cores = 0;
-
-#if defined(__FreeBSD__)
+    int i, num_cores = 0;
+    /* Check the number of available cores by counting set bits. */
+    cpu_set_t cpuset;
+    int ret = pthread_getaffinity_np(native_thread, sizeof(cpu_set_t), &cpuset);
+    if (ret)
+        return ABT_ERR_OTHER;
     for (i = 0; i < CPU_SETSIZE; i++) {
-        CPU_ZERO(&g_cpusets[i]);
-        CPU_SET(i, &g_cpusets[i]);
-    }
-    num_cores = CPU_SETSIZE;
-#else
-    i = sched_getaffinity(getpid(), sizeof(cpu_set_t), &g_initial_cpuset);
-    ABTI_ASSERT(i == 0);
-
-    for (i = 0; i < CPU_SETSIZE; i++) {
-        CPU_ZERO(&g_cpusets[i]);
-        if (CPU_ISSET(i, &g_initial_cpuset)) {
-            CPU_SET(i, &g_cpusets[num_cores]);
+        if (CPU_ISSET(i, &cpuset)) {
             num_cores++;
         }
     }
-#endif
-    gp_ABTI_global->num_cores = num_cores;
-
-    /* affinity type */
-    char *env = getenv("ABT_AFFINITY_TYPE");
-    if (env == NULL)
-        env = getenv("ABT_ENV_AFFINITY_TYPE");
-    if (env != NULL) {
-        if (strcmp(env, "chameleon") == 0) {
-            g_affinity_type = ABTI_ES_AFFINITY_CHAMELEON;
-        } else if (strcmp(env, "knc") == 0) {
-            g_affinity_type = ABTI_ES_AFFINITY_KNC;
-        }
-    }
+    *p_num_cores = num_cores;
+    return ABT_SUCCESS;
 #else
-    /* In this case, we don't support the ES affinity. */
-    gp_ABTI_global->set_affinity = ABT_FALSE;
+    return ABT_ERR_FEATURE_NA;
 #endif
+}
+
+static int read_cpuset(pthread_t native_thread, ABTD_affinity_cpuset *p_cpuset)
+{
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+    cpu_set_t cpuset;
+    int ret = pthread_getaffinity_np(native_thread, sizeof(cpu_set_t), &cpuset);
+    if (ret)
+        return ABT_ERR_OTHER;
+    int i, j, num_cpuids = 0;
+    for (i = 0; i < CPU_SETSIZE; i++) {
+        if (CPU_ISSET(i, &cpuset))
+            num_cpuids++;
+    }
+    p_cpuset->num_cpuids = num_cpuids;
+    p_cpuset->cpuids = (int *)malloc(sizeof(int) * num_cpuids);
+    for (i = 0, j = 0; i < CPU_SETSIZE; i++) {
+        if (CPU_ISSET(i, &cpuset))
+            p_cpuset->cpuids[j++] = i;
+    }
+    return ABT_SUCCESS;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
+}
+
+static int apply_cpuset(pthread_t native_thread,
+                        const ABTD_affinity_cpuset *p_cpuset)
+{
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+    size_t i;
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    for (i = 0; i < p_cpuset->num_cpuids; i++) {
+        CPU_SET(int_rem(p_cpuset->cpuids[i], CPU_SETSIZE), &cpuset);
+    }
+    int ret = pthread_setaffinity_np(native_thread, sizeof(cpu_set_t), &cpuset);
+    return ret == 0 ? ABT_SUCCESS : ABT_ERR_OTHER;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
+}
+
+void ABTD_affinity_init(void)
+{
+    g_affinity.num_cpusets = 0;
+    g_affinity.cpusets = NULL;
+    g_affinity.initial_cpuset.cpuids = NULL;
+    pthread_t self_native_thread = pthread_self();
+    int i, ret;
+    ret = get_num_cores(self_native_thread, &gp_ABTI_global->num_cores);
+    if (ret != ABT_SUCCESS || gp_ABTI_global->num_cores == 0) {
+        gp_ABTI_global->set_affinity = ABT_FALSE;
+        return;
+    }
+    ret = read_cpuset(self_native_thread, &g_affinity.initial_cpuset);
+    if (ret != ABT_SUCCESS) {
+        gp_ABTI_global->set_affinity = ABT_FALSE;
+        return;
+    } else if (g_affinity.initial_cpuset.num_cpuids == 0) {
+        ABTD_affinity_cpuset_destroy(&g_affinity.initial_cpuset);
+        gp_ABTI_global->set_affinity = ABT_FALSE;
+        return;
+    }
+    gp_ABTI_global->set_affinity = ABT_TRUE;
+    /* Create default cpusets. */
+    g_affinity.num_cpusets = g_affinity.initial_cpuset.num_cpuids;
+    g_affinity.cpusets =
+        (ABTD_affinity_cpuset *)ABTU_calloc(g_affinity.num_cpusets,
+                                            sizeof(ABTD_affinity_cpuset));
+    for (i = 0; i < g_affinity.num_cpusets; i++) {
+        g_affinity.cpusets[i].num_cpuids = 1;
+        g_affinity.cpusets[i].cpuids =
+            (int *)ABTU_malloc(sizeof(int) * g_affinity.cpusets[i].num_cpuids);
+        g_affinity.cpusets[i].cpuids[0] = g_affinity.initial_cpuset.cpuids[i];
+    }
 }
 
 void ABTD_affinity_finalize(void)
 {
-#ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    pthread_t ctx = pthread_self();
-    pthread_setaffinity_np(ctx, sizeof(cpu_set_t), &g_initial_cpuset);
-#endif
+    pthread_t self_native_thread = pthread_self();
+    if (gp_ABTI_global->set_affinity) {
+        /* Set the affinity of the main native thread to the original one. */
+        apply_cpuset(self_native_thread, &g_affinity.initial_cpuset);
+    }
+    /* Free g_afinity. */
+    ABTD_affinity_cpuset_destroy(&g_affinity.initial_cpuset);
+    int i;
+    for (i = 0; i < g_affinity.num_cpusets; i++) {
+        ABTD_affinity_cpuset_destroy(&g_affinity.cpusets[i]);
+    }
+    ABTU_free(g_affinity.cpusets);
+    g_affinity.cpusets = NULL;
+    g_affinity.num_cpusets = 0;
 }
 
-int ABTD_affinity_set(ABTD_xstream_context *p_ctx, int rank)
+int ABTD_affinity_cpuset_read(ABTD_xstream_context *p_ctx,
+                              ABTD_affinity_cpuset *p_cpuset)
 {
-#ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    int abt_errno;
+    return read_cpuset(p_ctx->native_thread, p_cpuset);
+}
 
-    cpu_set_t cpuset = ABTD_affinity_get_cpuset_for_rank(rank);
-    if (!pthread_setaffinity_np(p_ctx->native_thread, sizeof(cpu_set_t),
-                                &cpuset)) {
-        abt_errno = ABT_SUCCESS;
-    } else {
-        abt_errno = ABT_ERR_OTHER;
-        goto fn_fail;
+int ABTD_affinity_cpuset_apply(ABTD_xstream_context *p_ctx,
+                               const ABTD_affinity_cpuset *p_cpuset)
+{
+    return apply_cpuset(p_ctx->native_thread, p_cpuset);
+}
+
+int ABTD_affinity_cpuset_apply_default(ABTD_xstream_context *p_ctx, int rank)
+{
+    if (gp_ABTI_global->set_affinity) {
+        ABTD_affinity_cpuset *p_cpuset =
+            &g_affinity.cpusets[rank % g_affinity.num_cpusets];
+        return apply_cpuset(p_ctx->native_thread, p_cpuset);
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-#else
     return ABT_SUCCESS;
-#endif
 }
 
-int ABTD_affinity_set_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
-                             int *p_cpuset)
+void ABTD_affinity_cpuset_destroy(ABTD_affinity_cpuset *p_cpuset)
 {
-#ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    int abt_errno = ABT_SUCCESS;
-    int i;
-    cpu_set_t cpuset;
-
-    CPU_ZERO(&cpuset);
-    for (i = 0; i < cpuset_size; i++) {
-        ABTI_ASSERT(p_cpuset[i] < CPU_SETSIZE);
-        CPU_SET(p_cpuset[i], &cpuset);
+    if (p_cpuset) {
+        ABTU_free(p_cpuset->cpuids);
+        p_cpuset->cpuids = NULL;
     }
-
-    i = pthread_setaffinity_np(p_ctx->native_thread, sizeof(cpu_set_t),
-                               &cpuset);
-    ABTI_CHECK_TRUE(!i, ABT_ERR_OTHER);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-#else
-    return ABT_ERR_FEATURE_NA;
-#endif
-}
-
-int ABTD_affinity_get_cpuset(ABTD_xstream_context *p_ctx, int cpuset_size,
-                             int *p_cpuset, int *p_num_cpus)
-{
-#ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    int abt_errno = ABT_SUCCESS;
-    int i;
-    cpu_set_t cpuset;
-    int num_cpus = 0;
-
-    i = pthread_getaffinity_np(p_ctx->native_thread, sizeof(cpu_set_t),
-                               &cpuset);
-    ABTI_CHECK_TRUE(!i, ABT_ERR_OTHER);
-
-    if (p_cpuset != NULL) {
-        for (i = 0; i < CPU_SETSIZE; i++) {
-            if (CPU_ISSET(i, &cpuset)) {
-                if (num_cpus < cpuset_size) {
-                    p_cpuset[num_cpus] = i;
-                } else {
-                    break;
-                }
-                num_cpus++;
-            }
-        }
-    }
-
-    if (p_num_cpus != NULL) {
-        *p_num_cpus = ABTD_CPU_COUNT(&cpuset);
-    }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-#else
-    return ABT_ERR_FEATURE_NA;
-#endif
 }
