@@ -34,13 +34,12 @@ void ABTD_env_init(ABTI_global *p_global)
     if (env == NULL)
         env = getenv("ABT_ENV_SET_AFFINITY");
     if (env != NULL) {
-        if (strcmp(env, "0") == 0 || strcasecmp(env, "n") == 0 ||
-            strcasecmp(env, "no") == 0) {
+        if (strcasecmp(env, "n") == 0 || strcasecmp(env, "no") == 0) {
             p_global->set_affinity = ABT_FALSE;
         }
     }
     if (p_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_init();
+        ABTD_affinity_init(env);
     }
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG_PRINT

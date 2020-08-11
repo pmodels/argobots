@@ -52,7 +52,7 @@ int ABTD_xstream_context_revive(ABTD_xstream_context *p_ctx);
 int ABTD_xstream_context_set_self(ABTD_xstream_context *p_ctx);
 
 /* ES Affinity */
-void ABTD_affinity_init(void);
+void ABTD_affinity_init(const char *affinity_str);
 void ABTD_affinity_finalize(void);
 int ABTD_affinity_cpuset_read(ABTD_xstream_context *p_ctx,
                               ABTD_affinity_cpuset *p_cpuset);
@@ -60,6 +60,18 @@ int ABTD_affinity_cpuset_apply(ABTD_xstream_context *p_ctx,
                                const ABTD_affinity_cpuset *p_cpuset);
 int ABTD_affinity_cpuset_apply_default(ABTD_xstream_context *p_ctx, int rank);
 void ABTD_affinity_cpuset_destroy(ABTD_affinity_cpuset *p_cpuset);
+
+/* ES Affinity Parser */
+typedef struct ABTD_affinity_id_list {
+    int num;
+    int *ids; /* id here can be negative. */
+} ABTD_affinity_id_list;
+typedef struct ABTD_affinity_parser_list {
+    int num;
+    ABTD_affinity_id_list **p_id_lists;
+} ABTD_affinity_list;
+ABTD_affinity_list *ABTD_affinity_list_create(const char *affinity_str);
+void ABTD_affinity_list_free(ABTD_affinity_list *p_list);
 
 #include "abtd_stream.h"
 

@@ -101,7 +101,7 @@ static int apply_cpuset(pthread_t native_thread,
 #endif
 }
 
-void ABTD_affinity_init(void)
+void ABTD_affinity_init(const char *affinity_str)
 {
     g_affinity.num_cpusets = 0;
     g_affinity.cpusets = NULL;
@@ -123,16 +123,70 @@ void ABTD_affinity_init(void)
         return;
     }
     gp_ABTI_global->set_affinity = ABT_TRUE;
-    /* Create default cpusets. */
-    g_affinity.num_cpusets = g_affinity.initial_cpuset.num_cpuids;
-    g_affinity.cpusets =
-        (ABTD_affinity_cpuset *)ABTU_calloc(g_affinity.num_cpusets,
-                                            sizeof(ABTD_affinity_cpuset));
-    for (i = 0; i < g_affinity.num_cpusets; i++) {
-        g_affinity.cpusets[i].num_cpuids = 1;
-        g_affinity.cpusets[i].cpuids =
-            (int *)ABTU_malloc(sizeof(int) * g_affinity.cpusets[i].num_cpuids);
-        g_affinity.cpusets[i].cpuids[0] = g_affinity.initial_cpuset.cpuids[i];
+    ABTD_affinity_list *p_list = ABTD_affinity_list_create(affinity_str);
+    if (p_list) {
+        if (p_list->num == 0) {
+            ABTD_affinity_list_free(p_list);
+            p_list = NULL;
+        }
+    }
+    if (p_list) {
+        /* Create cpusets based on the affinity list.*/
+        g_affinity.num_cpusets = p_list->num;
+        g_affinity.cpusets =
+            (ABTD_affinity_cpuset *)ABTU_calloc(g_affinity.num_cpusets,
+                                                sizeof(ABTD_affinity_cpuset));
+        for (i = 0; i < p_list->num; i++) {
+            const ABTD_affinity_id_list *p_id_list = p_list->p_id_lists[i];
+            int j, num_cpuids = 0, len_cpuids = 8;
+            g_affinity.cpusets[i].cpuids =
+                (int *)ABTU_malloc(sizeof(int) * len_cpuids);
+            for (j = 0; j < p_id_list->num; j++) {
+                int cpuid_i = int_rem(p_id_list->ids[j],
+                                      g_affinity.initial_cpuset.num_cpuids);
+                int cpuid = g_affinity.initial_cpuset.cpuids[cpuid_i];
+                /* If it is unique, add it.*/
+                int k, is_unique = 1;
+                for (k = 0; k < num_cpuids; k++) {
+                    if (g_affinity.cpusets[i].cpuids[k] == cpuid) {
+                        is_unique = 0;
+                        break;
+                    }
+                }
+                if (is_unique) {
+                    if (num_cpuids == len_cpuids) {
+                        g_affinity.cpusets[i].cpuids =
+                            (int *)ABTU_realloc(g_affinity.cpusets[i].cpuids,
+                                                sizeof(int) * len_cpuids,
+                                                sizeof(int) * len_cpuids * 2);
+                        len_cpuids *= 2;
+                    }
+                    g_affinity.cpusets[i].cpuids[num_cpuids] = cpuid;
+                    num_cpuids++;
+                }
+            }
+            /* Adjust the size of cpuids. */
+            if (num_cpuids != len_cpuids)
+                g_affinity.cpusets[i].cpuids =
+                    (int *)ABTU_realloc(g_affinity.cpusets[i].cpuids,
+                                        sizeof(int) * len_cpuids,
+                                        sizeof(int) * num_cpuids);
+            g_affinity.cpusets[i].num_cpuids = num_cpuids;
+        }
+        ABTD_affinity_list_free(p_list);
+    } else {
+        /* Create default cpusets. */
+        g_affinity.num_cpusets = g_affinity.initial_cpuset.num_cpuids;
+        g_affinity.cpusets =
+            (ABTD_affinity_cpuset *)ABTU_calloc(g_affinity.num_cpusets,
+                                                sizeof(ABTD_affinity_cpuset));
+        for (i = 0; i < g_affinity.num_cpusets; i++) {
+            g_affinity.cpusets[i].num_cpuids = 1;
+            g_affinity.cpusets[i].cpuids = (int *)ABTU_malloc(
+                sizeof(int) * g_affinity.cpusets[i].num_cpuids);
+            g_affinity.cpusets[i].cpuids[0] =
+                g_affinity.initial_cpuset.cpuids[i];
+        }
     }
 }
 
