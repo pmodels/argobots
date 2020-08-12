@@ -193,7 +193,7 @@ ABTI_thread *ABTI_thread_htable_pop(ABTI_thread_htable *p_htable,
             p_queue->head = NULL;
             p_queue->tail = NULL;
         } else {
-            p_queue->head = ABTI_unit_get_thread(p_thread->p_next);
+            p_queue->head = p_thread->p_next;
         }
 
         p_queue->num_threads--;
@@ -216,7 +216,7 @@ ABTI_thread *ABTI_thread_htable_pop_low(ABTI_thread_htable *p_htable,
             p_queue->low_head = NULL;
             p_queue->low_tail = NULL;
         } else {
-            p_queue->low_head = ABTI_unit_get_thread(p_thread->p_next);
+            p_queue->low_head = p_thread->p_next;
         }
 
         p_queue->low_num_threads--;
@@ -242,7 +242,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
 
         /* Push p_thread to the queue */
         ABTD_atomic_release_store_int(&p_thread->state,
-                                      ABTI_UNIT_STATE_BLOCKED);
+                                      ABTI_THREAD_STATE_BLOCKED);
         ABTI_tool_event_thread_suspend(p_local_xstream, p_thread,
                                        p_thread->p_parent, sync_event_type,
                                        p_sync);
@@ -250,7 +250,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
             p_queue->low_head = p_thread;
             p_queue->low_tail = p_thread;
         } else {
-            p_queue->low_head = ABTI_unit_get_thread(p_target->p_next);
+            p_queue->low_head = p_target->p_next;
             p_queue->low_tail->p_next = p_thread;
             p_queue->low_tail = p_thread;
         }
@@ -262,10 +262,11 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
 
         /* Context-switch to p_target */
         ABTD_atomic_release_store_int(&p_target->state,
-                                      ABTI_UNIT_STATE_RUNNING);
+                                      ABTI_THREAD_STATE_RUNNING);
         ABTI_tool_event_thread_resume(p_local_xstream, p_target,
-                                      p_local_xstream ? p_local_xstream->p_unit
-                                                      : NULL);
+                                      p_local_xstream
+                                          ? p_local_xstream->p_thread
+                                          : NULL);
         ABTI_thread *p_prev =
             ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_thread,
                                                   p_target);

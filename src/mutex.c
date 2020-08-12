@@ -151,7 +151,7 @@ int ABT_mutex_lock(ABT_mutex mutex)
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local_xstream);
+        ABTI_thread_id self_id = ABTI_self_get_unit_id(p_local_xstream);
         if (self_id != p_mutex->attr.owner_id) {
             ABTI_mutex_lock(&p_local_xstream, p_mutex);
             p_mutex->attr.owner_id = self_id;
@@ -178,12 +178,11 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_unit_type type = ABTI_self_get_type(p_local_xstream);
-    if (ABTI_unit_type_is_thread(type)) {
+    ABTI_thread_type type = ABTI_self_get_type(p_local_xstream);
+    if (ABTI_thread_type_is_thread(type)) {
         LOG_DEBUG("%p: lock_low - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-            ABTI_thread_yield(pp_local_xstream,
-                              ABTI_unit_get_thread(p_local_xstream->p_unit),
+            ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread,
                               ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             p_local_xstream = *pp_local_xstream;
         }
@@ -196,8 +195,8 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_unit_type type = ABTI_self_get_type(p_local_xstream);
-    if (ABTI_unit_type_is_thread(type)) {
+    ABTI_thread_type type = ABTI_self_get_type(p_local_xstream);
+    if (ABTI_thread_type_is_thread(type)) {
         LOG_DEBUG("%p: lock_low - try\n", p_mutex);
         int c;
 
@@ -205,7 +204,7 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
          * low-mutex queue, we give the header ULT a chance to try to get
          * the mutex by context switching to it. */
         ABTI_thread_htable *p_htable = p_mutex->p_htable;
-        ABTI_thread *p_self = ABTI_unit_get_thread(p_local_xstream->p_unit);
+        ABTI_thread *p_self = p_local_xstream->p_thread;
         int rank = (int)p_local_xstream->rank;
         ABTI_thread_queue *p_queue = &p_htable->queue[rank];
         if (p_queue->low_num_threads > 0) {
@@ -239,7 +238,7 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
                         /* Push the previous ULT to its pool */
                         ABTI_thread *p_giver = p_mutex->p_giver;
                         ABTD_atomic_release_store_int(&p_giver->state,
-                                                      ABTI_UNIT_STATE_READY);
+                                                      ABTI_THREAD_STATE_READY);
                         ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
                                        ABTI_self_get_native_thread_id(
                                            *pp_local_xstream));
@@ -290,7 +289,7 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local_xstream);
+        ABTI_thread_id self_id = ABTI_self_get_unit_id(p_local_xstream);
         if (self_id != p_mutex->attr.owner_id) {
             ABTI_mutex_lock_low(&p_local_xstream, p_mutex);
             p_mutex->attr.owner_id = self_id;
@@ -347,7 +346,7 @@ int ABT_mutex_trylock(ABT_mutex mutex)
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local_xstream);
+        ABTI_thread_id self_id = ABTI_self_get_unit_id(p_local_xstream);
         if (self_id != p_mutex->attr.owner_id) {
             abt_errno = ABTI_mutex_trylock(p_mutex);
             if (abt_errno == ABT_SUCCESS) {
@@ -399,7 +398,7 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-        ABTI_unit_id self_id = ABTI_self_get_unit_id(p_local_xstream);
+        ABTI_thread_id self_id = ABTI_self_get_unit_id(p_local_xstream);
         if (self_id != p_mutex->attr.owner_id) {
             ABTI_mutex_spinlock(p_mutex);
             p_mutex->attr.owner_id = self_id;
@@ -479,9 +478,8 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
     ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     LOG_DEBUG("%p: unlock_se\n", p_mutex);
-    if (ABTI_unit_type_is_thread(ABTI_self_get_type(p_local_xstream)))
-        ABTI_thread_yield(pp_local_xstream,
-                          ABTI_unit_get_thread(p_local_xstream->p_unit),
+    if (ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream)))
+        ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread,
                           ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
 #else
     int i;
@@ -495,9 +493,8 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
      * waiter in the mutex queue.  We can just return. */
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) == 1) {
         LOG_DEBUG("%p: unlock_se\n", p_mutex);
-        if (ABTI_unit_type_is_thread(ABTI_self_get_type(p_local_xstream)))
-            ABTI_thread_yield(pp_local_xstream,
-                              ABTI_unit_get_thread(p_local_xstream->p_unit),
+        if (ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream)))
+            ABTI_thread_yield(pp_local_xstream, p_local_xstream->p_thread,
                               ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
         return abt_errno;
     }
@@ -505,7 +502,7 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
     /* There are ULTs waiting in the mutex queue */
     ABTI_thread_htable *p_htable = p_mutex->p_htable;
 
-    p_thread = ABTI_unit_get_thread(p_local_xstream->p_unit);
+    p_thread = p_local_xstream->p_thread;
     i = (int)p_local_xstream->rank;
     p_queue = &p_htable->queue[i];
 
@@ -568,10 +565,10 @@ handover:
 
     /* yield_to the next ULT */
     while (ABTD_atomic_acquire_load_uint32(&p_next->request) &
-           ABTI_UNIT_REQ_BLOCK)
+           ABTI_THREAD_REQ_BLOCK)
         ;
     ABTI_pool_dec_num_blocked(p_next->p_pool);
-    ABTD_atomic_release_store_int(&p_next->state, ABTI_UNIT_STATE_RUNNING);
+    ABTD_atomic_release_store_int(&p_next->state, ABTI_THREAD_STATE_RUNNING);
     ABTI_tool_event_thread_resume(p_local_xstream, p_next, p_thread);
     /* This works as a "yield" for this thread. */
     ABTI_tool_event_thread_yield(p_local_xstream, p_thread, p_thread->p_parent,
@@ -686,7 +683,7 @@ void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_htable *p_htable = p_mutex->p_htable;
-    ABTI_thread *p_self = ABTI_unit_get_thread(p_local_xstream->p_unit);
+    ABTI_thread *p_self = p_local_xstream->p_thread;
 
     int rank = (int)p_local_xstream->rank;
     ABTI_ASSERT(rank < p_htable->num_rows);
@@ -722,7 +719,7 @@ void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_htable *p_htable = p_mutex->p_htable;
-    ABTI_thread *p_self = ABTI_unit_get_thread(p_local_xstream->p_unit);
+    ABTI_thread *p_self = p_local_xstream->p_thread;
 
     int rank = (int)p_local_xstream->rank;
     ABTI_ASSERT(rank < p_htable->num_rows);

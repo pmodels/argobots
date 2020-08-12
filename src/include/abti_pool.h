@@ -77,7 +77,7 @@ static inline void ABTI_pool_add_thread(ABTI_thread *p_thread)
 {
     /* Set the ULT's state as READY. The relaxed version is used since the state
      * is synchronized by the following pool operation. */
-    ABTD_atomic_relaxed_store_int(&p_thread->state, ABTI_UNIT_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_thread->state, ABTI_THREAD_STATE_READY);
 
     /* Add the ULT to the associated pool */
     ABTI_pool_push(p_thread->p_pool, p_thread->unit);
@@ -119,7 +119,7 @@ static inline int ABTI_pool_add_thread(ABTI_thread *p_thread,
 
     /* Set the ULT's state as READY. The relaxed version is used since the state
      * is synchronized by the following pool operation. */
-    ABTD_atomic_relaxed_store_int(&p_thread->state, ABTI_UNIT_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_thread->state, ABTI_THREAD_STATE_READY);
 
     /* Add the ULT to the associated pool */
     abt_errno = ABTI_pool_push(p_thread->p_pool, p_thread->unit, producer_id);

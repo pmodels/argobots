@@ -197,19 +197,19 @@ int ABT_task_free(ABT_task *task)
 
     /* Wait until the task terminates */
     while (ABTD_atomic_acquire_load_int(&p_task->state) !=
-           ABTI_UNIT_STATE_TERMINATED) {
+           ABTI_THREAD_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!ABTI_unit_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
+        if (!ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
             ABTD_atomic_pause();
             continue;
         }
 #endif
-        ABTI_thread_yield(&p_local_xstream,
-                          ABTI_unit_get_thread(p_local_xstream->p_unit),
+        ABTI_thread_yield(&p_local_xstream, p_local_xstream->p_thread,
                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
     }
     ABTI_tool_event_task_join(p_local_xstream, p_task,
-                              p_local_xstream ? p_local_xstream->p_unit : NULL);
+                              p_local_xstream ? p_local_xstream->p_thread
+                                              : NULL);
     /* Free the ABTI_thread structure */
     ABTI_task_free(p_local_xstream, p_task);
 
@@ -246,19 +246,19 @@ int ABT_task_join(ABT_task task)
 
     /* TODO: better implementation */
     while (ABTD_atomic_acquire_load_int(&p_task->state) !=
-           ABTI_UNIT_STATE_TERMINATED) {
+           ABTI_THREAD_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!ABTI_unit_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
+        if (!ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
             ABTD_atomic_pause();
             continue;
         }
 #endif
-        ABTI_thread_yield(&p_local_xstream,
-                          ABTI_unit_get_thread(p_local_xstream->p_unit),
+        ABTI_thread_yield(&p_local_xstream, p_local_xstream->p_thread,
                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
     }
     ABTI_tool_event_task_join(p_local_xstream, p_task,
-                              p_local_xstream ? p_local_xstream->p_unit : NULL);
+                              p_local_xstream ? p_local_xstream->p_thread
+                                              : NULL);
 
 fn_exit:
     return abt_errno;
@@ -286,7 +286,7 @@ int ABT_task_cancel(ABT_task task)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Set the cancel request */
-    ABTI_task_set_request(p_task, ABTI_UNIT_REQ_CANCEL);
+    ABTI_task_set_request(p_task, ABTI_THREAD_REQ_CANCEL);
 
 fn_exit:
     return abt_errno;
@@ -332,9 +332,9 @@ int ABT_task_self(ABT_task *task)
     }
 #endif
 
-    ABTI_thread *p_unit = p_local_xstream->p_unit;
-    if (p_unit->type == ABTI_UNIT_TYPE_TASK) {
-        *task = ABTI_task_get_handle(ABTI_unit_get_task(p_unit));
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
+    if (p_thread->type == ABTI_THREAD_TYPE_TASK) {
+        *task = ABTI_task_get_handle(p_thread);
     } else {
         abt_errno = ABT_ERR_INV_TASK;
         *task = ABT_TASK_NULL;
@@ -375,9 +375,9 @@ int ABT_task_self_id(ABT_unit_id *id)
     }
 #endif
 
-    ABTI_thread *p_unit = p_local_xstream->p_unit;
-    if (p_unit->type == ABTI_UNIT_TYPE_TASK) {
-        *id = ABTI_task_get_id(ABTI_unit_get_task(p_unit));
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
+    if (p_thread->type == ABTI_THREAD_TYPE_TASK) {
+        *id = ABTI_task_get_id(p_thread);
     } else {
         abt_errno = ABT_ERR_INV_TASK;
     }
@@ -431,8 +431,8 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Return value */
-    *state = ABTI_unit_state_get_task_state(
-        (ABTI_unit_state)ABTD_atomic_acquire_load_int(&p_task->state));
+    *state = ABTI_thread_state_get_task_state(
+        (ABTI_thread_state)ABTD_atomic_acquire_load_int(&p_task->state));
 
 fn_exit:
     return abt_errno;
@@ -709,7 +709,7 @@ int ABT_task_set_specific(ABT_task task, ABT_key key, void *value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Set the value. */
-    ABTI_unit_set_specific(p_local_xstream, p_task, p_key, value);
+    ABTI_thread_set_specific(p_local_xstream, p_task, p_key, value);
 fn_exit:
     return abt_errno;
 
@@ -744,7 +744,7 @@ int ABT_task_get_specific(ABT_task task, ABT_key key, void **value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Get the value. */
-    *value = ABTI_unit_get_specific(p_task, p_key);
+    *value = ABTI_thread_get_specific(p_task, p_key);
 fn_exit:
     return abt_errno;
 
@@ -772,9 +772,9 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 
     p_newtask->p_last_xstream = NULL;
     p_newtask->p_parent = NULL;
-    ABTD_atomic_relaxed_store_int(&p_newtask->state, ABTI_UNIT_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_newtask->state, ABTI_THREAD_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_newtask->request, 0);
-    p_newtask->f_unit = task_func;
+    p_newtask->f_thread = task_func;
     p_newtask->p_arg = arg;
     p_newtask->p_pool = p_pool;
     p_newtask->refcount = refcount;
@@ -786,11 +786,11 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 
     /* Create a wrapper work unit */
     h_newtask = ABTI_task_get_handle(p_newtask);
-    p_newtask->type = ABTI_UNIT_TYPE_TASK;
+    p_newtask->type = ABTI_THREAD_TYPE_TASK;
     p_newtask->unit = p_pool->u_create_from_task(h_newtask);
 
     ABTI_tool_event_task_create(p_local_xstream, p_newtask,
-                                p_local_xstream ? p_local_xstream->p_unit
+                                p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL,
                                 p_pool);
     LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_task_get_id(p_newtask));
@@ -825,14 +825,14 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     int abt_errno = ABT_SUCCESS;
 
     ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_task->state) ==
-                        ABTI_UNIT_STATE_TERMINATED,
+                        ABTI_THREAD_STATE_TERMINATED,
                     ABT_ERR_INV_TASK);
 
     p_task->p_last_xstream = NULL;
     p_task->p_parent = NULL;
-    ABTD_atomic_relaxed_store_int(&p_task->state, ABTI_UNIT_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_task->state, ABTI_THREAD_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_task->request, 0);
-    p_task->f_unit = task_func;
+    p_task->f_thread = task_func;
     p_task->p_arg = arg;
     p_task->refcount = 1;
     ABTD_atomic_relaxed_store_ptr(&p_task->p_keytable, NULL);
@@ -850,7 +850,7 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     }
 
     ABTI_tool_event_task_revive(p_local_xstream, p_task,
-                                p_local_xstream ? p_local_xstream->p_unit
+                                p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL,
                                 p_pool);
     LOG_DEBUG("[T%" PRIu64 "] revived\n", ABTI_task_get_id(p_task));
@@ -875,7 +875,8 @@ fn_fail:
 void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_task)
 {
     ABTI_tool_event_task_free(p_local_xstream, p_task,
-                              p_local_xstream ? p_local_xstream->p_unit : NULL);
+                              p_local_xstream ? p_local_xstream->p_thread
+                                              : NULL);
     LOG_DEBUG("[T%" PRIu64 "] freed\n", ABTI_task_get_id(p_task));
 
     /* Free the unit */
@@ -905,13 +906,13 @@ void ABTI_task_print(ABTI_thread *p_task, FILE *p_os, int indent)
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *state;
     switch (ABTD_atomic_acquire_load_int(&p_task->state)) {
-        case ABTI_UNIT_STATE_READY:
+        case ABTI_THREAD_STATE_READY:
             state = "READY";
             break;
-        case ABTI_UNIT_STATE_RUNNING:
+        case ABTI_THREAD_STATE_RUNNING:
             state = "RUNNING";
             break;
-        case ABTI_UNIT_STATE_TERMINATED:
+        case ABTI_THREAD_STATE_TERMINATED:
             state = "TERMINATED";
             break;
         default:

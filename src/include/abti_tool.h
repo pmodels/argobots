@@ -271,7 +271,7 @@ static inline void ABTI_tool_event_thread_yield_impl(
     ABT_sync_event_type sync_event_type, void *p_sync)
 {
     if (ABTD_atomic_relaxed_load_uint32(&p_thread->request) &
-        ABTI_UNIT_REQ_BLOCK) {
+        ABTI_THREAD_REQ_BLOCK) {
         ABTI_tool_event_thread_impl(p_local_xstream,
                                     ABT_TOOL_EVENT_THREAD_SUSPEND, p_thread,
                                     NULL, p_thread->p_pool, p_parent,

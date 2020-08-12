@@ -64,20 +64,18 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
 
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread *p_thread;
-    ABTI_thread *p_unit;
 
     if (p_local_xstream != NULL) {
-        ABTI_thread *p_self = p_local_xstream->p_unit;
-        ABTI_CHECK_TRUE(ABTI_unit_type_is_thread(p_self->type), ABT_ERR_COND);
-        p_thread = ABTI_unit_get_thread(p_self);
-        p_unit = p_thread;
+        p_thread = p_local_xstream->p_thread;
+        ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_thread->type),
+                        ABT_ERR_COND);
     } else {
         /* external thread */
-        p_thread = NULL;
-        p_unit = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
-        p_unit->type = ABTI_UNIT_TYPE_EXT;
+        p_thread = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
+        p_thread->type = ABTI_THREAD_TYPE_EXT;
         /* use state for synchronization */
-        ABTD_atomic_relaxed_store_int(&p_unit->state, ABTI_UNIT_STATE_BLOCKED);
+        ABTD_atomic_relaxed_store_int(&p_thread->state,
+                                      ABTI_THREAD_STATE_BLOCKED);
     }
 
     ABTI_spinlock_acquire(&p_cond->lock);
@@ -88,29 +86,29 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
         ABT_bool result = ABTI_mutex_equal(p_cond->p_waiter_mutex, p_mutex);
         if (result == ABT_FALSE) {
             ABTI_spinlock_release(&p_cond->lock);
-            if (p_thread)
-                ABTU_free(p_unit);
+            if (p_local_xstream == NULL)
+                ABTU_free(p_thread);
             abt_errno = ABT_ERR_INV_MUTEX;
             goto fn_fail;
         }
     }
 
     if (p_cond->num_waiters == 0) {
-        p_unit->p_prev = p_unit;
-        p_unit->p_next = p_unit;
-        p_cond->p_head = p_unit;
-        p_cond->p_tail = p_unit;
+        p_thread->p_prev = p_thread;
+        p_thread->p_next = p_thread;
+        p_cond->p_head = p_thread;
+        p_cond->p_tail = p_thread;
     } else {
-        p_cond->p_tail->p_next = p_unit;
-        p_cond->p_head->p_prev = p_unit;
-        p_unit->p_prev = p_cond->p_tail;
-        p_unit->p_next = p_cond->p_head;
-        p_cond->p_tail = p_unit;
+        p_cond->p_tail->p_next = p_thread;
+        p_cond->p_head->p_prev = p_thread;
+        p_thread->p_prev = p_cond->p_tail;
+        p_thread->p_next = p_cond->p_head;
+        p_cond->p_tail = p_thread;
     }
 
     p_cond->num_waiters++;
 
-    if (p_thread) {
+    if (p_local_xstream != NULL) {
         /* Change the ULT's state to BLOCKED */
         ABTI_thread_set_blocked(p_thread);
 
@@ -123,16 +121,15 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
         /* Suspend the current ULT */
         ABTI_thread_suspend(pp_local_xstream, p_thread,
                             ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
-
     } else {
         ABTI_spinlock_release(&p_cond->lock);
         ABTI_mutex_unlock(p_local_xstream, p_mutex);
 
         /* External thread is waiting here. */
-        while (ABTD_atomic_acquire_load_int(&p_unit->state) !=
-               ABTI_UNIT_STATE_READY)
+        while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
+               ABTI_THREAD_STATE_READY)
             ;
-        ABTU_free(p_unit);
+        ABTU_free(p_thread);
     }
 
     /* Lock the mutex again */
@@ -158,25 +155,24 @@ static inline void ABTI_cond_broadcast(ABTI_xstream *p_local_xstream,
 
     /* Wake up all waiting ULTs */
     ABTI_thread *p_head = p_cond->p_head;
-    ABTI_thread *p_unit = p_head;
+    ABTI_thread *p_cur = p_head;
     while (1) {
-        ABTI_thread *p_next = p_unit->p_next;
+        ABTI_thread *p_next = p_cur->p_next;
 
-        p_unit->p_prev = NULL;
-        p_unit->p_next = NULL;
+        p_cur->p_prev = NULL;
+        p_cur->p_next = NULL;
 
-        if (ABTI_unit_type_is_thread(p_unit->type)) {
-            ABTI_thread *p_thread = ABTI_unit_get_thread(p_unit);
-            ABTI_thread_set_ready(p_local_xstream, p_thread);
+        if (ABTI_thread_type_is_thread(p_cur->type)) {
+            ABTI_thread_set_ready(p_local_xstream, p_cur);
         } else {
             /* When the head is an external thread */
-            ABTD_atomic_release_store_int(&p_unit->state,
-                                          ABTI_UNIT_STATE_READY);
+            ABTD_atomic_release_store_int(&p_cur->state,
+                                          ABTI_THREAD_STATE_READY);
         }
 
         /* Next ULT */
         if (p_next != p_head) {
-            p_unit = p_next;
+            p_cur = p_next;
         } else {
             break;
         }

@@ -103,11 +103,11 @@ int ABT_init(int argc, char **argv)
                                         &p_main_thread);
     /* Set as if p_local_xstream is currently running the main thread. */
     ABTD_atomic_relaxed_store_int(&p_main_thread->state,
-                                  ABTI_UNIT_STATE_RUNNING);
+                                  ABTI_THREAD_STATE_RUNNING);
     p_main_thread->p_last_xstream = p_local_xstream;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
     gp_ABTI_global->p_thread_main = p_main_thread;
-    p_local_xstream->p_unit = p_main_thread;
+    p_local_xstream->p_thread = p_main_thread;
 
     /* Start the primary ES */
     abt_errno = ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream,
@@ -170,11 +170,10 @@ int ABT_finalize(void)
                         ABT_ERR_INV_XSTREAM,
                         "ABT_finalize must be called by the primary ES.");
 
-    ABTI_thread *p_self = p_local_xstream->p_unit;
-    ABTI_CHECK_TRUE_MSG(p_self->type == ABTI_UNIT_TYPE_THREAD_MAIN,
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
+    ABTI_CHECK_TRUE_MSG(p_thread->type == ABTI_THREAD_TYPE_THREAD_MAIN,
                         ABT_ERR_INV_THREAD,
                         "ABT_finalize must be called by the primary ULT.");
-    ABTI_thread *p_thread = ABTI_unit_get_thread(p_self);
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     /* Turns off the tool interface */
@@ -190,7 +189,7 @@ int ABT_finalize(void)
     if (ABTD_atomic_acquire_load_int(&p_local_xstream->state) !=
         ABT_XSTREAM_STATE_TERMINATED) {
         /* Set the orphan request for the primary ULT */
-        ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_ORPHAN);
+        ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
 
         LOG_DEBUG("[U%" PRIu64 ":E%d] yield to scheduler\n",
                   ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
@@ -206,8 +205,8 @@ int ABT_finalize(void)
     }
 
     /* Remove the primary ULT */
-    ABTI_ASSERT(p_local_xstream->p_unit == p_self);
-    p_local_xstream->p_unit = NULL;
+    ABTI_ASSERT(p_local_xstream->p_thread == p_thread);
+    p_local_xstream->p_thread = NULL;
     ABTI_thread_free_main(p_local_xstream, p_thread);
 
     /* Free the primary ES */
