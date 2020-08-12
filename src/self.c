@@ -94,7 +94,7 @@ int ABT_self_is_primary(ABT_bool *flag)
     }
 #endif
 
-    ABTI_unit *p_unit = p_local_xstream->p_unit;
+    ABTI_thread *p_unit = p_local_xstream->p_unit;
     if (p_unit->type == ABTI_UNIT_TYPE_THREAD_MAIN) {
         *flag = ABT_TRUE;
     } else {
@@ -190,7 +190,7 @@ int ABT_self_get_last_pool_id(int *pool_id)
     }
 #endif
 
-    ABTI_unit *p_self = p_local_xstream->p_unit;
+    ABTI_thread *p_self = p_local_xstream->p_unit;
     ABTI_ASSERT(p_self->p_pool);
     *pool_id = (int)(p_self->p_pool->id);
 
@@ -227,7 +227,7 @@ int ABT_self_suspend(void)
     }
 #endif
 
-    ABTI_unit *p_self = p_local_xstream->p_unit;
+    ABTI_thread *p_self = p_local_xstream->p_unit;
     ABTI_CHECK_TRUE(ABTI_unit_type_is_thread(p_self->type), ABT_ERR_INV_THREAD);
     abt_errno = ABTI_thread_set_blocked(ABTI_unit_get_thread(p_self));
     ABTI_CHECK_ERROR(abt_errno);

@@ -117,7 +117,7 @@ static inline double convert_timespec_to_sec(const struct timespec *p_ts)
     return secs;
 }
 
-static inline void remove_unit(ABTI_cond *p_cond, ABTI_unit *p_unit)
+static inline void remove_unit(ABTI_cond *p_cond, ABTI_thread *p_unit)
 {
     if (p_unit->p_next == NULL)
         return;
@@ -185,7 +185,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
 
     double tar_time = convert_timespec_to_sec(abstime);
 
-    ABTI_unit *p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
+    ABTI_thread *p_unit = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
     p_unit->type = ABTI_UNIT_TYPE_EXT;
     ABTD_atomic_relaxed_store_int(&p_unit->state, ABTI_UNIT_STATE_BLOCKED);
 
@@ -283,7 +283,7 @@ int ABT_cond_signal(ABT_cond cond)
     }
 
     /* Wake up the first waiting ULT */
-    ABTI_unit *p_unit = p_cond->p_head;
+    ABTI_thread *p_unit = p_cond->p_head;
 
     p_cond->num_waiters--;
     if (p_cond->num_waiters == 0) {

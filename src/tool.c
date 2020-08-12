@@ -265,7 +265,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                 *(int *)val = 0;
             } else {
                 int depth = 0;
-                ABTI_unit *p_cur = p_tctx->p_parent;
+                ABTI_thread *p_cur = p_tctx->p_parent;
                 while (p_cur) {
                     depth++;
                     p_cur = p_cur->p_parent;
@@ -308,7 +308,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                     break;
                 case ABT_SYNC_EVENT_TYPE_TASK_JOIN:
                     *(ABT_task *)val = ABTI_task_get_handle(
-                        (ABTI_task *)p_tctx->p_sync_object);
+                        (ABTI_thread *)p_tctx->p_sync_object);
                     break;
                 case ABT_SYNC_EVENT_TYPE_MUTEX:
                     *(ABT_mutex *)val = ABTI_mutex_get_handle(

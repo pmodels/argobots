@@ -461,7 +461,7 @@ fn_fail:
 int ABT_info_print_task(FILE *fp, ABT_task task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     ABTI_task_print(p_task, fp, 0);
@@ -531,7 +531,7 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
         fprintf(fp,
                 "stack     : %p\n"
                 "stacksize : %" PRIu64 "\n",
-                p_thread->p_stack, (uint64_t)p_thread->stacksize);
+                p_thread->ctx.p_stack, (uint64_t)p_thread->ctx.stacksize);
         int abt_errno = ABTI_thread_print_stack(p_thread, fp);
         if (abt_errno != ABT_SUCCESS)
             fprintf(fp, "Failed to print stack.\n");

@@ -111,7 +111,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     ABTI_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready == ABT_FALSE) {
         ABTI_thread *p_current;
-        ABTI_unit *p_unit;
+        ABTI_thread *p_unit;
 
         if (p_local_xstream != NULL) {
             p_unit = p_local_xstream->p_unit;
@@ -121,7 +121,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         } else {
             /* external thread */
             p_current = NULL;
-            p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
+            p_unit = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
             p_unit->type = ABTI_UNIT_TYPE_EXT;
             /* use state for synchronization */
             ABTD_atomic_relaxed_store_int(&p_unit->state,
@@ -247,10 +247,10 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     }
 
     /* Wake up all waiting ULTs */
-    ABTI_unit *p_head = p_eventual->p_head;
-    ABTI_unit *p_unit = p_head;
+    ABTI_thread *p_head = p_eventual->p_head;
+    ABTI_thread *p_unit = p_head;
     while (1) {
-        ABTI_unit *p_next = p_unit->p_next;
+        ABTI_thread *p_next = p_unit->p_next;
         p_unit->p_next = NULL;
 
         if (ABTI_unit_type_is_thread(p_unit->type)) {

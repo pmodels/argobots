@@ -238,10 +238,9 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
 
                         /* Push the previous ULT to its pool */
                         ABTI_thread *p_giver = p_mutex->p_giver;
-                        ABTD_atomic_release_store_int(&p_giver->unit_def.state,
+                        ABTD_atomic_release_store_int(&p_giver->state,
                                                       ABTI_UNIT_STATE_READY);
-                        ABTI_POOL_PUSH(p_giver->unit_def.p_pool,
-                                       p_giver->unit_def.unit,
+                        ABTI_POOL_PUSH(p_giver->p_pool, p_giver->unit,
                                        ABTI_self_get_native_thread_id(
                                            *pp_local_xstream));
                         break;
@@ -568,24 +567,22 @@ handover:
               ABTI_thread_get_id(p_next));
 
     /* yield_to the next ULT */
-    while (ABTD_atomic_acquire_load_uint32(&p_next->unit_def.request) &
+    while (ABTD_atomic_acquire_load_uint32(&p_next->request) &
            ABTI_UNIT_REQ_BLOCK)
         ;
-    ABTI_pool_dec_num_blocked(p_next->unit_def.p_pool);
-    ABTD_atomic_release_store_int(&p_next->unit_def.state,
-                                  ABTI_UNIT_STATE_RUNNING);
-    ABTI_tool_event_thread_resume(p_local_xstream, p_next, &p_thread->unit_def);
+    ABTI_pool_dec_num_blocked(p_next->p_pool);
+    ABTD_atomic_release_store_int(&p_next->state, ABTI_UNIT_STATE_RUNNING);
+    ABTI_tool_event_thread_resume(p_local_xstream, p_next, p_thread);
     /* This works as a "yield" for this thread. */
-    ABTI_tool_event_thread_yield(p_local_xstream, p_thread,
-                                 p_thread->unit_def.p_parent,
+    ABTI_tool_event_thread_yield(p_local_xstream, p_thread, p_thread->p_parent,
                                  ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
     ABTI_thread *p_prev =
         ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_thread,
                                               p_next);
     /* Invoke an event of thread resume and run. */
     p_local_xstream = *pp_local_xstream;
-    ABTI_tool_event_thread_run(p_local_xstream, p_thread, &p_prev->unit_def,
-                               p_thread->unit_def.p_parent);
+    ABTI_tool_event_thread_run(p_local_xstream, p_thread, p_prev,
+                               p_thread->p_parent);
 #endif
 
     return abt_errno;

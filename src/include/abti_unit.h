@@ -6,7 +6,7 @@
 #ifndef ABTI_UNIT_H_INCLUDED
 #define ABTI_UNIT_H_INCLUDED
 
-/* Inlined functions for ABTI_unit */
+/* Inlined functions for ABTI_thread */
 
 static inline ABTI_ktable *
 ABTI_ktable_ensure_allocation(ABTI_xstream *p_local_xstream,
@@ -74,18 +74,18 @@ static inline ABT_unit_type ABTI_unit_type_get_type(ABTI_unit_type type)
     }
 }
 
-static inline ABTI_thread *ABTI_unit_get_thread(ABTI_unit *p_unit)
+static inline ABTI_thread *ABTI_unit_get_thread(ABTI_thread *p_unit)
 {
-    return (ABTI_thread *)(((char *)p_unit) - offsetof(ABTI_thread, unit_def));
+    return p_unit;
 }
 
-static inline ABTI_task *ABTI_unit_get_task(ABTI_unit *p_unit)
+static inline ABTI_thread *ABTI_unit_get_task(ABTI_thread *p_unit)
 {
-    return (ABTI_task *)(((char *)p_unit) - offsetof(ABTI_task, unit_def));
+    return p_unit;
 }
 
 static inline void ABTI_unit_set_specific(ABTI_xstream *p_local_xstream,
-                                          ABTI_unit *p_unit, ABTI_key *p_key,
+                                          ABTI_thread *p_unit, ABTI_key *p_key,
                                           void *value)
 {
     ABTI_ktable *p_ktable =
@@ -94,7 +94,7 @@ static inline void ABTI_unit_set_specific(ABTI_xstream *p_local_xstream,
     ABTI_ktable_set(p_local_xstream, p_ktable, p_key, value);
 }
 
-static inline void *ABTI_unit_get_specific(ABTI_unit *p_unit, ABTI_key *p_key)
+static inline void *ABTI_unit_get_specific(ABTI_thread *p_unit, ABTI_key *p_key)
 {
     ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(&p_unit->p_keytable);
     if (ABTI_ktable_is_valid(p_ktable)) {

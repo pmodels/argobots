@@ -41,7 +41,8 @@ static inline ABT_thread ABTI_thread_get_handle(ABTI_thread *p_thread)
 static inline ABTI_thread *
 ABTI_thread_context_get_thread(ABTD_thread_context *p_ctx)
 {
-    return (ABTI_thread *)(((char *)p_ctx) - offsetof(ABTI_thread, ctx));
+    return (ABTI_thread *)(((char *)p_ctx) - offsetof(ABTI_thread, ctx) -
+                           offsetof(ABTI_thread_context, ctx));
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
@@ -126,15 +127,15 @@ static inline ABT_bool ABTI_thread_is_dynamic_promoted(ABTI_thread *p_thread)
      *   Lessons Learned from Analyzing Dynamic Promotion for User-Level
      *   Threading, S. Iwasaki, A. Amer, K. Taura, and P. Balaji (SC '18)
      */
-    return ABTD_thread_context_is_dynamic_promoted(&p_thread->ctx);
+    return ABTD_thread_context_is_dynamic_promoted(&p_thread->ctx.ctx);
 }
 
 static inline void ABTI_thread_dynamic_promote_thread(ABTI_thread *p_thread)
 {
     LOG_DEBUG("[U%" PRIu64 "] dynamic-promote ULT\n",
               ABTI_thread_get_id(p_thread));
-    void *p_stack = p_thread->p_stack;
-    size_t stacksize = p_thread->stacksize;
+    void *p_stack = p_thread->ctx.p_stack;
+    size_t stacksize = p_thread->ctx.stacksize;
     void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
     ABTD_thread_context_dynamic_promote_thread(p_stacktop);
 }
@@ -151,22 +152,22 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_sibling_internal(
     }
     if (!ABTI_thread_is_dynamic_promoted(p_new)) {
         /* p_new does not have a context, so we first need to make it. */
-        ABTD_thread_context_arm_thread(p_new->stacksize, p_new->p_stack,
-                                       &p_new->ctx);
+        ABTD_thread_context_arm_thread(p_new->ctx.stacksize, p_new->ctx.p_stack,
+                                       &p_new->ctx.ctx);
     }
 #endif
-    p_new->unit_def.p_parent = p_old->unit_def.p_parent;
+    p_new->p_parent = p_old->p_parent;
     if (is_finish) {
         ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
-                                      p_old->unit_def.p_parent);
-        ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
+                                      p_old->p_parent);
+        ABTD_thread_finish_context(&p_old->ctx.ctx, &p_new->ctx.ctx);
         ABTU_unreachable();
     } else {
-        ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
+        ABTD_thread_context_switch(&p_old->ctx.ctx, &p_new->ctx.ctx);
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
-        ABTI_unit *p_prev = p_local_xstream->p_unit;
-        p_local_xstream->p_unit = &p_old->unit_def;
+        ABTI_thread *p_prev = p_local_xstream->p_unit;
+        p_local_xstream->p_unit = p_old;
         ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev->type));
         return ABTI_unit_get_thread(p_prev);
     }
@@ -176,8 +177,8 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_parent_internal(
     ABTI_xstream **pp_local_xstream, ABTI_thread *p_old, ABT_bool is_finish,
     ABT_sync_event_type sync_event_type, void *p_sync)
 {
-    ABTI_ASSERT(ABTI_unit_type_is_thread(p_old->unit_def.type));
-    ABTI_thread *p_new = ABTI_unit_get_thread(p_old->unit_def.p_parent);
+    ABTI_ASSERT(ABTI_unit_type_is_thread(p_old->type));
+    ABTI_thread *p_new = ABTI_unit_get_thread(p_old->p_parent);
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     /* Dynamic promotion is unnecessary if p_old will be discarded. */
     if (!is_finish && !ABTI_thread_is_dynamic_promoted(p_old))
@@ -187,22 +188,21 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_parent_internal(
 #endif
     if (is_finish) {
         ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
-                                      p_old->unit_def.p_parent);
-        ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
+                                      p_old->p_parent);
+        ABTD_thread_finish_context(&p_old->ctx.ctx, &p_new->ctx.ctx);
         ABTU_unreachable();
     } else {
-        ABTI_tool_event_thread_yield(*pp_local_xstream, p_old,
-                                     p_old->unit_def.p_parent, sync_event_type,
-                                     p_sync);
-        ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
+        ABTI_tool_event_thread_yield(*pp_local_xstream, p_old, p_old->p_parent,
+                                     sync_event_type, p_sync);
+        ABTD_thread_context_switch(&p_old->ctx.ctx, &p_new->ctx.ctx);
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
-        ABTI_unit *p_prev = p_local_xstream->p_unit;
-        p_local_xstream->p_unit = &p_old->unit_def;
+        ABTI_thread *p_prev = p_local_xstream->p_unit;
+        p_local_xstream->p_unit = p_old;
         ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev->type));
         /* Invoke an event of thread run. */
         ABTI_tool_event_thread_run(p_local_xstream, p_old, p_prev,
-                                   p_old->unit_def.p_parent);
+                                   p_old->p_parent);
         return ABTI_unit_get_thread(p_prev);
     }
 }
@@ -211,40 +211,38 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
     ABTI_xstream **pp_local_xstream, ABTI_thread *p_old, ABTI_thread *p_new)
 {
     ABTI_xstream *p_local_xstream;
-    p_new->unit_def.p_parent = &p_old->unit_def;
+    p_new->p_parent = p_old;
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     if (!ABTI_thread_is_dynamic_promoted(p_old)) {
         ABTI_thread_dynamic_promote_thread(p_old);
     }
     if (!ABTI_thread_is_dynamic_promoted(p_new)) {
-        void *p_stacktop = ((char *)p_new->p_stack) + p_new->stacksize;
+        void *p_stacktop = ((char *)p_new->ctx.p_stack) + p_new->ctx.stacksize;
         LOG_DEBUG("[U%" PRIu64 "] run ULT (dynamic promotion)\n",
                   ABTI_thread_get_id(p_new));
         p_local_xstream = *pp_local_xstream;
-        p_local_xstream->p_unit = &p_new->unit_def;
+        p_local_xstream->p_unit = p_new;
         /* Invoke an event of thread run. */
-        ABTI_tool_event_thread_run(p_local_xstream, p_new, &p_old->unit_def,
-                                   &p_old->unit_def);
-        ABTD_thread_context_make_and_call(&p_old->ctx, p_new->unit_def.f_unit,
-                                          p_new->unit_def.p_arg, p_stacktop);
+        ABTI_tool_event_thread_run(p_local_xstream, p_new, p_old, p_old);
+        ABTD_thread_context_make_and_call(&p_old->ctx.ctx, p_new->f_unit,
+                                          p_new->p_arg, p_stacktop);
         /* The scheduler continues from here. If the previous thread has not
          * run dynamic promotion, ABTI_thread_context_make_and_call took the
          * fast path. In this case, the request handling has not been done,
          * so it must be done here. */
         p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
-        ABTI_unit *p_prev_unit = p_local_xstream->p_unit;
+        ABTI_thread *p_prev_unit = p_local_xstream->p_unit;
         ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev_unit->type));
         ABTI_thread *p_prev = ABTI_unit_get_thread(p_prev_unit);
-        p_local_xstream->p_unit = &p_old->unit_def;
+        p_local_xstream->p_unit = p_old;
         if (!ABTI_thread_is_dynamic_promoted(p_prev)) {
             ABTI_ASSERT(p_prev == p_new);
             /* Invoke a thread-finish event of the previous thread. */
-            ABTI_tool_event_thread_finish(p_local_xstream, p_prev,
-                                          &p_old->unit_def);
+            ABTI_tool_event_thread_finish(p_local_xstream, p_prev, p_old);
             /* See ABTDI_thread_terminate for details.
              * TODO: avoid making a copy of the code. */
-            ABTD_thread_context *p_ctx = &p_prev->ctx;
+            ABTD_thread_context *p_ctx = &p_prev->ctx.ctx;
             ABTD_thread_context *p_link =
                 ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link);
             if (p_link) {
@@ -257,11 +255,11 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
 
                 /* We don't need to use the atomic OR operation here because
                  * the ULT will be terminated regardless of other requests. */
-                ABTD_atomic_release_store_uint32(&p_prev->unit_def.request,
+                ABTD_atomic_release_store_uint32(&p_prev->request,
                                                  ABTI_UNIT_REQ_TERMINATE);
             } else {
                 uint32_t req =
-                    ABTD_atomic_fetch_or_uint32(&p_prev->unit_def.request,
+                    ABTD_atomic_fetch_or_uint32(&p_prev->request,
                                                 ABTI_UNIT_REQ_JOIN |
                                                     ABTI_UNIT_REQ_TERMINATE);
                 if (req & ABTI_UNIT_REQ_JOIN) {
@@ -282,11 +280,11 @@ static inline ABTI_thread *ABTI_thread_context_switch_to_child_internal(
     }
 #endif
     {
-        ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
+        ABTD_thread_context_switch(&p_old->ctx.ctx, &p_new->ctx.ctx);
         p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
-        ABTI_unit *p_prev = p_local_xstream->p_unit;
-        p_local_xstream->p_unit = &p_old->unit_def;
+        ABTI_thread *p_prev = p_local_xstream->p_unit;
+        p_local_xstream->p_unit = p_old;
         ABTI_ASSERT(ABTI_unit_type_is_thread(p_prev->type));
         /* p_old keeps running as a parent, so no thread-run event incurs. */
         return ABTI_unit_get_thread(p_prev);
@@ -346,25 +344,25 @@ ABTI_thread_finish_context_sched_to_main_thread(ABTI_sched *p_main_sched)
 {
     /* The main thread is stored in p_link. */
     ABTI_thread *p_sched_thread = p_main_sched->p_thread;
-    ABTI_ASSERT(p_sched_thread->unit_def.type ==
-                ABTI_UNIT_TYPE_THREAD_MAIN_SCHED);
-    ABTD_thread_context *p_ctx = &p_sched_thread->ctx;
+    ABTI_ASSERT(p_sched_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN_SCHED);
+    ABTD_thread_context *p_ctx = &p_sched_thread->ctx.ctx;
     ABTI_thread *p_main_thread = ABTI_thread_context_get_thread(
         ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link));
     ABTI_ASSERT(p_main_thread &&
-                p_main_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_MAIN);
-    ABTD_thread_finish_context(&p_sched_thread->ctx, &p_main_thread->ctx);
+                p_main_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN);
+    ABTD_thread_finish_context(&p_sched_thread->ctx.ctx,
+                               &p_main_thread->ctx.ctx);
 }
 
 static inline void ABTI_thread_set_request(ABTI_thread *p_thread, uint32_t req)
 {
-    ABTD_atomic_fetch_or_uint32(&p_thread->unit_def.request, req);
+    ABTD_atomic_fetch_or_uint32(&p_thread->request, req);
 }
 
 static inline void ABTI_thread_unset_request(ABTI_thread *p_thread,
                                              uint32_t req)
 {
-    ABTD_atomic_fetch_and_uint32(&p_thread->unit_def.request, ~req);
+    ABTD_atomic_fetch_and_uint32(&p_thread->request, ~req);
 }
 
 static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
@@ -373,11 +371,10 @@ static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
                                      void *p_sync)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] yield\n", ABTI_thread_get_id(p_thread),
-              p_thread->unit_def.p_last_xstream->rank);
+              p_thread->p_last_xstream->rank);
 
     /* Change the state of current running thread */
-    ABTD_atomic_release_store_int(&p_thread->unit_def.state,
-                                  ABTI_UNIT_STATE_READY);
+    ABTD_atomic_release_store_int(&p_thread->state, ABTI_UNIT_STATE_READY);
 
     /* Switch to the top scheduler */
     ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread,
@@ -385,8 +382,7 @@ static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,
 
     /* Back to the original thread */
     LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
-              ABTI_thread_get_id(p_thread),
-              p_thread->unit_def.p_last_xstream->rank);
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 }
 
 #endif /* ABTI_THREAD_H_INCLUDED */

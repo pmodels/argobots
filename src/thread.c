@@ -309,13 +309,12 @@ int ABT_thread_free(ABT_thread *thread)
     /* We first need to check whether p_local_xstream is NULL because external
      * threads might call this routine. */
     ABTI_CHECK_TRUE_MSG(p_local_xstream == NULL ||
-                            &p_thread->unit_def != p_local_xstream->p_unit,
+                            p_thread != p_local_xstream->p_unit,
                         ABT_ERR_INV_THREAD,
                         "The current thread cannot be freed.");
 
-    ABTI_CHECK_TRUE_MSG(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                            p_thread->unit_def.type !=
-                                ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                            p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                         ABT_ERR_INV_THREAD,
                         "The main thread cannot be freed explicitly.");
 
@@ -447,7 +446,7 @@ int ABT_thread_exit(void)
         goto fn_exit;
     }
 
-    ABTI_unit *p_unit = p_local_xstream->p_unit;
+    ABTI_thread *p_unit = p_local_xstream->p_unit;
     ABTI_CHECK_TRUE(ABTI_unit_type_is_thread(p_unit->type), ABT_ERR_INV_THREAD);
     ABTI_thread *p_thread = ABTI_unit_get_thread(p_unit);
 
@@ -482,9 +481,8 @@ int ABT_thread_cancel(ABT_thread thread)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_CHECK_TRUE_MSG(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                            p_thread->unit_def.type !=
-                                ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                            p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                         ABT_ERR_INV_THREAD,
                         "The main thread cannot be canceled.");
 
@@ -537,7 +535,7 @@ int ABT_thread_self(ABT_thread *thread)
     }
 #endif
 
-    ABTI_unit *p_self = p_local_xstream->p_unit;
+    ABTI_thread *p_self = p_local_xstream->p_unit;
     if (ABTI_unit_type_is_thread(p_self->type)) {
         *thread = ABTI_thread_get_handle(ABTI_unit_get_thread(p_self));
     } else {
@@ -580,7 +578,7 @@ int ABT_thread_self_id(ABT_unit_id *id)
     }
 #endif
 
-    ABTI_unit *p_self = p_local_xstream->p_unit;
+    ABTI_thread *p_self = p_local_xstream->p_unit;
     if (ABTI_unit_type_is_thread(p_self->type)) {
         *id = ABTI_thread_get_id(ABTI_unit_get_thread(p_self));
     } else {
@@ -608,8 +606,7 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
 
     /* Return value */
     *state = ABTI_unit_state_get_thread_state(
-        (ABTI_unit_state)ABTD_atomic_acquire_load_int(
-            &p_thread->unit_def.state));
+        (ABTI_unit_state)ABTD_atomic_acquire_load_int(&p_thread->state));
 
 fn_exit:
     return abt_errno;
@@ -639,7 +636,7 @@ int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
-    *pool = ABTI_pool_get_handle(p_thread->unit_def.p_pool);
+    *pool = ABTI_pool_get_handle(p_thread->p_pool);
 
 fn_exit:
     return abt_errno;
@@ -670,8 +667,8 @@ int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_ASSERT(p_thread->unit_def.p_pool);
-    *id = (int)(p_thread->unit_def.p_pool->id);
+    ABTI_ASSERT(p_thread->p_pool);
+    *id = (int)(p_thread->p_pool->id);
 
 fn_exit:
     return abt_errno;
@@ -707,7 +704,7 @@ int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    p_thread->unit_def.p_pool = p_pool;
+    p_thread->p_pool = p_pool;
 
 fn_exit:
     return abt_errno;
@@ -750,23 +747,21 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
     LOG_DEBUG("[U%" PRIu64 ":E%d] yield_to -> U%" PRIu64 "\n",
               ABTI_thread_get_id(p_cur_thread),
-              p_cur_thread->unit_def.p_last_xstream->rank,
+              p_cur_thread->p_last_xstream->rank,
               ABTI_thread_get_id(p_tar_thread));
 
     /* The target ULT must be different from the caller ULT. */
     ABTI_CHECK_TRUE_MSG(p_cur_thread != p_tar_thread, ABT_ERR_INV_THREAD,
                         "The caller and target ULTs are the same.");
 
-    ABTI_CHECK_TRUE_MSG(ABTD_atomic_relaxed_load_int(
-                            &p_tar_thread->unit_def.state) !=
+    ABTI_CHECK_TRUE_MSG(ABTD_atomic_relaxed_load_int(&p_tar_thread->state) !=
                             ABTI_UNIT_STATE_TERMINATED,
                         ABT_ERR_INV_THREAD,
                         "Cannot yield to the terminated thread");
 
     /* Both threads must be associated with the same pool. */
     /* FIXME: instead of same pool, runnable by the same ES */
-    ABTI_CHECK_TRUE_MSG(p_cur_thread->unit_def.p_pool ==
-                            p_tar_thread->unit_def.p_pool,
+    ABTI_CHECK_TRUE_MSG(p_cur_thread->p_pool == p_tar_thread->p_pool,
                         ABT_ERR_INV_THREAD,
                         "The target thread's pool is not the same as mine.");
 
@@ -775,33 +770,32 @@ int ABT_thread_yield_to(ABT_thread thread)
         goto fn_exit;
     }
 
-    ABTD_atomic_release_store_int(&p_cur_thread->unit_def.state,
-                                  ABTI_UNIT_STATE_READY);
+    ABTD_atomic_release_store_int(&p_cur_thread->state, ABTI_UNIT_STATE_READY);
 
     /* This operation is corresponding to yield */
     ABTI_tool_event_thread_yield(p_local_xstream, p_cur_thread,
-                                 p_cur_thread->unit_def.p_parent,
+                                 p_cur_thread->p_parent,
                                  ABT_SYNC_EVENT_TYPE_USER, NULL);
 
     /* Add the current thread to the pool again. */
-    ABTI_POOL_PUSH(p_cur_thread->unit_def.p_pool, p_cur_thread->unit_def.unit,
+    ABTI_POOL_PUSH(p_cur_thread->p_pool, p_cur_thread->unit,
                    ABTI_self_get_native_thread_id(p_local_xstream));
 
     /* Remove the target ULT from the pool */
-    ABTI_POOL_REMOVE(p_tar_thread->unit_def.p_pool, p_tar_thread->unit_def.unit,
+    ABTI_POOL_REMOVE(p_tar_thread->p_pool, p_tar_thread->unit,
                      ABTI_self_get_native_thread_id(p_local_xstream));
 
     /* We set the last ES */
-    p_tar_thread->unit_def.p_last_xstream = p_local_xstream;
+    p_tar_thread->p_last_xstream = p_local_xstream;
 
     /* Switch the context */
-    ABTD_atomic_release_store_int(&p_tar_thread->unit_def.state,
+    ABTD_atomic_release_store_int(&p_tar_thread->state,
                                   ABTI_UNIT_STATE_RUNNING);
     ABTI_thread *p_prev =
         ABTI_thread_context_switch_to_sibling(&p_local_xstream, p_cur_thread,
                                               p_tar_thread);
-    ABTI_tool_event_thread_run(p_local_xstream, p_cur_thread, &p_prev->unit_def,
-                               p_cur_thread->unit_def.p_parent);
+    ABTI_tool_event_thread_run(p_local_xstream, p_cur_thread, p_prev,
+                               p_cur_thread->p_parent);
 
 fn_exit:
     return abt_errno;
@@ -826,7 +820,7 @@ int ABT_thread_yield(void)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTI_unit *p_self = NULL;
+    ABTI_thread *p_self = NULL;
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     if (!p_local_xstream) {
@@ -967,17 +961,16 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* checking for cases when migration is not allowed */
-    ABTI_CHECK_TRUE(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                        p_thread->unit_def.type !=
-                            ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                        p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->unit_def.state) !=
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABTI_UNIT_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
     /* Find a pool */
     ABTI_pool *p_pool;
-    ABTI_sched_get_migration_pool(p_sched, p_thread->unit_def.p_pool, &p_pool);
+    ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     abt_errno = ABTI_thread_migrate_to_pool(&p_local_xstream, p_thread, p_pool);
@@ -1079,7 +1072,7 @@ int ABT_thread_migrate(ABT_thread thread)
     /* FIXME: Currently, the target xstream is randomly chosen. We need a
      * better selection strategy. */
     /* TODO: handle better when no pool accepts migration */
-    /* TODO: choose a pool also when (p_thread->unit_def.p_pool->consumer ==
+    /* TODO: choose a pool also when (p_thread->p_pool->consumer ==
      * NULL) */
     while (1) {
         /* Only one ES */
@@ -1089,7 +1082,7 @@ int ABT_thread_migrate(ABT_thread thread)
         }
 
         p_xstream = p_xstreams[rand() % gp_ABTI_global->num_xstreams];
-        if (p_xstream && p_xstream != p_thread->unit_def.p_last_xstream) {
+        if (p_xstream && p_xstream != p_thread->p_last_xstream) {
             if (ABTD_atomic_acquire_load_int(&p_xstream->state) ==
                 ABT_XSTREAM_STATE_RUNNING) {
                 abt_errno = ABTI_thread_migrate_to_xstream(&p_local_xstream,
@@ -1172,8 +1165,8 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (p_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_USER) {
-        p_thread->unit_def.migratable = flag;
+    if (p_thread->type == ABTI_UNIT_TYPE_THREAD_USER) {
+        p_thread->migratable = flag;
     }
 
 fn_exit:
@@ -1208,7 +1201,7 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag = p_thread->unit_def.migratable;
+    *flag = p_thread->migratable;
 
 fn_exit:
     return abt_errno;
@@ -1245,8 +1238,8 @@ int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag)
     p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag = (p_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_MAIN) ? ABT_TRUE
-                                                                    : ABT_FALSE;
+    *flag =
+        (p_thread->type == ABTI_UNIT_TYPE_THREAD_MAIN) ? ABT_TRUE : ABT_FALSE;
 
 fn_exit:
     return abt_errno;
@@ -1276,7 +1269,7 @@ int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *flag)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag = (p_thread->unit_def.refcount == 0) ? ABT_TRUE : ABT_FALSE;
+    *flag = (p_thread->refcount == 0) ? ABT_TRUE : ABT_FALSE;
 
 fn_exit:
     return abt_errno;
@@ -1328,7 +1321,7 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
-    *stacksize = p_thread->stacksize;
+    *stacksize = p_thread->ctx.stacksize;
 
 fn_exit:
     return abt_errno;
@@ -1384,7 +1377,7 @@ int ABT_thread_set_arg(ABT_thread thread, void *arg)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    p_thread->unit_def.p_arg = arg;
+    p_thread->p_arg = arg;
 
 fn_exit:
     return abt_errno;
@@ -1414,7 +1407,7 @@ int ABT_thread_get_arg(ABT_thread thread, void **arg)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *arg = p_thread->unit_def.p_arg;
+    *arg = p_thread->p_arg;
 
 fn_exit:
     return abt_errno;
@@ -1449,7 +1442,7 @@ int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Set the value. */
-    ABTI_unit_set_specific(p_local_xstream, &p_thread->unit_def, p_key, value);
+    ABTI_unit_set_specific(p_local_xstream, p_thread, p_key, value);
 fn_exit:
     return abt_errno;
 
@@ -1484,7 +1477,7 @@ int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Get the value. */
-    *value = ABTI_unit_get_specific(&p_thread->unit_def, p_key);
+    *value = ABTI_unit_get_specific(p_thread, p_key);
 fn_exit:
     return abt_errno;
 
@@ -1516,11 +1509,11 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     ABTI_thread_attr thread_attr, *p_attr;
-    thread_attr.p_stack = p_thread->p_stack;
-    thread_attr.stacksize = p_thread->stacksize;
-    thread_attr.stacktype = p_thread->stacktype;
+    thread_attr.p_stack = p_thread->ctx.p_stack;
+    thread_attr.stacksize = p_thread->ctx.stacksize;
+    thread_attr.stacktype = p_thread->ctx.stacktype;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    thread_attr.migratable = p_thread->unit_def.migratable;
+    thread_attr.migratable = p_thread->migratable;
     thread_attr.f_cb = p_thread->f_migration_cb;
     thread_attr.p_cb_arg = p_thread->p_migration_cb_arg;
 #endif
@@ -1556,47 +1549,46 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newthread = ABTI_mem_alloc_thread(p_local_xstream, p_attr);
     if ((unit_type == ABTI_UNIT_TYPE_THREAD_MAIN ||
          unit_type == ABTI_UNIT_TYPE_THREAD_MAIN_SCHED) &&
-        p_newthread->p_stack == NULL) {
+        p_newthread->ctx.p_stack == NULL) {
         /* We don't need to initialize the context of 1. the main thread, and
          * 2. the main scheduler thread which runs on OS-level threads
          * (p_stack == NULL). Invalidate the context here. */
-        abt_errno = ABTD_thread_context_invalidate(&p_newthread->ctx);
+        abt_errno = ABTD_thread_context_invalidate(&p_newthread->ctx.ctx);
     } else if (p_sched == NULL) {
 #if ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-        size_t stack_size = p_newthread->stacksize;
-        void *p_stack = p_newthread->p_stack;
+        size_t stack_size = p_newthread->ctx.stacksize;
+        void *p_stack = p_newthread->ctx.p_stack;
         abt_errno = ABTD_thread_context_create(NULL, stack_size, p_stack,
-                                               &p_newthread->ctx);
+                                               &p_newthread->ctx.ctx);
 #else
         /* The context is not fully created now. */
-        abt_errno = ABTD_thread_context_init(NULL, &p_newthread->ctx);
+        abt_errno = ABTD_thread_context_init(NULL, &p_newthread->ctx.ctx);
 #endif
     } else {
-        size_t stack_size = p_newthread->stacksize;
-        void *p_stack = p_newthread->p_stack;
+        size_t stack_size = p_newthread->ctx.stacksize;
+        void *p_stack = p_newthread->ctx.p_stack;
         abt_errno = ABTD_thread_context_create(NULL, stack_size, p_stack,
-                                               &p_newthread->ctx);
+                                               &p_newthread->ctx.ctx);
     }
     ABTI_CHECK_ERROR(abt_errno);
-    p_newthread->unit_def.f_unit = thread_func;
-    p_newthread->unit_def.p_arg = arg;
+    p_newthread->f_unit = thread_func;
+    p_newthread->p_arg = arg;
 
-    ABTD_atomic_release_store_int(&p_newthread->unit_def.state,
-                                  ABTI_UNIT_STATE_READY);
-    ABTD_atomic_release_store_uint32(&p_newthread->unit_def.request, 0);
-    p_newthread->unit_def.p_last_xstream = NULL;
-    p_newthread->unit_def.p_parent = NULL;
+    ABTD_atomic_release_store_int(&p_newthread->state, ABTI_UNIT_STATE_READY);
+    ABTD_atomic_release_store_uint32(&p_newthread->request, 0);
+    p_newthread->p_last_xstream = NULL;
+    p_newthread->p_parent = NULL;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     p_newthread->p_sched = p_sched;
 #endif
-    p_newthread->unit_def.p_pool = p_pool;
-    p_newthread->unit_def.refcount = refcount;
-    p_newthread->unit_def.type = unit_type;
+    p_newthread->p_pool = p_pool;
+    p_newthread->refcount = refcount;
+    p_newthread->type = unit_type;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTD_atomic_relaxed_store_ptr(&p_newthread->p_migration_pool, NULL);
 #endif
-    ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable, NULL);
-    p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
+    ABTD_atomic_relaxed_store_ptr(&p_newthread->p_keytable, NULL);
+    p_newthread->id = ABTI_THREAD_INIT_ID;
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_unit_id thread_id = ABTI_thread_get_id(p_newthread);
@@ -1620,13 +1612,13 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     /* Create a wrapper unit */
     h_newthread = ABTI_thread_get_handle(p_newthread);
     if (push_pool) {
-        p_newthread->unit_def.unit = p_pool->u_create_from_thread(h_newthread);
+        p_newthread->unit = p_pool->u_create_from_thread(h_newthread);
         /* Add this thread to the pool */
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-        ABTI_pool_push(p_pool, p_newthread->unit_def.unit);
+        ABTI_pool_push(p_pool, p_newthread->unit);
 #else
         abt_errno =
-            ABTI_pool_push(p_pool, p_newthread->unit_def.unit,
+            ABTI_pool_push(p_pool, p_newthread->unit,
                            ABTI_self_get_native_thread_id(p_local_xstream));
         if (abt_errno != ABT_SUCCESS) {
             if (unit_type == ABTI_UNIT_TYPE_THREAD_MAIN) {
@@ -1640,7 +1632,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
         }
 #endif
     } else {
-        p_newthread->unit_def.unit = ABT_UNIT_NULL;
+        p_newthread->unit = ABT_UNIT_NULL;
     }
 
     /* Return value */
@@ -1676,21 +1668,18 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
 
     /* checking for cases when migration is not allowed */
-    ABTI_CHECK_TRUE(ABTI_pool_accept_migration(p_pool,
-                                               p_thread->unit_def.p_pool) ==
+    ABTI_CHECK_TRUE(ABTI_pool_accept_migration(p_pool, p_thread->p_pool) ==
                         ABT_TRUE,
                     ABT_ERR_INV_POOL);
-    ABTI_CHECK_TRUE(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                        p_thread->unit_def.type !=
-                            ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                        p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->unit_def.state) !=
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABTI_UNIT_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
     /* checking for migration to the same pool */
-    ABTI_CHECK_TRUE(p_thread->unit_def.p_pool != p_pool,
-                    ABT_ERR_MIGRATION_TARGET);
+    ABTI_CHECK_TRUE(p_thread->p_pool != p_pool, ABT_ERR_MIGRATION_TARGET);
 
     /* adding request to the thread.  p_migration_pool must be updated before
      * setting the request since the target thread would read p_migration_pool
@@ -1701,8 +1690,7 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
     ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
-    if (p_local_xstream != NULL &&
-        &p_thread->unit_def == p_local_xstream->p_unit) {
+    if (p_local_xstream != NULL && p_thread == p_local_xstream->p_unit) {
         ABTI_thread_yield(pp_local_xstream, p_thread, ABT_SYNC_EVENT_TYPE_OTHER,
                           NULL);
     }
@@ -1781,8 +1769,9 @@ int ABTI_thread_create_main_sched(ABTI_xstream *p_local_xstream,
         ABTI_CHECK_ERROR(abt_errno);
         /* When the main scheduler is terminated, the control will jump to the
          * primary ULT. */
-        ABTD_atomic_relaxed_store_thread_context_ptr(&p_newthread->ctx.p_link,
-                                                     &p_main_thread->ctx);
+        ABTD_atomic_relaxed_store_thread_context_ptr(&p_newthread->ctx.ctx
+                                                          .p_link,
+                                                     &p_main_thread->ctx.ctx);
     } else {
         /* For secondary ESs, the stack of OS thread is used for the main
          * scheduler's ULT. */
@@ -1850,14 +1839,13 @@ static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
                                              ABTI_thread *p_thread)
 {
     /* Free the unit */
-    p_thread->unit_def.p_pool->u_free(&p_thread->unit_def.unit);
+    p_thread->p_pool->u_free(&p_thread->unit);
 
     /* Free the context */
     ABTD_thread_context_free(&p_thread->ctx);
 
     /* Free the key-value table */
-    ABTI_ktable *p_ktable =
-        ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable);
+    ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable);
     /* No parallel access to TLS is allowed. */
     ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
     if (p_ktable) {
@@ -1868,7 +1856,7 @@ static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
 void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
-              p_thread->unit_def.p_last_xstream->rank);
+              p_thread->p_last_xstream->rank);
 
     /* Invoke a thread freeing event. */
     ABTI_tool_event_thread_free(p_local_xstream, p_thread,
@@ -1884,8 +1872,7 @@ void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 void ABTI_thread_free_main(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] main ULT freed\n",
-              ABTI_thread_get_id(p_thread),
-              p_thread->unit_def.p_last_xstream->rank);
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
     /* Invoke a thread freeing event. */
     ABTI_tool_event_thread_free(p_local_xstream, p_thread,
@@ -1893,8 +1880,7 @@ void ABTI_thread_free_main(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
                                                 : NULL);
 
     /* Free the key-value table */
-    ABTI_ktable *p_ktable =
-        ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable);
+    ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable);
     /* No parallel access to TLS is allowed. */
     ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
     if (p_ktable) {
@@ -1920,8 +1906,7 @@ void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
     ABTD_thread_context_free(&p_thread->ctx);
 
     /* Free the key-value table */
-    ABTI_ktable *p_ktable =
-        ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable);
+    ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable);
     /* No parallel access to TLS is allowed. */
     ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
     if (p_ktable) {
@@ -1936,22 +1921,21 @@ int ABTI_thread_set_blocked(ABTI_thread *p_thread)
     int abt_errno = ABT_SUCCESS;
 
     /* The main sched cannot be blocked */
-    ABTI_CHECK_TRUE(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_THREAD);
 
     /* To prevent the scheduler from adding the ULT to the pool */
     ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_BLOCK);
 
     /* Change the ULT's state to BLOCKED */
-    ABTD_atomic_release_store_int(&p_thread->unit_def.state,
-                                  ABTI_UNIT_STATE_BLOCKED);
+    ABTD_atomic_release_store_int(&p_thread->state, ABTI_UNIT_STATE_BLOCKED);
 
     /* Increase the number of blocked ULTs */
-    ABTI_pool *p_pool = p_thread->unit_def.p_pool;
+    ABTI_pool *p_pool = p_thread->p_pool;
     ABTI_pool_inc_num_blocked(p_pool);
 
     LOG_DEBUG("[U%" PRIu64 ":E%d] blocked\n", ABTI_thread_get_id(p_thread),
-              p_thread->unit_def.p_last_xstream->rank);
+              p_thread->p_last_xstream->rank);
 
 fn_exit:
     return abt_errno;
@@ -1966,8 +1950,8 @@ void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream, ABTI_thread *p_thread,
                          ABT_sync_event_type sync_event_type, void *p_sync)
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_ASSERT(&p_thread->unit_def == p_local_xstream->p_unit);
-    ABTI_ASSERT(p_thread->unit_def.p_last_xstream == p_local_xstream);
+    ABTI_ASSERT(p_thread == p_local_xstream->p_unit);
+    ABTI_ASSERT(p_thread->p_last_xstream == p_local_xstream);
 
     /* Switch to the scheduler, i.e., suspend p_thread  */
     LOG_DEBUG("[U%" PRIu64 ":E%d] suspended\n", ABTI_thread_get_id(p_thread),
@@ -1977,7 +1961,7 @@ void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream, ABTI_thread *p_thread,
 
     /* The suspended ULT resumes its execution from here. */
     LOG_DEBUG("[U%" PRIu64 ":E%d] resumed\n", ABTI_thread_get_id(p_thread),
-              p_thread->unit_def.p_last_xstream->rank);
+              p_thread->p_last_xstream->rank);
 }
 
 int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
@@ -1985,28 +1969,28 @@ int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
     int abt_errno = ABT_SUCCESS;
 
     /* The ULT should be in BLOCKED state. */
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->unit_def.state) ==
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) ==
                         ABTI_UNIT_STATE_BLOCKED,
                     ABT_ERR_THREAD);
 
     /* We should wait until the scheduler of the blocked ULT resets the BLOCK
      * request. Otherwise, the ULT can be pushed to a pool here and be
      * scheduled by another scheduler if it is pushed to a shared pool. */
-    while (ABTD_atomic_acquire_load_uint32(&p_thread->unit_def.request) &
+    while (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
            ABTI_UNIT_REQ_BLOCK)
         ABTD_atomic_pause();
 
     LOG_DEBUG("[U%" PRIu64 ":E%d] set ready\n", ABTI_thread_get_id(p_thread),
-              p_thread->unit_def.p_last_xstream->rank);
+              p_thread->p_last_xstream->rank);
 
     ABTI_tool_event_thread_resume(p_local_xstream, p_thread,
                                   p_local_xstream ? p_local_xstream->p_unit
                                                   : NULL);
-    /* p_thread->unit_def.p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
+    /* p_thread->p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
      * num_blocked consistent. Otherwise, other threads might pop p_thread
      * that has been pushed in ABTI_POOL_ADD_THREAD and change
-     * p_thread->unit_def.p_pool by ABT_unit_set_associated_pool. */
-    ABTI_pool *p_pool = p_thread->unit_def.p_pool;
+     * p_thread->p_pool by ABT_unit_set_associated_pool. */
+    ABTI_pool *p_pool = p_thread->p_pool;
 
     /* Add the ULT to its associated pool */
     ABTI_POOL_ADD_THREAD(p_thread,
@@ -2029,9 +2013,9 @@ static inline ABT_bool ABTI_thread_is_ready(ABTI_thread *p_thread)
      * pushed into a pool. Since we set ULT's state to READY and then push it
      * into a pool, we check them in the reverse order, i.e., check if the ULT
      * is inside a pool and the its state. */
-    ABTI_pool *p_pool = p_thread->unit_def.p_pool;
-    if (p_pool->u_is_in_pool(p_thread->unit_def.unit) == ABT_TRUE &&
-        ABTD_atomic_acquire_load_int(&p_thread->unit_def.state) ==
+    ABTI_pool *p_pool = p_thread->p_pool;
+    if (p_pool->u_is_in_pool(p_thread->unit) == ABT_TRUE &&
+        ABTD_atomic_acquire_load_int(&p_thread->state) ==
             ABTI_UNIT_STATE_READY) {
         return ABT_TRUE;
     }
@@ -2048,11 +2032,11 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = p_thread->unit_def.p_last_xstream;
+    ABTI_xstream *p_xstream = p_thread->p_last_xstream;
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *type, *state;
 
-    switch (p_thread->unit_def.type) {
+    switch (p_thread->type) {
         case ABTI_UNIT_TYPE_THREAD_MAIN:
             type = "MAIN";
             break;
@@ -2066,7 +2050,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             type = "UNKNOWN";
             break;
     }
-    switch (ABTD_atomic_acquire_load_int(&p_thread->unit_def.state)) {
+    switch (ABTD_atomic_acquire_load_int(&p_thread->state)) {
         case ABTI_UNIT_STATE_READY:
             state = "READY";
             break;
@@ -2104,12 +2088,10 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
             prefix, (void *)p_thread->p_sched,
 #endif
-            prefix, p_thread->unit_def.p_arg, prefix,
-            (void *)p_thread->unit_def.p_pool, prefix,
-            p_thread->unit_def.refcount, prefix,
-            ABTD_atomic_acquire_load_uint32(&p_thread->unit_def.request),
-            prefix,
-            ABTD_atomic_acquire_load_ptr(&p_thread->unit_def.p_keytable));
+            prefix, p_thread->p_arg, prefix, (void *)p_thread->p_pool, prefix,
+            p_thread->refcount, prefix,
+            ABTD_atomic_acquire_load_uint32(&p_thread->request), prefix,
+            ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable));
 
 fn_exit:
     fflush(p_os);
@@ -2119,8 +2101,8 @@ fn_exit:
 ABTU_no_sanitize_address int ABTI_thread_print_stack(ABTI_thread *p_thread,
                                                      FILE *p_os)
 {
-    void *p_stack = p_thread->p_stack;
-    size_t i, j, stacksize = p_thread->stacksize;
+    void *p_stack = p_thread->ctx.p_stack;
+    size_t i, j, stacksize = p_thread->ctx.stacksize;
     if (stacksize == 0 || p_stack == NULL) {
         /* Some threads do not have p_stack (e.g., the main thread) */
         return ABT_ERR_THREAD;
@@ -2180,10 +2162,10 @@ ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread)
     if (p_thread == NULL)
         return ABTI_THREAD_INIT_ID;
 
-    if (p_thread->unit_def.id == ABTI_THREAD_INIT_ID) {
-        p_thread->unit_def.id = ABTI_thread_get_new_id();
+    if (p_thread->id == ABTI_THREAD_INIT_ID) {
+        p_thread->id = ABTI_thread_get_new_id();
     }
-    return p_thread->unit_def.id;
+    return p_thread->id;
 }
 
 ABT_unit_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream)
@@ -2196,8 +2178,8 @@ int ABTI_thread_get_xstream_rank(ABTI_thread *p_thread)
     if (p_thread == NULL)
         return -1;
 
-    if (p_thread->unit_def.p_last_xstream) {
-        return p_thread->unit_def.p_last_xstream->rank;
+    if (p_thread->p_last_xstream) {
+        return p_thread->p_last_xstream->rank;
     } else {
         return -1;
     }
@@ -2220,37 +2202,37 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     int abt_errno = ABT_SUCCESS;
     size_t stacksize;
 
-    ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_thread->unit_def.state) ==
+    ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_thread->state) ==
                         ABTI_UNIT_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
     /* Create a ULT context */
-    stacksize = p_thread->stacksize;
-    abt_errno = ABTD_thread_context_create(NULL, stacksize, p_thread->p_stack,
-                                           &p_thread->ctx);
+    stacksize = p_thread->ctx.stacksize;
+    abt_errno =
+        ABTD_thread_context_create(NULL, stacksize, p_thread->ctx.p_stack,
+                                   &p_thread->ctx.ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
-    p_thread->unit_def.f_unit = thread_func;
-    p_thread->unit_def.p_arg = arg;
+    p_thread->f_unit = thread_func;
+    p_thread->p_arg = arg;
 
-    ABTD_atomic_relaxed_store_int(&p_thread->unit_def.state,
-                                  ABTI_UNIT_STATE_READY);
-    ABTD_atomic_relaxed_store_uint32(&p_thread->unit_def.request, 0);
-    p_thread->unit_def.p_last_xstream = NULL;
-    p_thread->unit_def.p_parent = NULL;
-    p_thread->unit_def.refcount = 1;
-    p_thread->unit_def.type = ABTI_UNIT_TYPE_THREAD_USER;
+    ABTD_atomic_relaxed_store_int(&p_thread->state, ABTI_UNIT_STATE_READY);
+    ABTD_atomic_relaxed_store_uint32(&p_thread->request, 0);
+    p_thread->p_last_xstream = NULL;
+    p_thread->p_parent = NULL;
+    p_thread->refcount = 1;
+    p_thread->type = ABTI_UNIT_TYPE_THREAD_USER;
 
-    if (p_thread->unit_def.p_pool != p_pool) {
+    if (p_thread->p_pool != p_pool) {
         /* Free the unit for the old pool */
-        p_thread->unit_def.p_pool->u_free(&p_thread->unit_def.unit);
+        p_thread->p_pool->u_free(&p_thread->unit);
 
         /* Set the new pool */
-        p_thread->unit_def.p_pool = p_pool;
+        p_thread->p_pool = p_pool;
 
         /* Create a wrapper unit */
         ABT_thread h_thread = ABTI_thread_get_handle(p_thread);
-        p_thread->unit_def.unit = p_pool->u_create_from_thread(h_thread);
+        p_thread->unit = p_pool->u_create_from_thread(h_thread);
     }
 
     /* Invoke a thread revive event. */
@@ -2263,9 +2245,9 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 
     /* Add this thread to the pool */
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    ABTI_pool_push(p_pool, p_thread->unit_def.unit);
+    ABTI_pool_push(p_pool, p_thread->unit);
 #else
-    abt_errno = ABTI_pool_push(p_pool, p_thread->unit_def.unit,
+    abt_errno = ABTI_pool_push(p_pool, p_thread->unit,
                                ABTI_self_get_native_thread_id(p_local_xstream));
     ABTI_CHECK_ERROR(abt_errno);
 #endif
@@ -2283,14 +2265,13 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
 {
     int abt_errno = ABT_SUCCESS;
 
-    if (ABTD_atomic_acquire_load_int(&p_thread->unit_def.state) ==
+    if (ABTD_atomic_acquire_load_int(&p_thread->state) ==
         ABTI_UNIT_STATE_TERMINATED) {
         goto fn_exit;
     }
 
-    ABTI_CHECK_TRUE_MSG(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                            p_thread->unit_def.type !=
-                                ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE_MSG(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                            p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                         ABT_ERR_INV_THREAD, "The main ULT cannot be joined.");
 
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
@@ -2300,73 +2281,69 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
         goto busywait_based;
 #endif
 
-    ABTI_unit *p_self_unit = p_local_xstream->p_unit;
-    ABTI_CHECK_TRUE_MSG(&p_thread->unit_def != p_self_unit, ABT_ERR_INV_THREAD,
+    ABTI_thread *p_self_unit = p_local_xstream->p_unit;
+    ABTI_CHECK_TRUE_MSG(p_thread != p_self_unit, ABT_ERR_INV_THREAD,
                         "The target ULT should be different.");
     ABTI_thread *p_self = ABTI_unit_get_thread(p_self_unit);
-    ABT_pool_access access = p_self->unit_def.p_pool->access;
+    ABT_pool_access access = p_self->p_pool->access;
 
-    if ((p_self->unit_def.p_pool == p_thread->unit_def.p_pool) &&
+    if ((p_self->p_pool == p_thread->p_pool) &&
         (access == ABT_POOL_ACCESS_PRIV || access == ABT_POOL_ACCESS_MPSC ||
          access == ABT_POOL_ACCESS_SPSC) &&
-        (ABTD_atomic_acquire_load_int(&p_thread->unit_def.state) ==
+        (ABTD_atomic_acquire_load_int(&p_thread->state) ==
          ABTI_UNIT_STATE_READY)) {
 
-        ABTI_xstream *p_xstream = p_self->unit_def.p_last_xstream;
+        ABTI_xstream *p_xstream = p_self->p_last_xstream;
 
         /* If other ES is calling ABTI_thread_set_ready(), p_thread may not
          * have been added to the pool yet because ABTI_thread_set_ready()
          * changes the state first followed by pushing p_thread to the pool.
          * Therefore, we have to check whether p_thread is in the pool, and if
          * not, we need to wait until it is added. */
-        while (p_thread->unit_def.p_pool->u_is_in_pool(
-                   p_thread->unit_def.unit) != ABT_TRUE) {
+        while (p_thread->p_pool->u_is_in_pool(p_thread->unit) != ABT_TRUE) {
         }
 
         /* This is corresponding to suspension. */
         ABTI_tool_event_thread_suspend(p_local_xstream, p_self,
-                                       p_self->unit_def.p_parent,
+                                       p_self->p_parent,
                                        ABT_SYNC_EVENT_TYPE_THREAD_JOIN,
                                        (void *)p_thread);
 
         /* Increase the number of blocked units.  Be sure to execute
          * ABTI_pool_inc_num_blocked before ABTI_POOL_REMOVE in order not to
          * underestimate the number of units in a pool. */
-        ABTI_pool_inc_num_blocked(p_self->unit_def.p_pool);
+        ABTI_pool_inc_num_blocked(p_self->p_pool);
         /* Remove the target ULT from the pool */
-        ABTI_POOL_REMOVE(p_thread->unit_def.p_pool, p_thread->unit_def.unit,
+        ABTI_POOL_REMOVE(p_thread->p_pool, p_thread->unit,
                          ABTI_self_get_native_thread_id(p_local_xstream));
 
         /* Set the link in the context for the target ULT.  Since p_link will be
          * referenced by p_self, this update does not require release store. */
-        ABTD_atomic_relaxed_store_thread_context_ptr(&p_thread->ctx.p_link,
-                                                     &p_self->ctx);
+        ABTD_atomic_relaxed_store_thread_context_ptr(&p_thread->ctx.ctx.p_link,
+                                                     &p_self->ctx.ctx);
         /* Set the last ES */
-        p_thread->unit_def.p_last_xstream = p_xstream;
-        ABTD_atomic_release_store_int(&p_thread->unit_def.state,
+        p_thread->p_last_xstream = p_xstream;
+        ABTD_atomic_release_store_int(&p_thread->state,
                                       ABTI_UNIT_STATE_RUNNING);
 
         /* Make the current ULT BLOCKED */
-        ABTD_atomic_release_store_int(&p_self->unit_def.state,
-                                      ABTI_UNIT_STATE_BLOCKED);
+        ABTD_atomic_release_store_int(&p_self->state, ABTI_UNIT_STATE_BLOCKED);
 
         LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
-                  ABTI_thread_get_id(p_self),
-                  p_self->unit_def.p_last_xstream->rank,
+                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
                   ABTI_thread_get_id(p_thread));
         LOG_DEBUG("[U%" PRIu64 ":E%d] start running\n",
-                  ABTI_thread_get_id(p_thread),
-                  p_thread->unit_def.p_last_xstream->rank);
+                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
 
         /* Switch the context */
         ABTI_thread *p_prev =
             ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_self,
                                                   p_thread);
         p_local_xstream = *pp_local_xstream;
-        ABTI_tool_event_thread_run(p_local_xstream, p_self, &p_prev->unit_def,
-                                   p_self->unit_def.p_parent);
+        ABTI_tool_event_thread_run(p_local_xstream, p_self, p_prev,
+                                   p_self->p_parent);
 
-    } else if ((p_self->unit_def.p_pool != p_thread->unit_def.p_pool) &&
+    } else if ((p_self->p_pool != p_thread->p_pool) &&
                (access == ABT_POOL_ACCESS_PRIV ||
                 access == ABT_POOL_ACCESS_SPSC)) {
         /* FIXME: once we change the suspend/resume mechanism (i.e., asking the
@@ -2378,22 +2355,21 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
         /* Tell p_thread that there has been a join request. */
         /* If request already has ABTI_UNIT_REQ_JOIN, p_thread is terminating.
          * We can't block p_self in this case. */
-        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_thread->unit_def.request,
-                                                   ABTI_UNIT_REQ_JOIN);
+        uint32_t req =
+            ABTD_atomic_fetch_or_uint32(&p_thread->request, ABTI_UNIT_REQ_JOIN);
         if (req & ABTI_UNIT_REQ_JOIN)
             goto yield_based;
 
         ABTI_thread_set_blocked(p_self);
         LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
-                  ABTI_thread_get_id(p_self),
-                  p_self->unit_def.p_last_xstream->rank,
+                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank,
                   ABTI_thread_get_id(p_thread));
 
         /* Set the link in the context of the target ULT. This p_link might be
          * read by p_thread running on another ES in parallel, so release-store
          * is needed here. */
-        ABTD_atomic_release_store_thread_context_ptr(&p_thread->ctx.p_link,
-                                                     &p_self->ctx);
+        ABTD_atomic_release_store_thread_context_ptr(&p_thread->ctx.ctx.p_link,
+                                                     &p_self->ctx.ctx);
 
         /* Suspend the current ULT */
         ABTI_thread_suspend(pp_local_xstream, p_self,
@@ -2407,19 +2383,17 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
      * Otherwise, the target ULT had been migrated to a different ES, p_self
      * has been resumed by p_self's scheduler.  In the latter case, we don't
      * need to change p_self's state. */
-    if (ABTD_atomic_relaxed_load_int(&p_self->unit_def.state) ==
+    if (ABTD_atomic_relaxed_load_int(&p_self->state) ==
         ABTI_UNIT_STATE_BLOCKED) {
-        ABTD_atomic_release_store_int(&p_self->unit_def.state,
-                                      ABTI_UNIT_STATE_RUNNING);
-        ABTI_pool_dec_num_blocked(p_self->unit_def.p_pool);
+        ABTD_atomic_release_store_int(&p_self->state, ABTI_UNIT_STATE_RUNNING);
+        ABTI_pool_dec_num_blocked(p_self->p_pool);
         LOG_DEBUG("[U%" PRIu64 ":E%d] resume after join\n",
-                  ABTI_thread_get_id(p_self),
-                  p_self->unit_def.p_last_xstream->rank);
+                  ABTI_thread_get_id(p_self), p_self->p_last_xstream->rank);
         goto fn_exit;
     }
 
 yield_based:
-    while (ABTD_atomic_acquire_load_int(&p_thread->unit_def.state) !=
+    while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
            ABTI_UNIT_STATE_TERMINATED) {
         ABTI_thread_yield(pp_local_xstream, ABTI_unit_get_thread(p_self_unit),
                           ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_thread);
@@ -2430,7 +2404,7 @@ yield_based:
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
 busywait_based:
 #endif
-    while (ABTD_atomic_acquire_load_int(&p_thread->unit_def.state) !=
+    while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
            ABTI_UNIT_STATE_TERMINATED) {
         ABTD_atomic_pause();
     }
@@ -2460,11 +2434,10 @@ static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_xstream->state) !=
                         ABT_XSTREAM_STATE_TERMINATED,
                     ABT_ERR_INV_XSTREAM);
-    ABTI_CHECK_TRUE(p_thread->unit_def.type != ABTI_UNIT_TYPE_THREAD_MAIN &&
-                        p_thread->unit_def.type !=
-                            ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
+    ABTI_CHECK_TRUE(p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN &&
+                        p_thread->type != ABTI_UNIT_TYPE_THREAD_MAIN_SCHED,
                     ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->unit_def.state) !=
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABTI_UNIT_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
@@ -2486,8 +2459,7 @@ static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
 
         /* We check the state of the sched */
         /* Find a pool */
-        ABTI_sched_get_migration_pool(p_sched, p_thread->unit_def.p_pool,
-                                      &p_pool);
+        ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
         if (p_pool == NULL) {
             abt_errno = ABT_ERR_INV_POOL;
             goto fn_fail;

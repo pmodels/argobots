@@ -22,7 +22,7 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit);
 static int pool_print_all(ABT_pool pool, void *arg,
                           void (*print_fn)(void *, ABT_unit));
 
-typedef ABTI_unit unit_t;
+typedef ABTI_thread unit_t;
 static ABT_unit_type unit_get_type(ABT_unit unit);
 static ABT_thread unit_get_thread(ABT_unit unit);
 static ABT_task unit_get_task(ABT_unit unit);
@@ -477,7 +477,7 @@ static ABT_bool unit_is_in_pool(ABT_unit unit)
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    unit_t *p_unit = &p_thread->unit_def;
+    unit_t *p_unit = p_thread;
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_unit->is_in_pool, 0);
@@ -488,8 +488,8 @@ static ABT_unit unit_create_from_thread(ABT_thread thread)
 
 static ABT_unit unit_create_from_task(ABT_task task)
 {
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
-    unit_t *p_unit = &p_task->unit_def;
+    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    unit_t *p_unit = p_task;
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_unit->is_in_pool, 0);
