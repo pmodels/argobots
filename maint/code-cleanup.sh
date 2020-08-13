@@ -4,7 +4,7 @@
 # * clang-format < 3.9 cannot be used since SortIncludes is not supported.
 #   SortIncludes must be disabled since abti.h depends on the order of #include.
 
-indent_list="clang-format-9.0 clang-format-8.0 clang-format-7.0 \
+indent_list="clang-format-10 clang-format-9.0 clang-format-8.0 clang-format-7.0 \
              clang-format-6.0 clang-format clang-format-5.0 clang-format-4.0 \
              clang-format-3.9"
 
@@ -34,7 +34,8 @@ indent_code()
                       AlignAfterOpenBracket: Align, \
                       SortIncludes: false, \
                       AllowShortFunctionsOnASingleLine : None, \
-                      PenaltyBreakBeforeFirstCallParameter: 100000}" \
+                      PenaltyBreakBeforeFirstCallParameter: 100000,
+                      SpacesInContainerLiterals: false}" \
                       -i ${file}
 }
 
