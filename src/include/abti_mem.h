@@ -84,11 +84,6 @@ ABTI_mem_alloc_thread_default(ABTI_xstream *p_local_xstream)
     /* Initialize members of ABTI_thread_attr. */
     p_thread->p_stack = p_stack;
     p_thread->stacksize = stacksize;
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->unit_def.migratable = ABT_TRUE;
-    p_thread->f_migration_cb = NULL;
-    p_thread->p_migration_cb_arg = NULL;
-#endif
     ABTI_VALGRIND_REGISTER_STACK(p_thread->p_stack, p_thread->stacksize);
     return p_thread;
 }
@@ -116,11 +111,6 @@ ABTI_mem_alloc_thread_mempool(ABTI_xstream *p_local_xstream,
     /* Copy members of p_attr. */
     p_thread->p_stack = p_stack;
     p_thread->stacksize = stacksize;
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->unit_def.migratable = p_attr->migratable;
-    p_thread->f_migration_cb = p_attr->f_cb;
-    p_thread->p_migration_cb_arg = p_attr->p_cb_arg;
-#endif
     ABTI_VALGRIND_REGISTER_STACK(p_thread->p_stack, p_thread->stacksize);
     return p_thread;
 }
@@ -137,11 +127,6 @@ ABTI_mem_alloc_thread_malloc(ABTI_thread_attr *p_attr)
     p_thread->stacktype = ABTI_STACK_TYPE_MALLOC;
     p_thread->stacksize = stacksize;
     p_thread->p_stack = p_stack;
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->unit_def.migratable = p_attr->migratable;
-    p_thread->f_migration_cb = p_attr->f_cb;
-    p_thread->p_migration_cb_arg = p_attr->p_cb_arg;
-#endif
     ABTI_VALGRIND_REGISTER_STACK(p_thread->p_stack, p_thread->stacksize);
     return p_thread;
 }
@@ -154,11 +139,6 @@ static inline ABTI_thread *ABTI_mem_alloc_thread_user(ABTI_thread_attr *p_attr)
     p_thread->stacktype = ABTI_STACK_TYPE_USER;
     p_thread->stacksize = p_attr->stacksize;
     p_thread->p_stack = p_attr->p_stack;
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->unit_def.migratable = p_attr->migratable;
-    p_thread->f_migration_cb = p_attr->f_cb;
-    p_thread->p_migration_cb_arg = p_attr->p_cb_arg;
-#endif
     ABTI_VALGRIND_REGISTER_STACK(p_thread->p_stack, p_thread->stacksize);
     return p_thread;
 }
@@ -171,35 +151,7 @@ static inline ABTI_thread *ABTI_mem_alloc_thread_main(ABTI_thread_attr *p_attr)
     p_thread->stacktype = ABTI_STACK_TYPE_MAIN;
     p_thread->stacksize = p_attr->stacksize;
     p_thread->p_stack = p_attr->p_stack;
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    p_thread->unit_def.migratable = p_attr->migratable;
-    p_thread->f_migration_cb = p_attr->f_cb;
-    p_thread->p_migration_cb_arg = p_attr->p_cb_arg;
-#endif
     return p_thread;
-}
-
-static inline ABTI_thread *ABTI_mem_alloc_thread(ABTI_xstream *p_local_xstream,
-                                                 ABTI_thread_attr *p_attr)
-{
-    if (!p_attr) {
-        return ABTI_mem_alloc_thread_default(p_local_xstream);
-    }
-    ABTI_stack_type stacktype = p_attr->stacktype;
-    if (stacktype == ABTI_STACK_TYPE_MEMPOOL) {
-#ifdef ABT_CONFIG_USE_MEM_POOL
-        return ABTI_mem_alloc_thread_mempool(p_local_xstream, p_attr);
-#else
-        return ABTI_mem_alloc_thread_malloc(p_attr);
-#endif
-    } else if (stacktype == ABTI_STACK_TYPE_MALLOC) {
-        return ABTI_mem_alloc_thread_malloc(p_attr);
-    } else if (stacktype == ABTI_STACK_TYPE_USER) {
-        return ABTI_mem_alloc_thread_user(p_attr);
-    } else {
-        ABTI_ASSERT(stacktype == ABTI_STACK_TYPE_MAIN);
-        return ABTI_mem_alloc_thread_main(p_attr);
-    }
 }
 
 static inline void ABTI_mem_free_thread(ABTI_xstream *p_local_xstream,

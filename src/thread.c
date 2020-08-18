@@ -1556,7 +1556,37 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABT_thread h_newthread;
 
     /* Allocate a ULT object and its stack, then create a thread context. */
-    p_newthread = ABTI_mem_alloc_thread(p_local_xstream, p_attr);
+    if (!p_attr) {
+        p_newthread = ABTI_mem_alloc_thread_default(p_local_xstream);
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+        p_newthread->unit_def.migratable = ABT_TRUE;
+        p_newthread->f_migration_cb = NULL;
+        p_newthread->p_migration_cb_arg = NULL;
+#endif
+    } else {
+        ABTI_stack_type stacktype = p_attr->stacktype;
+        if (stacktype == ABTI_STACK_TYPE_MEMPOOL) {
+#ifdef ABT_CONFIG_USE_MEM_POOL
+            p_newthread =
+                ABTI_mem_alloc_thread_mempool(p_local_xstream, p_attr);
+#else
+            p_newthread = ABTI_mem_alloc_thread_malloc(p_attr);
+#endif
+        } else if (stacktype == ABTI_STACK_TYPE_MALLOC) {
+            p_newthread = ABTI_mem_alloc_thread_malloc(p_attr);
+        } else if (stacktype == ABTI_STACK_TYPE_USER) {
+            p_newthread = ABTI_mem_alloc_thread_user(p_attr);
+        } else {
+            ABTI_ASSERT(stacktype == ABTI_STACK_TYPE_MAIN);
+            p_newthread = ABTI_mem_alloc_thread_main(p_attr);
+        }
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+        p_newthread->unit_def.migratable = p_attr->migratable;
+        p_newthread->f_migration_cb = p_attr->f_cb;
+        p_newthread->p_migration_cb_arg = p_attr->p_cb_arg;
+#endif
+    }
+
     if ((ABTI_unit_type_is_thread_main(unit_type) ||
          ABTI_unit_type_is_thread_main_sched(unit_type)) &&
         p_newthread->p_stack == NULL) {
