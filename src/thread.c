@@ -1563,6 +1563,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
     ABT_thread h_newthread;
+    ABTI_ktable *p_keytable = NULL;
 
     /* Allocate a ULT object and its stack, then create a thread context. */
     if (!p_attr) {
@@ -1633,13 +1634,14 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTD_atomic_relaxed_store_ptr(&p_newthread->p_migration_pool, NULL);
 #endif
-    ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable, NULL);
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
     if (p_sched && ABTI_unit_type_is_thread_user(unit_type)) {
         /* Set a destructor for p_sched. */
-        ABTI_ktable_set(p_local_xstream, &p_newthread->unit_def.p_keytable,
-                        &g_thread_sched_key, p_sched);
+        ABTI_ktable_set_unsafe(p_local_xstream, &p_keytable,
+                               &g_thread_sched_key, p_sched);
     }
+    ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable,
+                                  p_keytable);
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_unit_id thread_id = ABTI_thread_get_id(p_newthread);
