@@ -1176,7 +1176,11 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     if (ABTI_unit_type_is_thread_user(p_thread->unit_def.type)) {
-        p_thread->unit_def.migratable = flag;
+        if (flag) {
+            p_thread->unit_def.type |= ABTI_UNIT_TYPE_MIGRATABLE;
+        } else {
+            p_thread->unit_def.type &= ~ABTI_UNIT_TYPE_MIGRATABLE;
+        }
     }
 
 fn_exit:
@@ -1211,7 +1215,8 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag = p_thread->unit_def.migratable;
+    *flag = (p_thread->unit_def.type & ABTI_UNIT_TYPE_MIGRATABLE) ? ABT_TRUE
+                                                                  : ABT_FALSE;
 
 fn_exit:
     return abt_errno;
@@ -1524,7 +1529,9 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
     thread_attr.stacksize = p_thread->stacksize;
     thread_attr.stacktype = p_thread->stacktype;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    thread_attr.migratable = p_thread->unit_def.migratable;
+    thread_attr.migratable =
+        (p_thread->unit_def.type & ABTI_UNIT_TYPE_MIGRATABLE) ? ABT_TRUE
+                                                              : ABT_FALSE;
     thread_attr.f_cb = p_thread->f_migration_cb;
     thread_attr.p_cb_arg = p_thread->p_migration_cb_arg;
 #endif
@@ -1559,7 +1566,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     if (!p_attr) {
         p_newthread = ABTI_mem_alloc_thread_default(p_local_xstream);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-        p_newthread->unit_def.migratable = ABT_TRUE;
+        unit_type |= ABTI_UNIT_TYPE_MIGRATABLE;
         p_newthread->f_migration_cb = NULL;
         p_newthread->p_migration_cb_arg = NULL;
 #endif
@@ -1581,7 +1588,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
             p_newthread = ABTI_mem_alloc_thread_main(p_attr);
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-        p_newthread->unit_def.migratable = p_attr->migratable;
+        unit_type |= p_attr->migratable ? ABTI_UNIT_TYPE_MIGRATABLE : 0;
         p_newthread->f_migration_cb = p_attr->f_cb;
         p_newthread->p_migration_cb_arg = p_attr->p_cb_arg;
 #endif

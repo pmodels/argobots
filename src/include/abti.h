@@ -65,7 +65,8 @@ enum ABTI_sched_used {
 
 /* 0 - 2 : TASK/THREAD/EXT
  * 2 - 5 : USER/MAIN/MAIN_SCHED
- * 5 - 5 : NAMED */
+ * 5 - 5 : NAMED
+ * 6 - 6 : MIGRATABLE */
 #define ABTI_UNIT_TYPE_TASK ((ABTI_unit_type)0x0)
 #define ABTI_UNIT_TYPE_THREAD ((ABTI_unit_type)0x1)
 #define ABTI_UNIT_TYPE_EXT ((ABTI_unit_type)0x2)
@@ -79,6 +80,7 @@ enum ABTI_sched_used {
 #define ABTI_UNIT_TYPE_THREAD_MAIN_SCHED                                       \
     (ABTI_UNIT_TYPE_THREAD + ABTI_UNIT_TYPE_THREAD_TYPE_MAIN_SCHED)
 #define ABTI_UNIT_TYPE_NAMED ((ABTI_unit_type)(0x1 << 5))
+#define ABTI_UNIT_TYPE_MIGRATABLE ((ABTI_unit_type)(0x1 << 6))
 
 enum ABTI_unit_state {
     ABTI_UNIT_STATE_READY,
@@ -333,9 +335,6 @@ struct ABTI_unit {
     ABTI_pool *p_pool;            /* Associated pool */
     ABTD_atomic_ptr p_keytable;   /* Work unit-specific data (ABTI_ktable *) */
     ABT_unit_id id;               /* ID */
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    ABT_bool migratable; /* Migratability */
-#endif
 };
 
 struct ABTI_thread_attr {
