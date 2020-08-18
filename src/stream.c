@@ -1793,9 +1793,6 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         /* Now, we free the current main scheduler. p_main_sched->p_thread must
          * be NULL to avoid freeing it in ABTI_sched_discard_and_free(). */
         p_main_sched->p_thread = NULL;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-        p_sched->p_thread->p_sched = p_sched;
-#endif
         abt_errno = ABTI_sched_discard_and_free(*pp_local_xstream, p_main_sched,
                                                 ABT_FALSE);
         ABTI_CHECK_ERROR(abt_errno);

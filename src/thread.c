@@ -1600,7 +1600,6 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable, NULL);
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
 #ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    p_newthread->p_sched = p_sched;
     if (p_sched && unit_type == ABTI_UNIT_TYPE_THREAD_USER) {
         /* Set a destructor for p_sched. */
         ABTI_unit_set_specific(p_local_xstream, &p_newthread->unit_def,
@@ -2090,9 +2089,6 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             "%stype    : %s\n"
             "%sstate   : %s\n"
             "%slast_ES : %p (%d)\n"
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            "%sp_sched : %p\n"
-#endif
             "%sp_arg   : %p\n"
             "%spool    : %p\n"
             "%srefcount: %u\n"
@@ -2100,11 +2096,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             "%skeytable: %p\n",
             prefix, (void *)p_thread, prefix, ABTI_thread_get_id(p_thread),
             prefix, type, prefix, state, prefix, (void *)p_xstream,
-            xstream_rank,
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            prefix, (void *)p_thread->p_sched,
-#endif
-            prefix, p_thread->unit_def.p_arg, prefix,
+            xstream_rank, prefix, p_thread->unit_def.p_arg, prefix,
             (void *)p_thread->unit_def.p_pool, prefix,
             p_thread->unit_def.refcount, prefix,
             ABTD_atomic_acquire_load_uint32(&p_thread->unit_def.request),
