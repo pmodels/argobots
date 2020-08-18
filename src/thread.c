@@ -1816,16 +1816,6 @@ int ABTI_thread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr attr;
 
-    /* If p_sched is reused, ABTI_thread_revive() can be used. */
-    if (p_sched->p_thread) {
-        ABT_sched h_sched = ABTI_sched_get_handle(p_sched);
-        abt_errno = ABTI_thread_revive(p_local_xstream, p_pool,
-                                       (void (*)(void *))p_sched->run,
-                                       (void *)h_sched, p_sched->p_thread);
-        ABTI_CHECK_ERROR(abt_errno);
-        goto fn_exit;
-    }
-
     /* Allocate a ULT object and its stack */
     ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
                           ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
