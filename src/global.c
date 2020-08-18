@@ -171,7 +171,7 @@ int ABT_finalize(void)
                         "ABT_finalize must be called by the primary ES.");
 
     ABTI_unit *p_self = p_local_xstream->p_unit;
-    ABTI_CHECK_TRUE_MSG(p_self->type == ABTI_UNIT_TYPE_THREAD_MAIN,
+    ABTI_CHECK_TRUE_MSG(ABTI_unit_type_is_thread_main(p_self->type),
                         ABT_ERR_INV_THREAD,
                         "ABT_finalize must be called by the primary ULT.");
     ABTI_thread *p_thread = ABTI_unit_get_thread(p_self);

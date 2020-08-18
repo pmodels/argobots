@@ -459,7 +459,7 @@ static ABT_task unit_get_task(ABT_unit unit)
 {
     ABT_task h_task;
     unit_t *p_unit = (unit_t *)unit;
-    if (p_unit->type == ABTI_UNIT_TYPE_TASK) {
+    if (ABTI_unit_type_is_task(p_unit->type)) {
         h_task = ABTI_task_get_handle(ABTI_unit_get_task(p_unit));
     } else {
         h_task = ABT_TASK_NULL;
@@ -493,7 +493,7 @@ static ABT_unit unit_create_from_task(ABT_task task)
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_unit->is_in_pool, 0);
-    ABTI_ASSERT(p_unit->type == ABTI_UNIT_TYPE_TASK);
+    ABTI_ASSERT(ABTI_unit_type_is_task(p_unit->type));
 
     return (ABT_unit)p_unit;
 }

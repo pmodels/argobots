@@ -63,13 +63,24 @@ enum ABTI_sched_used {
     ABTI_SCHED_IN_POOL
 };
 
-enum ABTI_unit_type {
-    ABTI_UNIT_TYPE_TASK = 0x0,
-    ABTI_UNIT_TYPE_THREAD_USER = 0x1 + (0x0 << 2),
-    ABTI_UNIT_TYPE_THREAD_MAIN_SCHED = 0x1 + (0x1 << 2),
-    ABTI_UNIT_TYPE_THREAD_MAIN = 0x1 + (0x2 << 2),
-    ABTI_UNIT_TYPE_EXT = 0x2,
-};
+/* 0 - 2 : TASK/THREAD/EXT
+ * 2 - 5 : USER/MAIN/MAIN_SCHED
+ * 5 - 5 : NAMED
+ * 6 - 6 : MIGRATABLE */
+#define ABTI_UNIT_TYPE_TASK ((ABTI_unit_type)0x0)
+#define ABTI_UNIT_TYPE_THREAD ((ABTI_unit_type)0x1)
+#define ABTI_UNIT_TYPE_EXT ((ABTI_unit_type)0x2)
+#define ABTI_UNIT_TYPE_THREAD_TYPE_USER ((ABTI_unit_type)(0x1 << 2))
+#define ABTI_UNIT_TYPE_THREAD_TYPE_MAIN ((ABTI_unit_type)(0x1 << 3))
+#define ABTI_UNIT_TYPE_THREAD_TYPE_MAIN_SCHED ((ABTI_unit_type)(0x1 << 4))
+#define ABTI_UNIT_TYPE_THREAD_USER                                             \
+    (ABTI_UNIT_TYPE_THREAD + ABTI_UNIT_TYPE_THREAD_TYPE_USER)
+#define ABTI_UNIT_TYPE_THREAD_MAIN                                             \
+    (ABTI_UNIT_TYPE_THREAD + ABTI_UNIT_TYPE_THREAD_TYPE_MAIN)
+#define ABTI_UNIT_TYPE_THREAD_MAIN_SCHED                                       \
+    (ABTI_UNIT_TYPE_THREAD + ABTI_UNIT_TYPE_THREAD_TYPE_MAIN_SCHED)
+#define ABTI_UNIT_TYPE_NAMED ((ABTI_unit_type)(0x1 << 5))
+#define ABTI_UNIT_TYPE_MIGRATABLE ((ABTI_unit_type)(0x1 << 6))
 
 enum ABTI_unit_state {
     ABTI_UNIT_STATE_READY,
@@ -108,7 +119,7 @@ typedef struct ABTI_unit ABTI_unit;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_thread ABTI_thread;
 typedef enum ABTI_stack_type ABTI_stack_type;
-typedef enum ABTI_unit_type ABTI_unit_type;
+typedef uint32_t ABTI_unit_type;
 typedef enum ABTI_unit_state ABTI_unit_state;
 typedef struct ABTI_thread_htable ABTI_thread_htable;
 typedef struct ABTI_thread_queue ABTI_thread_queue;
@@ -324,10 +335,6 @@ struct ABTI_unit {
     ABTI_pool *p_pool;            /* Associated pool */
     ABTD_atomic_ptr p_keytable;   /* Work unit-specific data (ABTI_ktable *) */
     ABT_unit_id id;               /* ID */
-    uint32_t refcount;            /* Reference count */
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    ABT_bool migratable; /* Migratability */
-#endif
 };
 
 struct ABTI_thread_attr {

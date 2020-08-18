@@ -45,7 +45,7 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
                 prefix_fmt = "<U%" PRIu64 ":E%d> %s";
                 tid = ABTI_thread_get_id(p_thread);
             }
-        } else if (type == ABTI_UNIT_TYPE_TASK) {
+        } else if (ABTI_unit_type_is_task(type)) {
             rank = p_local_xstream->rank;
             p_task = ABTI_unit_get_task(p_local_xstream->p_unit);
             prefix_fmt = "<T%" PRIu64 ":E%d> %s";

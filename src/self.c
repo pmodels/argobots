@@ -95,7 +95,7 @@ int ABT_self_is_primary(ABT_bool *flag)
 #endif
 
     ABTI_unit *p_unit = p_local_xstream->p_unit;
-    if (p_unit->type == ABTI_UNIT_TYPE_THREAD_MAIN) {
+    if (ABTI_unit_type_is_thread_main(p_unit->type)) {
         *flag = ABT_TRUE;
     } else {
         if (!ABTI_unit_type_is_thread(p_unit->type))
@@ -347,7 +347,8 @@ int ABT_self_is_unnamed(ABT_bool *flag)
     }
 #endif
 
-    *flag = (p_local_xstream->p_unit->refcount == 0) ? ABT_TRUE : ABT_FALSE;
+    *flag = (p_local_xstream->p_unit->type & ABTI_UNIT_TYPE_NAMED) ? ABT_FALSE
+                                                                   : ABT_TRUE;
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
 fn_exit:
