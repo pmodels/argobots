@@ -176,9 +176,11 @@ static inline uint32_t ABTI_ktable_get_idx(ABTI_key *p_key, int size)
 }
 
 static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
-                                   ABTI_ktable *p_ktable, ABTI_key *p_key,
+                                   ABTD_atomic_ptr *pp_ktable, ABTI_key *p_key,
                                    void *value)
 {
+    ABTI_ktable *p_ktable =
+        ABTI_ktable_ensure_allocation(p_local_xstream, pp_ktable);
     uint32_t idx;
     ABTD_atomic_ptr *pp_elem;
     ABTI_ktelem *p_elem;
@@ -224,22 +226,25 @@ static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
     ABTI_spinlock_release(&p_ktable->lock);
 }
 
-static inline void *ABTI_ktable_get(ABTI_ktable *p_ktable, ABTI_key *p_key)
+static inline void *ABTI_ktable_get(ABTD_atomic_ptr *pp_ktable, ABTI_key *p_key)
 {
-    uint32_t idx;
-    ABTI_ktelem *p_elem;
+    ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(pp_ktable);
+    if (ABTI_ktable_is_valid(p_ktable)) {
+        uint32_t idx;
+        ABTI_ktelem *p_elem;
 
-    idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
-    p_elem =
-        (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(&p_ktable->p_elems[idx]);
-    uint32_t key_id = p_key->id;
-    while (p_elem) {
-        if (p_elem->key_id == key_id) {
-            return p_elem->value;
+        idx = ABTI_ktable_get_idx(p_key, p_ktable->size);
+        p_elem = (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(
+            &p_ktable->p_elems[idx]);
+        uint32_t key_id = p_key->id;
+        while (p_elem) {
+            if (p_elem->key_id == key_id) {
+                return p_elem->value;
+            }
+            p_elem =
+                (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(&p_elem->p_next);
         }
-        p_elem = (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(&p_elem->p_next);
     }
-
     return NULL;
 }
 

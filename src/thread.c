@@ -1458,7 +1458,9 @@ int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Set the value. */
-    ABTI_unit_set_specific(p_local_xstream, &p_thread->unit_def, p_key, value);
+    ABTI_ktable_set(p_local_xstream, &p_thread->unit_def.p_keytable, p_key,
+                    value);
+
 fn_exit:
     return abt_errno;
 
@@ -1493,7 +1495,7 @@ int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Get the value. */
-    *value = ABTI_unit_get_specific(&p_thread->unit_def, p_key);
+    *value = ABTI_ktable_get(&p_thread->unit_def.p_keytable, p_key);
 fn_exit:
     return abt_errno;
 
@@ -1635,8 +1637,8 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
     if (p_sched && ABTI_unit_type_is_thread_user(unit_type)) {
         /* Set a destructor for p_sched. */
-        ABTI_unit_set_specific(p_local_xstream, &p_newthread->unit_def,
-                               &g_thread_sched_key, p_sched);
+        ABTI_ktable_set(p_local_xstream, &p_newthread->unit_def.p_keytable,
+                        &g_thread_sched_key, p_sched);
     }
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
