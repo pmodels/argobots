@@ -50,23 +50,6 @@ static inline void ABTI_xstream_unset_request(ABTI_xstream *p_xstream,
     ABTD_atomic_fetch_and_uint32(&p_xstream->request, ~req);
 }
 
-/* Get the top scheduler from the sched list */
-static inline ABTI_sched *ABTI_xstream_get_top_sched(ABTI_xstream *p_xstream)
-{
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_unit *p_unit = p_xstream->p_unit;
-    while (p_unit) {
-        if (ABTI_unit_type_is_thread(p_unit->type)) {
-            ABTI_sched *p_sched = ABTI_unit_get_thread(p_unit)->p_sched;
-            if (p_sched)
-                return p_sched;
-        }
-        p_unit = p_unit->p_parent;
-    }
-#endif
-    return p_xstream->p_main_sched;
-}
-
 /* Get the first pool of the main scheduler. */
 static inline ABTI_pool *ABTI_xstream_get_main_pool(ABTI_xstream *p_xstream)
 {
