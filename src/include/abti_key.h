@@ -45,7 +45,8 @@ static inline ABT_key ABTI_key_get_handle(ABTI_key *p_key)
     }
 
 #define ABTI_KEY_ID_STACKABLE_SCHED 0
-#define ABTI_KEY_ID_END_ 1
+#define ABTI_KEY_ID_MIGRATION 1
+#define ABTI_KEY_ID_END_ 2
 
 typedef struct ABTI_ktable_mem_header {
     struct ABTI_ktable_mem_header *p_next;

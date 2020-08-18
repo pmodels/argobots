@@ -118,6 +118,7 @@ typedef struct ABTI_pool ABTI_pool;
 typedef struct ABTI_unit ABTI_unit;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_thread ABTI_thread;
+typedef struct ABTI_thread_mig_data ABTI_thread_mig_data;
 typedef enum ABTI_stack_type ABTI_stack_type;
 typedef uint32_t ABTI_unit_type;
 typedef enum ABTI_unit_state ABTI_unit_state;
@@ -348,18 +349,19 @@ struct ABTI_thread_attr {
 #endif
 };
 
+struct ABTI_thread_mig_data {
+    void (*f_migration_cb)(ABT_thread, void *); /* Callback function */
+    void *p_migration_cb_arg;                   /* Callback function argument */
+    ABTD_atomic_ptr
+        p_migration_pool; /* Destination of migration (ABTI_pool *) */
+};
+
 struct ABTI_thread {
     ABTD_thread_context ctx;   /* Context */
     ABTI_unit unit_def;        /* Internal unit definition */
     void *p_stack;             /* Stack address */
     size_t stacksize;          /* Stack size (in bytes) */
     ABTI_stack_type stacktype; /* Stack type */
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    void (*f_migration_cb)(ABT_thread, void *); /* Callback function */
-    void *p_migration_cb_arg;                   /* Callback function argument */
-    ABTD_atomic_ptr
-        p_migration_pool; /* Destination of migration (ABTI_pool *) */
-#endif
 };
 
 struct ABTI_task {
@@ -542,6 +544,8 @@ void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 /* User-level Thread (ULT)  */
 int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
                                 ABTI_thread *p_thread, ABTI_pool *p_pool);
+ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_xstream *p_local_xstream,
+                                               ABTI_thread *p_thread);
 int ABTI_thread_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                        void (*thread_func)(void *), void *arg,
                        ABTI_thread_attr *p_attr, ABTI_thread **pp_newthread);
