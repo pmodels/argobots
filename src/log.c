@@ -42,16 +42,8 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
                 }
             } else {
                 rank = p_local_xstream->rank;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-                if (p_thread->p_sched) {
-                    prefix_fmt = "<S%" PRIu64 ":E%d> %s";
-                    tid = p_thread->p_sched->id;
-                } else
-#endif
-                {
-                    prefix_fmt = "<U%" PRIu64 ":E%d> %s";
-                    tid = ABTI_thread_get_id(p_thread);
-                }
+                prefix_fmt = "<U%" PRIu64 ":E%d> %s";
+                tid = ABTI_thread_get_id(p_thread);
             }
         } else if (type == ABTI_UNIT_TYPE_TASK) {
             rank = p_local_xstream->rank;

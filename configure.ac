@@ -181,7 +181,6 @@ AC_ARG_ENABLE([feature],
         no-thread-cancel    - disable ULT cancellation
         no-task-cancel      - disable tasklet cancellation
         no-migration        - disable ULT migrationtask
-        no-stackable-sched  - disable stackable scheduler
         no-ext-thread       - disable supporting external threads
         none|no             - disable all features above
 ],,[enable_feature=all])
@@ -572,7 +571,6 @@ for option in $enable_feature ; do
             enable_thread_cancel=yes
             enable_task_cancel=yes
             enable_migration=yes
-            enable_stackable_sched=yes
             enable_ext_thread=yes
         ;;
         no-thread-cancel)
@@ -584,9 +582,6 @@ for option in $enable_feature ; do
         no-migration)
             enable_migration=no
         ;;
-        no-stackable-sched)
-            enable_stackable_sched=no
-        ;;
         no-ext-thread)
             enable_ext_thread=no
         ;;
@@ -594,7 +589,6 @@ for option in $enable_feature ; do
             enable_thread_cancel=no
             enable_task_cancel=no
             enable_migration=no
-            enable_stackable_sched=no
             enable_ext_thread=no
         ;;
         *)
@@ -617,10 +611,6 @@ AS_IF([test "x$enable_task_cancel" = "xno"],
 AS_IF([test "x$enable_migration" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_MIGRATION, 1,
         [Define to disable ULT migration])])
-
-AS_IF([test "x$enable_stackable_sched" = "xno"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_STACKABLE_SCHED, 1,
-        [Define to disable stackable scheduler])])
 
 AS_IF([test "x$enable_ext_thread" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_EXT_THREAD, 1,

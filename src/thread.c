@@ -27,6 +27,11 @@ static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
                                              ABTI_thread *p_thread);
 static inline ABT_unit_id ABTI_thread_get_new_id(void);
 
+static void key_destructor_stackable_sched(void *p_value);
+static ABTI_key g_thread_sched_key =
+    ABTI_KEY_STATIC_INITIALIZER(key_destructor_stackable_sched,
+                                ABTI_KEY_ID_STACKABLE_SCHED);
+
 /** @defgroup ULT User-level Thread (ULT)
  * This group is for User-level Thread (ULT).
  */
@@ -1586,9 +1591,6 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABTD_atomic_release_store_uint32(&p_newthread->unit_def.request, 0);
     p_newthread->unit_def.p_last_xstream = NULL;
     p_newthread->unit_def.p_parent = NULL;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    p_newthread->p_sched = p_sched;
-#endif
     p_newthread->unit_def.p_pool = p_pool;
     p_newthread->unit_def.refcount = refcount;
     p_newthread->unit_def.type = unit_type;
@@ -1597,6 +1599,11 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #endif
     ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable, NULL);
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
+    if (p_sched && unit_type == ABTI_UNIT_TYPE_THREAD_USER) {
+        /* Set a destructor for p_sched. */
+        ABTI_unit_set_specific(p_local_xstream, &p_newthread->unit_def,
+                               &g_thread_sched_key, p_sched);
+    }
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_unit_id thread_id = ABTI_thread_get_id(p_newthread);
@@ -1815,16 +1822,6 @@ int ABTI_thread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr attr;
-
-    /* If p_sched is reused, ABTI_thread_revive() can be used. */
-    if (p_sched->p_thread) {
-        ABT_sched h_sched = ABTI_sched_get_handle(p_sched);
-        abt_errno = ABTI_thread_revive(p_local_xstream, p_pool,
-                                       (void (*)(void *))p_sched->run,
-                                       (void *)h_sched, p_sched->p_thread);
-        ABTI_CHECK_ERROR(abt_errno);
-        goto fn_exit;
-    }
 
     /* Allocate a ULT object and its stack */
     ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
@@ -2090,9 +2087,6 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             "%stype    : %s\n"
             "%sstate   : %s\n"
             "%slast_ES : %p (%d)\n"
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            "%sp_sched : %p\n"
-#endif
             "%sp_arg   : %p\n"
             "%spool    : %p\n"
             "%srefcount: %u\n"
@@ -2100,11 +2094,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             "%skeytable: %p\n",
             prefix, (void *)p_thread, prefix, ABTI_thread_get_id(p_thread),
             prefix, type, prefix, state, prefix, (void *)p_xstream,
-            xstream_rank,
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-            prefix, (void *)p_thread->p_sched,
-#endif
-            prefix, p_thread->unit_def.p_arg, prefix,
+            xstream_rank, prefix, p_thread->unit_def.p_arg, prefix,
             (void *)p_thread->unit_def.p_pool, prefix,
             p_thread->unit_def.refcount, prefix,
             ABTD_atomic_acquire_load_uint32(&p_thread->unit_def.request),
@@ -2212,6 +2202,18 @@ int ABTI_thread_self_xstream_rank(ABTI_xstream *p_local_xstream)
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
+
+static void key_destructor_stackable_sched(void *p_value)
+{
+    /* This destructor should be called in ABTI_thread_free(), so it should not
+     * free the thread again.  */
+    ABTI_sched *p_sched = (ABTI_sched *)p_value;
+    p_sched->used = ABTI_SCHED_NOT_USED;
+    if (p_sched->automatic == ABT_TRUE) {
+        p_sched->p_thread = NULL;
+        ABTI_sched_free(ABTI_local_get_xstream_uninlined(), p_sched, ABT_FALSE);
+    }
+}
 
 static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                               void (*thread_func)(void *), void *arg,

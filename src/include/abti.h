@@ -342,11 +342,8 @@ struct ABTI_thread_attr {
 };
 
 struct ABTI_thread {
-    ABTD_thread_context ctx; /* Context */
-    ABTI_unit unit_def;      /* Internal unit definition */
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    ABTI_sched *p_sched; /* Scheduler */
-#endif
+    ABTD_thread_context ctx;   /* Context */
+    ABTI_unit unit_def;        /* Internal unit definition */
     void *p_stack;             /* Stack address */
     size_t stacksize;          /* Stack size (in bytes) */
     ABTI_stack_type stacktype; /* Stack type */
