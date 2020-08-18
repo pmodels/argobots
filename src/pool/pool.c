@@ -475,9 +475,6 @@ fn_fail:
  */
 int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
 {
-#ifdef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-    return ABT_ERR_FEATURE_NA;
-#else
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
@@ -547,7 +544,6 @@ fn_exit:
 fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
-#endif
 }
 
 /**

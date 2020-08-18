@@ -1599,13 +1599,11 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #endif
     ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable, NULL);
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
     if (p_sched && unit_type == ABTI_UNIT_TYPE_THREAD_USER) {
         /* Set a destructor for p_sched. */
         ABTI_unit_set_specific(p_local_xstream, &p_newthread->unit_def,
                                &g_thread_sched_key, p_sched);
     }
-#endif
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_unit_id thread_id = ABTI_thread_get_id(p_newthread);
