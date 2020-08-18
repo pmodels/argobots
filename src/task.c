@@ -333,7 +333,7 @@ int ABT_task_self(ABT_task *task)
 #endif
 
     ABTI_unit *p_unit = p_local_xstream->p_unit;
-    if (p_unit->type == ABTI_UNIT_TYPE_TASK) {
+    if (ABTI_unit_type_is_task(p_unit->type)) {
         *task = ABTI_task_get_handle(ABTI_unit_get_task(p_unit));
     } else {
         abt_errno = ABT_ERR_INV_TASK;
@@ -376,7 +376,7 @@ int ABT_task_self_id(ABT_unit_id *id)
 #endif
 
     ABTI_unit *p_unit = p_local_xstream->p_unit;
-    if (p_unit->type == ABTI_UNIT_TYPE_TASK) {
+    if (ABTI_unit_type_is_task(p_unit->type)) {
         *id = ABTI_task_get_id(ABTI_unit_get_task(p_unit));
     } else {
         abt_errno = ABT_ERR_INV_TASK;
@@ -594,7 +594,8 @@ int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag)
     ABTI_task *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
-    *flag = (p_task->unit_def.refcount == 0) ? ABT_TRUE : ABT_FALSE;
+    *flag =
+        (p_task->unit_def.type & ABTI_UNIT_TYPE_NAMED) ? ABT_FALSE : ABT_TRUE;
 
 fn_exit:
     return abt_errno;
@@ -778,7 +779,6 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newtask->unit_def.f_unit = task_func;
     p_newtask->unit_def.p_arg = arg;
     p_newtask->unit_def.p_pool = p_pool;
-    p_newtask->unit_def.refcount = refcount;
     ABTD_atomic_relaxed_store_ptr(&p_newtask->unit_def.p_keytable, NULL);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_newtask->unit_def.migratable = ABT_TRUE;
@@ -787,7 +787,9 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 
     /* Create a wrapper work unit */
     h_newtask = ABTI_task_get_handle(p_newtask);
-    p_newtask->unit_def.type = ABTI_UNIT_TYPE_TASK;
+    p_newtask->unit_def.type =
+        refcount ? (ABTI_UNIT_TYPE_TASK | ABTI_UNIT_TYPE_NAMED)
+                 : ABTI_UNIT_TYPE_TASK;
     p_newtask->unit_def.unit = p_pool->u_create_from_task(h_newtask);
 
     ABTI_tool_event_task_create(p_local_xstream, p_newtask,
@@ -836,7 +838,6 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABTD_atomic_relaxed_store_uint32(&p_task->unit_def.request, 0);
     p_task->unit_def.f_unit = task_func;
     p_task->unit_def.p_arg = arg;
-    p_task->unit_def.refcount = 1;
     ABTD_atomic_relaxed_store_ptr(&p_task->unit_def.p_keytable, NULL);
 
     if (p_task->unit_def.p_pool != p_pool) {
@@ -930,7 +931,6 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
             "%smigratable: %s\n"
 #endif
-            "%srefcount  : %u\n"
             "%srequest   : 0x%x\n"
             "%sp_arg     : %p\n"
             "%skeytable  : %p\n",
@@ -941,9 +941,8 @@ void ABTI_task_print(ABTI_task *p_task, FILE *p_os, int indent)
             prefix,
             (p_task->unit_def.migratable == ABT_TRUE) ? "TRUE" : "FALSE",
 #endif
-            prefix, p_task->unit_def.refcount, prefix,
-            ABTD_atomic_acquire_load_uint32(&p_task->unit_def.request), prefix,
-            p_task->unit_def.p_arg, prefix,
+            prefix, ABTD_atomic_acquire_load_uint32(&p_task->unit_def.request),
+            prefix, p_task->unit_def.p_arg, prefix,
             ABTD_atomic_acquire_load_ptr(&p_task->unit_def.p_keytable));
 
 fn_exit:

@@ -1744,7 +1744,7 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
     }
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        ABTI_CHECK_TRUE(p_thread->unit_def.type == ABTI_UNIT_TYPE_THREAD_MAIN,
+        ABTI_CHECK_TRUE(ABTI_unit_type_is_thread_main(p_thread->unit_def.type),
                         ABT_ERR_THREAD);
 
         /* Since the primary ES does not finish its execution until ABT_finalize
