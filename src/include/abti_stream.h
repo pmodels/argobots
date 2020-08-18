@@ -63,20 +63,9 @@ static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
     LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n", ABTI_thread_get_id(p_thread),
               p_thread->unit_def.p_last_xstream->rank);
     if (p_thread->unit_def.refcount == 0) {
-#ifndef ABT_CONFIG_DISABLE_STACKABLE_SCHED
-        if (p_thread->p_sched) {
-            /* NOTE: p_thread itself will be freed in ABTI_sched_free. */
-            ABTD_atomic_release_store_int(&p_thread->unit_def.state,
-                                          ABTI_UNIT_STATE_TERMINATED);
-            ABTI_sched_discard_and_free(p_local_xstream, p_thread->p_sched,
-                                        ABT_FALSE);
-        } else
-#endif
-        {
-            ABTD_atomic_release_store_int(&p_thread->unit_def.state,
-                                          ABTI_UNIT_STATE_TERMINATED);
-            ABTI_thread_free(p_local_xstream, p_thread);
-        }
+        ABTD_atomic_release_store_int(&p_thread->unit_def.state,
+                                      ABTI_UNIT_STATE_TERMINATED);
+        ABTI_thread_free(p_local_xstream, p_thread);
     } else {
         /* NOTE: We set the ULT's state as TERMINATED after checking refcount
          * because the ULT can be freed on a different ES.  In other words, we

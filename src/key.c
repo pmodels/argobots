@@ -10,7 +10,8 @@
  * work-unit local storage (TLS).
  */
 
-static ABTD_atomic_uint32 g_key_id = ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
+static ABTD_atomic_uint32 g_key_id =
+    ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(ABTI_KEY_ID_END_);
 
 /**
  * @ingroup KEY
