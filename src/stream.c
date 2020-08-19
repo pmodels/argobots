@@ -1609,10 +1609,12 @@ int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
     int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool;
 
+    ABTI_thread_mig_data *p_mig_data =
+        ABTI_thread_get_mig_data(p_local_xstream, p_thread);
     /* callback function */
-    if (p_thread->f_migration_cb) {
+    if (p_mig_data->f_migration_cb) {
         ABT_thread thread = ABTI_thread_get_handle(p_thread);
-        p_thread->f_migration_cb(thread, p_thread->p_migration_cb_arg);
+        p_mig_data->f_migration_cb(thread, p_mig_data->p_migration_cb_arg);
     }
 
     /* If request is set, p_migration_pool has a valid pool pointer. */
@@ -1620,7 +1622,7 @@ int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
                 ABTI_UNIT_REQ_MIGRATE);
 
     /* Extracting argument in migration request. */
-    p_pool = ABTD_atomic_relaxed_load_ptr(&p_thread->p_migration_pool);
+    p_pool = ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
     ABTI_thread_unset_request(p_thread, ABTI_UNIT_REQ_MIGRATE);
 
     LOG_DEBUG("[U%" PRIu64 "] migration: E%d -> NT %p\n",

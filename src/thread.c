@@ -30,6 +30,10 @@ static void key_destructor_stackable_sched(void *p_value);
 static ABTI_key g_thread_sched_key =
     ABTI_KEY_STATIC_INITIALIZER(key_destructor_stackable_sched,
                                 ABTI_KEY_ID_STACKABLE_SCHED);
+static void key_destructor_migration(void *p_value);
+static ABTI_key g_thread_mig_data_key =
+    ABTI_KEY_STATIC_INITIALIZER(key_destructor_migration,
+                                ABTI_KEY_ID_MIGRATION);
 
 /** @defgroup ULT User-level Thread (ULT)
  * This group is for User-level Thread (ULT).
@@ -1136,12 +1140,14 @@ int ABT_thread_set_callback(ABT_thread thread,
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    p_thread->f_migration_cb = cb_func;
-    p_thread->p_migration_cb_arg = cb_arg;
-
+    ABTI_thread_mig_data *p_mig_data =
+        ABTI_thread_get_mig_data(p_local_xstream, p_thread);
+    p_mig_data->f_migration_cb = cb_func;
+    p_mig_data->p_migration_cb_arg = cb_arg;
 fn_exit:
     return abt_errno;
 
@@ -1458,7 +1464,9 @@ int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Set the value. */
-    ABTI_unit_set_specific(p_local_xstream, &p_thread->unit_def, p_key, value);
+    ABTI_ktable_set(p_local_xstream, &p_thread->unit_def.p_keytable, p_key,
+                    value);
+
 fn_exit:
     return abt_errno;
 
@@ -1493,7 +1501,7 @@ int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Get the value. */
-    *value = ABTI_unit_get_specific(&p_thread->unit_def, p_key);
+    *value = ABTI_ktable_get(&p_thread->unit_def.p_keytable, p_key);
 fn_exit:
     return abt_errno;
 
@@ -1532,8 +1540,16 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
     thread_attr.migratable =
         (p_thread->unit_def.type & ABTI_UNIT_TYPE_MIGRATABLE) ? ABT_TRUE
                                                               : ABT_FALSE;
-    thread_attr.f_cb = p_thread->f_migration_cb;
-    thread_attr.p_cb_arg = p_thread->p_migration_cb_arg;
+    ABTI_thread_mig_data *p_mig_data =
+        (ABTI_thread_mig_data *)ABTI_ktable_get(&p_thread->unit_def.p_keytable,
+                                                &g_thread_mig_data_key);
+    if (p_mig_data) {
+        thread_attr.f_cb = p_mig_data->f_migration_cb;
+        thread_attr.p_cb_arg = p_mig_data->p_migration_cb_arg;
+    } else {
+        thread_attr.f_cb = NULL;
+        thread_attr.p_cb_arg = NULL;
+    }
 #endif
     p_attr = ABTI_thread_attr_dup(&thread_attr);
 
@@ -1561,14 +1577,13 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newthread;
     ABT_thread h_newthread;
+    ABTI_ktable *p_keytable = NULL;
 
     /* Allocate a ULT object and its stack, then create a thread context. */
     if (!p_attr) {
         p_newthread = ABTI_mem_alloc_thread_default(p_local_xstream);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         unit_type |= ABTI_UNIT_TYPE_MIGRATABLE;
-        p_newthread->f_migration_cb = NULL;
-        p_newthread->p_migration_cb_arg = NULL;
 #endif
     } else {
         ABTI_stack_type stacktype = p_attr->stacktype;
@@ -1589,8 +1604,14 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         unit_type |= p_attr->migratable ? ABTI_UNIT_TYPE_MIGRATABLE : 0;
-        p_newthread->f_migration_cb = p_attr->f_cb;
-        p_newthread->p_migration_cb_arg = p_attr->p_cb_arg;
+        if (p_attr->f_cb) {
+            ABTI_thread_mig_data *p_mig_data = (ABTI_thread_mig_data *)
+                ABTU_calloc(1, sizeof(ABTI_thread_mig_data));
+            p_mig_data->f_migration_cb = p_attr->f_cb;
+            p_mig_data->p_migration_cb_arg = p_attr->p_cb_arg;
+            ABTI_ktable_set_unsafe(p_local_xstream, &p_keytable,
+                                   &g_thread_mig_data_key, (void *)p_mig_data);
+        }
 #endif
     }
 
@@ -1628,16 +1649,14 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newthread->unit_def.p_parent = NULL;
     p_newthread->unit_def.p_pool = p_pool;
     p_newthread->unit_def.type = unit_type;
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    ABTD_atomic_relaxed_store_ptr(&p_newthread->p_migration_pool, NULL);
-#endif
-    ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable, NULL);
     p_newthread->unit_def.id = ABTI_THREAD_INIT_ID;
     if (p_sched && ABTI_unit_type_is_thread_user(unit_type)) {
         /* Set a destructor for p_sched. */
-        ABTI_unit_set_specific(p_local_xstream, &p_newthread->unit_def,
+        ABTI_ktable_set_unsafe(p_local_xstream, &p_keytable,
                                &g_thread_sched_key, p_sched);
     }
+    ABTD_atomic_relaxed_store_ptr(&p_newthread->unit_def.p_keytable,
+                                  p_keytable);
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     ABT_unit_id thread_id = ABTI_thread_get_id(p_newthread);
@@ -1738,7 +1757,11 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
      * after ABTI_UNIT_REQ_MIGRATE.  The update must be "atomic" (but does not
      * require acq-rel) since two threads can update the pointer value
      * simultaneously. */
-    ABTD_atomic_relaxed_store_ptr(&p_thread->p_migration_pool, (void *)p_pool);
+    ABTI_thread_mig_data *p_mig_data =
+        ABTI_thread_get_mig_data(p_local_xstream, p_thread);
+    ABTD_atomic_relaxed_store_ptr(&p_mig_data->p_migration_pool,
+                                  (void *)p_pool);
+
     ABTI_thread_set_request(p_thread, ABTI_UNIT_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
@@ -1758,6 +1781,22 @@ fn_fail:
 #else
     return ABT_ERR_MIGRATION_NA;
 #endif
+}
+
+ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_xstream *p_local_xstream,
+                                               ABTI_thread *p_thread)
+{
+    ABTI_thread_mig_data *p_mig_data =
+        (ABTI_thread_mig_data *)ABTI_ktable_get(&p_thread->unit_def.p_keytable,
+                                                &g_thread_mig_data_key);
+    if (!p_mig_data) {
+        p_mig_data =
+            (ABTI_thread_mig_data *)ABTU_calloc(1,
+                                                sizeof(ABTI_thread_mig_data));
+        ABTI_ktable_set(p_local_xstream, &p_thread->unit_def.p_keytable,
+                        &g_thread_mig_data_key, (void *)p_mig_data);
+    }
+    return p_mig_data;
 }
 
 int ABTI_thread_create_main(ABTI_xstream *p_local_xstream,
@@ -2241,6 +2280,12 @@ static void key_destructor_stackable_sched(void *p_value)
         p_sched->p_thread = NULL;
         ABTI_sched_free(ABTI_local_get_xstream_uninlined(), p_sched, ABT_FALSE);
     }
+}
+
+static void key_destructor_migration(void *p_value)
+{
+    ABTI_thread_mig_data *p_mig_data = (ABTI_thread_mig_data *)p_value;
+    ABTU_free(p_mig_data);
 }
 
 static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,

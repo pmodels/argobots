@@ -715,7 +715,8 @@ int ABT_task_set_specific(ABT_task task, ABT_key key, void *value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Set the value. */
-    ABTI_unit_set_specific(p_local_xstream, &p_task->unit_def, p_key, value);
+    ABTI_ktable_set(p_local_xstream, &p_task->unit_def.p_keytable, p_key,
+                    value);
 fn_exit:
     return abt_errno;
 
@@ -750,7 +751,7 @@ int ABT_task_get_specific(ABT_task task, ABT_key key, void **value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     /* Get the value. */
-    *value = ABTI_unit_get_specific(&p_task->unit_def, p_key);
+    *value = ABTI_ktable_get(&p_task->unit_def.p_keytable, p_key);
 fn_exit:
     return abt_errno;
 
