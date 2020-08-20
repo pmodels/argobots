@@ -47,7 +47,7 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
             }
         } else if (ABTI_unit_type_is_task(type)) {
             rank = p_local_xstream->rank;
-            p_task = ABTI_unit_get_task(p_local_xstream->p_unit);
+            p_task = p_local_xstream->p_unit;
             prefix_fmt = "<T%" PRIu64 ":E%d> %s";
             tid = ABTI_task_get_id(p_task);
         } else {
@@ -110,11 +110,11 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
 
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
-            if (p_task->unit_def.p_last_xstream) {
+            if (p_task->p_last_xstream) {
                 LOG_DEBUG("[T%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
                           "(producer: NT %p)\n",
                           ABTI_task_get_id(p_task),
-                          p_task->unit_def.p_last_xstream->rank, p_pool->id,
+                          p_task->p_last_xstream->rank, p_pool->id,
                           (void *)producer_id);
             } else {
                 LOG_DEBUG("[T%" PRIu64 "] pushed to P%" PRIu64 " "
@@ -157,11 +157,11 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
 
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
-            if (p_task->unit_def.p_last_xstream) {
+            if (p_task->p_last_xstream) {
                 LOG_DEBUG("[T%" PRIu64 ":E%d] removed from "
                           "P%" PRIu64 " (consumer: NT %p)\n",
                           ABTI_task_get_id(p_task),
-                          p_task->unit_def.p_last_xstream->rank, p_pool->id,
+                          p_task->p_last_xstream->rank, p_pool->id,
                           (void *)consumer_id);
             } else {
                 LOG_DEBUG("[T%" PRIu64 "] removed from P%" PRIu64 " "
@@ -202,11 +202,11 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
 
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
-            if (p_task->unit_def.p_last_xstream) {
+            if (p_task->p_last_xstream) {
                 LOG_DEBUG("[T%" PRIu64 ":E%d] popped from "
                           "P%" PRIu64 "\n",
                           ABTI_task_get_id(p_task),
-                          p_task->unit_def.p_last_xstream->rank, p_pool->id);
+                          p_task->p_last_xstream->rank, p_pool->id);
             } else {
                 LOG_DEBUG("[T%" PRIu64 "] popped from P%" PRIu64 "\n",
                           ABTI_task_get_id(p_task), p_pool->id);

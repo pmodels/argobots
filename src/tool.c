@@ -289,8 +289,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                 *(ABT_thread *)val = ABTI_thread_get_handle(
                     ABTI_unit_get_thread(p_tctx->p_caller));
             } else {
-                *(ABT_task *)val =
-                    ABTI_task_get_handle(ABTI_unit_get_task(p_tctx->p_caller));
+                *(ABT_task *)val = ABTI_task_get_handle(p_tctx->p_caller);
             }
             break;
         case ABT_TOOL_QUERY_KIND_SYNC_OBJECT_TYPE:

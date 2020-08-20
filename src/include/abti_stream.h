@@ -80,9 +80,9 @@ static inline void ABTI_xstream_terminate_task(ABTI_xstream *p_local_xstream,
                                                ABTI_task *p_task)
 {
     LOG_DEBUG("[T%" PRIu64 ":E%d] terminated\n", ABTI_task_get_id(p_task),
-              p_task->unit_def.p_last_xstream->rank);
-    if (!(p_task->unit_def.type & ABTI_UNIT_TYPE_NAMED)) {
-        ABTD_atomic_release_store_int(&p_task->unit_def.state,
+              p_task->p_last_xstream->rank);
+    if (!(p_task->type & ABTI_UNIT_TYPE_NAMED)) {
+        ABTD_atomic_release_store_int(&p_task->state,
                                       ABTI_UNIT_STATE_TERMINATED);
         ABTI_task_free(p_local_xstream, p_task);
     } else {
@@ -90,7 +90,7 @@ static inline void ABTI_xstream_terminate_task(ABTI_xstream *p_local_xstream,
          * because the task can be freed on a different ES.  In other words, we
          * must not access any field of p_task after changing the state to
          * TERMINATED. */
-        ABTD_atomic_release_store_int(&p_task->unit_def.state,
+        ABTD_atomic_release_store_int(&p_task->state,
                                       ABTI_UNIT_STATE_TERMINATED);
     }
 }

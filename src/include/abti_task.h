@@ -40,12 +40,12 @@ static inline ABT_task ABTI_task_get_handle(ABTI_task *p_task)
 
 static inline void ABTI_task_set_request(ABTI_task *p_task, uint32_t req)
 {
-    ABTD_atomic_fetch_or_uint32(&p_task->unit_def.request, req);
+    ABTD_atomic_fetch_or_uint32(&p_task->request, req);
 }
 
 static inline void ABTI_task_unset_request(ABTI_task *p_task, uint32_t req)
 {
-    ABTD_atomic_fetch_and_uint32(&p_task->unit_def.request, ~req);
+    ABTD_atomic_fetch_and_uint32(&p_task->request, ~req);
 }
 
 #endif /* ABTI_TASK_H_INCLUDED */

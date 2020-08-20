@@ -1561,7 +1561,7 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                 ABTI_task *p_task)
 {
 #ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
-    if (ABTD_atomic_acquire_load_uint32(&p_task->unit_def.request) &
+    if (ABTD_atomic_acquire_load_uint32(&p_task->request) &
         ABTI_UNIT_REQ_CANCEL) {
         ABTI_tool_event_task_cancel(p_local_xstream, p_task);
         ABTI_xstream_terminate_task(p_local_xstream, p_task);
@@ -1570,25 +1570,24 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
 #endif
 
     /* Change the task state */
-    ABTD_atomic_release_store_int(&p_task->unit_def.state,
-                                  ABTI_UNIT_STATE_RUNNING);
+    ABTD_atomic_release_store_int(&p_task->state, ABTI_UNIT_STATE_RUNNING);
 
     /* Set the associated ES */
-    p_task->unit_def.p_last_xstream = p_local_xstream;
+    p_task->p_last_xstream = p_local_xstream;
 
     /* Execute the task function */
     LOG_DEBUG("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
               p_local_xstream->rank);
 
     ABTI_unit *p_sched_unit = p_local_xstream->p_unit;
-    p_local_xstream->p_unit = &p_task->unit_def;
-    p_task->unit_def.p_parent = p_sched_unit;
+    p_local_xstream->p_unit = p_task;
+    p_task->p_parent = p_sched_unit;
 
     /* Execute the task function */
     ABTI_tool_event_task_run(p_local_xstream, p_task, p_sched_unit);
     LOG_DEBUG("[T%" PRIu64 ":E%d] running\n", ABTI_task_get_id(p_task),
               p_local_xstream->rank);
-    p_task->unit_def.f_unit(p_task->unit_def.p_arg);
+    p_task->f_unit(p_task->p_arg);
     ABTI_tool_event_task_finish(p_local_xstream, p_task, p_sched_unit);
     LOG_DEBUG("[T%" PRIu64 ":E%d] stopped\n", ABTI_task_get_id(p_task),
               p_local_xstream->rank);

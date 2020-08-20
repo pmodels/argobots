@@ -124,7 +124,7 @@ typedef uint32_t ABTI_unit_type;
 typedef enum ABTI_unit_state ABTI_unit_state;
 typedef struct ABTI_thread_htable ABTI_thread_htable;
 typedef struct ABTI_thread_queue ABTI_thread_queue;
-typedef struct ABTI_task ABTI_task;
+typedef ABTI_unit ABTI_task;
 typedef struct ABTI_key ABTI_key;
 typedef struct ABTI_ktelem ABTI_ktelem;
 typedef struct ABTI_ktable ABTI_ktable;
@@ -362,10 +362,6 @@ struct ABTI_thread {
     void *p_stack;             /* Stack address */
     size_t stacksize;          /* Stack size (in bytes) */
     ABTI_stack_type stacktype; /* Stack type */
-};
-
-struct ABTI_task {
-    ABTI_unit unit_def; /* Internal unit definition */
 };
 
 struct ABTI_key {
