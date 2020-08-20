@@ -108,7 +108,7 @@
 
 #define ABTI_CHECK_NULL_THREAD_PTR(p)                                          \
     do {                                                                       \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_thread *)NULL) {         \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_ythread *)NULL) {        \
             abt_errno = ABT_ERR_INV_THREAD;                                    \
             goto fn_fail;                                                      \
         }                                                                      \
@@ -124,7 +124,7 @@
 
 #define ABTI_CHECK_NULL_TASK_PTR(p)                                            \
     do {                                                                       \
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_task *)NULL) {           \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_thread *)NULL) {         \
             abt_errno = ABT_ERR_INV_TASK;                                      \
             goto fn_fail;                                                      \
         }                                                                      \

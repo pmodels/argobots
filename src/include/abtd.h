@@ -77,8 +77,8 @@ void ABTD_affinity_list_free(ABTD_affinity_list *p_list);
 
 /* ULT Context */
 #include "abtd_thread.h"
-void ABTD_thread_exit(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
-void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
+void ABTD_thread_exit(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread);
+void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread);
 
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
 #include <time.h>
