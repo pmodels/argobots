@@ -462,13 +462,11 @@ int ABT_thread_exit(void)
         goto fn_exit;
     }
 
-    ABTI_thread *p_thread = p_local_xstream->p_thread;
-    ABTI_CHECK_TRUE(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE,
-                    ABT_ERR_INV_THREAD);
-    ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-
+    ABTI_ythread *p_ythread;
+    ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_ythread,
+                         ABT_ERR_INV_THREAD);
     /* Set the exit request */
-    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_EXIT);
+    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_EXIT);
 
     /* Terminate this ULT */
     ABTD_ythread_exit(p_local_xstream, p_ythread);
@@ -553,9 +551,10 @@ int ABT_thread_self(ABT_thread *thread)
     }
 #endif
 
-    ABTI_thread *p_self = p_local_xstream->p_thread;
-    if (p_self->type & ABTI_THREAD_TYPE_YIELDABLE) {
-        *thread = ABTI_ythread_get_handle(ABTI_thread_get_ythread(p_self));
+    ABTI_ythread *p_ythread =
+        ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
+    if (p_ythread) {
+        *thread = ABTI_ythread_get_handle(p_ythread);
     } else {
         abt_errno = ABT_ERR_INV_THREAD;
         *thread = ABT_THREAD_NULL;
@@ -752,15 +751,12 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_ythread *p_cur_ythread = NULL;
 
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
-    p_cur_ythread = ABTI_thread_get_ythread(p_local_xstream->p_thread);
-#else
     /* If this routine is called by non-ULT, just return. */
-    if (p_local_xstream != NULL) {
-        p_cur_ythread = ABTI_thread_get_ythread(p_local_xstream->p_thread);
-    }
-    if (p_cur_ythread == NULL)
+    if (!p_local_xstream)
         goto fn_exit;
 #endif
+    ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_cur_ythread,
+                         ABT_ERR_INV_THREAD);
 
     ABTI_ythread *p_tar_ythread = ABTI_ythread_get_ptr(thread);
     ABTI_CHECK_NULL_YTHREAD_PTR(p_tar_ythread);
@@ -842,28 +838,22 @@ int ABT_thread_yield(void)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTI_thread *p_self = NULL;
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     if (!p_local_xstream) {
         goto fn_exit;
     }
 #endif
-    p_self = p_local_xstream->p_thread;
-    if (!(p_self->type & ABTI_THREAD_TYPE_YIELDABLE)) {
+    ABTI_ythread *p_ythread =
+        ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
+    if (!p_ythread) {
         goto fn_exit;
     }
-    ABTI_CHECK_TRUE(p_self->p_last_xstream == p_local_xstream, ABT_ERR_THREAD);
-
-    ABTI_ythread_yield(&p_local_xstream, ABTI_thread_get_ythread(p_self),
-                       ABT_SYNC_EVENT_TYPE_USER, NULL);
+    ABTI_ythread_yield(&p_local_xstream, p_ythread, ABT_SYNC_EVENT_TYPE_USER,
+                       NULL);
 
 fn_exit:
     return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**
@@ -1775,11 +1765,12 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
     ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
-    if (p_local_xstream != NULL && p_thread == p_local_xstream->p_thread &&
-        (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
-        ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-        ABTI_ythread_yield(pp_local_xstream, p_ythread,
-                           ABT_SYNC_EVENT_TYPE_OTHER, NULL);
+    if (p_local_xstream != NULL && p_thread == p_local_xstream->p_thread) {
+        ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+        if (p_ythread) {
+            ABTI_ythread_yield(pp_local_xstream, p_ythread,
+                               ABT_SYNC_EVENT_TYPE_OTHER, NULL);
+        }
     }
     goto fn_exit;
 
@@ -2147,10 +2138,11 @@ static inline int ABTI_ythread_join(ABTI_xstream **pp_local_xstream,
         goto busywait_based;
 #endif
 
-    ABTI_thread *p_self_thread = p_local_xstream->p_thread;
-    ABTI_CHECK_TRUE_MSG(&p_ythread->thread != p_self_thread, ABT_ERR_INV_THREAD,
+    ABTI_ythread *p_self;
+    ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_self,
+                         ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE_MSG(p_ythread != p_self, ABT_ERR_INV_THREAD,
                         "The target ULT should be different.");
-    ABTI_ythread *p_self = ABTI_thread_get_ythread(p_self_thread);
     ABT_pool_access access = p_self->thread.p_pool->access;
 
     if ((p_self->thread.p_pool == p_ythread->thread.p_pool) &&
@@ -2269,8 +2261,7 @@ static inline int ABTI_ythread_join(ABTI_xstream **pp_local_xstream,
 yield_based:
     while (ABTD_atomic_acquire_load_int(&p_ythread->thread.state) !=
            ABTI_THREAD_STATE_TERMINATED) {
-        ABTI_ythread_yield(pp_local_xstream,
-                           ABTI_thread_get_ythread(p_self_thread),
+        ABTI_ythread_yield(pp_local_xstream, p_self,
                            ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_ythread);
         p_local_xstream = *pp_local_xstream;
     }

@@ -227,14 +227,14 @@ int ABT_self_suspend(void)
     }
 #endif
 
-    ABTI_thread *p_self = p_local_xstream->p_thread;
-    ABTI_CHECK_TRUE(p_self->type & ABTI_THREAD_TYPE_YIELDABLE,
-                    ABT_ERR_INV_THREAD);
-    abt_errno = ABTI_ythread_set_blocked(ABTI_thread_get_ythread(p_self));
+    ABTI_ythread *p_self;
+    ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_self,
+                         ABT_ERR_INV_THREAD);
+    abt_errno = ABTI_ythread_set_blocked(p_self);
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_ythread_suspend(&p_local_xstream, ABTI_thread_get_ythread(p_self),
-                         ABT_SYNC_EVENT_TYPE_USER, NULL);
+    ABTI_ythread_suspend(&p_local_xstream, p_self, ABT_SYNC_EVENT_TYPE_USER,
+                         NULL);
 
 fn_exit:
     return abt_errno;

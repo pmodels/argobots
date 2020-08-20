@@ -136,7 +136,8 @@ static inline void ABTI_tool_event_thread_impl(
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     return;
 #else
-    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
+    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+    if (!p_ythread) {
         /* Use an event code for a tasklet-type thread. */
         event_code *= ABT_TOOL_EVENT_TASK_CREATE;
     }
@@ -162,9 +163,8 @@ static inline void ABTI_tool_event_thread_impl(
             tctx.p_caller = p_caller;
             tctx.sync_event_type = sync_event_type;
             tctx.p_sync_object = p_sync_object;
-            if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
-                ABT_thread h_thread =
-                    ABTI_ythread_get_handle(ABTI_thread_get_ythread(p_thread));
+            if (p_ythread) {
+                ABT_thread h_thread = ABTI_ythread_get_handle(p_ythread);
                 ABT_xstream h_xstream =
                     ABTI_xstream_get_handle(p_local_xstream);
                 ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);

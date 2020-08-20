@@ -60,6 +60,16 @@ static inline ABTI_ythread *ABTI_thread_get_ythread(ABTI_thread *p_thread)
                             offsetof(ABTI_ythread, thread));
 }
 
+static inline ABTI_ythread *
+ABTI_thread_get_ythread_or_null(ABTI_thread *p_thread)
+{
+    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+        return ABTI_thread_get_ythread(p_thread);
+    } else {
+        return NULL;
+    }
+}
+
 static inline void ABTI_thread_set_request(ABTI_thread *p_thread, uint32_t req)
 {
     ABTD_atomic_fetch_or_uint32(&p_thread->request, req);

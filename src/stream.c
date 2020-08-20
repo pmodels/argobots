@@ -480,16 +480,15 @@ int ABT_xstream_exit(void)
     ABTI_xstream_set_request(p_local_xstream, ABTI_XSTREAM_REQ_EXIT);
 
     /* Wait until the ES terminates */
-    ABTI_thread *p_self = p_local_xstream->p_thread;
     do {
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!(p_self->type & ABTI_THREAD_TYPE_YIELDABLE)) {
+        ABTI_ythread *p_ythread =
+            ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
+        if (p_ythread) {
+            ABTI_ythread_yield(&p_local_xstream, p_ythread,
+                               ABT_SYNC_EVENT_TYPE_OTHER, NULL);
+        } else {
             ABTD_atomic_pause();
-            continue;
         }
-#endif
-        ABTI_ythread_yield(&p_local_xstream, ABTI_thread_get_ythread(p_self),
-                           ABT_SYNC_EVENT_TYPE_OTHER, NULL);
     } while (ABTD_atomic_acquire_load_int(&p_local_xstream->state) !=
              ABT_XSTREAM_STATE_TERMINATED);
 
@@ -1271,10 +1270,7 @@ int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream)
      * the blocked ULT ready. */
     p_local_xstream = *pp_local_xstream;
     if (p_local_xstream) {
-        ABTI_thread *p_thread = p_local_xstream->p_thread;
-        if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
-            p_ythread = ABTI_thread_get_ythread(p_thread);
-        }
+        p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
     }
 
     if (p_ythread) {
@@ -1485,7 +1481,9 @@ int ABTI_xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
     LOG_DEBUG("[U%" PRIu64 ":E%d] start running\n",
               ABTI_thread_get_id(&p_ythread->thread), p_local_xstream->rank);
 
-    ABTI_ythread *p_self = ABTI_thread_get_ythread(p_local_xstream->p_thread);
+    ABTI_ythread *p_self;
+    ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_self,
+                         ABT_ERR_INV_THREAD);
     p_ythread = ABTI_ythread_context_switch_to_child(pp_local_xstream, p_self,
                                                      p_ythread);
     /* The previous ULT (p_ythread) may not be the same as one to which the
@@ -1620,11 +1618,12 @@ int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
     ABTI_thread_mig_data *p_mig_data =
         ABTI_thread_get_mig_data(p_local_xstream, p_thread);
     /* callback function */
-    if ((p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) &&
-        p_mig_data->f_migration_cb) {
-        ABT_thread thread =
-            ABTI_ythread_get_handle(ABTI_thread_get_ythread(p_thread));
-        p_mig_data->f_migration_cb(thread, p_mig_data->p_migration_cb_arg);
+    if (p_mig_data->f_migration_cb) {
+        ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+        if (p_ythread) {
+            ABT_thread thread = ABTI_ythread_get_handle(p_ythread);
+            p_mig_data->f_migration_cb(thread, p_mig_data->p_migration_cb_arg);
+        }
     }
 
     /* If request is set, p_migration_pool has a valid pool pointer. */
@@ -1736,7 +1735,8 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
     }
 
     /* If the ES has a main scheduler, we have to free it */
-    p_ythread = ABTI_thread_get_ythread((*pp_local_xstream)->p_thread);
+    ABTI_CHECK_YIELDABLE((*pp_local_xstream)->p_thread, &p_ythread,
+                         ABT_ERR_INV_THREAD);
     p_tar_pool = ABTI_pool_get_ptr(p_sched->pools[0]);
 
     /* If the caller ULT is associated with a pool of the current main

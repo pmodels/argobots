@@ -447,9 +447,10 @@ static ABT_unit_type unit_get_type(ABT_unit unit)
 static ABT_thread unit_get_thread(ABT_unit unit)
 {
     ABT_thread h_thread;
-    ABTI_thread *p_thread = (ABTI_thread *)unit;
-    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
-        h_thread = ABTI_ythread_get_handle(ABTI_thread_get_ythread(p_thread));
+    ABTI_ythread *p_ythread =
+        ABTI_thread_get_ythread_or_null((ABTI_thread *)unit);
+    if (p_ythread) {
+        h_thread = ABTI_ythread_get_handle(p_ythread);
     } else {
         h_thread = ABT_THREAD_NULL;
     }

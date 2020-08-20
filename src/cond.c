@@ -297,8 +297,8 @@ int ABT_cond_signal(ABT_cond cond)
     p_thread->p_prev = NULL;
     p_thread->p_next = NULL;
 
-    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
-        ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
+    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+    if (p_ythread) {
         ABTI_ythread_set_ready(p_local_xstream, p_ythread);
     } else {
         /* When the head is an external thread */
