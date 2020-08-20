@@ -343,8 +343,8 @@ struct ABTI_thread_mig_data {
 };
 
 struct ABTI_ythread {
-    ABTD_ythread_context ctx;  /* Context */
     ABTI_thread thread;        /* Common thread definition */
+    ABTD_ythread_context ctx;  /* Context */
     void *p_stack;             /* Stack address */
     size_t stacksize;          /* Stack size (in bytes) */
     ABTI_stack_type stacktype; /* Stack type */
@@ -540,7 +540,7 @@ int ABTI_ythread_create_main_sched(ABTI_xstream *p_local_xstream,
                                    ABTI_sched *p_sched);
 int ABTI_ythread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                               ABTI_sched *p_sched);
-void ABTI_ythread_free(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread);
+void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
 void ABTI_ythread_free_main(ABTI_xstream *p_local_xstream,
                             ABTI_ythread *p_ythread);
 void ABTI_ythread_free_main_sched(ABTI_xstream *p_local_xstream,
@@ -551,7 +551,7 @@ void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
                           ABT_sync_event_type sync_event_type, void *p_sync);
 int ABTI_ythread_set_ready(ABTI_xstream *p_local_xstream,
                            ABTI_ythread *p_ythread);
-void ABTI_ythread_print(ABTI_ythread *p_ythread, FILE *p_os, int indent);
+void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 int ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
 void ABTI_thread_reset_id(void);
 ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
@@ -582,11 +582,6 @@ ABT_bool ABTI_ythread_htable_switch_low(ABTI_xstream **pp_local_xstream,
                                         ABTI_ythread_htable *p_htable,
                                         ABT_sync_event_type sync_event_type,
                                         void *p_sync);
-
-/* Tasklet-type threads */
-void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_task);
-void ABTI_task_print(ABTI_thread *p_task, FILE *p_os, int indent);
-
 /* Key */
 void ABTI_ktable_free(ABTI_xstream *p_local_xstream, ABTI_ktable *p_ktable);
 
@@ -618,7 +613,6 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_tool.h"
 #include "abti_ythread.h"
 #include "abti_thread_attr.h"
-#include "abti_task.h"
 #include "abti_mutex.h"
 #include "abti_mutex_attr.h"
 #include "abti_cond.h"

@@ -350,7 +350,7 @@ static ABT_task unit_get_task(ABT_unit unit)
     ABT_task h_task;
     ABTI_thread *p_thread = (ABTI_thread *)unit;
     if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
-        h_task = ABTI_task_get_handle(p_thread);
+        h_task = ABTI_thread_get_handle(p_thread);
     } else {
         h_task = ABT_TASK_NULL;
     }
@@ -378,7 +378,7 @@ static ABT_unit unit_create_from_thread(ABT_thread thread)
 
 static ABT_unit unit_create_from_task(ABT_task task)
 {
-    ABTI_thread *p_thread = ABTI_task_get_ptr(task);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(task);
     p_thread->p_prev = NULL;
     p_thread->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_thread->is_in_pool, 0);

@@ -6,6 +6,36 @@
 #ifndef ABTI_THREAD_H_INCLUDED
 #define ABTI_THREAD_H_INCLUDED
 
+static inline ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread)
+{
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+    ABTI_thread *p_thread;
+    if (thread == ABT_THREAD_NULL) {
+        p_thread = NULL;
+    } else {
+        p_thread = (ABTI_thread *)thread;
+    }
+    return p_thread;
+#else
+    return (ABTI_thread *)thread;
+#endif
+}
+
+static inline ABT_thread ABTI_thread_get_handle(ABTI_thread *p_thread)
+{
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+    ABT_thread h_thread;
+    if (p_thread == NULL) {
+        h_thread = ABT_THREAD_NULL;
+    } else {
+        h_thread = (ABT_thread)p_thread;
+    }
+    return h_thread;
+#else
+    return (ABT_thread)p_thread;
+#endif
+}
+
 /* Inlined functions for User-level Thread (ULT) */
 
 static inline ABT_thread_state
@@ -56,8 +86,8 @@ static inline ABT_unit_type ABTI_thread_type_get_type(ABTI_thread_type type)
 
 static inline ABTI_ythread *ABTI_thread_get_ythread(ABTI_thread *p_thread)
 {
-    return (ABTI_ythread *)(((char *)p_thread) -
-                            offsetof(ABTI_ythread, thread));
+    ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
+    return (ABTI_ythread *)p_thread;
 }
 
 static inline ABTI_ythread *

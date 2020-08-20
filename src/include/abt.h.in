@@ -79,7 +79,7 @@ extern "C" {
 #define ABT_ERR_INV_UNIT           15  /* Invalid scheduling unit */
 #define ABT_ERR_INV_THREAD         16  /* Invalid ULT */
 #define ABT_ERR_INV_THREAD_ATTR    17  /* Invalid ULT attribute */
-#define ABT_ERR_INV_TASK           18  /* Invalid tasklet */
+#define ABT_ERR_INV_TASK           ABT_ERR_INV_THREAD
 #define ABT_ERR_INV_KEY            19  /* Invalid key */
 #define ABT_ERR_INV_MUTEX          20  /* Invalid mutex */
 #define ABT_ERR_INV_MUTEX_ATTR     21  /* Invalid mutex attribute */
@@ -99,7 +99,7 @@ extern "C" {
 #define ABT_ERR_POOL               34  /* Pool-related error */
 #define ABT_ERR_UNIT               35  /* Scheduling unit-related error */
 #define ABT_ERR_THREAD             36  /* ULT-related error */
-#define ABT_ERR_TASK               37  /* Task-related error */
+#define ABT_ERR_TASK               ABT_ERR_THREAD
 #define ABT_ERR_KEY                38  /* Key-related error */
 #define ABT_ERR_MUTEX              39  /* Mutex-related error */
 #define ABT_ERR_MUTEX_LOCKED       40  /* Return value when mutex is locked */
@@ -129,11 +129,9 @@ enum ABT_thread_state {
     ABT_THREAD_STATE_TERMINATED
 };
 
-enum ABT_task_state {
-    ABT_TASK_STATE_READY,
-    ABT_TASK_STATE_RUNNING,
-    ABT_TASK_STATE_TERMINATED
-};
+#define ABT_TASK_STATE_READY ABT_THREAD_STATE_READY
+#define ABT_TASK_STATE_RUNNING ABT_THREAD_STATE_RUNNING
+#define ABT_TASK_STATE_TERMINATED ABT_THREAD_STATE_TERMINATED
 
 enum ABT_sched_state {
     ABT_SCHED_STATE_READY,
@@ -348,11 +346,11 @@ typedef struct ABT_thread_attr_opaque *     ABT_thread_attr;
 /* ULT state */
 typedef enum ABT_thread_state               ABT_thread_state;
 /* Tasklet state */
-typedef enum ABT_task_state                 ABT_task_state;
+typedef enum ABT_thread_state               ABT_task_state;
 /* ULT id (alias to keep backward compatibility) */
 typedef ABT_unit_id                         ABT_thread_id;
 /* Tasklet */
-typedef struct ABT_task_opaque *            ABT_task;
+typedef struct ABT_thread_opaque *          ABT_task;
 /* WU-specific data key */
 typedef struct ABT_key_opaque *             ABT_key;
 /* Mutex */
@@ -397,7 +395,6 @@ typedef enum ABT_sync_event_type            ABT_sync_event_type;
 #define ABT_UNIT_NULL            ((ABT_unit)           NULL)
 #define ABT_THREAD_NULL          ((ABT_thread)         NULL)
 #define ABT_THREAD_ATTR_NULL     ((ABT_thread_attr)    NULL)
-#define ABT_TASK_NULL            ((ABT_task)           NULL)
 #define ABT_KEY_NULL             ((ABT_key)            NULL)
 #define ABT_MUTEX_NULL           ((ABT_mutex)          NULL)
 #define ABT_MUTEX_ATTR_NULL      ((ABT_mutex_attr)     NULL)
@@ -418,7 +415,6 @@ typedef enum ABT_sync_event_type            ABT_sync_event_type;
 #define ABT_UNIT_NULL            ((ABT_unit)           (0x07))
 #define ABT_THREAD_NULL          ((ABT_thread)         (0x08))
 #define ABT_THREAD_ATTR_NULL     ((ABT_thread_attr)    (0x09))
-#define ABT_TASK_NULL            ((ABT_task)           (0x0a))
 #define ABT_KEY_NULL             ((ABT_key)            (0x0b))
 #define ABT_MUTEX_NULL           ((ABT_mutex)          (0x0c))
 #define ABT_MUTEX_ATTR_NULL      ((ABT_mutex_attr)     (0x0d))
@@ -430,6 +426,7 @@ typedef enum ABT_sync_event_type            ABT_sync_event_type;
 #define ABT_TIMER_NULL           ((ABT_timer)          (0x13))
 #define ABT_TOOL_CONTEXT_NULL    ((ABT_tool_context)   (0x14))
 #endif
+#define ABT_TASK_NULL ABT_THREAD_NULL
 
 /* Scheduler config */
 typedef enum {
@@ -681,25 +678,24 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *newtask) ABT_API_PUBLIC;
 int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                     void *arg, ABT_task *newtask) ABT_API_PUBLIC;
-int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
-                    ABT_task *task) ABT_API_PUBLIC;
-int ABT_task_free(ABT_task *task) ABT_API_PUBLIC;
-int ABT_task_join(ABT_task task) ABT_API_PUBLIC;
-int ABT_task_cancel(ABT_task task) ABT_API_PUBLIC;
+#define ABT_task_revive           ABT_thread_revive
+#define ABT_task_free             ABT_thread_free
+#define ABT_task_join             ABT_thread_join
+#define ABT_task_cancel           ABT_thread_cancel
 int ABT_task_self(ABT_task *task) ABT_API_PUBLIC;
 int ABT_task_self_id(ABT_unit_id *id) ABT_API_PUBLIC;
-int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream) ABT_API_PUBLIC;
-int ABT_task_get_state(ABT_task task, ABT_task_state *state) ABT_API_PUBLIC;
-int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool) ABT_API_PUBLIC;
-int ABT_task_get_last_pool_id(ABT_task task, int *id) ABT_API_PUBLIC;
-int ABT_task_set_migratable(ABT_task task, ABT_bool flag) ABT_API_PUBLIC;
-int ABT_task_is_migratable(ABT_task task, ABT_bool *flag) ABT_API_PUBLIC;
-int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag) ABT_API_PUBLIC;
-int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result) ABT_API_PUBLIC;
-int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id) ABT_API_PUBLIC;
-int ABT_task_get_arg(ABT_task task, void **arg) ABT_API_PUBLIC;
-int ABT_task_set_specific(ABT_task task, ABT_key key, void *value) ABT_API_PUBLIC;
-int ABT_task_get_specific(ABT_task task, ABT_key key, void **value) ABT_API_PUBLIC;
+#define ABT_task_get_xstream      ABT_thread_get_xstream
+#define ABT_task_get_state        ABT_thread_get_state
+#define ABT_task_get_last_pool    ABT_thread_get_last_pool
+#define ABT_task_get_last_pool_id ABT_thread_get_last_pool_id
+#define ABT_task_set_migratable   ABT_thread_set_migratable
+#define ABT_task_is_migratable    ABT_thread_is_migratable
+#define ABT_task_is_unnamed       ABT_thread_is_unnamed
+#define ABT_task_equal            ABT_thread_equal
+#define ABT_task_get_id           ABT_thread_get_id
+#define ABT_task_get_arg          ABT_thread_get_arg
+#define ABT_task_set_specific     ABT_thread_set_specific
+#define ABT_task_get_specific     ABT_thread_get_specific
 
 /* Self */
 int ABT_self_get_type(ABT_unit_type *type) ABT_API_PUBLIC;
@@ -802,12 +798,12 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched) ABT_API_PUBLIC;
 int ABT_info_print_pool(FILE* fp, ABT_pool pool) ABT_API_PUBLIC;
 int ABT_info_print_thread(FILE* fp, ABT_thread thread) ABT_API_PUBLIC;
 int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr) ABT_API_PUBLIC;
-int ABT_info_print_task(FILE* fp, ABT_task task) ABT_API_PUBLIC;
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread) ABT_API_PUBLIC;
 int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool) ABT_API_PUBLIC;
 int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
                                              void (*cb_func)(ABT_bool, void *),
                                              void *arg) ABT_API_PUBLIC;
+#define ABT_info_print_task ABT_info_print_thread
 
 /* Tool Functions */
 int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
