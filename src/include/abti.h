@@ -566,7 +566,6 @@ void ABTI_thread_print(ABTI_ythread *p_thread, FILE *p_os, int indent);
 int ABTI_thread_print_stack(ABTI_ythread *p_thread, FILE *p_os);
 void ABTI_thread_reset_id(void);
 ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
-ABT_unit_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream);
 
 /* Thread attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);

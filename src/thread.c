@@ -2253,11 +2253,6 @@ ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread)
     return p_thread->id;
 }
 
-ABT_unit_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream)
-{
-    return ABTI_thread_get_id(p_local_xstream->p_thread);
-}
-
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
