@@ -568,7 +568,7 @@ handover:
     p_mutex->p_giver = p_thread;
 
     LOG_DEBUG("%p: handover -> U%" PRIu64 "\n", p_mutex,
-              ABTI_thread_get_id(p_next));
+              ABTI_thread_get_id(&p_next->thread));
 
     /* yield_to the next ULT */
     while (ABTD_atomic_acquire_load_uint32(&p_next->thread.request) &
@@ -820,7 +820,7 @@ void ABTI_mutex_wake_de(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
 
         /* Push p_thread to the scheduler's pool */
         LOG_DEBUG("%p: wake up U%" PRIu64 ":E%d\n", p_mutex,
-                  ABTI_thread_get_id(p_thread),
+                  ABTI_thread_get_id(&p_thread->thread),
                   ABTI_thread_get_xstream_rank(p_thread));
         ABTI_thread_set_ready(p_local_xstream, p_thread);
     }

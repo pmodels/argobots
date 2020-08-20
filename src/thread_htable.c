@@ -260,7 +260,8 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
     ABTI_thread_queue_release_low_mutex(p_queue);
 
     if (p_target) {
-        LOG_DEBUG("switch -> U%" PRIu64 "\n", ABTI_thread_get_id(p_target));
+        LOG_DEBUG("switch -> U%" PRIu64 "\n",
+                  ABTI_thread_get_id(&p_target->thread));
 
         /* Context-switch to p_target */
         ABTD_atomic_release_store_int(&p_target->thread.state,

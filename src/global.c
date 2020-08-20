@@ -61,7 +61,6 @@ int ABT_init(int argc, char **argv)
 
     /* Initialize IDs */
     ABTI_thread_reset_id();
-    ABTI_task_reset_id();
     ABTI_sched_reset_id();
     ABTI_pool_reset_id();
 
@@ -193,7 +192,7 @@ int ABT_finalize(void)
         ABTI_thread_set_request(p_self, ABTI_THREAD_REQ_ORPHAN);
 
         LOG_DEBUG("[U%" PRIu64 ":E%d] yield to scheduler\n",
-                  ABTI_thread_get_id(p_thread),
+                  ABTI_thread_get_id(p_self),
                   p_thread->thread.p_last_xstream->rank);
 
         /* Switch to the parent */
@@ -203,7 +202,7 @@ int ABT_finalize(void)
 
         /* Back to the original thread */
         LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
-                  ABTI_thread_get_id(p_thread),
+                  ABTI_thread_get_id(p_self),
                   p_thread->thread.p_last_xstream->rank);
     }
 

@@ -12,7 +12,6 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                             void (*task_func)(void *), void *arg,
                             ABTI_thread *p_task);
-static inline uint64_t ABTI_task_get_new_id(void);
 
 /** @defgroup TASK Tasklet
  * This group is for Tasklet.
@@ -379,7 +378,7 @@ int ABT_task_self_id(ABT_unit_id *id)
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
     if (ABTI_thread_type_is_task(p_thread->type)) {
-        *id = ABTI_task_get_id(p_thread);
+        *id = ABTI_thread_get_id(p_thread);
     } else {
         abt_errno = ABT_ERR_INV_TASK;
     }
@@ -651,7 +650,7 @@ int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id)
     ABTI_thread *p_task = ABTI_task_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
-    *task_id = ABTI_task_get_id(p_task);
+    *task_id = ABTI_thread_get_id(p_task);
 
 fn_exit:
     return abt_errno;
@@ -801,7 +800,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                                 p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL,
                                 p_pool);
-    LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_task_get_id(p_newtask));
+    LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_thread_get_id(p_newtask));
 
     /* Add this task to the scheduler's pool */
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
@@ -860,7 +859,7 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                                 p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL,
                                 p_pool);
-    LOG_DEBUG("[T%" PRIu64 "] revived\n", ABTI_task_get_id(p_task));
+    LOG_DEBUG("[T%" PRIu64 "] revived\n", ABTI_thread_get_id(p_task));
 
     /* Add this task to the scheduler's pool */
 #ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
@@ -884,7 +883,7 @@ void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_task)
     ABTI_tool_event_task_free(p_local_xstream, p_task,
                               p_local_xstream ? p_local_xstream->p_thread
                                               : NULL);
-    LOG_DEBUG("[T%" PRIu64 "] freed\n", ABTI_task_get_id(p_task));
+    LOG_DEBUG("[T%" PRIu64 "] freed\n", ABTI_thread_get_id(p_task));
 
     /* Free the unit */
     p_task->p_pool->u_free(&p_task->unit);
@@ -935,7 +934,7 @@ void ABTI_task_print(ABTI_thread *p_task, FILE *p_os, int indent)
             "%srequest   : 0x%x\n"
             "%sp_arg     : %p\n"
             "%skeytable  : %p\n",
-            prefix, (void *)p_task, prefix, ABTI_task_get_id(p_task), prefix,
+            prefix, (void *)p_task, prefix, ABTI_thread_get_id(p_task), prefix,
             state, prefix, (void *)p_task->p_last_xstream, xstream_rank, prefix,
             (void *)p_task->p_pool, prefix,
             ABTD_atomic_acquire_load_uint32(&p_task->request), prefix,
@@ -945,27 +944,4 @@ void ABTI_task_print(ABTI_thread *p_task, FILE *p_os, int indent)
 fn_exit:
     fflush(p_os);
     ABTU_free(prefix);
-}
-
-static ABTD_atomic_uint64 g_task_id = ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);
-void ABTI_task_reset_id(void)
-{
-    ABTD_atomic_release_store_uint64(&g_task_id, 0);
-}
-
-uint64_t ABTI_task_get_id(ABTI_thread *p_task)
-{
-    if (p_task->id == ABTI_TASK_INIT_ID) {
-        p_task->id = ABTI_task_get_new_id();
-    }
-    return p_task->id;
-}
-
-/*****************************************************************************/
-/* Internal static functions                                                 */
-/*****************************************************************************/
-
-static inline ABT_unit_id ABTI_task_get_new_id(void)
-{
-    return ABTD_atomic_fetch_add_uint64(&g_task_id, 1);
 }

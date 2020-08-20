@@ -48,7 +48,7 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
             ABTD_atomic_release_store_int(&p_thread->thread.state,
                                           ABTI_THREAD_STATE_TERMINATED);
             LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n",
-                      ABTI_thread_get_id(p_thread),
+                      ABTI_thread_get_id(&p_thread->thread),
                       p_thread->thread.p_last_xstream->rank);
 
             /* Note that a parent ULT cannot be a joiner. */
