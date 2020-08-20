@@ -73,7 +73,7 @@ static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
 }
 
-static inline void ABTI_pool_add_thread(ABTI_thread *p_thread)
+static inline void ABTI_pool_add_thread(ABTI_ythread *p_thread)
 {
     /* Set the ULT's state as READY. The relaxed version is used since the state
      * is synchronized by the following pool operation. */
@@ -113,7 +113,7 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline int ABTI_pool_add_thread(ABTI_thread *p_thread,
+static inline int ABTI_pool_add_thread(ABTI_ythread *p_thread,
                                        ABTI_native_thread_id producer_id)
 {
     int abt_errno;

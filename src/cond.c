@@ -299,7 +299,7 @@ int ABT_cond_signal(ABT_cond cond)
     p_unit->p_next = NULL;
 
     if (ABTI_unit_type_is_thread(p_unit->type)) {
-        ABTI_thread *p_thread = ABTI_unit_get_thread(p_unit);
+        ABTI_ythread *p_thread = ABTI_unit_get_thread(p_unit);
         ABTI_thread_set_ready(p_local_xstream, p_thread);
     } else {
         /* When the head is an external thread */

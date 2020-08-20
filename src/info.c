@@ -400,7 +400,7 @@ fn_fail:
 int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     ABTI_thread_print(p_thread, fp, 0);
@@ -485,7 +485,7 @@ fn_fail:
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     abt_errno = ABTI_thread_print_stack(p_thread, fp);
@@ -517,7 +517,7 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
     if (type == ABT_UNIT_TYPE_THREAD) {
         fprintf(fp, "=== ULT (%p) ===\n", (void *)unit);
         ABT_thread thread = p_pool->u_get_thread(unit);
-        ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+        ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
         ABT_unit_id thread_id = ABTI_thread_get_id(p_thread);
         fprintf(fp,
                 "id        : %" PRIu64 "\n"

@@ -34,7 +34,7 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
     p_newbarrier->num_waiters = num_waiters;
     p_newbarrier->counter = 0;
     p_newbarrier->waiters =
-        (ABTI_thread **)ABTU_malloc(num_waiters * sizeof(ABTI_thread *));
+        (ABTI_ythread **)ABTU_malloc(num_waiters * sizeof(ABTI_ythread *));
     p_newbarrier->waiter_type =
         (ABT_unit_type *)ABTU_malloc(num_waiters * sizeof(ABT_unit_type));
 
@@ -76,7 +76,7 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
         ABTU_free(p_barrier->waiters);
         ABTU_free(p_barrier->waiter_type);
         p_barrier->waiters =
-            (ABTI_thread **)ABTU_malloc(num_waiters * sizeof(ABTI_thread *));
+            (ABTI_ythread **)ABTU_malloc(num_waiters * sizeof(ABTI_ythread *));
         p_barrier->waiter_type =
             (ABT_unit_type *)ABTU_malloc(num_waiters * sizeof(ABT_unit_type));
     }
@@ -156,7 +156,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
 
     /* If we do not have all the waiters yet */
     if (p_barrier->counter < p_barrier->num_waiters) {
-        ABTI_thread *p_thread;
+        ABTI_ythread *p_thread;
         ABT_unit_type type;
         ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
@@ -170,7 +170,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
             /* external thread */
             /* Check size if ext_signal can be stored in p_thread. */
             ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_thread));
-            p_thread = (ABTI_thread *)&ext_signal;
+            p_thread = (ABTI_ythread *)&ext_signal;
             type = ABT_UNIT_TYPE_EXT;
         }
 
@@ -199,7 +199,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
         /* Signal all the waiting ULTs */
         int i;
         for (i = 0; i < p_barrier->num_waiters - 1; i++) {
-            ABTI_thread *p_thread = p_barrier->waiters[i];
+            ABTI_ythread *p_thread = p_barrier->waiters[i];
             if (p_barrier->waiter_type[i] == ABT_UNIT_TYPE_THREAD) {
                 ABTI_thread_set_ready(p_local_xstream, p_thread);
             } else {

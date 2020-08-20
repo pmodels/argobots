@@ -68,7 +68,7 @@ static void ABTD_thread_context_init_and_call(ABTD_thread_context *p_ctx,
                                               void *arg);
 #endif
 
-void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent);
+void ABTD_thread_print_context(ABTI_ythread *p_thread, FILE *p_os, int indent);
 
 #ifdef ABT_CONFIG_USE_FCONTEXT
 #include "abtd_fcontext.h"

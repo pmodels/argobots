@@ -107,14 +107,14 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
                  * other ULT on the same ES, we don't need to change the mutex
                  * state. */
                 if (p_mutex->p_handover) {
-                    ABTI_thread *p_self =
+                    ABTI_ythread *p_self =
                         ABTI_unit_get_thread((*pp_local_xstream)->p_unit);
                     if (p_self == p_mutex->p_handover) {
                         p_mutex->p_handover = NULL;
                         ABTD_atomic_release_store_uint32(&p_mutex->val, 2);
 
                         /* Push the previous ULT to its pool */
-                        ABTI_thread *p_giver = p_mutex->p_giver;
+                        ABTI_ythread *p_giver = p_mutex->p_giver;
                         ABTD_atomic_release_store_int(&p_giver->unit_def.state,
                                                       ABTI_UNIT_STATE_READY);
                         ABTI_POOL_PUSH(p_giver->unit_def.p_pool,

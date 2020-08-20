@@ -476,7 +476,7 @@ static ABT_bool unit_is_in_pool(ABT_unit unit)
 
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
     unit_t *p_unit = &p_thread->unit_def;
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;

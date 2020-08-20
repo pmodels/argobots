@@ -34,35 +34,35 @@ int ABTI_mem_check_lp_alloc(int lp_alloc);
 #ifdef ABT_CONFIG_USE_MEM_POOL
 static inline void
 ABTI_mem_alloc_thread_mempool_impl(ABTI_mem_pool_local_pool *p_mem_pool_stack,
-                                   size_t stacksize, ABTI_thread **pp_thread,
+                                   size_t stacksize, ABTI_ythread **pp_thread,
                                    void **pp_stack)
 {
     /* stacksize must be a multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE. */
     ABTI_ASSERT((stacksize & (ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0);
     char *p_thread = (char *)ABTI_mem_pool_alloc(p_mem_pool_stack);
     *pp_stack = (void *)(((char *)p_thread) - stacksize);
-    *pp_thread = (ABTI_thread *)p_thread;
+    *pp_thread = (ABTI_ythread *)p_thread;
 }
 #endif
 
 static inline void ABTI_mem_alloc_thread_malloc_impl(size_t stacksize,
-                                                     ABTI_thread **pp_thread,
+                                                     ABTI_ythread **pp_thread,
                                                      void **pp_stack)
 {
     /* stacksize must be a multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE. */
     size_t alloc_stacksize =
         (stacksize + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
         (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
-    char *p_stack = (char *)ABTU_malloc(alloc_stacksize + sizeof(ABTI_thread));
+    char *p_stack = (char *)ABTU_malloc(alloc_stacksize + sizeof(ABTI_ythread));
     *pp_stack = (void *)p_stack;
-    *pp_thread = (ABTI_thread *)(p_stack + alloc_stacksize);
+    *pp_thread = (ABTI_ythread *)(p_stack + alloc_stacksize);
 }
 
-static inline ABTI_thread *
+static inline ABTI_ythread *
 ABTI_mem_alloc_thread_default(ABTI_xstream *p_local_xstream)
 {
     size_t stacksize = ABTI_global_get_thread_stacksize();
-    ABTI_thread *p_thread;
+    ABTI_ythread *p_thread;
     void *p_stack;
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* If an external thread allocates a stack, we use ABTU_malloc. */
@@ -89,12 +89,12 @@ ABTI_mem_alloc_thread_default(ABTI_xstream *p_local_xstream)
 }
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
-static inline ABTI_thread *
+static inline ABTI_ythread *
 ABTI_mem_alloc_thread_mempool(ABTI_xstream *p_local_xstream,
                               ABTI_thread_attr *p_attr)
 {
     size_t stacksize = ABTI_global_get_thread_stacksize();
-    ABTI_thread *p_thread;
+    ABTI_ythread *p_thread;
     void *p_stack;
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* If an external thread allocates a stack, we use ABTU_malloc. */
@@ -116,11 +116,11 @@ ABTI_mem_alloc_thread_mempool(ABTI_xstream *p_local_xstream,
 }
 #endif
 
-static inline ABTI_thread *
+static inline ABTI_ythread *
 ABTI_mem_alloc_thread_malloc(ABTI_thread_attr *p_attr)
 {
     size_t stacksize = p_attr->stacksize;
-    ABTI_thread *p_thread;
+    ABTI_ythread *p_thread;
     void *p_stack;
     ABTI_mem_alloc_thread_malloc_impl(stacksize, &p_thread, &p_stack);
     /* Copy members of p_attr. */
@@ -131,10 +131,10 @@ ABTI_mem_alloc_thread_malloc(ABTI_thread_attr *p_attr)
     return p_thread;
 }
 
-static inline ABTI_thread *ABTI_mem_alloc_thread_user(ABTI_thread_attr *p_attr)
+static inline ABTI_ythread *ABTI_mem_alloc_thread_user(ABTI_thread_attr *p_attr)
 {
     /* Do not allocate stack, but Valgrind registration is preferred. */
-    ABTI_thread *p_thread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
+    ABTI_ythread *p_thread = (ABTI_ythread *)ABTU_malloc(sizeof(ABTI_ythread));
     /* Copy members of p_attr. */
     p_thread->stacktype = ABTI_STACK_TYPE_USER;
     p_thread->stacksize = p_attr->stacksize;
@@ -143,10 +143,10 @@ static inline ABTI_thread *ABTI_mem_alloc_thread_user(ABTI_thread_attr *p_attr)
     return p_thread;
 }
 
-static inline ABTI_thread *ABTI_mem_alloc_thread_main(ABTI_thread_attr *p_attr)
+static inline ABTI_ythread *ABTI_mem_alloc_thread_main(ABTI_thread_attr *p_attr)
 {
     /* Stack of the currently running Pthreads is used. */
-    ABTI_thread *p_thread = (ABTI_thread *)ABTU_malloc(sizeof(ABTI_thread));
+    ABTI_ythread *p_thread = (ABTI_ythread *)ABTU_malloc(sizeof(ABTI_ythread));
     /* Copy members of p_attr. */
     p_thread->stacktype = ABTI_STACK_TYPE_MAIN;
     p_thread->stacksize = p_attr->stacksize;
@@ -155,7 +155,7 @@ static inline ABTI_thread *ABTI_mem_alloc_thread_main(ABTI_thread_attr *p_attr)
 }
 
 static inline void ABTI_mem_free_thread(ABTI_xstream *p_local_xstream,
-                                        ABTI_thread *p_thread)
+                                        ABTI_ythread *p_thread)
 {
     /* Return stack. */
 #ifdef ABT_CONFIG_USE_MEM_POOL

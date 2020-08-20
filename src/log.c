@@ -15,7 +15,7 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
         return;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
 
-    ABTI_thread *p_thread = NULL;
+    ABTI_ythread *p_thread = NULL;
     ABTI_task *p_task = NULL;
     char *prefix_fmt = NULL, *prefix = NULL;
     char *newfmt;
@@ -89,7 +89,7 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
     if (gp_ABTI_global->use_logging == ABT_FALSE)
         return;
 
-    ABTI_thread *p_thread = NULL;
+    ABTI_ythread *p_thread = NULL;
     ABTI_task *p_task = NULL;
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:
@@ -136,7 +136,7 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
     if (gp_ABTI_global->use_logging == ABT_FALSE)
         return;
 
-    ABTI_thread *p_thread = NULL;
+    ABTI_ythread *p_thread = NULL;
     ABTI_task *p_task = NULL;
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:
@@ -184,7 +184,7 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
     if (unit == ABT_UNIT_NULL)
         return;
 
-    ABTI_thread *p_thread = NULL;
+    ABTI_ythread *p_thread = NULL;
     ABTI_task *p_task = NULL;
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:

@@ -116,15 +116,15 @@ typedef void *ABTI_sched_id;       /* Scheduler id */
 typedef uintptr_t ABTI_sched_kind; /* Scheduler kind */
 typedef struct ABTI_pool ABTI_pool;
 typedef struct ABTI_unit ABTI_unit;
+typedef ABTI_unit ABTI_task;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
-typedef struct ABTI_thread ABTI_thread;
+typedef struct ABTI_ythread ABTI_ythread;
 typedef struct ABTI_thread_mig_data ABTI_thread_mig_data;
 typedef enum ABTI_stack_type ABTI_stack_type;
 typedef uint32_t ABTI_unit_type;
 typedef enum ABTI_unit_state ABTI_unit_state;
 typedef struct ABTI_thread_htable ABTI_thread_htable;
 typedef struct ABTI_thread_queue ABTI_thread_queue;
-typedef ABTI_unit ABTI_task;
 typedef struct ABTI_key ABTI_key;
 typedef struct ABTI_ktelem ABTI_ktelem;
 typedef struct ABTI_ktable ABTI_ktable;
@@ -171,8 +171,8 @@ struct ABTI_mutex {
     ABTD_atomic_uint32 val;       /* 0: unlocked, 1: locked */
     ABTI_mutex_attr attr;         /* attributes */
     ABTI_thread_htable *p_htable; /* a set of queues */
-    ABTI_thread *p_handover;      /* next ULT for the mutex handover */
-    ABTI_thread *p_giver;         /* current ULT that hands over the mutex */
+    ABTI_ythread *p_handover;     /* next ULT for the mutex handover */
+    ABTI_ythread *p_giver;        /* current ULT that hands over the mutex */
 };
 
 struct ABTI_global {
@@ -183,16 +183,16 @@ struct ABTI_global {
                                   * to p_xstreams and p_xstreams[*] requires a
                                   * lock. Dereference does not require a lock.*/
 
-    int num_cores;              /* Number of CPU cores */
-    ABT_bool set_affinity;      /* Whether CPU affinity is used */
-    ABT_bool use_logging;       /* Whether logging is used */
-    ABT_bool use_debug;         /* Whether debug output is used */
-    int key_table_size;         /* Default key table size */
-    size_t thread_stacksize;    /* Default stack size for ULT (in bytes) */
-    size_t sched_stacksize;     /* Default stack size for sched (in bytes) */
-    uint32_t sched_event_freq;  /* Default check frequency for sched */
-    long sched_sleep_nsec;      /* Default nanoseconds for scheduler sleep */
-    ABTI_thread *p_thread_main; /* ULT of the main function */
+    int num_cores;               /* Number of CPU cores */
+    ABT_bool set_affinity;       /* Whether CPU affinity is used */
+    ABT_bool use_logging;        /* Whether logging is used */
+    ABT_bool use_debug;          /* Whether debug output is used */
+    int key_table_size;          /* Default key table size */
+    size_t thread_stacksize;     /* Default stack size for ULT (in bytes) */
+    size_t sched_stacksize;      /* Default stack size for sched (in bytes) */
+    uint32_t sched_event_freq;   /* Default check frequency for sched */
+    long sched_sleep_nsec;       /* Default nanoseconds for scheduler sleep */
+    ABTI_ythread *p_thread_main; /* ULT of the main function */
 
     uint32_t mutex_max_handovers; /* Default max. # of local handovers */
     uint32_t mutex_max_wakeups;   /* Default max. # of wakeups */
@@ -270,7 +270,7 @@ struct ABTI_sched {
     ABTD_atomic_uint32 request; /* Request */
     ABT_pool *pools;            /* Work unit pools */
     int num_pools;              /* Number of work unit pools */
-    ABTI_thread *p_thread;      /* Associated ULT */
+    ABTI_ythread *p_thread;     /* Associated ULT */
     void *data;                 /* Data for a specific scheduler */
 
     /* Scheduler functions */
@@ -324,13 +324,13 @@ struct ABTI_pool {
 struct ABTI_unit {
     ABTI_unit *p_prev;
     ABTI_unit *p_next;
-    ABTD_atomic_int is_in_pool;   /* Whether this unit is in a pool or not. */
+    ABTD_atomic_int is_in_pool;   /* Whether this thread is in a pool. */
     ABTI_unit_type type;          /* Unit type */
     ABT_unit unit;                /* Unit enclosing this thread */
     ABTI_xstream *p_last_xstream; /* Last ES where it ran */
-    ABTI_unit *p_parent;          /* Parent unit */
-    void (*f_unit)(void *);       /* Work unit function */
-    void *p_arg;                  /* Work unit function argument */
+    ABTI_unit *p_parent;          /* Parent thread */
+    void (*f_unit)(void *);       /* Thread function */
+    void *p_arg;                  /* Thread function argument */
     ABTD_atomic_int state;        /* State (ABTI_unit_state) */
     ABTD_atomic_uint32 request;   /* Request */
     ABTI_pool *p_pool;            /* Associated pool */
@@ -356,7 +356,7 @@ struct ABTI_thread_mig_data {
         p_migration_pool; /* Destination of migration (ABTI_pool *) */
 };
 
-struct ABTI_thread {
+struct ABTI_ythread {
     ABTD_thread_context ctx;   /* Context */
     ABTI_unit unit_def;        /* Internal unit definition */
     void *p_stack;             /* Stack address */
@@ -423,7 +423,7 @@ struct ABTI_future {
 struct ABTI_barrier {
     uint32_t num_waiters;
     volatile uint32_t counter;
-    ABTI_thread **waiters;
+    ABTI_ythread **waiters;
     ABT_unit_type *waiter_type;
     ABTI_spinlock lock;
 };
@@ -458,7 +458,7 @@ int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream);
 int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
 int ABTI_xstream_start(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream);
 int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
-                               ABTI_xstream *p_xstream, ABTI_thread *p_thread);
+                               ABTI_xstream *p_xstream, ABTI_ythread *p_thread);
 int ABTI_xstream_free(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream,
                       ABT_bool force_free);
 int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream);
@@ -466,11 +466,11 @@ void ABTI_xstream_schedule(void *p_arg);
 int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
                           ABTI_pool *p_pool);
 int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
-                                 ABTI_thread *p_thread);
+                                 ABTI_ythread *p_thread);
 void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                 ABTI_task *p_task);
 int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
-                                ABTI_thread *p_thread);
+                                ABTI_ythread *p_thread);
 int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                    ABTI_xstream *p_xstream,
@@ -539,33 +539,35 @@ void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 
 /* User-level Thread (ULT)  */
 int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
-                                ABTI_thread *p_thread, ABTI_pool *p_pool);
+                                ABTI_ythread *p_thread, ABTI_pool *p_pool);
 ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_xstream *p_local_xstream,
-                                               ABTI_thread *p_thread);
+                                               ABTI_ythread *p_thread);
 int ABTI_thread_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                        void (*thread_func)(void *), void *arg,
-                       ABTI_thread_attr *p_attr, ABTI_thread **pp_newthread);
+                       ABTI_thread_attr *p_attr, ABTI_ythread **pp_newthread);
 int ABTI_thread_create_main(ABTI_xstream *p_local_xstream,
-                            ABTI_xstream *p_xstream, ABTI_thread **p_thread);
+                            ABTI_xstream *p_xstream, ABTI_ythread **p_thread);
 int ABTI_thread_create_main_sched(ABTI_xstream *p_local_xstream,
                                   ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int ABTI_thread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                              ABTI_sched *p_sched);
-void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
+void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread);
 void ABTI_thread_free_main(ABTI_xstream *p_local_xstream,
-                           ABTI_thread *p_thread);
+                           ABTI_ythread *p_thread);
 void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
-                                 ABTI_thread *p_thread);
-int ABTI_thread_set_blocked(ABTI_thread *p_thread);
-void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream, ABTI_thread *p_thread,
+                                 ABTI_ythread *p_thread);
+int ABTI_thread_set_blocked(ABTI_ythread *p_thread);
+void ABTI_thread_suspend(ABTI_xstream **pp_local_xstream,
+                         ABTI_ythread *p_thread,
                          ABT_sync_event_type sync_event_type, void *p_sync);
-int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
-void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
-int ABTI_thread_print_stack(ABTI_thread *p_thread, FILE *p_os);
+int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream,
+                          ABTI_ythread *p_thread);
+void ABTI_thread_print(ABTI_ythread *p_thread, FILE *p_os, int indent);
+int ABTI_thread_print_stack(ABTI_ythread *p_thread, FILE *p_os);
 void ABTI_thread_reset_id(void);
-ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
+ABT_unit_id ABTI_thread_get_id(ABTI_ythread *p_thread);
 ABT_unit_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream);
-int ABTI_thread_get_xstream_rank(ABTI_thread *p_thread);
+int ABTI_thread_get_xstream_rank(ABTI_ythread *p_thread);
 int ABTI_thread_self_xstream_rank(ABTI_xstream *p_local_xstream);
 
 /* ULT Attributes */
@@ -577,20 +579,20 @@ ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr);
 ABTI_thread_htable *ABTI_thread_htable_create(uint32_t num_rows);
 void ABTI_thread_htable_free(ABTI_thread_htable *p_htable);
 void ABTI_thread_htable_push(ABTI_thread_htable *p_htable, int idx,
-                             ABTI_thread *p_thread);
+                             ABTI_ythread *p_thread);
 ABT_bool ABTI_thread_htable_add(ABTI_thread_htable *p_htable, int idx,
-                                ABTI_thread *p_thread);
+                                ABTI_ythread *p_thread);
 void ABTI_thread_htable_push_low(ABTI_thread_htable *p_htable, int idx,
-                                 ABTI_thread *p_thread);
+                                 ABTI_ythread *p_thread);
 ABT_bool ABTI_thread_htable_add_low(ABTI_thread_htable *p_htable, int idx,
-                                    ABTI_thread *p_thread);
-ABTI_thread *ABTI_thread_htable_pop(ABTI_thread_htable *p_htable,
-                                    ABTI_thread_queue *p_queue);
-ABTI_thread *ABTI_thread_htable_pop_low(ABTI_thread_htable *p_htable,
-                                        ABTI_thread_queue *p_queue);
+                                    ABTI_ythread *p_thread);
+ABTI_ythread *ABTI_thread_htable_pop(ABTI_thread_htable *p_htable,
+                                     ABTI_thread_queue *p_queue);
+ABTI_ythread *ABTI_thread_htable_pop_low(ABTI_thread_htable *p_htable,
+                                         ABTI_thread_queue *p_queue);
 ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
                                        ABTI_thread_queue *p_queue,
-                                       ABTI_thread *p_thread,
+                                       ABTI_ythread *p_thread,
                                        ABTI_thread_htable *p_htable,
                                        ABT_sync_event_type sync_event_type,
                                        void *p_sync);

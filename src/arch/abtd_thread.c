@@ -6,12 +6,12 @@
 #include "abti.h"
 
 static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
-                                         ABTI_thread *p_thread);
+                                         ABTI_ythread *p_thread);
 
 void ABTD_thread_func_wrapper(void *p_arg)
 {
     ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
-    ABTI_thread *p_thread = ABTI_thread_context_get_thread(p_ctx);
+    ABTI_ythread *p_thread = ABTI_thread_context_get_thread(p_ctx);
     ABTI_xstream *p_local_xstream = p_thread->unit_def.p_last_xstream;
     ABTI_tool_event_thread_run(p_local_xstream, p_thread,
                                p_local_xstream->p_unit,
@@ -27,20 +27,20 @@ void ABTD_thread_func_wrapper(void *p_arg)
     ABTD_thread_terminate(p_local_xstream, p_thread);
 }
 
-void ABTD_thread_exit(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
+void ABTD_thread_exit(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread)
 {
     ABTD_thread_terminate(p_local_xstream, p_thread);
 }
 
 static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
-                                         ABTI_thread *p_thread)
+                                         ABTI_ythread *p_thread)
 {
     ABTD_thread_context *p_ctx = &p_thread->ctx;
     ABTD_thread_context *p_link =
         ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link);
     if (p_link) {
         /* If p_link is set, it means that other ULT has called the join. */
-        ABTI_thread *p_joiner = ABTI_thread_context_get_thread(p_link);
+        ABTI_ythread *p_joiner = ABTI_thread_context_get_thread(p_link);
         if (p_thread->unit_def.p_last_xstream ==
             p_joiner->unit_def.p_last_xstream) {
             /* Only when the current ULT is on the same ES as p_joiner's,
@@ -102,7 +102,7 @@ void ABTD_thread_terminate_no_arg()
 }
 #endif
 
-void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
+void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread)
 {
     /* When we cancel a ULT, if other ULT is blocked to join the canceled ULT,
      * we have to wake up the joiner ULT.  However, unlike the case when the
@@ -113,7 +113,7 @@ void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 
     if (ABTD_atomic_acquire_load_thread_context_ptr(&p_ctx->p_link)) {
         /* If p_link is set, it means that other ULT has called the join. */
-        ABTI_thread *p_joiner = ABTI_thread_context_get_thread(
+        ABTI_ythread *p_joiner = ABTI_thread_context_get_thread(
             ABTD_atomic_relaxed_load_thread_context_ptr(&p_ctx->p_link));
         ABTI_thread_set_ready(p_local_xstream, p_joiner);
     } else {
@@ -126,7 +126,7 @@ void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
             while (ABTD_atomic_acquire_load_thread_context_ptr(
                        &p_ctx->p_link) == NULL)
                 ;
-            ABTI_thread *p_joiner = ABTI_thread_context_get_thread(
+            ABTI_ythread *p_joiner = ABTI_thread_context_get_thread(
                 ABTD_atomic_relaxed_load_thread_context_ptr(&p_ctx->p_link));
             ABTI_thread_set_ready(p_local_xstream, p_joiner);
         }
@@ -134,7 +134,7 @@ void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
     ABTI_tool_event_thread_cancel(p_local_xstream, p_thread);
 }
 
-void ABTD_thread_print_context(ABTI_thread *p_thread, FILE *p_os, int indent)
+void ABTD_thread_print_context(ABTI_ythread *p_thread, FILE *p_os, int indent)
 {
     char *prefix = ABTU_get_indent_str(indent);
     ABTD_thread_context *p_ctx = &p_thread->ctx;

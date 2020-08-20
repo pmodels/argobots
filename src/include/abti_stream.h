@@ -58,7 +58,7 @@ static inline ABTI_pool *ABTI_xstream_get_main_pool(ABTI_xstream *p_xstream)
 }
 
 static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
-                                                 ABTI_thread *p_thread)
+                                                 ABTI_ythread *p_thread)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n", ABTI_thread_get_id(p_thread),
               p_thread->unit_def.p_last_xstream->rank);

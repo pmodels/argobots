@@ -63,7 +63,7 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
     int abt_errno = ABT_SUCCESS;
 
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_thread *p_thread;
+    ABTI_ythread *p_thread;
     ABTI_unit *p_unit;
 
     if (p_local_xstream != NULL) {
@@ -166,7 +166,7 @@ static inline void ABTI_cond_broadcast(ABTI_xstream *p_local_xstream,
         p_unit->p_next = NULL;
 
         if (ABTI_unit_type_is_thread(p_unit->type)) {
-            ABTI_thread *p_thread = ABTI_unit_get_thread(p_unit);
+            ABTI_ythread *p_thread = ABTI_unit_get_thread(p_unit);
             ABTI_thread_set_ready(p_local_xstream, p_thread);
         } else {
             /* When the head is an external thread */

@@ -303,7 +303,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                     break;
                 case ABT_SYNC_EVENT_TYPE_THREAD_JOIN:
                     *(ABT_thread *)val = ABTI_thread_get_handle(
-                        (ABTI_thread *)p_tctx->p_sync_object);
+                        (ABTI_ythread *)p_tctx->p_sync_object);
                     break;
                 case ABT_SYNC_EVENT_TYPE_TASK_JOIN:
                     *(ABT_task *)val = ABTI_task_get_handle(

@@ -98,7 +98,7 @@ int ABT_init(int argc, char **argv)
     ABTI_local_set_xstream(p_local_xstream);
 
     /* Create the primary ULT, i.e., the main thread */
-    ABTI_thread *p_main_thread;
+    ABTI_ythread *p_main_thread;
     abt_errno = ABTI_thread_create_main(p_local_xstream, p_local_xstream,
                                         &p_main_thread);
     /* Set as if p_local_xstream is currently running the main thread. */
@@ -174,7 +174,7 @@ int ABT_finalize(void)
     ABTI_CHECK_TRUE_MSG(ABTI_unit_type_is_thread_main(p_self->type),
                         ABT_ERR_INV_THREAD,
                         "ABT_finalize must be called by the primary ULT.");
-    ABTI_thread *p_thread = ABTI_unit_get_thread(p_self);
+    ABTI_ythread *p_thread = ABTI_unit_get_thread(p_self);
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     /* Turns off the tool interface */

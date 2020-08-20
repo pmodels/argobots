@@ -28,7 +28,7 @@ static inline long ABTI_global_get_sched_sleep_nsec(void)
     return gp_ABTI_global->sched_sleep_nsec;
 }
 
-static inline ABTI_thread *ABTI_global_get_main(void)
+static inline ABTI_ythread *ABTI_global_get_main(void)
 {
     return gp_ABTI_global->p_thread_main;
 }

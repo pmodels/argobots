@@ -134,7 +134,7 @@ int ABT_future_wait(ABT_future future)
     ABTI_spinlock_acquire(&p_future->lock);
     if (ABTD_atomic_relaxed_load_uint32(&p_future->counter) <
         p_future->compartments) {
-        ABTI_thread *p_current;
+        ABTI_ythread *p_current;
         ABTI_unit *p_unit;
 
         if (p_local_xstream != NULL) {
@@ -280,7 +280,7 @@ int ABT_future_set(ABT_future future, void *value)
             p_unit->p_next = NULL;
 
             if (ABTI_unit_type_is_thread(p_unit->type)) {
-                ABTI_thread *p_thread = ABTI_unit_get_thread(p_unit);
+                ABTI_ythread *p_thread = ABTI_unit_get_thread(p_unit);
                 ABTI_thread_set_ready(p_local_xstream, p_thread);
             } else {
                 /* When the head is an external thread */
