@@ -2258,24 +2258,6 @@ ABT_unit_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream)
     return ABTI_thread_get_id(p_local_xstream->p_thread);
 }
 
-int ABTI_thread_get_xstream_rank(ABTI_ythread *p_thread)
-{
-    if (p_thread == NULL)
-        return -1;
-
-    if (p_thread->thread.p_last_xstream) {
-        return p_thread->thread.p_last_xstream->rank;
-    } else {
-        return -1;
-    }
-}
-
-int ABTI_thread_self_xstream_rank(ABTI_xstream *p_local_xstream)
-{
-    return ABTI_thread_get_xstream_rank(
-        ABTI_thread_get_ythread(p_local_xstream->p_thread));
-}
-
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/

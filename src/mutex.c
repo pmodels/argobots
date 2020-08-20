@@ -821,7 +821,9 @@ void ABTI_mutex_wake_de(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
         /* Push p_thread to the scheduler's pool */
         LOG_DEBUG("%p: wake up U%" PRIu64 ":E%d\n", p_mutex,
                   ABTI_thread_get_id(&p_thread->thread),
-                  ABTI_thread_get_xstream_rank(p_thread));
+                  p_thread->thread.p_last_xstream
+                      ? p_thread->thread.p_last_xstream->rank
+                      : -1);
         ABTI_thread_set_ready(p_local_xstream, p_thread);
     }
 }
