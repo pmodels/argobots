@@ -442,6 +442,7 @@ fn_fail:
     goto fn_exit;
 }
 
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup INFO
  * @brief   Write the information of the target tasklet to the output stream.
@@ -454,21 +455,8 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS  on success
  */
-int ABT_info_print_task(FILE *fp, ABT_task task)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    ABTI_thread_print(p_task, fp, 0);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
+int ABT_info_print_task(FILE *fp, ABT_task task);
+#endif
 
 /**
  * @ingroup INFO

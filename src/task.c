@@ -9,9 +9,6 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                             void (*task_func)(void *), void *arg,
                             ABTI_sched *p_sched, int refcount,
                             ABTI_thread **pp_newtask);
-static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
-                            void (*task_func)(void *), void *arg,
-                            ABTI_thread *p_task);
 
 /** @defgroup TASK Tasklet
  * This group is for Tasklet.
@@ -131,6 +128,7 @@ fn_fail:
     goto fn_exit;
 }
 
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Revive the tasklet.
@@ -150,29 +148,10 @@ fn_fail:
  * @retval ABT_SUCCESS on success
  */
 int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
-                    ABT_task *task)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+                    ABT_task *task);
+#endif
 
-    ABTI_thread *p_task = ABTI_thread_get_ptr(*task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-    ABTI_CHECK_NULL_POOL_PTR(p_pool);
-
-    abt_errno =
-        ABTI_task_revive(p_local_xstream, p_pool, task_func, arg, p_task);
-    ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Release the task object associated with task handle.
@@ -186,45 +165,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_free(ABT_task *task)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABT_task h_task = *task;
-    ABTI_thread *p_task = ABTI_thread_get_ptr(h_task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    /* Wait until the task terminates */
-    while (ABTD_atomic_acquire_load_int(&p_task->state) !=
-           ABTI_THREAD_STATE_TERMINATED) {
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!(ABTI_self_get_type(p_local_xstream) &
-              ABTI_THREAD_TYPE_YIELDABLE)) {
-            ABTD_atomic_pause();
-            continue;
-        }
+int ABT_task_free(ABT_task *task);
 #endif
-        ABTI_ythread_yield(&p_local_xstream,
-                           ABTI_thread_get_ythread(p_local_xstream->p_thread),
-                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
-    }
-    ABTI_tool_event_thread_join(p_local_xstream, p_task,
-                                p_local_xstream ? p_local_xstream->p_thread
-                                                : NULL);
-    /* Free the ABTI_thread structure */
-    ABTI_thread_free(p_local_xstream, p_task);
 
-    /* Return value */
-    *task = ABT_TASK_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Wait for the tasklet to terminate.
@@ -237,40 +181,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_join(ABT_task task)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    /* TODO: better implementation */
-    while (ABTD_atomic_acquire_load_int(&p_task->state) !=
-           ABTI_THREAD_STATE_TERMINATED) {
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!(ABTI_self_get_type(p_local_xstream) &
-              ABTI_THREAD_TYPE_YIELDABLE)) {
-            ABTD_atomic_pause();
-            continue;
-        }
+int ABT_task_join(ABT_task task);
 #endif
-        ABTI_ythread_yield(&p_local_xstream,
-                           ABTI_thread_get_ythread(p_local_xstream->p_thread),
-                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
-    }
-    ABTI_tool_event_thread_join(p_local_xstream, p_task,
-                                p_local_xstream ? p_local_xstream->p_thread
-                                                : NULL);
 
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Request the cancellation of the target task.
@@ -279,26 +193,8 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_cancel(ABT_task task)
-{
-#ifdef ABT_CONFIG_DISABLE_TASK_CANCEL
-    return ABT_ERR_FEATURE_NA;
-#else
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    /* Set the cancel request */
-    ABTI_thread_set_request(p_task, ABTI_THREAD_REQ_CANCEL);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+int ABT_task_cancel(ABT_task task);
 #endif
-}
 
 /**
  * @ingroup TASK
@@ -387,6 +283,7 @@ int ABT_task_self_id(ABT_unit_id *id)
     return abt_errno;
 }
 
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get the ES associated with the target tasklet.
@@ -400,23 +297,10 @@ int ABT_task_self_id(ABT_unit_id *id)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
+int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream);
+#endif
 
-    /* Return value */
-    *xstream = ABTI_xstream_get_handle(p_task->p_last_xstream);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Return the state of task.
@@ -426,25 +310,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_get_state(ABT_task task, ABT_task_state *state)
-{
-    int abt_errno = ABT_SUCCESS;
+int ABT_task_get_state(ABT_task task, ABT_task_state *state);
+#endif
 
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    /* Return value */
-    *state = ABTI_thread_state_get_task_state(
-        (ABTI_thread_state)ABTD_atomic_acquire_load_int(&p_task->state));
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Return the last pool of task.
@@ -457,24 +326,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool)
-{
-    int abt_errno = ABT_SUCCESS;
+int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool);
+#endif
 
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    /* Return value */
-    *pool = ABTI_pool_get_handle(p_task->p_pool);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get the last pool's ID of the tasklet
@@ -489,24 +344,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_get_last_pool_id(ABT_task task, int *id)
-{
-    int abt_errno = ABT_SUCCESS;
+int ABT_task_get_last_pool_id(ABT_task task, int *id);
+#endif
 
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    ABTI_ASSERT(p_task->p_pool);
-    *id = (int)(p_task->p_pool->id);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Set the tasklet's migratability.
@@ -523,30 +364,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_set_migratable(ABT_task task, ABT_bool flag)
-{
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    if (flag) {
-        p_task->type |= ABTI_THREAD_TYPE_MIGRATABLE;
-    } else {
-        p_task->type &= ~ABTI_THREAD_TYPE_MIGRATABLE;
-    }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-#else
-    return ABT_ERR_MIGRATION_NA;
+int ABT_task_set_migratable(ABT_task task, ABT_bool flag);
 #endif
-}
 
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get the tasklet's migratability.
@@ -561,26 +382,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_is_migratable(ABT_task task, ABT_bool *flag)
-{
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    *flag = (p_task->type & ABTI_THREAD_TYPE_MIGRATABLE) ? ABT_TRUE : ABT_FALSE;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-#else
-    return ABT_ERR_MIGRATION_NA;
+int ABT_task_is_migratable(ABT_task task, ABT_bool *flag);
 #endif
-}
 
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Check if the target task is unnamed
@@ -595,22 +400,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS  on success
  */
-int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
+int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag);
+#endif
 
-    *flag = (p_task->type & ABTI_THREAD_TYPE_NAMED) ? ABT_FALSE : ABT_TRUE;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Compare two tasklet handles for equality.
@@ -626,14 +419,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result)
-{
-    ABTI_thread *p_task1 = ABTI_thread_get_ptr(task1);
-    ABTI_thread *p_task2 = ABTI_thread_get_ptr(task2);
-    *result = (p_task1 == p_task2) ? ABT_TRUE : ABT_FALSE;
-    return ABT_SUCCESS;
-}
+int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
+#endif
 
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get the tasklet's id
@@ -645,23 +434,10 @@ int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id)
-{
-    int abt_errno = ABT_SUCCESS;
+int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id);
+#endif
 
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    *task_id = ABTI_thread_get_id(p_task);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Retrieve the argument for the tasklet function
@@ -674,23 +450,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_get_arg(ABT_task task, void **arg)
-{
-    int abt_errno = ABT_SUCCESS;
+int ABT_task_get_arg(ABT_task task, void **arg);
+#endif
 
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    *arg = p_task->p_arg;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief  Set the tasklet-specific value associated with the key
@@ -704,27 +467,10 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_set_specific(ABT_task task, ABT_key key, void *value)
-{
-    int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+int ABT_task_set_specific(ABT_task task, ABT_key key, void *value);
+#endif
 
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    ABTI_key *p_key = ABTI_key_get_ptr(key);
-    ABTI_CHECK_NULL_KEY_PTR(p_key);
-
-    /* Set the value. */
-    ABTI_ktable_set(p_local_xstream, &p_task->p_keytable, p_key, value);
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
+#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get the tasklet-specific value associated with the key
@@ -740,25 +486,8 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_task_get_specific(ABT_task task, ABT_key key, void **value)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-    ABTI_CHECK_NULL_TASK_PTR(p_task);
-
-    ABTI_key *p_key = ABTI_key_get_ptr(key);
-    ABTI_CHECK_NULL_KEY_PTR(p_key);
-
-    /* Get the value. */
-    *value = ABTI_ktable_get(&p_task->p_keytable, p_key);
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
+int ABT_task_get_specific(ABT_task task, ABT_key key, void **value);
+#endif
 
 /*****************************************************************************/
 /* Private APIs                                                              */
@@ -818,59 +547,6 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 
     /* Return value */
     *pp_newtask = p_newtask;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-
-static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
-                            void (*task_func)(void *), void *arg,
-                            ABTI_thread *p_task)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_task->state) ==
-                        ABTI_THREAD_STATE_TERMINATED,
-                    ABT_ERR_INV_TASK);
-
-    p_task->p_last_xstream = NULL;
-    p_task->p_parent = NULL;
-    ABTD_atomic_relaxed_store_int(&p_task->state, ABTI_THREAD_STATE_READY);
-    ABTD_atomic_relaxed_store_uint32(&p_task->request, 0);
-    p_task->f_thread = task_func;
-    p_task->p_arg = arg;
-    ABTD_atomic_relaxed_store_ptr(&p_task->p_keytable, NULL);
-
-    if (p_task->p_pool != p_pool) {
-        /* Free the unit for the old pool */
-        p_task->p_pool->u_free(&p_task->unit);
-
-        /* Set the new pool */
-        p_task->p_pool = p_pool;
-
-        /* Create a wrapper work unit */
-        ABT_task task = ABTI_thread_get_handle(p_task);
-        p_task->unit = p_pool->u_create_from_task(task);
-    }
-
-    ABTI_tool_event_thread_revive(p_local_xstream, p_task,
-                                  p_local_xstream ? p_local_xstream->p_thread
-                                                  : NULL,
-                                  p_pool);
-    LOG_DEBUG("[T%" PRIu64 "] revived\n", ABTI_thread_get_id(p_task));
-
-    /* Add this task to the scheduler's pool */
-#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    ABTI_pool_push(p_pool, p_task->unit);
-#else
-    abt_errno = ABTI_pool_push(p_pool, p_task->unit,
-                               ABTI_self_get_native_thread_id(p_local_xstream));
-    ABTI_CHECK_ERROR(abt_errno);
-#endif
 
 fn_exit:
     return abt_errno;

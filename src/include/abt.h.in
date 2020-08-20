@@ -678,25 +678,24 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *newtask) ABT_API_PUBLIC;
 int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                     void *arg, ABT_task *newtask) ABT_API_PUBLIC;
-int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
-                    ABT_task *task) ABT_API_PUBLIC;
-int ABT_task_free(ABT_task *task) ABT_API_PUBLIC;
-int ABT_task_join(ABT_task task) ABT_API_PUBLIC;
-int ABT_task_cancel(ABT_task task) ABT_API_PUBLIC;
+#define ABT_task_revive           ABT_thread_revive
+#define ABT_task_free             ABT_thread_free
+#define ABT_task_join             ABT_thread_join
+#define ABT_task_cancel           ABT_thread_cancel
 int ABT_task_self(ABT_task *task) ABT_API_PUBLIC;
 int ABT_task_self_id(ABT_unit_id *id) ABT_API_PUBLIC;
-int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream) ABT_API_PUBLIC;
-int ABT_task_get_state(ABT_task task, ABT_task_state *state) ABT_API_PUBLIC;
-int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool) ABT_API_PUBLIC;
-int ABT_task_get_last_pool_id(ABT_task task, int *id) ABT_API_PUBLIC;
-int ABT_task_set_migratable(ABT_task task, ABT_bool flag) ABT_API_PUBLIC;
-int ABT_task_is_migratable(ABT_task task, ABT_bool *flag) ABT_API_PUBLIC;
-int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag) ABT_API_PUBLIC;
-int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result) ABT_API_PUBLIC;
-int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id) ABT_API_PUBLIC;
-int ABT_task_get_arg(ABT_task task, void **arg) ABT_API_PUBLIC;
-int ABT_task_set_specific(ABT_task task, ABT_key key, void *value) ABT_API_PUBLIC;
-int ABT_task_get_specific(ABT_task task, ABT_key key, void **value) ABT_API_PUBLIC;
+#define ABT_task_get_xstream      ABT_thread_get_xstream
+#define ABT_task_get_state        ABT_thread_get_state
+#define ABT_task_get_last_pool    ABT_thread_get_last_pool
+#define ABT_task_get_last_pool_id ABT_thread_get_last_pool_id
+#define ABT_task_set_migratable   ABT_thread_set_migratable
+#define ABT_task_is_migratable    ABT_thread_is_migratable
+#define ABT_task_is_unnamed       ABT_thread_is_unnamed
+#define ABT_task_equal            ABT_thread_equal
+#define ABT_task_get_id           ABT_thread_get_id
+#define ABT_task_get_arg          ABT_thread_get_arg
+#define ABT_task_set_specific     ABT_thread_set_specific
+#define ABT_task_get_specific     ABT_thread_get_specific
 
 /* Self */
 int ABT_self_get_type(ABT_unit_type *type) ABT_API_PUBLIC;
@@ -799,12 +798,12 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched) ABT_API_PUBLIC;
 int ABT_info_print_pool(FILE* fp, ABT_pool pool) ABT_API_PUBLIC;
 int ABT_info_print_thread(FILE* fp, ABT_thread thread) ABT_API_PUBLIC;
 int ABT_info_print_thread_attr(FILE* fp, ABT_thread_attr attr) ABT_API_PUBLIC;
-int ABT_info_print_task(FILE* fp, ABT_task task) ABT_API_PUBLIC;
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread) ABT_API_PUBLIC;
 int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool) ABT_API_PUBLIC;
 int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
                                              void (*cb_func)(ABT_bool, void *),
                                              void *arg) ABT_API_PUBLIC;
+#define ABT_info_print_task ABT_info_print_thread
 
 /* Tool Functions */
 int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
