@@ -356,15 +356,15 @@ ABTI_thread_finish_context_sched_to_main_thread(ABTI_sched *p_main_sched)
     ABTD_thread_finish_context(&p_sched_thread->ctx, &p_main_thread->ctx);
 }
 
-static inline void ABTI_thread_set_request(ABTI_ythread *p_thread, uint32_t req)
+static inline void ABTI_thread_set_request(ABTI_thread *p_thread, uint32_t req)
 {
-    ABTD_atomic_fetch_or_uint32(&p_thread->thread.request, req);
+    ABTD_atomic_fetch_or_uint32(&p_thread->request, req);
 }
 
-static inline void ABTI_thread_unset_request(ABTI_ythread *p_thread,
+static inline void ABTI_thread_unset_request(ABTI_thread *p_thread,
                                              uint32_t req)
 {
-    ABTD_atomic_fetch_and_uint32(&p_thread->thread.request, ~req);
+    ABTD_atomic_fetch_and_uint32(&p_thread->request, ~req);
 }
 
 static inline void ABTI_thread_yield(ABTI_xstream **pp_local_xstream,

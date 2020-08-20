@@ -465,7 +465,7 @@ int ABT_thread_exit(void)
     ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
 
     /* Set the exit request */
-    ABTI_thread_set_request(p_ythread, ABTI_THREAD_REQ_EXIT);
+    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_EXIT);
 
     /* Terminate this ULT */
     ABTD_thread_exit(p_local_xstream, p_ythread);
@@ -500,7 +500,7 @@ int ABT_thread_cancel(ABT_thread thread)
                         "The main thread cannot be canceled.");
 
     /* Set the cancel request */
-    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_CANCEL);
+    ABTI_thread_set_request(&p_thread->thread, ABTI_THREAD_REQ_CANCEL);
 
 fn_exit:
     return abt_errno;
@@ -1764,7 +1764,7 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
     ABTD_atomic_relaxed_store_ptr(&p_mig_data->p_migration_pool,
                                   (void *)p_pool);
 
-    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
+    ABTI_thread_set_request(&p_thread->thread, ABTI_THREAD_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
     if (p_local_xstream != NULL &&
@@ -2015,7 +2015,7 @@ int ABTI_thread_set_blocked(ABTI_ythread *p_thread)
                     ABT_ERR_THREAD);
 
     /* To prevent the scheduler from adding the ULT to the pool */
-    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_BLOCK);
+    ABTI_thread_set_request(&p_thread->thread, ABTI_THREAD_REQ_BLOCK);
 
     /* Change the ULT's state to BLOCKED */
     ABTD_atomic_release_store_int(&p_thread->thread.state,

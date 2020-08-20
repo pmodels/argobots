@@ -190,7 +190,7 @@ int ABT_finalize(void)
     if (ABTD_atomic_acquire_load_int(&p_local_xstream->state) !=
         ABT_XSTREAM_STATE_TERMINATED) {
         /* Set the orphan request for the primary ULT */
-        ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
+        ABTI_thread_set_request(p_self, ABTI_THREAD_REQ_ORPHAN);
 
         LOG_DEBUG("[U%" PRIu64 ":E%d] yield to scheduler\n",
                   ABTI_thread_get_id(p_thread),

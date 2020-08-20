@@ -38,14 +38,4 @@ static inline ABT_task ABTI_task_get_handle(ABTI_thread *p_task)
 #endif
 }
 
-static inline void ABTI_task_set_request(ABTI_thread *p_task, uint32_t req)
-{
-    ABTD_atomic_fetch_or_uint32(&p_task->request, req);
-}
-
-static inline void ABTI_task_unset_request(ABTI_thread *p_task, uint32_t req)
-{
-    ABTD_atomic_fetch_and_uint32(&p_task->request, ~req);
-}
-
 #endif /* ABTI_TASK_H_INCLUDED */

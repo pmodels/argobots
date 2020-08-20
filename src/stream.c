@@ -1525,7 +1525,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
     } else if (request & ABTI_THREAD_REQ_BLOCK) {
         LOG_DEBUG("[U%" PRIu64 ":E%d] check blocked\n",
                   ABTI_thread_get_id(p_thread), p_local_xstream->rank);
-        ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_BLOCK);
+        ABTI_thread_unset_request(&p_thread->thread, ABTI_THREAD_REQ_BLOCK);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     } else if (request & ABTI_THREAD_REQ_MIGRATE) {
         /* This is the case when the ULT requests migration of itself. */
@@ -1537,14 +1537,14 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
          * pool. */
         LOG_DEBUG("[U%" PRIu64 ":E%d] orphaned\n", ABTI_thread_get_id(p_thread),
                   p_local_xstream->rank);
-        ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
+        ABTI_thread_unset_request(&p_thread->thread, ABTI_THREAD_REQ_ORPHAN);
         p_thread->thread.p_pool->u_free(&p_thread->thread.unit);
         p_thread->thread.p_pool = NULL;
     } else if (request & ABTI_THREAD_REQ_NOPUSH) {
         /* The ULT is not pushed back to the pool */
         LOG_DEBUG("[U%" PRIu64 ":E%d] not pushed\n",
                   ABTI_thread_get_id(p_thread), p_local_xstream->rank);
-        ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
+        ABTI_thread_unset_request(&p_thread->thread, ABTI_THREAD_REQ_NOPUSH);
     } else {
         abt_errno = ABT_ERR_THREAD;
         goto fn_fail;
@@ -1623,7 +1623,7 @@ int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
 
     /* Extracting argument in migration request. */
     p_pool = ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
-    ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
+    ABTI_thread_unset_request(&p_thread->thread, ABTI_THREAD_REQ_MIGRATE);
 
     LOG_DEBUG("[U%" PRIu64 "] migration: E%d -> NT %p\n",
               ABTI_thread_get_id(p_thread),
@@ -1787,7 +1787,7 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         p_xstream->p_main_sched = p_sched;
 
         /* Switch to the current main scheduler */
-        ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_NOPUSH);
+        ABTI_thread_set_request(&p_thread->thread, ABTI_THREAD_REQ_NOPUSH);
         ABTI_thread_context_switch_to_parent(pp_local_xstream, p_thread,
                                              ABT_SYNC_EVENT_TYPE_OTHER, NULL);
 
