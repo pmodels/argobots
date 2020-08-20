@@ -23,23 +23,23 @@ void init_and_call_fcontext(void *p_arg, void (*f_thread)(void *),
                             void *p_stacktop, fcontext_t *old);
 #endif
 
-static inline void ABTD_thread_context_make(ABTD_thread_context *p_ctx,
-                                            void *sp, size_t size,
-                                            void (*thread_func)(void *))
+static inline void ABTD_ythread_context_make(ABTD_ythread_context *p_ctx,
+                                             void *sp, size_t size,
+                                             void (*thread_func)(void *))
 {
     p_ctx->p_ctx = make_fcontext(sp, size, thread_func);
 }
 
-static inline void ABTD_thread_context_jump(ABTD_thread_context *p_old,
-                                            ABTD_thread_context *p_new,
-                                            void *arg)
+static inline void ABTD_ythread_context_jump(ABTD_ythread_context *p_old,
+                                             ABTD_ythread_context *p_new,
+                                             void *arg)
 {
     jump_fcontext(&p_old->p_ctx, p_new->p_ctx, arg);
 }
 
 ABTU_noreturn static inline void
-ABTD_thread_context_take(ABTD_thread_context *p_old, ABTD_thread_context *p_new,
-                         void *arg)
+ABTD_ythread_context_take(ABTD_ythread_context *p_old,
+                          ABTD_ythread_context *p_new, void *arg)
 {
     take_fcontext(&p_old->p_ctx, p_new->p_ctx, arg);
     ABTU_unreachable();
@@ -47,8 +47,8 @@ ABTD_thread_context_take(ABTD_thread_context *p_old, ABTD_thread_context *p_new,
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
 static inline void
-ABTD_thread_context_init_and_call(ABTD_thread_context *p_ctx, void *sp,
-                                  void (*thread_func)(void *), void *arg)
+ABTD_ythread_context_init_and_call(ABTD_ythread_context *p_ctx, void *sp,
+                                   void (*thread_func)(void *), void *arg)
 {
     init_and_call_fcontext(arg, thread_func, sp, &p_ctx->p_ctx);
 }

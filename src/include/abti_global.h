@@ -30,7 +30,7 @@ static inline long ABTI_global_get_sched_sleep_nsec(void)
 
 static inline ABTI_ythread *ABTI_global_get_main(void)
 {
-    return gp_ABTI_global->p_thread_main;
+    return gp_ABTI_global->p_main_ythread;
 }
 
 static inline uint32_t ABTI_global_get_mutex_max_handovers(void)

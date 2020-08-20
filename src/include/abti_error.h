@@ -65,6 +65,17 @@
         }                                                                      \
     } while (0)
 
+#define ABTI_CHECK_YIELDABLE(p_thread, pp_ythread, err)                        \
+    do {                                                                       \
+        ABTI_thread *p_tmp = (p_thread);                                       \
+        if (ABTI_IS_ERROR_CHECK_ENABLED &&                                     \
+            !(p_tmp->type & ABTI_THREAD_TYPE_YIELDABLE)) {                     \
+            abt_errno = (err);                                                 \
+            goto fn_fail;                                                      \
+        }                                                                      \
+        *(pp_ythread) = ABTI_thread_get_ythread(p_tmp);                        \
+    } while (0)
+
 #define ABTI_CHECK_TRUE_MSG(cond, val, msg)                                    \
     do {                                                                       \
         if (ABTI_IS_ERROR_CHECK_ENABLED && !(cond)) {                          \
@@ -106,7 +117,7 @@
         }                                                                      \
     } while (0)
 
-#define ABTI_CHECK_NULL_THREAD_PTR(p)                                          \
+#define ABTI_CHECK_NULL_YTHREAD_PTR(p)                                         \
     do {                                                                       \
         if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_ythread *)NULL) {        \
             abt_errno = ABT_ERR_INV_THREAD;                                    \

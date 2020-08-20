@@ -43,7 +43,8 @@ static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
     p_mutex->attr.max_handovers = ABTI_global_get_mutex_max_handovers();
     p_mutex->attr.max_wakeups = ABTI_global_get_mutex_max_wakeups();
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
-    p_mutex->p_htable = ABTI_thread_htable_create(gp_ABTI_global->max_xstreams);
+    p_mutex->p_htable =
+        ABTI_ythread_htable_create(gp_ABTI_global->max_xstreams);
     p_mutex->p_handover = NULL;
     p_mutex->p_giver = NULL;
 #endif
@@ -54,7 +55,7 @@ static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 #else
 static inline void ABTI_mutex_fini(ABTI_mutex *p_mutex)
 {
-    ABTI_thread_htable_free(p_mutex->p_htable);
+    ABTI_ythread_htable_free(p_mutex->p_htable);
 }
 #endif
 
@@ -75,12 +76,13 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_type type = ABTI_self_get_type(p_local_xstream);
-    if (ABTI_thread_type_is_thread(type)) {
+    if (type & ABTI_THREAD_TYPE_YIELDABLE) {
         LOG_DEBUG("%p: lock - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
-            ABTI_thread_yield(pp_local_xstream,
-                              ABTI_unit_get_thread(p_local_xstream->p_unit),
-                              ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
+            ABTI_ythread_yield(pp_local_xstream,
+                               ABTI_thread_get_ythread(
+                                   p_local_xstream->p_thread),
+                               ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             p_local_xstream = *pp_local_xstream;
         }
         LOG_DEBUG("%p: lock - acquired\n", p_mutex);
@@ -93,7 +95,7 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
 
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
-    if (ABTI_thread_type_is_thread(type)) {
+    if (type & ABTI_THREAD_TYPE_YIELDABLE) {
         LOG_DEBUG("%p: lock - try\n", p_mutex);
         int c;
         if ((c = ABTD_atomic_val_cas_strong_uint32(&p_mutex->val, 0, 1)) != 0) {
@@ -108,7 +110,7 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
                  * state. */
                 if (p_mutex->p_handover) {
                     ABTI_ythread *p_self =
-                        ABTI_unit_get_thread((*pp_local_xstream)->p_unit);
+                        ABTI_thread_get_ythread((*pp_local_xstream)->p_thread);
                     if (p_self == p_mutex->p_handover) {
                         p_mutex->p_handover = NULL;
                         ABTD_atomic_release_store_uint32(&p_mutex->val, 2);

@@ -276,7 +276,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
         case ABT_TOOL_QUERY_KIND_CALLER_TYPE:
             if (!p_tctx->p_caller) {
                 *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_EXT;
-            } else if (ABTI_thread_type_is_thread(p_tctx->p_caller->type)) {
+            } else if (p_tctx->p_caller->type & ABTI_THREAD_TYPE_YIELDABLE) {
                 *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_THREAD;
             } else {
                 *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_TASK;
@@ -285,9 +285,9 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
         case ABT_TOOL_QUERY_KIND_CALLER_HANDLE:
             if (!p_tctx->p_caller) {
                 *(void **)val = NULL;
-            } else if (ABTI_thread_type_is_thread(p_tctx->p_caller->type)) {
-                *(ABT_thread *)val = ABTI_thread_get_handle(
-                    ABTI_unit_get_thread(p_tctx->p_caller));
+            } else if (p_tctx->p_caller->type & ABTI_THREAD_TYPE_YIELDABLE) {
+                *(ABT_thread *)val = ABTI_ythread_get_handle(
+                    ABTI_thread_get_ythread(p_tctx->p_caller));
             } else {
                 *(ABT_task *)val = ABTI_task_get_handle(p_tctx->p_caller);
             }
@@ -302,7 +302,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                         (ABTI_xstream *)p_tctx->p_sync_object);
                     break;
                 case ABT_SYNC_EVENT_TYPE_THREAD_JOIN:
-                    *(ABT_thread *)val = ABTI_thread_get_handle(
+                    *(ABT_thread *)val = ABTI_ythread_get_handle(
                         (ABTI_ythread *)p_tctx->p_sync_object);
                     break;
                 case ABT_SYNC_EVENT_TYPE_TASK_JOIN:

@@ -61,7 +61,6 @@ int ABT_init(int argc, char **argv)
 
     /* Initialize IDs */
     ABTI_thread_reset_id();
-    ABTI_task_reset_id();
     ABTI_sched_reset_id();
     ABTI_pool_reset_id();
 
@@ -70,13 +69,10 @@ int ABT_init(int argc, char **argv)
     ABTI_spinlock_clear(&gp_ABTI_global->tool_writer_lock);
     gp_ABTI_global->tool_thread_cb_f = NULL;
     gp_ABTI_global->tool_thread_user_arg = NULL;
-    ABTD_atomic_relaxed_store_uint64(&gp_ABTI_global
-                                          ->tool_thread_event_mask_tagged,
-                                     0);
     gp_ABTI_global->tool_task_cb_f = NULL;
     gp_ABTI_global->tool_task_user_arg = NULL;
     ABTD_atomic_relaxed_store_uint64(&gp_ABTI_global
-                                          ->tool_task_event_mask_tagged,
+                                          ->tool_thread_event_mask_tagged,
                                      0);
 #endif
 
@@ -98,20 +94,20 @@ int ABT_init(int argc, char **argv)
     ABTI_local_set_xstream(p_local_xstream);
 
     /* Create the primary ULT, i.e., the main thread */
-    ABTI_ythread *p_main_thread;
-    abt_errno = ABTI_thread_create_main(p_local_xstream, p_local_xstream,
-                                        &p_main_thread);
+    ABTI_ythread *p_main_ythread;
+    abt_errno = ABTI_ythread_create_main(p_local_xstream, p_local_xstream,
+                                         &p_main_ythread);
     /* Set as if p_local_xstream is currently running the main thread. */
-    ABTD_atomic_relaxed_store_int(&p_main_thread->thread.state,
+    ABTD_atomic_relaxed_store_int(&p_main_ythread->thread.state,
                                   ABTI_THREAD_STATE_RUNNING);
-    p_main_thread->thread.p_last_xstream = p_local_xstream;
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_thread_create_main");
-    gp_ABTI_global->p_thread_main = p_main_thread;
-    p_local_xstream->p_unit = &p_main_thread->thread;
+    p_main_ythread->thread.p_last_xstream = p_local_xstream;
+    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_ythread_create_main");
+    gp_ABTI_global->p_main_ythread = p_main_ythread;
+    p_local_xstream->p_thread = &p_main_ythread->thread;
 
     /* Start the primary ES */
     abt_errno = ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream,
-                                           p_main_thread);
+                                           p_main_ythread);
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");
 
     if (gp_ABTI_global->print_config == ABT_TRUE) {
@@ -170,11 +166,12 @@ int ABT_finalize(void)
                         ABT_ERR_INV_XSTREAM,
                         "ABT_finalize must be called by the primary ES.");
 
-    ABTI_thread *p_self = p_local_xstream->p_unit;
-    ABTI_CHECK_TRUE_MSG(ABTI_thread_type_is_thread_main(p_self->type),
+    ABTI_thread *p_self = p_local_xstream->p_thread;
+    ABTI_CHECK_TRUE_MSG(p_self->type & ABTI_THREAD_TYPE_MAIN,
                         ABT_ERR_INV_THREAD,
                         "ABT_finalize must be called by the primary ULT.");
-    ABTI_ythread *p_thread = ABTI_unit_get_thread(p_self);
+    ABTI_ythread *p_ythread;
+    ABTI_CHECK_YIELDABLE(p_self, &p_ythread, ABT_ERR_INV_THREAD);
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     /* Turns off the tool interface */
@@ -190,27 +187,27 @@ int ABT_finalize(void)
     if (ABTD_atomic_acquire_load_int(&p_local_xstream->state) !=
         ABT_XSTREAM_STATE_TERMINATED) {
         /* Set the orphan request for the primary ULT */
-        ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_ORPHAN);
+        ABTI_thread_set_request(p_self, ABTI_THREAD_REQ_ORPHAN);
 
         LOG_DEBUG("[U%" PRIu64 ":E%d] yield to scheduler\n",
-                  ABTI_thread_get_id(p_thread),
-                  p_thread->thread.p_last_xstream->rank);
+                  ABTI_thread_get_id(p_self),
+                  p_ythread->thread.p_last_xstream->rank);
 
         /* Switch to the parent */
-        ABTI_thread_context_switch_to_parent(&p_local_xstream, p_thread,
-                                             ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
-                                             (void *)p_local_xstream);
+        ABTI_ythread_context_switch_to_parent(&p_local_xstream, p_ythread,
+                                              ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
+                                              (void *)p_local_xstream);
 
         /* Back to the original thread */
         LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
-                  ABTI_thread_get_id(p_thread),
-                  p_thread->thread.p_last_xstream->rank);
+                  ABTI_thread_get_id(p_self),
+                  p_ythread->thread.p_last_xstream->rank);
     }
 
     /* Remove the primary ULT */
-    ABTI_ASSERT(p_local_xstream->p_unit == p_self);
-    p_local_xstream->p_unit = NULL;
-    ABTI_thread_free_main(p_local_xstream, p_thread);
+    ABTI_ASSERT(p_local_xstream->p_thread == p_self);
+    p_local_xstream->p_thread = NULL;
+    ABTI_ythread_free_main(p_local_xstream, p_ythread);
 
     /* Free the primary ES */
     abt_errno = ABTI_xstream_free(p_local_xstream, p_local_xstream, ABT_TRUE);

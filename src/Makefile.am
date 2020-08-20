@@ -23,10 +23,11 @@ abt_sources = \
 	task.c \
 	thread.c \
 	thread_attr.c \
-	thread_htable.c \
 	timer.c \
 	tool.c \
-	unit.c
+	unit.c \
+	ythread.c \
+	ythread_htable.c
 
 include $(top_srcdir)/src/arch/Makefile.mk
 include $(top_srcdir)/src/mem/Makefile.mk
