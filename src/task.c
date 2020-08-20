@@ -56,7 +56,7 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
 
     /* Return value */
     if (newtask) {
-        *newtask = ABTI_task_get_handle(p_newtask);
+        *newtask = ABTI_thread_get_handle(p_newtask);
     }
 
 fn_exit:
@@ -119,7 +119,7 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
 
     /* Return value */
     if (newtask)
-        *newtask = ABTI_task_get_handle(p_newtask);
+        *newtask = ABTI_thread_get_handle(p_newtask);
 
 fn_exit:
     return abt_errno;
@@ -155,7 +155,7 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
-    ABTI_thread *p_task = ABTI_task_get_ptr(*task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(*task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -191,7 +191,7 @@ int ABT_task_free(ABT_task *task)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABT_task h_task = *task;
-    ABTI_thread *p_task = ABTI_task_get_ptr(h_task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(h_task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Wait until the task terminates */
@@ -212,7 +212,7 @@ int ABT_task_free(ABT_task *task)
                                 p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL);
     /* Free the ABTI_thread structure */
-    ABTI_task_free(p_local_xstream, p_task);
+    ABTI_thread_free(p_local_xstream, p_task);
 
     /* Return value */
     *task = ABT_TASK_NULL;
@@ -242,7 +242,7 @@ int ABT_task_join(ABT_task task)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* TODO: better implementation */
@@ -285,7 +285,7 @@ int ABT_task_cancel(ABT_task task)
     return ABT_ERR_FEATURE_NA;
 #else
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Set the cancel request */
@@ -337,7 +337,7 @@ int ABT_task_self(ABT_task *task)
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
     if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
-        *task = ABTI_task_get_handle(p_thread);
+        *task = ABTI_thread_get_handle(p_thread);
     } else {
         abt_errno = ABT_ERR_INV_TASK;
         *task = ABT_TASK_NULL;
@@ -403,7 +403,7 @@ int ABT_task_self_id(ABT_unit_id *id)
 int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Return value */
@@ -430,7 +430,7 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Return value */
@@ -461,7 +461,7 @@ int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     /* Return value */
@@ -493,7 +493,7 @@ int ABT_task_get_last_pool_id(ABT_task task, int *id)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     ABTI_ASSERT(p_task->p_pool);
@@ -527,7 +527,7 @@ int ABT_task_set_migratable(ABT_task task, ABT_bool flag)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     if (flag) {
@@ -565,7 +565,7 @@ int ABT_task_is_migratable(ABT_task task, ABT_bool *flag)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     *flag = (p_task->type & ABTI_THREAD_TYPE_MIGRATABLE) ? ABT_TRUE : ABT_FALSE;
@@ -598,7 +598,7 @@ fn_fail:
 int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     *flag = (p_task->type & ABTI_THREAD_TYPE_NAMED) ? ABT_FALSE : ABT_TRUE;
@@ -628,8 +628,8 @@ fn_fail:
  */
 int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result)
 {
-    ABTI_thread *p_task1 = ABTI_task_get_ptr(task1);
-    ABTI_thread *p_task2 = ABTI_task_get_ptr(task2);
+    ABTI_thread *p_task1 = ABTI_thread_get_ptr(task1);
+    ABTI_thread *p_task2 = ABTI_thread_get_ptr(task2);
     *result = (p_task1 == p_task2) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
@@ -649,7 +649,7 @@ int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     *task_id = ABTI_thread_get_id(p_task);
@@ -678,7 +678,7 @@ int ABT_task_get_arg(ABT_task task, void **arg)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     *arg = p_task->p_arg;
@@ -709,7 +709,7 @@ int ABT_task_set_specific(ABT_task task, ABT_key key, void *value)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     ABTI_key *p_key = ABTI_key_get_ptr(key);
@@ -744,7 +744,7 @@ int ABT_task_get_specific(ABT_task task, ABT_key key, void **value)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
     ABTI_key *p_key = ABTI_key_get_ptr(key);
@@ -788,7 +788,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newtask->id = ABTI_TASK_INIT_ID;
 
     /* Create a wrapper work unit */
-    h_newtask = ABTI_task_get_handle(p_newtask);
+    h_newtask = ABTI_thread_get_handle(p_newtask);
     ABTI_thread_type thread_type =
         refcount ? (ABTI_THREAD_TYPE_THREAD | ABTI_THREAD_TYPE_NAMED)
                  : ABTI_THREAD_TYPE_THREAD;
@@ -811,7 +811,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit,
                                ABTI_self_get_native_thread_id(p_local_xstream));
     if (abt_errno != ABT_SUCCESS) {
-        ABTI_task_free(p_local_xstream, p_newtask);
+        ABTI_thread_free(p_local_xstream, p_newtask);
         goto fn_fail;
     }
 #endif
@@ -853,7 +853,7 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
         p_task->p_pool = p_pool;
 
         /* Create a wrapper work unit */
-        ABT_task task = ABTI_task_get_handle(p_task);
+        ABT_task task = ABTI_thread_get_handle(p_task);
         p_task->unit = p_pool->u_create_from_task(task);
     }
 
@@ -878,72 +878,4 @@ fn_exit:
 fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
-}
-
-void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_task)
-{
-    ABTI_tool_event_thread_free(p_local_xstream, p_task,
-                                p_local_xstream ? p_local_xstream->p_thread
-                                                : NULL);
-    LOG_DEBUG("[T%" PRIu64 "] freed\n", ABTI_thread_get_id(p_task));
-
-    /* Free the unit */
-    p_task->p_pool->u_free(&p_task->unit);
-
-    /* Free the key-value table */
-    ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(&p_task->p_keytable);
-    /* No parallel access to TLS is allowed. */
-    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
-    if (p_ktable) {
-        ABTI_ktable_free(p_local_xstream, p_ktable);
-    }
-
-    ABTI_mem_free_task(p_local_xstream, p_task);
-}
-
-void ABTI_task_print(ABTI_thread *p_task, FILE *p_os, int indent)
-{
-    char *prefix = ABTU_get_indent_str(indent);
-
-    if (p_task == NULL) {
-        fprintf(p_os, "%s== NULL TASKLET ==\n", prefix);
-        goto fn_exit;
-    }
-
-    ABTI_xstream *p_xstream = p_task->p_last_xstream;
-    int xstream_rank = p_xstream ? p_xstream->rank : 0;
-    char *state;
-    switch (ABTD_atomic_acquire_load_int(&p_task->state)) {
-        case ABTI_THREAD_STATE_READY:
-            state = "READY";
-            break;
-        case ABTI_THREAD_STATE_RUNNING:
-            state = "RUNNING";
-            break;
-        case ABTI_THREAD_STATE_TERMINATED:
-            state = "TERMINATED";
-            break;
-        default:
-            state = "UNKNOWN";
-    }
-
-    fprintf(p_os,
-            "%s== TASKLET (%p) ==\n"
-            "%sid        : %" PRIu64 "\n"
-            "%sstate     : %s\n"
-            "%sES        : %p (%d)\n"
-            "%spool      : %p\n"
-            "%srequest   : 0x%x\n"
-            "%sp_arg     : %p\n"
-            "%skeytable  : %p\n",
-            prefix, (void *)p_task, prefix, ABTI_thread_get_id(p_task), prefix,
-            state, prefix, (void *)p_task->p_last_xstream, xstream_rank, prefix,
-            (void *)p_task->p_pool, prefix,
-            ABTD_atomic_acquire_load_uint32(&p_task->request), prefix,
-            p_task->p_arg, prefix,
-            ABTD_atomic_acquire_load_ptr(&p_task->p_keytable));
-
-fn_exit:
-    fflush(p_os);
-    ABTU_free(prefix);
 }

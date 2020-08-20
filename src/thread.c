@@ -2085,7 +2085,7 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
             ABT_thread h_thread = ABTI_ythread_get_handle(p_ythread);
             p_thread->unit = p_pool->u_create_from_thread(h_thread);
         } else {
-            ABT_task task = ABTI_task_get_handle(p_thread);
+            ABT_task task = ABTI_thread_get_handle(p_thread);
             p_thread->unit = p_pool->u_create_from_task(task);
         }
     }

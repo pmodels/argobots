@@ -582,11 +582,6 @@ ABT_bool ABTI_ythread_htable_switch_low(ABTI_xstream **pp_local_xstream,
                                         ABTI_ythread_htable *p_htable,
                                         ABT_sync_event_type sync_event_type,
                                         void *p_sync);
-
-/* Tasklet-type threads */
-void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_task);
-void ABTI_task_print(ABTI_thread *p_task, FILE *p_os, int indent);
-
 /* Key */
 void ABTI_ktable_free(ABTI_xstream *p_local_xstream, ABTI_ktable *p_ktable);
 
@@ -618,7 +613,6 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_tool.h"
 #include "abti_ythread.h"
 #include "abti_thread_attr.h"
-#include "abti_task.h"
 #include "abti_mutex.h"
 #include "abti_mutex_attr.h"
 #include "abti_cond.h"

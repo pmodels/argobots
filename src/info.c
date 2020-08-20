@@ -457,10 +457,10 @@ fn_fail:
 int ABT_info_print_task(FILE *fp, ABT_task task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_thread_get_ptr(task);
     ABTI_CHECK_NULL_TASK_PTR(p_task);
 
-    ABTI_task_print(p_task, fp, 0);
+    ABTI_thread_print(p_task, fp, 0);
 
 fn_exit:
     return abt_errno;

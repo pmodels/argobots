@@ -35,7 +35,6 @@ noinst_HEADERS = \
 	include/abti_spinlock.h \
 	include/abti_stream.h \
 	include/abti_sync_lifo.h \
-	include/abti_task.h \
 	include/abti_timer.h \
 	include/abti_thread.h \
 	include/abti_thread_attr.h \

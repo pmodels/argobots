@@ -109,7 +109,7 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
             break;
 
         case ABT_UNIT_TYPE_TASK:
-            p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
+            p_task = ABTI_thread_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_last_xstream) {
                 LOG_DEBUG("[T%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
                           "(producer: NT %p)\n",
@@ -156,7 +156,7 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
             break;
 
         case ABT_UNIT_TYPE_TASK:
-            p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
+            p_task = ABTI_thread_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_last_xstream) {
                 LOG_DEBUG("[T%" PRIu64 ":E%d] removed from "
                           "P%" PRIu64 " (consumer: NT %p)\n",
@@ -201,7 +201,7 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
             break;
 
         case ABT_UNIT_TYPE_TASK:
-            p_task = ABTI_task_get_ptr(p_pool->u_get_task(unit));
+            p_task = ABTI_thread_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_last_xstream) {
                 LOG_DEBUG("[T%" PRIu64 ":E%d] popped from "
                           "P%" PRIu64 "\n",

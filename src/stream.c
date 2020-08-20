@@ -1006,7 +1006,7 @@ int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
 
     } else if (type == ABT_UNIT_TYPE_TASK) {
         ABT_task task = p_pool->u_get_task(unit);
-        ABTI_thread *p_task = ABTI_task_get_ptr(task);
+        ABTI_thread *p_task = ABTI_thread_get_ptr(task);
         /* Execute the task */
         ABTI_xstream_schedule_task(*pp_local_xstream, p_task);
 
@@ -1455,7 +1455,7 @@ int ABTI_xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
                   ABTI_thread_get_id(&p_ythread->thread),
                   p_local_xstream->rank);
         ABTD_ythread_cancel(p_local_xstream, p_ythread);
-        ABTI_xstream_terminate_ythread(p_local_xstream, p_ythread);
+        ABTI_xstream_terminate_thread(p_local_xstream, &p_ythread->thread);
         goto fn_exit;
     }
 #endif
@@ -1508,14 +1508,14 @@ int ABTI_xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
                        ? "finished"
                        : ((request & ABTI_THREAD_REQ_EXIT) ? "exit called"
                                                            : "UNKNOWN")));
-        ABTI_xstream_terminate_ythread(p_local_xstream, p_ythread);
+        ABTI_xstream_terminate_thread(p_local_xstream, &p_ythread->thread);
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     } else if (request & ABTI_THREAD_REQ_CANCEL) {
         LOG_DEBUG("[U%" PRIu64 ":E%d] canceled\n",
                   ABTI_thread_get_id(&p_ythread->thread),
                   p_local_xstream->rank);
         ABTD_ythread_cancel(p_local_xstream, p_ythread);
-        ABTI_xstream_terminate_ythread(p_local_xstream, p_ythread);
+        ABTI_xstream_terminate_thread(p_local_xstream, &p_ythread->thread);
 #endif
     } else if (!(request & ABTI_THREAD_REQ_NON_YIELD)) {
         /* The ULT did not finish its execution.
@@ -1570,7 +1570,7 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
     if (ABTD_atomic_acquire_load_uint32(&p_task->request) &
         ABTI_THREAD_REQ_CANCEL) {
         ABTI_tool_event_thread_cancel(p_local_xstream, p_task);
-        ABTI_xstream_terminate_task(p_local_xstream, p_task);
+        ABTI_xstream_terminate_thread(p_local_xstream, p_task);
         return;
     }
 #endif
@@ -1603,7 +1603,7 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
     p_local_xstream->p_thread = p_sched_thread;
 
     /* Terminate the tasklet */
-    ABTI_xstream_terminate_task(p_local_xstream, p_task);
+    ABTI_xstream_terminate_thread(p_local_xstream, p_task);
 }
 
 int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
