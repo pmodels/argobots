@@ -1468,7 +1468,8 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     if (ABTD_atomic_acquire_load_uint32(&p_thread->thread.request) &
         ABTI_THREAD_REQ_MIGRATE) {
-        abt_errno = ABTI_xstream_migrate_thread(p_local_xstream, p_thread);
+        abt_errno =
+            ABTI_xstream_migrate_thread(p_local_xstream, &p_thread->thread);
         ABTI_CHECK_ERROR(abt_errno);
         goto fn_exit;
     }
@@ -1531,7 +1532,8 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     } else if (request & ABTI_THREAD_REQ_MIGRATE) {
         /* This is the case when the ULT requests migration of itself. */
-        abt_errno = ABTI_xstream_migrate_thread(p_local_xstream, p_thread);
+        abt_errno =
+            ABTI_xstream_migrate_thread(p_local_xstream, &p_thread->thread);
         ABTI_CHECK_ERROR(abt_errno);
 #endif
     } else if (request & ABTI_THREAD_REQ_ORPHAN) {
@@ -1603,7 +1605,7 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
 }
 
 int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
-                                ABTI_ythread *p_thread)
+                                ABTI_thread *p_thread)
 {
 #ifdef ABT_CONFIG_DISABLE_MIGRATION
     return ABT_ERR_MIGRATION_NA;
@@ -1614,29 +1616,30 @@ int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
     ABTI_thread_mig_data *p_mig_data =
         ABTI_thread_get_mig_data(p_local_xstream, p_thread);
     /* callback function */
-    if (p_mig_data->f_migration_cb) {
-        ABT_thread thread = ABTI_thread_get_handle(p_thread);
+    if (ABTI_thread_type_is_thread(p_thread->type) &&
+        p_mig_data->f_migration_cb) {
+        ABT_thread thread =
+            ABTI_thread_get_handle(ABTI_thread_get_ythread(p_thread));
         p_mig_data->f_migration_cb(thread, p_mig_data->p_migration_cb_arg);
     }
 
     /* If request is set, p_migration_pool has a valid pool pointer. */
-    ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&p_thread->thread.request) &
+    ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&p_thread->request) &
                 ABTI_THREAD_REQ_MIGRATE);
 
     /* Extracting argument in migration request. */
     p_pool = ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
-    ABTI_thread_unset_request(&p_thread->thread, ABTI_THREAD_REQ_MIGRATE);
+    ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
     LOG_DEBUG("[U%" PRIu64 "] migration: E%d -> NT %p\n",
-              ABTI_thread_get_id(&p_thread->thread),
-              p_thread->thread.p_last_xstream->rank,
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
               (void *)p_pool->consumer_id);
 
     /* Change the associated pool */
-    p_thread->thread.p_pool = p_pool;
+    p_thread->p_pool = p_pool;
 
     /* Add the unit to the scheduler's pool */
-    ABTI_POOL_PUSH(p_pool, p_thread->thread.unit,
+    ABTI_POOL_PUSH(p_pool, p_thread->unit,
                    ABTI_self_get_native_thread_id(p_local_xstream));
 
     ABTI_pool_dec_num_migrations(p_pool);

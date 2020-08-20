@@ -470,7 +470,7 @@ int ABTI_xstream_schedule_thread(ABTI_xstream **pp_local_xstream,
 void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                 ABTI_thread *p_task);
 int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
-                                ABTI_ythread *p_thread);
+                                ABTI_thread *p_thread);
 int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                    ABTI_xstream *p_xstream,
@@ -539,9 +539,9 @@ void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 
 /* Yieldable threads */
 int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
-                                ABTI_ythread *p_thread, ABTI_pool *p_pool);
+                                ABTI_thread *p_thread, ABTI_pool *p_pool);
 ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_xstream *p_local_xstream,
-                                               ABTI_ythread *p_thread);
+                                               ABTI_thread *p_thread);
 int ABTI_thread_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                        void (*thread_func)(void *), void *arg,
                        ABTI_thread_attr *p_attr, ABTI_ythread **pp_newthread);
