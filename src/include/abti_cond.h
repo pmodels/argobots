@@ -68,7 +68,7 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
 
     if (p_local_xstream != NULL) {
         p_thread = p_local_xstream->p_thread;
-        ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_thread->type),
+        ABTI_CHECK_TRUE(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE,
                         ABT_ERR_COND);
         p_ythread = ABTI_thread_get_ythread(p_thread);
     } else {
@@ -166,7 +166,7 @@ static inline void ABTI_cond_broadcast(ABTI_xstream *p_local_xstream,
         p_thread->p_prev = NULL;
         p_thread->p_next = NULL;
 
-        if (ABTI_thread_type_is_thread(p_thread->type)) {
+        if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
             ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
             ABTI_ythread_set_ready(p_local_xstream, p_ythread);
         } else {

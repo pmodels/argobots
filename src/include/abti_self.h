@@ -47,10 +47,9 @@ static inline ABTI_thread_type ABTI_self_get_type(ABTI_xstream *p_local_xstream)
     if (p_local_xstream->p_thread) {
         return p_local_xstream->p_thread->type;
     } else {
-        /* Since p_local_xstream->p_thread can return NULL during executing
-         * ABTI_init(), it should always be safe to say that the type of caller
-         * is ULT if the control reaches here. */
-        return ABTI_THREAD_TYPE_THREAD_MAIN;
+        /* p_local_xstream->p_thread can return NULL during executing
+         * ABTI_init() */
+        return ABTI_THREAD_TYPE_EXT;
     }
 }
 

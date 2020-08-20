@@ -95,10 +95,10 @@ int ABT_self_is_primary(ABT_bool *flag)
 #endif
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (ABTI_thread_type_is_thread_main(p_thread->type)) {
+    if (p_thread->type & ABTI_THREAD_TYPE_MAIN) {
         *flag = ABT_TRUE;
     } else {
-        if (!ABTI_thread_type_is_thread(p_thread->type))
+        if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE))
             abt_errno = ABT_ERR_INV_THREAD;
         *flag = ABT_FALSE;
     }
@@ -228,7 +228,7 @@ int ABT_self_suspend(void)
 #endif
 
     ABTI_thread *p_self = p_local_xstream->p_thread;
-    ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_self->type),
+    ABTI_CHECK_TRUE(p_self->type & ABTI_THREAD_TYPE_YIELDABLE,
                     ABT_ERR_INV_THREAD);
     abt_errno = ABTI_ythread_set_blocked(ABTI_thread_get_ythread(p_self));
     ABTI_CHECK_ERROR(abt_errno);

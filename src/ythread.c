@@ -10,8 +10,7 @@ int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread)
     int abt_errno = ABT_SUCCESS;
 
     /* The main sched cannot be blocked */
-    ABTI_CHECK_TRUE(!ABTI_thread_type_is_thread_main_sched(
-                        p_ythread->thread.type),
+    ABTI_CHECK_TRUE(!(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
                     ABT_ERR_THREAD);
 
     /* To prevent the scheduler from adding the ULT to the pool */
@@ -116,14 +115,12 @@ void ABTI_ythread_print(ABTI_ythread *p_ythread, FILE *p_os, int indent)
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
     char *type, *state;
 
-    if (ABTI_thread_type_is_thread_main(p_ythread->thread.type)) {
+    if (p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN) {
         type = "MAIN";
-    } else if (ABTI_thread_type_is_thread_main_sched(p_ythread->thread.type)) {
+    } else if (p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED) {
         type = "MAIN_SCHED";
-    } else if (ABTI_thread_type_is_thread_user(p_ythread->thread.type)) {
-        type = "USER";
     } else {
-        type = "UNKNOWN";
+        type = "USER";
     }
     switch (ABTD_atomic_acquire_load_int(&p_ythread->thread.state)) {
         case ABTI_THREAD_STATE_READY:

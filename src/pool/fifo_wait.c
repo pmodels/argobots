@@ -336,7 +336,7 @@ static ABT_thread unit_get_thread(ABT_unit unit)
 {
     ABT_thread h_thread;
     ABTI_thread *p_thread = (ABTI_thread *)unit;
-    if (ABTI_thread_type_is_thread(p_thread->type)) {
+    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
         h_thread = ABTI_ythread_get_handle(ABTI_thread_get_ythread(p_thread));
     } else {
         h_thread = ABT_THREAD_NULL;
@@ -348,7 +348,7 @@ static ABT_task unit_get_task(ABT_unit unit)
 {
     ABT_task h_task;
     ABTI_thread *p_thread = (ABTI_thread *)unit;
-    if (ABTI_thread_type_is_task(p_thread->type)) {
+    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
         h_task = ABTI_task_get_handle(p_thread);
     } else {
         h_task = ABT_TASK_NULL;
@@ -370,7 +370,7 @@ static ABT_unit unit_create_from_thread(ABT_thread thread)
     p_thread->p_prev = NULL;
     p_thread->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_thread->is_in_pool, 0);
-    ABTI_ASSERT(ABTI_thread_type_is_thread(p_thread->type));
+    ABTI_ASSERT(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE);
 
     return (ABT_unit)p_thread;
 }
@@ -381,8 +381,7 @@ static ABT_unit unit_create_from_task(ABT_task task)
     p_thread->p_prev = NULL;
     p_thread->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_thread->is_in_pool, 0);
-    ABTI_ASSERT(p_thread->type == ABTI_THREAD_TYPE_TASK);
-    ABTI_ASSERT(ABTI_thread_type_is_task(p_thread->type));
+    ABTI_ASSERT(!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE));
 
     return (ABT_unit)p_thread;
 }

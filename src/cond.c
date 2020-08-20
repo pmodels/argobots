@@ -231,7 +231,8 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             break;
         }
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
+        if (!(ABTI_self_get_type(p_local_xstream) &
+              ABTI_THREAD_TYPE_YIELDABLE)) {
             ABTD_atomic_pause();
             continue;
         }
@@ -296,7 +297,7 @@ int ABT_cond_signal(ABT_cond cond)
     p_thread->p_prev = NULL;
     p_thread->p_next = NULL;
 
-    if (ABTI_thread_type_is_thread(p_thread->type)) {
+    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
         ABTI_ythread_set_ready(p_local_xstream, p_ythread);
     } else {

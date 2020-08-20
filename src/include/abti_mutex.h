@@ -76,7 +76,7 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_type type = ABTI_self_get_type(p_local_xstream);
-    if (ABTI_thread_type_is_thread(type)) {
+    if (type & ABTI_THREAD_TYPE_YIELDABLE) {
         LOG_DEBUG("%p: lock - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
             ABTI_ythread_yield(pp_local_xstream,
@@ -95,7 +95,7 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
 
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
-    if (ABTI_thread_type_is_thread(type)) {
+    if (type & ABTI_THREAD_TYPE_YIELDABLE) {
         LOG_DEBUG("%p: lock - try\n", p_mutex);
         int c;
         if ((c = ABTD_atomic_val_cas_strong_uint32(&p_mutex->val, 0, 1)) != 0) {

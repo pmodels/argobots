@@ -198,7 +198,8 @@ int ABT_task_free(ABT_task *task)
     while (ABTD_atomic_acquire_load_int(&p_task->state) !=
            ABTI_THREAD_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
+        if (!(ABTI_self_get_type(p_local_xstream) &
+              ABTI_THREAD_TYPE_YIELDABLE)) {
             ABTD_atomic_pause();
             continue;
         }
@@ -248,7 +249,8 @@ int ABT_task_join(ABT_task task)
     while (ABTD_atomic_acquire_load_int(&p_task->state) !=
            ABTI_THREAD_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream))) {
+        if (!(ABTI_self_get_type(p_local_xstream) &
+              ABTI_THREAD_TYPE_YIELDABLE)) {
             ABTD_atomic_pause();
             continue;
         }
@@ -334,7 +336,7 @@ int ABT_task_self(ABT_task *task)
 #endif
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (ABTI_thread_type_is_task(p_thread->type)) {
+    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
         *task = ABTI_task_get_handle(p_thread);
     } else {
         abt_errno = ABT_ERR_INV_TASK;
@@ -377,7 +379,7 @@ int ABT_task_self_id(ABT_unit_id *id)
 #endif
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (ABTI_thread_type_is_task(p_thread->type)) {
+    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
         *id = ABTI_thread_get_id(p_thread);
     } else {
         abt_errno = ABT_ERR_INV_TASK;
@@ -788,8 +790,8 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     /* Create a wrapper work unit */
     h_newtask = ABTI_task_get_handle(p_newtask);
     ABTI_thread_type thread_type =
-        refcount ? (ABTI_THREAD_TYPE_TASK | ABTI_THREAD_TYPE_NAMED)
-                 : ABTI_THREAD_TYPE_TASK;
+        refcount ? (ABTI_THREAD_TYPE_THREAD | ABTI_THREAD_TYPE_NAMED)
+                 : ABTI_THREAD_TYPE_THREAD;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     thread_type |= ABTI_THREAD_TYPE_MIGRATABLE;
 #endif

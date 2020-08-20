@@ -140,7 +140,7 @@ int ABT_future_wait(ABT_future future)
         if (p_local_xstream != NULL) {
             p_thread = p_local_xstream->p_thread;
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
-            if (!ABTI_thread_type_is_thread(p_thread->type)) {
+            if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
                 abt_errno = ABT_ERR_FUTURE;
                 ABTI_spinlock_release(&p_future->lock);
                 goto fn_fail;
@@ -279,7 +279,7 @@ int ABT_future_set(ABT_future future, void *value)
             ABTI_thread *p_next = p_thread->p_next;
             p_thread->p_next = NULL;
 
-            if (ABTI_thread_type_is_thread(p_thread->type)) {
+            if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
                 ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
                 ABTI_ythread_set_ready(p_local_xstream, p_ythread);
             } else {

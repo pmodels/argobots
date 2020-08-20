@@ -43,49 +43,14 @@ ABTI_thread_state_get_task_state(ABTI_thread_state state)
     }
 }
 
-static inline ABT_bool ABTI_thread_type_is_thread(ABTI_thread_type type)
-{
-    return (type & ABTI_THREAD_TYPE_THREAD) ? ABT_TRUE : ABT_FALSE;
-}
-
-static inline ABT_bool ABTI_thread_type_is_task(ABTI_thread_type type)
-{
-    return (!(type & (ABTI_THREAD_TYPE_THREAD | ABTI_THREAD_TYPE_EXT)))
-               ? ABT_TRUE
-               : ABT_FALSE;
-}
-
-static inline ABT_bool ABTI_thread_type_is_ext(ABTI_thread_type type)
-{
-    return (type & ABTI_THREAD_TYPE_EXT) ? ABT_TRUE : ABT_FALSE;
-}
-
-static inline ABT_bool ABTI_thread_type_is_thread_user(ABTI_thread_type type)
-{
-    return (type & ABTI_THREAD_TYPE_THREAD_TYPE_USER) ? ABT_TRUE : ABT_FALSE;
-}
-
-static inline ABT_bool ABTI_thread_type_is_thread_main(ABTI_thread_type type)
-{
-    return (type & ABTI_THREAD_TYPE_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
-}
-
-static inline ABT_bool
-ABTI_thread_type_is_thread_main_sched(ABTI_thread_type type)
-{
-    return (type & ABTI_THREAD_TYPE_THREAD_TYPE_MAIN_SCHED) ? ABT_TRUE
-                                                            : ABT_FALSE;
-}
-
 static inline ABT_unit_type ABTI_thread_type_get_type(ABTI_thread_type type)
 {
-    if (ABTI_thread_type_is_thread(type)) {
+    if (type & ABTI_THREAD_TYPE_YIELDABLE) {
         return ABT_UNIT_TYPE_THREAD;
-    } else if (ABTI_thread_type_is_task(type)) {
-        return ABT_UNIT_TYPE_TASK;
-    } else {
-        ABTI_ASSERT(ABTI_thread_type_is_ext(type));
+    } else if (type == ABTI_THREAD_TYPE_EXT) {
         return ABT_UNIT_TYPE_EXT;
+    } else {
+        return ABT_UNIT_TYPE_TASK;
     }
 }
 

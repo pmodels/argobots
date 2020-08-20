@@ -798,8 +798,7 @@ int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched,
     /* Free the associated work unit */
     if (p_sched->type == ABT_SCHED_TYPE_ULT) {
         if (p_sched->p_ythread) {
-            if (ABTI_thread_type_is_thread_main_sched(
-                    p_sched->p_ythread->thread.type)) {
+            if (p_sched->p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED) {
                 ABTI_ythread_free_main_sched(p_local_xstream,
                                              p_sched->p_ythread);
             } else {

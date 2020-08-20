@@ -99,7 +99,7 @@ void ABTD_ythread_terminate_no_arg()
      * ABTD_ythread_context_make_and_call, so it cannot take the argument. We
      * get the thread descriptor from TLS. */
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    ABTI_ASSERT(ABTI_thread_type_is_thread(p_thread->type));
+    ABTI_ASSERT(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE);
     ABTD_ythread_terminate(p_local_xstream, ABTI_thread_get_ythread(p_thread));
 }
 #endif

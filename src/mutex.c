@@ -179,7 +179,7 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_type type = ABTI_self_get_type(p_local_xstream);
-    if (ABTI_thread_type_is_thread(type)) {
+    if (type & ABTI_THREAD_TYPE_YIELDABLE) {
         LOG_DEBUG("%p: lock_low - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
             ABTI_ythread_yield(pp_local_xstream,
@@ -198,7 +198,7 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
      * just call mutex_spinlock. */
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_thread_type type = ABTI_self_get_type(p_local_xstream);
-    if (ABTI_thread_type_is_thread(type)) {
+    if (type & ABTI_THREAD_TYPE_YIELDABLE) {
         LOG_DEBUG("%p: lock_low - try\n", p_mutex);
         int c;
 
@@ -482,7 +482,7 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
     ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     LOG_DEBUG("%p: unlock_se\n", p_mutex);
-    if (ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream)))
+    if (ABTI_self_get_type(p_local_xstream) & ABTI_THREAD_TYPE_YIELDABLE)
         ABTI_ythread_yield(pp_local_xstream,
                            ABTI_thread_get_ythread(p_local_xstream->p_thread),
                            ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
@@ -498,7 +498,7 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
      * waiter in the mutex queue.  We can just return. */
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) == 1) {
         LOG_DEBUG("%p: unlock_se\n", p_mutex);
-        if (ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream)))
+        if (ABTI_self_get_type(p_local_xstream) & ABTI_THREAD_TYPE_YIELDABLE)
             ABTI_ythread_yield(pp_local_xstream,
                                ABTI_thread_get_ythread(
                                    p_local_xstream->p_thread),

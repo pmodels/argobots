@@ -162,7 +162,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
 
         if (p_local_xstream != NULL) {
             ABTI_thread *p_self = p_local_xstream->p_thread;
-            ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_self->type),
+            ABTI_CHECK_TRUE(p_self->type & ABTI_THREAD_TYPE_YIELDABLE,
                             ABT_ERR_BARRIER);
             p_ythread = ABTI_thread_get_ythread(p_self);
             type = ABT_UNIT_TYPE_THREAD;

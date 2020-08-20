@@ -115,7 +115,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
         if (p_local_xstream != NULL) {
             p_thread = p_local_xstream->p_thread;
-            ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_thread->type),
+            ABTI_CHECK_TRUE(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE,
                             ABT_ERR_EVENTUAL);
             p_ythread = ABTI_thread_get_ythread(p_thread);
         } else {
@@ -253,7 +253,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
         ABTI_thread *p_next = p_thread->p_next;
         p_thread->p_next = NULL;
 
-        if (ABTI_thread_type_is_thread(p_thread->type)) {
+        if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
             ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
             ABTI_ythread_set_ready(p_local_xstream, p_ythread);
         } else {

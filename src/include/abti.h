@@ -63,24 +63,13 @@ enum ABTI_sched_used {
     ABTI_SCHED_IN_POOL
 };
 
-/* 0 - 2 : TASK/THREAD/EXT
- * 2 - 5 : USER/MAIN/MAIN_SCHED
- * 5 - 5 : NAMED
- * 6 - 6 : MIGRATABLE */
-#define ABTI_THREAD_TYPE_TASK ((ABTI_thread_type)0x0)
-#define ABTI_THREAD_TYPE_THREAD ((ABTI_thread_type)0x1)
-#define ABTI_THREAD_TYPE_EXT ((ABTI_thread_type)0x2)
-#define ABTI_THREAD_TYPE_THREAD_TYPE_USER ((ABTI_thread_type)(0x1 << 2))
-#define ABTI_THREAD_TYPE_THREAD_TYPE_MAIN ((ABTI_thread_type)(0x1 << 3))
-#define ABTI_THREAD_TYPE_THREAD_TYPE_MAIN_SCHED ((ABTI_thread_type)(0x1 << 4))
-#define ABTI_THREAD_TYPE_THREAD_USER                                           \
-    (ABTI_THREAD_TYPE_THREAD + ABTI_THREAD_TYPE_THREAD_TYPE_USER)
-#define ABTI_THREAD_TYPE_THREAD_MAIN                                           \
-    (ABTI_THREAD_TYPE_THREAD + ABTI_THREAD_TYPE_THREAD_TYPE_MAIN)
-#define ABTI_THREAD_TYPE_THREAD_MAIN_SCHED                                     \
-    (ABTI_THREAD_TYPE_THREAD + ABTI_THREAD_TYPE_THREAD_TYPE_MAIN_SCHED)
-#define ABTI_THREAD_TYPE_NAMED ((ABTI_thread_type)(0x1 << 5))
-#define ABTI_THREAD_TYPE_MIGRATABLE ((ABTI_thread_type)(0x1 << 6))
+#define ABTI_THREAD_TYPE_EXT ((ABTI_thread_type)0)
+#define ABTI_THREAD_TYPE_THREAD ((ABTI_thread_type)(0x1 << 0))
+#define ABTI_THREAD_TYPE_MAIN ((ABTI_thread_type)(0x1 << 1))
+#define ABTI_THREAD_TYPE_MAIN_SCHED ((ABTI_thread_type)(0x1 << 2))
+#define ABTI_THREAD_TYPE_YIELDABLE ((ABTI_thread_type)(0x1 << 3))
+#define ABTI_THREAD_TYPE_NAMED ((ABTI_thread_type)(0x1 << 4))
+#define ABTI_THREAD_TYPE_MIGRATABLE ((ABTI_thread_type)(0x1 << 5))
 
 enum ABTI_thread_state {
     ABTI_THREAD_STATE_READY,

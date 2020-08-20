@@ -483,7 +483,7 @@ int ABT_xstream_exit(void)
     ABTI_thread *p_self = p_local_xstream->p_thread;
     do {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!ABTI_thread_type_is_thread(p_self->type)) {
+        if (!(p_self->type & ABTI_THREAD_TYPE_YIELDABLE)) {
             ABTD_atomic_pause();
             continue;
         }
@@ -693,7 +693,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     ABTI_thread *p_self = p_local_xstream->p_thread;
-    ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_self->type),
+    ABTI_CHECK_TRUE(p_self->type & ABTI_THREAD_TYPE_YIELDABLE,
                     ABT_ERR_INV_THREAD);
 
     /* For now, if the target ES is running, we allow to change the main
@@ -1271,9 +1271,9 @@ int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream)
      * the blocked ULT ready. */
     p_local_xstream = *pp_local_xstream;
     if (p_local_xstream) {
-        ABTI_thread *p_self = p_local_xstream->p_thread;
-        if (ABTI_thread_type_is_thread(p_self->type)) {
-            p_ythread = ABTI_thread_get_ythread(p_self);
+        ABTI_thread *p_thread = p_local_xstream->p_thread;
+        if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+            p_ythread = ABTI_thread_get_ythread(p_thread);
         }
     }
 
@@ -1320,8 +1320,8 @@ int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream)
         while (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
                ABT_XSTREAM_STATE_TERMINATED) {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-            if (!ABTI_thread_type_is_thread(
-                    ABTI_self_get_type(p_local_xstream))) {
+            if (!(ABTI_self_get_type(p_local_xstream) &
+                  ABTI_THREAD_TYPE_YIELDABLE)) {
                 ABTD_atomic_pause();
                 continue;
             }
@@ -1620,7 +1620,7 @@ int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
     ABTI_thread_mig_data *p_mig_data =
         ABTI_thread_get_mig_data(p_local_xstream, p_thread);
     /* callback function */
-    if (ABTI_thread_type_is_thread(p_thread->type) &&
+    if ((p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) &&
         p_mig_data->f_migration_cb) {
         ABT_thread thread =
             ABTI_ythread_get_handle(ABTI_thread_get_ythread(p_thread));
@@ -1754,7 +1754,7 @@ int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
     }
 
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        ABTI_CHECK_TRUE(ABTI_thread_type_is_thread_main(p_ythread->thread.type),
+        ABTI_CHECK_TRUE(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN,
                         ABT_ERR_THREAD);
 
         /* Since the primary ES does not finish its execution until ABT_finalize
