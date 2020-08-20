@@ -4,7 +4,7 @@
  */
 
 #include "abti.h"
-#include "abti_thread_htable.h"
+#include "abti_ythread_htable.h"
 
 /** @defgroup MUTEX Mutex
  * Mutex is a synchronization method to support mutual exclusion between ULTs.

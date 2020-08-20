@@ -4,7 +4,7 @@
  */
 
 #include "abti.h"
-#include "abti_thread_htable.h"
+#include "abti_ythread_htable.h"
 
 ABTI_ythread_htable *ABTI_ythread_htable_create(uint32_t num_rows)
 {

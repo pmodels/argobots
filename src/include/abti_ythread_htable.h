@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef ABTI_THREAD_HTABLE_H_INCLUDED
-#define ABTI_THREAD_HTABLE_H_INCLUDED
+#ifndef ABTI_YTHREAD_HTABLE_H_INCLUDED
+#define ABTI_YTHREAD_HTABLE_H_INCLUDED
 
 #include "abt_config.h"
 
@@ -174,4 +174,4 @@ static inline void ABTI_ythread_htable_del_l_head(ABTI_ythread_htable *p_htable)
     }
 }
 
-#endif /* ABTI_THREAD_HTABLE_H_INCLUDED */
+#endif /* ABTI_YTHREAD_HTABLE_H_INCLUDED */

@@ -1,0 +1,219 @@
+/* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
+/*
+ * See COPYRIGHT in top-level directory.
+ */
+
+#include "abti.h"
+
+int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    /* The main sched cannot be blocked */
+    ABTI_CHECK_TRUE(!ABTI_thread_type_is_thread_main_sched(
+                        p_ythread->thread.type),
+                    ABT_ERR_THREAD);
+
+    /* To prevent the scheduler from adding the ULT to the pool */
+    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_BLOCK);
+
+    /* Change the ULT's state to BLOCKED */
+    ABTD_atomic_release_store_int(&p_ythread->thread.state,
+                                  ABTI_THREAD_STATE_BLOCKED);
+
+    /* Increase the number of blocked ULTs */
+    ABTI_pool *p_pool = p_ythread->thread.p_pool;
+    ABTI_pool_inc_num_blocked(p_pool);
+
+    LOG_DEBUG("[U%" PRIu64 ":E%d] blocked\n",
+              ABTI_thread_get_id(&p_ythread->thread),
+              p_ythread->thread.p_last_xstream->rank);
+
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/* NOTE: This routine should be called after ABTI_ythread_set_blocked. */
+void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
+                          ABTI_ythread *p_ythread,
+                          ABT_sync_event_type sync_event_type, void *p_sync)
+{
+    ABTI_xstream *p_local_xstream = *pp_local_xstream;
+    ABTI_ASSERT(&p_ythread->thread == p_local_xstream->p_thread);
+    ABTI_ASSERT(p_ythread->thread.p_last_xstream == p_local_xstream);
+
+    /* Switch to the scheduler, i.e., suspend p_ythread  */
+    LOG_DEBUG("[U%" PRIu64 ":E%d] suspended\n",
+              ABTI_thread_get_id(&p_ythread->thread), p_local_xstream->rank);
+    ABTI_ythread_context_switch_to_parent(pp_local_xstream, p_ythread,
+                                          sync_event_type, p_sync);
+
+    /* The suspended ULT resumes its execution from here. */
+    LOG_DEBUG("[U%" PRIu64 ":E%d] resumed\n",
+              ABTI_thread_get_id(&p_ythread->thread),
+              p_ythread->thread.p_last_xstream->rank);
+}
+
+int ABTI_ythread_set_ready(ABTI_xstream *p_local_xstream,
+                           ABTI_ythread *p_ythread)
+{
+    int abt_errno = ABT_SUCCESS;
+
+    /* The ULT should be in BLOCKED state. */
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
+                        ABTI_THREAD_STATE_BLOCKED,
+                    ABT_ERR_THREAD);
+
+    /* We should wait until the scheduler of the blocked ULT resets the BLOCK
+     * request. Otherwise, the ULT can be pushed to a pool here and be
+     * scheduled by another scheduler if it is pushed to a shared pool. */
+    while (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
+           ABTI_THREAD_REQ_BLOCK)
+        ABTD_atomic_pause();
+
+    LOG_DEBUG("[U%" PRIu64 ":E%d] set ready\n",
+              ABTI_thread_get_id(&p_ythread->thread),
+              p_ythread->thread.p_last_xstream->rank);
+
+    ABTI_tool_event_ythread_resume(p_local_xstream, p_ythread,
+                                   p_local_xstream ? p_local_xstream->p_thread
+                                                   : NULL);
+    /* p_ythread->thread.p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
+     * num_blocked consistent. Otherwise, other threads might pop p_ythread
+     * that has been pushed in ABTI_POOL_ADD_THREAD and change
+     * p_ythread->thread.p_pool by ABT_unit_set_associated_pool. */
+    ABTI_pool *p_pool = p_ythread->thread.p_pool;
+
+    /* Add the ULT to its associated pool */
+    ABTI_POOL_ADD_THREAD(&p_ythread->thread,
+                         ABTI_self_get_native_thread_id(p_local_xstream));
+
+    /* Decrease the number of blocked threads */
+    ABTI_pool_dec_num_blocked(p_pool);
+
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+void ABTI_ythread_print(ABTI_ythread *p_ythread, FILE *p_os, int indent)
+{
+    char *prefix = ABTU_get_indent_str(indent);
+
+    if (p_ythread == NULL) {
+        fprintf(p_os, "%s== NULL ULT ==\n", prefix);
+        goto fn_exit;
+    }
+
+    ABTI_xstream *p_xstream = p_ythread->thread.p_last_xstream;
+    int xstream_rank = p_xstream ? p_xstream->rank : 0;
+    char *type, *state;
+
+    if (ABTI_thread_type_is_thread_main(p_ythread->thread.type)) {
+        type = "MAIN";
+    } else if (ABTI_thread_type_is_thread_main_sched(p_ythread->thread.type)) {
+        type = "MAIN_SCHED";
+    } else if (ABTI_thread_type_is_thread_user(p_ythread->thread.type)) {
+        type = "USER";
+    } else {
+        type = "UNKNOWN";
+    }
+    switch (ABTD_atomic_acquire_load_int(&p_ythread->thread.state)) {
+        case ABTI_THREAD_STATE_READY:
+            state = "READY";
+            break;
+        case ABTI_THREAD_STATE_RUNNING:
+            state = "RUNNING";
+            break;
+        case ABTI_THREAD_STATE_BLOCKED:
+            state = "BLOCKED";
+            break;
+        case ABTI_THREAD_STATE_TERMINATED:
+            state = "TERMINATED";
+            break;
+        default:
+            state = "UNKNOWN";
+            break;
+    }
+
+    fprintf(p_os,
+            "%s== ULT (%p) ==\n"
+            "%sid      : %" PRIu64 "\n"
+            "%stype    : %s\n"
+            "%sstate   : %s\n"
+            "%slast_ES : %p (%d)\n"
+            "%sp_arg   : %p\n"
+            "%spool    : %p\n"
+            "%srequest : 0x%x\n"
+            "%skeytable: %p\n",
+            prefix, (void *)p_ythread, prefix,
+            ABTI_thread_get_id(&p_ythread->thread), prefix, type, prefix, state,
+            prefix, (void *)p_xstream, xstream_rank, prefix,
+            p_ythread->thread.p_arg, prefix, (void *)p_ythread->thread.p_pool,
+            prefix, ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request),
+            prefix,
+            ABTD_atomic_acquire_load_ptr(&p_ythread->thread.p_keytable));
+
+fn_exit:
+    fflush(p_os);
+    ABTU_free(prefix);
+}
+
+ABTU_no_sanitize_address int ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
+                                                      FILE *p_os)
+{
+    void *p_stack = p_ythread->p_stack;
+    size_t i, j, stacksize = p_ythread->stacksize;
+    if (stacksize == 0 || p_stack == NULL) {
+        /* Some threads do not have p_stack (e.g., the main thread) */
+        return ABT_ERR_THREAD;
+    }
+
+    char buffer[32];
+    const size_t value_width = 8;
+    const int num_bytes = sizeof(buffer);
+
+    for (i = 0; i < stacksize; i += num_bytes) {
+        if (stacksize >= i + num_bytes) {
+            memcpy(buffer, &((uint8_t *)p_stack)[i], num_bytes);
+        } else {
+            memset(buffer, 0, num_bytes);
+            memcpy(buffer, &((uint8_t *)p_stack)[i], stacksize - i);
+        }
+        /* Print the stack address */
+#if SIZEOF_VOID_P == 8
+        fprintf(p_os, "%016" PRIxPTR ":",
+                (uintptr_t)(&((uint8_t *)p_stack)[i]));
+#elif SIZEOF_VOID_P == 4
+        fprintf(p_os, "%08" PRIxPTR ":", (uintptr_t)(&((uint8_t *)p_stack)[i]));
+#else
+#error "unknown pointer size"
+#endif
+        /* Print the raw stack data */
+        for (j = 0; j < num_bytes / value_width; j++) {
+            if (value_width == 8) {
+                uint64_t val = ((uint64_t *)buffer)[j];
+                fprintf(p_os, " %016" PRIx64, val);
+            } else if (value_width == 4) {
+                uint32_t val = ((uint32_t *)buffer)[j];
+                fprintf(p_os, " %08" PRIx32, val);
+            } else if (value_width == 2) {
+                uint16_t val = ((uint16_t *)buffer)[j];
+                fprintf(p_os, " %04" PRIx16, val);
+            } else {
+                uint8_t val = ((uint8_t *)buffer)[j];
+                fprintf(p_os, " %02" PRIx8, val);
+            }
+            if (j == (num_bytes / value_width) - 1)
+                fprintf(p_os, "\n");
+        }
+    }
+    return ABT_SUCCESS;
+}

@@ -11,8 +11,8 @@ noinst_HEADERS = \
 	include/abtd_atomic.h \
 	include/abtd_context.h \
 	include/abtd_fcontext.h \
-	include/abtd_thread.h \
 	include/abtd_ucontext.h \
+	include/abtd_ythread.h \
 	include/abti.h \
 	include/abti_barrier.h \
 	include/abti_cond.h \
@@ -39,9 +39,8 @@ noinst_HEADERS = \
 	include/abti_timer.h \
 	include/abti_thread.h \
 	include/abti_thread_attr.h \
-	include/abti_thread_htable.h \
 	include/abti_tool.h \
-	include/abti_unit.h \
 	include/abti_valgrind.h \
+	include/abti_ythread.h \
+	include/abti_ythread_htable.h \
 	include/abtu.h
-

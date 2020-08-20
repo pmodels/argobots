@@ -3,8 +3,8 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef ABTD_THREAD_H_INCLUDED
-#define ABTD_THREAD_H_INCLUDED
+#ifndef ABTD_YTHREAD_H_INCLUDED
+#define ABTD_YTHREAD_H_INCLUDED
 
 #if defined(ABT_C_HAVE_VISIBILITY)
 #define ABT_API_PRIVATE __attribute__((visibility("hidden")))
@@ -131,4 +131,4 @@ ABTD_ythread_context_dynamic_promote_ythread(void *p_stacktop)
 }
 #endif
 
-#endif /* ABTD_THREAD_H_INCLUDED */
+#endif /* ABTD_YTHREAD_H_INCLUDED */
