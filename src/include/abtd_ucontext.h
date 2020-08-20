@@ -8,25 +8,25 @@
 
 static void ABTD_ucontext_wrapper(int arg1, int arg2)
 {
-    ABTD_thread_context *p_self;
+    ABTD_ythread_context *p_self;
 #if SIZEOF_VOID_P == 8
-    p_self = (ABTD_thread_context *)(((uintptr_t)((uint32_t)arg1) << 32) |
-                                     ((uintptr_t)((uint32_t)arg2)));
+    p_self = (ABTD_ythread_context *)(((uintptr_t)((uint32_t)arg1) << 32) |
+                                      ((uintptr_t)((uint32_t)arg2)));
 #elif SIZEOF_VOID_P == 4
-    p_self = (ABTD_thread_context *)((uintptr_t)arg1);
+    p_self = (ABTD_ythread_context *)((uintptr_t)arg1);
 #else
 #error "Unknown pointer size."
 #endif
     p_self->f_uctx_thread(p_self->p_uctx_arg);
-    /* ABTD_thread_context_jump or take must be called at the end of
+    /* ABTD_ythread_context_jump or take must be called at the end of
      * f_uctx_thread, */
     ABTI_ASSERT(0);
     ABTU_unreachable();
 }
 
-static inline void ABTD_thread_context_make(ABTD_thread_context *p_ctx,
-                                            void *sp, size_t size,
-                                            void (*thread_func)(void *))
+static inline void ABTD_ythread_context_make(ABTD_ythread_context *p_ctx,
+                                             void *sp, size_t size,
+                                             void (*thread_func)(void *))
 {
     getcontext(&p_ctx->uctx);
     p_ctx->p_ctx = &p_ctx->uctx;
@@ -50,17 +50,17 @@ static inline void ABTD_thread_context_make(ABTD_thread_context *p_ctx,
 #endif
 }
 
-static inline void ABTD_thread_context_jump(ABTD_thread_context *p_old,
-                                            ABTD_thread_context *p_new,
-                                            void *arg)
+static inline void ABTD_ythread_context_jump(ABTD_ythread_context *p_old,
+                                             ABTD_ythread_context *p_new,
+                                             void *arg)
 {
     p_new->p_uctx_arg = arg;
     swapcontext(&p_old->uctx, &p_new->uctx);
 }
 
 ABTU_noreturn static inline void
-ABTD_thread_context_take(ABTD_thread_context *p_old, ABTD_thread_context *p_new,
-                         void *arg)
+ABTD_ythread_context_take(ABTD_ythread_context *p_old,
+                          ABTD_ythread_context *p_new, void *arg)
 {
     p_new->p_uctx_arg = arg;
     setcontext(&p_new->uctx);
@@ -68,7 +68,7 @@ ABTD_thread_context_take(ABTD_thread_context *p_old, ABTD_thread_context *p_new,
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-#error "ABTD_thread_context_make_and_call is not implemented."
+#error "ABTD_ythread_context_make_and_call is not implemented."
 #endif
 
 #endif /* ABTD_UCONTEXT_H_INCLUDED */

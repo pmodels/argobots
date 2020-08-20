@@ -57,22 +57,22 @@ static inline ABTI_pool *ABTI_xstream_get_main_pool(ABTI_xstream *p_xstream)
     return ABTI_pool_get_ptr(pool);
 }
 
-static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
-                                                 ABTI_ythread *p_thread)
+static inline void ABTI_xstream_terminate_ythread(ABTI_xstream *p_local_xstream,
+                                                  ABTI_ythread *p_ythread)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n",
-              ABTI_thread_get_id(&p_thread->thread),
-              p_thread->thread.p_last_xstream->rank);
-    if (!(p_thread->thread.type & ABTI_THREAD_TYPE_NAMED)) {
-        ABTD_atomic_release_store_int(&p_thread->thread.state,
+              ABTI_thread_get_id(&p_ythread->thread),
+              p_ythread->thread.p_last_xstream->rank);
+    if (!(p_ythread->thread.type & ABTI_THREAD_TYPE_NAMED)) {
+        ABTD_atomic_release_store_int(&p_ythread->thread.state,
                                       ABTI_THREAD_STATE_TERMINATED);
-        ABTI_thread_free(p_local_xstream, p_thread);
+        ABTI_ythread_free(p_local_xstream, p_ythread);
     } else {
         /* NOTE: We set the ULT's state as TERMINATED after checking refcount
          * because the ULT can be freed on a different ES.  In other words, we
          * must not access any field of p_thead after changing the state to
          * TERMINATED. */
-        ABTD_atomic_release_store_int(&p_thread->thread.state,
+        ABTD_atomic_release_store_int(&p_ythread->thread.state,
                                       ABTI_THREAD_STATE_TERMINATED);
     }
 }

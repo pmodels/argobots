@@ -113,7 +113,7 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
 
     if (p_ythread) {
         /* Change the ULT's state to BLOCKED */
-        ABTI_thread_set_blocked(p_ythread);
+        ABTI_ythread_set_blocked(p_ythread);
 
         ABTI_spinlock_release(&p_cond->lock);
 
@@ -122,8 +122,8 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
         ABTI_mutex_unlock(p_local_xstream, p_mutex);
 
         /* Suspend the current ULT */
-        ABTI_thread_suspend(pp_local_xstream, p_ythread,
-                            ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
+        ABTI_ythread_suspend(pp_local_xstream, p_ythread,
+                             ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
 
     } else {
         ABTI_spinlock_release(&p_cond->lock);
@@ -168,7 +168,7 @@ static inline void ABTI_cond_broadcast(ABTI_xstream *p_local_xstream,
 
         if (ABTI_thread_type_is_thread(p_thread->type)) {
             ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-            ABTI_thread_set_ready(p_local_xstream, p_ythread);
+            ABTI_ythread_set_ready(p_local_xstream, p_ythread);
         } else {
             /* When the head is an external thread */
             ABTD_atomic_release_store_int(&p_thread->state,

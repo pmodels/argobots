@@ -236,9 +236,9 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             continue;
         }
 #endif
-        ABTI_thread_yield(&p_local_xstream,
-                          ABTI_thread_get_ythread(p_local_xstream->p_thread),
-                          ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
+        ABTI_ythread_yield(&p_local_xstream,
+                           ABTI_thread_get_ythread(p_local_xstream->p_thread),
+                           ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
     }
 
     /* Lock the mutex again */
@@ -298,7 +298,7 @@ int ABT_cond_signal(ABT_cond cond)
 
     if (ABTI_thread_type_is_thread(p_thread->type)) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-        ABTI_thread_set_ready(p_local_xstream, p_ythread);
+        ABTI_ythread_set_ready(p_local_xstream, p_ythread);
     } else {
         /* When the head is an external thread */
         ABTD_atomic_release_store_int(&p_thread->state,

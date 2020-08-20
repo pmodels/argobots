@@ -138,14 +138,14 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         }
 
         if (p_ythread) {
-            ABTI_thread_set_blocked(p_ythread);
+            ABTI_ythread_set_blocked(p_ythread);
 
             ABTI_spinlock_release(&p_eventual->lock);
 
             /* Suspend the current ULT */
-            ABTI_thread_suspend(&p_local_xstream, p_ythread,
-                                ABT_SYNC_EVENT_TYPE_EVENTUAL,
-                                (void *)p_eventual);
+            ABTI_ythread_suspend(&p_local_xstream, p_ythread,
+                                 ABT_SYNC_EVENT_TYPE_EVENTUAL,
+                                 (void *)p_eventual);
 
         } else {
             ABTI_spinlock_release(&p_eventual->lock);
@@ -255,7 +255,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 
         if (ABTI_thread_type_is_thread(p_thread->type)) {
             ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-            ABTI_thread_set_ready(p_local_xstream, p_ythread);
+            ABTI_ythread_set_ready(p_local_xstream, p_ythread);
         } else {
             /* When the head is an external thread */
             ABTD_atomic_release_store_int(&p_thread->state,

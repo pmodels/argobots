@@ -230,11 +230,11 @@ int ABT_self_suspend(void)
     ABTI_thread *p_self = p_local_xstream->p_thread;
     ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_self->type),
                     ABT_ERR_INV_THREAD);
-    abt_errno = ABTI_thread_set_blocked(ABTI_thread_get_ythread(p_self));
+    abt_errno = ABTI_ythread_set_blocked(ABTI_thread_get_ythread(p_self));
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_thread_suspend(&p_local_xstream, ABTI_thread_get_ythread(p_self),
-                        ABT_SYNC_EVENT_TYPE_USER, NULL);
+    ABTI_ythread_suspend(&p_local_xstream, ABTI_thread_get_ythread(p_self),
+                         ABT_SYNC_EVENT_TYPE_USER, NULL);
 
 fn_exit:
     return abt_errno;

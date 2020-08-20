@@ -535,7 +535,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     /* In both ABT_SCHED_TYPE_ULT and ABT_SCHED_TYPE_TASK cases, we use ULT-type
      * scheduler to reduce the code maintenance cost.  ABT_SCHED_TYPE_TASK
      * should be removed in the future. */
-    abt_errno = ABTI_thread_create_sched(p_local_xstream, p_pool, p_sched);
+    abt_errno = ABTI_ythread_create_sched(p_local_xstream, p_pool, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:

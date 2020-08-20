@@ -340,10 +340,10 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream,
                 stop = ABT_TRUE;
             } else {
                 ABTI_ASSERT(p_sched->type == ABT_SCHED_TYPE_ULT);
-                ABTI_thread_context_switch_to_parent(pp_local_xstream,
-                                                     p_sched->p_thread,
-                                                     ABT_SYNC_EVENT_TYPE_OTHER,
-                                                     NULL);
+                ABTI_ythread_context_switch_to_parent(pp_local_xstream,
+                                                      p_sched->p_ythread,
+                                                      ABT_SYNC_EVENT_TYPE_OTHER,
+                                                      NULL);
             }
         }
     }
@@ -597,7 +597,7 @@ int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->pools = pool_list;
     p_sched->num_pools = num_pools;
     p_sched->type = def->type;
-    p_sched->p_thread = NULL;
+    p_sched->p_ythread = NULL;
 
     p_sched->init = def->init;
     p_sched->run = def->run;
@@ -797,18 +797,19 @@ int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched,
 
     /* Free the associated work unit */
     if (p_sched->type == ABT_SCHED_TYPE_ULT) {
-        if (p_sched->p_thread) {
+        if (p_sched->p_ythread) {
             if (ABTI_thread_type_is_thread_main_sched(
-                    p_sched->p_thread->thread.type)) {
-                ABTI_thread_free_main_sched(p_local_xstream, p_sched->p_thread);
+                    p_sched->p_ythread->thread.type)) {
+                ABTI_ythread_free_main_sched(p_local_xstream,
+                                             p_sched->p_ythread);
             } else {
-                ABTI_thread_free(p_local_xstream, p_sched->p_thread);
+                ABTI_ythread_free(p_local_xstream, p_sched->p_ythread);
             }
         }
     } else if (p_sched->type == ABT_SCHED_TYPE_TASK) {
         /* The underlying implementation is ULT. */
-        if (p_sched->p_thread) {
-            ABTI_thread_free(p_local_xstream, p_sched->p_thread);
+        if (p_sched->p_ythread) {
+            ABTI_ythread_free(p_local_xstream, p_sched->p_ythread);
         }
     }
 

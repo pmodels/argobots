@@ -182,10 +182,10 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
     if (ABTI_thread_type_is_thread(type)) {
         LOG_DEBUG("%p: lock_low - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
-            ABTI_thread_yield(pp_local_xstream,
-                              ABTI_thread_get_ythread(
-                                  p_local_xstream->p_thread),
-                              ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
+            ABTI_ythread_yield(pp_local_xstream,
+                               ABTI_thread_get_ythread(
+                                   p_local_xstream->p_thread),
+                               ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             p_local_xstream = *pp_local_xstream;
         }
         LOG_DEBUG("%p: lock_low - acquired\n", p_mutex);
@@ -205,17 +205,17 @@ static inline void ABTI_mutex_lock_low(ABTI_xstream **pp_local_xstream,
         /* If other ULTs associated with the same ES are waiting on the
          * low-mutex queue, we give the header ULT a chance to try to get
          * the mutex by context switching to it. */
-        ABTI_thread_htable *p_htable = p_mutex->p_htable;
+        ABTI_ythread_htable *p_htable = p_mutex->p_htable;
         ABTI_ythread *p_self =
             ABTI_thread_get_ythread(p_local_xstream->p_thread);
         int rank = (int)p_local_xstream->rank;
-        ABTI_thread_queue *p_queue = &p_htable->queue[rank];
+        ABTI_ythread_queue *p_queue = &p_htable->queue[rank];
         if (p_queue->low_num_threads > 0) {
             ABT_bool ret =
-                ABTI_thread_htable_switch_low(pp_local_xstream, p_queue, p_self,
-                                              p_htable,
-                                              ABT_SYNC_EVENT_TYPE_MUTEX,
-                                              (void *)p_mutex);
+                ABTI_ythread_htable_switch_low(pp_local_xstream, p_queue,
+                                               p_self, p_htable,
+                                               ABT_SYNC_EVENT_TYPE_MUTEX,
+                                               (void *)p_mutex);
             if (ret == ABT_TRUE) {
                 /* This ULT became a waiter in the mutex queue */
                 goto check_handover;
@@ -483,15 +483,15 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     LOG_DEBUG("%p: unlock_se\n", p_mutex);
     if (ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream)))
-        ABTI_thread_yield(pp_local_xstream,
-                          ABTI_thread_get_ythread(p_local_xstream->p_thread),
-                          ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
+        ABTI_ythread_yield(pp_local_xstream,
+                           ABTI_thread_get_ythread(p_local_xstream->p_thread),
+                           ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
 #else
     int i;
     ABTI_ythread *p_next = NULL;
-    ABTI_ythread *p_thread;
+    ABTI_ythread *p_ythread;
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_thread_queue *p_queue;
+    ABTI_ythread_queue *p_queue;
 
     /* Unlock the mutex */
     /* If p_mutex->val is 1 before decreasing it, it means there is no any
@@ -499,17 +499,17 @@ static inline int ABTI_mutex_unlock_se(ABTI_xstream **pp_local_xstream,
     if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) == 1) {
         LOG_DEBUG("%p: unlock_se\n", p_mutex);
         if (ABTI_thread_type_is_thread(ABTI_self_get_type(p_local_xstream)))
-            ABTI_thread_yield(pp_local_xstream,
-                              ABTI_thread_get_ythread(
-                                  p_local_xstream->p_thread),
-                              ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
+            ABTI_ythread_yield(pp_local_xstream,
+                               ABTI_thread_get_ythread(
+                                   p_local_xstream->p_thread),
+                               ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
         return abt_errno;
     }
 
     /* There are ULTs waiting in the mutex queue */
-    ABTI_thread_htable *p_htable = p_mutex->p_htable;
+    ABTI_ythread_htable *p_htable = p_mutex->p_htable;
 
-    p_thread = ABTI_thread_get_ythread(p_local_xstream->p_thread);
+    p_ythread = ABTI_thread_get_ythread(p_local_xstream->p_thread);
     i = (int)p_local_xstream->rank;
     p_queue = &p_htable->queue[i];
 
@@ -520,8 +520,8 @@ check_cond:
         LOG_DEBUG("%p: unlock_se\n", p_mutex);
         ABTI_mutex_wake_de(p_local_xstream, p_mutex);
         p_queue->num_handovers = 0;
-        ABTI_thread_yield(pp_local_xstream, p_thread, ABT_SYNC_EVENT_TYPE_MUTEX,
-                          (void *)p_mutex);
+        ABTI_ythread_yield(pp_local_xstream, p_ythread,
+                           ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
         return abt_errno;
     }
 
@@ -531,12 +531,12 @@ check_cond:
             ABTD_atomic_release_store_uint32(&p_mutex->val, 0); /* Unlock */
             LOG_DEBUG("%p: unlock_se\n", p_mutex);
             ABTI_mutex_wake_de(p_local_xstream, p_mutex);
-            ABTI_thread_yield(pp_local_xstream, p_thread,
-                              ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
+            ABTI_ythread_yield(pp_local_xstream, p_ythread,
+                               ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             return abt_errno;
         }
     } else {
-        p_next = ABTI_thread_htable_pop(p_htable, p_queue);
+        p_next = ABTI_ythread_htable_pop(p_htable, p_queue);
         if (p_next == NULL)
             goto check_cond;
         else
@@ -549,23 +549,23 @@ check_cond:
         ABTD_atomic_release_store_uint32(&p_mutex->val, 0); /* Unlock */
         LOG_DEBUG("%p: unlock_se\n", p_mutex);
         ABTI_mutex_wake_de(p_local_xstream, p_mutex);
-        ABTI_thread_yield(pp_local_xstream, p_thread, ABT_SYNC_EVENT_TYPE_MUTEX,
-                          (void *)p_mutex);
+        ABTI_ythread_yield(pp_local_xstream, p_ythread,
+                           ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
         return abt_errno;
     } else {
-        p_next = ABTI_thread_htable_pop_low(p_htable, p_queue);
+        p_next = ABTI_ythread_htable_pop_low(p_htable, p_queue);
         if (p_next == NULL)
             goto check_cond;
     }
 
 handover:
-    /* We don't push p_thread to the pool. Instead, we will yield_to p_thread
+    /* We don't push p_ythread to the pool. Instead, we will yield_to p_ythread
      * directly at the end of this function. */
     p_queue->num_handovers++;
 
     /* We are handing over the mutex */
     p_mutex->p_handover = p_next;
-    p_mutex->p_giver = p_thread;
+    p_mutex->p_giver = p_ythread;
 
     LOG_DEBUG("%p: handover -> U%" PRIu64 "\n", p_mutex,
               ABTI_thread_get_id(&p_next->thread));
@@ -577,18 +577,18 @@ handover:
     ABTI_pool_dec_num_blocked(p_next->thread.p_pool);
     ABTD_atomic_release_store_int(&p_next->thread.state,
                                   ABTI_THREAD_STATE_RUNNING);
-    ABTI_tool_event_ythread_resume(p_local_xstream, p_next, &p_thread->thread);
+    ABTI_tool_event_ythread_resume(p_local_xstream, p_next, &p_ythread->thread);
     /* This works as a "yield" for this thread. */
-    ABTI_tool_event_ythread_yield(p_local_xstream, p_thread,
-                                  p_thread->thread.p_parent,
+    ABTI_tool_event_ythread_yield(p_local_xstream, p_ythread,
+                                  p_ythread->thread.p_parent,
                                   ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
     ABTI_ythread *p_prev =
-        ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_thread,
-                                              p_next);
+        ABTI_ythread_context_switch_to_sibling(pp_local_xstream, p_ythread,
+                                               p_next);
     /* Invoke an event of thread resume and run. */
     p_local_xstream = *pp_local_xstream;
-    ABTI_tool_event_thread_run(p_local_xstream, &p_thread->thread,
-                               &p_prev->thread, p_thread->thread.p_parent);
+    ABTI_tool_event_thread_run(p_local_xstream, &p_ythread->thread,
+                               &p_prev->thread, p_ythread->thread.p_parent);
 #endif
 
     return abt_errno;
@@ -691,12 +691,12 @@ void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
                      int val)
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_thread_htable *p_htable = p_mutex->p_htable;
+    ABTI_ythread_htable *p_htable = p_mutex->p_htable;
     ABTI_ythread *p_self = ABTI_thread_get_ythread(p_local_xstream->p_thread);
 
     int rank = (int)p_local_xstream->rank;
     ABTI_ASSERT(rank < p_htable->num_rows);
-    ABTI_thread_queue *p_queue = &p_htable->queue[rank];
+    ABTI_ythread_queue *p_queue = &p_htable->queue[rank];
 
     ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
 
@@ -706,33 +706,33 @@ void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
     }
 
     if (p_queue->p_h_next == NULL) {
-        ABTI_thread_htable_add_h_node(p_htable, p_queue);
+        ABTI_ythread_htable_add_h_node(p_htable, p_queue);
     }
 
     /* Change the ULT's state to BLOCKED */
-    ABTI_thread_set_blocked(p_self);
+    ABTI_ythread_set_blocked(p_self);
 
     /* Push the current ULT to the queue */
-    ABTI_thread_htable_push(p_htable, rank, p_self);
+    ABTI_ythread_htable_push(p_htable, rank, p_self);
 
     /* Unlock */
     ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
 
     /* Suspend the current ULT */
-    ABTI_thread_suspend(pp_local_xstream, p_self, ABT_SYNC_EVENT_TYPE_MUTEX,
-                        (void *)p_mutex);
+    ABTI_ythread_suspend(pp_local_xstream, p_self, ABT_SYNC_EVENT_TYPE_MUTEX,
+                         (void *)p_mutex);
 }
 
 void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
                          int val)
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_thread_htable *p_htable = p_mutex->p_htable;
+    ABTI_ythread_htable *p_htable = p_mutex->p_htable;
     ABTI_ythread *p_self = ABTI_thread_get_ythread(p_local_xstream->p_thread);
 
     int rank = (int)p_local_xstream->rank;
     ABTI_ASSERT(rank < p_htable->num_rows);
-    ABTI_thread_queue *p_queue = &p_htable->queue[rank];
+    ABTI_ythread_queue *p_queue = &p_htable->queue[rank];
 
     ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
 
@@ -742,34 +742,34 @@ void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
     }
 
     if (p_queue->p_l_next == NULL) {
-        ABTI_thread_htable_add_l_node(p_htable, p_queue);
+        ABTI_ythread_htable_add_l_node(p_htable, p_queue);
     }
 
     /* Change the ULT's state to BLOCKED */
-    ABTI_thread_set_blocked(p_self);
+    ABTI_ythread_set_blocked(p_self);
 
     /* Push the current ULT to the queue */
-    ABTI_thread_htable_push_low(p_htable, rank, p_self);
+    ABTI_ythread_htable_push_low(p_htable, rank, p_self);
 
     /* Unlock */
     ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
 
     /* Suspend the current ULT */
-    ABTI_thread_suspend(pp_local_xstream, p_self, ABT_SYNC_EVENT_TYPE_MUTEX,
-                        (void *)p_mutex);
+    ABTI_ythread_suspend(pp_local_xstream, p_self, ABT_SYNC_EVENT_TYPE_MUTEX,
+                         (void *)p_mutex);
 }
 
 void ABTI_mutex_wake_de(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
 {
     int n;
-    ABTI_ythread *p_thread;
-    ABTI_thread_htable *p_htable = p_mutex->p_htable;
+    ABTI_ythread *p_ythread;
+    ABTI_ythread_htable *p_htable = p_mutex->p_htable;
     int num = p_mutex->attr.max_wakeups;
-    ABTI_thread_queue *p_start, *p_curr;
+    ABTI_ythread_queue *p_start, *p_curr;
 
     /* Wake up num ULTs in a round-robin manner */
     for (n = 0; n < num; n++) {
-        p_thread = NULL;
+        p_ythread = NULL;
 
         ABTI_THREAD_HTABLE_LOCK(p_htable->mutex);
 
@@ -781,13 +781,13 @@ void ABTI_mutex_wake_de(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
         /* Wake up the high-priority ULTs */
         p_start = p_htable->h_list;
         for (p_curr = p_start; p_curr;) {
-            p_thread = ABTI_thread_htable_pop(p_htable, p_curr);
+            p_ythread = ABTI_ythread_htable_pop(p_htable, p_curr);
             if (p_curr->num_threads == 0) {
-                ABTI_thread_htable_del_h_head(p_htable);
+                ABTI_ythread_htable_del_h_head(p_htable);
             } else {
                 p_htable->h_list = p_curr->p_h_next;
             }
-            if (p_thread != NULL)
+            if (p_ythread != NULL)
                 goto done;
             p_curr = p_htable->h_list;
             if (p_curr == p_start)
@@ -797,13 +797,13 @@ void ABTI_mutex_wake_de(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
         /* Wake up the low-priority ULTs */
         p_start = p_htable->l_list;
         for (p_curr = p_start; p_curr;) {
-            p_thread = ABTI_thread_htable_pop_low(p_htable, p_curr);
+            p_ythread = ABTI_ythread_htable_pop_low(p_htable, p_curr);
             if (p_curr->low_num_threads == 0) {
-                ABTI_thread_htable_del_l_head(p_htable);
+                ABTI_ythread_htable_del_l_head(p_htable);
             } else {
                 p_htable->l_list = p_curr->p_l_next;
             }
-            if (p_thread != NULL)
+            if (p_ythread != NULL)
                 goto done;
             p_curr = p_htable->l_list;
             if (p_curr == p_start)
@@ -818,12 +818,12 @@ void ABTI_mutex_wake_de(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex)
     done:
         ABTI_THREAD_HTABLE_UNLOCK(p_htable->mutex);
 
-        /* Push p_thread to the scheduler's pool */
+        /* Push p_ythread to the scheduler's pool */
         LOG_DEBUG("%p: wake up U%" PRIu64 ":E%d\n", p_mutex,
-                  ABTI_thread_get_id(&p_thread->thread),
-                  p_thread->thread.p_last_xstream
-                      ? p_thread->thread.p_last_xstream->rank
+                  ABTI_thread_get_id(&p_ythread->thread),
+                  p_ythread->thread.p_last_xstream
+                      ? p_ythread->thread.p_last_xstream->rank
                       : -1);
-        ABTI_thread_set_ready(p_local_xstream, p_thread);
+        ABTI_ythread_set_ready(p_local_xstream, p_ythread);
     }
 }

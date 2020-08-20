@@ -106,7 +106,7 @@
         }                                                                      \
     } while (0)
 
-#define ABTI_CHECK_NULL_THREAD_PTR(p)                                          \
+#define ABTI_CHECK_NULL_YTHREAD_PTR(p)                                         \
     do {                                                                       \
         if (ABTI_IS_ERROR_CHECK_ENABLED && p == (ABTI_ythread *)NULL) {        \
             abt_errno = ABT_ERR_INV_THREAD;                                    \

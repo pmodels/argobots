@@ -16,14 +16,14 @@
  * int ABT_any_func()
  * {
  *     ABTI_xstream *p_xstream = ABTI_local_get_xstream()->p_xstream;
- *     [context switch (e.g., ABTI_thread_yield())];
+ *     [context switch (e.g., ABTI_ythread_yield())];
  *     ABTI_xstream *p_xstream2 = ABTI_local_get_xstream()->p_xstream;
  * }
  *
  * p_xstream and p_xstream2 can be always the same although context switch
  * changes the running execution stream because a compiler assumes that the
  * running Pthreads is the same across the function call
- * (i.e., ABTI_thread_yield()) and caches a thread local value as a compiler
+ * (i.e., ABTI_ythread_yield()) and caches a thread local value as a compiler
  * optimization.  To avoid this, we need to assure that the second
  * ABTI_local_get_xstream() really reads the thread local value again.
  *

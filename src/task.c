@@ -203,9 +203,9 @@ int ABT_task_free(ABT_task *task)
             continue;
         }
 #endif
-        ABTI_thread_yield(&p_local_xstream,
-                          ABTI_thread_get_ythread(p_local_xstream->p_thread),
-                          ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
+        ABTI_ythread_yield(&p_local_xstream,
+                           ABTI_thread_get_ythread(p_local_xstream->p_thread),
+                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
     }
     ABTI_tool_event_thread_join(p_local_xstream, p_task,
                                 p_local_xstream ? p_local_xstream->p_thread
@@ -253,9 +253,9 @@ int ABT_task_join(ABT_task task)
             continue;
         }
 #endif
-        ABTI_thread_yield(&p_local_xstream,
-                          ABTI_thread_get_ythread(p_local_xstream->p_thread),
-                          ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
+        ABTI_ythread_yield(&p_local_xstream,
+                           ABTI_thread_get_ythread(p_local_xstream->p_thread),
+                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
     }
     ABTI_tool_event_thread_join(p_local_xstream, p_task,
                                 p_local_xstream ? p_local_xstream->p_thread

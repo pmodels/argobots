@@ -337,7 +337,7 @@ static ABT_thread unit_get_thread(ABT_unit unit)
     ABT_thread h_thread;
     ABTI_thread *p_thread = (ABTI_thread *)unit;
     if (ABTI_thread_type_is_thread(p_thread->type)) {
-        h_thread = ABTI_thread_get_handle(ABTI_thread_get_ythread(p_thread));
+        h_thread = ABTI_ythread_get_handle(ABTI_thread_get_ythread(p_thread));
     } else {
         h_thread = ABT_THREAD_NULL;
     }
@@ -365,7 +365,7 @@ static ABT_bool unit_is_in_pool(ABT_unit unit)
 
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
-    ABTI_ythread *p_ythread = ABTI_thread_get_ptr(thread);
+    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
     ABTI_thread *p_thread = &p_ythread->thread;
     p_thread->p_prev = NULL;
     p_thread->p_next = NULL;

@@ -51,7 +51,7 @@ void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool)
 
     if (type == ABT_UNIT_TYPE_THREAD) {
         ABT_thread thread = p_pool->u_get_thread(unit);
-        ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
+        ABTI_ythread *p_thread = ABTI_ythread_get_ptr(thread);
         p_thread->thread.p_pool = p_pool;
 
     } else {

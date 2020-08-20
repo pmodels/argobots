@@ -400,10 +400,10 @@ fn_fail:
 int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
+    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
 
-    ABTI_thread_print(p_thread, fp, 0);
+    ABTI_ythread_print(p_ythread, fp, 0);
 
 fn_exit:
     return abt_errno;
@@ -485,10 +485,10 @@ fn_fail:
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
+    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
 
-    abt_errno = ABTI_thread_print_stack(p_thread, fp);
+    abt_errno = ABTI_ythread_print_stack(p_ythread, fp);
 
 fn_exit:
     return abt_errno;
@@ -517,18 +517,18 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
     if (type == ABT_UNIT_TYPE_THREAD) {
         fprintf(fp, "=== ULT (%p) ===\n", (void *)unit);
         ABT_thread thread = p_pool->u_get_thread(unit);
-        ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
-        ABT_unit_id thread_id = ABTI_thread_get_id(&p_thread->thread);
+        ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
+        ABT_unit_id thread_id = ABTI_thread_get_id(&p_ythread->thread);
         fprintf(fp,
                 "id        : %" PRIu64 "\n"
                 "ctx       : %p\n",
-                (uint64_t)thread_id, (void *)&p_thread->ctx);
-        ABTD_thread_print_context(p_thread, fp, 2);
+                (uint64_t)thread_id, (void *)&p_ythread->ctx);
+        ABTD_ythread_print_context(p_ythread, fp, 2);
         fprintf(fp,
                 "stack     : %p\n"
                 "stacksize : %" PRIu64 "\n",
-                p_thread->p_stack, (uint64_t)p_thread->stacksize);
-        int abt_errno = ABTI_thread_print_stack(p_thread, fp);
+                p_ythread->p_stack, (uint64_t)p_ythread->stacksize);
+        int abt_errno = ABTI_ythread_print_stack(p_ythread, fp);
         if (abt_errno != ABT_SUCCESS)
             fprintf(fp, "Failed to print stack.\n");
     } else if (type == ABT_UNIT_TYPE_TASK) {

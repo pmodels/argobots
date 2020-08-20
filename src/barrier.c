@@ -156,7 +156,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
 
     /* If we do not have all the waiters yet */
     if (p_barrier->counter < p_barrier->num_waiters) {
-        ABTI_ythread *p_thread;
+        ABTI_ythread *p_ythread;
         ABT_unit_type type;
         ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
@@ -164,31 +164,32 @@ int ABT_barrier_wait(ABT_barrier barrier)
             ABTI_thread *p_self = p_local_xstream->p_thread;
             ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_self->type),
                             ABT_ERR_BARRIER);
-            p_thread = ABTI_thread_get_ythread(p_self);
+            p_ythread = ABTI_thread_get_ythread(p_self);
             type = ABT_UNIT_TYPE_THREAD;
         } else {
             /* external thread */
             /* Check size if ext_signal can be stored in p_thread. */
-            ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_thread));
-            p_thread = (ABTI_ythread *)&ext_signal;
+            ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_ythread));
+            p_ythread = (ABTI_ythread *)&ext_signal;
             type = ABT_UNIT_TYPE_EXT;
         }
 
         /* Keep the waiter's information */
-        p_barrier->waiters[pos] = p_thread;
+        p_barrier->waiters[pos] = p_ythread;
         p_barrier->waiter_type[pos] = type;
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             /* Change the ULT's state to BLOCKED */
-            ABTI_thread_set_blocked(p_thread);
+            ABTI_ythread_set_blocked(p_ythread);
         }
 
         ABTI_spinlock_release(&p_barrier->lock);
 
         if (type == ABT_UNIT_TYPE_THREAD) {
             /* Suspend the current ULT */
-            ABTI_thread_suspend(&p_local_xstream, p_thread,
-                                ABT_SYNC_EVENT_TYPE_BARRIER, (void *)p_barrier);
+            ABTI_ythread_suspend(&p_local_xstream, p_ythread,
+                                 ABT_SYNC_EVENT_TYPE_BARRIER,
+                                 (void *)p_barrier);
         } else {
             /* External thread is waiting here polling ext_signal. */
             /* FIXME: need a better implementation */
@@ -199,12 +200,13 @@ int ABT_barrier_wait(ABT_barrier barrier)
         /* Signal all the waiting ULTs */
         int i;
         for (i = 0; i < p_barrier->num_waiters - 1; i++) {
-            ABTI_ythread *p_thread = p_barrier->waiters[i];
+            ABTI_ythread *p_ythread = p_barrier->waiters[i];
             if (p_barrier->waiter_type[i] == ABT_UNIT_TYPE_THREAD) {
-                ABTI_thread_set_ready(p_local_xstream, p_thread);
+                ABTI_ythread_set_ready(p_local_xstream, p_ythread);
             } else {
                 /* When p_cur is an external thread */
-                ABTD_atomic_int32 *p_ext_signal = (ABTD_atomic_int32 *)p_thread;
+                ABTD_atomic_int32 *p_ext_signal =
+                    (ABTD_atomic_int32 *)p_ythread;
                 ABTD_atomic_release_store_int32(p_ext_signal, 1);
             }
 

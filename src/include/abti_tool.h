@@ -6,7 +6,7 @@
 #ifndef ABTI_TOOL_H_INCLUDED
 #define ABTI_TOOL_H_INCLUDED
 
-static inline ABT_thread ABTI_thread_get_handle(ABTI_ythread *p_thread);
+static inline ABT_thread ABTI_ythread_get_handle(ABTI_ythread *p_thread);
 static inline ABT_task ABTI_task_get_handle(ABTI_thread *p_task);
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
@@ -164,7 +164,7 @@ static inline void ABTI_tool_event_thread_impl(
             tctx.p_sync_object = p_sync_object;
             if (ABTI_thread_type_is_thread(p_thread->type)) {
                 ABT_thread h_thread =
-                    ABTI_thread_get_handle(ABTI_thread_get_ythread(p_thread));
+                    ABTI_ythread_get_handle(ABTI_thread_get_ythread(p_thread));
                 ABT_xstream h_xstream =
                     ABTI_xstream_get_handle(p_local_xstream);
                 ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);

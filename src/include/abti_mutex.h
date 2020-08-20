@@ -43,7 +43,8 @@ static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
     p_mutex->attr.max_handovers = ABTI_global_get_mutex_max_handovers();
     p_mutex->attr.max_wakeups = ABTI_global_get_mutex_max_wakeups();
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
-    p_mutex->p_htable = ABTI_thread_htable_create(gp_ABTI_global->max_xstreams);
+    p_mutex->p_htable =
+        ABTI_ythread_htable_create(gp_ABTI_global->max_xstreams);
     p_mutex->p_handover = NULL;
     p_mutex->p_giver = NULL;
 #endif
@@ -54,7 +55,7 @@ static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 #else
 static inline void ABTI_mutex_fini(ABTI_mutex *p_mutex)
 {
-    ABTI_thread_htable_free(p_mutex->p_htable);
+    ABTI_ythread_htable_free(p_mutex->p_htable);
 }
 #endif
 
@@ -78,10 +79,10 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
     if (ABTI_thread_type_is_thread(type)) {
         LOG_DEBUG("%p: lock - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
-            ABTI_thread_yield(pp_local_xstream,
-                              ABTI_thread_get_ythread(
-                                  p_local_xstream->p_thread),
-                              ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
+            ABTI_ythread_yield(pp_local_xstream,
+                               ABTI_thread_get_ythread(
+                                   p_local_xstream->p_thread),
+                               ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             p_local_xstream = *pp_local_xstream;
         }
         LOG_DEBUG("%p: lock - acquired\n", p_mutex);
