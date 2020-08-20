@@ -525,11 +525,17 @@ void ABTI_pool_reset_id(void);
 /* Work Unit */
 void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 
-/* Yieldable threads */
+/* Threads */
 int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
                                 ABTI_thread *p_thread, ABTI_pool *p_pool);
 ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_xstream *p_local_xstream,
                                                ABTI_thread *p_thread);
+void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
+void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
+void ABTI_thread_reset_id(void);
+ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
+
+/* Yieldable threads */
 int ABTI_ythread_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                         void (*thread_func)(void *), void *arg,
                         ABTI_thread_attr *p_attr, ABTI_ythread **pp_newthread);
@@ -540,7 +546,6 @@ int ABTI_ythread_create_main_sched(ABTI_xstream *p_local_xstream,
                                    ABTI_sched *p_sched);
 int ABTI_ythread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                               ABTI_sched *p_sched);
-void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
 void ABTI_ythread_free_main(ABTI_xstream *p_local_xstream,
                             ABTI_ythread *p_ythread);
 void ABTI_ythread_free_main_sched(ABTI_xstream *p_local_xstream,
@@ -551,10 +556,7 @@ void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
                           ABT_sync_event_type sync_event_type, void *p_sync);
 int ABTI_ythread_set_ready(ABTI_xstream *p_local_xstream,
                            ABTI_ythread *p_ythread);
-void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 int ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
-void ABTI_thread_reset_id(void);
-ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
 
 /* Thread attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);
