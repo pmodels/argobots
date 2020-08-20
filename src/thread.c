@@ -874,10 +874,11 @@ int ABT_thread_resume(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTI_ythread *p_ythread;
 
-    p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    ABTI_ythread *p_ythread;
+    ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_INV_THREAD);
 
     abt_errno = ABTI_ythread_set_ready(p_local_xstream, p_ythread);
     ABTI_CHECK_ERROR(abt_errno);
