@@ -23,8 +23,6 @@ static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
                                           ABTI_xstream *p_xstream);
 #endif
 static inline ABT_bool ABTI_thread_is_ready(ABTI_ythread *p_thread);
-static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
-                                             ABTI_ythread *p_thread);
 static inline ABT_unit_id ABTI_thread_get_new_id(void);
 
 static void key_destructor_stackable_sched(void *p_value);
@@ -1921,22 +1919,6 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
-                                             ABTI_ythread *p_thread)
-{
-    /* Free the unit */
-    p_thread->thread.p_pool->u_free(&p_thread->thread.unit);
-
-    /* Free the key-value table */
-    ABTI_ktable *p_ktable =
-        ABTD_atomic_acquire_load_ptr(&p_thread->thread.p_keytable);
-    /* No parallel access to TLS is allowed. */
-    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
-    if (p_ktable) {
-        ABTI_ktable_free(p_local_xstream, p_ktable);
-    }
-}
-
 void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n",
@@ -1948,7 +1930,17 @@ void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread)
                                 p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL);
 
-    ABTI_thread_free_internal(p_local_xstream, p_thread);
+    /* Free the unit */
+    p_thread->thread.p_pool->u_free(&p_thread->thread.unit);
+
+    /* Free the key-value table */
+    ABTI_ktable *p_ktable =
+        ABTD_atomic_acquire_load_ptr(&p_thread->thread.p_keytable);
+    /* No parallel access to TLS is allowed. */
+    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
+    if (p_ktable) {
+        ABTI_ktable_free(p_local_xstream, p_ktable);
+    }
 
     /* Free ABTI_ythread (stack will also be freed) */
     ABTI_mem_free_thread(p_local_xstream, p_thread);
