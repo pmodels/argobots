@@ -161,10 +161,10 @@ int ABT_barrier_wait(ABT_barrier barrier)
         ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
         if (p_local_xstream != NULL) {
-            ABTI_thread *p_self = p_local_xstream->p_unit;
+            ABTI_thread *p_self = p_local_xstream->p_thread;
             ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_self->type),
                             ABT_ERR_BARRIER);
-            p_thread = ABTI_unit_get_thread(p_self);
+            p_thread = ABTI_thread_get_ythread(p_self);
             type = ABT_UNIT_TYPE_THREAD;
         } else {
             /* external thread */

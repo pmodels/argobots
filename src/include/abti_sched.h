@@ -62,7 +62,7 @@ static inline void ABTI_sched_unset_request(ABTI_sched *p_sched, uint32_t req)
     ABTD_atomic_fetch_and_uint32(&p_sched->request, ~req);
 }
 
-static inline ABT_bool ABTI_sched_has_unit(ABTI_sched *p_sched)
+static inline ABT_bool ABTI_sched_has_thread(ABTI_sched *p_sched)
 {
     int p;
     size_t s;

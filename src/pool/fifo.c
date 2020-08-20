@@ -22,7 +22,6 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit);
 static int pool_print_all(ABT_pool pool, void *arg,
                           void (*print_fn)(void *, ABT_unit));
 
-typedef ABTI_thread unit_t;
 static ABT_unit_type unit_get_type(ABT_unit unit);
 static ABT_thread unit_get_thread(ABT_unit unit);
 static ABT_task unit_get_task(ABT_unit unit);
@@ -33,9 +32,9 @@ static void unit_free(ABT_unit *unit);
 
 struct data {
     ABTI_spinlock mutex;
-    size_t num_units;
-    unit_t *p_head;
-    unit_t *p_tail;
+    size_t num_threads;
+    ABTI_thread *p_head;
+    ABTI_thread *p_tail;
 };
 typedef struct data data_t;
 
@@ -113,7 +112,7 @@ int pool_init(ABT_pool pool, ABT_pool_config config)
         ABTI_spinlock_clear(&p_data->mutex);
     }
 
-    p_data->num_units = 0;
+    p_data->num_threads = 0;
     p_data->p_head = NULL;
     p_data->p_tail = NULL;
 
@@ -137,33 +136,33 @@ static size_t pool_get_size(ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    return p_data->num_units;
+    return p_data->num_threads;
 }
 
 static void pool_push_shared(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    unit_t *p_unit = (unit_t *)unit;
+    ABTI_thread *p_thread = (ABTI_thread *)unit;
 
     ABTI_spinlock_acquire(&p_data->mutex);
-    if (p_data->num_units == 0) {
-        p_unit->p_prev = p_unit;
-        p_unit->p_next = p_unit;
-        p_data->p_head = p_unit;
-        p_data->p_tail = p_unit;
+    if (p_data->num_threads == 0) {
+        p_thread->p_prev = p_thread;
+        p_thread->p_next = p_thread;
+        p_data->p_head = p_thread;
+        p_data->p_tail = p_thread;
     } else {
-        unit_t *p_head = p_data->p_head;
-        unit_t *p_tail = p_data->p_tail;
-        p_tail->p_next = p_unit;
-        p_head->p_prev = p_unit;
-        p_unit->p_prev = p_tail;
-        p_unit->p_next = p_head;
-        p_data->p_tail = p_unit;
+        ABTI_thread *p_head = p_data->p_head;
+        ABTI_thread *p_tail = p_data->p_tail;
+        p_tail->p_next = p_thread;
+        p_head->p_prev = p_thread;
+        p_thread->p_prev = p_tail;
+        p_thread->p_next = p_head;
+        p_data->p_tail = p_thread;
     }
-    p_data->num_units++;
+    p_data->num_threads++;
 
-    ABTD_atomic_release_store_int(&p_unit->is_in_pool, 1);
+    ABTD_atomic_release_store_int(&p_thread->is_in_pool, 1);
     ABTI_spinlock_release(&p_data->mutex);
 }
 
@@ -171,55 +170,55 @@ static void pool_push_private(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    unit_t *p_unit = (unit_t *)unit;
+    ABTI_thread *p_thread = (ABTI_thread *)unit;
 
-    if (p_data->num_units == 0) {
-        p_unit->p_prev = p_unit;
-        p_unit->p_next = p_unit;
-        p_data->p_head = p_unit;
-        p_data->p_tail = p_unit;
+    if (p_data->num_threads == 0) {
+        p_thread->p_prev = p_thread;
+        p_thread->p_next = p_thread;
+        p_data->p_head = p_thread;
+        p_data->p_tail = p_thread;
     } else {
-        unit_t *p_head = p_data->p_head;
-        unit_t *p_tail = p_data->p_tail;
-        p_tail->p_next = p_unit;
-        p_head->p_prev = p_unit;
-        p_unit->p_prev = p_tail;
-        p_unit->p_next = p_head;
-        p_data->p_tail = p_unit;
+        ABTI_thread *p_head = p_data->p_head;
+        ABTI_thread *p_tail = p_data->p_tail;
+        p_tail->p_next = p_thread;
+        p_head->p_prev = p_thread;
+        p_thread->p_prev = p_tail;
+        p_thread->p_next = p_head;
+        p_data->p_tail = p_thread;
     }
-    p_data->num_units++;
+    p_data->num_threads++;
 
-    ABTD_atomic_release_store_int(&p_unit->is_in_pool, 1);
+    ABTD_atomic_release_store_int(&p_thread->is_in_pool, 1);
 }
 
 static ABT_unit pool_pop_wait(ABT_pool pool, double time_secs)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    unit_t *p_unit = NULL;
+    ABTI_thread *p_thread = NULL;
     ABT_unit h_unit = ABT_UNIT_NULL;
 
     double time_start = 0.0;
 
     do {
         ABTI_spinlock_acquire(&p_data->mutex);
-        if (p_data->num_units > 0) {
-            p_unit = p_data->p_head;
-            if (p_data->num_units == 1) {
+        if (p_data->num_threads > 0) {
+            p_thread = p_data->p_head;
+            if (p_data->num_threads == 1) {
                 p_data->p_head = NULL;
                 p_data->p_tail = NULL;
             } else {
-                p_unit->p_prev->p_next = p_unit->p_next;
-                p_unit->p_next->p_prev = p_unit->p_prev;
-                p_data->p_head = p_unit->p_next;
+                p_thread->p_prev->p_next = p_thread->p_next;
+                p_thread->p_next->p_prev = p_thread->p_prev;
+                p_data->p_head = p_thread->p_next;
             }
-            p_data->num_units--;
+            p_data->num_threads--;
 
-            p_unit->p_prev = NULL;
-            p_unit->p_next = NULL;
-            ABTD_atomic_release_store_int(&p_unit->is_in_pool, 0);
+            p_thread->p_prev = NULL;
+            p_thread->p_next = NULL;
+            ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
 
-            h_unit = (ABT_unit)p_unit;
+            h_unit = (ABT_unit)p_thread;
             ABTI_spinlock_release(&p_data->mutex);
         } else {
             ABTI_spinlock_release(&p_data->mutex);
@@ -244,28 +243,28 @@ static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    unit_t *p_unit = NULL;
+    ABTI_thread *p_thread = NULL;
     ABT_unit h_unit = ABT_UNIT_NULL;
 
     do {
         ABTI_spinlock_acquire(&p_data->mutex);
-        if (p_data->num_units > 0) {
-            p_unit = p_data->p_head;
-            if (p_data->num_units == 1) {
+        if (p_data->num_threads > 0) {
+            p_thread = p_data->p_head;
+            if (p_data->num_threads == 1) {
                 p_data->p_head = NULL;
                 p_data->p_tail = NULL;
             } else {
-                p_unit->p_prev->p_next = p_unit->p_next;
-                p_unit->p_next->p_prev = p_unit->p_prev;
-                p_data->p_head = p_unit->p_next;
+                p_thread->p_prev->p_next = p_thread->p_next;
+                p_thread->p_next->p_prev = p_thread->p_prev;
+                p_data->p_head = p_thread->p_next;
             }
-            p_data->num_units--;
+            p_data->num_threads--;
 
-            p_unit->p_prev = NULL;
-            p_unit->p_next = NULL;
-            ABTD_atomic_release_store_int(&p_unit->is_in_pool, 0);
+            p_thread->p_prev = NULL;
+            p_thread->p_next = NULL;
+            ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
 
-            h_unit = (ABT_unit)p_unit;
+            h_unit = (ABT_unit)p_thread;
             ABTI_spinlock_release(&p_data->mutex);
         } else {
             ABTI_spinlock_release(&p_data->mutex);
@@ -286,27 +285,27 @@ static ABT_unit pool_pop_shared(ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    unit_t *p_unit = NULL;
+    ABTI_thread *p_thread = NULL;
     ABT_unit h_unit = ABT_UNIT_NULL;
 
     ABTI_spinlock_acquire(&p_data->mutex);
-    if (p_data->num_units > 0) {
-        p_unit = p_data->p_head;
-        if (p_data->num_units == 1) {
+    if (p_data->num_threads > 0) {
+        p_thread = p_data->p_head;
+        if (p_data->num_threads == 1) {
             p_data->p_head = NULL;
             p_data->p_tail = NULL;
         } else {
-            p_unit->p_prev->p_next = p_unit->p_next;
-            p_unit->p_next->p_prev = p_unit->p_prev;
-            p_data->p_head = p_unit->p_next;
+            p_thread->p_prev->p_next = p_thread->p_next;
+            p_thread->p_next->p_prev = p_thread->p_prev;
+            p_data->p_head = p_thread->p_next;
         }
-        p_data->num_units--;
+        p_data->num_threads--;
 
-        p_unit->p_prev = NULL;
-        p_unit->p_next = NULL;
-        ABTD_atomic_release_store_int(&p_unit->is_in_pool, 0);
+        p_thread->p_prev = NULL;
+        p_thread->p_next = NULL;
+        ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
 
-        h_unit = (ABT_unit)p_unit;
+        h_unit = (ABT_unit)p_thread;
     }
     ABTI_spinlock_release(&p_data->mutex);
 
@@ -317,26 +316,26 @@ static ABT_unit pool_pop_private(ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    unit_t *p_unit = NULL;
+    ABTI_thread *p_thread = NULL;
     ABT_unit h_unit = ABT_UNIT_NULL;
 
-    if (p_data->num_units > 0) {
-        p_unit = p_data->p_head;
-        if (p_data->num_units == 1) {
+    if (p_data->num_threads > 0) {
+        p_thread = p_data->p_head;
+        if (p_data->num_threads == 1) {
             p_data->p_head = NULL;
             p_data->p_tail = NULL;
         } else {
-            p_unit->p_prev->p_next = p_unit->p_next;
-            p_unit->p_next->p_prev = p_unit->p_prev;
-            p_data->p_head = p_unit->p_next;
+            p_thread->p_prev->p_next = p_thread->p_next;
+            p_thread->p_next->p_prev = p_thread->p_prev;
+            p_data->p_head = p_thread->p_next;
         }
-        p_data->num_units--;
+        p_data->num_threads--;
 
-        p_unit->p_prev = NULL;
-        p_unit->p_next = NULL;
-        ABTD_atomic_release_store_int(&p_unit->is_in_pool, 0);
+        p_thread->p_prev = NULL;
+        p_thread->p_next = NULL;
+        ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
 
-        h_unit = (ABT_unit)p_unit;
+        h_unit = (ABT_unit)p_thread;
     }
 
     return h_unit;
@@ -346,32 +345,33 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    unit_t *p_unit = (unit_t *)unit;
+    ABTI_thread *p_thread = (ABTI_thread *)unit;
 
-    ABTI_CHECK_TRUE_RET(p_data->num_units != 0, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_unit->is_in_pool) == 1,
+    ABTI_CHECK_TRUE_RET(p_data->num_threads != 0, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) ==
+                            1,
                         ABT_ERR_POOL);
 
     ABTI_spinlock_acquire(&p_data->mutex);
-    if (p_data->num_units == 1) {
+    if (p_data->num_threads == 1) {
         p_data->p_head = NULL;
         p_data->p_tail = NULL;
     } else {
-        p_unit->p_prev->p_next = p_unit->p_next;
-        p_unit->p_next->p_prev = p_unit->p_prev;
-        if (p_unit == p_data->p_head) {
-            p_data->p_head = p_unit->p_next;
-        } else if (p_unit == p_data->p_tail) {
-            p_data->p_tail = p_unit->p_prev;
+        p_thread->p_prev->p_next = p_thread->p_next;
+        p_thread->p_next->p_prev = p_thread->p_prev;
+        if (p_thread == p_data->p_head) {
+            p_data->p_head = p_thread->p_next;
+        } else if (p_thread == p_data->p_tail) {
+            p_data->p_tail = p_thread->p_prev;
         }
     }
-    p_data->num_units--;
+    p_data->num_threads--;
 
-    ABTD_atomic_release_store_int(&p_unit->is_in_pool, 0);
+    ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
     ABTI_spinlock_release(&p_data->mutex);
 
-    p_unit->p_prev = NULL;
-    p_unit->p_next = NULL;
+    p_thread->p_prev = NULL;
+    p_thread->p_next = NULL;
 
     return ABT_SUCCESS;
 }
@@ -380,29 +380,30 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    unit_t *p_unit = (unit_t *)unit;
+    ABTI_thread *p_thread = (ABTI_thread *)unit;
 
-    ABTI_CHECK_TRUE_RET(p_data->num_units != 0, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_unit->is_in_pool) == 1,
+    ABTI_CHECK_TRUE_RET(p_data->num_threads != 0, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) ==
+                            1,
                         ABT_ERR_POOL);
 
-    if (p_data->num_units == 1) {
+    if (p_data->num_threads == 1) {
         p_data->p_head = NULL;
         p_data->p_tail = NULL;
     } else {
-        p_unit->p_prev->p_next = p_unit->p_next;
-        p_unit->p_next->p_prev = p_unit->p_prev;
-        if (p_unit == p_data->p_head) {
-            p_data->p_head = p_unit->p_next;
-        } else if (p_unit == p_data->p_tail) {
-            p_data->p_tail = p_unit->p_prev;
+        p_thread->p_prev->p_next = p_thread->p_next;
+        p_thread->p_next->p_prev = p_thread->p_prev;
+        if (p_thread == p_data->p_head) {
+            p_data->p_head = p_thread->p_next;
+        } else if (p_thread == p_data->p_tail) {
+            p_data->p_tail = p_thread->p_prev;
         }
     }
-    p_data->num_units--;
+    p_data->num_threads--;
 
-    ABTD_atomic_release_store_int(&p_unit->is_in_pool, 0);
-    p_unit->p_prev = NULL;
-    p_unit->p_next = NULL;
+    ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
+    p_thread->p_prev = NULL;
+    p_thread->p_next = NULL;
 
     return ABT_SUCCESS;
 }
@@ -419,13 +420,13 @@ static int pool_print_all(ABT_pool pool, void *arg,
         ABTI_spinlock_acquire(&p_data->mutex);
     }
 
-    size_t num_units = p_data->num_units;
-    unit_t *p_unit = p_data->p_head;
-    while (num_units--) {
-        ABTI_ASSERT(p_unit);
-        ABT_unit unit = (ABT_unit)p_unit;
+    size_t num_threads = p_data->num_threads;
+    ABTI_thread *p_thread = p_data->p_head;
+    while (num_threads--) {
+        ABTI_ASSERT(p_thread);
+        ABT_unit unit = (ABT_unit)p_thread;
         print_fn(arg, unit);
-        p_unit = p_unit->p_next;
+        p_thread = p_thread->p_next;
     }
 
     if (access != ABT_POOL_ACCESS_PRIV) {
@@ -439,16 +440,16 @@ static int pool_print_all(ABT_pool pool, void *arg,
 
 static ABT_unit_type unit_get_type(ABT_unit unit)
 {
-    unit_t *p_unit = (unit_t *)unit;
-    return ABTI_thread_type_get_type(p_unit->type);
+    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    return ABTI_thread_type_get_type(p_thread->type);
 }
 
 static ABT_thread unit_get_thread(ABT_unit unit)
 {
     ABT_thread h_thread;
-    unit_t *p_unit = (unit_t *)unit;
-    if (ABTI_thread_type_is_thread(p_unit->type)) {
-        h_thread = ABTI_thread_get_handle(ABTI_unit_get_thread(p_unit));
+    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    if (ABTI_thread_type_is_thread(p_thread->type)) {
+        h_thread = ABTI_thread_get_handle(ABTI_thread_get_ythread(p_thread));
     } else {
         h_thread = ABT_THREAD_NULL;
     }
@@ -458,9 +459,9 @@ static ABT_thread unit_get_thread(ABT_unit unit)
 static ABT_task unit_get_task(ABT_unit unit)
 {
     ABT_task h_task;
-    unit_t *p_unit = (unit_t *)unit;
-    if (ABTI_thread_type_is_task(p_unit->type)) {
-        h_task = ABTI_task_get_handle(p_unit);
+    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    if (ABTI_thread_type_is_task(p_thread->type)) {
+        h_task = ABTI_task_get_handle(p_thread);
     } else {
         h_task = ABT_TASK_NULL;
     }
@@ -469,33 +470,32 @@ static ABT_task unit_get_task(ABT_unit unit)
 
 static ABT_bool unit_is_in_pool(ABT_unit unit)
 {
-    unit_t *p_unit = (unit_t *)unit;
-    return ABTD_atomic_acquire_load_int(&p_unit->is_in_pool) ? ABT_TRUE
-                                                             : ABT_FALSE;
+    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    return ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) ? ABT_TRUE
+                                                               : ABT_FALSE;
 }
 
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
-    ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
-    unit_t *p_unit = &p_thread->thread;
-    p_unit->p_prev = NULL;
-    p_unit->p_next = NULL;
-    ABTD_atomic_relaxed_store_int(&p_unit->is_in_pool, 0);
-    ABTI_ASSERT(ABTI_thread_type_is_thread(p_unit->type));
+    ABTI_ythread *p_ythread = ABTI_thread_get_ptr(thread);
+    ABTI_thread *p_thread = &p_ythread->thread;
+    p_thread->p_prev = NULL;
+    p_thread->p_next = NULL;
+    ABTD_atomic_relaxed_store_int(&p_thread->is_in_pool, 0);
+    ABTI_ASSERT(ABTI_thread_type_is_thread(p_thread->type));
 
-    return (ABT_unit)p_unit;
+    return (ABT_unit)p_thread;
 }
 
 static ABT_unit unit_create_from_task(ABT_task task)
 {
-    ABTI_thread *p_task = ABTI_task_get_ptr(task);
-    unit_t *p_unit = p_task;
-    p_unit->p_prev = NULL;
-    p_unit->p_next = NULL;
-    ABTD_atomic_relaxed_store_int(&p_unit->is_in_pool, 0);
-    ABTI_ASSERT(ABTI_thread_type_is_task(p_unit->type));
+    ABTI_thread *p_thread = ABTI_task_get_ptr(task);
+    p_thread->p_prev = NULL;
+    p_thread->p_next = NULL;
+    ABTD_atomic_relaxed_store_int(&p_thread->is_in_pool, 0);
+    ABTI_ASSERT(ABTI_thread_type_is_task(p_thread->type));
 
-    return (ABT_unit)p_unit;
+    return (ABT_unit)p_thread;
 }
 
 static void unit_free(ABT_unit *unit)

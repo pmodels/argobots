@@ -110,40 +110,40 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
     ABTI_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready == ABT_FALSE) {
-        ABTI_ythread *p_current;
-        ABTI_thread *p_unit;
+        ABTI_ythread *p_ythread;
+        ABTI_thread *p_thread;
 
         if (p_local_xstream != NULL) {
-            p_unit = p_local_xstream->p_unit;
-            ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_unit->type),
+            p_thread = p_local_xstream->p_thread;
+            ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_thread->type),
                             ABT_ERR_EVENTUAL);
-            p_current = ABTI_unit_get_thread(p_unit);
+            p_ythread = ABTI_thread_get_ythread(p_thread);
         } else {
             /* external thread */
-            p_current = NULL;
-            p_unit = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
-            p_unit->type = ABTI_THREAD_TYPE_EXT;
+            p_ythread = NULL;
+            p_thread = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
+            p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */
-            ABTD_atomic_relaxed_store_int(&p_unit->state,
+            ABTD_atomic_relaxed_store_int(&p_thread->state,
                                           ABTI_THREAD_STATE_BLOCKED);
         }
 
-        p_unit->p_next = NULL;
+        p_thread->p_next = NULL;
         if (p_eventual->p_head == NULL) {
-            p_eventual->p_head = p_unit;
-            p_eventual->p_tail = p_unit;
+            p_eventual->p_head = p_thread;
+            p_eventual->p_tail = p_thread;
         } else {
-            p_eventual->p_tail->p_next = p_unit;
-            p_eventual->p_tail = p_unit;
+            p_eventual->p_tail->p_next = p_thread;
+            p_eventual->p_tail = p_thread;
         }
 
-        if (p_current) {
-            ABTI_thread_set_blocked(p_current);
+        if (p_ythread) {
+            ABTI_thread_set_blocked(p_ythread);
 
             ABTI_spinlock_release(&p_eventual->lock);
 
             /* Suspend the current ULT */
-            ABTI_thread_suspend(&p_local_xstream, p_current,
+            ABTI_thread_suspend(&p_local_xstream, p_ythread,
                                 ABT_SYNC_EVENT_TYPE_EVENTUAL,
                                 (void *)p_eventual);
 
@@ -151,10 +151,10 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
             ABTI_spinlock_release(&p_eventual->lock);
 
             /* External thread is waiting here. */
-            while (ABTD_atomic_acquire_load_int(&p_unit->state) !=
+            while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
                    ABTI_THREAD_STATE_READY)
                 ;
-            ABTU_free(p_unit);
+            ABTU_free(p_thread);
         }
     } else {
         ABTI_spinlock_release(&p_eventual->lock);
@@ -248,23 +248,23 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 
     /* Wake up all waiting ULTs */
     ABTI_thread *p_head = p_eventual->p_head;
-    ABTI_thread *p_unit = p_head;
+    ABTI_thread *p_thread = p_head;
     while (1) {
-        ABTI_thread *p_next = p_unit->p_next;
-        p_unit->p_next = NULL;
+        ABTI_thread *p_next = p_thread->p_next;
+        p_thread->p_next = NULL;
 
-        if (ABTI_thread_type_is_thread(p_unit->type)) {
-            ABTI_ythread *p_thread = ABTI_unit_get_thread(p_unit);
-            ABTI_thread_set_ready(p_local_xstream, p_thread);
+        if (ABTI_thread_type_is_thread(p_thread->type)) {
+            ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
+            ABTI_thread_set_ready(p_local_xstream, p_ythread);
         } else {
             /* When the head is an external thread */
-            ABTD_atomic_release_store_int(&p_unit->state,
+            ABTD_atomic_release_store_int(&p_thread->state,
                                           ABTI_THREAD_STATE_READY);
         }
 
         /* Next ULT */
         if (p_next != NULL) {
-            p_unit = p_next;
+            p_thread = p_next;
         } else {
             break;
         }

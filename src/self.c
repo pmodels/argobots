@@ -94,11 +94,11 @@ int ABT_self_is_primary(ABT_bool *flag)
     }
 #endif
 
-    ABTI_thread *p_unit = p_local_xstream->p_unit;
-    if (ABTI_thread_type_is_thread_main(p_unit->type)) {
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
+    if (ABTI_thread_type_is_thread_main(p_thread->type)) {
         *flag = ABT_TRUE;
     } else {
-        if (!ABTI_thread_type_is_thread(p_unit->type))
+        if (!ABTI_thread_type_is_thread(p_thread->type))
             abt_errno = ABT_ERR_INV_THREAD;
         *flag = ABT_FALSE;
     }
@@ -190,7 +190,7 @@ int ABT_self_get_last_pool_id(int *pool_id)
     }
 #endif
 
-    ABTI_thread *p_self = p_local_xstream->p_unit;
+    ABTI_thread *p_self = p_local_xstream->p_thread;
     ABTI_ASSERT(p_self->p_pool);
     *pool_id = (int)(p_self->p_pool->id);
 
@@ -227,13 +227,13 @@ int ABT_self_suspend(void)
     }
 #endif
 
-    ABTI_thread *p_self = p_local_xstream->p_unit;
+    ABTI_thread *p_self = p_local_xstream->p_thread;
     ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_self->type),
                     ABT_ERR_INV_THREAD);
-    abt_errno = ABTI_thread_set_blocked(ABTI_unit_get_thread(p_self));
+    abt_errno = ABTI_thread_set_blocked(ABTI_thread_get_ythread(p_self));
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_thread_suspend(&p_local_xstream, ABTI_unit_get_thread(p_self),
+    ABTI_thread_suspend(&p_local_xstream, ABTI_thread_get_ythread(p_self),
                         ABT_SYNC_EVENT_TYPE_USER, NULL);
 
 fn_exit:
@@ -274,7 +274,7 @@ int ABT_self_set_arg(void *arg)
     }
 #endif
 
-    p_local_xstream->p_unit->p_arg = arg;
+    p_local_xstream->p_thread->p_arg = arg;
 
 fn_exit:
     return abt_errno;
@@ -315,7 +315,7 @@ int ABT_self_get_arg(void **arg)
     }
 #endif
 
-    *arg = p_local_xstream->p_unit->p_arg;
+    *arg = p_local_xstream->p_thread->p_arg;
 
 fn_exit:
     return abt_errno;
@@ -348,8 +348,9 @@ int ABT_self_is_unnamed(ABT_bool *flag)
     }
 #endif
 
-    *flag = (p_local_xstream->p_unit->type & ABTI_THREAD_TYPE_NAMED) ? ABT_FALSE
-                                                                     : ABT_TRUE;
+    *flag = (p_local_xstream->p_thread->type & ABTI_THREAD_TYPE_NAMED)
+                ? ABT_FALSE
+                : ABT_TRUE;
 
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
 fn_exit:

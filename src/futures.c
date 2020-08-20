@@ -134,55 +134,55 @@ int ABT_future_wait(ABT_future future)
     ABTI_spinlock_acquire(&p_future->lock);
     if (ABTD_atomic_relaxed_load_uint32(&p_future->counter) <
         p_future->compartments) {
-        ABTI_ythread *p_current;
-        ABTI_thread *p_unit;
+        ABTI_ythread *p_ythread;
+        ABTI_thread *p_thread;
 
         if (p_local_xstream != NULL) {
-            p_unit = p_local_xstream->p_unit;
+            p_thread = p_local_xstream->p_thread;
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
-            if (!ABTI_thread_type_is_thread(p_unit->type)) {
+            if (!ABTI_thread_type_is_thread(p_thread->type)) {
                 abt_errno = ABT_ERR_FUTURE;
                 ABTI_spinlock_release(&p_future->lock);
                 goto fn_fail;
             }
 #endif
-            p_current = ABTI_unit_get_thread(p_unit);
+            p_ythread = ABTI_thread_get_ythread(p_thread);
         } else {
             /* external thread */
-            p_current = NULL;
-            p_unit = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
-            p_unit->type = ABTI_THREAD_TYPE_EXT;
+            p_ythread = NULL;
+            p_thread = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
+            p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */
-            ABTD_atomic_relaxed_store_int(&p_unit->state,
+            ABTD_atomic_relaxed_store_int(&p_thread->state,
                                           ABTI_THREAD_STATE_BLOCKED);
         }
 
-        p_unit->p_next = NULL;
+        p_thread->p_next = NULL;
         if (p_future->p_head == NULL) {
-            p_future->p_head = p_unit;
-            p_future->p_tail = p_unit;
+            p_future->p_head = p_thread;
+            p_future->p_tail = p_thread;
         } else {
-            p_future->p_tail->p_next = p_unit;
-            p_future->p_tail = p_unit;
+            p_future->p_tail->p_next = p_thread;
+            p_future->p_tail = p_thread;
         }
 
-        if (p_current) {
-            ABTI_thread_set_blocked(p_current);
+        if (p_ythread) {
+            ABTI_thread_set_blocked(p_ythread);
 
             ABTI_spinlock_release(&p_future->lock);
 
             /* Suspend the current ULT */
-            ABTI_thread_suspend(&p_local_xstream, p_current,
+            ABTI_thread_suspend(&p_local_xstream, p_ythread,
                                 ABT_SYNC_EVENT_TYPE_FUTURE, (void *)p_future);
 
         } else {
             ABTI_spinlock_release(&p_future->lock);
 
             /* External thread is waiting here. */
-            while (ABTD_atomic_acquire_load_int(&p_unit->state) !=
+            while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
                    ABTI_THREAD_STATE_READY)
                 ;
-            ABTU_free(p_unit);
+            ABTU_free(p_thread);
         }
     } else {
         ABTI_spinlock_release(&p_future->lock);
@@ -274,23 +274,23 @@ int ABT_future_set(ABT_future future, void *value)
 
         /* Wake up all waiting ULTs */
         ABTI_thread *p_head = p_future->p_head;
-        ABTI_thread *p_unit = p_head;
+        ABTI_thread *p_thread = p_head;
         while (1) {
-            ABTI_thread *p_next = p_unit->p_next;
-            p_unit->p_next = NULL;
+            ABTI_thread *p_next = p_thread->p_next;
+            p_thread->p_next = NULL;
 
-            if (ABTI_thread_type_is_thread(p_unit->type)) {
-                ABTI_ythread *p_thread = ABTI_unit_get_thread(p_unit);
-                ABTI_thread_set_ready(p_local_xstream, p_thread);
+            if (ABTI_thread_type_is_thread(p_thread->type)) {
+                ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
+                ABTI_thread_set_ready(p_local_xstream, p_ythread);
             } else {
                 /* When the head is an external thread */
-                ABTD_atomic_release_store_int(&p_unit->state,
+                ABTD_atomic_release_store_int(&p_thread->state,
                                               ABTI_THREAD_STATE_READY);
             }
 
             /* Next ULT */
             if (p_next != NULL) {
-                p_unit = p_next;
+                p_thread = p_next;
             } else {
                 break;
             }

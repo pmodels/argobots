@@ -287,7 +287,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                 *(void **)val = NULL;
             } else if (ABTI_thread_type_is_thread(p_tctx->p_caller->type)) {
                 *(ABT_thread *)val = ABTI_thread_get_handle(
-                    ABTI_unit_get_thread(p_tctx->p_caller));
+                    ABTI_thread_get_ythread(p_tctx->p_caller));
             } else {
                 *(ABT_task *)val = ABTI_task_get_handle(p_tctx->p_caller);
             }

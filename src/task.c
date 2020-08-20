@@ -205,11 +205,12 @@ int ABT_task_free(ABT_task *task)
         }
 #endif
         ABTI_thread_yield(&p_local_xstream,
-                          ABTI_unit_get_thread(p_local_xstream->p_unit),
+                          ABTI_thread_get_ythread(p_local_xstream->p_thread),
                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
     }
     ABTI_tool_event_task_join(p_local_xstream, p_task,
-                              p_local_xstream ? p_local_xstream->p_unit : NULL);
+                              p_local_xstream ? p_local_xstream->p_thread
+                                              : NULL);
     /* Free the ABTI_thread structure */
     ABTI_task_free(p_local_xstream, p_task);
 
@@ -254,11 +255,12 @@ int ABT_task_join(ABT_task task)
         }
 #endif
         ABTI_thread_yield(&p_local_xstream,
-                          ABTI_unit_get_thread(p_local_xstream->p_unit),
+                          ABTI_thread_get_ythread(p_local_xstream->p_thread),
                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
     }
     ABTI_tool_event_task_join(p_local_xstream, p_task,
-                              p_local_xstream ? p_local_xstream->p_unit : NULL);
+                              p_local_xstream ? p_local_xstream->p_thread
+                                              : NULL);
 
 fn_exit:
     return abt_errno;
@@ -332,9 +334,9 @@ int ABT_task_self(ABT_task *task)
     }
 #endif
 
-    ABTI_thread *p_unit = p_local_xstream->p_unit;
-    if (ABTI_thread_type_is_task(p_unit->type)) {
-        *task = ABTI_task_get_handle(p_unit);
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
+    if (ABTI_thread_type_is_task(p_thread->type)) {
+        *task = ABTI_task_get_handle(p_thread);
     } else {
         abt_errno = ABT_ERR_INV_TASK;
         *task = ABT_TASK_NULL;
@@ -375,9 +377,9 @@ int ABT_task_self_id(ABT_unit_id *id)
     }
 #endif
 
-    ABTI_thread *p_unit = p_local_xstream->p_unit;
-    if (ABTI_thread_type_is_task(p_unit->type)) {
-        *id = ABTI_task_get_id(p_unit);
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
+    if (ABTI_thread_type_is_task(p_thread->type)) {
+        *id = ABTI_task_get_id(p_thread);
     } else {
         abt_errno = ABT_ERR_INV_TASK;
     }
@@ -796,7 +798,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newtask->unit = p_pool->u_create_from_task(h_newtask);
 
     ABTI_tool_event_task_create(p_local_xstream, p_newtask,
-                                p_local_xstream ? p_local_xstream->p_unit
+                                p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL,
                                 p_pool);
     LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_task_get_id(p_newtask));
@@ -855,7 +857,7 @@ static int ABTI_task_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     }
 
     ABTI_tool_event_task_revive(p_local_xstream, p_task,
-                                p_local_xstream ? p_local_xstream->p_unit
+                                p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL,
                                 p_pool);
     LOG_DEBUG("[T%" PRIu64 "] revived\n", ABTI_task_get_id(p_task));
@@ -880,7 +882,8 @@ fn_fail:
 void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_task)
 {
     ABTI_tool_event_task_free(p_local_xstream, p_task,
-                              p_local_xstream ? p_local_xstream->p_unit : NULL);
+                              p_local_xstream ? p_local_xstream->p_thread
+                                              : NULL);
     LOG_DEBUG("[T%" PRIu64 "] freed\n", ABTI_task_get_id(p_task));
 
     /* Free the unit */

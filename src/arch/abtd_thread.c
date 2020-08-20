@@ -14,9 +14,9 @@ void ABTD_thread_func_wrapper(void *p_arg)
     ABTI_ythread *p_thread = ABTI_thread_context_get_thread(p_ctx);
     ABTI_xstream *p_local_xstream = p_thread->thread.p_last_xstream;
     ABTI_tool_event_thread_run(p_local_xstream, p_thread,
-                               p_local_xstream->p_unit,
+                               p_local_xstream->p_thread,
                                p_thread->thread.p_parent);
-    p_local_xstream->p_unit = &p_thread->thread;
+    p_local_xstream->p_thread = &p_thread->thread;
 
     p_thread->thread.f_thread(p_thread->thread.p_arg);
 
@@ -97,9 +97,9 @@ void ABTD_thread_terminate_no_arg()
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     /* This function is called by `return` in ABTD_thread_context_make_and_call,
      * so it cannot take the argument. We get the thread descriptor from TLS. */
-    ABTI_thread *p_unit = p_local_xstream->p_unit;
-    ABTI_ASSERT(ABTI_thread_type_is_thread(p_unit->type));
-    ABTD_thread_terminate(p_local_xstream, ABTI_unit_get_thread(p_unit));
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
+    ABTI_ASSERT(ABTI_thread_type_is_thread(p_thread->type));
+    ABTD_thread_terminate(p_local_xstream, ABTI_thread_get_ythread(p_thread));
 }
 #endif
 

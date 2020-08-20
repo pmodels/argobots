@@ -21,7 +21,7 @@ ABTI_self_get_native_thread_id(ABTI_xstream *p_local_xstream)
 }
 
 static inline ABTI_thread_id
-ABTI_self_get_unit_id(ABTI_xstream *p_local_xstream)
+ABTI_self_get_thread_id(ABTI_xstream *p_local_xstream)
 {
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
@@ -31,7 +31,7 @@ ABTI_self_get_unit_id(ABTI_xstream *p_local_xstream)
         return (ABTI_thread_id)ABTI_local_get_local_ptr();
     }
 #endif
-    return (ABTI_thread_id)p_local_xstream->p_unit;
+    return (ABTI_thread_id)p_local_xstream->p_thread;
 }
 
 static inline ABTI_thread_type ABTI_self_get_type(ABTI_xstream *p_local_xstream)
@@ -44,8 +44,8 @@ static inline ABTI_thread_type ABTI_self_get_type(ABTI_xstream *p_local_xstream)
         return ABTI_THREAD_TYPE_EXT;
     }
 #endif
-    if (p_local_xstream->p_unit) {
-        return p_local_xstream->p_unit->type;
+    if (p_local_xstream->p_thread) {
+        return p_local_xstream->p_thread->type;
     } else {
         /* Since p_local_xstream->p_thread can return NULL during executing
          * ABTI_init(), it should always be safe to say that the type of caller

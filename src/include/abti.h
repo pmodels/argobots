@@ -142,7 +142,7 @@ typedef struct ABTI_tool_context ABTI_tool_context;
  * execution streams and external threads */
 struct ABTI_native_thread_id_opaque;
 typedef struct ABTI_native_thread_id_opaque *ABTI_native_thread_id;
-/* ID associated with work unit (i.e., ULTs, tasklets, and external threads) */
+/* ID associated with thread (i.e., ULTs, tasklets, and external threads) */
 struct ABTI_thread_id_opaque;
 typedef struct ABTI_thread_id_opaque *ABTI_thread_id;
 
@@ -253,7 +253,7 @@ struct ABTI_xstream {
     ABTD_xstream_context ctx; /* ES context */
 
     ABTU_align_member_var(ABT_CONFIG_STATIC_CACHELINE_SIZE)
-        ABTI_thread *p_unit; /* Current running ULT/tasklet */
+        ABTI_thread *p_thread; /* Current running ULT/tasklet */
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
     ABTI_mem_pool_local_pool mem_pool_stack;
@@ -267,8 +267,8 @@ struct ABTI_sched {
     ABTI_sched_kind kind;       /* Kind of the scheduler  */
     ABT_sched_type type;        /* Can yield or not (ULT or task) */
     ABTD_atomic_uint32 request; /* Request */
-    ABT_pool *pools;            /* Work unit pools */
-    int num_pools;              /* Number of work unit pools */
+    ABT_pool *pools;            /* Thread pools */
+    int num_pools;              /* Number of thread pools */
     ABTI_ythread *p_thread;     /* Associated ULT */
     void *data;                 /* Data for a specific scheduler */
 
@@ -324,7 +324,7 @@ struct ABTI_thread {
     ABTI_thread *p_prev;
     ABTI_thread *p_next;
     ABTD_atomic_int is_in_pool;   /* Whether this thread is in a pool. */
-    ABTI_thread_type type;        /* Unit type */
+    ABTI_thread_type type;        /* Thread type */
     ABT_unit unit;                /* Unit enclosing this thread */
     ABTI_xstream *p_last_xstream; /* Last ES where it ran */
     ABTI_thread *p_parent;        /* Parent thread */
@@ -333,7 +333,7 @@ struct ABTI_thread {
     ABTD_atomic_int state;        /* State (ABTI_thread_state) */
     ABTD_atomic_uint32 request;   /* Request */
     ABTI_pool *p_pool;            /* Associated pool */
-    ABTD_atomic_ptr p_keytable;   /* Work unit-specific data (ABTI_ktable *) */
+    ABTD_atomic_ptr p_keytable;   /* Thread-specific data (ABTI_ktable *) */
     ABT_unit_id id;               /* ID */
 };
 
@@ -437,7 +437,7 @@ struct ABTI_tool_context {
     ABTI_thread *p_caller;
     ABTI_pool *p_pool;
     ABTI_thread
-        *p_parent; /* Parent of the target unit.  Used to get the depth */
+        *p_parent; /* Parent of the target thread.  Used to get the depth */
     ABT_sync_event_type sync_event_type;
     void *p_sync_object; /* ABTI type */
 };
@@ -537,7 +537,7 @@ void ABTI_pool_reset_id(void);
 /* Work Unit */
 void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 
-/* User-level Thread (ULT)  */
+/* Yieldable threads */
 int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
                                 ABTI_ythread *p_thread, ABTI_pool *p_pool);
 ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_xstream *p_local_xstream,
@@ -570,12 +570,12 @@ ABT_unit_id ABTI_thread_self_id(ABTI_xstream *p_local_xstream);
 int ABTI_thread_get_xstream_rank(ABTI_ythread *p_thread);
 int ABTI_thread_self_xstream_rank(ABTI_xstream *p_local_xstream);
 
-/* ULT Attributes */
+/* Thread attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);
 void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf);
 ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr);
 
-/* ULT hash table */
+/* Thread hash table */
 ABTI_thread_htable *ABTI_thread_htable_create(uint32_t num_rows);
 void ABTI_thread_htable_free(ABTI_thread_htable *p_htable);
 void ABTI_thread_htable_push(ABTI_thread_htable *p_htable, int idx,
@@ -597,7 +597,7 @@ ABT_bool ABTI_thread_htable_switch_low(ABTI_xstream **pp_local_xstream,
                                        ABT_sync_event_type sync_event_type,
                                        void *p_sync);
 
-/* Tasklet */
+/* Tasklet-type threads */
 void ABTI_task_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_task);
 void ABTI_task_print(ABTI_thread *p_task, FILE *p_os, int indent);
 void ABTI_task_reset_id(void);

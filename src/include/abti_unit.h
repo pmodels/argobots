@@ -96,9 +96,10 @@ static inline ABT_unit_type ABTI_thread_type_get_type(ABTI_thread_type type)
     }
 }
 
-static inline ABTI_ythread *ABTI_unit_get_thread(ABTI_thread *p_unit)
+static inline ABTI_ythread *ABTI_thread_get_ythread(ABTI_thread *p_thread)
 {
-    return (ABTI_ythread *)(((char *)p_unit) - offsetof(ABTI_ythread, thread));
+    return (ABTI_ythread *)(((char *)p_thread) -
+                            offsetof(ABTI_ythread, thread));
 }
 
 #endif /* ABTI_UNIT_H_INCLUDED */

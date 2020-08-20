@@ -6,7 +6,7 @@
 #ifndef ABTI_KEY_H_INCLUDED
 #define ABTI_KEY_H_INCLUDED
 
-/* Inlined functions for Work unit-specific data key */
+/* Inlined functions for thread-specific data key */
 
 static inline ABTI_key *ABTI_key_get_ptr(ABT_key key)
 {
