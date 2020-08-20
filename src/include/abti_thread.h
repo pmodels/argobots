@@ -56,23 +56,6 @@ ABTI_thread_state_get_thread_state(ABTI_thread_state state)
     }
 }
 
-static inline ABT_task_state
-ABTI_thread_state_get_task_state(ABTI_thread_state state)
-{
-    switch (state) {
-        case ABTI_THREAD_STATE_READY:
-            return ABT_TASK_STATE_READY;
-        case ABTI_THREAD_STATE_RUNNING:
-            return ABT_TASK_STATE_RUNNING;
-        case ABTI_THREAD_STATE_TERMINATED:
-            return ABT_TASK_STATE_TERMINATED;
-        case ABTI_THREAD_STATE_BLOCKED:
-        default:
-            ABTI_ASSERT(0);
-            ABTU_unreachable();
-    }
-}
-
 static inline ABT_unit_type ABTI_thread_type_get_type(ABTI_thread_type type)
 {
     if (type & ABTI_THREAD_TYPE_YIELDABLE) {
