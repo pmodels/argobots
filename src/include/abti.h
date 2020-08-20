@@ -540,7 +540,7 @@ int ABTI_ythread_create_main_sched(ABTI_xstream *p_local_xstream,
                                    ABTI_sched *p_sched);
 int ABTI_ythread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                               ABTI_sched *p_sched);
-void ABTI_ythread_free(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread);
+void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
 void ABTI_ythread_free_main(ABTI_xstream *p_local_xstream,
                             ABTI_ythread *p_ythread);
 void ABTI_ythread_free_main_sched(ABTI_xstream *p_local_xstream,

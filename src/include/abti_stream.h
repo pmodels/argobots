@@ -66,7 +66,7 @@ static inline void ABTI_xstream_terminate_ythread(ABTI_xstream *p_local_xstream,
     if (!(p_ythread->thread.type & ABTI_THREAD_TYPE_NAMED)) {
         ABTD_atomic_release_store_int(&p_ythread->thread.state,
                                       ABTI_THREAD_STATE_TERMINATED);
-        ABTI_ythread_free(p_local_xstream, p_ythread);
+        ABTI_thread_free(p_local_xstream, &p_ythread->thread);
     } else {
         /* NOTE: We set the ULT's state as TERMINATED after checking refcount
          * because the ULT can be freed on a different ES.  In other words, we

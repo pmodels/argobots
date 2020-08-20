@@ -318,26 +318,25 @@ int ABT_thread_free(ABT_thread *thread)
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABT_thread h_thread = *thread;
 
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(h_thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(h_thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* We first need to check whether p_local_xstream is NULL because external
      * threads might call this routine. */
     ABTI_CHECK_TRUE_MSG(p_local_xstream == NULL ||
-                            &p_ythread->thread != p_local_xstream->p_thread,
+                            p_thread != p_local_xstream->p_thread,
                         ABT_ERR_INV_THREAD,
                         "The current thread cannot be freed.");
 
-    ABTI_CHECK_TRUE_MSG(!(p_ythread->thread.type &
-                          (ABTI_THREAD_TYPE_MAIN |
-                           ABTI_THREAD_TYPE_MAIN_SCHED)),
+    ABTI_CHECK_TRUE_MSG(!(p_thread->type & (ABTI_THREAD_TYPE_MAIN |
+                                            ABTI_THREAD_TYPE_MAIN_SCHED)),
                         ABT_ERR_INV_THREAD,
                         "The main thread cannot be freed explicitly.");
 
     /* Wait until the thread terminates */
-    ABTI_thread_join(&p_local_xstream, &p_ythread->thread);
-    /* Free the ABTI_ythread structure */
-    ABTI_ythread_free(p_local_xstream, p_ythread);
+    ABTI_thread_join(&p_local_xstream, p_thread);
+    /* Free the ABTI_thread structure */
+    ABTI_thread_free(p_local_xstream, p_thread);
 
     /* Return value */
     *thread = ABT_THREAD_NULL;
@@ -369,9 +368,9 @@ int ABT_thread_free_many(int num, ABT_thread *thread_list)
     int i;
 
     for (i = 0; i < num; i++) {
-        ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread_list[i]);
-        ABTI_thread_join(&p_local_xstream, &p_ythread->thread);
-        ABTI_ythread_free(p_local_xstream, p_ythread);
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(thread_list[i]);
+        ABTI_thread_join(&p_local_xstream, p_thread);
+        ABTI_thread_free(p_local_xstream, p_thread);
     }
     return ABT_SUCCESS;
 }
@@ -1694,7 +1693,7 @@ ABTI_ythread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
             } else if (thread_type & ABTI_THREAD_TYPE_MAIN_SCHED) {
                 ABTI_ythread_free_main_sched(p_local_xstream, p_newthread);
             } else {
-                ABTI_ythread_free(p_local_xstream, p_newthread);
+                ABTI_thread_free(p_local_xstream, &p_newthread->thread);
             }
             goto fn_fail;
         }
@@ -1921,31 +1920,34 @@ fn_fail:
     goto fn_exit;
 }
 
-void ABTI_ythread_free(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
+void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread)
 {
-    LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n",
-              ABTI_thread_get_id(&p_ythread->thread),
-              p_ythread->thread.p_last_xstream->rank);
+    LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
+              p_thread->p_last_xstream ? p_thread->p_last_xstream->rank : -1);
 
     /* Invoke a thread freeing event. */
-    ABTI_tool_event_thread_free(p_local_xstream, &p_ythread->thread,
+    ABTI_tool_event_thread_free(p_local_xstream, p_thread,
                                 p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL);
 
     /* Free the unit */
-    p_ythread->thread.p_pool->u_free(&p_ythread->thread.unit);
+    p_thread->p_pool->u_free(&p_thread->unit);
 
     /* Free the key-value table */
-    ABTI_ktable *p_ktable =
-        ABTD_atomic_acquire_load_ptr(&p_ythread->thread.p_keytable);
+    ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable);
     /* No parallel access to TLS is allowed. */
     ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
     if (p_ktable) {
         ABTI_ktable_free(p_local_xstream, p_ktable);
     }
 
-    /* Free ABTI_ythread (stack will also be freed) */
-    ABTI_mem_free_ythread(p_local_xstream, p_ythread);
+    /* Free ABTI_thread (stack will also be freed) */
+    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+    if (p_ythread) {
+        ABTI_mem_free_ythread(p_local_xstream, p_ythread);
+    } else {
+        ABTI_mem_free_task(p_local_xstream, p_thread);
+    }
 }
 
 void ABTI_ythread_free_main(ABTI_xstream *p_local_xstream,
