@@ -1927,9 +1927,6 @@ static inline void ABTI_thread_free_internal(ABTI_xstream *p_local_xstream,
     /* Free the unit */
     p_thread->thread.p_pool->u_free(&p_thread->thread.unit);
 
-    /* Free the context */
-    ABTD_thread_context_free(&p_thread->ctx);
-
     /* Free the key-value table */
     ABTI_ktable *p_ktable =
         ABTD_atomic_acquire_load_ptr(&p_thread->thread.p_keytable);
@@ -1992,9 +1989,6 @@ void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
     ABTI_tool_event_thread_free(p_local_xstream, p_thread,
                                 p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL);
-
-    /* Free the context */
-    ABTD_thread_context_free(&p_thread->ctx);
 
     /* Free the key-value table */
     ABTI_ktable *p_ktable =

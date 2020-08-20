@@ -77,9 +77,6 @@ static inline int ABTD_thread_context_arm_thread(size_t stacksize,
 }
 #endif
 
-/* Currently, nothing to do */
-#define ABTD_thread_context_free(p_ctx)
-
 static inline void ABTD_thread_context_switch(ABTD_thread_context *p_old,
                                               ABTD_thread_context *p_new)
 {
