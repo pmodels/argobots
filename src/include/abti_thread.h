@@ -56,8 +56,8 @@ static inline ABT_unit_type ABTI_thread_type_get_type(ABTI_thread_type type)
 
 static inline ABTI_ythread *ABTI_thread_get_ythread(ABTI_thread *p_thread)
 {
-    return (ABTI_ythread *)(((char *)p_thread) -
-                            offsetof(ABTI_ythread, thread));
+    ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
+    return (ABTI_ythread *)p_thread;
 }
 
 static inline ABTI_ythread *
