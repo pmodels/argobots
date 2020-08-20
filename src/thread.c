@@ -15,8 +15,8 @@ ABTI_ythread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
                               void (*thread_func)(void *), void *arg,
                               ABTI_thread *p_thread);
-static inline int ABTI_ythread_join(ABTI_xstream **pp_local_xstream,
-                                    ABTI_ythread *p_ythread);
+static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
+                                   ABTI_thread *p_thread);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 static int ABTI_thread_migrate_to_xstream(ABTI_xstream **pp_local_xstream,
                                           ABTI_thread *p_thread,
@@ -335,7 +335,7 @@ int ABT_thread_free(ABT_thread *thread)
                         "The main thread cannot be freed explicitly.");
 
     /* Wait until the thread terminates */
-    ABTI_ythread_join(&p_local_xstream, p_ythread);
+    ABTI_thread_join(&p_local_xstream, &p_ythread->thread);
     /* Free the ABTI_ythread structure */
     ABTI_ythread_free(p_local_xstream, p_ythread);
 
@@ -370,7 +370,7 @@ int ABT_thread_free_many(int num, ABT_thread *thread_list)
 
     for (i = 0; i < num; i++) {
         ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread_list[i]);
-        ABTI_ythread_join(&p_local_xstream, p_ythread);
+        ABTI_thread_join(&p_local_xstream, &p_ythread->thread);
         ABTI_ythread_free(p_local_xstream, p_ythread);
     }
     return ABT_SUCCESS;
@@ -390,9 +390,9 @@ int ABT_thread_join(ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
-    abt_errno = ABTI_ythread_join(&p_local_xstream, p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    abt_errno = ABTI_thread_join(&p_local_xstream, p_thread);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -421,8 +421,8 @@ int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     int i;
     for (i = 0; i < num_threads; i++) {
-        abt_errno = ABTI_ythread_join(&p_local_xstream,
-                                      ABTI_ythread_get_ptr(thread_list[i]));
+        abt_errno = ABTI_thread_join(&p_local_xstream,
+                                     ABTI_thread_get_ptr(thread_list[i]));
         ABTI_CHECK_ERROR(abt_errno);
     }
 
@@ -2122,33 +2122,36 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline int ABTI_ythread_join(ABTI_xstream **pp_local_xstream,
-                                    ABTI_ythread *p_ythread)
+static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
+                                   ABTI_thread *p_thread)
 {
     int abt_errno = ABT_SUCCESS;
 
-    if (ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
+    if (ABTD_atomic_acquire_load_int(&p_thread->state) ==
         ABTI_THREAD_STATE_TERMINATED) {
         goto fn_exit;
     }
 
-    ABTI_CHECK_TRUE_MSG(!(p_ythread->thread.type &
-                          (ABTI_THREAD_TYPE_MAIN |
-                           ABTI_THREAD_TYPE_MAIN_SCHED)),
+    ABTI_CHECK_TRUE_MSG(!(p_thread->type & (ABTI_THREAD_TYPE_MAIN |
+                                            ABTI_THREAD_TYPE_MAIN_SCHED)),
                         ABT_ERR_INV_THREAD, "The main ULT cannot be joined.");
 
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    ABTI_thread_type type = ABTI_self_get_type(p_local_xstream);
-    if (!(type & ABTI_THREAD_TYPE_YIELDABLE))
+    if (!p_local_xstream)
         goto busywait_based;
 #endif
 
     ABTI_ythread *p_self;
     ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_self,
                          ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE_MSG(p_ythread != p_self, ABT_ERR_INV_THREAD,
+    ABTI_CHECK_TRUE_MSG(p_thread != &p_self->thread, ABT_ERR_INV_THREAD,
                         "The target ULT should be different.");
+
+    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+    if (!p_ythread)
+        goto yield_based_task;
+
     ABT_pool_access access = p_self->thread.p_pool->access;
 
     if ((p_self->thread.p_pool == p_ythread->thread.p_pool) &&
@@ -2273,17 +2276,26 @@ yield_based:
     }
     goto fn_exit;
 
+yield_based_task:
+    while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
+           ABTI_THREAD_STATE_TERMINATED) {
+        ABTI_ythread_yield(pp_local_xstream, p_self,
+                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_thread);
+        p_local_xstream = *pp_local_xstream;
+    }
+    goto fn_exit;
+
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
 busywait_based:
 #endif
-    while (ABTD_atomic_acquire_load_int(&p_ythread->thread.state) !=
+    while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
            ABTI_THREAD_STATE_TERMINATED) {
         ABTD_atomic_pause();
     }
 
 fn_exit:
     if (abt_errno == ABT_SUCCESS) {
-        ABTI_tool_event_thread_join(*pp_local_xstream, &p_ythread->thread,
+        ABTI_tool_event_thread_join(*pp_local_xstream, p_thread,
                                     *pp_local_xstream
                                         ? (*pp_local_xstream)->p_thread
                                         : NULL);
