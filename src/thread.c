@@ -919,13 +919,13 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    abt_errno = ABTI_thread_migrate_to_xstream(&p_local_xstream,
-                                               &p_ythread->thread, p_xstream);
+    abt_errno =
+        ABTI_thread_migrate_to_xstream(&p_local_xstream, p_thread, p_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -966,26 +966,25 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* checking for cases when migration is not allowed */
-    ABTI_CHECK_TRUE(!(p_ythread->thread.type &
+    ABTI_CHECK_TRUE(!(p_thread->type &
                       (ABTI_THREAD_TYPE_MAIN | ABTI_THREAD_TYPE_MAIN_SCHED)),
                     ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) !=
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
                         ABTI_THREAD_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
     /* Find a pool */
     ABTI_pool *p_pool;
-    ABTI_sched_get_migration_pool(p_sched, p_ythread->thread.p_pool, &p_pool);
+    ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_thread_migrate_to_pool(&p_local_xstream,
-                                            &p_ythread->thread, p_pool);
+    abt_errno = ABTI_thread_migrate_to_pool(&p_local_xstream, p_thread, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTI_pool_inc_num_migrations(p_pool);
@@ -1025,13 +1024,12 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     int abt_errno;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_thread_migrate_to_pool(&p_local_xstream,
-                                            &p_ythread->thread, p_pool);
+    abt_errno = ABTI_thread_migrate_to_pool(&p_local_xstream, p_thread, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTI_pool_inc_num_migrations(p_pool);
@@ -1076,8 +1074,8 @@ int ABT_thread_migrate(ABT_thread thread)
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_xstream *p_xstream;
 
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     ABTI_xstream **p_xstreams = gp_ABTI_global->p_xstreams;
 
@@ -1085,8 +1083,7 @@ int ABT_thread_migrate(ABT_thread thread)
     /* FIXME: Currently, the target xstream is randomly chosen. We need a
      * better selection strategy. */
     /* TODO: handle better when no pool accepts migration */
-    /* TODO: choose a pool also when (p_ythread->thread.p_pool->consumer ==
-     * NULL) */
+    /* TODO: choose a pool also when (p_thread->p_pool->consumer == NULL) */
     while (1) {
         /* Only one ES */
         if (gp_ABTI_global->num_xstreams == 1) {
@@ -1095,12 +1092,11 @@ int ABT_thread_migrate(ABT_thread thread)
         }
 
         p_xstream = p_xstreams[rand() % gp_ABTI_global->num_xstreams];
-        if (p_xstream && p_xstream != p_ythread->thread.p_last_xstream) {
+        if (p_xstream && p_xstream != p_thread->p_last_xstream) {
             if (ABTD_atomic_acquire_load_int(&p_xstream->state) ==
                 ABT_XSTREAM_STATE_RUNNING) {
                 abt_errno = ABTI_thread_migrate_to_xstream(&p_local_xstream,
-                                                           &p_ythread->thread,
-                                                           p_xstream);
+                                                           p_thread, p_xstream);
                 if (abt_errno != ABT_ERR_INV_XSTREAM &&
                     abt_errno != ABT_ERR_MIGRATION_TARGET) {
                     ABTI_CHECK_ERROR(abt_errno);
