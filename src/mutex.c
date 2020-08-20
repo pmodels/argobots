@@ -577,18 +577,18 @@ handover:
     ABTI_pool_dec_num_blocked(p_next->thread.p_pool);
     ABTD_atomic_release_store_int(&p_next->thread.state,
                                   ABTI_THREAD_STATE_RUNNING);
-    ABTI_tool_event_thread_resume(p_local_xstream, p_next, &p_thread->thread);
+    ABTI_tool_event_ythread_resume(p_local_xstream, p_next, &p_thread->thread);
     /* This works as a "yield" for this thread. */
-    ABTI_tool_event_thread_yield(p_local_xstream, p_thread,
-                                 p_thread->thread.p_parent,
-                                 ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
+    ABTI_tool_event_ythread_yield(p_local_xstream, p_thread,
+                                  p_thread->thread.p_parent,
+                                  ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
     ABTI_ythread *p_prev =
         ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_thread,
                                               p_next);
     /* Invoke an event of thread resume and run. */
     p_local_xstream = *pp_local_xstream;
-    ABTI_tool_event_thread_run(p_local_xstream, p_thread, &p_prev->thread,
-                               p_thread->thread.p_parent);
+    ABTI_tool_event_thread_run(p_local_xstream, &p_thread->thread,
+                               &p_prev->thread, p_thread->thread.p_parent);
 #endif
 
     return abt_errno;

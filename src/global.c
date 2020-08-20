@@ -69,13 +69,10 @@ int ABT_init(int argc, char **argv)
     ABTI_spinlock_clear(&gp_ABTI_global->tool_writer_lock);
     gp_ABTI_global->tool_thread_cb_f = NULL;
     gp_ABTI_global->tool_thread_user_arg = NULL;
-    ABTD_atomic_relaxed_store_uint64(&gp_ABTI_global
-                                          ->tool_thread_event_mask_tagged,
-                                     0);
     gp_ABTI_global->tool_task_cb_f = NULL;
     gp_ABTI_global->tool_task_user_arg = NULL;
     ABTD_atomic_relaxed_store_uint64(&gp_ABTI_global
-                                          ->tool_task_event_mask_tagged,
+                                          ->tool_thread_event_mask_tagged,
                                      0);
 #endif
 

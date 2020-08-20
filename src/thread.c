@@ -788,9 +788,9 @@ int ABT_thread_yield_to(ABT_thread thread)
                                   ABTI_THREAD_STATE_READY);
 
     /* This operation is corresponding to yield */
-    ABTI_tool_event_thread_yield(p_local_xstream, p_cur_thread,
-                                 p_cur_thread->thread.p_parent,
-                                 ABT_SYNC_EVENT_TYPE_USER, NULL);
+    ABTI_tool_event_ythread_yield(p_local_xstream, p_cur_thread,
+                                  p_cur_thread->thread.p_parent,
+                                  ABT_SYNC_EVENT_TYPE_USER, NULL);
 
     /* Add the current thread to the pool again. */
     ABTI_POOL_PUSH(p_cur_thread->thread.p_pool, p_cur_thread->thread.unit,
@@ -809,8 +809,8 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_ythread *p_prev =
         ABTI_thread_context_switch_to_sibling(&p_local_xstream, p_cur_thread,
                                               p_tar_thread);
-    ABTI_tool_event_thread_run(p_local_xstream, p_cur_thread, &p_prev->thread,
-                               p_cur_thread->thread.p_parent);
+    ABTI_tool_event_thread_run(p_local_xstream, &p_cur_thread->thread,
+                               &p_prev->thread, p_cur_thread->thread.p_parent);
 
 fn_exit:
     return abt_errno;
@@ -1675,7 +1675,7 @@ ABTI_thread_create_internal(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
 #endif
 
     /* Invoke a thread creation event. */
-    ABTI_tool_event_thread_create(p_local_xstream, p_newthread,
+    ABTI_tool_event_thread_create(p_local_xstream, &p_newthread->thread,
                                   p_local_xstream ? p_local_xstream->p_thread
                                                   : NULL,
                                   push_pool ? p_pool : NULL);
@@ -1926,7 +1926,7 @@ void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread)
               p_thread->thread.p_last_xstream->rank);
 
     /* Invoke a thread freeing event. */
-    ABTI_tool_event_thread_free(p_local_xstream, p_thread,
+    ABTI_tool_event_thread_free(p_local_xstream, &p_thread->thread,
                                 p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL);
 
@@ -1954,7 +1954,7 @@ void ABTI_thread_free_main(ABTI_xstream *p_local_xstream,
               p_thread->thread.p_last_xstream->rank);
 
     /* Invoke a thread freeing event. */
-    ABTI_tool_event_thread_free(p_local_xstream, p_thread,
+    ABTI_tool_event_thread_free(p_local_xstream, &p_thread->thread,
                                 p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL);
 
@@ -1978,7 +1978,7 @@ void ABTI_thread_free_main_sched(ABTI_xstream *p_local_xstream,
               p_local_xstream ? p_local_xstream->rank : -1);
 
     /* Invoke a thread freeing event. */
-    ABTI_tool_event_thread_free(p_local_xstream, p_thread,
+    ABTI_tool_event_thread_free(p_local_xstream, &p_thread->thread,
                                 p_local_xstream ? p_local_xstream->p_thread
                                                 : NULL);
 
@@ -2067,9 +2067,9 @@ int ABTI_thread_set_ready(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread)
               ABTI_thread_get_id(&p_thread->thread),
               p_thread->thread.p_last_xstream->rank);
 
-    ABTI_tool_event_thread_resume(p_local_xstream, p_thread,
-                                  p_local_xstream ? p_local_xstream->p_thread
-                                                  : NULL);
+    ABTI_tool_event_ythread_resume(p_local_xstream, p_thread,
+                                   p_local_xstream ? p_local_xstream->p_thread
+                                                   : NULL);
     /* p_thread->thread.p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
      * num_blocked consistent. Otherwise, other threads might pop p_thread
      * that has been pushed in ABTI_POOL_ADD_THREAD and change
@@ -2300,7 +2300,7 @@ static int ABTI_thread_revive(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     }
 
     /* Invoke a thread revive event. */
-    ABTI_tool_event_thread_revive(p_local_xstream, p_thread,
+    ABTI_tool_event_thread_revive(p_local_xstream, &p_thread->thread,
                                   p_local_xstream ? p_local_xstream->p_thread
                                                   : NULL,
                                   p_pool);
@@ -2369,10 +2369,10 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
         }
 
         /* This is corresponding to suspension. */
-        ABTI_tool_event_thread_suspend(p_local_xstream, p_self,
-                                       p_self->thread.p_parent,
-                                       ABT_SYNC_EVENT_TYPE_THREAD_JOIN,
-                                       (void *)p_thread);
+        ABTI_tool_event_ythread_suspend(p_local_xstream, p_self,
+                                        p_self->thread.p_parent,
+                                        ABT_SYNC_EVENT_TYPE_THREAD_JOIN,
+                                        (void *)p_thread);
 
         /* Increase the number of blocked units.  Be sure to execute
          * ABTI_pool_inc_num_blocked before ABTI_POOL_REMOVE in order not to
@@ -2408,8 +2408,8 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
             ABTI_thread_context_switch_to_sibling(pp_local_xstream, p_self,
                                                   p_thread);
         p_local_xstream = *pp_local_xstream;
-        ABTI_tool_event_thread_run(p_local_xstream, p_self, &p_prev->thread,
-                                   p_self->thread.p_parent);
+        ABTI_tool_event_thread_run(p_local_xstream, &p_self->thread,
+                                   &p_prev->thread, p_self->thread.p_parent);
 
     } else if ((p_self->thread.p_pool != p_thread->thread.p_pool) &&
                (access == ABT_POOL_ACCESS_PRIV ||
@@ -2483,7 +2483,7 @@ busywait_based:
 
 fn_exit:
     if (abt_errno == ABT_SUCCESS) {
-        ABTI_tool_event_thread_join(*pp_local_xstream, p_thread,
+        ABTI_tool_event_thread_join(*pp_local_xstream, &p_thread->thread,
                                     *pp_local_xstream
                                         ? (*pp_local_xstream)->p_thread
                                         : NULL);

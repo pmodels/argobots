@@ -81,7 +81,8 @@ ABTI_tool_event_thread_update_callback(ABT_tool_thread_callback_fn cb_func,
     uint64_t new_tag =
         (current + ABTI_TOOL_EVENT_TAG_INC) & ABTI_TOOL_EVENT_TAG_MASK;
     uint64_t new_mask =
-        new_tag | ((event_mask_thread & ~ABTI_TOOL_EVENT_TAG_MASK) &
+        new_tag | (((event_mask_thread & ABT_TOOL_EVENT_THREAD_ALL) |
+                    (current & ABT_TOOL_EVENT_TASK_ALL)) &
                    ~ABTI_TOOL_EVENT_TAG_DIRTY_BIT);
     uint64_t dirty_mask = ABTI_TOOL_EVENT_TAG_DIRTY_BIT | new_mask;
 
@@ -105,20 +106,21 @@ ABTI_tool_event_task_update_callback(ABT_tool_task_callback_fn cb_func,
 
     /* This following writing process is needed to avoid data race between a
      * reader and a writer. */
-    uint64_t current =
-        ABTD_atomic_acquire_load_uint64(&p_global->tool_task_event_mask_tagged);
+    uint64_t current = ABTD_atomic_acquire_load_uint64(
+        &p_global->tool_thread_event_mask_tagged);
     uint64_t new_tag =
         (current + ABTI_TOOL_EVENT_TAG_INC) & ABTI_TOOL_EVENT_TAG_MASK;
     uint64_t new_mask =
-        new_tag | ((event_mask_task & ~ABTI_TOOL_EVENT_TAG_MASK) &
+        new_tag | (((event_mask_task & ABT_TOOL_EVENT_TASK_ALL) |
+                    (current & ABT_TOOL_EVENT_THREAD_ALL)) &
                    ~ABTI_TOOL_EVENT_TAG_DIRTY_BIT);
     uint64_t dirty_mask = ABTI_TOOL_EVENT_TAG_DIRTY_BIT | new_mask;
 
-    ABTD_atomic_release_store_uint64(&p_global->tool_task_event_mask_tagged,
+    ABTD_atomic_release_store_uint64(&p_global->tool_thread_event_mask_tagged,
                                      dirty_mask);
     p_global->tool_task_cb_f = cb_func;
     p_global->tool_task_user_arg = user_arg;
-    ABTD_atomic_release_store_uint64(&p_global->tool_task_event_mask_tagged,
+    ABTD_atomic_release_store_uint64(&p_global->tool_thread_event_mask_tagged,
                                      new_mask);
 
     ABTI_spinlock_release(&p_global->tool_writer_lock);
@@ -127,20 +129,27 @@ ABTI_tool_event_task_update_callback(ABT_tool_task_callback_fn cb_func,
 #endif /* !ABT_CONFIG_DISABLE_TOOL_INTERFACE */
 
 static inline void ABTI_tool_event_thread_impl(
-    ABTI_xstream *p_local_xstream, uint64_t event_code, ABTI_ythread *p_thread,
+    ABTI_xstream *p_local_xstream, uint64_t event_code, ABTI_thread *p_thread,
     ABTI_thread *p_caller, ABTI_pool *p_pool, ABTI_thread *p_parent,
     ABT_sync_event_type sync_event_type, void *p_sync_object)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     return;
 #else
+    if (!ABTI_thread_type_is_thread(p_thread->type)) {
+        /* Use an event code for a tasklet-type thread. */
+        event_code *= ABT_TOOL_EVENT_TASK_CREATE;
+    }
     ABTI_global *p_global = gp_ABTI_global;
     while (1) {
         uint64_t current_mask = ABTD_atomic_acquire_load_uint64(
             &p_global->tool_thread_event_mask_tagged);
         if (current_mask & event_code) {
-            ABT_tool_thread_callback_fn cb_func = p_global->tool_thread_cb_f;
-            void *user_arg = p_global->tool_thread_user_arg;
+            ABT_tool_thread_callback_fn cb_func_thread =
+                p_global->tool_thread_cb_f;
+            ABT_tool_task_callback_fn cb_func_task = p_global->tool_task_cb_f;
+            void *user_arg_thread = p_global->tool_thread_user_arg;
+            void *user_arg_task = p_global->tool_task_user_arg;
             /* Double check the current event mask. */
             uint64_t current_mask2 = ABTD_atomic_acquire_load_uint64(
                 &p_global->tool_thread_event_mask_tagged);
@@ -153,47 +162,22 @@ static inline void ABTI_tool_event_thread_impl(
             tctx.p_caller = p_caller;
             tctx.sync_event_type = sync_event_type;
             tctx.p_sync_object = p_sync_object;
-            ABT_thread h_thread = ABTI_thread_get_handle(p_thread);
-            ABT_xstream h_xstream = ABTI_xstream_get_handle(p_local_xstream);
-            ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);
-            cb_func(h_thread, h_xstream, event_code, h_tctx, user_arg);
-        }
-        return;
-    }
-#endif /* !ABT_CONFIG_DISABLE_TOOL_INTERFACE */
-}
-
-static inline void ABTI_tool_event_task_impl(
-    ABTI_xstream *p_local_xstream, uint64_t event_code, ABTI_thread *p_task,
-    ABTI_thread *p_caller, ABTI_pool *p_pool, ABTI_thread *p_parent,
-    ABT_sync_event_type sync_event_type, void *p_sync_object)
-{
-#ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    return;
-#else
-    ABTI_global *p_global = gp_ABTI_global;
-    while (1) {
-        uint64_t current_mask = ABTD_atomic_acquire_load_uint64(
-            &p_global->tool_task_event_mask_tagged);
-        if (current_mask & event_code) {
-            ABT_tool_task_callback_fn cb_func = p_global->tool_task_cb_f;
-            void *user_arg = p_global->tool_task_user_arg;
-            /* Double check the current event mask. */
-            uint64_t current_mask2 = ABTD_atomic_acquire_load_uint64(
-                &p_global->tool_task_event_mask_tagged);
-            if (ABTU_unlikely(current_mask != current_mask2 ||
-                              (current_mask & ABTI_TOOL_EVENT_TAG_DIRTY_BIT)))
-                continue;
-            ABTI_tool_context tctx;
-            tctx.p_pool = p_pool;
-            tctx.p_parent = p_parent;
-            tctx.p_caller = p_caller;
-            tctx.sync_event_type = sync_event_type;
-            tctx.p_sync_object = p_sync_object;
-            ABT_task h_task = ABTI_task_get_handle(p_task);
-            ABT_xstream h_xstream = ABTI_xstream_get_handle(p_local_xstream);
-            ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);
-            cb_func(h_task, h_xstream, event_code, h_tctx, user_arg);
+            if (ABTI_thread_type_is_thread(p_thread->type)) {
+                ABT_thread h_thread =
+                    ABTI_thread_get_handle(ABTI_thread_get_ythread(p_thread));
+                ABT_xstream h_xstream =
+                    ABTI_xstream_get_handle(p_local_xstream);
+                ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);
+                cb_func_thread(h_thread, h_xstream, event_code, h_tctx,
+                               user_arg_thread);
+            } else {
+                ABT_task h_task = ABTI_task_get_handle(p_thread);
+                ABT_xstream h_xstream =
+                    ABTI_xstream_get_handle(p_local_xstream);
+                ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);
+                cb_func_task(h_task, h_xstream, event_code, h_tctx,
+                             user_arg_task);
+            }
         }
         return;
     }
@@ -202,8 +186,8 @@ static inline void ABTI_tool_event_task_impl(
 
 static inline void
 ABTI_tool_event_thread_create_impl(ABTI_xstream *p_local_xstream,
-                                   ABTI_ythread *p_thread,
-                                   ABTI_thread *p_caller, ABTI_pool *p_pool)
+                                   ABTI_thread *p_thread, ABTI_thread *p_caller,
+                                   ABTI_pool *p_pool)
 {
     ABTI_tool_event_thread_impl(p_local_xstream, ABT_TOOL_EVENT_THREAD_CREATE,
                                 p_thread, p_caller, p_pool, NULL,
@@ -212,7 +196,7 @@ ABTI_tool_event_thread_create_impl(ABTI_xstream *p_local_xstream,
 
 static inline void
 ABTI_tool_event_thread_join_impl(ABTI_xstream *p_local_xstream,
-                                 ABTI_ythread *p_thread, ABTI_thread *p_caller)
+                                 ABTI_thread *p_thread, ABTI_thread *p_caller)
 {
     ABTI_tool_event_thread_impl(p_local_xstream, ABT_TOOL_EVENT_THREAD_JOIN,
                                 p_thread, p_caller, NULL, NULL,
@@ -221,7 +205,7 @@ ABTI_tool_event_thread_join_impl(ABTI_xstream *p_local_xstream,
 
 static inline void
 ABTI_tool_event_thread_free_impl(ABTI_xstream *p_local_xstream,
-                                 ABTI_ythread *p_thread, ABTI_thread *p_caller)
+                                 ABTI_thread *p_thread, ABTI_thread *p_caller)
 {
     ABTI_tool_event_thread_impl(p_local_xstream, ABT_TOOL_EVENT_THREAD_FREE,
                                 p_thread, p_caller, NULL, NULL,
@@ -230,8 +214,8 @@ ABTI_tool_event_thread_free_impl(ABTI_xstream *p_local_xstream,
 
 static inline void
 ABTI_tool_event_thread_revive_impl(ABTI_xstream *p_local_xstream,
-                                   ABTI_ythread *p_thread,
-                                   ABTI_thread *p_caller, ABTI_pool *p_pool)
+                                   ABTI_thread *p_thread, ABTI_thread *p_caller,
+                                   ABTI_pool *p_pool)
 {
     ABTI_tool_event_thread_impl(p_local_xstream, ABT_TOOL_EVENT_THREAD_REVIVE,
                                 p_thread, p_caller, p_pool, NULL,
@@ -240,7 +224,7 @@ ABTI_tool_event_thread_revive_impl(ABTI_xstream *p_local_xstream,
 
 static inline void
 ABTI_tool_event_thread_run_impl(ABTI_xstream *p_local_xstream,
-                                ABTI_ythread *p_thread, ABTI_thread *p_prev,
+                                ABTI_thread *p_thread, ABTI_thread *p_prev,
                                 ABTI_thread *p_parent)
 {
     ABTI_tool_event_thread_impl(p_local_xstream, ABT_TOOL_EVENT_THREAD_RUN,
@@ -250,8 +234,7 @@ ABTI_tool_event_thread_run_impl(ABTI_xstream *p_local_xstream,
 
 static inline void
 ABTI_tool_event_thread_finish_impl(ABTI_xstream *p_local_xstream,
-                                   ABTI_ythread *p_thread,
-                                   ABTI_thread *p_parent)
+                                   ABTI_thread *p_thread, ABTI_thread *p_parent)
 {
     ABTI_tool_event_thread_impl(p_local_xstream, ABT_TOOL_EVENT_THREAD_FINISH,
                                 p_thread, NULL, NULL, p_parent,
@@ -260,114 +243,53 @@ ABTI_tool_event_thread_finish_impl(ABTI_xstream *p_local_xstream,
 
 static inline void
 ABTI_tool_event_thread_cancel_impl(ABTI_xstream *p_local_xstream,
-                                   ABTI_ythread *p_thread)
+                                   ABTI_thread *p_thread)
 {
     ABTI_tool_event_thread_impl(p_local_xstream, ABT_TOOL_EVENT_THREAD_CANCEL,
                                 p_thread, NULL, NULL, NULL,
                                 ABT_SYNC_EVENT_TYPE_UNKNOWN, NULL);
 }
 
-static inline void ABTI_tool_event_thread_yield_impl(
-    ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread,
+static inline void ABTI_tool_event_ythread_yield_impl(
+    ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread,
     ABTI_thread *p_parent, ABT_sync_event_type sync_event_type, void *p_sync)
 {
-    if (ABTD_atomic_relaxed_load_uint32(&p_thread->thread.request) &
+    if (ABTD_atomic_relaxed_load_uint32(&p_ythread->thread.request) &
         ABTI_THREAD_REQ_BLOCK) {
         ABTI_tool_event_thread_impl(p_local_xstream,
-                                    ABT_TOOL_EVENT_THREAD_SUSPEND, p_thread,
-                                    NULL, p_thread->thread.p_pool, p_parent,
+                                    ABT_TOOL_EVENT_THREAD_SUSPEND,
+                                    &p_ythread->thread, NULL,
+                                    p_ythread->thread.p_pool, p_parent,
                                     sync_event_type, p_sync);
 
     } else {
         ABTI_tool_event_thread_impl(p_local_xstream,
-                                    ABT_TOOL_EVENT_THREAD_YIELD, p_thread, NULL,
-                                    p_thread->thread.p_pool, p_parent,
+                                    ABT_TOOL_EVENT_THREAD_YIELD,
+                                    &p_ythread->thread, NULL,
+                                    p_ythread->thread.p_pool, p_parent,
                                     sync_event_type, p_sync);
     }
 }
 
-static inline void ABTI_tool_event_thread_suspend_impl(
-    ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread,
+static inline void ABTI_tool_event_ythread_suspend_impl(
+    ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread,
     ABTI_thread *p_parent, ABT_sync_event_type sync_event_type, void *p_sync)
 {
     ABTI_tool_event_thread_impl(p_local_xstream, ABT_TOOL_EVENT_THREAD_SUSPEND,
-                                p_thread, NULL, p_thread->thread.p_pool,
-                                p_parent, sync_event_type, p_sync);
+                                &p_ythread->thread, NULL,
+                                p_ythread->thread.p_pool, p_parent,
+                                sync_event_type, p_sync);
 }
 
 static inline void
-ABTI_tool_event_thread_resume_impl(ABTI_xstream *p_local_xstream,
-                                   ABTI_ythread *p_thread,
-                                   ABTI_thread *p_caller)
+ABTI_tool_event_ythread_resume_impl(ABTI_xstream *p_local_xstream,
+                                    ABTI_ythread *p_ythread,
+                                    ABTI_thread *p_caller)
 {
     ABTI_tool_event_thread_impl(p_local_xstream, ABT_TOOL_EVENT_THREAD_RESUME,
-                                p_thread, p_caller, p_thread->thread.p_pool,
-                                NULL, ABT_SYNC_EVENT_TYPE_UNKNOWN, NULL);
-}
-
-static inline void
-ABTI_tool_event_task_create_impl(ABTI_xstream *p_local_xstream,
-                                 ABTI_thread *p_task, ABTI_thread *p_caller,
-                                 ABTI_pool *p_pool)
-{
-    ABTI_tool_event_task_impl(p_local_xstream, ABT_TOOL_EVENT_TASK_CREATE,
-                              p_task, p_caller, p_pool, NULL,
-                              ABT_SYNC_EVENT_TYPE_UNKNOWN, NULL);
-}
-
-static inline void ABTI_tool_event_task_join_impl(ABTI_xstream *p_local_xstream,
-                                                  ABTI_thread *p_task,
-                                                  ABTI_thread *p_caller)
-{
-    ABTI_tool_event_task_impl(p_local_xstream, ABT_TOOL_EVENT_TASK_JOIN, p_task,
-                              p_caller, NULL, NULL, ABT_SYNC_EVENT_TYPE_UNKNOWN,
-                              NULL);
-}
-
-static inline void ABTI_tool_event_task_free_impl(ABTI_xstream *p_local_xstream,
-                                                  ABTI_thread *p_task,
-                                                  ABTI_thread *p_caller)
-{
-    ABTI_tool_event_task_impl(p_local_xstream, ABT_TOOL_EVENT_TASK_FREE, p_task,
-                              p_caller, NULL, NULL, ABT_SYNC_EVENT_TYPE_UNKNOWN,
-                              NULL);
-}
-
-static inline void
-ABTI_tool_event_task_revive_impl(ABTI_xstream *p_local_xstream,
-                                 ABTI_thread *p_task, ABTI_thread *p_caller,
-                                 ABTI_pool *p_pool)
-{
-    ABTI_tool_event_task_impl(p_local_xstream, ABT_TOOL_EVENT_TASK_REVIVE,
-                              p_task, p_caller, p_pool, NULL,
-                              ABT_SYNC_EVENT_TYPE_UNKNOWN, NULL);
-}
-
-static inline void ABTI_tool_event_task_run_impl(ABTI_xstream *p_local_xstream,
-                                                 ABTI_thread *p_task,
-                                                 ABTI_thread *p_parent)
-{
-    ABTI_tool_event_task_impl(p_local_xstream, ABT_TOOL_EVENT_TASK_RUN, p_task,
-                              p_parent, NULL, p_parent,
-                              ABT_SYNC_EVENT_TYPE_UNKNOWN, NULL);
-}
-
-static inline void
-ABTI_tool_event_task_finish_impl(ABTI_xstream *p_local_xstream,
-                                 ABTI_thread *p_task, ABTI_thread *p_parent)
-{
-    ABTI_tool_event_task_impl(p_local_xstream, ABT_TOOL_EVENT_TASK_FINISH,
-                              p_task, NULL, NULL, p_parent,
-                              ABT_SYNC_EVENT_TYPE_UNKNOWN, NULL);
-}
-
-static inline void
-ABTI_tool_event_task_cancel_impl(ABTI_xstream *p_local_xstream,
-                                 ABTI_thread *p_task)
-{
-    ABTI_tool_event_task_impl(p_local_xstream, ABT_TOOL_EVENT_TASK_CANCEL,
-                              p_task, NULL, NULL, NULL,
-                              ABT_SYNC_EVENT_TYPE_UNKNOWN, NULL);
+                                &p_ythread->thread, p_caller,
+                                p_ythread->thread.p_pool, NULL,
+                                ABT_SYNC_EVENT_TYPE_UNKNOWN, NULL);
 }
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
@@ -434,83 +356,31 @@ ABTI_tool_event_task_cancel_impl(ABTI_xstream *p_local_xstream,
         }                                                                      \
     } while (0)
 
-#define ABTI_tool_event_thread_yield(p_local_xstream, p_thread, p_parent,      \
-                                     sync_event_type, p_sync)                  \
+#define ABTI_tool_event_ythread_yield(p_local_xstream, p_ythread, p_parent,    \
+                                      sync_event_type, p_sync)                 \
     do {                                                                       \
         if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_thread_yield_impl(p_local_xstream, p_thread,       \
-                                              p_parent, sync_event_type,       \
-                                              p_sync);                         \
+            ABTI_tool_event_ythread_yield_impl(p_local_xstream, p_ythread,     \
+                                               p_parent, sync_event_type,      \
+                                               p_sync);                        \
         }                                                                      \
     } while (0)
 
-#define ABTI_tool_event_thread_suspend(p_local_xstream, p_thread, p_parent,    \
-                                       sync_event_type, p_sync)                \
+#define ABTI_tool_event_ythread_suspend(p_local_xstream, p_ythread, p_parent,  \
+                                        sync_event_type, p_sync)               \
     do {                                                                       \
         if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_thread_suspend_impl(p_local_xstream, p_thread,     \
-                                                p_parent, sync_event_type,     \
-                                                p_sync);                       \
+            ABTI_tool_event_ythread_suspend_impl(p_local_xstream, p_ythread,   \
+                                                 p_parent, sync_event_type,    \
+                                                 p_sync);                      \
         }                                                                      \
     } while (0)
 
-#define ABTI_tool_event_thread_resume(p_local_xstream, p_thread, p_caller)     \
+#define ABTI_tool_event_ythread_resume(p_local_xstream, p_ythread, p_caller)   \
     do {                                                                       \
         if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_thread_resume_impl(p_local_xstream, p_thread,      \
-                                               p_caller);                      \
-        }                                                                      \
-    } while (0)
-
-#define ABTI_tool_event_task_create(p_local_xstream, p_task, p_caller, p_pool) \
-    do {                                                                       \
-        if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_task_create_impl(p_local_xstream, p_task,          \
-                                             p_caller, p_pool);                \
-        }                                                                      \
-    } while (0)
-
-#define ABTI_tool_event_task_join(p_local_xstream, p_task, p_caller)           \
-    do {                                                                       \
-        if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_task_join_impl(p_local_xstream, p_task, p_caller); \
-        }                                                                      \
-    } while (0)
-
-#define ABTI_tool_event_task_free(p_local_xstream, p_task, p_caller)           \
-    do {                                                                       \
-        if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_task_free_impl(p_local_xstream, p_task, p_caller); \
-        }                                                                      \
-    } while (0)
-
-#define ABTI_tool_event_task_revive(p_local_xstream, p_task, p_caller, p_pool) \
-    do {                                                                       \
-        if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_task_revive_impl(p_local_xstream, p_task,          \
-                                             p_caller, p_pool);                \
-        }                                                                      \
-    } while (0)
-
-#define ABTI_tool_event_task_run(p_local_xstream, p_task, p_parent)            \
-    do {                                                                       \
-        if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_task_run_impl(p_local_xstream, p_task, p_parent);  \
-        }                                                                      \
-    } while (0)
-
-#define ABTI_tool_event_task_finish(p_local_xstream, p_task, p_parent)         \
-    do {                                                                       \
-        if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_task_finish_impl(p_local_xstream, p_task,          \
-                                             p_parent);                        \
-        }                                                                      \
-    } while (0)
-
-#define ABTI_tool_event_task_cancel(p_local_xstream, p_task)                   \
-    do {                                                                       \
-        if (ABTI_USE_TOOL_INTERFACE) {                                         \
-            ABTI_tool_event_task_cancel_impl(p_local_xstream, p_task);         \
+            ABTI_tool_event_ythread_resume_impl(p_local_xstream, p_ythread,    \
+                                                p_caller);                     \
         }                                                                      \
     } while (0)
 

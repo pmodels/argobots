@@ -1568,7 +1568,7 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
 #ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
     if (ABTD_atomic_acquire_load_uint32(&p_task->request) &
         ABTI_THREAD_REQ_CANCEL) {
-        ABTI_tool_event_task_cancel(p_local_xstream, p_task);
+        ABTI_tool_event_thread_cancel(p_local_xstream, p_task);
         ABTI_xstream_terminate_task(p_local_xstream, p_task);
         return;
     }
@@ -1589,11 +1589,12 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
     p_task->p_parent = p_sched_thread;
 
     /* Execute the task function */
-    ABTI_tool_event_task_run(p_local_xstream, p_task, p_sched_thread);
+    ABTI_tool_event_thread_run(p_local_xstream, p_task, p_sched_thread,
+                               p_sched_thread);
     LOG_DEBUG("[T%" PRIu64 ":E%d] running\n", ABTI_thread_get_id(p_task),
               p_local_xstream->rank);
     p_task->f_thread(p_task->p_arg);
-    ABTI_tool_event_task_finish(p_local_xstream, p_task, p_sched_thread);
+    ABTI_tool_event_thread_finish(p_local_xstream, p_task, p_sched_thread);
     LOG_DEBUG("[T%" PRIu64 ":E%d] stopped\n", ABTI_thread_get_id(p_task),
               p_local_xstream->rank);
 
@@ -1885,8 +1886,8 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
         ABTI_CHECK_ERROR(abt_errno);
         p_sched->p_thread->thread.p_last_xstream = p_local_xstream;
     } else {
-        ABTI_tool_event_thread_create(p_local_xstream, p_sched->p_thread, NULL,
-                                      NULL);
+        ABTI_tool_event_thread_create(p_local_xstream,
+                                      &p_sched->p_thread->thread, NULL, NULL);
     }
 
     /* Set the sched ULT as the current ULT */
@@ -1894,13 +1895,17 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 
     /* Execute the main scheduler of this ES */
     LOG_DEBUG("[E%d] start\n", p_local_xstream->rank);
-    ABTI_tool_event_thread_run(p_local_xstream, p_sched->p_thread, NULL, NULL);
+    ABTI_tool_event_thread_run(p_local_xstream, &p_sched->p_thread->thread,
+                               NULL, NULL);
     ABTI_xstream_schedule(p_arg);
     ABTI_tool_event_thread_finish(p_local_xstream,
-                                  p_local_xstream->p_main_sched->p_thread,
+                                  &p_local_xstream->p_main_sched->p_thread
+                                       ->thread,
                                   NULL);
     ABTI_tool_event_thread_free(p_local_xstream,
-                                p_local_xstream->p_main_sched->p_thread, NULL);
+                                &p_local_xstream->p_main_sched->p_thread
+                                     ->thread,
+                                NULL);
     LOG_DEBUG("[E%d] end\n", p_local_xstream->rank);
 
     /* Reset the current ES and its local info. */

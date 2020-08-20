@@ -13,7 +13,7 @@ void ABTD_thread_func_wrapper(void *p_arg)
     ABTD_thread_context *p_ctx = (ABTD_thread_context *)p_arg;
     ABTI_ythread *p_thread = ABTI_thread_context_get_thread(p_ctx);
     ABTI_xstream *p_local_xstream = p_thread->thread.p_last_xstream;
-    ABTI_tool_event_thread_run(p_local_xstream, p_thread,
+    ABTI_tool_event_thread_run(p_local_xstream, &p_thread->thread,
                                p_local_xstream->p_thread,
                                p_thread->thread.p_parent);
     p_local_xstream->p_thread = &p_thread->thread;
@@ -52,8 +52,8 @@ static inline void ABTD_thread_terminate(ABTI_xstream *p_local_xstream,
                       p_thread->thread.p_last_xstream->rank);
 
             /* Note that a parent ULT cannot be a joiner. */
-            ABTI_tool_event_thread_resume(p_local_xstream, p_joiner,
-                                          &p_thread->thread);
+            ABTI_tool_event_ythread_resume(p_local_xstream, p_joiner,
+                                           &p_thread->thread);
             ABTI_thread_finish_context_to_sibling(p_local_xstream, p_thread,
                                                   p_joiner);
             return;
@@ -133,7 +133,7 @@ void ABTD_thread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_thread)
             ABTI_thread_set_ready(p_local_xstream, p_joiner);
         }
     }
-    ABTI_tool_event_thread_cancel(p_local_xstream, p_thread);
+    ABTI_tool_event_thread_cancel(p_local_xstream, &p_thread->thread);
 }
 
 void ABTD_thread_print_context(ABTI_ythread *p_thread, FILE *p_os, int indent)

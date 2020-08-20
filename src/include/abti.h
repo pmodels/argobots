@@ -223,11 +223,9 @@ struct ABTI_global {
 
     ABT_tool_thread_callback_fn tool_thread_cb_f;
     void *tool_thread_user_arg;
-    ABTD_atomic_uint64 tool_thread_event_mask_tagged;
-
     ABT_tool_task_callback_fn tool_task_cb_f;
     void *tool_task_user_arg;
-    ABTD_atomic_uint64 tool_task_event_mask_tagged;
+    ABTD_atomic_uint64 tool_thread_event_mask_tagged;
 #endif
 };
 

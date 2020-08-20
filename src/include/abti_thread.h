@@ -157,7 +157,7 @@ static inline ABTI_ythread *ABTI_thread_context_switch_to_sibling_internal(
 #endif
     p_new->thread.p_parent = p_old->thread.p_parent;
     if (is_finish) {
-        ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
+        ABTI_tool_event_thread_finish(*pp_local_xstream, &p_old->thread,
                                       p_old->thread.p_parent);
         ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
         ABTU_unreachable();
@@ -186,14 +186,14 @@ static inline ABTI_ythread *ABTI_thread_context_switch_to_parent_internal(
     ABTI_ASSERT(ABTI_thread_is_dynamic_promoted(p_new));
 #endif
     if (is_finish) {
-        ABTI_tool_event_thread_finish(*pp_local_xstream, p_old,
+        ABTI_tool_event_thread_finish(*pp_local_xstream, &p_old->thread,
                                       p_old->thread.p_parent);
         ABTD_thread_finish_context(&p_old->ctx, &p_new->ctx);
         ABTU_unreachable();
     } else {
-        ABTI_tool_event_thread_yield(*pp_local_xstream, p_old,
-                                     p_old->thread.p_parent, sync_event_type,
-                                     p_sync);
+        ABTI_tool_event_ythread_yield(*pp_local_xstream, p_old,
+                                      p_old->thread.p_parent, sync_event_type,
+                                      p_sync);
         ABTD_thread_context_switch(&p_old->ctx, &p_new->ctx);
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
         *pp_local_xstream = p_local_xstream;
@@ -201,7 +201,7 @@ static inline ABTI_ythread *ABTI_thread_context_switch_to_parent_internal(
         p_local_xstream->p_thread = &p_old->thread;
         ABTI_ASSERT(ABTI_thread_type_is_thread(p_prev->type));
         /* Invoke an event of thread run. */
-        ABTI_tool_event_thread_run(p_local_xstream, p_old, p_prev,
+        ABTI_tool_event_thread_run(p_local_xstream, &p_old->thread, p_prev,
                                    p_old->thread.p_parent);
         return ABTI_thread_get_ythread(p_prev);
     }
@@ -223,8 +223,8 @@ static inline ABTI_ythread *ABTI_thread_context_switch_to_child_internal(
         p_local_xstream = *pp_local_xstream;
         p_local_xstream->p_thread = &p_new->thread;
         /* Invoke an event of thread run. */
-        ABTI_tool_event_thread_run(p_local_xstream, p_new, &p_old->thread,
-                                   &p_old->thread);
+        ABTI_tool_event_thread_run(p_local_xstream, &p_new->thread,
+                                   &p_old->thread, &p_old->thread);
         ABTD_thread_context_make_and_call(&p_old->ctx, p_new->thread.f_thread,
                                           p_new->thread.p_arg, p_stacktop);
         /* The scheduler continues from here. If the previous thread has not
@@ -240,7 +240,7 @@ static inline ABTI_ythread *ABTI_thread_context_switch_to_child_internal(
         if (!ABTI_thread_is_dynamic_promoted(p_prev)) {
             ABTI_ASSERT(p_prev == p_new);
             /* Invoke a thread-finish event of the previous thread. */
-            ABTI_tool_event_thread_finish(p_local_xstream, p_prev,
+            ABTI_tool_event_thread_finish(p_local_xstream, &p_prev->thread,
                                           &p_old->thread);
             /* See ABTDI_thread_terminate for details.
              * TODO: avoid making a copy of the code. */
