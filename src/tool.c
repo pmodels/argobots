@@ -265,7 +265,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                 *(int *)val = 0;
             } else {
                 int depth = 0;
-                ABTI_unit *p_cur = p_tctx->p_parent;
+                ABTI_thread *p_cur = p_tctx->p_parent;
                 while (p_cur) {
                     depth++;
                     p_cur = p_cur->p_parent;
@@ -276,7 +276,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
         case ABT_TOOL_QUERY_KIND_CALLER_TYPE:
             if (!p_tctx->p_caller) {
                 *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_EXT;
-            } else if (ABTI_unit_type_is_thread(p_tctx->p_caller->type)) {
+            } else if (ABTI_thread_type_is_thread(p_tctx->p_caller->type)) {
                 *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_THREAD;
             } else {
                 *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_TASK;
@@ -285,7 +285,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
         case ABT_TOOL_QUERY_KIND_CALLER_HANDLE:
             if (!p_tctx->p_caller) {
                 *(void **)val = NULL;
-            } else if (ABTI_unit_type_is_thread(p_tctx->p_caller->type)) {
+            } else if (ABTI_thread_type_is_thread(p_tctx->p_caller->type)) {
                 *(ABT_thread *)val = ABTI_thread_get_handle(
                     ABTI_unit_get_thread(p_tctx->p_caller));
             } else {
@@ -307,7 +307,7 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                     break;
                 case ABT_SYNC_EVENT_TYPE_TASK_JOIN:
                     *(ABT_task *)val = ABTI_task_get_handle(
-                        (ABTI_task *)p_tctx->p_sync_object);
+                        (ABTI_thread *)p_tctx->p_sync_object);
                     break;
                 case ABT_SYNC_EVENT_TYPE_MUTEX:
                     *(ABT_mutex *)val = ABTI_mutex_get_handle(

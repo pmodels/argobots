@@ -12,7 +12,7 @@
  * used to determine whether the descriptor is allocated externally (i.e.,
  * malloc()) or taken from a memory pool. */
 #define ABTI_MEM_POOL_DESC_SIZE                                                \
-    (((sizeof(ABTI_task) + 4 + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &         \
+    (((sizeof(ABTI_thread) + 4 + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &       \
       (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1))) -                             \
      4)
 
@@ -232,13 +232,13 @@ static inline void ABTI_mem_free_desc(ABTI_xstream *p_local_xstream,
 #endif
 }
 
-static inline ABTI_task *ABTI_mem_alloc_task(ABTI_xstream *p_local_xstream)
+static inline ABTI_thread *ABTI_mem_alloc_task(ABTI_xstream *p_local_xstream)
 {
-    return (ABTI_task *)ABTI_mem_alloc_desc(p_local_xstream);
+    return (ABTI_thread *)ABTI_mem_alloc_desc(p_local_xstream);
 }
 
 static inline void ABTI_mem_free_task(ABTI_xstream *p_local_xstream,
-                                      ABTI_task *p_task)
+                                      ABTI_thread *p_task)
 {
     ABTI_mem_free_desc(p_local_xstream, (void *)p_task);
 }

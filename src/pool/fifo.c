@@ -22,7 +22,7 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit);
 static int pool_print_all(ABT_pool pool, void *arg,
                           void (*print_fn)(void *, ABT_unit));
 
-typedef ABTI_unit unit_t;
+typedef ABTI_thread unit_t;
 static ABT_unit_type unit_get_type(ABT_unit unit);
 static ABT_thread unit_get_thread(ABT_unit unit);
 static ABT_task unit_get_task(ABT_unit unit);
@@ -440,14 +440,14 @@ static int pool_print_all(ABT_pool pool, void *arg,
 static ABT_unit_type unit_get_type(ABT_unit unit)
 {
     unit_t *p_unit = (unit_t *)unit;
-    return ABTI_unit_type_get_type(p_unit->type);
+    return ABTI_thread_type_get_type(p_unit->type);
 }
 
 static ABT_thread unit_get_thread(ABT_unit unit)
 {
     ABT_thread h_thread;
     unit_t *p_unit = (unit_t *)unit;
-    if (ABTI_unit_type_is_thread(p_unit->type)) {
+    if (ABTI_thread_type_is_thread(p_unit->type)) {
         h_thread = ABTI_thread_get_handle(ABTI_unit_get_thread(p_unit));
     } else {
         h_thread = ABT_THREAD_NULL;
@@ -459,7 +459,7 @@ static ABT_task unit_get_task(ABT_unit unit)
 {
     ABT_task h_task;
     unit_t *p_unit = (unit_t *)unit;
-    if (ABTI_unit_type_is_task(p_unit->type)) {
+    if (ABTI_thread_type_is_task(p_unit->type)) {
         h_task = ABTI_task_get_handle(p_unit);
     } else {
         h_task = ABT_TASK_NULL;
@@ -477,23 +477,23 @@ static ABT_bool unit_is_in_pool(ABT_unit unit)
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
     ABTI_ythread *p_thread = ABTI_thread_get_ptr(thread);
-    unit_t *p_unit = &p_thread->unit_def;
+    unit_t *p_unit = &p_thread->thread;
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_unit->is_in_pool, 0);
-    ABTI_ASSERT(ABTI_unit_type_is_thread(p_unit->type));
+    ABTI_ASSERT(ABTI_thread_type_is_thread(p_unit->type));
 
     return (ABT_unit)p_unit;
 }
 
 static ABT_unit unit_create_from_task(ABT_task task)
 {
-    ABTI_task *p_task = ABTI_task_get_ptr(task);
+    ABTI_thread *p_task = ABTI_task_get_ptr(task);
     unit_t *p_unit = p_task;
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_unit->is_in_pool, 0);
-    ABTI_ASSERT(ABTI_unit_type_is_task(p_unit->type));
+    ABTI_ASSERT(ABTI_thread_type_is_task(p_unit->type));
 
     return (ABT_unit)p_unit;
 }

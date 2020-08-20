@@ -74,8 +74,8 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
 {
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_unit_type type = ABTI_self_get_type(p_local_xstream);
-    if (ABTI_unit_type_is_thread(type)) {
+    ABTI_thread_type type = ABTI_self_get_type(p_local_xstream);
+    if (ABTI_thread_type_is_thread(type)) {
         LOG_DEBUG("%p: lock - try\n", p_mutex);
         while (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
             ABTI_thread_yield(pp_local_xstream,
@@ -89,11 +89,11 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
     }
 #else
     int abt_errno;
-    ABTI_unit_type type = ABTI_self_get_type(*pp_local_xstream);
+    ABTI_thread_type type = ABTI_self_get_type(*pp_local_xstream);
 
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
-    if (ABTI_unit_type_is_thread(type)) {
+    if (ABTI_thread_type_is_thread(type)) {
         LOG_DEBUG("%p: lock - try\n", p_mutex);
         int c;
         if ((c = ABTD_atomic_val_cas_strong_uint32(&p_mutex->val, 0, 1)) != 0) {
@@ -115,10 +115,10 @@ static inline void ABTI_mutex_lock(ABTI_xstream **pp_local_xstream,
 
                         /* Push the previous ULT to its pool */
                         ABTI_ythread *p_giver = p_mutex->p_giver;
-                        ABTD_atomic_release_store_int(&p_giver->unit_def.state,
-                                                      ABTI_UNIT_STATE_READY);
-                        ABTI_POOL_PUSH(p_giver->unit_def.p_pool,
-                                       p_giver->unit_def.unit,
+                        ABTD_atomic_release_store_int(&p_giver->thread.state,
+                                                      ABTI_THREAD_STATE_READY);
+                        ABTI_POOL_PUSH(p_giver->thread.p_pool,
+                                       p_giver->thread.unit,
                                        ABTI_self_get_native_thread_id(
                                            *pp_local_xstream));
                         break;

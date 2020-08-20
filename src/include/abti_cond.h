@@ -64,20 +64,21 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
 
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_ythread *p_thread;
-    ABTI_unit *p_unit;
+    ABTI_thread *p_unit;
 
     if (p_local_xstream != NULL) {
-        ABTI_unit *p_self = p_local_xstream->p_unit;
-        ABTI_CHECK_TRUE(ABTI_unit_type_is_thread(p_self->type), ABT_ERR_COND);
+        ABTI_thread *p_self = p_local_xstream->p_unit;
+        ABTI_CHECK_TRUE(ABTI_thread_type_is_thread(p_self->type), ABT_ERR_COND);
         p_thread = ABTI_unit_get_thread(p_self);
-        p_unit = &p_thread->unit_def;
+        p_unit = &p_thread->thread;
     } else {
         /* external thread */
         p_thread = NULL;
-        p_unit = (ABTI_unit *)ABTU_calloc(1, sizeof(ABTI_unit));
-        p_unit->type = ABTI_UNIT_TYPE_EXT;
+        p_unit = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
+        p_unit->type = ABTI_THREAD_TYPE_EXT;
         /* use state for synchronization */
-        ABTD_atomic_relaxed_store_int(&p_unit->state, ABTI_UNIT_STATE_BLOCKED);
+        ABTD_atomic_relaxed_store_int(&p_unit->state,
+                                      ABTI_THREAD_STATE_BLOCKED);
     }
 
     ABTI_spinlock_acquire(&p_cond->lock);
@@ -130,7 +131,7 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
 
         /* External thread is waiting here. */
         while (ABTD_atomic_acquire_load_int(&p_unit->state) !=
-               ABTI_UNIT_STATE_READY)
+               ABTI_THREAD_STATE_READY)
             ;
         ABTU_free(p_unit);
     }
@@ -157,21 +158,21 @@ static inline void ABTI_cond_broadcast(ABTI_xstream *p_local_xstream,
     }
 
     /* Wake up all waiting ULTs */
-    ABTI_unit *p_head = p_cond->p_head;
-    ABTI_unit *p_unit = p_head;
+    ABTI_thread *p_head = p_cond->p_head;
+    ABTI_thread *p_unit = p_head;
     while (1) {
-        ABTI_unit *p_next = p_unit->p_next;
+        ABTI_thread *p_next = p_unit->p_next;
 
         p_unit->p_prev = NULL;
         p_unit->p_next = NULL;
 
-        if (ABTI_unit_type_is_thread(p_unit->type)) {
+        if (ABTI_thread_type_is_thread(p_unit->type)) {
             ABTI_ythread *p_thread = ABTI_unit_get_thread(p_unit);
             ABTI_thread_set_ready(p_local_xstream, p_thread);
         } else {
             /* When the head is an external thread */
             ABTD_atomic_release_store_int(&p_unit->state,
-                                          ABTI_UNIT_STATE_READY);
+                                          ABTI_THREAD_STATE_READY);
         }
 
         /* Next ULT */
