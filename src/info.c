@@ -400,10 +400,10 @@ fn_fail:
 int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_ythread_print(p_ythread, fp, 0);
+    ABTI_thread_print(p_thread, fp, 0);
 
 fn_exit:
     return abt_errno;
@@ -485,8 +485,10 @@ fn_fail:
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    ABTI_ythread *p_ythread;
+    ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_INV_THREAD);
 
     abt_errno = ABTI_ythread_print_stack(p_ythread, fp);
 

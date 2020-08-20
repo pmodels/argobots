@@ -102,27 +102,32 @@ fn_fail:
     goto fn_exit;
 }
 
-void ABTI_ythread_print(ABTI_ythread *p_ythread, FILE *p_os, int indent)
+void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
 {
     char *prefix = ABTU_get_indent_str(indent);
 
-    if (p_ythread == NULL) {
-        fprintf(p_os, "%s== NULL ULT ==\n", prefix);
+    if (p_thread == NULL) {
+        fprintf(p_os, "%s== NULL thread ==\n", prefix);
         goto fn_exit;
     }
 
-    ABTI_xstream *p_xstream = p_ythread->thread.p_last_xstream;
+    ABTI_xstream *p_xstream = p_thread->p_last_xstream;
     int xstream_rank = p_xstream ? p_xstream->rank : 0;
-    char *type, *state;
+    char *type, *yieldable, *state;
 
-    if (p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN) {
+    if (p_thread->type & ABTI_THREAD_TYPE_MAIN) {
         type = "MAIN";
-    } else if (p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED) {
+    } else if (p_thread->type & ABTI_THREAD_TYPE_MAIN_SCHED) {
         type = "MAIN_SCHED";
     } else {
         type = "USER";
     }
-    switch (ABTD_atomic_acquire_load_int(&p_ythread->thread.state)) {
+    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+        yieldable = "yes";
+    } else {
+        yieldable = "no";
+    }
+    switch (ABTD_atomic_acquire_load_int(&p_thread->state)) {
         case ABTI_THREAD_STATE_READY:
             state = "READY";
             break;
@@ -141,22 +146,22 @@ void ABTI_ythread_print(ABTI_ythread *p_ythread, FILE *p_os, int indent)
     }
 
     fprintf(p_os,
-            "%s== ULT (%p) ==\n"
-            "%sid      : %" PRIu64 "\n"
-            "%stype    : %s\n"
-            "%sstate   : %s\n"
-            "%slast_ES : %p (%d)\n"
-            "%sp_arg   : %p\n"
-            "%spool    : %p\n"
-            "%srequest : 0x%x\n"
-            "%skeytable: %p\n",
-            prefix, (void *)p_ythread, prefix,
-            ABTI_thread_get_id(&p_ythread->thread), prefix, type, prefix, state,
-            prefix, (void *)p_xstream, xstream_rank, prefix,
-            p_ythread->thread.p_arg, prefix, (void *)p_ythread->thread.p_pool,
-            prefix, ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request),
-            prefix,
-            ABTD_atomic_acquire_load_ptr(&p_ythread->thread.p_keytable));
+            "%s== Thread (%p) ==\n"
+            "%sid        : %" PRIu64 "\n"
+            "%stype      : %s\n"
+            "%syieldable : %s\n"
+            "%sstate     : %s\n"
+            "%slast_ES   : %p (%d)\n"
+            "%sp_arg     : %p\n"
+            "%spool      : %p\n"
+            "%srequest   : 0x%x\n"
+            "%skeytable  : %p\n",
+            prefix, (void *)p_thread, prefix, ABTI_thread_get_id(p_thread),
+            prefix, type, prefix, yieldable, prefix, state, prefix,
+            (void *)p_xstream, xstream_rank, prefix, p_thread->p_arg, prefix,
+            (void *)p_thread->p_pool, prefix,
+            ABTD_atomic_acquire_load_uint32(&p_thread->request), prefix,
+            ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable));
 
 fn_exit:
     fflush(p_os);

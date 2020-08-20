@@ -551,7 +551,7 @@ void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
                           ABT_sync_event_type sync_event_type, void *p_sync);
 int ABTI_ythread_set_ready(ABTI_xstream *p_local_xstream,
                            ABTI_ythread *p_ythread);
-void ABTI_ythread_print(ABTI_ythread *p_ythread, FILE *p_os, int indent);
+void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 int ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
 void ABTI_thread_reset_id(void);
 ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
