@@ -493,17 +493,16 @@ int ABT_thread_cancel(ABT_thread thread)
     return ABT_ERR_FEATURE_NA;
 #else
     int abt_errno = ABT_SUCCESS;
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_ythread);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_CHECK_TRUE_MSG(!(p_ythread->thread.type &
-                          (ABTI_THREAD_TYPE_MAIN |
-                           ABTI_THREAD_TYPE_MAIN_SCHED)),
+    ABTI_CHECK_TRUE_MSG(!(p_thread->type & (ABTI_THREAD_TYPE_MAIN |
+                                            ABTI_THREAD_TYPE_MAIN_SCHED)),
                         ABT_ERR_INV_THREAD,
                         "The main thread cannot be canceled.");
 
     /* Set the cancel request */
-    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_CANCEL);
+    ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_CANCEL);
 
 fn_exit:
     return abt_errno;
