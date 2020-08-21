@@ -17,8 +17,6 @@
  * through \c newrwlock. If an error occurs in this routine, a non-zero error
  * code will be returned and \c newrwlock will be set to \c ABT_RWLOCK_NULL.
  *
- * Only ULTs can use the rwlock, and tasklets must not use it.
- *
  * @param[out] newrwlock  handle to a new rwlock
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -88,9 +86,6 @@ fn_fail:
  * When the caller ULT is blocked, the context is switched to the scheduler
  * of the associated ES to make progress of other work units.
  *
- * The rwlock can be used only by ULTs. Tasklets must not call any blocking
- * routines like \c ABT_rwlock_rdlock.
- *
  * @param[in] rwlock  handle to the rwlock
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -121,9 +116,6 @@ fn_fail:
  * by a reader or a writer, the caller ULT will be blocked until the rwlock
  * becomes available. When the caller ULT is blocked, the context is switched
  * to the scheduler of the associated ES to make progress of other work units.
- *
- * The rwlock can be used only by ULTs. Tasklets must not call any blocking
- * routines like \c ABT_rwlock_wrlock.
  *
  * @param[in] rwlock  handle to the rwlock
  * @return Error code

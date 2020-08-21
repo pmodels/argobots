@@ -207,38 +207,29 @@ int ABT_task_cancel(ABT_task task);
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
- * @retval ABT_ERR_INV_TASK      called by a ULT
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
+ * @retval ABT_ERR_INV_THREAD    called by a yieldable thread (ULT)
  */
 int ABT_task_self(ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABT_task ret = ABT_TASK_NULL;
 
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        *task = ABT_TASK_NULL;
-        return abt_errno;
-    }
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        *task = ABT_TASK_NULL;
-        return abt_errno;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
-        *task = ABTI_thread_get_handle(p_thread);
-    } else {
-        abt_errno = ABT_ERR_INV_TASK;
-        *task = ABT_TASK_NULL;
-    }
+    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE),
+                    ABT_ERR_INV_THREAD);
+    ret = ABTI_thread_get_handle(p_thread);
 
+fn_exit:
+    *task = ret;
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -251,34 +242,27 @@ int ABT_task_self(ABT_task *task)
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
- * @retval ABT_ERR_INV_TASK      called by a ULT
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
+ * @retval ABT_ERR_INV_THREAD    called by a yieldable thread (ULT)
  */
 int ABT_task_self_id(ABT_unit_id *id)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
 
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        return abt_errno;
-    }
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        return abt_errno;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
-        *id = ABTI_thread_get_id(p_thread);
-    } else {
-        abt_errno = ABT_ERR_INV_TASK;
-    }
+    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE),
+                    ABT_ERR_INV_THREAD);
+    *id = ABTI_thread_get_id(p_thread);
+
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 #ifdef ABT_CONFIG_USE_DOXYGEN

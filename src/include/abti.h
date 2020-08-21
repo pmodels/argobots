@@ -602,7 +602,7 @@ void ABTI_mutex_attr_print(ABTI_mutex_attr *p_attr, FILE *p_os, int indent);
 void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf);
 
 /* Information */
-int ABTI_info_print_config(FILE *fp);
+void ABTI_info_print_config(FILE *fp);
 void ABTI_info_check_print_all_thread_stacks(void);
 
 #include "abti_log.h"

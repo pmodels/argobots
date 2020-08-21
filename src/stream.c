@@ -457,44 +457,32 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
+ * @retval ABT_ERR_INV_THREAD    called by a non-yieldable thread (tasklet)
  */
 int ABT_xstream_exit(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
 
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        goto fn_exit;
-    }
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_exit;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_ythread;
+    ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_ythread);
 
     /* Set the exit request */
     ABTI_xstream_set_request(p_local_xstream, ABTI_XSTREAM_REQ_EXIT);
 
     /* Wait until the ES terminates */
     do {
-        ABTI_ythread *p_ythread =
-            ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
-        if (p_ythread) {
-            ABTI_ythread_yield(&p_local_xstream, p_ythread,
-                               ABT_SYNC_EVENT_TYPE_OTHER, NULL);
-        } else {
-            ABTD_atomic_pause();
-        }
+        ABTI_ythread_yield(&p_local_xstream, p_ythread,
+                           ABT_SYNC_EVENT_TYPE_OTHER, NULL);
     } while (ABTD_atomic_acquire_load_int(&p_local_xstream->state) !=
              ABT_XSTREAM_STATE_TERMINATED);
-
 fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -521,6 +509,7 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
 
@@ -536,33 +525,26 @@ fn_fail:
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_xstream_self(ABT_xstream *xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABT_xstream ret = ABT_XSTREAM_NULL;
 
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        *xstream = ABT_XSTREAM_NULL;
-        goto fn_exit;
-    }
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        *xstream = ABT_XSTREAM_NULL;
-        goto fn_exit;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     /* Return value */
-    *xstream = ABTI_xstream_get_handle(p_local_xstream);
+    ret = ABTI_xstream_get_handle(p_local_xstream);
 
 fn_exit:
+    *xstream = ret;
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -578,26 +560,19 @@ fn_exit:
 int ABT_xstream_self_rank(int *rank)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
 
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        goto fn_exit;
-    }
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_exit;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     /* Return value */
     *rank = (int)p_local_xstream->rank;
 
 fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -678,27 +653,22 @@ fn_fail:
  * @param[in] xstream  handle to the target ES
  * @param[in] sched    handle to the scheduler
  * @return Error code
- * @retval ABT_SUCCESS         on success
- * @retval ABT_ERR_INV_THREAD  the caller is not ULT
- * @retval ABT_ERR_XSTREAM     the current main scheduler of \c xstream has
- *                             work units in its associated pools
+ * @retval ABT_SUCCESS          on success
+ * @retval ABT_ERR_XSTREAM      the current main scheduler of \c xstream has
+ *                              work units in its associated pools
+ * @retval ABT_ERR_INV_XSTREAM  called by an external thread
+ * @retval ABT_ERR_INV_THREAD   called by a non-yieldable thread (tasklet)
  */
 int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_sched *p_sched;
-
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    ABTI_CHECK_TRUE(!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream,
-                    ABT_ERR_INV_THREAD);
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    ABTI_thread *p_self = p_local_xstream->p_thread;
-    ABTI_CHECK_TRUE(p_self->type & ABTI_THREAD_TYPE_YIELDABLE,
-                    ABT_ERR_INV_THREAD);
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_self;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_self);
 
     /* For now, if the target ES is running, we allow to change the main
      * scheduler of the ES only when the caller is running on the same ES. */
@@ -707,7 +677,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
      * function. */
     if (ABTD_atomic_acquire_load_int(&p_xstream->state) ==
         ABT_XSTREAM_STATE_RUNNING) {
-        if (p_self->p_last_xstream != p_xstream) {
+        if (p_self->thread.p_last_xstream != p_xstream) {
             abt_errno = ABT_ERR_XSTREAM_STATE;
             goto fn_fail;
         }
@@ -726,6 +696,7 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
         }
     }
 
+    ABTI_sched *p_sched;
     if (sched == ABT_SCHED_NULL) {
         abt_errno = ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
                                             ABT_SCHED_CONFIG_NULL, &p_sched);
@@ -759,7 +730,9 @@ fn_fail:
  * @param[in] num_pools   number of pools associated with this scheduler
  * @param[in] pools       pools associated with this scheduler
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS          on success
+ * @retval ABT_ERR_INV_XSTREAM  called by an external thread
+ * @retval ABT_ERR_INV_THREAD   called by a non-yieldable thread (tasklet)
  */
 int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
                                      ABT_sched_predef predef, int num_pools,
@@ -767,10 +740,8 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    ABTI_CHECK_TRUE(!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream,
-                    ABT_ERR_INV_THREAD);
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, NULL);
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
@@ -919,19 +890,21 @@ int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
 int ABT_xstream_get_num(int *num_xstreams)
 {
     int abt_errno = ABT_SUCCESS;
+    int ret = 0;
 
     /* In case that Argobots has not been initialized, return an error code
      * instead of making the call fail. */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        *num_xstreams = 0;
-        goto fn_exit;
-    }
+    ABTI_SETUP_WITH_INIT_CHECK();
 
-    *num_xstreams = gp_ABTI_global->num_xstreams;
+    ret = gp_ABTI_global->num_xstreams;
 
 fn_exit:
+    *num_xstreams = ret;
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -981,16 +954,18 @@ fn_fail:
  * @param[in] unit handle to the unit to run
  * @param[in] pool pool where unit is from
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS          on success
+ * @retval ABT_ERR_INV_XSTREAM  called by an external thread
+ * @retval ABT_ERR_INV_THREAD   called by a non-yieldable thread (tasklet)
  */
 int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
 {
     int abt_errno;
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    ABTI_CHECK_TRUE(!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream,
-                    ABT_ERR_INV_THREAD);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, NULL);
 
     abt_errno = ABTI_xstream_run_unit(&p_local_xstream, unit, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
@@ -1046,24 +1021,14 @@ fn_fail:
  * @param[in] sched handle to the scheduler where this call is from
  * @return Error code
  * @retval ABT_SUCCESS on success
+ * @retval ABT_ERR_INV_XSTREAM  called by an external thread
  */
 int ABT_xstream_check_events(ABT_sched sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
 
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        goto fn_exit;
-    }
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_exit;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     abt_errno = ABTI_xstream_check_events(p_local_xstream, sched);
     ABTI_CHECK_ERROR(abt_errno);

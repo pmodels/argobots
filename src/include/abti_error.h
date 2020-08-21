@@ -27,12 +27,63 @@
         ((void)sizeof(char[2 * !!(cond)-1]));                                  \
     } while (0)
 
-#define ABTI_CHECK_INITIALIZED()                                               \
+#define ABTI_SETUP_WITH_INIT_CHECK()                                           \
     do {                                                                       \
         if (ABTI_IS_ERROR_CHECK_ENABLED && gp_ABTI_global == NULL) {           \
             abt_errno = ABT_ERR_UNINITIALIZED;                                 \
             goto fn_fail;                                                      \
         }                                                                      \
+    } while (0)
+
+#define ABTI_SETUP_LOCAL_XSTREAM(pp_local_xstream)                             \
+    do {                                                                       \
+        ABTI_xstream *p_local_xstream_tmp =                                    \
+            ABTI_local_get_xstream_or_null(ABTI_local_get_local());            \
+        if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream_tmp == NULL) {       \
+            abt_errno = ABT_ERR_INV_XSTREAM;                                   \
+            goto fn_fail;                                                      \
+        }                                                                      \
+        ABTI_xstream **pp_local_xstream_tmp = (pp_local_xstream);              \
+        if (pp_local_xstream_tmp) {                                            \
+            *pp_local_xstream_tmp = p_local_xstream_tmp;                       \
+        }                                                                      \
+    } while (0)
+
+#define ABTI_SETUP_LOCAL_YTHREAD(pp_local_xstream, pp_ythread)                 \
+    do {                                                                       \
+        ABTI_xstream *p_local_xstream_tmp =                                    \
+            ABTI_local_get_xstream_or_null(ABTI_local_get_local());            \
+        if (ABTI_IS_ERROR_CHECK_ENABLED && ABTI_IS_EXT_THREAD_ENABLED &&       \
+            p_local_xstream_tmp == NULL) {                                     \
+            abt_errno = ABT_ERR_INV_XSTREAM;                                   \
+            goto fn_fail;                                                      \
+        }                                                                      \
+        ABTI_xstream **pp_local_xstream_tmp = (pp_local_xstream);              \
+        if (pp_local_xstream_tmp) {                                            \
+            *pp_local_xstream_tmp = p_local_xstream_tmp;                       \
+        }                                                                      \
+        ABTI_thread *p_thread_tmp = p_local_xstream_tmp->p_thread;             \
+        if (ABTI_IS_ERROR_CHECK_ENABLED &&                                     \
+            !(p_thread_tmp->type & ABTI_THREAD_TYPE_YIELDABLE)) {              \
+            abt_errno = ABT_ERR_INV_THREAD;                                    \
+            goto fn_fail;                                                      \
+        }                                                                      \
+        ABTI_ythread **pp_ythread_tmp = (pp_ythread);                          \
+        if (pp_ythread_tmp) {                                                  \
+            *pp_ythread_tmp = ABTI_thread_get_ythread(p_thread_tmp);           \
+        }                                                                      \
+    } while (0)
+
+#define ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(pp_local_xstream)             \
+    do {                                                                       \
+        ABTI_SETUP_WITH_INIT_CHECK();                                          \
+        ABTI_SETUP_LOCAL_XSTREAM(pp_local_xstream);                            \
+    } while (0)
+
+#define ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(pp_local_xstream, pp_ythread) \
+    do {                                                                       \
+        ABTI_SETUP_WITH_INIT_CHECK();                                          \
+        ABTI_SETUP_LOCAL_YTHREAD(pp_local_xstream, pp_ythread);                \
     } while (0)
 
 #define ABTI_CHECK_ERROR(abt_errno)                                            \

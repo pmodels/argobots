@@ -29,30 +29,32 @@
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_get_type(ABT_unit_type *type)
 {
     int abt_errno = ABT_SUCCESS;
+    ABT_unit_type ret = ABT_UNIT_TYPE_EXT;
+
+    /* If Argobots has not been initialized, set type to ABT_UNIT_TYPE_EXT. */
+    ABTI_SETUP_WITH_INIT_CHECK();
+
     ABTI_local *p_local = ABTI_local_get_local();
-
-    /* If Argobots has not been initialized, set type to ABT_UNIT_TYPE_EXIT. */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        *type = ABT_UNIT_TYPE_EXT;
-        goto fn_exit;
-    }
-
     ABTI_thread_type raw_type = ABTI_self_get_type(p_local);
-    *type = ABTI_thread_type_get_type(raw_type);
+    ret = ABTI_thread_type_get_type(raw_type);
     /* This is when an external thread called this routine. */
-    if (ABTI_IS_EXT_THREAD_ENABLED && *type == ABT_UNIT_TYPE_EXT) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && ret == ABT_UNIT_TYPE_EXT) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
 
 fn_exit:
+    *type = ret;
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -69,40 +71,27 @@ fn_exit:
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
- * @retval ABT_ERR_INV_THREAD    called by a tasklet
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_is_primary(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABT_bool ret = ABT_FALSE;
 
-    /* If Argobots has not been initialized, set flag to ABT_FALSE. */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        *flag = ABT_FALSE;
-        goto fn_exit;
-    }
-
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    /* This is when an external thread called this routine. */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        *flag = ABT_FALSE;
-        goto fn_exit;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (p_thread->type & ABTI_THREAD_TYPE_MAIN) {
-        *flag = ABT_TRUE;
-    } else {
-        if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE))
-            abt_errno = ABT_ERR_INV_THREAD;
-        *flag = ABT_FALSE;
-    }
+    if (p_thread->type & ABTI_THREAD_TYPE_MAIN)
+        ret = ABT_TRUE;
 
 fn_exit:
+    *flag = ret;
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -118,34 +107,26 @@ fn_exit:
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_on_primary_xstream(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    ABT_bool ret = ABT_FALSE;
 
-    /* If Argobots has not been initialized, set flag to ABT_FALSE. */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        *flag = ABT_FALSE;
-        goto fn_exit;
-    }
-
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    /* This is when an external thread called this routine. */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        *flag = ABT_FALSE;
-        goto fn_exit;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     /* Return value */
-    *flag = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE
-                                                                 : ABT_FALSE;
-
+    ret = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE
+                                                               : ABT_FALSE;
 fn_exit:
+    *flag = ret;
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -164,34 +145,27 @@ fn_exit:
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_get_last_pool_id(int *pool_id)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    int ret = -1;
 
-    if (gp_ABTI_global == NULL) {
-        /* Argobots has not been initialized. */
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        *pool_id = -1;
-        goto fn_exit;
-    }
-
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    /* This is when an external thread called this routine. */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        *pool_id = -1;
-        goto fn_exit;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_self = p_local_xstream->p_thread;
     ABTI_ASSERT(p_self->p_pool);
-    *pool_id = (int)(p_self->p_pool->id);
+    ret = p_self->p_pool->id;
 
 fn_exit:
+    *pool_id = ret;
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -207,24 +181,19 @@ fn_exit:
  * \c ABT_ERR_INV_THREAD without suspending the caller.
  *
  * @return Error code
- * @retval ABT_SUCCESS          on success
- * @retval ABT_ERR_INV_THREAD   called by a non-ULT
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
+ * @retval ABT_ERR_INV_THREAD    called by a non-yieldable thread (tasklet)
  */
 int ABT_self_suspend(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
 
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    /* This is when an external thread called this routine. */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_THREAD;
-        goto fn_exit;
-    }
-
+    ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_self;
-    ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_self,
-                         ABT_ERR_INV_THREAD);
+    ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_self);
+
     abt_errno = ABTI_ythread_set_blocked(p_self);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -248,30 +217,25 @@ fn_fail:
  *
  * @param[in] arg  argument for the work unit function
  * @return Error code
- * @retval ABT_SUCCESS on success
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_set_arg(void *arg)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
 
-    /* When Argobots has not been initialized */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        goto fn_exit;
-    }
-
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    /* When an external thread called this routine */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_exit;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     p_local_xstream->p_thread->p_arg = arg;
 
 fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -287,31 +251,26 @@ fn_exit:
  * @param[out] arg  argument for the work unit function
  * @return Error code
  * @retval ABT_SUCCESS on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_get_arg(void **arg)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
+    void *ret = NULL;
 
-    /* When Argobots has not been initialized */
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        *arg = NULL;
-        goto fn_exit;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    /* When an external thread called this routine */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        *arg = NULL;
-        goto fn_exit;
-    }
-
-    *arg = p_local_xstream->p_thread->p_arg;
+    ret = p_local_xstream->p_thread->p_arg;
 
 fn_exit:
+    *arg = ret;
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -325,19 +284,16 @@ fn_exit:
  * @param[out] flag  result (<tt>ABT_TRUE</tt> if unnamed)
  *
  * @return Error code
- * @retval ABT_SUCCESS  on success
+ * @retval ABT_SUCCESS           on success
+ * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_is_unnamed(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    /* When an external thread called this routine */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        *flag = ABT_FALSE;
-        goto fn_exit;
-    }
+
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     *flag = (p_local_xstream->p_thread->type & ABTI_THREAD_TYPE_NAMED)
                 ? ABT_FALSE
@@ -345,4 +301,8 @@ int ABT_self_is_unnamed(ABT_bool *flag)
 
 fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
