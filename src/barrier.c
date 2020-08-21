@@ -144,7 +144,7 @@ fn_fail:
 int ABT_barrier_wait(ABT_barrier barrier)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
     uint32_t pos;
@@ -160,6 +160,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
         ABT_unit_type type;
         ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
         if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
             p_ythread =
                 ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
@@ -203,7 +204,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
         for (i = 0; i < p_barrier->num_waiters - 1; i++) {
             ABTI_ythread *p_ythread = p_barrier->waiters[i];
             if (p_barrier->waiter_type[i] == ABT_UNIT_TYPE_THREAD) {
-                ABTI_ythread_set_ready(p_local_xstream, p_ythread);
+                ABTI_ythread_set_ready(p_local, p_ythread);
             } else {
                 /* When p_cur is an external thread */
                 ABTD_atomic_int32 *p_ext_signal =

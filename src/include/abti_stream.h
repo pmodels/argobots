@@ -57,7 +57,7 @@ static inline ABTI_pool *ABTI_xstream_get_main_pool(ABTI_xstream *p_xstream)
     return ABTI_pool_get_ptr(pool);
 }
 
-static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
+static inline void ABTI_xstream_terminate_thread(ABTI_local *p_local,
                                                  ABTI_thread *p_thread)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n", ABTI_thread_get_id(p_thread),
@@ -65,7 +65,7 @@ static inline void ABTI_xstream_terminate_thread(ABTI_xstream *p_local_xstream,
     if (!(p_thread->type & ABTI_THREAD_TYPE_NAMED)) {
         ABTD_atomic_release_store_int(&p_thread->state,
                                       ABTI_THREAD_STATE_TERMINATED);
-        ABTI_thread_free(p_local_xstream, p_thread);
+        ABTI_thread_free(p_local, p_thread);
     } else {
         /* NOTE: We set the ULT's state as TERMINATED after checking refcount
          * because the ULT can be freed on a different ES.  In other words, we
@@ -81,6 +81,11 @@ static inline ABTI_native_thread_id
 ABTI_xstream_get_native_thread_id(ABTI_xstream *p_xstream)
 {
     return (ABTI_native_thread_id)p_xstream;
+}
+
+static inline ABTI_local *ABTI_xstream_get_local(ABTI_xstream *p_xstream)
+{
+    return (ABTI_local *)p_xstream;
 }
 
 #endif /* ABTI_XSTREAM_H_INCLUDED */

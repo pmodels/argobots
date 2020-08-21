@@ -88,7 +88,8 @@ fn_fail:
 
 static void sched_run(ABT_sched sched)
 {
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_xstream *p_local_xstream =
+        ABTI_local_get_xstream(ABTI_local_get_local());
     ABT_unit unit = ABT_UNIT_NULL;
     uint32_t pop_count = 0;
     sched_data *p_data;
@@ -117,8 +118,10 @@ static void sched_run(ABT_sched sched)
         /* if we attempted event_freq pops, check for events */
         if (pop_count >= event_freq) {
             ABTI_xstream_check_events(p_local_xstream, sched);
-            if (ABTI_sched_has_to_stop(&p_local_xstream, p_sched) == ABT_TRUE)
+            ABTI_local *p_local = ABTI_xstream_get_local(p_local_xstream);
+            if (ABTI_sched_has_to_stop(&p_local, p_sched) == ABT_TRUE)
                 break;
+            p_local_xstream = ABTI_local_get_xstream(p_local);
             SCHED_SLEEP(unit != ABT_UNIT_NULL, p_data->sleep_time);
             pop_count = 0;
         }

@@ -57,15 +57,15 @@ static inline ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
 #endif
 }
 
-static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
-                                 ABTI_cond *p_cond, ABTI_mutex *p_mutex)
+static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
+                                 ABTI_mutex *p_mutex)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_ythread *p_ythread = NULL;
     ABTI_thread *p_thread;
 
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
     if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
         p_thread = p_local_xstream->p_thread;
         p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
@@ -117,15 +117,15 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
 
         /* Unlock the mutex that the calling ULT is holding */
         /* FIXME: should check if mutex was locked by the calling ULT */
-        ABTI_mutex_unlock(p_local_xstream, p_mutex);
+        ABTI_mutex_unlock(ABTI_xstream_get_local(p_local_xstream), p_mutex);
 
         /* Suspend the current ULT */
-        ABTI_ythread_suspend(pp_local_xstream, p_ythread,
+        ABTI_ythread_suspend(&p_local_xstream, p_ythread,
                              ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
-
+        *pp_local = ABTI_xstream_get_local(p_local_xstream);
     } else {
         ABTI_spinlock_release(&p_cond->lock);
-        ABTI_mutex_unlock(p_local_xstream, p_mutex);
+        ABTI_mutex_unlock(ABTI_xstream_get_local(p_local_xstream), p_mutex);
 
         /* External thread is waiting here. */
         while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
@@ -135,7 +135,7 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
     }
 
     /* Lock the mutex again */
-    ABTI_mutex_lock(pp_local_xstream, p_mutex);
+    ABTI_mutex_lock(pp_local, p_mutex);
 
 fn_exit:
     return abt_errno;
@@ -145,8 +145,7 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline void ABTI_cond_broadcast(ABTI_xstream *p_local_xstream,
-                                       ABTI_cond *p_cond)
+static inline void ABTI_cond_broadcast(ABTI_local *p_local, ABTI_cond *p_cond)
 {
     ABTI_spinlock_acquire(&p_cond->lock);
 
@@ -166,7 +165,7 @@ static inline void ABTI_cond_broadcast(ABTI_xstream *p_local_xstream,
 
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread) {
-            ABTI_ythread_set_ready(p_local_xstream, p_ythread);
+            ABTI_ythread_set_ready(p_local, p_ythread);
         } else {
             /* When the head is an external thread */
             ABTD_atomic_release_store_int(&p_thread->state,

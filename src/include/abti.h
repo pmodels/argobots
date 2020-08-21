@@ -101,6 +101,7 @@ enum ABTI_stack_type {
 
 /* Data Types */
 typedef struct ABTI_global ABTI_global;
+typedef struct ABTI_local ABTI_local;
 typedef struct ABTI_local_func ABTI_local_func;
 typedef struct ABTI_xstream ABTI_xstream;
 typedef enum ABTI_xstream_type ABTI_xstream_type;
@@ -224,9 +225,11 @@ struct ABTI_global {
 #endif
 };
 
+struct ABTI_local; /* Empty. */
+
 struct ABTI_local_func {
     char padding1[ABT_CONFIG_STATIC_CACHELINE_SIZE];
-    ABTI_xstream *(*get_local_xstream_f)(void);
+    ABTI_local *(*get_local_f)(void);
     void (*set_local_xstream_f)(ABTI_xstream *);
     void *(*get_local_ptr_f)(void);
     char padding2[ABT_CONFIG_STATIC_CACHELINE_SIZE];
@@ -441,7 +444,7 @@ extern ABTI_global *gp_ABTI_global;
 extern ABTI_local_func gp_ABTI_local_func;
 
 /* ES Local Data */
-extern ABTD_XSTREAM_LOCAL ABTI_xstream *lp_ABTI_xstream;
+extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
 
 /* Global */
 void ABTI_global_update_max_xstreams(int new_size);
@@ -449,13 +452,13 @@ void ABTI_global_update_max_xstreams(int new_size);
 /* Execution Stream (ES) */
 int ABTI_xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream);
 int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
-int ABTI_xstream_start(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream);
+int ABTI_xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream);
 int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
                                ABTI_xstream *p_xstream,
                                ABTI_ythread *p_ythread);
-int ABTI_xstream_free(ABTI_xstream *p_local_xstream, ABTI_xstream *p_xstream,
+int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
                       ABT_bool force_free);
-int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream);
+int ABTI_xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream);
 void ABTI_xstream_schedule(void *p_arg);
 int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
                           ABTI_pool *p_pool);
@@ -463,8 +466,7 @@ int ABTI_xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
                                   ABTI_ythread *p_ythread);
 void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                 ABTI_thread *p_task);
-int ABTI_xstream_migrate_thread(ABTI_xstream *p_local_xstream,
-                                ABTI_thread *p_thread);
+int ABTI_xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread);
 int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                    ABTI_xstream *p_xstream,
@@ -487,16 +489,14 @@ int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                             ABT_pool *pools, ABT_sched_config config,
                             ABTI_sched **pp_newsched);
-int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched,
+int ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
                     ABT_bool force_free);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
 ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
-ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream,
-                                ABTI_sched *p_sched);
+ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched);
 size_t ABTI_sched_get_size(ABTI_sched *p_sched);
 size_t ABTI_sched_get_total_size(ABTI_sched *p_sched);
-size_t ABTI_sched_get_effective_size(ABTI_xstream *p_local_xstream,
-                                     ABTI_sched *p_sched);
+size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched);
 void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                       ABT_bool print_sub);
 void ABTI_sched_reset_id(void);
@@ -532,36 +532,32 @@ void ABTI_pool_reset_id(void);
 void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 
 /* Threads */
-int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
-                                ABTI_thread *p_thread, ABTI_pool *p_pool);
-ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_xstream *p_local_xstream,
+int ABTI_thread_migrate_to_pool(ABTI_local **p_local, ABTI_thread *p_thread,
+                                ABTI_pool *p_pool);
+ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_local *p_local,
                                                ABTI_thread *p_thread);
-void ABTI_thread_free(ABTI_xstream *p_local_xstream, ABTI_thread *p_thread);
+void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 void ABTI_thread_reset_id(void);
 ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
 
 /* Yieldable threads */
-int ABTI_ythread_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
+int ABTI_ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
                         void (*thread_func)(void *), void *arg,
                         ABTI_thread_attr *p_attr, ABTI_ythread **pp_newthread);
-int ABTI_ythread_create_main(ABTI_xstream *p_local_xstream,
-                             ABTI_xstream *p_xstream, ABTI_ythread **p_ythread);
-int ABTI_ythread_create_main_sched(ABTI_xstream *p_local_xstream,
-                                   ABTI_xstream *p_xstream,
+int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
+                             ABTI_ythread **p_ythread);
+int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
                                    ABTI_sched *p_sched);
-int ABTI_ythread_create_sched(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
+int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
                               ABTI_sched *p_sched);
-void ABTI_ythread_free_main(ABTI_xstream *p_local_xstream,
-                            ABTI_ythread *p_ythread);
-void ABTI_ythread_free_main_sched(ABTI_xstream *p_local_xstream,
-                                  ABTI_ythread *p_ythread);
+void ABTI_ythread_free_main(ABTI_local *p_local, ABTI_ythread *p_ythread);
+void ABTI_ythread_free_main_sched(ABTI_local *p_local, ABTI_ythread *p_ythread);
 int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread);
 void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
                           ABTI_ythread *p_ythread,
                           ABT_sync_event_type sync_event_type, void *p_sync);
-int ABTI_ythread_set_ready(ABTI_xstream *p_local_xstream,
-                           ABTI_ythread *p_ythread);
+int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread);
 int ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
 
 /* Thread attributes */
@@ -591,7 +587,7 @@ ABT_bool ABTI_ythread_htable_switch_low(ABTI_xstream **pp_local_xstream,
                                         ABT_sync_event_type sync_event_type,
                                         void *p_sync);
 /* Key */
-void ABTI_ktable_free(ABTI_xstream *p_local_xstream, ABTI_ktable *p_ktable);
+void ABTI_ktable_free(ABTI_local *p_local, ABTI_ktable *p_ktable);
 
 /* Mutex */
 void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
@@ -599,7 +595,7 @@ void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
 void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
                          int val);
 void ABTI_mutex_wake_se(ABTI_mutex *p_mutex, int num);
-void ABTI_mutex_wake_de(ABTI_xstream *p_local_xstream, ABTI_mutex *p_mutex);
+void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex);
 
 /* Mutex Attributes */
 void ABTI_mutex_attr_print(ABTI_mutex_attr *p_attr, FILE *p_os, int indent);

@@ -38,9 +38,9 @@
  * If you don't understand this problem well and it is not in the critical path,
  * use the uninlined version for correctness.
  */
-static inline ABTI_xstream *ABTI_local_get_xstream(void)
+static inline ABTI_local *ABTI_local_get_local(void)
 {
-    return lp_ABTI_xstream;
+    return lp_ABTI_local;
 }
 
 /*
@@ -48,9 +48,9 @@ static inline ABTI_xstream *ABTI_local_get_xstream(void)
  * the thread local value without referring to the cached TLS.  This is slower
  * than ABTI_local_get_xstream(), so use ABTI_local_get_xstream() if possible.
  */
-static inline ABTI_xstream *ABTI_local_get_xstream_uninlined(void)
+static inline ABTI_local *ABTI_local_get_local_uninlined(void)
 {
-    return gp_ABTI_local_func.get_local_xstream_f();
+    return gp_ABTI_local_func.get_local_f();
 }
 
 /*
@@ -69,6 +69,23 @@ static inline void ABTI_local_set_xstream(ABTI_xstream *p_local_xstream)
 static inline void *ABTI_local_get_local_ptr(void)
 {
     return gp_ABTI_local_func.get_local_ptr_f();
+}
+
+/*
+ * A developer must be aware that p_local can be NULL.
+ */
+static inline ABTI_xstream *ABTI_local_get_xstream_or_null(ABTI_local *p_local)
+{
+    return (ABTI_xstream *)p_local;
+}
+
+/*
+ * This function assumes that the given p_local is not NULL (=running on an
+ * execution stream).
+ */
+static inline ABTI_xstream *ABTI_local_get_xstream(ABTI_local *p_local)
+{
+    return (ABTI_xstream *)p_local;
 }
 
 #endif /* ABTI_LOCAL_H_INCLUDED */

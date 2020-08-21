@@ -127,7 +127,7 @@ fn_fail:
 int ABT_future_wait(ABT_future future)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -137,6 +137,7 @@ int ABT_future_wait(ABT_future future)
         ABTI_ythread *p_ythread = NULL;
         ABTI_thread *p_thread;
 
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
         if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
             p_thread = p_local_xstream->p_thread;
             p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
@@ -238,7 +239,7 @@ fn_fail:
 int ABT_future_set(ABT_future future, void *value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -274,7 +275,7 @@ int ABT_future_set(ABT_future future, void *value)
 
             ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
             if (p_ythread) {
-                ABTI_ythread_set_ready(p_local_xstream, p_ythread);
+                ABTI_ythread_set_ready(p_local, p_ythread);
             } else {
                 /* When the head is an external thread */
                 ABTD_atomic_release_store_int(&p_thread->state,

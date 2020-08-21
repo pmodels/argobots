@@ -163,7 +163,8 @@ static inline ABTI_ythread *ABTI_ythread_context_switch_to_sibling_internal(
         ABTU_unreachable();
     } else {
         ABTD_ythread_context_switch(&p_old->ctx, &p_new->ctx);
-        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
+        ABTI_local *p_local = ABTI_local_get_local_uninlined();
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
         *pp_local_xstream = p_local_xstream;
         ABTI_thread *p_prev = p_local_xstream->p_thread;
         p_local_xstream->p_thread = &p_old->thread;
@@ -194,7 +195,8 @@ static inline ABTI_ythread *ABTI_ythread_context_switch_to_parent_internal(
                                       p_old->thread.p_parent, sync_event_type,
                                       p_sync);
         ABTD_ythread_context_switch(&p_old->ctx, &p_new->ctx);
-        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_uninlined();
+        ABTI_local *p_local = ABTI_local_get_local_uninlined();
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
         *pp_local_xstream = p_local_xstream;
         ABTI_thread *p_prev = p_local_xstream->p_thread;
         p_local_xstream->p_thread = &p_old->thread;
@@ -230,7 +232,8 @@ static inline ABTI_ythread *ABTI_ythread_context_switch_to_child_internal(
          * run dynamic promotion, ABTI_ythread_context_make_and_call took the
          * fast path. In this case, the request handling has not been done,
          * so it must be done here. */
-        p_local_xstream = ABTI_local_get_xstream_uninlined();
+        ABTI_local *p_local = ABTI_local_get_local_uninlined();
+        p_local_xstream = ABTI_local_get_xstream(p_local);
         *pp_local_xstream = p_local_xstream;
         ABTI_thread *p_prev_thread = p_local_xstream->p_thread;
         ABTI_ASSERT(p_prev_thread->type & ABTI_THREAD_TYPE_YIELDABLE);
@@ -253,7 +256,8 @@ static inline ABTI_ythread *ABTI_ythread_context_switch_to_child_internal(
                     ABTI_ythread_context_get_ythread(p_link);
                 /* The scheduler may not use a bypass mechanism, so just makes
                  * p_joiner ready. */
-                ABTI_ythread_set_ready(p_local_xstream, p_joiner);
+                ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
+                                       p_joiner);
 
                 /* We don't need to use the atomic OR operation here because
                  * the ULT will be terminated regardless of other requests. */
@@ -272,7 +276,8 @@ static inline ABTI_ythread *ABTI_ythread_context_switch_to_child_internal(
                         p_link = ABTD_atomic_acquire_load_ythread_context_ptr(
                             &p_ctx->p_link);
                     } while (!p_link);
-                    ABTI_ythread_set_ready(p_local_xstream,
+                    ABTI_ythread_set_ready(ABTI_xstream_get_local(
+                                               p_local_xstream),
                                            ABTI_ythread_context_get_ythread(
                                                p_link));
                 }
@@ -283,7 +288,8 @@ static inline ABTI_ythread *ABTI_ythread_context_switch_to_child_internal(
 #endif
     {
         ABTD_ythread_context_switch(&p_old->ctx, &p_new->ctx);
-        p_local_xstream = ABTI_local_get_xstream_uninlined();
+        ABTI_local *p_local = ABTI_local_get_local_uninlined();
+        p_local_xstream = ABTI_local_get_xstream(p_local);
         *pp_local_xstream = p_local_xstream;
         ABTI_thread *p_prev = p_local_xstream->p_thread;
         p_local_xstream->p_thread = &p_old->thread;

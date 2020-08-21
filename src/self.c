@@ -34,6 +34,8 @@
 int ABT_self_get_type(ABT_unit_type *type)
 {
     int abt_errno = ABT_SUCCESS;
+    ABTI_local *p_local = ABTI_local_get_local();
+
     /* If Argobots has not been initialized, set type to ABT_UNIT_TYPE_EXIT. */
     if (gp_ABTI_global == NULL) {
         abt_errno = ABT_ERR_UNINITIALIZED;
@@ -41,8 +43,7 @@ int ABT_self_get_type(ABT_unit_type *type)
         goto fn_exit;
     }
 
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-    ABTI_thread_type raw_type = ABTI_self_get_type(p_local_xstream);
+    ABTI_thread_type raw_type = ABTI_self_get_type(p_local);
     *type = ABTI_thread_type_get_type(raw_type);
     /* This is when an external thread called this routine. */
     if (ABTI_IS_EXT_THREAD_ENABLED && *type == ABT_UNIT_TYPE_EXT) {
@@ -74,7 +75,7 @@ fn_exit:
 int ABT_self_is_primary(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* If Argobots has not been initialized, set flag to ABT_FALSE. */
     if (gp_ABTI_global == NULL) {
@@ -83,6 +84,7 @@ int ABT_self_is_primary(ABT_bool *flag)
         goto fn_exit;
     }
 
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* This is when an external thread called this routine. */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
@@ -121,7 +123,7 @@ fn_exit:
 int ABT_self_on_primary_xstream(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* If Argobots has not been initialized, set flag to ABT_FALSE. */
     if (gp_ABTI_global == NULL) {
@@ -130,6 +132,7 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
         goto fn_exit;
     }
 
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* This is when an external thread called this routine. */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
@@ -166,7 +169,7 @@ fn_exit:
 int ABT_self_get_last_pool_id(int *pool_id)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
 
     if (gp_ABTI_global == NULL) {
         /* Argobots has not been initialized. */
@@ -175,6 +178,7 @@ int ABT_self_get_last_pool_id(int *pool_id)
         goto fn_exit;
     }
 
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* This is when an external thread called this routine. */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
@@ -209,8 +213,9 @@ fn_exit:
 int ABT_self_suspend(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
 
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* This is when an external thread called this routine. */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_THREAD;
@@ -248,7 +253,7 @@ fn_fail:
 int ABT_self_set_arg(void *arg)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* When Argobots has not been initialized */
     if (gp_ABTI_global == NULL) {
@@ -256,6 +261,7 @@ int ABT_self_set_arg(void *arg)
         goto fn_exit;
     }
 
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* When an external thread called this routine */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
@@ -285,7 +291,7 @@ fn_exit:
 int ABT_self_get_arg(void **arg)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* When Argobots has not been initialized */
     if (gp_ABTI_global == NULL) {
@@ -294,6 +300,7 @@ int ABT_self_get_arg(void **arg)
         goto fn_exit;
     }
 
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* When an external thread called this routine */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
@@ -323,8 +330,8 @@ fn_exit:
 int ABT_self_is_unnamed(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
-
+    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* When an external thread called this routine */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;

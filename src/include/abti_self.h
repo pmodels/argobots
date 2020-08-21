@@ -7,8 +7,9 @@
 #define ABTI_SELF_H_INCLUDED
 
 static inline ABTI_native_thread_id
-ABTI_self_get_native_thread_id(ABTI_xstream *p_local_xstream)
+ABTI_self_get_native_thread_id(ABTI_local *p_local)
 {
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* This is when an external thread called this routine. */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         /* A pointer to a thread local variable can distinguish all external
@@ -18,9 +19,9 @@ ABTI_self_get_native_thread_id(ABTI_xstream *p_local_xstream)
     return (ABTI_native_thread_id)p_local_xstream;
 }
 
-static inline ABTI_thread_id
-ABTI_self_get_thread_id(ABTI_xstream *p_local_xstream)
+static inline ABTI_thread_id ABTI_self_get_thread_id(ABTI_local *p_local)
 {
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* This is when an external thread called this routine. */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         /* A pointer to a thread local variable is unique to an external thread
@@ -30,10 +31,9 @@ ABTI_self_get_thread_id(ABTI_xstream *p_local_xstream)
     return (ABTI_thread_id)p_local_xstream->p_thread;
 }
 
-static inline ABTI_thread_type ABTI_self_get_type(ABTI_xstream *p_local_xstream)
+static inline ABTI_thread_type ABTI_self_get_type(ABTI_local *p_local)
 {
-    ABTI_ASSERT(gp_ABTI_global);
-
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* This is when an external thread called this routine. */
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         return ABTI_THREAD_TYPE_EXT;

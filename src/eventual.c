@@ -104,7 +104,7 @@ fn_fail:
 int ABT_eventual_wait(ABT_eventual eventual, void **value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
@@ -113,6 +113,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         ABTI_ythread *p_ythread = NULL;
         ABTI_thread *p_thread;
 
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
         if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
             p_thread = p_local_xstream->p_thread;
             p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
@@ -144,7 +145,6 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
             ABTI_ythread_suspend(&p_local_xstream, p_ythread,
                                  ABT_SYNC_EVENT_TYPE_EVENTUAL,
                                  (void *)p_eventual);
-
         } else {
             ABTI_spinlock_release(&p_eventual->lock);
 
@@ -229,7 +229,7 @@ fn_fail:
 int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
     ABTI_CHECK_TRUE(nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);
@@ -254,7 +254,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread) {
-            ABTI_ythread_set_ready(p_local_xstream, p_ythread);
+            ABTI_ythread_set_ready(p_local, p_ythread);
         } else {
             /* When the head is an external thread */
             ABTD_atomic_release_store_int(&p_thread->state,
