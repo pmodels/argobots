@@ -290,7 +290,7 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
     *stop = ABT_FALSE;
 
     /* When this routine is called by an external thread, e.g., pthread */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }

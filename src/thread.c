@@ -456,7 +456,7 @@ int ABT_thread_exit(void)
         abt_errno = ABT_ERR_UNINITIALIZED;
         goto fn_exit;
     }
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
@@ -1756,7 +1756,8 @@ int ABTI_thread_migrate_to_pool(ABTI_xstream **pp_local_xstream,
     ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
 
     /* yielding if it is the same thread */
-    if (p_local_xstream != NULL && p_thread == p_local_xstream->p_thread) {
+    if ((!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) &&
+        p_thread == p_local_xstream->p_thread) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread) {
             ABTI_ythread_yield(pp_local_xstream, p_ythread,

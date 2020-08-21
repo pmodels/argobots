@@ -66,7 +66,7 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
     ABTI_ythread *p_ythread;
     ABTI_thread *p_thread;
 
-    if (p_local_xstream != NULL) {
+    if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
         p_thread = p_local_xstream->p_thread;
         ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_COND);
     } else {
