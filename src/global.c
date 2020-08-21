@@ -160,7 +160,8 @@ int ABT_finalize(void)
         goto fn_exit;
 
     /* If called by an external thread, return an error. */
-    ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream,
+                    ABT_ERR_INV_XSTREAM);
 
     ABTI_CHECK_TRUE_MSG(p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY,
                         ABT_ERR_INV_XSTREAM,

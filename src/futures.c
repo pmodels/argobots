@@ -137,7 +137,7 @@ int ABT_future_wait(ABT_future future)
         ABTI_ythread *p_ythread;
         ABTI_thread *p_thread;
 
-        if (p_local_xstream != NULL) {
+        if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
             p_thread = p_local_xstream->p_thread;
             p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK

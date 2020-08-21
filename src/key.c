@@ -107,7 +107,8 @@ int ABT_key_set(ABT_key key, void *value)
 
     /* We don't allow an external thread to call this routine. */
     ABTI_CHECK_INITIALIZED();
-    ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream,
+                    ABT_ERR_INV_XSTREAM);
 
     /* Obtain the key-value table pointer. */
     ABTI_ktable_set(p_local_xstream, &p_local_xstream->p_thread->p_keytable,
@@ -145,7 +146,8 @@ int ABT_key_get(ABT_key key, void **value)
 
     /* We don't allow an external thread to call this routine. */
     ABTI_CHECK_INITIALIZED();
-    ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream,
+                    ABT_ERR_INV_XSTREAM);
 
     /* Obtain the key-value table pointer */
     *value = ABTI_ktable_get(&p_local_xstream->p_thread->p_keytable, p_key);

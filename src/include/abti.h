@@ -19,6 +19,12 @@
 #include "abti_error.h"
 #include "abti_valgrind.h"
 
+#ifdef ABT_CONFIG_DISABLE_EXT_THREAD
+#define ABTI_IS_EXT_THREAD_ENABLED 0
+#else
+#define ABTI_IS_EXT_THREAD_ENABLED 1
+#endif
+
 /* Constants */
 #define ABTI_SCHED_NUM_PRIO 3
 

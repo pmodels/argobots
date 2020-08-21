@@ -386,7 +386,9 @@ int ABT_xstream_free(ABT_xstream *xstream)
 
     /* We first need to check whether p_local_xstream is NULL because this
      * routine might be called by external threads. */
-    ABTI_CHECK_TRUE_MSG(p_local_xstream == NULL || p_xstream != p_local_xstream,
+    ABTI_CHECK_TRUE_MSG((ABTI_IS_EXT_THREAD_ENABLED &&
+                         p_local_xstream == NULL) ||
+                            p_xstream != p_local_xstream,
                         ABT_ERR_INV_XSTREAM,
                         "The current xstream cannot be freed.");
 
@@ -471,7 +473,7 @@ int ABT_xstream_exit(void)
         abt_errno = ABT_ERR_UNINITIALIZED;
         goto fn_exit;
     }
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
@@ -550,7 +552,7 @@ int ABT_xstream_self(ABT_xstream *xstream)
         *xstream = ABT_XSTREAM_NULL;
         goto fn_exit;
     }
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *xstream = ABT_XSTREAM_NULL;
         goto fn_exit;
@@ -585,7 +587,7 @@ int ABT_xstream_self_rank(int *rank)
         abt_errno = ABT_ERR_UNINITIALIZED;
         goto fn_exit;
     }
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
@@ -686,7 +688,8 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_sched *p_sched;
 
-    ABTI_CHECK_TRUE(p_local_xstream != NULL, ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream,
+                    ABT_ERR_INV_THREAD);
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
@@ -1046,7 +1049,7 @@ int ABT_xstream_check_events(ABT_sched sched)
         abt_errno = ABT_ERR_UNINITIALIZED;
         goto fn_exit;
     }
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
@@ -1269,22 +1272,22 @@ int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream)
      * single-writer access mode, may be violated because another ES has to set
      * the blocked ULT ready. */
     p_local_xstream = *pp_local_xstream;
-    if (p_local_xstream) {
-        p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
-    }
-
-    if (p_ythread) {
-        ABT_pool_access access = p_ythread->thread.p_pool->access;
-        if (access == ABT_POOL_ACCESS_MPSC || access == ABT_POOL_ACCESS_MPMC) {
-            is_blockable = ABT_TRUE;
-        }
-
+    if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
+        ABTI_thread *p_thread = p_local_xstream->p_thread;
+        ABT_pool_access access = p_thread->p_pool->access;
         /* The target ES must not be the same as the caller ULT's ES if the
          * access mode of the associated pool is not MPMC. */
         if (access != ABT_POOL_ACCESS_MPMC) {
             ABTI_CHECK_TRUE_MSG(p_xstream != p_local_xstream,
                                 ABT_ERR_INV_XSTREAM,
                                 "The target ES should be different.");
+        }
+        p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+        if (p_ythread) {
+            if (access == ABT_POOL_ACCESS_MPSC ||
+                access == ABT_POOL_ACCESS_MPMC) {
+                is_blockable = ABT_TRUE;
+            }
         }
     }
 
@@ -1315,17 +1318,13 @@ int ABTI_xstream_join(ABTI_xstream **pp_local_xstream, ABTI_xstream *p_xstream)
 
         while (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
                ABT_XSTREAM_STATE_TERMINATED) {
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-            if (!(ABTI_self_get_type(p_local_xstream) &
-                  ABTI_THREAD_TYPE_YIELDABLE)) {
+            if (p_ythread) {
+                ABTI_ythread_yield(pp_local_xstream, p_ythread,
+                                   ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
+                                   (void *)p_xstream);
+            } else {
                 ABTD_atomic_pause();
-                continue;
             }
-#endif
-            ABTI_ythread_yield(pp_local_xstream, p_ythread,
-                               ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
-                               (void *)p_xstream);
-            p_local_xstream = *pp_local_xstream;
         }
     }
 

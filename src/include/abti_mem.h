@@ -64,14 +64,11 @@ ABTI_mem_alloc_ythread_default(ABTI_xstream *p_local_xstream)
     size_t stacksize = ABTI_global_get_thread_stacksize();
     ABTI_ythread *p_ythread;
     void *p_stack;
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* If an external thread allocates a stack, we use ABTU_malloc. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         ABTI_mem_alloc_ythread_malloc_impl(stacksize, &p_ythread, &p_stack);
         p_ythread->stacktype = ABTI_STACK_TYPE_MALLOC;
-    } else
-#endif
-    {
+    } else {
 #ifdef ABT_CONFIG_USE_MEM_POOL
         ABTI_mem_alloc_ythread_mempool_impl(&p_local_xstream->mem_pool_stack,
                                             stacksize, &p_ythread, &p_stack);
@@ -96,14 +93,11 @@ ABTI_mem_alloc_ythread_mempool(ABTI_xstream *p_local_xstream,
     size_t stacksize = ABTI_global_get_thread_stacksize();
     ABTI_ythread *p_ythread;
     void *p_stack;
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* If an external thread allocates a stack, we use ABTU_malloc. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         ABTI_mem_alloc_ythread_malloc_impl(stacksize, &p_ythread, &p_stack);
         p_ythread->stacktype = ABTI_STACK_TYPE_MALLOC;
-    } else
-#endif
-    {
+    } else {
         ABTI_mem_alloc_ythread_mempool_impl(&p_local_xstream->mem_pool_stack,
                                             stacksize, &p_ythread, &p_stack);
         p_ythread->stacktype = ABTI_STACK_TYPE_MEMPOOL;
@@ -194,14 +188,12 @@ static inline void *ABTI_mem_alloc_desc(ABTI_xstream *p_local_xstream)
     return ABTU_malloc(ABTI_MEM_POOL_DESC_SIZE);
 #else
     void *p_desc;
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         /* For external threads */
         p_desc = ABTU_malloc(ABTI_MEM_POOL_DESC_SIZE);
         *(uint32_t *)(((char *)p_desc) + ABTI_MEM_POOL_DESC_SIZE) = 1;
         return p_desc;
     }
-#endif
 
     /* Find the page that has an empty block */
     p_desc = ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc);

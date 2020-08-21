@@ -113,7 +113,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         ABTI_ythread *p_ythread;
         ABTI_thread *p_thread;
 
-        if (p_local_xstream != NULL) {
+        if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
             p_thread = p_local_xstream->p_thread;
             ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_EVENTUAL);
         } else {

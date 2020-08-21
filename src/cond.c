@@ -230,16 +230,14 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             abt_errno = ABT_ERR_COND_TIMEDOUT;
             break;
         }
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (!(ABTI_self_get_type(p_local_xstream) &
-              ABTI_THREAD_TYPE_YIELDABLE)) {
+        ABTI_ythread *p_ythread =
+            ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
+        if (p_ythread) {
+            ABTI_ythread_yield(&p_local_xstream, p_ythread,
+                               ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
+        } else {
             ABTD_atomic_pause();
-            continue;
         }
-#endif
-        ABTI_ythread_yield(&p_local_xstream,
-                           ABTI_thread_get_ythread(p_local_xstream->p_thread),
-                           ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
     }
 
     /* Lock the mutex again */
