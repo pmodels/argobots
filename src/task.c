@@ -215,15 +215,15 @@ int ABT_task_self(ABT_task *task)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
     if (gp_ABTI_global == NULL) {
         abt_errno = ABT_ERR_UNINITIALIZED;
         *task = ABT_TASK_NULL;
         return abt_errno;
     }
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
     if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *task = ABT_TASK_NULL;
@@ -260,14 +260,14 @@ int ABT_task_self_id(ABT_unit_id *id)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
     if (gp_ABTI_global == NULL) {
         abt_errno = ABT_ERR_UNINITIALIZED;
         return abt_errno;
     }
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* In case that Argobots has not been initialized or this routine is called
+     * by an external thread, e.g., pthread, return an error code instead of
+     * making the call fail. */
     if (p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         return abt_errno;
