@@ -2201,11 +2201,13 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
     if (ABTI_IS_EXT_THREAD_ENABLED && !p_local_xstream)
         goto busywait_based;
 
-    ABTI_ythread *p_self;
-    ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_self,
-                         ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE_MSG(p_thread != &p_self->thread, ABT_ERR_INV_THREAD,
+    ABTI_thread *p_self_thread = p_local_xstream->p_thread;
+    ABTI_CHECK_TRUE_MSG(p_thread != p_self_thread, ABT_ERR_INV_THREAD,
                         "The target ULT should be different.");
+
+    ABTI_ythread *p_self = ABTI_thread_get_ythread_or_null(p_self_thread);
+    if (!p_self)
+        goto busywait_based;
 
     ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
     if (!p_ythread)

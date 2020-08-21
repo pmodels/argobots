@@ -110,15 +110,15 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
     ABTI_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready == ABT_FALSE) {
-        ABTI_ythread *p_ythread;
+        ABTI_ythread *p_ythread = NULL;
         ABTI_thread *p_thread;
 
         if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
             p_thread = p_local_xstream->p_thread;
-            ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_EVENTUAL);
-        } else {
-            /* external thread */
-            p_ythread = NULL;
+            p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+        }
+        if (!p_ythread) {
+            /* external thread or non-yieldable thread */
             p_thread = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
             p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */
@@ -152,7 +152,8 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
             while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
                    ABTI_THREAD_STATE_READY)
                 ;
-            ABTU_free(p_thread);
+            if (p_thread->type == ABTI_THREAD_TYPE_EXT)
+                ABTU_free(p_thread);
         }
     } else {
         ABTI_spinlock_release(&p_eventual->lock);

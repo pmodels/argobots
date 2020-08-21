@@ -63,15 +63,15 @@ static inline int ABTI_cond_wait(ABTI_xstream **pp_local_xstream,
     int abt_errno = ABT_SUCCESS;
 
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_ythread *p_ythread;
+    ABTI_ythread *p_ythread = NULL;
     ABTI_thread *p_thread;
 
     if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
         p_thread = p_local_xstream->p_thread;
-        ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_COND);
-    } else {
-        /* external thread */
-        p_ythread = NULL;
+        p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+    }
+    if (!p_ythread) {
+        /* external thread or non-yieldable thread */
         p_thread = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
         p_thread->type = ABTI_THREAD_TYPE_EXT;
         /* use state for synchronization */

@@ -134,22 +134,15 @@ int ABT_future_wait(ABT_future future)
     ABTI_spinlock_acquire(&p_future->lock);
     if (ABTD_atomic_relaxed_load_uint32(&p_future->counter) <
         p_future->compartments) {
-        ABTI_ythread *p_ythread;
+        ABTI_ythread *p_ythread = NULL;
         ABTI_thread *p_thread;
 
         if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
             p_thread = p_local_xstream->p_thread;
             p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
-            if (!p_ythread) {
-                abt_errno = ABT_ERR_FUTURE;
-                ABTI_spinlock_release(&p_future->lock);
-                goto fn_fail;
-            }
-#endif
-        } else {
+        }
+        if (!p_ythread) {
             /* external thread */
-            p_ythread = NULL;
             p_thread = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
             p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */

@@ -156,16 +156,19 @@ int ABT_barrier_wait(ABT_barrier barrier)
 
     /* If we do not have all the waiters yet */
     if (p_barrier->counter < p_barrier->num_waiters) {
-        ABTI_ythread *p_ythread;
+        ABTI_ythread *p_ythread = NULL;
         ABT_unit_type type;
         ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
 
         if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
-            ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_ythread,
-                                 ABT_ERR_BARRIER);
+            p_ythread =
+                ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
+        }
+        if (p_ythread) {
+            /* yieldable thread */
             type = ABT_UNIT_TYPE_THREAD;
         } else {
-            /* external thread */
+            /* external thread or non-yieldable thread */
             /* Check size if ext_signal can be stored in p_thread. */
             ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_ythread));
             p_ythread = (ABTI_ythread *)&ext_signal;
