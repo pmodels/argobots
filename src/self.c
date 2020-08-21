@@ -44,13 +44,11 @@ int ABT_self_get_type(ABT_unit_type *type)
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_thread_type raw_type = ABTI_self_get_type(p_local_xstream);
     *type = ABTI_thread_type_get_type(raw_type);
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
-    if (*type == ABT_UNIT_TYPE_EXT) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && *type == ABT_UNIT_TYPE_EXT) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
-#endif
 
 fn_exit:
     return abt_errno;
@@ -85,14 +83,12 @@ int ABT_self_is_primary(ABT_bool *flag)
         goto fn_exit;
     }
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *flag = ABT_FALSE;
         goto fn_exit;
     }
-#endif
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
     if (p_thread->type & ABTI_THREAD_TYPE_MAIN) {
@@ -134,14 +130,12 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
         goto fn_exit;
     }
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *flag = ABT_FALSE;
         goto fn_exit;
     }
-#endif
 
     /* Return value */
     *flag = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE
@@ -181,14 +175,12 @@ int ABT_self_get_last_pool_id(int *pool_id)
         goto fn_exit;
     }
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *pool_id = -1;
         goto fn_exit;
     }
-#endif
 
     ABTI_thread *p_self = p_local_xstream->p_thread;
     ABTI_ASSERT(p_self->p_pool);
@@ -219,13 +211,11 @@ int ABT_self_suspend(void)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* This is when an external thread called this routine. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_THREAD;
         goto fn_exit;
     }
-#endif
 
     ABTI_ythread *p_self;
     ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_self,
@@ -266,13 +256,11 @@ int ABT_self_set_arg(void *arg)
         goto fn_exit;
     }
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* When an external thread called this routine */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         goto fn_exit;
     }
-#endif
 
     p_local_xstream->p_thread->p_arg = arg;
 
@@ -306,14 +294,12 @@ int ABT_self_get_arg(void **arg)
         goto fn_exit;
     }
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* When an external thread called this routine */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *arg = NULL;
         goto fn_exit;
     }
-#endif
 
     *arg = p_local_xstream->p_thread->p_arg;
 
@@ -339,21 +325,17 @@ int ABT_self_is_unnamed(ABT_bool *flag)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* When an external thread called this routine */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *flag = ABT_FALSE;
         goto fn_exit;
     }
-#endif
 
     *flag = (p_local_xstream->p_thread->type & ABTI_THREAD_TYPE_NAMED)
                 ? ABT_FALSE
                 : ABT_TRUE;
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
 fn_exit:
-#endif
     return abt_errno;
 }

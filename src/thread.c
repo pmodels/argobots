@@ -538,16 +538,14 @@ int ABT_thread_self(ABT_thread *thread)
         *thread = ABT_THREAD_NULL;
         return abt_errno;
     }
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
      * making the call fail. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *thread = ABT_THREAD_NULL;
         return abt_errno;
     }
-#endif
 
     ABTI_ythread *p_ythread =
         ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
@@ -583,15 +581,13 @@ int ABT_thread_self_id(ABT_unit_id *id)
         abt_errno = ABT_ERR_UNINITIALIZED;
         return abt_errno;
     }
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
      * making the call fail. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         return abt_errno;
     }
-#endif
 
     ABTI_thread *p_self = p_local_xstream->p_thread;
     if (p_self->type & ABTI_THREAD_TYPE_YIELDABLE) {
@@ -747,11 +743,9 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
     ABTI_ythread *p_cur_ythread = NULL;
 
-#ifdef ABT_CONFIG_DISABLE_EXT_THREAD
     /* If this routine is called by non-ULT, just return. */
-    if (!p_local_xstream)
+    if (ABTI_IS_EXT_THREAD_ENABLED && !p_local_xstream)
         goto fn_exit;
-#endif
     ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_cur_ythread,
                          ABT_ERR_INV_THREAD);
 
@@ -836,11 +830,9 @@ int ABT_thread_yield(void)
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    if (!p_local_xstream) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && !p_local_xstream) {
         goto fn_exit;
     }
-#endif
     ABTI_ythread *p_ythread =
         ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
     if (!p_ythread) {
@@ -2205,10 +2197,8 @@ static inline int ABTI_thread_join(ABTI_xstream **pp_local_xstream,
                         ABT_ERR_INV_THREAD, "The main ULT cannot be joined.");
 
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    if (!p_local_xstream)
+    if (ABTI_IS_EXT_THREAD_ENABLED && !p_local_xstream)
         goto busywait_based;
-#endif
 
     ABTI_ythread *p_self;
     ABTI_CHECK_YIELDABLE(p_local_xstream->p_thread, &p_self,
@@ -2353,9 +2343,7 @@ yield_based_task:
     }
     goto fn_exit;
 
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
 busywait_based:
-#endif
     while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
            ABTI_THREAD_STATE_TERMINATED) {
         ABTD_atomic_pause();

@@ -220,16 +220,14 @@ int ABT_task_self(ABT_task *task)
         *task = ABT_TASK_NULL;
         return abt_errno;
     }
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
      * making the call fail. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         *task = ABT_TASK_NULL;
         return abt_errno;
     }
-#endif
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
     if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
@@ -264,15 +262,13 @@ int ABT_task_self_id(ABT_unit_id *id)
         abt_errno = ABT_ERR_UNINITIALIZED;
         return abt_errno;
     }
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* In case that Argobots has not been initialized or this routine is called
      * by an external thread, e.g., pthread, return an error code instead of
      * making the call fail. */
-    if (p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         abt_errno = ABT_ERR_INV_XSTREAM;
         return abt_errno;
     }
-#endif
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
     if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
