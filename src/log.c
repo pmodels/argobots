@@ -15,8 +15,6 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
         return;
     ABTI_local *p_local = ABTI_local_get_local_uninlined();
 
-    ABTI_ythread *p_ythread = NULL;
-    ABTI_thread *p_task = NULL;
     char *prefix_fmt = NULL, *prefix = NULL;
     char *newfmt;
     uint64_t tid;
@@ -24,10 +22,10 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
     int tid_len = 0, rank_len = 0;
     size_t newfmt_len;
 
-    ABTI_thread_type type = ABTI_self_get_type(p_local);
-    if (type & ABTI_THREAD_TYPE_YIELDABLE) {
-        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
-        p_ythread = ABTI_thread_get_ythread(p_local_xstream->p_thread);
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+    if (p_local_xstream) {
+        ABTI_ythread *p_ythread =
+            ABTI_thread_get_ythread(p_local_xstream->p_thread);
         if (p_ythread == NULL) {
             if (p_local_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY) {
                 prefix_fmt = "<U%" PRIu64 ":E%d> %s";
@@ -42,12 +40,6 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
             prefix_fmt = "<U%" PRIu64 ":E%d> %s";
             tid = ABTI_thread_get_id(&p_ythread->thread);
         }
-    } else if (type != ABTI_THREAD_TYPE_EXT) {
-        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
-        rank = p_local_xstream->rank;
-        p_task = p_local_xstream->p_thread;
-        prefix_fmt = "<T%" PRIu64 ":E%d> %s";
-        tid = ABTI_thread_get_id(p_task);
     } else {
         prefix = "<EXT> ";
         prefix_fmt = "%s%s";
