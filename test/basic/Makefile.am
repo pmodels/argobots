@@ -71,6 +71,9 @@ endif
 if ABT_CONFIG_DISABLE_EXT_THREAD
 XFAIL_TESTS += self_type ext_thread ext_thread2
 endif
+if ABT_CONFIG_DISABLE_ERROR_CHECK
+XFAIL_TESTS += self_type
+endif
 
 check_PROGRAMS = $(TESTS)
 noinst_PROGRAMS = $(TESTS)

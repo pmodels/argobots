@@ -88,12 +88,18 @@ void thread_func(void *arg)
 
     ATS_printf(1, "[TH%d]: after yield\n", t_arg->id);
 
-    ABT_task task;
-    ret = ABT_task_self(&task);
-    assert(ret == ABT_ERR_INV_TASK);
-    if (task != ABT_TASK_NULL) {
-        fprintf(stderr, "ERROR: should not be a tasklet\n");
-        exit(-1);
+    ABT_bool is_check_error = ABT_FALSE;
+    ret = ABT_info_query_config(ABT_INFO_QUERY_KIND_ENABLED_CHECK_ERROR,
+                                (void *)&is_check_error);
+    ATS_ERROR(ret, "ABT_info_query_config");
+    if (is_check_error) {
+        ABT_task task;
+        ret = ABT_task_self(&task);
+        assert(ret == ABT_ERR_INV_TASK);
+        if (task != ABT_TASK_NULL) {
+            fprintf(stderr, "ERROR: should not be a tasklet\n");
+            exit(-1);
+        }
     }
 }
 
@@ -126,11 +132,17 @@ void task_func2(void *arg)
     ABT_thread thread;
     int ret;
 
-    ret = ABT_thread_self(&thread);
-    assert(ret == ABT_ERR_INV_THREAD);
-    if (thread != ABT_THREAD_NULL) {
-        fprintf(stderr, "ERROR: should not be a ULT\n");
-        exit(-1);
+    ABT_bool is_check_error = ABT_FALSE;
+    ret = ABT_info_query_config(ABT_INFO_QUERY_KIND_ENABLED_CHECK_ERROR,
+                                (void *)&is_check_error);
+    ATS_ERROR(ret, "ABT_info_query_config");
+    if (is_check_error) {
+        ret = ABT_thread_self(&thread);
+        assert(ret == ABT_ERR_INV_THREAD);
+        if (thread != ABT_THREAD_NULL) {
+            fprintf(stderr, "ERROR: should not be a ULT\n");
+            exit(-1);
+        }
     }
 
     size_t i;
