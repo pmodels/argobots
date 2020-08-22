@@ -633,6 +633,7 @@ int ABT_thread_exit(void) ABT_API_PUBLIC;
 int ABT_thread_cancel(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_thread_self(ABT_thread *thread) ABT_API_PUBLIC;
 int ABT_thread_self_id(ABT_unit_id *id) ABT_API_PUBLIC;
+int ABT_thread_get_last_xstream(ABT_thread thread, ABT_xstream *xstream) ABT_API_PUBLIC;
 int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state) ABT_API_PUBLIC;
 int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool) ABT_API_PUBLIC;
 int ABT_thread_get_last_pool_id(ABT_thread thread, int *id) ABT_API_PUBLIC;
@@ -684,7 +685,7 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
 #define ABT_task_cancel           ABT_thread_cancel
 int ABT_task_self(ABT_task *task) ABT_API_PUBLIC;
 int ABT_task_self_id(ABT_unit_id *id) ABT_API_PUBLIC;
-#define ABT_task_get_xstream      ABT_thread_get_xstream
+#define ABT_task_get_xstream      ABT_thread_get_last_xstream
 #define ABT_task_get_state        ABT_thread_get_state
 #define ABT_task_get_last_pool    ABT_thread_get_last_pool
 #define ABT_task_get_last_pool_id ABT_thread_get_last_pool_id

@@ -562,6 +562,35 @@ fn_fail:
 
 /**
  * @ingroup ULT
+ * @brief   Get the ES associated with the target thread.
+ *
+ * \c ABT_thread_get_last_xstream() returns the last ES handle associated with
+ * the target thread to \c xstream.  If the target thread is not associated
+ * with any ES, \c ABT_XSTREAM_NULL is returned to \c xstream.
+ *
+ * @param[in]  thread   handle to the target thread
+ * @param[out] xstream  ES handle
+ * @return Error code
+ * @retval ABT_SUCCESS on success
+ */
+int ABT_thread_get_last_xstream(ABT_thread thread, ABT_xstream *xstream)
+{
+    int abt_errno = ABT_SUCCESS;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    *xstream = ABTI_xstream_get_handle(p_thread->p_last_xstream);
+
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Return the state of thread.
  *
  * @param[in]  thread  handle to the target thread
