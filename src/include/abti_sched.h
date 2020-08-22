@@ -40,14 +40,14 @@ static inline ABT_sched ABTI_sched_get_handle(ABTI_sched *p_sched)
 
 /* Set `used` of p_sched to NOT_USED and free p_sched if its `automatic` is
  * ABT_TRUE, which means it is safe to free p_sched inside the runtime. */
-static inline int ABTI_sched_discard_and_free(ABTI_xstream *p_local_xstream,
+static inline int ABTI_sched_discard_and_free(ABTI_local *p_local,
                                               ABTI_sched *p_sched,
                                               ABT_bool force_free)
 {
     int abt_errno = ABT_SUCCESS;
     p_sched->used = ABTI_SCHED_NOT_USED;
     if (p_sched->automatic == ABT_TRUE || force_free) {
-        abt_errno = ABTI_sched_free(p_local_xstream, p_sched, force_free);
+        abt_errno = ABTI_sched_free(p_local, p_sched, force_free);
     }
     return abt_errno;
 }

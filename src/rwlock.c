@@ -17,8 +17,6 @@
  * through \c newrwlock. If an error occurs in this routine, a non-zero error
  * code will be returned and \c newrwlock will be set to \c ABT_RWLOCK_NULL.
  *
- * Only ULTs can use the rwlock, and tasklets must not use it.
- *
  * @param[out] newrwlock  handle to a new rwlock
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -88,9 +86,6 @@ fn_fail:
  * When the caller ULT is blocked, the context is switched to the scheduler
  * of the associated ES to make progress of other work units.
  *
- * The rwlock can be used only by ULTs. Tasklets must not call any blocking
- * routines like \c ABT_rwlock_rdlock.
- *
  * @param[in] rwlock  handle to the rwlock
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -98,11 +93,11 @@ fn_fail:
 int ABT_rwlock_rdlock(ABT_rwlock rwlock)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
-    ABTI_rwlock_rdlock(&p_local_xstream, p_rwlock);
+    ABTI_rwlock_rdlock(&p_local, p_rwlock);
 
 fn_exit:
     return abt_errno;
@@ -122,9 +117,6 @@ fn_fail:
  * becomes available. When the caller ULT is blocked, the context is switched
  * to the scheduler of the associated ES to make progress of other work units.
  *
- * The rwlock can be used only by ULTs. Tasklets must not call any blocking
- * routines like \c ABT_rwlock_wrlock.
- *
  * @param[in] rwlock  handle to the rwlock
  * @return Error code
  * @retval ABT_SUCCESS on success
@@ -132,11 +124,11 @@ fn_fail:
 int ABT_rwlock_wrlock(ABT_rwlock rwlock)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
-    ABTI_rwlock_wrlock(&p_local_xstream, p_rwlock);
+    ABTI_rwlock_wrlock(&p_local, p_rwlock);
 
 fn_exit:
     return abt_errno;
@@ -162,11 +154,11 @@ fn_fail:
 int ABT_rwlock_unlock(ABT_rwlock rwlock)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
-    ABTI_rwlock_unlock(&p_local_xstream, p_rwlock);
+    ABTI_rwlock_unlock(&p_local, p_rwlock);
 
 fn_exit:
     return abt_errno;

@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
+static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
                             void (*task_func)(void *), void *arg,
                             ABTI_sched *p_sched, int refcount,
                             ABTI_thread **pp_newtask);
@@ -41,13 +41,13 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newtask;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     int refcount = (newtask != NULL) ? 1 : 0;
-    abt_errno = ABTI_task_create(p_local_xstream, p_pool, task_func, arg, NULL,
+    abt_errno = ABTI_task_create(p_local, p_pool, task_func, arg, NULL,
                                  refcount, &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -101,7 +101,7 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                                void *arg, ABT_task *newtask)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newtask;
 
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
@@ -110,7 +110,7 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
     /* TODO: need to consider the access type of target pool */
     ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_xstream);
     int refcount = (newtask != NULL) ? 1 : 0;
-    abt_errno = ABTI_task_create(p_local_xstream, p_pool, task_func, arg, NULL,
+    abt_errno = ABTI_task_create(p_local, p_pool, task_func, arg, NULL,
                                  refcount, &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -207,37 +207,29 @@ int ABT_task_cancel(ABT_task task);
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
- * @retval ABT_ERR_INV_TASK      called by a ULT
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
+ * @retval ABT_ERR_INV_THREAD    called by a yieldable thread (ULT)
  */
 int ABT_task_self(ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABT_task ret = ABT_TASK_NULL;
 
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        *task = ABT_TASK_NULL;
-        return abt_errno;
-    }
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        *task = ABT_TASK_NULL;
-        return abt_errno;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
-        *task = ABTI_thread_get_handle(p_thread);
-    } else {
-        abt_errno = ABT_ERR_INV_TASK;
-        *task = ABT_TASK_NULL;
-    }
+    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE),
+                    ABT_ERR_INV_THREAD);
+    ret = ABTI_thread_get_handle(p_thread);
 
+fn_exit:
+    *task = ret;
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -250,33 +242,27 @@ int ABT_task_self(ABT_task *task)
  * @return Error code
  * @retval ABT_SUCCESS           on success
  * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
- * @retval ABT_ERR_INV_TASK      called by a ULT
+ * @retval ABT_ERR_INV_XSTREAM   called by an external thread
+ * @retval ABT_ERR_INV_THREAD    called by a yieldable thread (ULT)
  */
 int ABT_task_self_id(ABT_unit_id *id)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
 
-    if (gp_ABTI_global == NULL) {
-        abt_errno = ABT_ERR_UNINITIALIZED;
-        return abt_errno;
-    }
-    /* In case that Argobots has not been initialized or this routine is called
-     * by an external thread, e.g., pthread, return an error code instead of
-     * making the call fail. */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        return abt_errno;
-    }
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
-        *id = ABTI_thread_get_id(p_thread);
-    } else {
-        abt_errno = ABT_ERR_INV_TASK;
-    }
+    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE),
+                    ABT_ERR_INV_THREAD);
+    *id = ABTI_thread_get_id(p_thread);
+
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 #ifdef ABT_CONFIG_USE_DOXYGEN
@@ -489,7 +475,7 @@ int ABT_task_get_specific(ABT_task task, ABT_key key, void **value);
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
+static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
                             void (*task_func)(void *), void *arg,
                             ABTI_sched *p_sched, int refcount,
                             ABTI_thread **pp_newtask)
@@ -500,7 +486,7 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     /* Allocate a task object */
-    p_newtask = ABTI_mem_alloc_task(p_local_xstream);
+    p_newtask = ABTI_mem_alloc_task(p_local);
 
     p_newtask->p_last_xstream = NULL;
     p_newtask->p_parent = NULL;
@@ -523,9 +509,11 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     p_newtask->type = thread_type;
     p_newtask->unit = p_pool->u_create_from_task(h_newtask);
 
-    ABTI_tool_event_thread_create(p_local_xstream, p_newtask,
-                                  p_local_xstream ? p_local_xstream->p_thread
-                                                  : NULL,
+    ABTI_tool_event_thread_create(p_local, p_newtask,
+                                  ABTI_local_get_xstream_or_null(p_local)
+                                      ? ABTI_local_get_xstream(p_local)
+                                            ->p_thread
+                                      : NULL,
                                   p_pool);
     LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_thread_get_id(p_newtask));
 
@@ -534,9 +522,9 @@ static int ABTI_task_create(ABTI_xstream *p_local_xstream, ABTI_pool *p_pool,
     ABTI_pool_push(p_pool, p_newtask->unit);
 #else
     abt_errno = ABTI_pool_push(p_pool, p_newtask->unit,
-                               ABTI_self_get_native_thread_id(p_local_xstream));
+                               ABTI_self_get_native_thread_id(p_local));
     if (abt_errno != ABT_SUCCESS) {
-        ABTI_thread_free(p_local_xstream, p_newtask);
+        ABTI_thread_free(p_local, p_newtask);
         goto fn_fail;
     }
 #endif

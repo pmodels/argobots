@@ -23,7 +23,7 @@ void ABTD_ythread_func_wrapper(void *p_arg)
     /* This ABTI_local_get_xstream() is controversial since it is called after
      * the context-switchable function (i.e., thread_func()).  We assume that
      * the compiler does not load TLS offset etc before thread_func(). */
-    p_local_xstream = ABTI_local_get_xstream();
+    p_local_xstream = ABTI_local_get_xstream(ABTI_local_get_local());
     ABTD_ythread_terminate(p_local_xstream, p_ythread);
 }
 
@@ -52,8 +52,9 @@ static inline void ABTD_ythread_terminate(ABTI_xstream *p_local_xstream,
                       p_ythread->thread.p_last_xstream->rank);
 
             /* Note that a parent ULT cannot be a joiner. */
-            ABTI_tool_event_ythread_resume(p_local_xstream, p_joiner,
-                                           &p_ythread->thread);
+            ABTI_tool_event_ythread_resume(ABTI_xstream_get_local(
+                                               p_local_xstream),
+                                           p_joiner, &p_ythread->thread);
             ABTI_ythread_finish_context_to_sibling(p_local_xstream, p_ythread,
                                                    p_joiner);
             return;
@@ -61,7 +62,8 @@ static inline void ABTD_ythread_terminate(ABTI_xstream *p_local_xstream,
             /* If the current ULT's associated ES is different from p_joiner's,
              * we can't directly jump to p_joiner.  Instead, we wake up
              * p_joiner here so that p_joiner's scheduler can resume it. */
-            ABTI_ythread_set_ready(p_local_xstream, p_joiner);
+            ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
+                                   p_joiner);
 
             /* We don't need to use the atomic OR operation here because the ULT
              * will be terminated regardless of other requests. */
@@ -80,7 +82,7 @@ static inline void ABTD_ythread_terminate(ABTI_xstream *p_local_xstream,
                 p_link = ABTD_atomic_acquire_load_ythread_context_ptr(
                     &p_ctx->p_link);
             } while (!p_link);
-            ABTI_ythread_set_ready(p_local_xstream,
+            ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
                                    ABTI_ythread_context_get_ythread(p_link));
         }
     }
@@ -94,7 +96,8 @@ static inline void ABTD_ythread_terminate(ABTI_xstream *p_local_xstream,
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
 void ABTD_ythread_terminate_no_arg()
 {
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
     /* This function is called by `return` in
      * ABTD_ythread_context_make_and_call, so it cannot take the argument. We
      * get the thread descriptor from TLS. */
@@ -117,7 +120,8 @@ void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
         /* If p_link is set, it means that other ULT has called the join. */
         ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(
             ABTD_atomic_relaxed_load_ythread_context_ptr(&p_ctx->p_link));
-        ABTI_ythread_set_ready(p_local_xstream, p_joiner);
+        ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
+                               p_joiner);
     } else {
         uint32_t req =
             ABTD_atomic_fetch_or_uint32(&p_ythread->thread.request,
@@ -131,7 +135,8 @@ void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
                 ;
             ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(
                 ABTD_atomic_relaxed_load_ythread_context_ptr(&p_ctx->p_link));
-            ABTI_ythread_set_ready(p_local_xstream, p_joiner);
+            ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
+                                   p_joiner);
         }
     }
     ABTI_tool_event_thread_cancel(p_local_xstream, &p_ythread->thread);

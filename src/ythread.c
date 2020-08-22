@@ -57,8 +57,7 @@ void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
               p_ythread->thread.p_last_xstream->rank);
 }
 
-int ABTI_ythread_set_ready(ABTI_xstream *p_local_xstream,
-                           ABTI_ythread *p_ythread)
+int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
 {
     int abt_errno = ABT_SUCCESS;
 
@@ -78,9 +77,11 @@ int ABTI_ythread_set_ready(ABTI_xstream *p_local_xstream,
               ABTI_thread_get_id(&p_ythread->thread),
               p_ythread->thread.p_last_xstream->rank);
 
-    ABTI_tool_event_ythread_resume(p_local_xstream, p_ythread,
-                                   p_local_xstream ? p_local_xstream->p_thread
-                                                   : NULL);
+    ABTI_tool_event_ythread_resume(p_local, p_ythread,
+                                   ABTI_local_get_xstream_or_null(p_local)
+                                       ? ABTI_local_get_xstream(p_local)
+                                             ->p_thread
+                                       : NULL);
     /* p_ythread->thread.p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
      * num_blocked consistent. Otherwise, other threads might pop p_ythread
      * that has been pushed in ABTI_POOL_ADD_THREAD and change
@@ -89,7 +90,7 @@ int ABTI_ythread_set_ready(ABTI_xstream *p_local_xstream,
 
     /* Add the ULT to its associated pool */
     ABTI_POOL_ADD_THREAD(&p_ythread->thread,
-                         ABTI_self_get_native_thread_id(p_local_xstream));
+                         ABTI_self_get_native_thread_id(p_local));
 
     /* Decrease the number of blocked threads */
     ABTI_pool_dec_num_blocked(p_pool);

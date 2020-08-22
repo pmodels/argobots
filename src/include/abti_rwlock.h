@@ -55,50 +55,48 @@ static inline void ABTI_rwlock_fini(ABTI_rwlock *p_rwlock)
     ABTI_cond_fini(&p_rwlock->cond);
 }
 
-static inline int ABTI_rwlock_rdlock(ABTI_xstream **pp_local_xstream,
+static inline int ABTI_rwlock_rdlock(ABTI_local **pp_local,
                                      ABTI_rwlock *p_rwlock)
 {
     int abt_errno = ABT_SUCCESS;
 
-    ABTI_mutex_lock(pp_local_xstream, &p_rwlock->mutex);
+    ABTI_mutex_lock(pp_local, &p_rwlock->mutex);
 
     while (p_rwlock->write_flag && abt_errno == ABT_SUCCESS) {
-        abt_errno =
-            ABTI_cond_wait(pp_local_xstream, &p_rwlock->cond, &p_rwlock->mutex);
+        abt_errno = ABTI_cond_wait(pp_local, &p_rwlock->cond, &p_rwlock->mutex);
     }
 
     if (abt_errno == ABT_SUCCESS) {
         p_rwlock->reader_count++;
     }
 
-    ABTI_mutex_unlock(*pp_local_xstream, &p_rwlock->mutex);
+    ABTI_mutex_unlock(*pp_local, &p_rwlock->mutex);
     return abt_errno;
 }
 
-static inline int ABTI_rwlock_wrlock(ABTI_xstream **pp_local_xstream,
+static inline int ABTI_rwlock_wrlock(ABTI_local **pp_local,
                                      ABTI_rwlock *p_rwlock)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_mutex_lock(pp_local_xstream, &p_rwlock->mutex);
+    ABTI_mutex_lock(pp_local, &p_rwlock->mutex);
 
     while ((p_rwlock->write_flag || p_rwlock->reader_count) &&
            abt_errno == ABT_SUCCESS) {
-        abt_errno =
-            ABTI_cond_wait(pp_local_xstream, &p_rwlock->cond, &p_rwlock->mutex);
+        abt_errno = ABTI_cond_wait(pp_local, &p_rwlock->cond, &p_rwlock->mutex);
     }
 
     if (abt_errno == ABT_SUCCESS) {
         p_rwlock->write_flag = 1;
     }
 
-    ABTI_mutex_unlock(*pp_local_xstream, &p_rwlock->mutex);
+    ABTI_mutex_unlock(*pp_local, &p_rwlock->mutex);
     return abt_errno;
 }
 
-static inline void ABTI_rwlock_unlock(ABTI_xstream **pp_local_xstream,
+static inline void ABTI_rwlock_unlock(ABTI_local **pp_local,
                                       ABTI_rwlock *p_rwlock)
 {
-    ABTI_mutex_lock(pp_local_xstream, &p_rwlock->mutex);
+    ABTI_mutex_lock(pp_local, &p_rwlock->mutex);
 
     if (p_rwlock->write_flag) {
         p_rwlock->write_flag = 0;
@@ -107,10 +105,10 @@ static inline void ABTI_rwlock_unlock(ABTI_xstream **pp_local_xstream,
     }
 
     /* TODO: elision */
-    ABTI_xstream *p_local_xstream = *pp_local_xstream;
-    ABTI_cond_broadcast(p_local_xstream, &p_rwlock->cond);
+    ABTI_local *p_local = *pp_local;
+    ABTI_cond_broadcast(p_local, &p_rwlock->cond);
 
-    ABTI_mutex_unlock(p_local_xstream, &p_rwlock->mutex);
+    ABTI_mutex_unlock(p_local, &p_rwlock->mutex);
 }
 
 #endif /* ABTI_RWLOCK_H_INCLUDED */

@@ -502,6 +502,8 @@ for option in $enable_checks ; do
     esac
 done
 IFS="$save_IFS"
+AM_CONDITIONAL([ABT_CONFIG_DISABLE_ERROR_CHECK],
+    [test "x$enable_error_check" = "xno"])
 
 AS_IF([test "x$enable_error_check" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_ERROR_CHECK, 1,

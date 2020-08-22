@@ -95,8 +95,9 @@ int ABT_init(int argc, char **argv)
 
     /* Create the primary ULT, i.e., the main thread */
     ABTI_ythread *p_main_ythread;
-    abt_errno = ABTI_ythread_create_main(p_local_xstream, p_local_xstream,
-                                         &p_main_ythread);
+    abt_errno =
+        ABTI_ythread_create_main(ABTI_xstream_get_local(p_local_xstream),
+                                 p_local_xstream, &p_main_ythread);
     /* Set as if p_local_xstream is currently running the main thread. */
     ABTD_atomic_relaxed_store_int(&p_main_ythread->thread.state,
                                   ABTI_THREAD_STATE_RUNNING);
@@ -144,7 +145,7 @@ fn_fail:
 int ABT_finalize(void)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
 
     /* First, take a global lock protecting the initialization/finalization
      * process. Don't go to fn_exit before taking a lock */
@@ -159,6 +160,7 @@ int ABT_finalize(void)
     if (--g_ABTI_num_inits != 0)
         goto fn_exit;
 
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* If called by an external thread, return an error. */
     ABTI_CHECK_TRUE(!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream,
                     ABT_ERR_INV_XSTREAM);
@@ -208,10 +210,11 @@ int ABT_finalize(void)
     /* Remove the primary ULT */
     ABTI_ASSERT(p_local_xstream->p_thread == p_self);
     p_local_xstream->p_thread = NULL;
-    ABTI_ythread_free_main(p_local_xstream, p_ythread);
+    ABTI_ythread_free_main(ABTI_xstream_get_local(p_local_xstream), p_ythread);
 
     /* Free the primary ES */
-    abt_errno = ABTI_xstream_free(p_local_xstream, p_local_xstream, ABT_TRUE);
+    abt_errno = ABTI_xstream_free(ABTI_xstream_get_local(p_local_xstream),
+                                  p_local_xstream, ABT_TRUE);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Finalize the ES local data */

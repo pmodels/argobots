@@ -64,7 +64,7 @@ static inline int ABTI_ktable_is_valid(ABTI_ktable *p_ktable)
            ((uintptr_t)(void *)0x0);
 }
 
-static inline ABTI_ktable *ABTI_ktable_create(ABTI_xstream *p_local_xstream)
+static inline ABTI_ktable *ABTI_ktable_create(ABTI_local *p_local)
 {
     ABTI_ktable *p_ktable;
     int key_table_size = gp_ABTI_global->key_table_size;
@@ -80,7 +80,7 @@ static inline ABTI_ktable *ABTI_ktable_create(ABTI_xstream *p_local_xstream)
      * unsafe memory pool without taking a lock. */
     if (ABTU_likely(ktable_size <= ABTI_KTABLE_DESC_SIZE)) {
         /* Use memory pool. */
-        void *p_mem = ABTI_mem_alloc_desc(p_local_xstream);
+        void *p_mem = ABTI_mem_alloc_desc(p_local);
         ABTI_ktable_mem_header *p_header = (ABTI_ktable_mem_header *)p_mem;
         p_ktable =
             (ABTI_ktable *)(((char *)p_mem) + sizeof(ABTI_ktable_mem_header));
@@ -107,7 +107,7 @@ static inline ABTI_ktable *ABTI_ktable_create(ABTI_xstream *p_local_xstream)
     return p_ktable;
 }
 
-static inline void *ABTI_ktable_alloc_elem(ABTI_xstream *p_local_xstream,
+static inline void *ABTI_ktable_alloc_elem(ABTI_local *p_local,
                                            ABTI_ktable *p_ktable, size_t size)
 {
     ABTI_ASSERT((size & (ABTU_MAX_ALIGNMENT - 1)) == 0);
@@ -120,7 +120,7 @@ static inline void *ABTI_ktable_alloc_elem(ABTI_xstream *p_local_xstream,
         return p_ret;
     } else if (ABTU_likely(size <= ABTI_KTABLE_DESC_SIZE)) {
         /* Use memory pool. */
-        void *p_mem = ABTI_mem_alloc_desc(p_local_xstream);
+        void *p_mem = ABTI_mem_alloc_desc(p_local);
         ABTI_ktable_mem_header *p_header = (ABTI_ktable_mem_header *)p_mem;
         p_header->p_next = (ABTI_ktable_mem_header *)p_ktable->p_used_mem;
         p_header->is_from_mempool = ABT_TRUE;
@@ -146,7 +146,7 @@ static inline uint32_t ABTI_ktable_get_idx(ABTI_key *p_key, int size)
     return p_key->id & (size - 1);
 }
 
-static inline void ABTI_ktable_set_impl(ABTI_xstream *p_local_xstream,
+static inline void ABTI_ktable_set_impl(ABTI_local *p_local,
                                         ABTI_ktable *p_ktable, ABTI_key *p_key,
                                         void *value, ABT_bool is_safe)
 {
@@ -187,8 +187,8 @@ static inline void ABTI_ktable_set_impl(ABTI_xstream *p_local_xstream,
     ABTI_STATIC_ASSERT((ABTU_MAX_ALIGNMENT & (ABTU_MAX_ALIGNMENT - 1)) == 0);
     size_t ktelem_size = (sizeof(ABTI_ktelem) + ABTU_MAX_ALIGNMENT - 1) &
                          (~(ABTU_MAX_ALIGNMENT - 1));
-    p_elem = (ABTI_ktelem *)ABTI_ktable_alloc_elem(p_local_xstream, p_ktable,
-                                                   ktelem_size);
+    p_elem =
+        (ABTI_ktelem *)ABTI_ktable_alloc_elem(p_local, p_ktable, ktelem_size);
     p_elem->f_destructor = p_key->f_destructor;
     p_elem->key_id = p_key->id;
     p_elem->value = value;
@@ -198,7 +198,7 @@ static inline void ABTI_ktable_set_impl(ABTI_xstream *p_local_xstream,
         ABTI_spinlock_release(&p_ktable->lock);
 }
 
-static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
+static inline void ABTI_ktable_set(ABTI_local *p_local,
                                    ABTD_atomic_ptr *pp_ktable, ABTI_key *p_key,
                                    void *value)
 {
@@ -209,7 +209,7 @@ static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
             if (ABTD_atomic_bool_cas_weak_ptr(pp_ktable, NULL,
                                               ABTI_KTABLE_LOCKED)) {
                 /* The lock was acquired, so let's allocate this table. */
-                p_ktable = ABTI_ktable_create(p_local_xstream);
+                p_ktable = ABTI_ktable_create(p_local);
                 /* Write down the value.  The lock is released here. */
                 ABTD_atomic_release_store_ptr(pp_ktable, p_ktable);
                 break;
@@ -231,19 +231,19 @@ static inline void ABTI_ktable_set(ABTI_xstream *p_local_xstream,
             }
         }
     }
-    ABTI_ktable_set_impl(p_local_xstream, p_ktable, p_key, value, ABT_TRUE);
+    ABTI_ktable_set_impl(p_local, p_ktable, p_key, value, ABT_TRUE);
 }
 
-static inline void ABTI_ktable_set_unsafe(ABTI_xstream *p_local_xstream,
+static inline void ABTI_ktable_set_unsafe(ABTI_local *p_local,
                                           ABTI_ktable **pp_ktable,
                                           ABTI_key *p_key, void *value)
 {
     ABTI_ktable *p_ktable = *pp_ktable;
     if (!p_ktable) {
-        p_ktable = ABTI_ktable_create(p_local_xstream);
+        p_ktable = ABTI_ktable_create(p_local);
         *pp_ktable = p_ktable;
     }
-    ABTI_ktable_set_impl(p_local_xstream, p_ktable, p_key, value, ABT_FALSE);
+    ABTI_ktable_set_impl(p_local, p_ktable, p_key, value, ABT_FALSE);
 }
 
 static inline void *ABTI_ktable_get(ABTD_atomic_ptr *pp_ktable, ABTI_key *p_key)

@@ -92,13 +92,13 @@ fn_fail:
 int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    abt_errno = ABTI_cond_wait(&p_local_xstream, p_cond, p_mutex);
+    abt_errno = ABTI_cond_wait(&p_local, p_cond, p_mutex);
     if (abt_errno != ABT_SUCCESS)
         goto fn_fail;
 
@@ -177,7 +177,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
                        const struct timespec *abstime)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
@@ -220,8 +220,13 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     ABTI_spinlock_release(&p_cond->lock);
 
     /* Unlock the mutex that the calling ULT is holding */
-    ABTI_mutex_unlock(p_local_xstream, p_mutex);
+    ABTI_mutex_unlock(p_local, p_mutex);
 
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+    ABTI_ythread *p_ythread = NULL;
+    if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
+        p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
+    }
     while (ABTD_atomic_acquire_load_int(&thread.state) !=
            ABTI_THREAD_STATE_READY) {
         double cur_time = ABTI_get_wtime();
@@ -230,18 +235,17 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             abt_errno = ABT_ERR_COND_TIMEDOUT;
             break;
         }
-        ABTI_ythread *p_ythread =
-            ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
         if (p_ythread) {
             ABTI_ythread_yield(&p_local_xstream, p_ythread,
                                ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
+            p_local = ABTI_xstream_get_local(p_local_xstream);
         } else {
             ABTD_atomic_pause();
         }
     }
 
     /* Lock the mutex again */
-    ABTI_mutex_lock(&p_local_xstream, p_mutex);
+    ABTI_mutex_lock(&p_local, p_mutex);
 
 fn_exit:
     return abt_errno;
@@ -268,7 +272,7 @@ fn_fail:
 int ABT_cond_signal(ABT_cond cond)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
@@ -297,7 +301,7 @@ int ABT_cond_signal(ABT_cond cond)
 
     ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
     if (p_ythread) {
-        ABTI_ythread_set_ready(p_local_xstream, p_ythread);
+        ABTI_ythread_set_ready(p_local, p_ythread);
     } else {
         /* When the head is an external thread */
         ABTD_atomic_release_store_int(&p_thread->state,
@@ -330,11 +334,11 @@ fn_fail:
 int ABT_cond_broadcast(ABT_cond cond)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
-    ABTI_cond_broadcast(p_local_xstream, p_cond);
+    ABTI_cond_broadcast(p_local, p_cond);
 
 fn_exit:
     return abt_errno;

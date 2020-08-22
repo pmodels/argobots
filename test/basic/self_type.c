@@ -30,7 +30,7 @@ void task_hello(void *arg)
     assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_TASK);
 
     ret = ABT_self_is_primary(&flag);
-    assert(ret == ABT_ERR_INV_THREAD && flag == ABT_FALSE);
+    assert(ret == ABT_SUCCESS && flag == ABT_FALSE);
 
     ret = ABT_self_on_primary_xstream(&flag);
     assert(ret == ABT_SUCCESS);

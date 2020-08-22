@@ -111,7 +111,7 @@
 int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_INITIALIZED();
+    ABTI_SETUP_WITH_INIT_CHECK();
 
     switch (query_kind) {
         case ABT_INFO_QUERY_KIND_ENABLED_DEBUG:
@@ -256,7 +256,17 @@ fn_fail:
  */
 int ABT_info_print_config(FILE *fp)
 {
-    return ABTI_info_print_config(fp);
+    int abt_errno = ABT_SUCCESS;
+    ABTI_SETUP_WITH_INIT_CHECK();
+
+    ABTI_info_print_config(fp);
+
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -274,7 +284,7 @@ int ABT_info_print_config(FILE *fp)
 int ABT_info_print_all_xstreams(FILE *fp)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_INITIALIZED();
+    ABTI_SETUP_WITH_INIT_CHECK();
 
     ABTI_global *p_global = gp_ABTI_global;
     int i;
@@ -791,11 +801,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
     }
 }
 
-int ABTI_info_print_config(FILE *fp)
+void ABTI_info_print_config(FILE *fp)
 {
-    int abt_errno = ABT_SUCCESS;
-    ABTI_CHECK_INITIALIZED();
-
     ABTI_global *p_global = gp_ABTI_global;
 
     fprintf(fp, "Argobots Configuration:\n");
@@ -856,11 +863,4 @@ int ABTI_info_print_config(FILE *fp)
 #endif /* ABT_CONFIG_USE_MEM_POOL */
 
     fflush(fp);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }

@@ -127,12 +127,12 @@ fn_fail:
 int ABT_sched_free(ABT_sched *sched)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(*sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* Free the scheduler */
-    abt_errno = ABTI_sched_free(p_local_xstream, p_sched, ABT_FALSE);
+    abt_errno = ABTI_sched_free(p_local, p_sched, ABT_FALSE);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -285,20 +285,14 @@ fn_fail:
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
 
     *stop = ABT_FALSE;
-
-    /* When this routine is called by an external thread, e.g., pthread */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_exit;
-    }
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    *stop = ABTI_sched_has_to_stop(&p_local_xstream, p_sched);
+    *stop = ABTI_sched_has_to_stop(&p_local, p_sched);
 
 fn_exit:
     return abt_errno;
@@ -308,48 +302,44 @@ fn_fail:
     goto fn_exit;
 }
 
-ABT_bool ABTI_sched_has_to_stop(ABTI_xstream **pp_local_xstream,
-                                ABTI_sched *p_sched)
+ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
 {
-    ABT_bool stop = ABT_FALSE;
-    size_t size;
-    ABTI_xstream *p_local_xstream = *pp_local_xstream;
-
     /* Check exit request */
     if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
         ABTI_SCHED_REQ_EXIT) {
-        stop = ABT_TRUE;
-        goto fn_exit;
+        return ABT_TRUE;
     }
 
-    size = ABTI_sched_get_effective_size(p_local_xstream, p_sched);
-    if (size == 0) {
+    if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0) {
         if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
             ABTI_SCHED_REQ_FINISH) {
             /* Check join request */
-            size = ABTI_sched_get_effective_size(p_local_xstream, p_sched);
-            if (size == 0) {
-                stop = ABT_TRUE;
-            }
+            if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0)
+                return ABT_TRUE;
         } else if (p_sched->used == ABTI_SCHED_IN_POOL) {
             /* If the scheduler is a stacked one, we have to escape from the
              * scheduling function. The scheduler will be stopped if it is a
              * tasklet type. However, if the scheduler is a ULT type, we
              * context switch to the parent scheduler. */
-            if (p_sched->type == ABT_SCHED_TYPE_TASK) {
-                stop = ABT_TRUE;
-            } else {
-                ABTI_ASSERT(p_sched->type == ABT_SCHED_TYPE_ULT);
-                ABTI_ythread_context_switch_to_parent(pp_local_xstream,
-                                                      p_sched->p_ythread,
-                                                      ABT_SYNC_EVENT_TYPE_OTHER,
-                                                      NULL);
-            }
+            if (p_sched->type == ABT_SCHED_TYPE_TASK)
+                return ABT_TRUE;
+            /* If the current caller cannot yield, let's finish it */
+            ABTI_xstream *p_local_xstream =
+                ABTI_local_get_xstream_or_null(*pp_local);
+            if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL)
+                return ABT_TRUE;
+            /* If the current caller is not the scheduler, let's finish. */
+            if (&p_sched->p_ythread->thread != p_local_xstream->p_thread)
+                return ABT_TRUE;
+            /* Yield this scheduler. */
+            ABTI_ythread_context_switch_to_parent(&p_local_xstream,
+                                                  p_sched->p_ythread,
+                                                  ABT_SYNC_EVENT_TYPE_OTHER,
+                                                  NULL);
+            *pp_local = ABTI_xstream_get_local(p_local_xstream);
         }
     }
-
-fn_exit:
-    return stop;
+    return ABT_FALSE;
 }
 
 /**
@@ -499,15 +489,13 @@ size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
  * the caller ES is not the latest consumer. This is necessary when the ES
  * associated with the target scheduler has to be joined and the pool is shared
  * between different schedulers associated with different ESs. */
-size_t ABTI_sched_get_effective_size(ABTI_xstream *p_local_xstream,
-                                     ABTI_sched *p_sched)
+size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
 {
     size_t pool_size = 0;
     int p;
 
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    ABTI_native_thread_id self_id =
-        ABTI_self_get_native_thread_id(p_local_xstream);
+    ABTI_native_thread_id self_id = ABTI_self_get_native_thread_id(p_local);
 #endif
 
     for (p = 0; p < p_sched->num_pools; p++) {
@@ -771,7 +759,7 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched,
+int ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
                     ABT_bool force_free)
 {
     int abt_errno = ABT_SUCCESS;
@@ -799,16 +787,15 @@ int ABTI_sched_free(ABTI_xstream *p_local_xstream, ABTI_sched *p_sched,
     if (p_sched->type == ABT_SCHED_TYPE_ULT) {
         if (p_sched->p_ythread) {
             if (p_sched->p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED) {
-                ABTI_ythread_free_main_sched(p_local_xstream,
-                                             p_sched->p_ythread);
+                ABTI_ythread_free_main_sched(p_local, p_sched->p_ythread);
             } else {
-                ABTI_thread_free(p_local_xstream, &p_sched->p_ythread->thread);
+                ABTI_thread_free(p_local, &p_sched->p_ythread->thread);
             }
         }
     } else if (p_sched->type == ABT_SCHED_TYPE_TASK) {
         /* The underlying implementation is ULT. */
         if (p_sched->p_ythread) {
-            ABTI_thread_free(p_local_xstream, &p_sched->p_ythread->thread);
+            ABTI_thread_free(p_local, &p_sched->p_ythread->thread);
         }
     }
 

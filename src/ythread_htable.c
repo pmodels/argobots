@@ -266,7 +266,8 @@ ABT_bool ABTI_ythread_htable_switch_low(ABTI_xstream **pp_local_xstream,
         /* Context-switch to p_target */
         ABTD_atomic_release_store_int(&p_target->thread.state,
                                       ABTI_THREAD_STATE_RUNNING);
-        ABTI_tool_event_ythread_resume(p_local_xstream, p_target,
+        ABTI_tool_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream),
+                                       p_target,
                                        p_local_xstream
                                            ? p_local_xstream->p_thread
                                            : NULL);

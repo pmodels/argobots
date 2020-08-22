@@ -127,29 +127,23 @@ fn_fail:
 int ABT_future_wait(ABT_future future)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
     ABTI_spinlock_acquire(&p_future->lock);
     if (ABTD_atomic_relaxed_load_uint32(&p_future->counter) <
         p_future->compartments) {
-        ABTI_ythread *p_ythread;
+        ABTI_ythread *p_ythread = NULL;
         ABTI_thread *p_thread;
 
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
         if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
             p_thread = p_local_xstream->p_thread;
             p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
-            if (!p_ythread) {
-                abt_errno = ABT_ERR_FUTURE;
-                ABTI_spinlock_release(&p_future->lock);
-                goto fn_fail;
-            }
-#endif
-        } else {
+        }
+        if (!p_ythread) {
             /* external thread */
-            p_ythread = NULL;
             p_thread = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
             p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */
@@ -245,7 +239,7 @@ fn_fail:
 int ABT_future_set(ABT_future future, void *value)
 {
     int abt_errno = ABT_SUCCESS;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream();
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -281,7 +275,7 @@ int ABT_future_set(ABT_future future, void *value)
 
             ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
             if (p_ythread) {
-                ABTI_ythread_set_ready(p_local_xstream, p_ythread);
+                ABTI_ythread_set_ready(p_local, p_ythread);
             } else {
                 /* When the head is an external thread */
                 ABTD_atomic_release_store_int(&p_thread->state,
