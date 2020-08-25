@@ -19,7 +19,6 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
     char *newfmt;
     uint64_t tid;
     int rank;
-    int tid_len = 0, rank_len = 0;
     size_t newfmt_len;
 
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
@@ -46,9 +45,9 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
     }
 
     if (prefix == NULL) {
-        tid_len = ABTU_get_int_len(tid);
-        rank_len = ABTU_get_int_len(rank);
-        newfmt_len = 6 + tid_len + rank_len + strlen(format);
+        /* Both tid and rank are less than 42 characters in total. */
+        const int len_tid_rank = 50;
+        newfmt_len = 6 + len_tid_rank + strlen(format);
         newfmt = (char *)ABTU_malloc(newfmt_len + 1);
         sprintf(newfmt, prefix_fmt, tid, rank, format);
     } else {

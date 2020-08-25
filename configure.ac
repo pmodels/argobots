@@ -788,9 +788,6 @@ AS_IF([test "x$have_alignof" = "xc11"],
       [AC_DEFINE(ABT_CONFIG_HAVE_ALIGNOF_C11, 1,
                  [Define to 1 if you have the `alignof' operator.])])
 
-# check math library
-AC_CHECK_LIB([m], [log10])
-
 # check if MAP_ANONYMOUS or MAP_ANON is defined
 AC_TRY_COMPILE([
 #include <stdio.h>
