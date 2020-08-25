@@ -200,7 +200,8 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
     int i;
 
     if (attr != ABT_THREAD_ATTR_NULL) {
-        if (ABTI_thread_attr_get_ptr(attr)->stacktype == ABTI_STACK_TYPE_USER) {
+        if (ABTI_thread_attr_get_ptr(attr)->thread_type &
+            ABTI_THREAD_TYPE_STACK_USER) {
             abt_errno = ABT_ERR_INV_THREAD_ATTR;
             goto fn_fail;
         }
@@ -1512,12 +1513,11 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
     if (p_ythread) {
         thread_attr.p_stack = p_ythread->p_stack;
         thread_attr.stacksize = p_ythread->stacksize;
-        thread_attr.stacktype = p_ythread->stacktype;
     } else {
         thread_attr.p_stack = NULL;
         thread_attr.stacksize = 0;
-        thread_attr.stacktype = ABTI_STACK_TYPE_USER;
     }
+    thread_attr.thread_type = p_thread->type;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     thread_attr.migratable =
         (p_thread->type & ABTI_THREAD_TYPE_MIGRATABLE) ? ABT_TRUE : ABT_FALSE;
@@ -1566,19 +1566,19 @@ static inline int ABTI_ythread_create_internal(
         thread_type |= ABTI_THREAD_TYPE_MIGRATABLE;
 #endif
     } else {
-        ABTI_stack_type stacktype = p_attr->stacktype;
-        if (stacktype == ABTI_STACK_TYPE_MEMPOOL) {
+        ABTI_thread_type attr_type = p_attr->thread_type;
+        if (attr_type & ABTI_THREAD_TYPE_STACK_MEMPOOL) {
 #ifdef ABT_CONFIG_USE_MEM_POOL
             p_newthread = ABTI_mem_alloc_ythread_mempool(p_local, p_attr);
 #else
             p_newthread = ABTI_mem_alloc_ythread_malloc(p_attr);
 #endif
-        } else if (stacktype == ABTI_STACK_TYPE_MALLOC) {
+        } else if (attr_type & ABTI_THREAD_TYPE_STACK_MALLOC) {
             p_newthread = ABTI_mem_alloc_ythread_malloc(p_attr);
-        } else if (stacktype == ABTI_STACK_TYPE_USER) {
+        } else if (attr_type & ABTI_THREAD_TYPE_STACK_USER) {
             p_newthread = ABTI_mem_alloc_ythread_user(p_attr);
         } else {
-            ABTI_ASSERT(stacktype == ABTI_STACK_TYPE_MAIN);
+            ABTI_ASSERT(attr_type & ABTI_THREAD_TYPE_STACK_MAIN);
             p_newthread = ABTI_mem_alloc_ythread_main(p_attr);
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
@@ -1626,7 +1626,7 @@ static inline int ABTI_ythread_create_internal(
     p_newthread->thread.p_last_xstream = NULL;
     p_newthread->thread.p_parent = NULL;
     p_newthread->thread.p_pool = p_pool;
-    p_newthread->thread.type = thread_type;
+    p_newthread->thread.type |= thread_type;
     p_newthread->thread.id = ABTI_THREAD_INIT_ID;
     if (p_sched && !(thread_type &
                      (ABTI_THREAD_TYPE_MAIN | ABTI_THREAD_TYPE_MAIN_SCHED))) {
@@ -1795,7 +1795,8 @@ int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
     /* Allocate a ULT object */
 
     /* TODO: Need to set the actual stack address and size for the main ULT */
-    ABTI_thread_attr_init(&attr, NULL, 0, ABTI_STACK_TYPE_MAIN, ABT_FALSE);
+    ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_STACK_MAIN,
+                          ABT_FALSE);
 
     /* Although this main ULT is running now, we add this main ULT to the pool
      * so that the scheduler can schedule the main ULT when the main ULT is
@@ -1832,7 +1833,7 @@ int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
         /* Create a ULT object and its stack */
         ABTI_thread_attr attr;
         ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
-                              ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
+                              ABTI_THREAD_TYPE_STACK_MALLOC, ABT_FALSE);
         ABTI_ythread *p_main_ythread = ABTI_global_get_main();
         abt_errno =
             ABTI_ythread_create_internal(p_local, NULL, ABTI_xstream_schedule,
@@ -1850,7 +1851,8 @@ int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
         /* For secondary ESs, the stack of OS thread is used for the main
          * scheduler's ULT. */
         ABTI_thread_attr attr;
-        ABTI_thread_attr_init(&attr, NULL, 0, ABTI_STACK_TYPE_MAIN, ABT_FALSE);
+        ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_STACK_MAIN,
+                              ABT_FALSE);
         abt_errno =
             ABTI_ythread_create_internal(p_local, NULL, ABTI_xstream_schedule,
                                          (void *)p_xstream, &attr,
@@ -1881,7 +1883,7 @@ int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
 
     /* Allocate a ULT object and its stack */
     ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
-                          ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
+                          ABTI_THREAD_TYPE_STACK_MALLOC, ABT_FALSE);
     abt_errno =
         ABTI_ythread_create_internal(p_local, p_pool,
                                      (void (*)(void *))p_sched->run,

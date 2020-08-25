@@ -67,15 +67,15 @@ static inline ABTI_ythread *ABTI_mem_alloc_ythread_default(ABTI_local *p_local)
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         ABTI_mem_alloc_ythread_malloc_impl(stacksize, &p_ythread, &p_stack);
-        p_ythread->stacktype = ABTI_STACK_TYPE_MALLOC;
+        p_ythread->thread.type = ABTI_THREAD_TYPE_STACK_MALLOC;
     } else {
 #ifdef ABT_CONFIG_USE_MEM_POOL
         ABTI_mem_alloc_ythread_mempool_impl(&p_local_xstream->mem_pool_stack,
                                             stacksize, &p_ythread, &p_stack);
-        p_ythread->stacktype = ABTI_STACK_TYPE_MEMPOOL;
+        p_ythread->thread.type = ABTI_THREAD_TYPE_STACK_MEMPOOL;
 #else
         ABTI_mem_alloc_ythread_malloc_impl(stacksize, &p_ythread, &p_stack);
-        p_ythread->stacktype = ABTI_STACK_TYPE_MALLOC;
+        p_ythread->thread.type = ABTI_THREAD_TYPE_STACK_MALLOC;
 #endif
     }
     /* Initialize members of ABTI_thread_attr. */
@@ -96,11 +96,11 @@ ABTI_mem_alloc_ythread_mempool(ABTI_local *p_local, ABTI_thread_attr *p_attr)
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         ABTI_mem_alloc_ythread_malloc_impl(stacksize, &p_ythread, &p_stack);
-        p_ythread->stacktype = ABTI_STACK_TYPE_MALLOC;
+        p_ythread->thread.type = ABTI_THREAD_TYPE_STACK_MALLOC;
     } else {
         ABTI_mem_alloc_ythread_mempool_impl(&p_local_xstream->mem_pool_stack,
                                             stacksize, &p_ythread, &p_stack);
-        p_ythread->stacktype = ABTI_STACK_TYPE_MEMPOOL;
+        p_ythread->thread.type = ABTI_THREAD_TYPE_STACK_MEMPOOL;
     }
     /* Copy members of p_attr. */
     p_ythread->p_stack = p_stack;
@@ -118,7 +118,7 @@ ABTI_mem_alloc_ythread_malloc(ABTI_thread_attr *p_attr)
     void *p_stack;
     ABTI_mem_alloc_ythread_malloc_impl(stacksize, &p_ythread, &p_stack);
     /* Copy members of p_attr. */
-    p_ythread->stacktype = ABTI_STACK_TYPE_MALLOC;
+    p_ythread->thread.type = ABTI_THREAD_TYPE_STACK_MALLOC;
     p_ythread->stacksize = stacksize;
     p_ythread->p_stack = p_stack;
     ABTI_VALGRIND_REGISTER_STACK(p_ythread->p_stack, p_ythread->stacksize);
@@ -131,7 +131,7 @@ ABTI_mem_alloc_ythread_user(ABTI_thread_attr *p_attr)
     /* Do not allocate stack, but Valgrind registration is preferred. */
     ABTI_ythread *p_ythread = (ABTI_ythread *)ABTU_malloc(sizeof(ABTI_ythread));
     /* Copy members of p_attr. */
-    p_ythread->stacktype = ABTI_STACK_TYPE_USER;
+    p_ythread->thread.type = ABTI_THREAD_TYPE_STACK_USER;
     p_ythread->stacksize = p_attr->stacksize;
     p_ythread->p_stack = p_attr->p_stack;
     ABTI_VALGRIND_REGISTER_STACK(p_ythread->p_stack, p_ythread->stacksize);
@@ -144,7 +144,7 @@ ABTI_mem_alloc_ythread_main(ABTI_thread_attr *p_attr)
     /* Stack of the currently running Pthreads is used. */
     ABTI_ythread *p_ythread = (ABTI_ythread *)ABTU_malloc(sizeof(ABTI_ythread));
     /* Copy members of p_attr. */
-    p_ythread->stacktype = ABTI_STACK_TYPE_MAIN;
+    p_ythread->thread.type = ABTI_THREAD_TYPE_STACK_MAIN;
     p_ythread->stacksize = p_attr->stacksize;
     p_ythread->p_stack = p_attr->p_stack;
     return p_ythread;
@@ -155,7 +155,7 @@ static inline void ABTI_mem_free_ythread(ABTI_local *p_local,
 {
     /* Return stack. */
 #ifdef ABT_CONFIG_USE_MEM_POOL
-    if (p_ythread->stacktype == ABTI_STACK_TYPE_MEMPOOL) {
+    if (p_ythread->thread.type & ABTI_THREAD_TYPE_STACK_MEMPOOL) {
         ABTI_VALGRIND_UNREGISTER_STACK(p_ythread->p_stack);
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
         /* Came from a memory pool. */
@@ -171,12 +171,12 @@ static inline void ABTI_mem_free_ythread(ABTI_local *p_local,
         ABTI_mem_pool_free(&p_local_xstream->mem_pool_stack, p_ythread);
     } else
 #endif
-        if (p_ythread->stacktype == ABTI_STACK_TYPE_MALLOC) {
+        if (p_ythread->thread.type & ABTI_THREAD_TYPE_STACK_MALLOC) {
         ABTI_VALGRIND_UNREGISTER_STACK(p_ythread->p_stack);
         /* p_ythread is allocated together with the stack. */
         ABTU_free(p_ythread->p_stack);
     } else {
-        if (p_ythread->stacktype == ABTI_STACK_TYPE_USER) {
+        if (p_ythread->thread.type & ABTI_THREAD_TYPE_STACK_USER) {
             ABTI_VALGRIND_UNREGISTER_STACK(p_ythread->p_stack);
         }
         ABTU_free(p_ythread);

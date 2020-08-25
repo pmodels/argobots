@@ -32,7 +32,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
 
     /* Default values */
     ABTI_thread_attr_init(p_newattr, NULL, ABTI_global_get_thread_stacksize(),
-                          ABTI_STACK_TYPE_MEMPOOL, ABT_TRUE);
+                          ABTI_THREAD_TYPE_STACK_MEMPOOL, ABT_TRUE);
 
     /* Return value */
     *newattr = ABTI_thread_attr_get_handle(p_newattr);
@@ -101,20 +101,25 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
-    p_attr->p_stack = stackaddr;
+    ABTI_thread_type new_thread_type;
     if (stackaddr != NULL) {
         if (((uintptr_t)stackaddr & 0x7) != 0) {
             abt_errno = ABT_ERR_OTHER;
             goto fn_fail;
         }
-        p_attr->stacktype = ABTI_STACK_TYPE_USER;
+        new_thread_type = ABTI_THREAD_TYPE_STACK_USER;
     } else {
         if (stacksize == ABTI_global_get_thread_stacksize()) {
-            p_attr->stacktype = ABTI_STACK_TYPE_MEMPOOL;
+            new_thread_type = ABTI_THREAD_TYPE_STACK_MEMPOOL;
         } else {
-            p_attr->stacktype = ABTI_STACK_TYPE_MALLOC;
+            new_thread_type = ABTI_THREAD_TYPE_STACK_MALLOC;
         }
     }
+    /* Unset the stack type and set new_thread_type. */
+    p_attr->thread_type &= ~ABTI_THREAD_TYPES_STACK;
+    p_attr->thread_type |= new_thread_type;
+
+    p_attr->p_stack = stackaddr;
     p_attr->stacksize = stacksize;
 
 fn_exit:
@@ -179,11 +184,15 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 
     /* Set the value */
     p_attr->stacksize = stacksize;
+    ABTI_thread_type new_thread_type;
     if (stacksize == ABTI_global_get_thread_stacksize()) {
-        p_attr->stacktype = ABTI_STACK_TYPE_MEMPOOL;
+        new_thread_type = ABTI_THREAD_TYPE_STACK_MEMPOOL;
     } else {
-        p_attr->stacktype = ABTI_STACK_TYPE_MALLOC;
+        new_thread_type = ABTI_THREAD_TYPE_STACK_MALLOC;
     }
+    /* Unset the stack type and set new_thread_type. */
+    p_attr->thread_type &= ~ABTI_THREAD_TYPES_STACK;
+    p_attr->thread_type |= new_thread_type;
 
 fn_exit:
     return abt_errno;
@@ -319,22 +328,16 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
     }
 
     char *stacktype;
-    switch (p_attr->stacktype) {
-        case ABTI_STACK_TYPE_MEMPOOL:
-            stacktype = "MEMPOOL";
-            break;
-        case ABTI_STACK_TYPE_MALLOC:
-            stacktype = "MALLOC";
-            break;
-        case ABTI_STACK_TYPE_USER:
-            stacktype = "USER";
-            break;
-        case ABTI_STACK_TYPE_MAIN:
-            stacktype = "MAIN";
-            break;
-        default:
-            stacktype = "UNKNOWN";
-            break;
+    if (p_attr->thread_type & ABTI_THREAD_TYPE_STACK_MEMPOOL) {
+        stacktype = "MEMPOOL";
+    } else if (p_attr->thread_type & ABTI_THREAD_TYPE_STACK_MALLOC) {
+        stacktype = "MALLOC";
+    } else if (p_attr->thread_type & ABTI_THREAD_TYPE_STACK_USER) {
+        stacktype = "USER";
+    } else if (p_attr->thread_type & ABTI_THREAD_TYPE_STACK_MAIN) {
+        stacktype = "MAIN";
+    } else {
+        stacktype = "UNKNOWN";
     }
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION

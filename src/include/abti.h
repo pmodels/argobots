@@ -77,6 +77,15 @@ enum ABTI_sched_used {
 #define ABTI_THREAD_TYPE_NAMED ((ABTI_thread_type)(0x1 << 4))
 #define ABTI_THREAD_TYPE_MIGRATABLE ((ABTI_thread_type)(0x1 << 5))
 
+#define ABTI_THREAD_TYPE_STACK_MEMPOOL ((ABTI_thread_type)(0x1 << 6))
+#define ABTI_THREAD_TYPE_STACK_MALLOC ((ABTI_thread_type)(0x1 << 7))
+#define ABTI_THREAD_TYPE_STACK_USER ((ABTI_thread_type)(0x1 << 8))
+#define ABTI_THREAD_TYPE_STACK_MAIN ((ABTI_thread_type)(0x1 << 9))
+
+#define ABTI_THREAD_TYPES_STACK                                                \
+    (ABTI_THREAD_TYPE_STACK_MEMPOOL | ABTI_THREAD_TYPE_STACK_MALLOC |          \
+     ABTI_THREAD_TYPE_STACK_USER | ABTI_THREAD_TYPE_STACK_MAIN)
+
 enum ABTI_thread_state {
     ABTI_THREAD_STATE_READY,
     ABTI_THREAD_STATE_RUNNING,
@@ -87,13 +96,6 @@ enum ABTI_thread_state {
 enum ABTI_mutex_attr_val {
     ABTI_MUTEX_ATTR_NONE = 0,
     ABTI_MUTEX_ATTR_RECURSIVE = 1 << 0
-};
-
-enum ABTI_stack_type {
-    ABTI_STACK_TYPE_MEMPOOL = 0, /* Stack taken from the memory pool */
-    ABTI_STACK_TYPE_MALLOC,      /* Stack allocated by malloc in Argobots */
-    ABTI_STACK_TYPE_USER,        /* Stack given by a user */
-    ABTI_STACK_TYPE_MAIN,        /* Stack of a main ULT. */
 };
 
 /* Macro functions */
@@ -115,7 +117,6 @@ typedef struct ABTI_thread ABTI_thread;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_ythread ABTI_ythread;
 typedef struct ABTI_thread_mig_data ABTI_thread_mig_data;
-typedef enum ABTI_stack_type ABTI_stack_type;
 typedef uint32_t ABTI_thread_type;
 typedef enum ABTI_thread_state ABTI_thread_state;
 typedef struct ABTI_ythread_htable ABTI_ythread_htable;
@@ -334,9 +335,9 @@ struct ABTI_thread {
 };
 
 struct ABTI_thread_attr {
-    void *p_stack;             /* Stack address */
-    size_t stacksize;          /* Stack size (in bytes) */
-    ABTI_stack_type stacktype; /* Stack type */
+    void *p_stack;                /* Stack address */
+    size_t stacksize;             /* Stack size (in bytes) */
+    ABTI_thread_type thread_type; /* Thread type */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABT_bool migratable;              /* Migratability */
     void (*f_cb)(ABT_thread, void *); /* Callback function */
@@ -352,11 +353,10 @@ struct ABTI_thread_mig_data {
 };
 
 struct ABTI_ythread {
-    ABTI_thread thread;        /* Common thread definition */
-    ABTD_ythread_context ctx;  /* Context */
-    void *p_stack;             /* Stack address */
-    size_t stacksize;          /* Stack size (in bytes) */
-    ABTI_stack_type stacktype; /* Stack type */
+    ABTI_thread thread;       /* Common thread definition */
+    ABTD_ythread_context ctx; /* Context */
+    void *p_stack;            /* Stack address */
+    size_t stacksize;         /* Stack size (in bytes) */
 };
 
 struct ABTI_key {
