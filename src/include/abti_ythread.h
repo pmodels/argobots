@@ -372,7 +372,7 @@ static inline void ABTI_ythread_yield(ABTI_xstream **pp_local_xstream,
 
     /* Change the state of current running thread */
     ABTD_atomic_release_store_int(&p_ythread->thread.state,
-                                  ABTI_THREAD_STATE_READY);
+                                  ABT_THREAD_STATE_READY);
 
     /* Switch to the top scheduler */
     ABTI_ythread_context_switch_to_parent(pp_local_xstream, p_ythread,

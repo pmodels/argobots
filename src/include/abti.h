@@ -87,13 +87,6 @@ enum ABTI_sched_used {
      ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK |                                 \
      ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK)
 
-enum ABTI_thread_state {
-    ABTI_THREAD_STATE_READY,
-    ABTI_THREAD_STATE_RUNNING,
-    ABTI_THREAD_STATE_BLOCKED,
-    ABTI_THREAD_STATE_TERMINATED,
-};
-
 enum ABTI_mutex_attr_val {
     ABTI_MUTEX_ATTR_NONE = 0,
     ABTI_MUTEX_ATTR_RECURSIVE = 1 << 0
@@ -119,7 +112,6 @@ typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_ythread ABTI_ythread;
 typedef struct ABTI_thread_mig_data ABTI_thread_mig_data;
 typedef uint32_t ABTI_thread_type;
-typedef enum ABTI_thread_state ABTI_thread_state;
 typedef struct ABTI_ythread_htable ABTI_ythread_htable;
 typedef struct ABTI_ythread_queue ABTI_ythread_queue;
 typedef struct ABTI_key ABTI_key;
@@ -329,7 +321,7 @@ struct ABTI_thread {
     ABTI_thread *p_parent;        /* Parent thread */
     void (*f_thread)(void *);     /* Thread function */
     void *p_arg;                  /* Thread function argument */
-    ABTD_atomic_int state;        /* State (ABTI_thread_state) */
+    ABTD_atomic_int state;        /* State (ABT_thread_state) */
     ABTD_atomic_uint32 request;   /* Request */
     ABTI_pool *p_pool;            /* Associated pool */
     ABTD_atomic_ptr p_keytable;   /* Thread-specific data (ABTI_ktable *) */

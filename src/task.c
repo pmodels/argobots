@@ -488,7 +488,7 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
 
     p_newtask->p_last_xstream = NULL;
     p_newtask->p_parent = NULL;
-    ABTD_atomic_relaxed_store_int(&p_newtask->state, ABTI_THREAD_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_newtask->state, ABT_THREAD_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_newtask->request, 0);
     p_newtask->f_thread = task_func;
     p_newtask->p_arg = arg;

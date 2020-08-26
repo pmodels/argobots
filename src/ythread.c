@@ -16,7 +16,7 @@ int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread)
 
     /* Change the ULT's state to BLOCKED */
     ABTD_atomic_release_store_int(&p_ythread->thread.state,
-                                  ABTI_THREAD_STATE_BLOCKED);
+                                  ABT_THREAD_STATE_BLOCKED);
 
     /* Increase the number of blocked ULTs */
     ABTI_pool *p_pool = p_ythread->thread.p_pool;
@@ -54,7 +54,7 @@ int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
     /* The ULT should be in BLOCKED state. */
     ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(
                             &p_ythread->thread.state) ==
-                            ABTI_THREAD_STATE_BLOCKED,
+                            ABT_THREAD_STATE_BLOCKED,
                         ABT_ERR_THREAD);
 
     /* We should wait until the scheduler of the blocked ULT resets the BLOCK

@@ -64,7 +64,7 @@ static inline void ABTI_xstream_terminate_thread(ABTI_local *p_local,
               p_thread->p_last_xstream->rank);
     if (!(p_thread->type & ABTI_THREAD_TYPE_NAMED)) {
         ABTD_atomic_release_store_int(&p_thread->state,
-                                      ABTI_THREAD_STATE_TERMINATED);
+                                      ABT_THREAD_STATE_TERMINATED);
         ABTI_thread_free(p_local, p_thread);
     } else {
         /* NOTE: We set the ULT's state as TERMINATED after checking refcount
@@ -72,7 +72,7 @@ static inline void ABTI_xstream_terminate_thread(ABTI_local *p_local,
          * must not access any field of p_thead after changing the state to
          * TERMINATED. */
         ABTD_atomic_release_store_int(&p_thread->state,
-                                      ABTI_THREAD_STATE_TERMINATED);
+                                      ABT_THREAD_STATE_TERMINATED);
     }
 }
 

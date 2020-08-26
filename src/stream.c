@@ -1392,7 +1392,7 @@ int ABTI_xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
 
     /* Change the ULT state */
     ABTD_atomic_release_store_int(&p_ythread->thread.state,
-                                  ABTI_THREAD_STATE_RUNNING);
+                                  ABT_THREAD_STATE_RUNNING);
 
     /* Switch the context */
     LOG_DEBUG("[U%" PRIu64 ":E%d] start running\n",
@@ -1492,7 +1492,7 @@ void ABTI_xstream_schedule_task(ABTI_xstream *p_local_xstream,
 #endif
 
     /* Change the task state */
-    ABTD_atomic_release_store_int(&p_task->state, ABTI_THREAD_STATE_RUNNING);
+    ABTD_atomic_release_store_int(&p_task->state, ABT_THREAD_STATE_RUNNING);
 
     /* Set the associated ES */
     p_task->p_last_xstream = p_local_xstream;

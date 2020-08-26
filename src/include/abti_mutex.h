@@ -115,7 +115,7 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                     /* Push the previous ULT to its pool */
                     ABTI_ythread *p_giver = p_mutex->p_giver;
                     ABTD_atomic_release_store_int(&p_giver->thread.state,
-                                                  ABTI_THREAD_STATE_READY);
+                                                  ABT_THREAD_STATE_READY);
                     ABTI_pool_push(*pp_local, p_giver->thread.p_pool,
                                    p_giver->thread.unit);
                     break;

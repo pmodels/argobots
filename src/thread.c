@@ -616,8 +616,7 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     /* Return value */
-    *state = ABTI_thread_state_get_thread_state(
-        (ABTI_thread_state)ABTD_atomic_acquire_load_int(&p_thread->state));
+    *state = (ABT_thread_state)ABTD_atomic_acquire_load_int(&p_thread->state);
 
 fn_exit:
     return abt_errno;
@@ -761,7 +760,7 @@ int ABT_thread_yield_to(ABT_thread thread)
 
     ABTI_CHECK_TRUE_MSG(ABTD_atomic_relaxed_load_int(
                             &p_tar_ythread->thread.state) !=
-                            ABTI_THREAD_STATE_TERMINATED,
+                            ABT_THREAD_STATE_TERMINATED,
                         ABT_ERR_INV_THREAD,
                         "Cannot yield to the terminated thread");
 
@@ -780,12 +779,12 @@ int ABT_thread_yield_to(ABT_thread thread)
     if (!(p_tar_ythread->thread.p_pool->u_is_in_pool(
               p_tar_ythread->thread.unit) == ABT_TRUE &&
           ABTD_atomic_acquire_load_int(&p_tar_ythread->thread.state) ==
-              ABTI_THREAD_STATE_READY)) {
+              ABT_THREAD_STATE_READY)) {
         goto fn_exit;
     }
 
     ABTD_atomic_release_store_int(&p_cur_ythread->thread.state,
-                                  ABTI_THREAD_STATE_READY);
+                                  ABT_THREAD_STATE_READY);
 
     /* This operation is corresponding to yield */
     ABTI_tool_event_ythread_yield(p_local_xstream, p_cur_ythread,
@@ -809,7 +808,7 @@ int ABT_thread_yield_to(ABT_thread thread)
 
     /* Switch the context */
     ABTD_atomic_release_store_int(&p_tar_ythread->thread.state,
-                                  ABTI_THREAD_STATE_RUNNING);
+                                  ABT_THREAD_STATE_RUNNING);
     ABTI_ythread *p_prev =
         ABTI_ythread_context_switch_to_sibling(&p_local_xstream, p_cur_ythread,
                                                p_tar_ythread);
@@ -978,7 +977,7 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
                       (ABTI_THREAD_TYPE_MAIN | ABTI_THREAD_TYPE_MAIN_SCHED)),
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                        ABTI_THREAD_STATE_TERMINATED,
+                        ABT_THREAD_STATE_TERMINATED,
                     ABT_ERR_INV_THREAD);
 
     /* Find a pool */
@@ -1642,7 +1641,7 @@ static inline int ABTI_ythread_create_internal(
     p_newthread->thread.p_arg = arg;
 
     ABTD_atomic_release_store_int(&p_newthread->thread.state,
-                                  ABTI_THREAD_STATE_READY);
+                                  ABT_THREAD_STATE_READY);
     ABTD_atomic_release_store_uint32(&p_newthread->thread.request, 0);
     p_newthread->thread.p_last_xstream = NULL;
     p_newthread->thread.p_parent = NULL;
@@ -1717,7 +1716,7 @@ int ABTI_thread_migrate_to_pool(ABTI_local **pp_local, ABTI_thread *p_thread,
                                             ABTI_THREAD_TYPE_MAIN_SCHED)),
                         ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                            ABTI_THREAD_STATE_TERMINATED,
+                            ABT_THREAD_STATE_TERMINATED,
                         ABT_ERR_INV_THREAD);
 
     /* checking for migration to the same pool */
@@ -1936,16 +1935,16 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             yieldable = "no";
         }
         switch (ABTD_atomic_acquire_load_int(&p_thread->state)) {
-            case ABTI_THREAD_STATE_READY:
+            case ABT_THREAD_STATE_READY:
                 state = "READY";
                 break;
-            case ABTI_THREAD_STATE_RUNNING:
+            case ABT_THREAD_STATE_RUNNING:
                 state = "RUNNING";
                 break;
-            case ABTI_THREAD_STATE_BLOCKED:
+            case ABT_THREAD_STATE_BLOCKED:
                 state = "BLOCKED";
                 break;
-            case ABTI_THREAD_STATE_TERMINATED:
+            case ABT_THREAD_STATE_TERMINATED:
                 state = "TERMINATED";
                 break;
             default:
@@ -2021,13 +2020,13 @@ static int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
                               ABTI_thread *p_thread)
 {
     ABTI_CHECK_TRUE_RET(ABTD_atomic_relaxed_load_int(&p_thread->state) ==
-                            ABTI_THREAD_STATE_TERMINATED,
+                            ABT_THREAD_STATE_TERMINATED,
                         ABT_ERR_INV_THREAD);
 
     p_thread->f_thread = thread_func;
     p_thread->p_arg = arg;
 
-    ABTD_atomic_relaxed_store_int(&p_thread->state, ABTI_THREAD_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_thread->request, 0);
     p_thread->p_last_xstream = NULL;
     p_thread->p_parent = NULL;
@@ -2076,7 +2075,7 @@ static int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
 static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
 {
     if (ABTD_atomic_acquire_load_int(&p_thread->state) ==
-        ABTI_THREAD_STATE_TERMINATED) {
+        ABT_THREAD_STATE_TERMINATED) {
         goto fn_exit;
     }
 
@@ -2107,7 +2106,7 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         (access == ABT_POOL_ACCESS_PRIV || access == ABT_POOL_ACCESS_MPSC ||
          access == ABT_POOL_ACCESS_SPSC) &&
         (ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
-         ABTI_THREAD_STATE_READY)) {
+         ABT_THREAD_STATE_READY)) {
 
         ABTI_xstream *p_xstream = p_self->thread.p_last_xstream;
 
@@ -2143,11 +2142,11 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         /* Set the last ES */
         p_ythread->thread.p_last_xstream = p_xstream;
         ABTD_atomic_release_store_int(&p_ythread->thread.state,
-                                      ABTI_THREAD_STATE_RUNNING);
+                                      ABT_THREAD_STATE_RUNNING);
 
         /* Make the current ULT BLOCKED */
         ABTD_atomic_release_store_int(&p_self->thread.state,
-                                      ABTI_THREAD_STATE_BLOCKED);
+                                      ABT_THREAD_STATE_BLOCKED);
 
         LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
                   ABTI_thread_get_id(&p_self->thread),
@@ -2208,9 +2207,9 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
      * has been resumed by p_self's scheduler.  In the latter case, we don't
      * need to change p_self's state. */
     if (ABTD_atomic_relaxed_load_int(&p_self->thread.state) ==
-        ABTI_THREAD_STATE_BLOCKED) {
+        ABT_THREAD_STATE_BLOCKED) {
         ABTD_atomic_release_store_int(&p_self->thread.state,
-                                      ABTI_THREAD_STATE_RUNNING);
+                                      ABT_THREAD_STATE_RUNNING);
         ABTI_pool_dec_num_blocked(p_self->thread.p_pool);
         LOG_DEBUG("[U%" PRIu64 ":E%d] resume after join\n",
                   ABTI_thread_get_id(&p_self->thread),
@@ -2220,7 +2219,7 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
 
 yield_based:
     while (ABTD_atomic_acquire_load_int(&p_ythread->thread.state) !=
-           ABTI_THREAD_STATE_TERMINATED) {
+           ABT_THREAD_STATE_TERMINATED) {
         ABTI_ythread_yield(&p_local_xstream, p_self,
                            ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_ythread);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
@@ -2229,7 +2228,7 @@ yield_based:
 
 yield_based_task:
     while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-           ABTI_THREAD_STATE_TERMINATED) {
+           ABT_THREAD_STATE_TERMINATED) {
         ABTI_ythread_yield(&p_local_xstream, p_self,
                            ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_thread);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
@@ -2238,7 +2237,7 @@ yield_based_task:
 
 busywait_based:
     while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-           ABTI_THREAD_STATE_TERMINATED) {
+           ABT_THREAD_STATE_TERMINATED) {
         ABTD_atomic_pause();
     }
 
@@ -2264,7 +2263,7 @@ static int ABTI_thread_migrate_to_xstream(ABTI_local **pp_local,
                                             ABTI_THREAD_TYPE_MAIN_SCHED)),
                         ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                            ABTI_THREAD_STATE_TERMINATED,
+                            ABT_THREAD_STATE_TERMINATED,
                         ABT_ERR_INV_THREAD);
 
     /* We need to find the target scheduler */

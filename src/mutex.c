@@ -243,7 +243,7 @@ static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
                         /* Push the previous ULT to its pool */
                         ABTI_ythread *p_giver = p_mutex->p_giver;
                         ABTD_atomic_release_store_int(&p_giver->thread.state,
-                                                      ABTI_THREAD_STATE_READY);
+                                                      ABT_THREAD_STATE_READY);
                         ABTI_pool_push(*pp_local, p_giver->thread.p_pool,
                                        p_giver->thread.unit);
                         break;
@@ -579,7 +579,7 @@ handover:
         ;
     ABTI_pool_dec_num_blocked(p_next->thread.p_pool);
     ABTD_atomic_release_store_int(&p_next->thread.state,
-                                  ABTI_THREAD_STATE_RUNNING);
+                                  ABT_THREAD_STATE_RUNNING);
     ABTI_tool_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream),
                                    p_next, &p_ythread->thread);
     /* This works as a "yield" for this thread. */

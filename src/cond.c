@@ -193,7 +193,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
 
     ABTI_thread thread;
     thread.type = ABTI_THREAD_TYPE_EXT;
-    ABTD_atomic_relaxed_store_int(&thread.state, ABTI_THREAD_STATE_BLOCKED);
+    ABTD_atomic_relaxed_store_int(&thread.state, ABT_THREAD_STATE_BLOCKED);
 
     ABTI_spinlock_acquire(&p_cond->lock);
 
@@ -233,7 +233,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
         p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
     }
     while (ABTD_atomic_acquire_load_int(&thread.state) !=
-           ABTI_THREAD_STATE_READY) {
+           ABT_THREAD_STATE_READY) {
         double cur_time = ABTI_get_wtime();
         if (cur_time >= tar_time) {
             remove_thread(p_cond, &thread);
@@ -309,8 +309,7 @@ int ABT_cond_signal(ABT_cond cond)
         ABTI_ythread_set_ready(p_local, p_ythread);
     } else {
         /* When the head is an external thread */
-        ABTD_atomic_release_store_int(&p_thread->state,
-                                      ABTI_THREAD_STATE_READY);
+        ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
     }
 
     ABTI_spinlock_release(&p_cond->lock);

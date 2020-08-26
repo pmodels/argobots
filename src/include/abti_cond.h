@@ -74,7 +74,7 @@ static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
         p_thread->type = ABTI_THREAD_TYPE_EXT;
         /* use state for synchronization */
         ABTD_atomic_relaxed_store_int(&p_thread->state,
-                                      ABTI_THREAD_STATE_BLOCKED);
+                                      ABT_THREAD_STATE_BLOCKED);
     }
 
     ABTI_spinlock_acquire(&p_cond->lock);
@@ -125,7 +125,7 @@ static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
 
         /* External thread is waiting here. */
         while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-               ABTI_THREAD_STATE_READY)
+               ABT_THREAD_STATE_READY)
             ;
         ABTU_free(p_thread);
     }
@@ -159,7 +159,7 @@ static inline void ABTI_cond_broadcast(ABTI_local *p_local, ABTI_cond *p_cond)
         } else {
             /* When the head is an external thread */
             ABTD_atomic_release_store_int(&p_thread->state,
-                                          ABTI_THREAD_STATE_READY);
+                                          ABT_THREAD_STATE_READY);
         }
 
         /* Next ULT */

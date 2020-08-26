@@ -189,7 +189,7 @@ ABT_bool ABTI_ythread_htable_switch_low(ABTI_xstream **pp_local_xstream,
 
         /* Push p_ythread to the queue */
         ABTD_atomic_release_store_int(&p_ythread->thread.state,
-                                      ABTI_THREAD_STATE_BLOCKED);
+                                      ABT_THREAD_STATE_BLOCKED);
         ABTI_tool_event_ythread_suspend(p_local_xstream, p_ythread,
                                         p_ythread->thread.p_parent,
                                         sync_event_type, p_sync);
@@ -211,7 +211,7 @@ ABT_bool ABTI_ythread_htable_switch_low(ABTI_xstream **pp_local_xstream,
 
         /* Context-switch to p_target */
         ABTD_atomic_release_store_int(&p_target->thread.state,
-                                      ABTI_THREAD_STATE_RUNNING);
+                                      ABT_THREAD_STATE_RUNNING);
         ABTI_tool_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream),
                                        p_target,
                                        p_local_xstream

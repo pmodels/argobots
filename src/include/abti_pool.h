@@ -225,7 +225,7 @@ static inline int ABTI_pool_add_thread_impl(ABTI_local *p_local,
 {
     /* Set the ULT's state as READY. The relaxed version is used since the state
      * is synchronized by the following pool operation. */
-    ABTD_atomic_relaxed_store_int(&p_thread->state, ABTI_THREAD_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
 
     /* Add the ULT to the associated pool */
     int abt_errno = ABTI_pool_push(p_local, p_thread->p_pool, p_thread->unit);
