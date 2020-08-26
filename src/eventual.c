@@ -35,6 +35,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     ABTI_eventual *p_eventual;
 
     p_eventual = (ABTI_eventual *)ABTU_malloc(sizeof(ABTI_eventual));
+    ABTI_CHECK_TRUE(p_eventual != NULL, ABT_ERR_MEM);
     ABTI_spinlock_clear(&p_eventual->lock);
     p_eventual->ready = ABT_FALSE;
     p_eventual->nbytes = nbytes;
@@ -44,7 +45,12 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
 
     *neweventual = ABTI_eventual_get_handle(p_eventual);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**

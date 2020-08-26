@@ -29,6 +29,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     ABTI_thread_attr *p_newattr;
 
     p_newattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
+    ABTI_CHECK_TRUE(p_newattr, ABT_ERR_MEM);
 
     /* Default values */
     ABTI_thread_attr_init(p_newattr, NULL, ABTI_global_get_thread_stacksize(),
@@ -37,7 +38,12 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     /* Return value */
     *newattr = ABTI_thread_attr_get_handle(p_newattr);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -264,7 +270,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #endif
 }
 
@@ -301,7 +307,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #endif
 }
 

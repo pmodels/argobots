@@ -71,14 +71,14 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
     ABTU_free(newfmt);
 }
 
-void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
-                        ABTI_native_thread_id producer_id)
+void ABTI_log_pool_push(ABTI_local *p_local, ABTI_pool *p_pool, ABT_unit unit)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE)
         return;
 
     ABTI_ythread *p_ythread = NULL;
     ABTI_thread *p_task = NULL;
+    ABTI_native_thread_id producer_id = ABTI_self_get_native_thread_id(p_local);
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:
             p_ythread = ABTI_ythread_get_ptr(p_pool->u_get_thread(unit));
@@ -118,14 +118,14 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
     }
 }
 
-void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
-                          ABTI_native_thread_id consumer_id)
+void ABTI_log_pool_remove(ABTI_local *p_local, ABTI_pool *p_pool, ABT_unit unit)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE)
         return;
 
     ABTI_ythread *p_ythread = NULL;
     ABTI_thread *p_task = NULL;
+    ABTI_native_thread_id consumer_id = ABTI_self_get_native_thread_id(p_local);
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:
             p_ythread = ABTI_ythread_get_ptr(p_pool->u_get_thread(unit));

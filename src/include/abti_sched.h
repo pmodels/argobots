@@ -44,12 +44,12 @@ static inline int ABTI_sched_discard_and_free(ABTI_local *p_local,
                                               ABTI_sched *p_sched,
                                               ABT_bool force_free)
 {
-    int abt_errno = ABT_SUCCESS;
     p_sched->used = ABTI_SCHED_NOT_USED;
     if (p_sched->automatic == ABT_TRUE || force_free) {
-        abt_errno = ABTI_sched_free(p_local, p_sched, force_free);
+        int abt_errno = ABTI_sched_free(p_local, p_sched, force_free);
+        ABTI_CHECK_ERROR_RET(abt_errno);
     }
-    return abt_errno;
+    return ABT_SUCCESS;
 }
 
 static inline void ABTI_sched_set_request(ABTI_sched *p_sched, uint32_t req)

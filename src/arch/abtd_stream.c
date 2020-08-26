@@ -48,7 +48,6 @@ static void *ABTDI_xstream_context_thread_func(void *arg)
 int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
                                 ABTD_xstream_context *p_ctx)
 {
-    int abt_errno = ABT_SUCCESS;
     p_ctx->thread_f = f_xstream;
     p_ctx->p_arg = p_arg;
     p_ctx->state = ABTD_XSTREAM_CONTEXT_STATE_RUNNING;
@@ -58,14 +57,13 @@ int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
                              ABTDI_xstream_context_thread_func, p_ctx);
     if (ret != 0) {
         HANDLE_ERROR("pthread_create");
-        abt_errno = ABT_ERR_XSTREAM;
+        return ABT_ERR_XSTREAM;
     }
-    return abt_errno;
+    return ABT_SUCCESS;
 }
 
 int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx)
 {
-    int abt_errno = ABT_SUCCESS;
     /* Request termination */
     pthread_mutex_lock(&p_ctx->state_lock);
     ABTI_ASSERT(p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_WAITING);
@@ -75,17 +73,16 @@ int ABTD_xstream_context_free(ABTD_xstream_context *p_ctx)
     /* Join the target thread. */
     int ret = pthread_join(p_ctx->native_thread, NULL);
     if (ret != 0) {
-        HANDLE_ERROR("pthread_join");
-        abt_errno = ABT_ERR_XSTREAM;
+        /* This is fatal. */
+        return ABT_ERR_XSTREAM;
     }
     pthread_cond_destroy(&p_ctx->state_cond);
     pthread_mutex_destroy(&p_ctx->state_lock);
-    return abt_errno;
+    return ABT_SUCCESS;
 }
 
 int ABTD_xstream_context_join(ABTD_xstream_context *p_ctx)
 {
-    int abt_errno = ABT_SUCCESS;
     /* If not finished, sleep this thread. */
     pthread_mutex_lock(&p_ctx->state_lock);
     if (p_ctx->state != ABTD_XSTREAM_CONTEXT_STATE_WAITING) {
@@ -98,24 +95,22 @@ int ABTD_xstream_context_join(ABTD_xstream_context *p_ctx)
     }
     ABTI_ASSERT(p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_WAITING);
     pthread_mutex_unlock(&p_ctx->state_lock);
-    return abt_errno;
+    return ABT_SUCCESS;
 }
 
 int ABTD_xstream_context_revive(ABTD_xstream_context *p_ctx)
 {
-    int abt_errno = ABT_SUCCESS;
     /* Request restart */
     pthread_mutex_lock(&p_ctx->state_lock);
     ABTI_ASSERT(p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_WAITING);
     p_ctx->state = ABTD_XSTREAM_CONTEXT_STATE_RUNNING;
     pthread_cond_signal(&p_ctx->state_cond);
     pthread_mutex_unlock(&p_ctx->state_lock);
-    return abt_errno;
+    return ABT_SUCCESS;
 }
 
 int ABTD_xstream_context_set_self(ABTD_xstream_context *p_ctx)
 {
-    int abt_errno = ABT_SUCCESS;
     p_ctx->native_thread = pthread_self();
-    return abt_errno;
+    return ABT_SUCCESS;
 }

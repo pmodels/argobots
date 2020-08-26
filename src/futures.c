@@ -60,6 +60,7 @@ int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
     ABTI_future *p_future;
 
     p_future = (ABTI_future *)ABTU_malloc(sizeof(ABTI_future));
+    ABTI_CHECK_TRUE(p_future != NULL, ABT_ERR_MEM);
     ABTI_spinlock_clear(&p_future->lock);
     ABTD_atomic_relaxed_store_uint32(&p_future->counter, 0);
     p_future->compartments = compartments;
@@ -70,7 +71,12 @@ int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
 
     *newfuture = ABTI_future_get_handle(p_future);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**

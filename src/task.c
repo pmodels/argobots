@@ -480,10 +480,8 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
                             ABTI_sched *p_sched, int refcount,
                             ABTI_thread **pp_newtask)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_newtask;
     ABT_task h_newtask;
-    ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     /* Allocate a task object */
     p_newtask = ABTI_mem_alloc_nythread(p_local);
@@ -518,24 +516,14 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_thread_get_id(p_newtask));
 
     /* Add this task to the scheduler's pool */
-#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    ABTI_pool_push(p_pool, p_newtask->unit);
-#else
-    abt_errno = ABTI_pool_push(p_pool, p_newtask->unit,
-                               ABTI_self_get_native_thread_id(p_local));
-    if (abt_errno != ABT_SUCCESS) {
+    int abt_errno = ABTI_pool_push(p_local, p_pool, p_newtask->unit);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTI_thread_free(p_local, p_newtask);
-        goto fn_fail;
+        return abt_errno;
     }
-#endif
 
     /* Return value */
     *pp_newtask = p_newtask;
 
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }

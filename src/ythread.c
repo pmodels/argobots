@@ -7,11 +7,9 @@
 
 int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread)
 {
-    int abt_errno = ABT_SUCCESS;
-
     /* The main sched cannot be blocked */
-    ABTI_CHECK_TRUE(!(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
-                    ABT_ERR_THREAD);
+    ABTI_CHECK_TRUE_RET(!(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                        ABT_ERR_THREAD);
 
     /* To prevent the scheduler from adding the ULT to the pool */
     ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_BLOCK);
@@ -27,13 +25,7 @@ int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread)
     LOG_DEBUG("[U%" PRIu64 ":E%d] blocked\n",
               ABTI_thread_get_id(&p_ythread->thread),
               p_ythread->thread.p_last_xstream->rank);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /* NOTE: This routine should be called after ABTI_ythread_set_blocked. */
@@ -59,12 +51,11 @@ void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
 
 int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
 {
-    int abt_errno = ABT_SUCCESS;
-
     /* The ULT should be in BLOCKED state. */
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
-                        ABTI_THREAD_STATE_BLOCKED,
-                    ABT_ERR_THREAD);
+    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(
+                            &p_ythread->thread.state) ==
+                            ABTI_THREAD_STATE_BLOCKED,
+                        ABT_ERR_THREAD);
 
     /* We should wait until the scheduler of the blocked ULT resets the BLOCK
      * request. Otherwise, the ULT can be pushed to a pool here and be
@@ -89,18 +80,12 @@ int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
     ABTI_pool *p_pool = p_ythread->thread.p_pool;
 
     /* Add the ULT to its associated pool */
-    ABTI_POOL_ADD_THREAD(&p_ythread->thread,
-                         ABTI_self_get_native_thread_id(p_local));
+    int abt_errno = ABTI_pool_add_thread(p_local, &p_ythread->thread);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     /* Decrease the number of blocked threads */
     ABTI_pool_dec_num_blocked(p_pool);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 ABTU_no_sanitize_address int ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
@@ -110,7 +95,7 @@ ABTU_no_sanitize_address int ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
     size_t i, j, stacksize = p_ythread->stacksize;
     if (stacksize == 0 || p_stack == NULL) {
         /* Some threads do not have p_stack (e.g., the main thread) */
-        return ABT_ERR_THREAD;
+        return ABT_SUCCESS;
     }
 
     char buffer[32];

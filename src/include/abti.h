@@ -472,7 +472,7 @@ int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                    ABTI_xstream *p_xstream,
                                    ABTI_sched *p_sched);
-int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched);
+void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 void *ABTI_xstream_launch_main_sched(void *p_arg);
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub);
@@ -517,14 +517,6 @@ int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
 void ABTI_pool_free(ABTI_pool *p_pool);
 int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
 int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def);
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-int ABTI_pool_set_consumer(ABTI_pool *p_pool,
-                           ABTI_native_thread_id consumer_id);
-#endif
-#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-int ABTI_pool_set_producer(ABTI_pool *p_pool,
-                           ABTI_native_thread_id producer_id);
-#endif
 int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source);
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
@@ -609,11 +601,11 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_log.h"
 #include "abti_local.h"
 #include "abti_global.h"
+#include "abti_self.h"
 #include "abti_pool.h"
 #include "abti_sched.h"
 #include "abti_config.h"
 #include "abti_stream.h"
-#include "abti_self.h"
 #include "abti_thread.h"
 #include "abti_tool.h"
 #include "abti_ythread.h"

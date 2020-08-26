@@ -27,16 +27,18 @@ int ABT_rwlock_create(ABT_rwlock *newrwlock)
     ABTI_rwlock *p_newrwlock;
 
     p_newrwlock = (ABTI_rwlock *)ABTU_malloc(sizeof(ABTI_rwlock));
-    if (p_newrwlock == NULL) {
-        abt_errno = ABT_ERR_MEM;
-    } else {
-        ABTI_rwlock_init(p_newrwlock);
-    }
+    ABTI_CHECK_TRUE(p_newrwlock != NULL, ABT_ERR_MEM);
+    ABTI_rwlock_init(p_newrwlock);
 
     /* Return value */
     *newrwlock = ABTI_rwlock_get_handle(p_newrwlock);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**

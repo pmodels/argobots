@@ -38,12 +38,18 @@ int ABT_mutex_create(ABT_mutex *newmutex)
     ABTI_mutex *p_newmutex;
 
     p_newmutex = (ABTI_mutex *)ABTU_calloc(1, sizeof(ABTI_mutex));
+    ABTI_CHECK_TRUE(p_newmutex != NULL, ABT_ERR_MEM);
     ABTI_mutex_init(p_newmutex);
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -194,7 +200,6 @@ static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
         ABTI_mutex_spinlock(p_mutex);
     }
 #else
-    int abt_errno = ABT_SUCCESS;
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
     if (p_ythread) {
@@ -239,10 +244,8 @@ static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
                         ABTI_ythread *p_giver = p_mutex->p_giver;
                         ABTD_atomic_release_store_int(&p_giver->thread.state,
                                                       ABTI_THREAD_STATE_READY);
-                        ABTI_POOL_PUSH(p_giver->thread.p_pool,
-                                       p_giver->thread.unit,
-                                       ABTI_self_get_native_thread_id(
-                                           *pp_local));
+                        ABTI_pool_push(*pp_local, p_giver->thread.p_pool,
+                                       p_giver->thread.unit);
                         break;
                     }
                 }
@@ -255,12 +258,7 @@ static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
         ABTI_mutex_spinlock(p_mutex);
     }
 
-fn_exit:
     return;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 #endif
 }
 

@@ -60,8 +60,6 @@ static inline ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
 static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
                                  ABTI_mutex *p_mutex)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_ythread *p_ythread = NULL;
     ABTI_thread *p_thread;
 
@@ -89,8 +87,7 @@ static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
             ABTI_spinlock_release(&p_cond->lock);
             if (!p_ythread)
                 ABTU_free(p_thread);
-            abt_errno = ABT_ERR_INV_MUTEX;
-            goto fn_fail;
+            return ABT_ERR_INV_MUTEX;
         }
     }
 
@@ -136,13 +133,7 @@ static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
 
     /* Lock the mutex again */
     ABTI_mutex_lock(pp_local, p_mutex);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 static inline void ABTI_cond_broadcast(ABTI_local *p_local, ABTI_cond *p_cond)

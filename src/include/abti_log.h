@@ -11,18 +11,17 @@
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 
 void ABTI_log_debug(FILE *fh, const char *format, ...);
-void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit,
-                        ABTI_native_thread_id producer_id);
-void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit,
-                          ABTI_native_thread_id consumer_id);
+void ABTI_log_pool_push(ABTI_local *p_local, ABTI_pool *p_pool, ABT_unit unit);
+void ABTI_log_pool_remove(ABTI_local *p_local, ABTI_pool *p_pool,
+                          ABT_unit unit);
 void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit);
 
 #define LOG_DEBUG(fmt, ...) ABTI_log_debug(stderr, fmt, __VA_ARGS__)
 
-#define LOG_DEBUG_POOL_PUSH(p_pool, unit, produer_id)                          \
-    ABTI_log_pool_push(p_pool, unit, produer_id)
-#define LOG_DEBUG_POOL_REMOVE(p_pool, unit, consumer_id)                       \
-    ABTI_log_pool_remove(p_pool, unit, consumer_id)
+#define LOG_DEBUG_POOL_PUSH(p_local, p_pool, unit)                             \
+    ABTI_log_pool_push(p_local, p_pool, unit)
+#define LOG_DEBUG_POOL_REMOVE(p_local, p_pool, unit)                           \
+    ABTI_log_pool_remove(p_local, p_pool, unit)
 #define LOG_DEBUG_POOL_POP(p_pool, unit) ABTI_log_pool_pop(p_pool, unit)
 
 #else

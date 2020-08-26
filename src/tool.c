@@ -45,7 +45,7 @@ int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
                                       void *user_arg)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #else
     if (cb_func == NULL)
         event_mask_thread = ABT_TOOL_EVENT_THREAD_NONE;
@@ -87,7 +87,7 @@ int ABT_tool_register_task_callback(ABT_tool_task_callback_fn cb_func,
                                     uint64_t event_mask_task, void *user_arg)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #else
     if (cb_func == NULL)
         event_mask_task = ABT_TOOL_EVENT_TASK_NONE;
@@ -195,7 +195,7 @@ int ABT_tool_query_thread(ABT_tool_context context, uint64_t event_thread,
                           ABT_tool_query_kind query_kind, void *val)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #else
     int abt_errno = ABT_SUCCESS;
 
@@ -232,7 +232,7 @@ int ABT_tool_query_task(ABT_tool_context context, uint64_t event_task,
                         ABT_tool_query_kind query_kind, void *val)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #else
     int abt_errno = ABT_SUCCESS;
 
@@ -254,8 +254,6 @@ fn_fail:
 static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                                   ABT_tool_query_kind query_kind, void *val)
 {
-    int abt_errno = ABT_SUCCESS;
-
     switch (query_kind) {
         case ABT_TOOL_QUERY_KIND_POOL:
             *(ABT_pool *)val = ABTI_pool_get_handle(p_tctx->p_pool);
@@ -338,8 +336,8 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
             }
             break;
         default:
-            abt_errno = ABT_ERR_OTHER;
+            return ABT_ERR_OTHER;
     }
-    return abt_errno;
+    return ABT_SUCCESS;
 }
 #endif

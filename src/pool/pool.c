@@ -298,15 +298,9 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 
     ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_UNIT);
 
-#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    ABTI_pool_push(p_pool, unit);
-#else
     /* Save the producer ES information in the pool */
-    abt_errno =
-        ABTI_pool_push(p_pool, unit,
-                       ABTI_self_get_native_thread_id(ABTI_local_get_local()));
+    abt_errno = ABTI_pool_push(ABTI_local_get_local(), p_pool, unit);
     ABTI_CHECK_ERROR(abt_errno);
-#endif
 
 fn_exit:
     return abt_errno;
@@ -332,9 +326,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_POOL_REMOVE(p_pool, unit,
-                                 ABTI_self_get_native_thread_id(
-                                     ABTI_local_get_local()));
+    abt_errno = ABTI_pool_remove(ABTI_local_get_local(), p_pool, unit);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -487,9 +479,9 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
              * a pool with another associated pool, and set the right value if
              * it is okay  */
             for (p = 0; p < p_sched->num_pools; p++) {
-                abt_errno =
-                    ABTI_pool_set_consumer(ABTI_pool_get_ptr(p_sched->pools[p]),
-                                           p_pool->consumer_id);
+                abt_errno = ABTI_pool_set_consumer_id(ABTI_pool_get_ptr(
+                                                          p_sched->pools[p]),
+                                                      p_pool->consumer_id);
                 ABTI_CHECK_ERROR(abt_errno);
             }
             break;
@@ -569,7 +561,6 @@ fn_fail:
 int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
                      ABT_bool automatic, ABTI_pool **pp_newpool)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool;
 
     p_pool = (ABTI_pool *)ABTU_malloc(sizeof(ABTI_pool));
@@ -608,26 +599,20 @@ int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
 
     /* Configure the pool */
     if (p_pool->p_init) {
-        abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
+        int abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
         if (abt_errno != ABT_SUCCESS) {
             ABTU_free(p_pool);
-            goto fn_fail;
+            return abt_errno;
         }
     }
     *pp_newpool = p_pool;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                            ABT_bool automatic, ABTI_pool **pp_newpool)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABT_pool_def def;
 
     switch (kind) {
@@ -641,18 +626,12 @@ int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
             abt_errno = ABT_ERR_INV_POOL_KIND;
             break;
     }
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     abt_errno =
         ABTI_pool_create(&def, ABT_POOL_CONFIG_NULL, automatic, pp_newpool);
-    ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    ABTI_CHECK_ERROR_RET(abt_errno);
+    return ABT_SUCCESS;
 }
 
 void ABTI_pool_free(ABTI_pool *p_pool)
@@ -669,178 +648,63 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 
     if (p_pool == NULL) {
         fprintf(p_os, "%s== NULL POOL ==\n", prefix);
-        goto fn_exit;
-    }
+    } else {
+        char *access;
 
-    char *access;
+        switch (p_pool->access) {
+            case ABT_POOL_ACCESS_PRIV:
+                access = "PRIV";
+                break;
+            case ABT_POOL_ACCESS_SPSC:
+                access = "SPSC";
+                break;
+            case ABT_POOL_ACCESS_MPSC:
+                access = "MPSC";
+                break;
+            case ABT_POOL_ACCESS_SPMC:
+                access = "SPMC";
+                break;
+            case ABT_POOL_ACCESS_MPMC:
+                access = "MPMC";
+                break;
+            default:
+                access = "UNKNOWN";
+                break;
+        }
 
-    switch (p_pool->access) {
-        case ABT_POOL_ACCESS_PRIV:
-            access = "PRIV";
-            break;
-        case ABT_POOL_ACCESS_SPSC:
-            access = "SPSC";
-            break;
-        case ABT_POOL_ACCESS_MPSC:
-            access = "MPSC";
-            break;
-        case ABT_POOL_ACCESS_SPMC:
-            access = "SPMC";
-            break;
-        case ABT_POOL_ACCESS_MPMC:
-            access = "MPMC";
-            break;
-        default:
-            access = "UNKNOWN";
-            break;
-    }
-
-    fprintf(p_os,
-            "%s== POOL (%p) ==\n"
-            "%sid            : %" PRIu64 "\n"
-            "%saccess        : %s\n"
-            "%sautomatic     : %s\n"
-            "%snum_scheds    : %d\n"
+        fprintf(p_os,
+                "%s== POOL (%p) ==\n"
+                "%sid            : %" PRIu64 "\n"
+                "%saccess        : %s\n"
+                "%sautomatic     : %s\n"
+                "%snum_scheds    : %d\n"
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-            "%sconsumer ID   : %p\n"
+                "%sconsumer ID   : %p\n"
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-            "%sproducer ID   : %p\n"
+                "%sproducer ID   : %p\n"
 #endif
-            "%ssize          : %zu\n"
-            "%snum_blocked   : %d\n"
-            "%snum_migrations: %d\n"
-            "%sdata          : %p\n",
-            prefix, (void *)p_pool, prefix, p_pool->id, prefix, access, prefix,
-            (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE", prefix,
-            ABTD_atomic_acquire_load_int32(&p_pool->num_scheds),
+                "%ssize          : %zu\n"
+                "%snum_blocked   : %d\n"
+                "%snum_migrations: %d\n"
+                "%sdata          : %p\n",
+                prefix, (void *)p_pool, prefix, p_pool->id, prefix, access,
+                prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
+                prefix, ABTD_atomic_acquire_load_int32(&p_pool->num_scheds),
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-            prefix, (void *)p_pool->consumer_id,
+                prefix, (void *)p_pool->consumer_id,
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-            prefix, (void *)p_pool->producer_id,
+                prefix, (void *)p_pool->producer_id,
 #endif
-            prefix, ABTI_pool_get_size(p_pool), prefix,
-            ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), prefix,
-            ABTD_atomic_acquire_load_int32(&p_pool->num_migrations), prefix,
-            p_pool->data);
-
-fn_exit:
+                prefix, ABTI_pool_get_size(p_pool), prefix,
+                ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), prefix,
+                ABTD_atomic_acquire_load_int32(&p_pool->num_migrations), prefix,
+                p_pool->data);
+    }
     fflush(p_os);
     ABTU_free(prefix);
 }
-
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-/* Set the associated consumer ES of a pool. This function has no effect on
- * pools of shared-read access mode. If a pool is private-read to an ES, we
- * check that the previous value of "consumer_id" is the same as the argument of
- * the function "consumer_id"
- * */
-int ABTI_pool_set_consumer(ABTI_pool *p_pool, ABTI_native_thread_id consumer_id)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 0) {
-        return abt_errno;
-    }
-
-    switch (p_pool->access) {
-        case ABT_POOL_ACCESS_PRIV:
-#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-            ABTI_CHECK_TRUE(!p_pool->producer_id ||
-                                p_pool->producer_id == consumer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
-#endif
-            ABTI_CHECK_TRUE(!p_pool->consumer_id ||
-                                p_pool->consumer_id == consumer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
-            p_pool->consumer_id = consumer_id;
-            break;
-
-        case ABT_POOL_ACCESS_SPSC:
-        case ABT_POOL_ACCESS_MPSC:
-            ABTI_CHECK_TRUE(!p_pool->consumer_id ||
-                                p_pool->consumer_id == consumer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
-            /* NB: as we do not want to use a mutex, the function can be wrong
-             * here */
-            p_pool->consumer_id = consumer_id;
-            break;
-
-        case ABT_POOL_ACCESS_SPMC:
-        case ABT_POOL_ACCESS_MPMC:
-            p_pool->consumer_id = consumer_id;
-            break;
-
-        default:
-            abt_errno = ABT_ERR_INV_POOL_ACCESS;
-            ABTI_CHECK_ERROR(abt_errno);
-    }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-#endif
-
-#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-/* Set the associated producer ES of a pool. This function has no effect on
- * pools of shared-write access mode. If a pool is private-write to an ES, we
- * check that the previous value of "producer_id" is the same as the argument of
- * the function "producer_id"
- * */
-int ABTI_pool_set_producer(ABTI_pool *p_pool, ABTI_native_thread_id producer_id)
-{
-    int abt_errno = ABT_SUCCESS;
-
-    if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 0) {
-        return abt_errno;
-    }
-
-    switch (p_pool->access) {
-        case ABT_POOL_ACCESS_PRIV:
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-            ABTI_CHECK_TRUE(!p_pool->consumer_id ||
-                                p_pool->consumer_id == producer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
-#endif
-            ABTI_CHECK_TRUE(!p_pool->producer_id ||
-                                p_pool->producer_id == producer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
-            p_pool->producer_id = producer_id;
-            break;
-
-        case ABT_POOL_ACCESS_SPSC:
-        case ABT_POOL_ACCESS_SPMC:
-            ABTI_CHECK_TRUE(!p_pool->producer_id ||
-                                p_pool->producer_id == producer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
-            /* NB: as we do not want to use a mutex, the function can be wrong
-             * here */
-            p_pool->producer_id = producer_id;
-            break;
-
-        case ABT_POOL_ACCESS_MPSC:
-        case ABT_POOL_ACCESS_MPMC:
-            p_pool->producer_id = producer_id;
-            break;
-
-        default:
-            abt_errno = ABT_ERR_INV_POOL_ACCESS;
-            ABTI_CHECK_ERROR(abt_errno);
-    }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
-}
-#endif
 
 /* Check if a pool accept migrations or not. When the producer of the
  * destination pool is ES private, we have to ensure that we are on the right
