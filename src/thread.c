@@ -780,12 +780,16 @@ int ABT_thread_yield_to(ABT_thread thread)
                                   ABT_SYNC_EVENT_TYPE_USER, NULL);
 
     /* Add the current thread to the pool again. */
-    ABTI_POOL_PUSH(p_cur_ythread->thread.p_pool, p_cur_ythread->thread.unit,
-                   ABTI_xstream_get_native_thread_id(p_local_xstream));
+    abt_errno = ABTI_pool_push(ABTI_xstream_get_local(p_local_xstream),
+                               p_cur_ythread->thread.p_pool,
+                               p_cur_ythread->thread.unit);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Remove the target ULT from the pool */
-    ABTI_POOL_REMOVE(p_tar_ythread->thread.p_pool, p_tar_ythread->thread.unit,
-                     ABTI_xstream_get_native_thread_id(p_local_xstream));
+    abt_errno = ABTI_pool_remove(ABTI_xstream_get_local(p_local_xstream),
+                                 p_tar_ythread->thread.p_pool,
+                                 p_tar_ythread->thread.unit);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* We set the last ES */
     p_tar_ythread->thread.p_last_xstream = p_local_xstream;
@@ -1667,12 +1671,8 @@ static inline int ABTI_ythread_create_internal(
     if (push_pool) {
         p_newthread->thread.unit = p_pool->u_create_from_thread(h_newthread);
         /* Add this thread to the pool */
-#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-        ABTI_pool_push(p_pool, p_newthread->thread.unit);
-#else
-        abt_errno = ABTI_pool_push(p_pool, p_newthread->thread.unit,
-                                   ABTI_self_get_native_thread_id(p_local));
-        if (abt_errno != ABT_SUCCESS) {
+        abt_errno = ABTI_pool_push(p_local, p_pool, p_newthread->thread.unit);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
             if (thread_type & ABTI_THREAD_TYPE_MAIN) {
                 ABTI_ythread_free_main(p_local, p_newthread);
             } else if (thread_type & ABTI_THREAD_TYPE_MAIN_SCHED) {
@@ -1682,7 +1682,6 @@ static inline int ABTI_ythread_create_internal(
             }
             goto fn_fail;
         }
-#endif
     } else {
         p_newthread->thread.unit = ABT_UNIT_NULL;
     }
@@ -2140,13 +2139,8 @@ static int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
     LOG_DEBUG("[U%" PRIu64 "] revived\n", ABTI_thread_get_id(p_thread));
 
     /* Add this thread to the pool */
-#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    ABTI_pool_push(p_pool, p_thread->unit);
-#else
-    abt_errno = ABTI_pool_push(p_pool, p_thread->unit,
-                               ABTI_self_get_native_thread_id(p_local));
+    abt_errno = ABTI_pool_push(p_local, p_pool, p_thread->unit);
     ABTI_CHECK_ERROR(abt_errno);
-#endif
 
 fn_exit:
     return abt_errno;
@@ -2215,8 +2209,9 @@ static inline int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
          * underestimate the number of units in a pool. */
         ABTI_pool_inc_num_blocked(p_self->thread.p_pool);
         /* Remove the target ULT from the pool */
-        ABTI_POOL_REMOVE(p_ythread->thread.p_pool, p_ythread->thread.unit,
-                         ABTI_xstream_get_native_thread_id(p_local_xstream));
+        abt_errno =
+            ABTI_pool_remove(ABTI_xstream_get_local(p_local_xstream),
+                             p_ythread->thread.p_pool, p_ythread->thread.unit);
 
         /* Set the link in the context for the target ULT.  Since p_link will be
          * referenced by p_self, this update does not require release store. */

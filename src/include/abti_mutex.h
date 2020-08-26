@@ -117,8 +117,10 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                     ABTI_ythread *p_giver = p_mutex->p_giver;
                     ABTD_atomic_release_store_int(&p_giver->thread.state,
                                                   ABTI_THREAD_STATE_READY);
-                    ABTI_POOL_PUSH(p_giver->thread.p_pool, p_giver->thread.unit,
-                                   ABTI_self_get_native_thread_id(*pp_local));
+                    abt_errno =
+                        ABTI_pool_push(*pp_local, p_giver->thread.p_pool,
+                                       p_giver->thread.unit);
+                    ABTI_CHECK_ERROR(abt_errno);
                     break;
                 }
             }

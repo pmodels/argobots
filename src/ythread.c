@@ -89,8 +89,8 @@ int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
     ABTI_pool *p_pool = p_ythread->thread.p_pool;
 
     /* Add the ULT to its associated pool */
-    ABTI_POOL_ADD_THREAD(&p_ythread->thread,
-                         ABTI_self_get_native_thread_id(p_local));
+    abt_errno = ABTI_pool_add_thread(p_local, &p_ythread->thread);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Decrease the number of blocked threads */
     ABTI_pool_dec_num_blocked(p_pool);
