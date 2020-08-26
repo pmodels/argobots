@@ -82,8 +82,7 @@ static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
     if (p_cond->p_waiter_mutex == NULL) {
         p_cond->p_waiter_mutex = p_mutex;
     } else {
-        ABT_bool result = ABTI_mutex_equal(p_cond->p_waiter_mutex, p_mutex);
-        if (result == ABT_FALSE) {
+        if (p_cond->p_waiter_mutex != p_mutex) {
             ABTI_spinlock_release(&p_cond->lock);
             if (!p_ythread)
                 ABTU_free(p_thread);

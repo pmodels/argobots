@@ -558,7 +558,6 @@ int ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
 
 /* Thread attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);
-void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf);
 ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr);
 
 /* Thread hash table */
@@ -594,7 +593,6 @@ void ABTI_info_check_print_all_thread_stacks(void);
 
 #include "abti_log.h"
 #include "abti_local.h"
-#include "abti_global.h"
 #include "abti_self.h"
 #include "abti_pool.h"
 #include "abti_sched.h"

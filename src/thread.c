@@ -20,7 +20,6 @@ static int ABTI_thread_migrate_to_xstream(ABTI_local **pp_local,
                                           ABTI_thread *p_thread,
                                           ABTI_xstream *p_xstream);
 #endif
-static inline ABT_bool ABTI_ythread_is_ready(ABTI_ythread *p_ythread);
 static inline ABT_unit_id ABTI_thread_get_new_id(void);
 
 static void key_destructor_stackable_sched(void *p_value);
@@ -773,8 +772,15 @@ int ABT_thread_yield_to(ABT_thread thread)
                         ABT_ERR_INV_THREAD,
                         "The target thread's pool is not the same as mine.");
 
-    /* If the target thread is not in READY, we don't yield. */
-    if (ABTI_ythread_is_ready(p_tar_ythread) == ABT_FALSE) {
+    /* If the target thread is not in READY, we don't yield.  Note that ULT can
+     * be regarded as 'ready' only if its state is READY and it has been
+     * pushed into a pool. Since we set ULT's state to READY and then push it
+     * into a pool, we check them in the reverse order, i.e., check if the ULT
+     * is inside a pool and the its state. */
+    if (!(p_tar_ythread->thread.p_pool->u_is_in_pool(
+              p_tar_ythread->thread.unit) == ABT_TRUE &&
+          ABTD_atomic_acquire_load_int(&p_tar_ythread->thread.state) ==
+              ABTI_THREAD_STATE_READY)) {
         goto fn_exit;
     }
 
@@ -1799,7 +1805,7 @@ int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
         /* Create a ULT object and its stack */
         ABTI_ythread *p_newthread;
         ABTI_thread_attr attr;
-        ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
+        ABTI_thread_attr_init(&attr, NULL, gp_ABTI_global->sched_stacksize,
                               ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK,
                               ABT_FALSE);
         int abt_errno =
@@ -1812,7 +1818,7 @@ int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
         ABTI_CHECK_ERROR_RET(abt_errno);
         /* When the main scheduler is terminated, the control will jump to the
          * primary ULT. */
-        ABTI_ythread *p_main_ythread = ABTI_global_get_main();
+        ABTI_ythread *p_main_ythread = gp_ABTI_global->p_main_ythread;
         ABTD_atomic_relaxed_store_ythread_context_ptr(&p_newthread->ctx.p_link,
                                                       &p_main_ythread->ctx);
         p_sched->p_ythread = p_newthread;
@@ -1841,7 +1847,7 @@ int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
     ABTI_thread_attr attr;
 
     /* Allocate a ULT object and its stack */
-    ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
+    ABTI_thread_attr_init(&attr, NULL, gp_ABTI_global->sched_stacksize,
                           ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK, ABT_FALSE);
     int abt_errno =
         ABTI_ythread_create_internal(p_local, p_pool,
@@ -1904,22 +1910,6 @@ void ABTI_ythread_free_main_sched(ABTI_local *p_local, ABTI_ythread *p_ythread)
                   ? ABTI_local_get_xstream(p_local)->rank
                   : -1);
     ABTI_thread_free_impl(p_local, p_thread, ABT_FALSE);
-}
-
-static inline ABT_bool ABTI_ythread_is_ready(ABTI_ythread *p_ythread)
-{
-    /* ULT can be regarded as 'ready' only if its state is READY and it has been
-     * pushed into a pool. Since we set ULT's state to READY and then push it
-     * into a pool, we check them in the reverse order, i.e., check if the ULT
-     * is inside a pool and the its state. */
-    ABTI_pool *p_pool = p_ythread->thread.p_pool;
-    if (p_pool->u_is_in_pool(p_ythread->thread.unit) == ABT_TRUE &&
-        ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
-            ABTI_THREAD_STATE_READY) {
-        return ABT_TRUE;
-    }
-
-    return ABT_FALSE;
 }
 
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)

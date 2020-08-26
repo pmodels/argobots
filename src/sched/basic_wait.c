@@ -52,7 +52,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     /* Default settings */
     sched_data *p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
-    p_data->event_freq = ABTI_global_get_sched_event_freq();
+    p_data->event_freq = gp_ABTI_global->sched_event_freq;
 
     /* Set the variables from the config */
     void *p_event_freq = &p_data->event_freq;

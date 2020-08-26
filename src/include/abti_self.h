@@ -31,20 +31,4 @@ static inline ABTI_thread_id ABTI_self_get_thread_id(ABTI_local *p_local)
     return (ABTI_thread_id)p_local_xstream->p_thread;
 }
 
-static inline ABTI_thread_type ABTI_self_get_type(ABTI_local *p_local)
-{
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    /* This is when an external thread called this routine. */
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        return ABTI_THREAD_TYPE_EXT;
-    }
-    if (p_local_xstream->p_thread) {
-        return p_local_xstream->p_thread->type;
-    } else {
-        /* p_local_xstream->p_thread can return NULL during executing
-         * ABTI_init() */
-        return ABTI_THREAD_TYPE_EXT;
-    }
-}
-
 #endif /* ABTI_SELF_H_INCLUDED */

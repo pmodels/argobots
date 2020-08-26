@@ -43,10 +43,10 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     /* Default settings */
     sched_data *p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
-    p_data->event_freq = ABTI_global_get_sched_event_freq();
+    p_data->event_freq = gp_ABTI_global->sched_event_freq;
 #ifdef ABT_CONFIG_USE_SCHED_SLEEP
     p_data->sleep_time.tv_sec = 0;
-    p_data->sleep_time.tv_nsec = ABTI_global_get_sched_sleep_nsec();
+    p_data->sleep_time.tv_nsec = gp_ABTI_global->sched_sleep_nsec;
 #endif
 
     /* Set the variables from the config */

@@ -200,8 +200,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     if (p_cond->p_waiter_mutex == NULL) {
         p_cond->p_waiter_mutex = p_mutex;
     } else {
-        ABT_bool result = ABTI_mutex_equal(p_cond->p_waiter_mutex, p_mutex);
-        if (result == ABT_FALSE) {
+        if (p_cond->p_waiter_mutex != p_mutex) {
             ABTI_spinlock_release(&p_cond->lock);
             abt_errno = ABT_ERR_INV_MUTEX;
             goto fn_fail;

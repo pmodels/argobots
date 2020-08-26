@@ -37,16 +37,10 @@ int ABT_self_get_type(ABT_unit_type *type)
     ABT_unit_type ret = ABT_UNIT_TYPE_EXT;
 
     /* If Argobots has not been initialized, set type to ABT_UNIT_TYPE_EXT. */
-    ABTI_SETUP_WITH_INIT_CHECK();
-
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_thread_type raw_type = ABTI_self_get_type(p_local);
-    ret = ABTI_thread_type_get_type(raw_type);
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
     /* This is when an external thread called this routine. */
-    if (ABTI_IS_EXT_THREAD_ENABLED && ret == ABT_UNIT_TYPE_EXT) {
-        abt_errno = ABT_ERR_INV_XSTREAM;
-        goto fn_exit;
-    }
+    ret = ABTI_thread_type_get_type(p_local_xstream->p_thread->type);
 
 fn_exit:
     *type = ret;

@@ -77,7 +77,7 @@ int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
 
     p_newmutex = (ABTI_mutex *)ABTU_malloc(sizeof(ABTI_mutex));
     ABTI_mutex_init(p_newmutex);
-    ABTI_mutex_attr_copy(&p_newmutex->attr, p_attr);
+    memcpy(&p_newmutex->attr, p_attr, sizeof(ABTI_mutex_attr));
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
@@ -687,7 +687,7 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
 {
     ABTI_mutex *p_mutex1 = ABTI_mutex_get_ptr(mutex1);
     ABTI_mutex *p_mutex2 = ABTI_mutex_get_ptr(mutex2);
-    *result = ABTI_mutex_equal(p_mutex1, p_mutex2);
+    *result = (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
 
