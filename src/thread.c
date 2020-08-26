@@ -200,7 +200,11 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
     int i;
 
     if (attr != ABT_THREAD_ATTR_NULL) {
-        if (ABTI_thread_attr_get_ptr(attr)->stacktype == ABTI_STACK_TYPE_USER) {
+        if (ABTI_thread_attr_get_ptr(attr)->thread_type &
+            (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC |
+             ABTI_THREAD_TYPE_MEM_MALLOC_DESC)) {
+            /* This implies that the stack is given by a user.  Since threads
+             * cannot use the same stack region, this is illegal. */
             abt_errno = ABT_ERR_INV_THREAD_ATTR;
             goto fn_fail;
         }
@@ -1512,12 +1516,11 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
     if (p_ythread) {
         thread_attr.p_stack = p_ythread->p_stack;
         thread_attr.stacksize = p_ythread->stacksize;
-        thread_attr.stacktype = p_ythread->stacktype;
     } else {
         thread_attr.p_stack = NULL;
         thread_attr.stacksize = 0;
-        thread_attr.stacktype = ABTI_STACK_TYPE_USER;
     }
+    thread_attr.thread_type = p_thread->type;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     thread_attr.migratable =
         (p_thread->type & ABTI_THREAD_TYPE_MIGRATABLE) ? ABT_TRUE : ABT_FALSE;
@@ -1566,20 +1569,21 @@ static inline int ABTI_ythread_create_internal(
         thread_type |= ABTI_THREAD_TYPE_MIGRATABLE;
 #endif
     } else {
-        ABTI_stack_type stacktype = p_attr->stacktype;
-        if (stacktype == ABTI_STACK_TYPE_MEMPOOL) {
+        ABTI_thread_type attr_type = p_attr->thread_type;
+        if (attr_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK) {
 #ifdef ABT_CONFIG_USE_MEM_POOL
-            p_newthread = ABTI_mem_alloc_ythread_mempool(p_local, p_attr);
+            p_newthread =
+                ABTI_mem_alloc_ythread_mempool_desc_stack(p_local, p_attr);
 #else
-            p_newthread = ABTI_mem_alloc_ythread_malloc(p_attr);
+            p_newthread = ABTI_mem_alloc_ythread_malloc_desc_stack(p_attr);
 #endif
-        } else if (stacktype == ABTI_STACK_TYPE_MALLOC) {
-            p_newthread = ABTI_mem_alloc_ythread_malloc(p_attr);
-        } else if (stacktype == ABTI_STACK_TYPE_USER) {
-            p_newthread = ABTI_mem_alloc_ythread_user(p_attr);
+        } else if (attr_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
+            p_newthread = ABTI_mem_alloc_ythread_malloc_desc_stack(p_attr);
         } else {
-            ABTI_ASSERT(stacktype == ABTI_STACK_TYPE_MAIN);
-            p_newthread = ABTI_mem_alloc_ythread_main(p_attr);
+            ABTI_ASSERT(attr_type & (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC |
+                                     ABTI_THREAD_TYPE_MEM_MALLOC_DESC));
+            /* Let's try to use mempool first since it performs better. */
+            p_newthread = ABTI_mem_alloc_ythread_mempool_desc(p_local, p_attr);
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         thread_type |= p_attr->migratable ? ABTI_THREAD_TYPE_MIGRATABLE : 0;
@@ -1594,29 +1598,30 @@ static inline int ABTI_ythread_create_internal(
 #endif
     }
 
-    if ((thread_type & (ABTI_THREAD_TYPE_MAIN | ABTI_THREAD_TYPE_MAIN_SCHED)) &&
-        p_newthread->p_stack == NULL) {
-        /* We don't need to initialize the context of 1. the main thread, and
-         * 2. the main scheduler thread which runs on OS-level threads
-         * (p_stack == NULL). Invalidate the context here. */
-        abt_errno = ABTD_ythread_context_invalidate(&p_newthread->ctx);
-    } else if (p_sched == NULL) {
+    if (thread_type & (ABTI_THREAD_TYPE_MAIN | ABTI_THREAD_TYPE_MAIN_SCHED)) {
+        if (p_newthread->p_stack == NULL) {
+            /* We don't need to initialize the context if a thread will run on
+             * OS-level threads. Invalidate the context here. */
+            ABTD_ythread_context_invalidate(&p_newthread->ctx);
+        } else {
+            /* Create the context.  This thread is special, so dynamic promotion
+             * is not supported. */
+            size_t stack_size = p_newthread->stacksize;
+            void *p_stack = p_newthread->p_stack;
+            ABTD_ythread_context_create(NULL, stack_size, p_stack,
+                                        &p_newthread->ctx);
+        }
+    } else {
 #if ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION
         size_t stack_size = p_newthread->stacksize;
         void *p_stack = p_newthread->p_stack;
-        abt_errno = ABTD_ythread_context_create(NULL, stack_size, p_stack,
-                                                &p_newthread->ctx);
+        ABTD_ythread_context_create(NULL, stack_size, p_stack,
+                                    &p_newthread->ctx);
 #else
         /* The context is not fully created now. */
-        abt_errno = ABTD_ythread_context_init(NULL, &p_newthread->ctx);
+        ABTD_ythread_context_init(NULL, &p_newthread->ctx);
 #endif
-    } else {
-        size_t stack_size = p_newthread->stacksize;
-        void *p_stack = p_newthread->p_stack;
-        abt_errno = ABTD_ythread_context_create(NULL, stack_size, p_stack,
-                                                &p_newthread->ctx);
     }
-    ABTI_CHECK_ERROR(abt_errno);
     p_newthread->thread.f_thread = thread_func;
     p_newthread->thread.p_arg = arg;
 
@@ -1626,7 +1631,7 @@ static inline int ABTI_ythread_create_internal(
     p_newthread->thread.p_last_xstream = NULL;
     p_newthread->thread.p_parent = NULL;
     p_newthread->thread.p_pool = p_pool;
-    p_newthread->thread.type = thread_type;
+    p_newthread->thread.type |= thread_type;
     p_newthread->thread.id = ABTI_THREAD_INIT_ID;
     if (p_sched && !(thread_type &
                      (ABTI_THREAD_TYPE_MAIN | ABTI_THREAD_TYPE_MAIN_SCHED))) {
@@ -1685,6 +1690,9 @@ static inline int ABTI_ythread_create_internal(
     /* Return value */
     *pp_newthread = p_newthread;
 
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    return abt_errno;
+#else
 fn_exit:
     return abt_errno;
 
@@ -1692,6 +1700,7 @@ fn_fail:
     *pp_newthread = NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#endif
 }
 
 int ABTI_ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
@@ -1795,7 +1804,8 @@ int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
     /* Allocate a ULT object */
 
     /* TODO: Need to set the actual stack address and size for the main ULT */
-    ABTI_thread_attr_init(&attr, NULL, 0, ABTI_STACK_TYPE_MAIN, ABT_FALSE);
+    ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
+                          ABT_FALSE);
 
     /* Although this main ULT is running now, we add this main ULT to the pool
      * so that the scheduler can schedule the main ULT when the main ULT is
@@ -1832,7 +1842,8 @@ int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
         /* Create a ULT object and its stack */
         ABTI_thread_attr attr;
         ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
-                              ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
+                              ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK,
+                              ABT_FALSE);
         ABTI_ythread *p_main_ythread = ABTI_global_get_main();
         abt_errno =
             ABTI_ythread_create_internal(p_local, NULL, ABTI_xstream_schedule,
@@ -1850,7 +1861,8 @@ int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
         /* For secondary ESs, the stack of OS thread is used for the main
          * scheduler's ULT. */
         ABTI_thread_attr attr;
-        ABTI_thread_attr_init(&attr, NULL, 0, ABTI_STACK_TYPE_MAIN, ABT_FALSE);
+        ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
+                              ABT_FALSE);
         abt_errno =
             ABTI_ythread_create_internal(p_local, NULL, ABTI_xstream_schedule,
                                          (void *)p_xstream, &attr,
@@ -1881,7 +1893,7 @@ int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
 
     /* Allocate a ULT object and its stack */
     ABTI_thread_attr_init(&attr, NULL, ABTI_global_get_sched_stacksize(),
-                          ABTI_STACK_TYPE_MALLOC, ABT_FALSE);
+                          ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK, ABT_FALSE);
     abt_errno =
         ABTI_ythread_create_internal(p_local, p_pool,
                                      (void (*)(void *))p_sched->run,
@@ -1899,11 +1911,10 @@ fn_fail:
     goto fn_exit;
 }
 
-void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
+static inline void ABTI_thread_free_impl(ABTI_local *p_local,
+                                         ABTI_thread *p_thread,
+                                         ABT_bool free_unit)
 {
-    LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
-              p_thread->p_last_xstream ? p_thread->p_last_xstream->rank : -1);
-
     /* Invoke a thread freeing event. */
     ABTI_tool_event_thread_free(p_local, p_thread,
                                 ABTI_local_get_xstream_or_null(p_local)
@@ -1911,7 +1922,9 @@ void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
                                     : NULL);
 
     /* Free the unit */
-    p_thread->p_pool->u_free(&p_thread->unit);
+    if (free_unit) {
+        p_thread->p_pool->u_free(&p_thread->unit);
+    }
 
     /* Free the key-value table */
     ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable);
@@ -1922,62 +1935,33 @@ void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
     }
 
     /* Free ABTI_thread (stack will also be freed) */
-    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-    if (p_ythread) {
-        ABTI_mem_free_ythread(p_local, p_ythread);
-    } else {
-        ABTI_mem_free_task(p_local, p_thread);
-    }
+    ABTI_mem_free_thread(p_local, p_thread);
+}
+
+void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
+{
+    LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
+              p_thread->p_last_xstream ? p_thread->p_last_xstream->rank : -1);
+    ABTI_thread_free_impl(p_local, p_thread, ABT_TRUE);
 }
 
 void ABTI_ythread_free_main(ABTI_local *p_local, ABTI_ythread *p_ythread)
 {
+    ABTI_thread *p_thread = &p_ythread->thread;
     LOG_DEBUG("[U%" PRIu64 ":E%d] main ULT freed\n",
-              ABTI_thread_get_id(&p_ythread->thread),
-              p_ythread->thread.p_last_xstream->rank);
-
-    /* Invoke a thread freeing event. */
-    ABTI_tool_event_thread_free(p_local, &p_ythread->thread,
-                                ABTI_local_get_xstream_or_null(p_local)
-                                    ? ABTI_local_get_xstream(p_local)->p_thread
-                                    : NULL);
-
-    /* Free the key-value table */
-    ABTI_ktable *p_ktable =
-        ABTD_atomic_acquire_load_ptr(&p_ythread->thread.p_keytable);
-    /* No parallel access to TLS is allowed. */
-    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
-    if (p_ktable) {
-        ABTI_ktable_free(p_local, p_ktable);
-    }
-
-    ABTI_mem_free_ythread(p_local, p_ythread);
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+    ABTI_thread_free_impl(p_local, p_thread, ABT_FALSE);
 }
 
 void ABTI_ythread_free_main_sched(ABTI_local *p_local, ABTI_ythread *p_ythread)
 {
+    ABTI_thread *p_thread = &p_ythread->thread;
     LOG_DEBUG("[U%" PRIu64 ":E%d] main sched ULT freed\n",
-              ABTI_thread_get_id(&p_ythread->thread),
+              ABTI_thread_get_id(p_thread),
               ABTI_local_get_xstream_or_null(p_local)
                   ? ABTI_local_get_xstream(p_local)->rank
                   : -1);
-
-    /* Invoke a thread freeing event. */
-    ABTI_tool_event_thread_free(p_local, &p_ythread->thread,
-                                ABTI_local_get_xstream_or_null(p_local)
-                                    ? ABTI_local_get_xstream(p_local)->p_thread
-                                    : NULL);
-
-    /* Free the key-value table */
-    ABTI_ktable *p_ktable =
-        ABTD_atomic_acquire_load_ptr(&p_ythread->thread.p_keytable);
-    /* No parallel access to TLS is allowed. */
-    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
-    if (p_ktable) {
-        ABTI_ktable_free(p_local, p_ktable);
-    }
-
-    ABTI_mem_free_ythread(p_local, p_ythread);
+    ABTI_thread_free_impl(p_local, p_thread, ABT_FALSE);
 }
 
 static inline ABT_bool ABTI_ythread_is_ready(ABTI_ythread *p_ythread)
@@ -2141,10 +2125,8 @@ static int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
     if (p_ythread) {
         /* Create a ULT context */
         size_t stacksize = p_ythread->stacksize;
-        abt_errno =
-            ABTD_ythread_context_create(NULL, stacksize, p_ythread->p_stack,
-                                        &p_ythread->ctx);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTD_ythread_context_create(NULL, stacksize, p_ythread->p_stack,
+                                    &p_ythread->ctx);
     }
 
     /* Invoke a thread revive event. */

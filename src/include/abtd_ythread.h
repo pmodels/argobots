@@ -17,28 +17,22 @@ void ABTD_ythread_func_wrapper(void *p_arg);
 void ABTD_ythread_terminate_no_arg();
 #endif
 
-static inline int ABTD_ythread_context_create(ABTD_ythread_context *p_link,
-                                              size_t stacksize, void *p_stack,
-                                              ABTD_ythread_context *p_newctx)
+static inline void ABTD_ythread_context_create(ABTD_ythread_context *p_link,
+                                               size_t stacksize, void *p_stack,
+                                               ABTD_ythread_context *p_newctx)
 {
-    int abt_errno = ABT_SUCCESS;
-    void *p_stacktop;
-
     /* ABTD_ythread_context_make uses the top address of stack.
        Note that the parameter, p_stack, points to the bottom of stack. */
-    p_stacktop = (void *)(((char *)p_stack) + stacksize);
+    void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
 
     ABTD_ythread_context_make(p_newctx, p_stacktop, stacksize,
                               ABTD_ythread_func_wrapper);
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_newctx->p_link, p_link);
-
-    return abt_errno;
 }
 
-static inline int
+static inline void
 ABTD_ythread_context_invalidate(ABTD_ythread_context *p_newctx)
 {
-    int abt_errno = ABT_SUCCESS;
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
     /* p_ctx is used to check whether the context requires dynamic promotion is
      * necessary or not, so this value must not be NULL. */
@@ -47,34 +41,32 @@ ABTD_ythread_context_invalidate(ABTD_ythread_context *p_newctx)
     p_newctx->p_ctx = NULL;
 #endif
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_newctx->p_link, NULL);
-    return abt_errno;
 }
 
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-static inline int ABTD_ythread_context_init(ABTD_ythread_context *p_link,
-                                            ABTD_ythread_context *p_newctx)
+static inline void ABTD_ythread_context_init(ABTD_ythread_context *p_link,
+                                             ABTD_ythread_context *p_newctx)
 {
-    int abt_errno = ABT_SUCCESS;
     p_newctx->p_ctx = NULL;
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_newctx->p_link, p_link);
-    return abt_errno;
 }
 
-static inline int
+static inline void
 ABTD_ythread_context_arm_ythread(size_t stacksize, void *p_stack,
                                  ABTD_ythread_context *p_newctx)
 {
-    /* This function *arms* the dynamic promotion thread (initialized by
+    /*
+     * This function *arms* the dynamic promotion thread (initialized by
      * ABTD_ythread_context_init) as if it were created by
      * ABTD_ythread_context_create; this function fully creates the context
-     * so that the thread can be run by ABTD_ythread_context_jump. */
-    int abt_errno = ABT_SUCCESS;
-    /* ABTD_ythread_context_make uses the top address of stack.
-       Note that the parameter, p_stack, points to the bottom of stack. */
+     * so that the thread can be run by ABTD_ythread_context_jump.
+     *
+     * ABTD_ythread_context_make uses the top address of stack.
+     * Note that the parameter, p_stack, points to the bottom of stack.
+     */
     void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
     ABTD_ythread_context_make(p_newctx, p_stacktop, stacksize,
                               ABTD_ythread_func_wrapper);
-    return abt_errno;
 }
 #endif
 

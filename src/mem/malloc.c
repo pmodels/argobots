@@ -63,12 +63,12 @@ void ABTI_mem_init(ABTI_global *p_global)
                                    num_requested_types,
                                    gp_ABTI_global->mem_page_size);
     /* The last four bytes will be used to store a mempool flag */
-    ABTI_STATIC_ASSERT(((ABTI_MEM_POOL_DESC_SIZE + 4) &
+    ABTI_STATIC_ASSERT((ABTI_MEM_POOL_DESC_ELEM_SIZE &
                         (ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0);
     ABTI_mem_pool_init_global_pool(&p_global->mem_pool_desc,
                                    p_global->mem_max_descs /
                                        ABT_MEM_POOL_MAX_LOCAL_BUCKETS,
-                                   ABTI_MEM_POOL_DESC_SIZE + 4, 0,
+                                   ABTI_MEM_POOL_DESC_ELEM_SIZE, 0,
                                    p_global->mem_page_size, requested_types,
                                    num_requested_types,
                                    gp_ABTI_global->mem_page_size);

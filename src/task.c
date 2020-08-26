@@ -486,7 +486,7 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     /* Allocate a task object */
-    p_newtask = ABTI_mem_alloc_task(p_local);
+    p_newtask = ABTI_mem_alloc_nythread(p_local);
 
     p_newtask->p_last_xstream = NULL;
     p_newtask->p_parent = NULL;
@@ -506,7 +506,7 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     thread_type |= ABTI_THREAD_TYPE_MIGRATABLE;
 #endif
-    p_newtask->type = thread_type;
+    p_newtask->type |= thread_type;
     p_newtask->unit = p_pool->u_create_from_task(h_newtask);
 
     ABTI_tool_event_thread_create(p_local, p_newtask,
