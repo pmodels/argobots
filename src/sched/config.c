@@ -9,6 +9,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+static inline size_t ABTI_sched_config_type_size(ABT_sched_config_type type);
+
 /** @defgroup SCHED_CONFIG Scheduler config
  * This group is for Scheduler config.
  */
@@ -204,7 +206,7 @@ int ABT_sched_config_free(ABT_sched_config *config)
     return ABT_SUCCESS;
 }
 
-size_t ABTI_sched_config_type_size(ABT_sched_config_type type)
+static inline size_t ABTI_sched_config_type_size(ABT_sched_config_type type)
 {
     switch (type) {
         case ABT_SCHED_CONFIG_INT:

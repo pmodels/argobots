@@ -5,6 +5,8 @@
 
 #include "abti.h"
 
+static int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
+
 /** @defgroup INFO  Information
  * This group is for getting diverse runtime information of Argobots.  The
  * routines in this group are meant for debugging and diagnosing Argobots.
@@ -538,8 +540,6 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
     }
 }
 
-int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
-
 /**
  * @ingroup INFO
  * @brief   Dump stack information of all the threads in the target pool.
@@ -570,7 +570,7 @@ fn_fail:
     goto fn_exit;
 }
 
-int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
+static int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
 {
     int abt_errno = ABT_SUCCESS;
     ABT_pool pool = ABTI_pool_get_handle(p_pool);

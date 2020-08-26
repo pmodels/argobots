@@ -64,7 +64,7 @@ int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def)
 
 /* Pool functions */
 
-int pool_init(ABT_pool pool, ABT_pool_config config)
+static int pool_init(ABT_pool pool, ABT_pool_config config)
 {
     ABTI_UNUSED(config);
     int abt_errno = ABT_SUCCESS;

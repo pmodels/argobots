@@ -5,6 +5,10 @@
 
 #include "abti.h"
 
+static int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
+                             ABT_sched_config config, ABT_bool automatic,
+                             ABTI_sched **pp_newsched);
+static inline ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 static inline uint64_t ABTI_sched_get_new_id(void);
 #endif
@@ -547,9 +551,9 @@ void ABTI_sched_exit(ABTI_sched *p_sched)
     ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_EXIT);
 }
 
-int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                      ABT_sched_config config, ABT_bool automatic,
-                      ABTI_sched **pp_newsched)
+static int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
+                             ABT_sched_config config, ABT_bool automatic,
+                             ABTI_sched **pp_newsched)
 {
     ABTI_sched *p_sched;
     int p;
@@ -817,7 +821,7 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
     return ABT_SUCCESS;
 }
 
-ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
+static inline ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
 {
     return (ABTI_sched_kind)def;
 }

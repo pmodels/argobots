@@ -19,6 +19,9 @@ static inline int ABTI_thread_join(ABTI_local **pp_local,
 static int ABTI_thread_migrate_to_xstream(ABTI_local **pp_local,
                                           ABTI_thread *p_thread,
                                           ABTI_xstream *p_xstream);
+static int ABTI_thread_migrate_to_pool(ABTI_local **p_local,
+                                       ABTI_thread *p_thread,
+                                       ABTI_pool *p_pool);
 #endif
 static inline ABT_unit_id ABTI_thread_get_new_id(void);
 
@@ -1704,10 +1707,10 @@ static inline int ABTI_ythread_create_internal(
     return ABT_SUCCESS;
 }
 
-int ABTI_thread_migrate_to_pool(ABTI_local **pp_local, ABTI_thread *p_thread,
-                                ABTI_pool *p_pool)
-{
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
+static int ABTI_thread_migrate_to_pool(ABTI_local **pp_local,
+                                       ABTI_thread *p_thread, ABTI_pool *p_pool)
+{
     /* checking for cases when migration is not allowed */
     ABTI_CHECK_TRUE_RET(ABTI_pool_accept_migration(p_pool, p_thread->p_pool) ==
                             ABT_TRUE,
@@ -1746,10 +1749,8 @@ int ABTI_thread_migrate_to_pool(ABTI_local **pp_local, ABTI_thread *p_thread,
         }
     }
     return ABT_SUCCESS;
-#else
-    return ABT_ERR_MIGRATION_NA;
-#endif
 }
+#endif
 
 ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_local *p_local,
                                                ABTI_thread *p_thread)

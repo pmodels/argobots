@@ -5,6 +5,8 @@
 
 #include "abti.h"
 
+static int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
+                            ABT_bool automatic, ABTI_pool **pp_newpool);
 static inline uint64_t ABTI_pool_get_new_id(void);
 
 /** @defgroup POOL Pool
@@ -558,8 +560,8 @@ fn_fail:
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
-                     ABT_bool automatic, ABTI_pool **pp_newpool)
+static int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
+                            ABT_bool automatic, ABTI_pool **pp_newpool)
 {
     ABTI_pool *p_pool;
 
