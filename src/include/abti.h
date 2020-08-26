@@ -472,7 +472,7 @@ int ABTI_xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 int ABTI_xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                    ABTI_xstream *p_xstream,
                                    ABTI_sched *p_sched);
-int ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABT_sched sched);
+void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 void *ABTI_xstream_launch_main_sched(void *p_arg);
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub);

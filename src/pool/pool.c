@@ -561,7 +561,6 @@ fn_fail:
 int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
                      ABT_bool automatic, ABTI_pool **pp_newpool)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool;
 
     p_pool = (ABTI_pool *)ABTU_malloc(sizeof(ABTI_pool));
@@ -600,26 +599,20 @@ int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
 
     /* Configure the pool */
     if (p_pool->p_init) {
-        abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
+        int abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
         if (abt_errno != ABT_SUCCESS) {
             ABTU_free(p_pool);
-            goto fn_fail;
+            return abt_errno;
         }
     }
     *pp_newpool = p_pool;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                            ABT_bool automatic, ABTI_pool **pp_newpool)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABT_pool_def def;
 
     switch (kind) {
@@ -633,18 +626,12 @@ int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
             abt_errno = ABT_ERR_INV_POOL_KIND;
             break;
     }
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     abt_errno =
         ABTI_pool_create(&def, ABT_POOL_CONFIG_NULL, automatic, pp_newpool);
-    ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    ABTI_CHECK_ERROR_RET(abt_errno);
+    return ABT_SUCCESS;
 }
 
 void ABTI_pool_free(ABTI_pool *p_pool)
@@ -661,63 +648,60 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 
     if (p_pool == NULL) {
         fprintf(p_os, "%s== NULL POOL ==\n", prefix);
-        goto fn_exit;
-    }
+    } else {
+        char *access;
 
-    char *access;
+        switch (p_pool->access) {
+            case ABT_POOL_ACCESS_PRIV:
+                access = "PRIV";
+                break;
+            case ABT_POOL_ACCESS_SPSC:
+                access = "SPSC";
+                break;
+            case ABT_POOL_ACCESS_MPSC:
+                access = "MPSC";
+                break;
+            case ABT_POOL_ACCESS_SPMC:
+                access = "SPMC";
+                break;
+            case ABT_POOL_ACCESS_MPMC:
+                access = "MPMC";
+                break;
+            default:
+                access = "UNKNOWN";
+                break;
+        }
 
-    switch (p_pool->access) {
-        case ABT_POOL_ACCESS_PRIV:
-            access = "PRIV";
-            break;
-        case ABT_POOL_ACCESS_SPSC:
-            access = "SPSC";
-            break;
-        case ABT_POOL_ACCESS_MPSC:
-            access = "MPSC";
-            break;
-        case ABT_POOL_ACCESS_SPMC:
-            access = "SPMC";
-            break;
-        case ABT_POOL_ACCESS_MPMC:
-            access = "MPMC";
-            break;
-        default:
-            access = "UNKNOWN";
-            break;
-    }
-
-    fprintf(p_os,
-            "%s== POOL (%p) ==\n"
-            "%sid            : %" PRIu64 "\n"
-            "%saccess        : %s\n"
-            "%sautomatic     : %s\n"
-            "%snum_scheds    : %d\n"
+        fprintf(p_os,
+                "%s== POOL (%p) ==\n"
+                "%sid            : %" PRIu64 "\n"
+                "%saccess        : %s\n"
+                "%sautomatic     : %s\n"
+                "%snum_scheds    : %d\n"
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-            "%sconsumer ID   : %p\n"
+                "%sconsumer ID   : %p\n"
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-            "%sproducer ID   : %p\n"
+                "%sproducer ID   : %p\n"
 #endif
-            "%ssize          : %zu\n"
-            "%snum_blocked   : %d\n"
-            "%snum_migrations: %d\n"
-            "%sdata          : %p\n",
-            prefix, (void *)p_pool, prefix, p_pool->id, prefix, access, prefix,
-            (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE", prefix,
-            ABTD_atomic_acquire_load_int32(&p_pool->num_scheds),
+                "%ssize          : %zu\n"
+                "%snum_blocked   : %d\n"
+                "%snum_migrations: %d\n"
+                "%sdata          : %p\n",
+                prefix, (void *)p_pool, prefix, p_pool->id, prefix, access,
+                prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
+                prefix, ABTD_atomic_acquire_load_int32(&p_pool->num_scheds),
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-            prefix, (void *)p_pool->consumer_id,
+                prefix, (void *)p_pool->consumer_id,
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-            prefix, (void *)p_pool->producer_id,
+                prefix, (void *)p_pool->producer_id,
 #endif
-            prefix, ABTI_pool_get_size(p_pool), prefix,
-            ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), prefix,
-            ABTD_atomic_acquire_load_int32(&p_pool->num_migrations), prefix,
-            p_pool->data);
-
-fn_exit:
+                prefix, ABTI_pool_get_size(p_pool), prefix,
+                ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), prefix,
+                ABTD_atomic_acquire_load_int32(&p_pool->num_migrations), prefix,
+                p_pool->data);
+    }
     fflush(p_os);
     ABTU_free(prefix);
 }

@@ -92,7 +92,6 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
     }
     LOG_DEBUG("%p: lock - acquired\n", p_mutex);
 #else
-    int abt_errno;
     /* Only ULTs can yield when the mutex has been locked. For others,
      * just call mutex_spinlock. */
     LOG_DEBUG("%p: lock - try\n", p_mutex);
@@ -117,10 +116,8 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                     ABTI_ythread *p_giver = p_mutex->p_giver;
                     ABTD_atomic_release_store_int(&p_giver->thread.state,
                                                   ABTI_THREAD_STATE_READY);
-                    abt_errno =
-                        ABTI_pool_push(*pp_local, p_giver->thread.p_pool,
-                                       p_giver->thread.unit);
-                    ABTI_CHECK_ERROR(abt_errno);
+                    ABTI_pool_push(*pp_local, p_giver->thread.p_pool,
+                                   p_giver->thread.unit);
                     break;
                 }
             }
@@ -129,13 +126,7 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
         }
     }
     LOG_DEBUG("%p: lock - acquired\n", p_mutex);
-
-fn_exit:
     return;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 #endif
 }
 

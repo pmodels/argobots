@@ -103,7 +103,7 @@ static void sched_run(ABT_sched sched)
         }
 
         if (++work_count >= event_freq) {
-            ABTI_xstream_check_events(p_local_xstream, sched);
+            ABTI_xstream_check_events(p_local_xstream, p_sched);
             ABTI_local *p_local = ABTI_xstream_get_local(p_local_xstream);
             if (ABTI_sched_has_to_stop(&p_local, p_sched) == ABT_TRUE)
                 break;

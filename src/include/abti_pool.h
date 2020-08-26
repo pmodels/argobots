@@ -84,25 +84,24 @@ static inline int
 ABTI_pool_set_consumer_common_impl(ABTI_pool *p_pool,
                                    ABTI_native_thread_id consumer_id)
 {
-    int abt_errno = ABT_SUCCESS;
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-            ABTI_CHECK_TRUE(!p_pool->producer_id ||
-                                p_pool->producer_id == consumer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
+            ABTI_CHECK_TRUE_RET(!p_pool->producer_id ||
+                                    p_pool->producer_id == consumer_id,
+                                ABT_ERR_INV_POOL_ACCESS);
 #endif
-            ABTI_CHECK_TRUE(!p_pool->consumer_id ||
-                                p_pool->consumer_id == consumer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
+            ABTI_CHECK_TRUE_RET(!p_pool->consumer_id ||
+                                    p_pool->consumer_id == consumer_id,
+                                ABT_ERR_INV_POOL_ACCESS);
             p_pool->consumer_id = consumer_id;
             break;
 
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_MPSC:
-            ABTI_CHECK_TRUE(!p_pool->consumer_id ||
-                                p_pool->consumer_id == consumer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
+            ABTI_CHECK_TRUE_RET(!p_pool->consumer_id ||
+                                    p_pool->consumer_id == consumer_id,
+                                ABT_ERR_INV_POOL_ACCESS);
             /* NB: as we do not want to use a mutex, the function can be wrong
              * here */
             p_pool->consumer_id = consumer_id;
@@ -114,16 +113,9 @@ ABTI_pool_set_consumer_common_impl(ABTI_pool *p_pool,
             break;
 
         default:
-            abt_errno = ABT_ERR_INV_POOL_ACCESS;
-            ABTI_CHECK_ERROR(abt_errno);
+            return ABT_ERR_INV_POOL_ACCESS;
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 static inline int ABTI_pool_set_consumer_id(ABTI_pool *p_pool,
@@ -163,31 +155,27 @@ static inline int ABTI_pool_set_producer_impl(ABTI_local *p_local,
                                               ABTI_pool *p_pool)
 {
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    int abt_errno = ABT_SUCCESS;
-
-    if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 0) {
-        return abt_errno;
-    }
-
+    if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 0)
+        return ABT_SUCCESS;
     ABTI_native_thread_id producer_id = ABTI_self_get_native_thread_id(p_local);
     switch (p_pool->access) {
         case ABT_POOL_ACCESS_PRIV:
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-            ABTI_CHECK_TRUE(!p_pool->consumer_id ||
-                                p_pool->consumer_id == producer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
+            ABTI_CHECK_TRUE_RET(!p_pool->consumer_id ||
+                                    p_pool->consumer_id == producer_id,
+                                ABT_ERR_INV_POOL_ACCESS);
 #endif
-            ABTI_CHECK_TRUE(!p_pool->producer_id ||
-                                p_pool->producer_id == producer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
+            ABTI_CHECK_TRUE_RET(!p_pool->producer_id ||
+                                    p_pool->producer_id == producer_id,
+                                ABT_ERR_INV_POOL_ACCESS);
             p_pool->producer_id = producer_id;
             break;
 
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_SPMC:
-            ABTI_CHECK_TRUE(!p_pool->producer_id ||
-                                p_pool->producer_id == producer_id,
-                            ABT_ERR_INV_POOL_ACCESS);
+            ABTI_CHECK_TRUE_RET(!p_pool->producer_id ||
+                                    p_pool->producer_id == producer_id,
+                                ABT_ERR_INV_POOL_ACCESS);
             /* NB: as we do not want to use a mutex, the function can be wrong
              * here */
             p_pool->producer_id = producer_id;
@@ -199,16 +187,9 @@ static inline int ABTI_pool_set_producer_impl(ABTI_local *p_local,
             break;
 
         default:
-            abt_errno = ABT_ERR_INV_POOL_ACCESS;
-            ABTI_CHECK_ERROR(abt_errno);
+            return ABT_ERR_INV_POOL_ACCESS;
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 #else
     return ABT_SUCCESS;
 #endif
@@ -223,23 +204,15 @@ fn_fail:
 static inline int ABTI_pool_push_impl(ABTI_local *p_local, ABTI_pool *p_pool,
                                       ABT_unit unit)
 {
-    int abt_errno = ABT_SUCCESS;
-
     LOG_DEBUG_POOL_PUSH(p_local, p_pool, unit);
 
     /* Save the producer ES information in the pool */
-    abt_errno = ABTI_pool_set_producer(p_local, p_pool);
-    ABTI_CHECK_ERROR(abt_errno);
+    int abt_errno = ABTI_pool_set_producer(p_local, p_pool);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     /* Push unit into pool */
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 #define ABTI_pool_push(p_local, p_pool, unit)                                  \
@@ -250,22 +223,14 @@ fn_fail:
 static inline int ABTI_pool_add_thread_impl(ABTI_local *p_local,
                                             ABTI_thread *p_thread)
 {
-    int abt_errno;
-
     /* Set the ULT's state as READY. The relaxed version is used since the state
      * is synchronized by the following pool operation. */
     ABTD_atomic_relaxed_store_int(&p_thread->state, ABTI_THREAD_STATE_READY);
 
     /* Add the ULT to the associated pool */
-    abt_errno = ABTI_pool_push(p_local, p_thread->p_pool, p_thread->unit);
-    ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    int abt_errno = ABTI_pool_push(p_local, p_thread->p_pool, p_thread->unit);
+    ABTI_CHECK_ERROR_RET(abt_errno);
+    return ABT_SUCCESS;
 }
 
 #define ABTI_pool_add_thread(p_local, p_thread)                                \
@@ -276,22 +241,17 @@ fn_fail:
 static inline int ABTI_pool_remove_impl(ABTI_local *p_local, ABTI_pool *p_pool,
                                         ABT_unit unit)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
 
     LOG_DEBUG_POOL_REMOVE(p_local, p_pool, unit);
 
     abt_errno = ABTI_pool_set_consumer(p_local, p_pool);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     abt_errno = p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 #define ABTI_pool_remove(p_local, p_pool, unit)                                \

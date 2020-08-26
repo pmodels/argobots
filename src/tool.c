@@ -254,8 +254,6 @@ fn_fail:
 static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                                   ABT_tool_query_kind query_kind, void *val)
 {
-    int abt_errno = ABT_SUCCESS;
-
     switch (query_kind) {
         case ABT_TOOL_QUERY_KIND_POOL:
             *(ABT_pool *)val = ABTI_pool_get_handle(p_tctx->p_pool);
@@ -338,8 +336,8 @@ static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
             }
             break;
         default:
-            abt_errno = ABT_ERR_OTHER;
+            return ABT_ERR_OTHER;
     }
-    return abt_errno;
+    return ABT_SUCCESS;
 }
 #endif

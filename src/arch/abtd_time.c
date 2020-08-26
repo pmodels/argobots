@@ -20,8 +20,6 @@ void ABTD_time_init(void)
 /* Obtain the time value */
 int ABTD_time_get(ABTD_time *p_time)
 {
-    int abt_errno = ABT_SUCCESS;
-
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
     clock_gettime(CLOCK_REALTIME, p_time);
 #elif defined(ABT_CONFIG_USE_MACH_ABSOLUTE_TIME)
@@ -30,7 +28,7 @@ int ABTD_time_get(ABTD_time *p_time)
     gettimeofday(p_time, NULL);
 #endif
 
-    return abt_errno;
+    return ABT_SUCCESS;
 }
 
 /* Read the time value as seconds (double precision) */

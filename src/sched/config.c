@@ -222,7 +222,6 @@ size_t ABTI_sched_config_type_size(ABT_sched_config_type type)
 int ABTI_sched_config_read_global(ABT_sched_config config,
                                   ABT_pool_access *access, ABT_bool *automatic)
 {
-    int abt_errno = ABT_SUCCESS;
     int num_vars = 2;
     /* We use XXX_i variables because va_list converts these types into int */
     int access_i = -1;
@@ -232,21 +231,16 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
     variables[(ABT_sched_config_access.idx + 2) * (-1)] = &access_i;
     variables[(ABT_sched_config_automatic.idx + 2) * (-1)] = &automatic_i;
 
-    abt_errno = ABTI_sched_config_read(config, 0, num_vars, variables);
+    int abt_errno = ABTI_sched_config_read(config, 0, num_vars, variables);
     ABTU_free(variables);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     if (access_i != -1)
         *access = (ABT_pool_access)access_i;
     if (automatic_i != -1)
         *automatic = (ABT_bool)automatic_i;
 
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /* type is 0 if we read the private parameters, else 1 */
