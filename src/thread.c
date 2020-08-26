@@ -201,10 +201,10 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
 
     if (attr != ABT_THREAD_ATTR_NULL) {
         if (ABTI_thread_attr_get_ptr(attr)->thread_type &
-            ABTI_THREAD_TYPE_MEM_MALLOC_DESC) {
-            /* ABTI_THREAD_TYPE_MEM_MALLOC_DESC implies that the stack is given
-             * by a user.  Since threads cannot use the same stack region, this
-             * is illegal. */
+            (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC |
+             ABTI_THREAD_TYPE_MEM_MALLOC_DESC)) {
+            /* This implies that the stack is given by a user.  Since threads
+             * cannot use the same stack region, this is illegal. */
             abt_errno = ABT_ERR_INV_THREAD_ATTR;
             goto fn_fail;
         }
@@ -1580,8 +1580,10 @@ static inline int ABTI_ythread_create_internal(
         } else if (attr_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
             p_newthread = ABTI_mem_alloc_ythread_malloc_desc_stack(p_attr);
         } else {
-            ABTI_ASSERT(attr_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC);
-            p_newthread = ABTI_mem_alloc_ythread_malloc_desc(p_attr);
+            ABTI_ASSERT(attr_type & (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC |
+                                     ABTI_THREAD_TYPE_MEM_MALLOC_DESC));
+            /* Let's try to use mempool first since it performs better. */
+            p_newthread = ABTI_mem_alloc_ythread_mempool_desc(p_local, p_attr);
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         thread_type |= p_attr->migratable ? ABTI_THREAD_TYPE_MIGRATABLE : 0;
@@ -1797,7 +1799,7 @@ int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
     /* Allocate a ULT object */
 
     /* TODO: Need to set the actual stack address and size for the main ULT */
-    ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MALLOC_DESC,
+    ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
                           ABT_FALSE);
 
     /* Although this main ULT is running now, we add this main ULT to the pool
@@ -1854,7 +1856,7 @@ int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
         /* For secondary ESs, the stack of OS thread is used for the main
          * scheduler's ULT. */
         ABTI_thread_attr attr;
-        ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MALLOC_DESC,
+        ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
                               ABT_FALSE);
         abt_errno =
             ABTI_ythread_create_internal(p_local, NULL, ABTI_xstream_schedule,

@@ -30,6 +30,9 @@ void ABTI_mem_finalize(ABTI_global *p_global);
 void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream);
 int ABTI_mem_check_lp_alloc(int lp_alloc);
 
+static inline void *ABTI_mem_alloc_desc(ABTI_local *p_local);
+static inline void ABTI_mem_free_desc(ABTI_local *p_local, void *p_desc);
+
 /* Inline functions */
 #ifdef ABT_CONFIG_USE_MEM_POOL
 static inline void ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
@@ -133,12 +136,20 @@ ABTI_mem_alloc_ythread_malloc_desc_stack(ABTI_thread_attr *p_attr)
 }
 
 static inline ABTI_ythread *
-ABTI_mem_alloc_ythread_malloc_desc(ABTI_thread_attr *p_attr)
+ABTI_mem_alloc_ythread_mempool_desc(ABTI_local *p_local,
+                                    ABTI_thread_attr *p_attr)
 {
-    /* Do not allocate stack, but Valgrind registration is preferred. */
-    ABTI_ythread *p_ythread = (ABTI_ythread *)ABTU_malloc(sizeof(ABTI_ythread));
+    ABTI_ythread *p_ythread;
+    if (sizeof(ABTI_ythread) <= ABTI_MEM_POOL_DESC_SIZE) {
+        /* Use a descriptor pool for ABT_thread. */
+        p_ythread = (ABTI_ythread *)ABTI_mem_alloc_desc(p_local);
+        p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
+    } else {
+        /* Do not allocate stack, but Valgrind registration is preferred. */
+        p_ythread = (ABTI_ythread *)ABTU_malloc(sizeof(ABTI_ythread));
+        p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
+    }
     /* Copy members of p_attr. */
-    p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
     p_ythread->stacksize = p_attr->stacksize;
     p_ythread->p_stack = p_attr->p_stack;
     /* Note that the valgrind registration is ignored iff p_stack is NULL. */
@@ -169,6 +180,8 @@ static inline void ABTI_mem_free_ythread(ABTI_local *p_local,
 #endif
         if (p_ythread->thread.type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
         ABTU_free(p_ythread->p_stack);
+    } else if (p_ythread->thread.type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
+        ABTI_mem_free_desc(p_local, (void *)p_ythread);
     } else {
         ABTI_ASSERT(p_ythread->thread.type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC);
         ABTU_free(p_ythread);

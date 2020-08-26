@@ -107,7 +107,7 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
             abt_errno = ABT_ERR_OTHER;
             goto fn_fail;
         }
-        new_thread_type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
+        new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
     } else {
         if (stacksize == ABTI_global_get_thread_stacksize()) {
             new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
@@ -188,7 +188,7 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
     if (stacksize == ABTI_global_get_thread_stacksize()) {
         new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
     } else {
-        new_thread_type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
+        new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
     }
     /* Unset the stack type and set new_thread_type. */
     p_attr->thread_type &= ~ABTI_THREAD_TYPES_MEM;
@@ -328,7 +328,9 @@ void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
     }
 
     char *stacktype;
-    if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC) {
+    if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
+        stacktype = "MEMPOOL_DESC";
+    } else if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC) {
         stacktype = "MALLOC_DESC";
     } else if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK) {
         stacktype = "MEMPOOL_DESC_STACK";
