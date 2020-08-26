@@ -1906,11 +1906,10 @@ fn_fail:
     goto fn_exit;
 }
 
-void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
+static inline void ABTI_thread_free_impl(ABTI_local *p_local,
+                                         ABTI_thread *p_thread,
+                                         ABT_bool free_unit)
 {
-    LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
-              p_thread->p_last_xstream ? p_thread->p_last_xstream->rank : -1);
-
     /* Invoke a thread freeing event. */
     ABTI_tool_event_thread_free(p_local, p_thread,
                                 ABTI_local_get_xstream_or_null(p_local)
@@ -1918,7 +1917,9 @@ void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
                                     : NULL);
 
     /* Free the unit */
-    p_thread->p_pool->u_free(&p_thread->unit);
+    if (free_unit) {
+        p_thread->p_pool->u_free(&p_thread->unit);
+    }
 
     /* Free the key-value table */
     ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable);
@@ -1929,62 +1930,33 @@ void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
     }
 
     /* Free ABTI_thread (stack will also be freed) */
-    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-    if (p_ythread) {
-        ABTI_mem_free_ythread(p_local, p_ythread);
-    } else {
-        ABTI_mem_free_task(p_local, p_thread);
-    }
+    ABTI_mem_free_thread(p_local, p_thread);
+}
+
+void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
+{
+    LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
+              p_thread->p_last_xstream ? p_thread->p_last_xstream->rank : -1);
+    ABTI_thread_free_impl(p_local, p_thread, ABT_TRUE);
 }
 
 void ABTI_ythread_free_main(ABTI_local *p_local, ABTI_ythread *p_ythread)
 {
+    ABTI_thread *p_thread = &p_ythread->thread;
     LOG_DEBUG("[U%" PRIu64 ":E%d] main ULT freed\n",
-              ABTI_thread_get_id(&p_ythread->thread),
-              p_ythread->thread.p_last_xstream->rank);
-
-    /* Invoke a thread freeing event. */
-    ABTI_tool_event_thread_free(p_local, &p_ythread->thread,
-                                ABTI_local_get_xstream_or_null(p_local)
-                                    ? ABTI_local_get_xstream(p_local)->p_thread
-                                    : NULL);
-
-    /* Free the key-value table */
-    ABTI_ktable *p_ktable =
-        ABTD_atomic_acquire_load_ptr(&p_ythread->thread.p_keytable);
-    /* No parallel access to TLS is allowed. */
-    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
-    if (p_ktable) {
-        ABTI_ktable_free(p_local, p_ktable);
-    }
-
-    ABTI_mem_free_ythread(p_local, p_ythread);
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+    ABTI_thread_free_impl(p_local, p_thread, ABT_FALSE);
 }
 
 void ABTI_ythread_free_main_sched(ABTI_local *p_local, ABTI_ythread *p_ythread)
 {
+    ABTI_thread *p_thread = &p_ythread->thread;
     LOG_DEBUG("[U%" PRIu64 ":E%d] main sched ULT freed\n",
-              ABTI_thread_get_id(&p_ythread->thread),
+              ABTI_thread_get_id(p_thread),
               ABTI_local_get_xstream_or_null(p_local)
                   ? ABTI_local_get_xstream(p_local)->rank
                   : -1);
-
-    /* Invoke a thread freeing event. */
-    ABTI_tool_event_thread_free(p_local, &p_ythread->thread,
-                                ABTI_local_get_xstream_or_null(p_local)
-                                    ? ABTI_local_get_xstream(p_local)->p_thread
-                                    : NULL);
-
-    /* Free the key-value table */
-    ABTI_ktable *p_ktable =
-        ABTD_atomic_acquire_load_ptr(&p_ythread->thread.p_keytable);
-    /* No parallel access to TLS is allowed. */
-    ABTI_ASSERT(p_ktable != ABTI_KTABLE_LOCKED);
-    if (p_ktable) {
-        ABTI_ktable_free(p_local, p_ktable);
-    }
-
-    ABTI_mem_free_ythread(p_local, p_ythread);
+    ABTI_thread_free_impl(p_local, p_thread, ABT_FALSE);
 }
 
 static inline ABT_bool ABTI_ythread_is_ready(ABTI_ythread *p_ythread)
