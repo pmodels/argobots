@@ -1699,21 +1699,6 @@ static inline int ABTI_ythread_create_internal(
     return ABT_SUCCESS;
 }
 
-int ABTI_ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
-                        void (*thread_func)(void *), void *arg,
-                        ABTI_thread_attr *p_attr, ABTI_ythread **pp_newthread)
-{
-    ABTI_thread_type unit_type =
-        (pp_newthread != NULL)
-            ? (ABTI_THREAD_TYPE_YIELDABLE | ABTI_THREAD_TYPE_NAMED)
-            : ABTI_THREAD_TYPE_YIELDABLE;
-    int abt_errno = ABTI_ythread_create_internal(p_local, p_pool, thread_func,
-                                                 arg, p_attr, unit_type, NULL,
-                                                 NULL, ABT_TRUE, pp_newthread);
-    ABTI_CHECK_ERROR_RET(abt_errno);
-    return ABT_SUCCESS;
-}
-
 int ABTI_thread_migrate_to_pool(ABTI_local **pp_local, ABTI_thread *p_thread,
                                 ABTI_pool *p_pool)
 {

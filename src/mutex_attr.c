@@ -115,34 +115,3 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
-
-/*****************************************************************************/
-/* Private APIs                                                              */
-/*****************************************************************************/
-
-void ABTI_mutex_attr_print(ABTI_mutex_attr *p_attr, FILE *p_os, int indent)
-{
-    char *prefix = ABTU_get_indent_str(indent);
-    char attr[100];
-
-    ABTI_mutex_attr_get_str(p_attr, attr);
-    fprintf(p_os, "%smutex attr: %s\n", prefix, attr);
-    fflush(p_os);
-    ABTU_free(prefix);
-}
-
-void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf)
-{
-    if (p_attr == NULL) {
-        sprintf(p_buf, "[NULL ATTR]");
-        return;
-    }
-
-    sprintf(p_buf,
-            "["
-            "attrs:%x "
-            "nesting_cnt:%u "
-            "owner_id:%p "
-            "]",
-            p_attr->attrs, p_attr->nesting_cnt, (void *)p_attr->owner_id);
-}

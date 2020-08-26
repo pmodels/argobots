@@ -76,13 +76,6 @@ static inline void ABTI_xstream_terminate_thread(ABTI_local *p_local,
     }
 }
 
-/* Get the native thread id associated with the target xstream. */
-static inline ABTI_native_thread_id
-ABTI_xstream_get_native_thread_id(ABTI_xstream *p_xstream)
-{
-    return (ABTI_native_thread_id)p_xstream;
-}
-
 static inline ABTI_local *ABTI_xstream_get_local(ABTI_xstream *p_xstream)
 {
     return (ABTI_local *)p_xstream;

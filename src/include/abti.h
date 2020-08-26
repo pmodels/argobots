@@ -541,9 +541,6 @@ void ABTI_thread_reset_id(void);
 ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
 
 /* Yieldable threads */
-int ABTI_ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
-                        void (*thread_func)(void *), void *arg,
-                        ABTI_thread_attr *p_attr, ABTI_ythread **pp_newthread);
 int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
                              ABTI_ythread **p_ythread);
 int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
@@ -569,12 +566,8 @@ ABTI_ythread_htable *ABTI_ythread_htable_create(uint32_t num_rows);
 void ABTI_ythread_htable_free(ABTI_ythread_htable *p_htable);
 void ABTI_ythread_htable_push(ABTI_ythread_htable *p_htable, int idx,
                               ABTI_ythread *p_ythread);
-ABT_bool ABTI_ythread_htable_add(ABTI_ythread_htable *p_htable, int idx,
-                                 ABTI_ythread *p_ythread);
 void ABTI_ythread_htable_push_low(ABTI_ythread_htable *p_htable, int idx,
                                   ABTI_ythread *p_ythread);
-ABT_bool ABTI_ythread_htable_add_low(ABTI_ythread_htable *p_htable, int idx,
-                                     ABTI_ythread *p_ythread);
 ABTI_ythread *ABTI_ythread_htable_pop(ABTI_ythread_htable *p_htable,
                                       ABTI_ythread_queue *p_queue);
 ABTI_ythread *ABTI_ythread_htable_pop_low(ABTI_ythread_htable *p_htable,
@@ -593,12 +586,7 @@ void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
                      int val);
 void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
                          int val);
-void ABTI_mutex_wake_se(ABTI_mutex *p_mutex, int num);
 void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex);
-
-/* Mutex Attributes */
-void ABTI_mutex_attr_print(ABTI_mutex_attr *p_attr, FILE *p_os, int indent);
-void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf);
 
 /* Information */
 void ABTI_info_print_config(FILE *fp);
