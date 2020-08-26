@@ -1603,24 +1603,23 @@ static inline int ABTI_ythread_create_internal(
         /* We don't need to initialize the context of 1. the main thread, and
          * 2. the main scheduler thread which runs on OS-level threads
          * (p_stack == NULL). Invalidate the context here. */
-        abt_errno = ABTD_ythread_context_invalidate(&p_newthread->ctx);
+        ABTD_ythread_context_invalidate(&p_newthread->ctx);
     } else if (p_sched == NULL) {
 #if ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION
         size_t stack_size = p_newthread->stacksize;
         void *p_stack = p_newthread->p_stack;
-        abt_errno = ABTD_ythread_context_create(NULL, stack_size, p_stack,
-                                                &p_newthread->ctx);
+        ABTD_ythread_context_create(NULL, stack_size, p_stack,
+                                    &p_newthread->ctx);
 #else
         /* The context is not fully created now. */
-        abt_errno = ABTD_ythread_context_init(NULL, &p_newthread->ctx);
+        ABTD_ythread_context_init(NULL, &p_newthread->ctx);
 #endif
     } else {
         size_t stack_size = p_newthread->stacksize;
         void *p_stack = p_newthread->p_stack;
-        abt_errno = ABTD_ythread_context_create(NULL, stack_size, p_stack,
-                                                &p_newthread->ctx);
+        ABTD_ythread_context_create(NULL, stack_size, p_stack,
+                                    &p_newthread->ctx);
     }
-    ABTI_CHECK_ERROR(abt_errno);
     p_newthread->thread.f_thread = thread_func;
     p_newthread->thread.p_arg = arg;
 
@@ -1689,6 +1688,9 @@ static inline int ABTI_ythread_create_internal(
     /* Return value */
     *pp_newthread = p_newthread;
 
+#ifdef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    return abt_errno;
+#else
 fn_exit:
     return abt_errno;
 
@@ -1696,6 +1698,7 @@ fn_fail:
     *pp_newthread = NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
+#endif
 }
 
 int ABTI_ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
@@ -2120,10 +2123,8 @@ static int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
     if (p_ythread) {
         /* Create a ULT context */
         size_t stacksize = p_ythread->stacksize;
-        abt_errno =
-            ABTD_ythread_context_create(NULL, stacksize, p_ythread->p_stack,
-                                        &p_ythread->ctx);
-        ABTI_CHECK_ERROR(abt_errno);
+        ABTD_ythread_context_create(NULL, stacksize, p_ythread->p_stack,
+                                    &p_ythread->ctx);
     }
 
     /* Invoke a thread revive event. */
