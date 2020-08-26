@@ -132,6 +132,7 @@ typedef struct ABTI_rwlock ABTI_rwlock;
 typedef struct ABTI_eventual ABTI_eventual;
 typedef struct ABTI_future ABTI_future;
 typedef struct ABTI_barrier ABTI_barrier;
+typedef struct ABTI_xstream_barrier ABTI_xstream_barrier;
 typedef struct ABTI_timer ABTI_timer;
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
 typedef struct ABTI_tool_context ABTI_tool_context;
@@ -424,6 +425,11 @@ struct ABTI_barrier {
     ABTI_spinlock lock;
 };
 
+struct ABTI_xstream_barrier {
+    uint32_t num_waiters;
+    ABTD_xstream_barrier bar;
+};
+
 struct ABTI_timer {
     ABTD_time start;
     ABTD_time end;
@@ -617,6 +623,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_eventual.h"
 #include "abti_future.h"
 #include "abti_barrier.h"
+#include "abti_stream_barrier.h"
 #include "abti_timer.h"
 #include "abti_mem.h"
 #include "abti_key.h"
