@@ -1598,13 +1598,20 @@ static inline int ABTI_ythread_create_internal(
 #endif
     }
 
-    if ((thread_type & (ABTI_THREAD_TYPE_MAIN | ABTI_THREAD_TYPE_MAIN_SCHED)) &&
-        p_newthread->p_stack == NULL) {
-        /* We don't need to initialize the context of 1. the main thread, and
-         * 2. the main scheduler thread which runs on OS-level threads
-         * (p_stack == NULL). Invalidate the context here. */
-        ABTD_ythread_context_invalidate(&p_newthread->ctx);
-    } else if (p_sched == NULL) {
+    if (thread_type & (ABTI_THREAD_TYPE_MAIN | ABTI_THREAD_TYPE_MAIN_SCHED)) {
+        if (p_newthread->p_stack == NULL) {
+            /* We don't need to initialize the context if a thread will run on
+             * OS-level threads. Invalidate the context here. */
+            ABTD_ythread_context_invalidate(&p_newthread->ctx);
+        } else {
+            /* Create the context.  This thread is special, so dynamic promotion
+             * is not supported. */
+            size_t stack_size = p_newthread->stacksize;
+            void *p_stack = p_newthread->p_stack;
+            ABTD_ythread_context_create(NULL, stack_size, p_stack,
+                                        &p_newthread->ctx);
+        }
+    } else {
 #if ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION
         size_t stack_size = p_newthread->stacksize;
         void *p_stack = p_newthread->p_stack;
@@ -1614,11 +1621,6 @@ static inline int ABTI_ythread_create_internal(
         /* The context is not fully created now. */
         ABTD_ythread_context_init(NULL, &p_newthread->ctx);
 #endif
-    } else {
-        size_t stack_size = p_newthread->stacksize;
-        void *p_stack = p_newthread->p_stack;
-        ABTD_ythread_context_create(NULL, stack_size, p_stack,
-                                    &p_newthread->ctx);
     }
     p_newthread->thread.f_thread = thread_func;
     p_newthread->thread.p_arg = arg;
