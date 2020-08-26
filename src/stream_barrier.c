@@ -86,7 +86,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #endif
 }
 
@@ -125,7 +125,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #endif
 }
 
@@ -158,6 +158,6 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #endif
 }

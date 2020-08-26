@@ -364,15 +364,22 @@ fn_fail:
  */
 int ABT_thread_free_many(int num, ABT_thread *thread_list)
 {
+    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     int i;
 
     for (i = 0; i < num; i++) {
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread_list[i]);
-        ABTI_thread_join(&p_local, p_thread);
+        abt_errno = ABTI_thread_join(&p_local, p_thread);
+        ABTI_CHECK_ERROR(abt_errno);
         ABTI_thread_free(p_local, p_thread);
     }
-    return ABT_SUCCESS;
+fn_exit:
+    return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
@@ -478,7 +485,7 @@ fn_fail:
 int ABT_thread_cancel(ABT_thread thread)
 {
 #ifdef ABT_CONFIG_DISABLE_THREAD_CANCEL
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #else
     int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
@@ -924,7 +931,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_MIGRATION_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_MIGRATION_NA);
 #endif
 }
 
@@ -985,7 +992,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_MIGRATION_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_MIGRATION_NA);
 #endif
 }
 
@@ -1030,7 +1037,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_MIGRATION_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_MIGRATION_NA);
 #endif
 }
 
@@ -1102,7 +1109,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_MIGRATION_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_MIGRATION_NA);
 #endif
 }
 
@@ -1140,7 +1147,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #endif
 }
 
@@ -1182,7 +1189,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #endif
 }
 
@@ -1217,7 +1224,7 @@ fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 #else
-    return ABT_ERR_FEATURE_NA;
+    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
 #endif
 }
 

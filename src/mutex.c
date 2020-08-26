@@ -38,12 +38,18 @@ int ABT_mutex_create(ABT_mutex *newmutex)
     ABTI_mutex *p_newmutex;
 
     p_newmutex = (ABTI_mutex *)ABTU_calloc(1, sizeof(ABTI_mutex));
+    ABTI_CHECK_TRUE(p_newmutex != NULL, ABT_ERR_MEM);
     ABTI_mutex_init(p_newmutex);
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**

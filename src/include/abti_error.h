@@ -341,4 +341,10 @@
         }                                                                      \
     } while (0)
 
+#define HANDLE_ERROR_FUNC_WITH_CODE_RET(n)                                     \
+    do {                                                                       \
+        HANDLE_ERROR_FUNC_WITH_CODE(n);                                        \
+        return n;                                                              \
+    } while (0)
+
 #endif /* ABTI_ERROR_H_INCLUDED */

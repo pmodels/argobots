@@ -45,12 +45,18 @@ int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
     ABTI_key *p_newkey;
 
     p_newkey = (ABTI_key *)ABTU_malloc(sizeof(ABTI_key));
+    ABTI_CHECK_TRUE(p_newkey != NULL, ABT_ERR_MEM);
     p_newkey->f_destructor = destructor;
     p_newkey->id = ABTD_atomic_fetch_add_uint32(&g_key_id, 1);
     /* Return value */
     *newkey = ABTI_key_get_handle(p_newkey);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**

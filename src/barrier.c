@@ -29,6 +29,7 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
     ABTI_barrier *p_newbarrier;
 
     p_newbarrier = (ABTI_barrier *)ABTU_malloc(sizeof(ABTI_barrier));
+    ABTI_CHECK_TRUE(p_newbarrier != NULL, ABT_ERR_MEM);
 
     ABTI_spinlock_clear(&p_newbarrier->lock);
     p_newbarrier->num_waiters = num_waiters;
@@ -41,7 +42,12 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
     /* Return value */
     *newbarrier = ABTI_barrier_get_handle(p_newbarrier);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**

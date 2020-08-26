@@ -29,12 +29,18 @@ int ABT_cond_create(ABT_cond *newcond)
     ABTI_cond *p_newcond;
 
     p_newcond = (ABTI_cond *)ABTU_malloc(sizeof(ABTI_cond));
+    ABTI_CHECK_TRUE(p_newcond != NULL, ABT_ERR_MEM);
     ABTI_cond_init(p_newcond);
 
     /* Return value */
     *newcond = ABTI_cond_get_handle(p_newcond);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**

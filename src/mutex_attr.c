@@ -29,6 +29,7 @@ int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
     ABTI_mutex_attr *p_newattr;
 
     p_newattr = (ABTI_mutex_attr *)ABTU_malloc(sizeof(ABTI_mutex_attr));
+    ABTI_CHECK_TRUE(p_newattr != NULL, ABT_ERR_MEM);
 
     /* Default values */
     p_newattr->attrs = ABTI_MUTEX_ATTR_NONE;
@@ -40,7 +41,12 @@ int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
     /* Return value */
     *newattr = ABTI_mutex_attr_get_handle(p_newattr);
 
+fn_exit:
     return abt_errno;
+
+fn_fail:
+    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
+    goto fn_exit;
 }
 
 /**
