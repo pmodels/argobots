@@ -1685,9 +1685,9 @@ ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_local *p_local,
         (ABTI_thread_mig_data *)ABTI_ktable_get(&p_thread->p_keytable,
                                                 &g_thread_mig_data_key);
     if (!p_mig_data) {
-        p_mig_data =
-            (ABTI_thread_mig_data *)ABTU_calloc(1,
-                                                sizeof(ABTI_thread_mig_data));
+        int abt_errno =
+            ABTU_calloc(1, sizeof(ABTI_thread_mig_data), (void **)&p_mig_data);
+        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
         ABTI_ktable_set(p_local, &p_thread->p_keytable, &g_thread_mig_data_key,
                         (void *)p_mig_data);
     }
@@ -1817,8 +1817,10 @@ ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         thread_type |= p_attr->migratable ? ABTI_THREAD_TYPE_MIGRATABLE : 0;
         if (p_attr->f_cb) {
-            ABTI_thread_mig_data *p_mig_data = (ABTI_thread_mig_data *)
-                ABTU_calloc(1, sizeof(ABTI_thread_mig_data));
+            ABTI_thread_mig_data *p_mig_data;
+            int abt_errno = ABTU_calloc(1, sizeof(ABTI_thread_mig_data),
+                                        (void **)&p_mig_data);
+            ABTI_ASSERT(abt_errno == ABT_SUCCESS);
             p_mig_data->f_migration_cb = p_attr->f_cb;
             p_mig_data->p_migration_cb_arg = p_attr->p_cb_arg;
             ABTI_ktable_set_unsafe(p_local, &p_keytable, &g_thread_mig_data_key,

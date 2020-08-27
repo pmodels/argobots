@@ -91,7 +91,10 @@ static inline ABTI_ktable *ABTI_ktable_create(ABTI_local *p_local)
         p_ktable->extra_mem_size = ABTI_KTABLE_DESC_SIZE - ktable_size;
     } else {
         /* Use malloc() */
-        void *p_mem = ABTU_malloc(ktable_size + sizeof(ABTI_ktable_mem_header));
+        void *p_mem;
+        int abt_errno =
+            ABTU_malloc(ktable_size + sizeof(ABTI_ktable_mem_header), &p_mem);
+        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
         ABTI_ktable_mem_header *p_header = (ABTI_ktable_mem_header *)p_mem;
         p_ktable =
             (ABTI_ktable *)(((char *)p_mem) + sizeof(ABTI_ktable_mem_header));
@@ -131,7 +134,10 @@ static inline void *ABTI_ktable_alloc_elem(ABTI_local *p_local,
         return p_mem;
     } else {
         /* Use malloc() */
-        void *p_mem = ABTU_malloc(size + sizeof(ABTI_ktable_mem_header));
+        void *p_mem;
+        int abt_errno =
+            ABTU_malloc(size + sizeof(ABTI_ktable_mem_header), &p_mem);
+        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
         ABTI_ktable_mem_header *p_header = (ABTI_ktable_mem_header *)p_mem;
         p_header->p_next = (ABTI_ktable_mem_header *)p_ktable->p_used_mem;
         p_header->is_from_mempool = ABT_FALSE;

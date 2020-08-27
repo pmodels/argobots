@@ -696,9 +696,11 @@ static inline uint64_t pool_get_new_id(void);
 static int pool_create(ABT_pool_def *def, ABT_pool_config config,
                        ABT_bool automatic, ABTI_pool **pp_newpool)
 {
+    int abt_errno;
     ABTI_pool *p_pool;
+    abt_errno = ABTU_malloc(sizeof(ABTI_pool), (void **)&p_pool);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
-    p_pool = (ABTI_pool *)ABTU_malloc(sizeof(ABTI_pool));
     p_pool->access = def->access;
     p_pool->automatic = automatic;
     ABTD_atomic_release_store_int32(&p_pool->num_scheds, 0);
@@ -734,7 +736,7 @@ static int pool_create(ABT_pool_def *def, ABT_pool_config config,
 
     /* Configure the pool */
     if (p_pool->p_init) {
-        int abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
+        abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
         if (abt_errno != ABT_SUCCESS) {
             ABTU_free(p_pool);
             return abt_errno;

@@ -28,8 +28,8 @@ int ABT_cond_create(ABT_cond *newcond)
     int abt_errno = ABT_SUCCESS;
     ABTI_cond *p_newcond;
 
-    p_newcond = (ABTI_cond *)ABTU_malloc(sizeof(ABTI_cond));
-    ABTI_CHECK_TRUE(p_newcond != NULL, ABT_ERR_MEM);
+    abt_errno = ABTU_malloc(sizeof(ABTI_cond), (void **)&p_newcond);
+    ABTI_CHECK_ERROR(abt_errno);
     ABTI_cond_init(p_newcond);
 
     /* Return value */

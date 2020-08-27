@@ -144,7 +144,8 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
 
     ABTI_CHECK_TRUE(rank >= 0, ABT_ERR_INV_XSTREAM_RANK);
 
-    p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
+    abt_errno = ABTU_malloc(sizeof(ABTI_xstream), (void **)&p_newxstream);
+    ABTI_CHECK_ERROR(abt_errno);
 
     if (xstream_take_rank(p_newxstream, rank) == ABT_FALSE) {
         ABTU_free(p_newxstream);
@@ -1343,9 +1344,11 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 
 static int xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
 {
+    int abt_errno;
     ABTI_xstream *p_newxstream;
 
-    p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
+    abt_errno = ABTU_malloc(sizeof(ABTI_xstream), (void **)&p_newxstream);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     xstream_set_new_rank(p_newxstream);
 
@@ -1360,7 +1363,7 @@ static int xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     ABTI_mem_init_local(p_newxstream);
 
     /* Set the main scheduler */
-    int abt_errno = xstream_init_main_sched(p_newxstream, p_sched);
+    abt_errno = xstream_init_main_sched(p_newxstream, p_sched);
     ABTI_CHECK_ERROR_RET(abt_errno);
 
     LOG_DEBUG("[E%d] created\n", p_newxstream->rank);

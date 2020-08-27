@@ -28,8 +28,8 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_newattr;
 
-    p_newattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
-    ABTI_CHECK_TRUE(p_newattr, ABT_ERR_MEM);
+    abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_newattr);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Default values */
     ABTI_thread_attr_init(p_newattr, NULL, gp_ABTI_global->thread_stacksize,
@@ -366,7 +366,8 @@ ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr)
 {
     ABTI_thread_attr *p_dupattr;
 
-    p_dupattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
+    int abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_dupattr);
+    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     memcpy(p_dupattr, p_attr, sizeof(ABTI_thread_attr));
 
     return p_dupattr;

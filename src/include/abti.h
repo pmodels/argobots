@@ -15,15 +15,22 @@
 
 #include "abt_config.h"
 #include "abt.h"
-#include "abtu.h"
-#include "abti_error.h"
-#include "abti_valgrind.h"
+
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+#define ABTI_IS_ERROR_CHECK_ENABLED 1
+#else
+#define ABTI_IS_ERROR_CHECK_ENABLED 0
+#endif
 
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
 #define ABTI_IS_EXT_THREAD_ENABLED 0
 #else
 #define ABTI_IS_EXT_THREAD_ENABLED 1
 #endif
+
+#include "abtu.h"
+#include "abti_error.h"
+#include "abti_valgrind.h"
 
 /* Constants */
 #define ABTI_SCHED_NUM_PRIO 3

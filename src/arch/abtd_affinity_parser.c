@@ -7,24 +7,29 @@
 
 static ABTD_affinity_id_list *id_list_create(void)
 {
-    return (ABTD_affinity_id_list *)calloc(1, sizeof(ABTD_affinity_id_list));
+    ABTD_affinity_id_list *p_id_list;
+    int ret =
+        ABTU_calloc(1, sizeof(ABTD_affinity_id_list), (void **)&p_id_list);
+    ABTI_ASSERT(ret == ABT_SUCCESS);
+    return p_id_list;
 }
 
 static void id_list_free(ABTD_affinity_id_list *p_id_list)
 {
     if (p_id_list)
-        free(p_id_list->ids);
-    free(p_id_list);
+        ABTU_free(p_id_list->ids);
+    ABTU_free(p_id_list);
 }
 
 static void id_list_add(ABTD_affinity_id_list *p_id_list, int id, int num,
                         int stride)
 {
     /* Needs to add num ids. */
-    int i;
-    p_id_list->ids =
-        (int *)ABTU_realloc(p_id_list->ids, sizeof(int) * p_id_list->num,
-                            sizeof(int) * (p_id_list->num + num));
+    int i, ret;
+    ret = ABTU_realloc(sizeof(int) * p_id_list->num,
+                       sizeof(int) * (p_id_list->num + num),
+                       (void **)&p_id_list->ids);
+    ABTI_ASSERT(ret == ABT_SUCCESS);
     for (i = 0; i < num; i++) {
         p_id_list->ids[p_id_list->num + i] = id + stride * i;
     }
@@ -33,7 +38,11 @@ static void id_list_add(ABTD_affinity_id_list *p_id_list, int id, int num,
 
 static ABTD_affinity_list *list_create(void)
 {
-    return (ABTD_affinity_list *)calloc(1, sizeof(ABTD_affinity_list));
+
+    ABTD_affinity_list *p_list;
+    int ret = ABTU_calloc(1, sizeof(ABTD_affinity_list), (void **)&p_list);
+    ABTI_ASSERT(ret == ABT_SUCCESS);
+    return p_list;
 }
 
 static void list_free(ABTD_affinity_list *p_list)
@@ -51,15 +60,18 @@ static void list_add(ABTD_affinity_list *p_list, ABTD_affinity_id_list *p_base,
                      int num, int stride)
 {
     /* Needs to add num id-lists. */
-    int i, j;
-    p_list->p_id_lists = (ABTD_affinity_id_list **)
-        ABTU_realloc(p_list->p_id_lists,
-                     sizeof(ABTD_affinity_id_list *) * p_list->num,
-                     sizeof(ABTD_affinity_id_list *) * (p_list->num + num));
+    int i, j, ret;
+
+    ret = ABTU_realloc(sizeof(ABTD_affinity_id_list *) * p_list->num,
+                       sizeof(ABTD_affinity_id_list *) * (p_list->num + num),
+                       (void **)&p_list->p_id_lists);
+    ABTI_ASSERT(ret == ABT_SUCCESS);
     for (i = 1; i < num; i++) {
         ABTD_affinity_id_list *p_id_list = id_list_create();
         p_id_list->num = p_base->num;
-        p_id_list->ids = (int *)malloc(sizeof(int) * p_id_list->num);
+        ret =
+            ABTU_malloc(sizeof(int) * p_id_list->num, (void **)&p_id_list->ids);
+        ABTI_ASSERT(ret == ABT_SUCCESS);
         for (j = 0; j < p_id_list->num; j++)
             p_id_list->ids[j] = p_base->ids[j] + stride * i;
         p_list->p_id_lists[p_list->num + i] = p_id_list;

@@ -103,7 +103,9 @@ static int pool_init(ABT_pool pool, ABT_pool_config config)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABT_pool_access access;
 
-    data_t *p_data = (data_t *)ABTU_malloc(sizeof(data_t));
+    data_t *p_data;
+    abt_errno = ABTU_malloc(sizeof(data_t), (void **)&p_data);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     access = p_pool->access;
 

@@ -9,12 +9,6 @@
 #include <assert.h>
 #include <abt_config.h>
 
-#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
-#define ABTI_IS_ERROR_CHECK_ENABLED 1
-#else
-#define ABTI_IS_ERROR_CHECK_ENABLED 0
-#endif
-
 #define ABTI_ASSERT(cond)                                                      \
     do {                                                                       \
         if (ABTI_IS_ERROR_CHECK_ENABLED) {                                     \

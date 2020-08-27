@@ -48,11 +48,15 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
         /* Both tid and rank are less than 42 characters in total. */
         const int len_tid_rank = 50;
         newfmt_len = 6 + len_tid_rank + strlen(format);
-        newfmt = (char *)ABTU_malloc(newfmt_len + 1);
+        int abt_errno = ABTU_malloc(newfmt_len + 1, (void **)&newfmt);
+        if (abt_errno != ABT_SUCCESS)
+            return;
         sprintf(newfmt, prefix_fmt, tid, rank, format);
     } else {
         newfmt_len = strlen(prefix) + strlen(format);
-        newfmt = (char *)ABTU_malloc(newfmt_len + 1);
+        int abt_errno = ABTU_malloc(newfmt_len + 1, (void **)&newfmt);
+        if (abt_errno != ABT_SUCCESS)
+            return;
         sprintf(newfmt, prefix_fmt, prefix, format);
     }
 

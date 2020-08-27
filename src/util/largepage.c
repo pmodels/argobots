@@ -3,9 +3,10 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#include "abtu.h"
 #include <sys/types.h>
 #include <sys/mman.h>
+
+#include "abti.h"
 
 #define ABTU_LP_PROTS (PROT_READ | PROT_WRITE)
 
@@ -62,8 +63,9 @@ int ABTU_is_supported_largepage_type(size_t size, size_t alignment_hint,
         /* It always succeeds. */
         return 1;
     } else if (requested == ABTU_MEM_LARGEPAGE_MEMALIGN) {
-        void *p_page = ABTU_memalign(alignment_hint, size);
-        if (p_page) {
+        void *p_page;
+        int ret = ABTU_memalign(alignment_hint, size, &p_page);
+        if (ret == ABT_SUCCESS && p_page != NULL) {
             ABTU_free(p_page);
             return 1;
         }
@@ -90,29 +92,31 @@ void *ABTU_alloc_largepage(size_t size, size_t alignment_hint,
                            ABTU_MEM_LARGEPAGE_TYPE *p_actual)
 {
     int i;
+    void *ptr = NULL;
     for (i = 0; i < num_requested_types; i++) {
         ABTU_MEM_LARGEPAGE_TYPE requested = requested_types[i];
         if (requested == ABTU_MEM_LARGEPAGE_MALLOC) {
-            *p_actual = ABTU_MEM_LARGEPAGE_MALLOC;
-            return ABTU_malloc(size);
+            int abt_error = ABTU_malloc(size, &ptr);
+            if (abt_error == ABT_SUCCESS && ptr) {
+                *p_actual = ABTU_MEM_LARGEPAGE_MALLOC;
+                return ptr;
+            }
         } else if (requested == ABTU_MEM_LARGEPAGE_MEMALIGN) {
-            void *p_page = ABTU_memalign(alignment_hint, size);
-            if (p_page) {
+            int abt_error = ABTU_memalign(alignment_hint, size, &ptr);
+            if (abt_error == ABT_SUCCESS && ptr) {
                 *p_actual = ABTU_MEM_LARGEPAGE_MEMALIGN;
-                return p_page;
+                return ptr;
             }
         } else if (requested == ABTU_MEM_LARGEPAGE_MMAP) {
-            void *p_page = mmap_regular(size);
-            if (p_page) {
-                *p_actual = ABTU_MEM_LARGEPAGE_MMAP;
-                return p_page;
-            }
+            *p_actual = ABTU_MEM_LARGEPAGE_MMAP;
+            ptr = mmap_regular(size);
+            if (ptr)
+                return ptr;
         } else if (requested == ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE) {
-            void *p_page = mmap_hugepage(size);
-            if (p_page) {
-                *p_actual = ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE;
-                return p_page;
-            }
+            *p_actual = ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE;
+            ptr = mmap_hugepage(size);
+            if (ptr)
+                return ptr;
         }
     }
     return NULL;

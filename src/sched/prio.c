@@ -42,7 +42,9 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* Default settings */
-    sched_data *p_data = (sched_data *)ABTU_malloc(sizeof(sched_data));
+    sched_data *p_data;
+    abt_errno = ABTU_malloc(sizeof(sched_data), (void **)&p_data);
+    ABTI_CHECK_ERROR(abt_errno);
     p_data->event_freq = gp_ABTI_global->sched_event_freq;
 #ifdef ABT_CONFIG_USE_SCHED_SLEEP
     p_data->sleep_time.tv_sec = 0;
@@ -83,7 +85,9 @@ static void sched_run(ABT_sched sched)
 
     /* Get the list of pools */
     num_pools = p_sched->num_pools;
-    p_pools = (ABT_pool *)ABTU_malloc(num_pools * sizeof(ABT_pool));
+    int abt_errno =
+        ABTU_malloc(num_pools * sizeof(ABT_pool), (void **)&p_pools);
+    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     memcpy(p_pools, p_sched->pools, sizeof(ABT_pool) * num_pools);
 
     while (1) {

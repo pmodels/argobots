@@ -26,7 +26,9 @@ int ABT_rwlock_create(ABT_rwlock *newrwlock)
     int abt_errno = ABT_SUCCESS;
     ABTI_rwlock *p_newrwlock;
 
-    p_newrwlock = (ABTI_rwlock *)ABTU_malloc(sizeof(ABTI_rwlock));
+    abt_errno = ABTU_malloc(sizeof(ABTI_rwlock), (void **)&p_newrwlock);
+    ABTI_CHECK_ERROR(abt_errno);
+
     ABTI_CHECK_TRUE(p_newrwlock != NULL, ABT_ERR_MEM);
     ABTI_mutex_init(&p_newrwlock->mutex);
     ABTI_cond_init(&p_newrwlock->cond);

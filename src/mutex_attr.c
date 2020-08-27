@@ -28,8 +28,8 @@ int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
     int abt_errno = ABT_SUCCESS;
     ABTI_mutex_attr *p_newattr;
 
-    p_newattr = (ABTI_mutex_attr *)ABTU_malloc(sizeof(ABTI_mutex_attr));
-    ABTI_CHECK_TRUE(p_newattr != NULL, ABT_ERR_MEM);
+    abt_errno = ABTU_malloc(sizeof(ABTI_mutex_attr), (void **)&p_newattr);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Default values */
     p_newattr->attrs = ABTI_MUTEX_ATTR_NONE;

@@ -10,10 +10,12 @@ ABTI_ythread_htable *ABTI_ythread_htable_create(uint32_t num_rows)
 {
     ABTI_STATIC_ASSERT(sizeof(ABTI_ythread_queue) == 192);
 
+    int abt_errno;
     ABTI_ythread_htable *p_htable;
     size_t q_size = num_rows * sizeof(ABTI_ythread_queue);
 
-    p_htable = (ABTI_ythread_htable *)ABTU_malloc(sizeof(ABTI_ythread_htable));
+    abt_errno = ABTU_malloc(sizeof(ABTI_ythread_htable), (void **)&p_htable);
+    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
 #if defined(HAVE_LH_LOCK_H)
     lh_lock_init(&p_htable->mutex);
 #elif defined(HAVE_CLH_H)
@@ -26,7 +28,8 @@ ABTI_ythread_htable *ABTI_ythread_htable_create(uint32_t num_rows)
 #endif
     ABTD_atomic_relaxed_store_uint32(&p_htable->num_elems, 0);
     p_htable->num_rows = num_rows;
-    p_htable->queue = (ABTI_ythread_queue *)ABTU_memalign(64, q_size);
+    abt_errno = ABTU_memalign(64, q_size, (void **)&p_htable->queue);
+    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     memset(p_htable->queue, 0, q_size);
     p_htable->h_list = NULL;
     p_htable->l_list = NULL;
@@ -60,18 +63,6 @@ void ABTI_ythread_htable_push(ABTI_ythread_htable *p_htable, int idx,
     if (idx >= p_htable->num_rows) {
         ABTI_ASSERT(0);
         ABTU_unreachable();
-#if 0
-        /* Increase the hash table */
-        uint32_t cur_size, new_size;
-        cur_size = p_htable->num_rows;
-        new_size = (idx / cur_size + 1) * cur_size;
-        p_htable->queue = (ABTI_ythread_queue *)
-            ABTU_realloc(p_htable->queue, cur_size * sizeof(ABTI_ythread_queue),
-                         new_size * sizeof(ABTI_ythread_queue));
-        memset(&p_htable->queue[cur_size], 0,
-               (new_size - cur_size) * sizeof(ABTI_ythread_queue));
-        p_htable->num_rows = new_size;
-#endif
     }
 
     /* Add p_ythread to the end of the idx-th row */
@@ -97,18 +88,6 @@ void ABTI_ythread_htable_push_low(ABTI_ythread_htable *p_htable, int idx,
     if (idx >= p_htable->num_rows) {
         ABTI_ASSERT(0);
         ABTU_unreachable();
-#if 0
-        /* Increase the hash table */
-        uint32_t cur_size, new_size;
-        cur_size = p_htable->num_rows;
-        new_size = (idx / cur_size + 1) * cur_size;
-        p_htable->queue = (ABTI_ythread_queue *)
-            ABTU_realloc(p_htable->queue, cur_size * sizeof(ABTI_ythread_queue),
-                         new_size * sizeof(ABTI_ythread_queue));
-        memset(&p_htable->queue[cur_size], 0,
-               (new_size - cur_size) * sizeof(ABTI_ythread_queue));
-        p_htable->num_rows = new_size;
-#endif
     }
 
     /* Add p_ythread to the end of the idx-th row */

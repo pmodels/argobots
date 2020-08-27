@@ -232,7 +232,8 @@ static int read_cpuset(pthread_t native_thread, ABTD_affinity_cpuset *p_cpuset)
             num_cpuids++;
     }
     p_cpuset->num_cpuids = num_cpuids;
-    p_cpuset->cpuids = (int *)malloc(sizeof(int) * num_cpuids);
+    ret = ABTU_malloc(sizeof(int) * num_cpuids, (void **)&p_cpuset->cpuids);
+    ABTI_CHECK_ERROR_RET(ret);
     for (i = 0, j = 0; i < CPU_SETSIZE; i++) {
         if (CPU_ISSET(i, &cpuset))
             p_cpuset->cpuids[j++] = i;
@@ -292,14 +293,20 @@ void ABTD_affinity_init(const char *affinity_str)
     if (p_list) {
         /* Create cpusets based on the affinity list.*/
         g_affinity.num_cpusets = p_list->num;
-        g_affinity.cpusets =
-            (ABTD_affinity_cpuset *)ABTU_calloc(g_affinity.num_cpusets,
-                                                sizeof(ABTD_affinity_cpuset));
+        ret = ABTU_calloc(g_affinity.num_cpusets, sizeof(ABTD_affinity_cpuset),
+                          (void **)&g_affinity.cpusets);
+        ABTI_ASSERT(ret == ABT_SUCCESS);
         for (i = 0; i < p_list->num; i++) {
             const ABTD_affinity_id_list *p_id_list = p_list->p_id_lists[i];
             int j, num_cpuids = 0, len_cpuids = 8;
-            g_affinity.cpusets[i].cpuids =
-                (int *)ABTU_malloc(sizeof(int) * len_cpuids);
+            ret = ABTU_malloc(sizeof(int) * len_cpuids,
+                              (void **)&g_affinity.cpusets[i].cpuids);
+            ABTI_ASSERT(ret == ABT_SUCCESS);
+            if (ABTI_IS_ERROR_CHECK_ENABLED && ret != ABT_SUCCESS) {
+                ABTD_affinity_list_free(p_list);
+                gp_ABTI_global->set_affinity = ABT_FALSE;
+                return;
+            }
             for (j = 0; j < p_id_list->num; j++) {
                 int cpuid_i = int_rem(p_id_list->ids[j],
                                       g_affinity.initial_cpuset.num_cpuids);
@@ -314,10 +321,11 @@ void ABTD_affinity_init(const char *affinity_str)
                 }
                 if (is_unique) {
                     if (num_cpuids == len_cpuids) {
-                        g_affinity.cpusets[i].cpuids =
-                            (int *)ABTU_realloc(g_affinity.cpusets[i].cpuids,
-                                                sizeof(int) * len_cpuids,
-                                                sizeof(int) * len_cpuids * 2);
+                        ret = ABTU_realloc(sizeof(int) * len_cpuids,
+                                           sizeof(int) * len_cpuids * 2,
+                                           (void **)&g_affinity.cpusets[i]
+                                               .cpuids);
+                        ABTI_ASSERT(ret == ABT_SUCCESS);
                         len_cpuids *= 2;
                     }
                     g_affinity.cpusets[i].cpuids[num_cpuids] = cpuid;
@@ -326,23 +334,24 @@ void ABTD_affinity_init(const char *affinity_str)
             }
             /* Adjust the size of cpuids. */
             if (num_cpuids != len_cpuids)
-                g_affinity.cpusets[i].cpuids =
-                    (int *)ABTU_realloc(g_affinity.cpusets[i].cpuids,
-                                        sizeof(int) * len_cpuids,
-                                        sizeof(int) * num_cpuids);
+                ret = ABTU_realloc(sizeof(int) * len_cpuids,
+                                   sizeof(int) * num_cpuids,
+                                   (void **)&g_affinity.cpusets[i].cpuids);
+            ABTI_ASSERT(ret == ABT_SUCCESS);
             g_affinity.cpusets[i].num_cpuids = num_cpuids;
         }
         ABTD_affinity_list_free(p_list);
     } else {
         /* Create default cpusets. */
         g_affinity.num_cpusets = g_affinity.initial_cpuset.num_cpuids;
-        g_affinity.cpusets =
-            (ABTD_affinity_cpuset *)ABTU_calloc(g_affinity.num_cpusets,
-                                                sizeof(ABTD_affinity_cpuset));
+        ret = ABTU_calloc(g_affinity.num_cpusets, sizeof(ABTD_affinity_cpuset),
+                          (void **)&g_affinity.cpusets);
+        ABTI_ASSERT(ret == ABT_SUCCESS);
         for (i = 0; i < g_affinity.num_cpusets; i++) {
             g_affinity.cpusets[i].num_cpuids = 1;
-            g_affinity.cpusets[i].cpuids = (int *)ABTU_malloc(
-                sizeof(int) * g_affinity.cpusets[i].num_cpuids);
+            ret = ABTU_malloc(sizeof(int) * g_affinity.cpusets[i].num_cpuids,
+                              (void **)&g_affinity.cpusets[i].cpuids);
+            ABTI_ASSERT(ret == ABT_SUCCESS);
             g_affinity.cpusets[i].cpuids[0] =
                 g_affinity.initial_cpuset.cpuids[i];
         }

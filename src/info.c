@@ -832,7 +832,9 @@ fn_fail:
 static inline void info_initialize_pool_set(struct info_pool_set_t *p_set)
 {
     size_t default_len = 16;
-    p_set->pools = (ABT_pool *)ABTU_malloc(sizeof(ABT_pool) * default_len);
+    int abt_errno =
+        ABTU_malloc(sizeof(ABT_pool) * default_len, (void **)&p_set->pools);
+    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     p_set->num = 0;
     p_set->len = default_len;
 }
@@ -853,9 +855,10 @@ static inline void info_add_pool_set(ABT_pool pool,
     /* Add pool to p_set. */
     if (p_set->num == p_set->len) {
         size_t new_len = p_set->len * 2;
-        p_set->pools = (ABT_pool *)ABTU_realloc(p_set->pools,
-                                                sizeof(ABT_pool) * p_set->len,
-                                                sizeof(ABT_pool) * new_len);
+        int abt_errno =
+            ABTU_realloc(sizeof(ABT_pool) * p_set->len,
+                         sizeof(ABT_pool) * new_len, (void **)&p_set->pools);
+        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
         p_set->len = new_len;
     }
     p_set->pools[p_set->num++] = pool;
