@@ -21,6 +21,8 @@ static ABT_sched_def sched_randws_def = {
 
 typedef struct {
     uint32_t event_freq;
+    int num_pools;
+    ABT_pool *pools;
 #ifdef ABT_CONFIG_USE_SCHED_SLEEP
     struct timespec sleep_time;
 #endif
@@ -34,6 +36,7 @@ ABT_sched_def *ABTI_sched_get_randws_def(void)
 static int sched_init(ABT_sched sched, ABT_sched_config config)
 {
     int abt_errno = ABT_SUCCESS;
+    int num_pools;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
@@ -52,6 +55,17 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     void *p_event_freq = &p_data->event_freq;
     ABTI_sched_config_read(config, 1, 1, &p_event_freq);
 
+    /* Save the list of pools */
+    num_pools = p_sched->num_pools;
+    p_data->num_pools = num_pools;
+    abt_errno =
+        ABTU_malloc(num_pools * sizeof(ABT_pool), (void **)&p_data->pools);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_data);
+        goto fn_fail;
+    }
+    memcpy(p_data->pools, p_sched->pools, sizeof(ABT_pool) * num_pools);
+
     p_sched->data = p_data;
 
 fn_exit:
@@ -69,7 +83,7 @@ static void sched_run(ABT_sched sched)
     uint32_t work_count = 0;
     sched_data *p_data;
     int num_pools;
-    ABT_pool *p_pools;
+    ABT_pool *pools;
     ABT_unit unit;
     int target;
     unsigned seed = time(NULL);
@@ -80,16 +94,13 @@ static void sched_run(ABT_sched sched)
 
     p_data = (sched_data *)p_sched->data;
     num_pools = p_sched->num_pools;
-    int abt_errno =
-        ABTU_malloc(num_pools * sizeof(ABT_pool), (void **)&p_pools);
-    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-    memcpy(p_pools, p_sched->pools, sizeof(ABT_pool) * num_pools);
+    pools = p_data->pools;
 
     while (1) {
         CNT_INIT(run_cnt, 0);
 
         /* Execute one work unit from the scheduler's pool */
-        ABT_pool pool = p_pools[0];
+        ABT_pool pool = pools[0];
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
         unit = ABTI_pool_pop(p_pool);
         if (unit != ABT_UNIT_NULL) {
@@ -99,7 +110,7 @@ static void sched_run(ABT_sched sched)
             /* Steal a work unit from other pools */
             target =
                 (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
-            pool = p_pools[target];
+            pool = pools[target];
             p_pool = ABTI_pool_get_ptr(pool);
             unit = ABTI_pool_pop(p_pool);
             LOG_DEBUG_POOL_POP(p_pool, unit);
@@ -120,8 +131,6 @@ static void sched_run(ABT_sched sched)
             SCHED_SLEEP(run_cnt, p_data->sleep_time);
         }
     }
-
-    ABTU_free(p_pools);
 }
 
 static int sched_free(ABT_sched sched)
@@ -130,7 +139,7 @@ static int sched_free(ABT_sched sched)
     ABTI_ASSERT(p_sched);
 
     sched_data *p_data = (sched_data *)p_sched->data;
+    ABTU_free(p_data->pools);
     ABTU_free(p_data);
-
     return ABT_SUCCESS;
 }
