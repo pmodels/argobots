@@ -540,7 +540,8 @@ int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
                          ABTI_thread_attr **pp_dup_attr);
 
 /* Thread hash table */
-ABTI_ythread_htable *ABTI_ythread_htable_create(uint32_t num_rows);
+int ABTI_ythread_htable_create(uint32_t num_rows,
+                               ABTI_ythread_htable **pp_htable);
 void ABTI_ythread_htable_free(ABTI_ythread_htable *p_htable);
 void ABTI_ythread_htable_push(ABTI_ythread_htable *p_htable, int idx,
                               ABTI_ythread *p_ythread);

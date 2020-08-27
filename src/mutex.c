@@ -42,7 +42,11 @@ int ABT_mutex_create(ABT_mutex *newmutex)
 
     abt_errno = ABTU_calloc(1, sizeof(ABTI_mutex), (void **)&p_newmutex);
     ABTI_CHECK_ERROR(abt_errno);
-    ABTI_mutex_init(p_newmutex);
+    abt_errno = ABTI_mutex_init(p_newmutex);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_newmutex);
+        goto fn_fail;
+    }
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
@@ -80,7 +84,11 @@ int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
 
     abt_errno = ABTU_malloc(sizeof(ABTI_mutex), (void **)&p_newmutex);
     ABTI_CHECK_ERROR(abt_errno);
-    ABTI_mutex_init(p_newmutex);
+    abt_errno = ABTI_mutex_init(p_newmutex);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_newmutex);
+        goto fn_fail;
+    }
     memcpy(&p_newmutex->attr, p_attr, sizeof(ABTI_mutex_attr));
 
     /* Return value */

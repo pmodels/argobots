@@ -6,7 +6,8 @@
 #include "abti.h"
 #include "abti_ythread_htable.h"
 
-ABTI_ythread_htable *ABTI_ythread_htable_create(uint32_t num_rows)
+int ABTI_ythread_htable_create(uint32_t num_rows,
+                               ABTI_ythread_htable **pp_htable)
 {
     ABTI_STATIC_ASSERT(sizeof(ABTI_ythread_queue) == 192);
 
@@ -15,26 +16,35 @@ ABTI_ythread_htable *ABTI_ythread_htable_create(uint32_t num_rows)
     size_t q_size = num_rows * sizeof(ABTI_ythread_queue);
 
     abt_errno = ABTU_malloc(sizeof(ABTI_ythread_htable), (void **)&p_htable);
-    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+    ABTI_CHECK_ERROR_RET(abt_errno);
+
+    abt_errno = ABTU_memalign(64, q_size, (void **)&p_htable->queue);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_htable);
+        return abt_errno;
+    }
+    memset(p_htable->queue, 0, q_size);
+
 #if defined(HAVE_LH_LOCK_H)
     lh_lock_init(&p_htable->mutex);
 #elif defined(HAVE_CLH_H)
     clh_init(&p_htable->mutex);
 #elif defined(USE_PTHREAD_MUTEX)
     int ret = pthread_mutex_init(&p_htable->mutex, NULL);
-    assert(!ret);
+    if (ret) {
+        ABTU_free(p_htable->queue);
+        ABTU_free(p_htable);
+        return ABT_ERR_OTHER;
+    }
 #else
     ABTI_spinlock_clear(&p_htable->mutex);
 #endif
     ABTD_atomic_relaxed_store_uint32(&p_htable->num_elems, 0);
     p_htable->num_rows = num_rows;
-    abt_errno = ABTU_memalign(64, q_size, (void **)&p_htable->queue);
-    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-    memset(p_htable->queue, 0, q_size);
     p_htable->h_list = NULL;
     p_htable->l_list = NULL;
-
-    return p_htable;
+    *pp_htable = p_htable;
+    return ABT_SUCCESS;
 }
 
 void ABTI_ythread_htable_free(ABTI_ythread_htable *p_htable)
