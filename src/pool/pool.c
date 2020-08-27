@@ -5,9 +5,8 @@
 
 #include "abti.h"
 
-static int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
-                            ABT_bool automatic, ABTI_pool **pp_newpool);
-static inline uint64_t ABTI_pool_get_new_id(void);
+static int pool_create(ABT_pool_def *def, ABT_pool_config config,
+                       ABT_bool automatic, ABTI_pool **pp_newpool);
 
 /** @defgroup POOL Pool
  * This group is for Pool.
@@ -35,7 +34,7 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_newpool;
 
-    abt_errno = ABTI_pool_create(def, config, ABT_FALSE, &p_newpool);
+    abt_errno = pool_create(def, config, ABT_FALSE, &p_newpool);
     ABTI_CHECK_ERROR(abt_errno);
     *newpool = ABTI_pool_get_handle(p_newpool);
 
@@ -579,8 +578,7 @@ int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
     }
     ABTI_CHECK_ERROR_RET(abt_errno);
 
-    abt_errno =
-        ABTI_pool_create(&def, ABT_POOL_CONFIG_NULL, automatic, pp_newpool);
+    abt_errno = pool_create(&def, ABT_POOL_CONFIG_NULL, automatic, pp_newpool);
     ABTI_CHECK_ERROR_RET(abt_errno);
     return ABT_SUCCESS;
 }
@@ -694,8 +692,9 @@ void ABTI_pool_reset_id(void)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
-                            ABT_bool automatic, ABTI_pool **pp_newpool)
+static inline uint64_t pool_get_new_id(void);
+static int pool_create(ABT_pool_def *def, ABT_pool_config config,
+                       ABT_bool automatic, ABTI_pool **pp_newpool)
 {
     ABTI_pool *p_pool;
 
@@ -730,7 +729,7 @@ static int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->p_remove = def->p_remove;
     p_pool->p_free = def->p_free;
     p_pool->p_print_all = def->p_print_all;
-    p_pool->id = ABTI_pool_get_new_id();
+    p_pool->id = pool_get_new_id();
     LOG_DEBUG("[P%" PRIu64 "] created\n", p_pool->id);
 
     /* Configure the pool */
@@ -745,7 +744,7 @@ static int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
     return ABT_SUCCESS;
 }
 
-static inline uint64_t ABTI_pool_get_new_id(void)
+static inline uint64_t pool_get_new_id(void)
 {
     return (uint64_t)ABTD_atomic_fetch_add_uint64(&g_pool_id, 1);
 }

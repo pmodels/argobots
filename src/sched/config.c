@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-static inline size_t ABTI_sched_config_type_size(ABT_sched_config_type type);
+static inline size_t sched_config_type_size(ABT_sched_config_type type);
 
 /** @defgroup SCHED_CONFIG Scheduler config
  * This group is for Scheduler config.
@@ -86,7 +86,7 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
         ABT_sched_config_type type = var.type;
         num_params++;
 
-        size_t size = ABTI_sched_config_type_size(type);
+        size_t size = sched_config_type_size(type);
         if (offset + sizeof(param) + sizeof(type) + size > buffer_size) {
             size_t cur_buffer_size = buffer_size;
             buffer_size += alloc_size;
@@ -293,7 +293,7 @@ int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static inline size_t ABTI_sched_config_type_size(ABT_sched_config_type type)
+static inline size_t sched_config_type_size(ABT_sched_config_type type)
 {
     switch (type) {
         case ABT_SCHED_CONFIG_INT:

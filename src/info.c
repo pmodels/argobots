@@ -5,8 +5,8 @@
 
 #include "abti.h"
 
-static int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
-static void ABTI_info_trigger_print_all_thread_stacks(
+static int info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
+static void info_trigger_print_all_thread_stacks(
     FILE *fp, double timeout, void (*cb_func)(ABT_bool, void *), void *arg);
 
 /** @defgroup INFO  Information
@@ -521,7 +521,7 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_info_print_thread_stacks_in_pool(fp, p_pool);
+    abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -572,7 +572,7 @@ int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
                                              void (*cb_func)(ABT_bool, void *),
                                              void *arg)
 {
-    ABTI_info_trigger_print_all_thread_stacks(fp, timeout, cb_func, arg);
+    info_trigger_print_all_thread_stacks(fp, timeout, cb_func, arg);
     return ABT_SUCCESS;
 }
 
@@ -580,20 +580,22 @@ int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-struct ABTI_info_print_unit_arg_t {
+struct info_print_unit_arg_t {
     FILE *fp;
     ABT_pool pool;
 };
 
-struct ABTI_info_pool_set_t {
+struct info_pool_set_t {
     ABT_pool *pools;
     size_t num;
     size_t len;
 };
 
-static int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
-static inline void
-ABTI_info_initialize_pool_set(struct ABTI_info_pool_set_t *p_set);
+static int info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
+static inline void info_initialize_pool_set(struct info_pool_set_t *p_set);
+static inline void info_add_pool_set(ABT_pool pool,
+                                     struct info_pool_set_t *p_set);
+static inline void info_finalize_pool_set(struct info_pool_set_t *p_set);
 
 #define PRINT_STACK_FLAG_UNSET 0
 #define PRINT_STACK_FLAG_INITIALIZE 1
@@ -608,11 +610,6 @@ static void (*print_cb_func)(ABT_bool, void *) = NULL;
 static void *print_arg = NULL;
 static ABTD_atomic_uint32 print_stack_barrier =
     ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
-
-static inline void ABTI_info_add_pool_set(ABT_pool pool,
-                                          struct ABTI_info_pool_set_t *p_set);
-static inline void
-ABTI_info_finalize_pool_set(struct ABTI_info_pool_set_t *p_set);
 
 void ABTI_info_check_print_all_thread_stacks(void)
 {
@@ -648,8 +645,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
          * no ES is calling and will call Argobots functions except this
          * function while printing stack information. */
         int i, j;
-        struct ABTI_info_pool_set_t pool_set;
-        ABTI_info_initialize_pool_set(&pool_set);
+        struct info_pool_set_t pool_set;
+        info_initialize_pool_set(&pool_set);
         FILE *fp = print_stack_fp;
         if (force_print) {
             fprintf(fp,
@@ -669,13 +666,13 @@ void ABTI_info_check_print_all_thread_stacks(void)
                 ABTI_ASSERT(pool != ABT_POOL_NULL);
                 fprintf(fp, "  pools[%d] : %p\n", j,
                         (void *)ABTI_pool_get_ptr(pool));
-                ABTI_info_add_pool_set(pool, &pool_set);
+                info_add_pool_set(pool, &pool_set);
             }
         }
         for (i = 0; i < pool_set.num; i++) {
             ABT_pool pool = pool_set.pools[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-            int abt_errno = ABTI_info_print_thread_stacks_in_pool(fp, p_pool);
+            int abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
             if (abt_errno != ABT_SUCCESS)
                 fprintf(fp, "  Failed to print (errno = %d).\n", abt_errno);
         }
@@ -684,7 +681,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
 
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
-        ABTI_info_finalize_pool_set(&pool_set);
+        info_finalize_pool_set(&pool_set);
         /* Update print_stack_flag to 3. */
         ABTD_atomic_release_store_uint32(&print_stack_flag,
                                          PRINT_STACK_FLAG_FINALIZE);
@@ -774,12 +771,12 @@ void ABTI_info_print_config(FILE *fp)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static void ABTI_info_print_unit(void *arg, ABT_unit unit)
+static void info_print_unit(void *arg, ABT_unit unit)
 {
     /* This function may not have any side effect on unit because it is passed
      * to p_print_all. */
-    struct ABTI_info_print_unit_arg_t *p_arg;
-    p_arg = (struct ABTI_info_print_unit_arg_t *)arg;
+    struct info_print_unit_arg_t *p_arg;
+    p_arg = (struct info_print_unit_arg_t *)arg;
     FILE *fp = p_arg->fp;
     ABT_pool pool = p_arg->pool;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -809,7 +806,7 @@ static void ABTI_info_print_unit(void *arg, ABT_unit unit)
     }
 }
 
-static int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
+static int info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
 {
     int abt_errno = ABT_SUCCESS;
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
@@ -819,10 +816,10 @@ static int ABTI_info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
         goto fn_fail;
     }
     fprintf(fp, "== pool (%p) ==\n", (void *)p_pool);
-    struct ABTI_info_print_unit_arg_t arg;
+    struct info_print_unit_arg_t arg;
     arg.fp = fp;
     arg.pool = pool;
-    p_pool->p_print_all(pool, &arg, ABTI_info_print_unit);
+    p_pool->p_print_all(pool, &arg, info_print_unit);
 
 fn_exit:
     return abt_errno;
@@ -832,8 +829,7 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline void
-ABTI_info_initialize_pool_set(struct ABTI_info_pool_set_t *p_set)
+static inline void info_initialize_pool_set(struct info_pool_set_t *p_set)
 {
     size_t default_len = 16;
     p_set->pools = (ABT_pool *)ABTU_malloc(sizeof(ABT_pool) * default_len);
@@ -841,14 +837,13 @@ ABTI_info_initialize_pool_set(struct ABTI_info_pool_set_t *p_set)
     p_set->len = default_len;
 }
 
-static inline void
-ABTI_info_finalize_pool_set(struct ABTI_info_pool_set_t *p_set)
+static inline void info_finalize_pool_set(struct info_pool_set_t *p_set)
 {
     ABTU_free(p_set->pools);
 }
 
-static inline void ABTI_info_add_pool_set(ABT_pool pool,
-                                          struct ABTI_info_pool_set_t *p_set)
+static inline void info_add_pool_set(ABT_pool pool,
+                                     struct info_pool_set_t *p_set)
 {
     size_t i;
     for (i = 0; i < p_set->num; i++) {
@@ -866,7 +861,7 @@ static inline void ABTI_info_add_pool_set(ABT_pool pool,
     p_set->pools[p_set->num++] = pool;
 }
 
-static void ABTI_info_trigger_print_all_thread_stacks(
+static void info_trigger_print_all_thread_stacks(
     FILE *fp, double timeout, void (*cb_func)(ABT_bool, void *), void *arg)
 {
     /* This function is signal-safe, so it may not call other functions unless

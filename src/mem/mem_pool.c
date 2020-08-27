@@ -7,14 +7,14 @@
 #include <stddef.h>
 
 static inline ABTI_mem_pool_page *
-ABTI_mem_pool_lifo_elem_to_page(ABTI_sync_lifo_element *lifo_elem)
+mem_pool_lifo_elem_to_page(ABTI_sync_lifo_element *lifo_elem)
 {
     return (ABTI_mem_pool_page *)(((char *)lifo_elem) -
                                   offsetof(ABTI_mem_pool_page, lifo_elem));
 }
 
 static inline ABTI_mem_pool_header *
-ABTI_mem_pool_lifo_elem_to_header(ABTI_sync_lifo_element *lifo_elem)
+mem_pool_lifo_elem_to_header(ABTI_sync_lifo_element *lifo_elem)
 {
     return (
         ABTI_mem_pool_header *)(((char *)lifo_elem) -
@@ -60,7 +60,7 @@ void ABTI_mem_pool_destroy_global_pool(ABTI_mem_pool_global_pool *p_global_pool)
     ABTI_sync_lifo_element *p_page_lifo_elem;
     while ((p_page_lifo_elem =
                 ABTI_sync_lifo_pop_unsafe(&p_global_pool->mem_page_lifo))) {
-        p_page = ABTI_mem_pool_lifo_elem_to_page(p_page_lifo_elem);
+        p_page = mem_pool_lifo_elem_to_page(p_page_lifo_elem);
         ABTU_free_largepage(p_page->mem, p_page->page_size, p_page->lp_type);
     }
     p_page = (ABTI_mem_pool_page *)ABTD_atomic_relaxed_load_ptr(
@@ -161,7 +161,7 @@ ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool)
     if (ABTU_likely(p_popped_bucket_lifo_elem)) {
         /* Use this bucket. */
         ABTI_mem_pool_header *popped_bucket =
-            ABTI_mem_pool_lifo_elem_to_header(p_popped_bucket_lifo_elem);
+            mem_pool_lifo_elem_to_header(p_popped_bucket_lifo_elem);
         popped_bucket->bucket_info.num_headers = num_headers_per_bucket;
         return popped_bucket;
     } else {
@@ -177,7 +177,7 @@ ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool)
             if ((p_page_lifo_elem =
                      ABTI_sync_lifo_pop(&p_global_pool->mem_page_lifo))) {
                 /* Use a page popped from mem_page_lifo */
-                p_page = ABTI_mem_pool_lifo_elem_to_page(p_page_lifo_elem);
+                p_page = mem_pool_lifo_elem_to_page(p_page_lifo_elem);
             } else {
                 /* Let's allocate memory by myself */
                 const size_t page_size = p_global_pool->page_size;

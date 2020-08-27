@@ -5,12 +5,12 @@
 
 #include "abti.h"
 
-static int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                             ABT_sched_config config, ABT_bool automatic,
-                             ABTI_sched **pp_newsched);
-static inline ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def);
+static int sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
+                        ABT_sched_config config, ABT_bool automatic,
+                        ABTI_sched **pp_newsched);
+static inline ABTI_sched_kind sched_get_kind(ABT_sched_def *def);
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-static inline uint64_t ABTI_sched_get_new_id(void);
+static inline uint64_t sched_get_new_id(void);
 #endif
 
 /** @defgroup SCHED Scheduler
@@ -47,8 +47,8 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     /* TODO: the default value of automatic is different from
      * ABT_sched_create_basic(). Make it consistent. */
     const ABT_bool def_automatic = ABT_FALSE;
-    abt_errno = ABTI_sched_create(def, num_pools, pools, config, def_automatic,
-                                  &p_sched);
+    abt_errno =
+        sched_create(def, num_pools, pools, config, def_automatic, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -489,28 +489,25 @@ int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
         switch (predef) {
             case ABT_SCHED_DEFAULT:
             case ABT_SCHED_BASIC:
-                abt_errno =
-                    ABTI_sched_create(ABTI_sched_get_basic_def(), num_pools,
-                                      pool_list, ABT_SCHED_CONFIG_NULL,
-                                      automatic, pp_newsched);
+                abt_errno = sched_create(ABTI_sched_get_basic_def(), num_pools,
+                                         pool_list, ABT_SCHED_CONFIG_NULL,
+                                         automatic, pp_newsched);
                 break;
             case ABT_SCHED_BASIC_WAIT:
-                abt_errno = ABTI_sched_create(ABTI_sched_get_basic_wait_def(),
-                                              num_pools, pool_list,
-                                              ABT_SCHED_CONFIG_NULL, automatic,
-                                              pp_newsched);
+                abt_errno =
+                    sched_create(ABTI_sched_get_basic_wait_def(), num_pools,
+                                 pool_list, ABT_SCHED_CONFIG_NULL, automatic,
+                                 pp_newsched);
                 break;
             case ABT_SCHED_PRIO:
-                abt_errno =
-                    ABTI_sched_create(ABTI_sched_get_prio_def(), num_pools,
-                                      pool_list, ABT_SCHED_CONFIG_NULL,
-                                      automatic, pp_newsched);
+                abt_errno = sched_create(ABTI_sched_get_prio_def(), num_pools,
+                                         pool_list, ABT_SCHED_CONFIG_NULL,
+                                         automatic, pp_newsched);
                 break;
             case ABT_SCHED_RANDWS:
-                abt_errno =
-                    ABTI_sched_create(ABTI_sched_get_randws_def(), num_pools,
-                                      pool_list, ABT_SCHED_CONFIG_NULL,
-                                      automatic, pp_newsched);
+                abt_errno = sched_create(ABTI_sched_get_randws_def(), num_pools,
+                                         pool_list, ABT_SCHED_CONFIG_NULL,
+                                         automatic, pp_newsched);
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
@@ -561,24 +558,24 @@ int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
         switch (predef) {
             case ABT_SCHED_DEFAULT:
             case ABT_SCHED_BASIC:
-                abt_errno = ABTI_sched_create(ABTI_sched_get_basic_def(),
-                                              num_pools, pool_list, config,
-                                              automatic, pp_newsched);
+                abt_errno =
+                    sched_create(ABTI_sched_get_basic_def(), num_pools,
+                                 pool_list, config, automatic, pp_newsched);
                 break;
             case ABT_SCHED_BASIC_WAIT:
-                abt_errno = ABTI_sched_create(ABTI_sched_get_basic_wait_def(),
-                                              num_pools, pool_list, config,
-                                              automatic, pp_newsched);
+                abt_errno =
+                    sched_create(ABTI_sched_get_basic_wait_def(), num_pools,
+                                 pool_list, config, automatic, pp_newsched);
                 break;
             case ABT_SCHED_PRIO:
-                abt_errno = ABTI_sched_create(ABTI_sched_get_prio_def(),
-                                              num_pools, pool_list, config,
-                                              automatic, pp_newsched);
+                abt_errno =
+                    sched_create(ABTI_sched_get_prio_def(), num_pools,
+                                 pool_list, config, automatic, pp_newsched);
                 break;
             case ABT_SCHED_RANDWS:
-                abt_errno = ABTI_sched_create(ABTI_sched_get_randws_def(),
-                                              num_pools, pool_list, config,
-                                              automatic, pp_newsched);
+                abt_errno =
+                    sched_create(ABTI_sched_get_randws_def(), num_pools,
+                                 pool_list, config, automatic, pp_newsched);
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
@@ -777,12 +774,11 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
         size_t size, pos;
 
         kind = p_sched->kind;
-        if (kind == ABTI_sched_get_kind(ABTI_sched_get_basic_def())) {
+        if (kind == sched_get_kind(ABTI_sched_get_basic_def())) {
             kind_str = "BASIC";
-        } else if (kind ==
-                   ABTI_sched_get_kind(ABTI_sched_get_basic_wait_def())) {
+        } else if (kind == sched_get_kind(ABTI_sched_get_basic_wait_def())) {
             kind_str = "BASIC_WAIT";
-        } else if (kind == ABTI_sched_get_kind(ABTI_sched_get_prio_def())) {
+        } else if (kind == sched_get_kind(ABTI_sched_get_prio_def())) {
             kind_str = "PRIO";
         } else {
             kind_str = "USER";
@@ -875,14 +871,14 @@ void ABTI_sched_reset_id(void)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static inline ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
+static inline ABTI_sched_kind sched_get_kind(ABT_sched_def *def)
 {
     return (ABTI_sched_kind)def;
 }
 
-static int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                             ABT_sched_config config, ABT_bool automatic,
-                             ABTI_sched **pp_newsched)
+static int sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
+                        ABT_sched_config config, ABT_bool automatic,
+                        ABTI_sched **pp_newsched)
 {
     ABTI_sched *p_sched;
     int p;
@@ -912,7 +908,7 @@ static int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 
     p_sched->used = ABTI_SCHED_NOT_USED;
     p_sched->automatic = automatic;
-    p_sched->kind = ABTI_sched_get_kind(def);
+    p_sched->kind = sched_get_kind(def);
     ABTD_atomic_relaxed_store_uint32(&p_sched->request, 0);
     p_sched->pools = pool_list;
     p_sched->num_pools = num_pools;
@@ -925,7 +921,7 @@ static int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     p_sched->get_migr_pool = def->get_migr_pool;
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-    p_sched->id = ABTI_sched_get_new_id();
+    p_sched->id = sched_get_new_id();
 #endif
     LOG_DEBUG("[S%" PRIu64 "] created\n", p_sched->id);
 
@@ -940,7 +936,7 @@ static int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 }
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-static inline uint64_t ABTI_sched_get_new_id(void)
+static inline uint64_t sched_get_new_id(void)
 {
     return ABTD_atomic_fetch_add_uint64(&g_sched_id, 1);
 }

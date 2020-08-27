@@ -6,10 +6,8 @@
 #include "abti.h"
 #include "abti_ythread_htable.h"
 
-static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
-                                       ABTI_mutex *p_mutex);
-static inline int ABTI_mutex_unlock_se(ABTI_local **pp_local,
-                                       ABTI_mutex *p_mutex);
+static inline void mutex_lock_low(ABTI_local **pp_local, ABTI_mutex *p_mutex);
+static inline int mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex);
 
 /** @defgroup MUTEX Mutex
  * Mutex is a synchronization method to support mutual exclusion between ULTs.
@@ -206,13 +204,13 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
 
     if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
         /* default attributes */
-        ABTI_mutex_lock_low(&p_local, p_mutex);
+        mutex_lock_low(&p_local, p_mutex);
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
         ABTI_thread_id self_id = ABTI_self_get_thread_id(p_local);
         if (self_id != p_mutex->attr.owner_id) {
-            ABTI_mutex_lock_low(&p_local, p_mutex);
+            mutex_lock_low(&p_local, p_mutex);
             p_mutex->attr.owner_id = self_id;
             ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
         } else {
@@ -221,7 +219,7 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
 
     } else {
         /* unknown attributes */
-        ABTI_mutex_lock_low(&p_local, p_mutex);
+        mutex_lock_low(&p_local, p_mutex);
     }
 
 fn_exit:
@@ -415,7 +413,7 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
 
     if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
         /* default attributes */
-        ABTI_mutex_unlock_se(&p_local, p_mutex);
+        mutex_unlock_se(&p_local, p_mutex);
 
     } else if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
@@ -424,14 +422,14 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
                         ABT_ERR_INV_THREAD);
         if (p_mutex->attr.nesting_cnt == 0) {
             p_mutex->attr.owner_id = 0;
-            ABTI_mutex_unlock_se(&p_local, p_mutex);
+            mutex_unlock_se(&p_local, p_mutex);
         } else {
             p_mutex->attr.nesting_cnt--;
         }
 
     } else {
         /* unknown attributes */
-        ABTI_mutex_unlock_se(&p_local, p_mutex);
+        mutex_unlock_se(&p_local, p_mutex);
     }
 
 fn_exit:
@@ -631,8 +629,7 @@ void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
-                                       ABTI_mutex *p_mutex)
+static inline void mutex_lock_low(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 {
     ABTI_ythread *p_ythread = NULL;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
@@ -715,8 +712,7 @@ static inline void ABTI_mutex_lock_low(ABTI_local **pp_local,
 }
 
 /* Hand over the mutex to other ULT on the same ES */
-static inline int ABTI_mutex_unlock_se(ABTI_local **pp_local,
-                                       ABTI_mutex *p_mutex)
+static inline int mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 {
     int abt_errno = ABT_SUCCESS;
 

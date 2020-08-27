@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static int ABTI_timer_create(ABTI_timer **pp_newtimer);
+static int timer_alloc(ABTI_timer **pp_newtimer);
 
 /** @defgroup TIMER  Timer
  * This group is for Timer.
@@ -44,7 +44,7 @@ int ABT_timer_create(ABT_timer *newtimer)
     int abt_errno = ABT_SUCCESS;
     ABTI_timer *p_newtimer;
 
-    abt_errno = ABTI_timer_create(&p_newtimer);
+    abt_errno = timer_alloc(&p_newtimer);
     ABTI_CHECK_ERROR(abt_errno);
 
     *newtimer = ABTI_timer_get_handle(p_newtimer);
@@ -81,7 +81,7 @@ int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer)
 
     ABTI_timer *p_newtimer;
 
-    abt_errno = ABTI_timer_create(&p_newtimer);
+    abt_errno = timer_alloc(&p_newtimer);
     ABTI_CHECK_ERROR(abt_errno);
 
     memcpy(p_newtimer, p_timer, sizeof(ABTI_timer));
@@ -344,7 +344,7 @@ fn_fail:
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static int ABTI_timer_create(ABTI_timer **pp_newtimer)
+static int timer_alloc(ABTI_timer **pp_newtimer)
 {
     /* We use libc malloc/free for ABT_timer because ABTU_malloc/free might
      * need the initialization of Argobots if they are not the same as libc
