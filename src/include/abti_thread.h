@@ -38,24 +38,6 @@ static inline ABT_thread ABTI_thread_get_handle(ABTI_thread *p_thread)
 
 /* Inlined functions for User-level Thread (ULT) */
 
-static inline ABT_thread_state
-ABTI_thread_state_get_thread_state(ABTI_thread_state state)
-{
-    switch (state) {
-        case ABTI_THREAD_STATE_READY:
-            return ABT_THREAD_STATE_READY;
-        case ABTI_THREAD_STATE_RUNNING:
-            return ABT_THREAD_STATE_RUNNING;
-        case ABTI_THREAD_STATE_BLOCKED:
-            return ABT_THREAD_STATE_BLOCKED;
-        case ABTI_THREAD_STATE_TERMINATED:
-            return ABT_THREAD_STATE_TERMINATED;
-        default:
-            ABTI_ASSERT(0);
-            ABTU_unreachable();
-    }
-}
-
 static inline ABT_unit_type ABTI_thread_type_get_type(ABTI_thread_type type)
 {
     if (type & ABTI_THREAD_TYPE_YIELDABLE) {

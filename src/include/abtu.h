@@ -176,9 +176,6 @@ void *ABTU_alloc_largepage(size_t size, size_t alignment_hint,
                            ABTU_MEM_LARGEPAGE_TYPE *p_actual);
 void ABTU_free_largepage(void *ptr, size_t size, ABTU_MEM_LARGEPAGE_TYPE type);
 
-#define ABTU_strcpy(d, s) strcpy(d, s)
-#define ABTU_strncpy(d, s, n) strncpy(d, s, n)
-
 /* The caller should free the memory returned. */
 char *ABTU_get_indent_str(int indent);
 

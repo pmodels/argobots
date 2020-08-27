@@ -5,10 +5,10 @@
 
 #include "abti.h"
 
-static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
-                            void (*task_func)(void *), void *arg,
-                            ABTI_sched *p_sched, int refcount,
-                            ABTI_thread **pp_newtask);
+static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
+                       void (*task_func)(void *), void *arg,
+                       ABTI_sched *p_sched, int refcount,
+                       ABTI_thread **pp_newtask);
 
 /** @defgroup TASK Tasklet
  * This group is for Tasklet.
@@ -47,8 +47,8 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     int refcount = (newtask != NULL) ? 1 : 0;
-    abt_errno = ABTI_task_create(p_local, p_pool, task_func, arg, NULL,
-                                 refcount, &p_newtask);
+    abt_errno = task_create(p_local, p_pool, task_func, arg, NULL, refcount,
+                            &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -110,8 +110,8 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
     /* TODO: need to consider the access type of target pool */
     ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_xstream);
     int refcount = (newtask != NULL) ? 1 : 0;
-    abt_errno = ABTI_task_create(p_local, p_pool, task_func, arg, NULL,
-                                 refcount, &p_newtask);
+    abt_errno = task_create(p_local, p_pool, task_func, arg, NULL, refcount,
+                            &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -472,13 +472,13 @@ int ABT_task_get_specific(ABT_task task, ABT_key key, void **value);
 #endif
 
 /*****************************************************************************/
-/* Private APIs                                                              */
+/* Internal static functions                                                 */
 /*****************************************************************************/
 
-static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
-                            void (*task_func)(void *), void *arg,
-                            ABTI_sched *p_sched, int refcount,
-                            ABTI_thread **pp_newtask)
+static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
+                       void (*task_func)(void *), void *arg,
+                       ABTI_sched *p_sched, int refcount,
+                       ABTI_thread **pp_newtask)
 {
     ABTI_thread *p_newtask;
     ABT_task h_newtask;
@@ -488,7 +488,7 @@ static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,
 
     p_newtask->p_last_xstream = NULL;
     p_newtask->p_parent = NULL;
-    ABTD_atomic_relaxed_store_int(&p_newtask->state, ABTI_THREAD_STATE_READY);
+    ABTD_atomic_relaxed_store_int(&p_newtask->state, ABT_THREAD_STATE_READY);
     ABTD_atomic_relaxed_store_uint32(&p_newtask->request, 0);
     p_newtask->f_thread = task_func;
     p_newtask->p_arg = arg;

@@ -6,8 +6,8 @@
 #include "abti.h"
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
-                                  ABT_tool_query_kind query_kind, void *val);
+static inline int tool_query(ABTI_tool_context *p_tctx,
+                             ABT_tool_query_kind query_kind, void *val);
 #endif
 
 /** @defgroup Tool interface
@@ -201,7 +201,7 @@ int ABT_tool_query_thread(ABT_tool_context context, uint64_t event_thread,
 
     ABTI_tool_context *p_tctx = ABTI_tool_context_get_ptr(context);
     ABTI_CHECK_NULL_TOOL_CONTEXT_PTR(p_tctx);
-    abt_errno = ABTI_tool_query(p_tctx, query_kind, val);
+    abt_errno = tool_query(p_tctx, query_kind, val);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -238,7 +238,7 @@ int ABT_tool_query_task(ABT_tool_context context, uint64_t event_task,
 
     ABTI_tool_context *p_tctx = ABTI_tool_context_get_ptr(context);
     ABTI_CHECK_NULL_TOOL_CONTEXT_PTR(p_tctx);
-    abt_errno = ABTI_tool_query(p_tctx, query_kind, val);
+    abt_errno = tool_query(p_tctx, query_kind, val);
     ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
@@ -250,9 +250,13 @@ fn_fail:
 #endif
 }
 
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
-                                  ABT_tool_query_kind query_kind, void *val)
+static inline int tool_query(ABTI_tool_context *p_tctx,
+                             ABT_tool_query_kind query_kind, void *val)
 {
     switch (query_kind) {
         case ABT_TOOL_QUERY_KIND_POOL:

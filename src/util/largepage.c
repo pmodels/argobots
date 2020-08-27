@@ -29,7 +29,7 @@
 #define ABTU_LP_USE_HUGEPAGE 0
 #endif
 
-static void *ABTU_mmap_regular(size_t size)
+static void *mmap_regular(size_t size)
 {
 #if ABTU_LP_USE_MMAP
     void *p_page = mmap(NULL, size, ABTU_LP_PROTS, ABTU_LP_FLAGS_RP, 0, 0);
@@ -39,7 +39,7 @@ static void *ABTU_mmap_regular(size_t size)
 #endif
 }
 
-static void *ABTU_mmap_hugepage(size_t size)
+static void *mmap_hugepage(size_t size)
 {
 #if ABTU_LP_USE_MMAP && ABTU_LP_USE_MMAP_HUGEPAGE
     void *p_page = mmap(NULL, size, ABTU_LP_PROTS, ABTU_LP_FLAGS_HP, 0, 0);
@@ -49,7 +49,7 @@ static void *ABTU_mmap_hugepage(size_t size)
 #endif
 }
 
-static void ABTU_munmap(void *p_page, size_t size)
+static void mmap_free(void *p_page, size_t size)
 {
     munmap(p_page, size);
 }
@@ -68,15 +68,15 @@ int ABTU_is_supported_largepage_type(size_t size, size_t alignment_hint,
             return 1;
         }
     } else if (requested == ABTU_MEM_LARGEPAGE_MMAP) {
-        void *p_page = ABTU_mmap_regular(size);
+        void *p_page = mmap_regular(size);
         if (p_page) {
-            ABTU_munmap(p_page, size);
+            mmap_free(p_page, size);
             return 1;
         }
     } else if (requested == ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE) {
-        void *p_page = ABTU_mmap_hugepage(size);
+        void *p_page = mmap_hugepage(size);
         if (p_page) {
-            ABTU_munmap(p_page, size);
+            mmap_free(p_page, size);
             return 1;
         }
     }
@@ -102,13 +102,13 @@ void *ABTU_alloc_largepage(size_t size, size_t alignment_hint,
                 return p_page;
             }
         } else if (requested == ABTU_MEM_LARGEPAGE_MMAP) {
-            void *p_page = ABTU_mmap_regular(size);
+            void *p_page = mmap_regular(size);
             if (p_page) {
                 *p_actual = ABTU_MEM_LARGEPAGE_MMAP;
                 return p_page;
             }
         } else if (requested == ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE) {
-            void *p_page = ABTU_mmap_hugepage(size);
+            void *p_page = mmap_hugepage(size);
             if (p_page) {
                 *p_actual = ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE;
                 return p_page;
@@ -127,8 +127,8 @@ void ABTU_free_largepage(void *ptr, size_t size, ABTU_MEM_LARGEPAGE_TYPE type)
     } else if (type == ABTU_MEM_LARGEPAGE_MEMALIGN) {
         ABTU_free(ptr);
     } else if (type == ABTU_MEM_LARGEPAGE_MMAP) {
-        ABTU_munmap(ptr, size);
+        mmap_free(ptr, size);
     } else if (type == ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE) {
-        ABTU_munmap(ptr, size);
+        mmap_free(ptr, size);
     }
 }

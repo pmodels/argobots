@@ -154,7 +154,7 @@ int ABT_future_wait(ABT_future future)
             p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */
             ABTD_atomic_relaxed_store_int(&p_thread->state,
-                                          ABTI_THREAD_STATE_BLOCKED);
+                                          ABT_THREAD_STATE_BLOCKED);
         }
 
         p_thread->p_next = NULL;
@@ -180,7 +180,7 @@ int ABT_future_wait(ABT_future future)
 
             /* External thread is waiting here. */
             while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                   ABTI_THREAD_STATE_READY)
+                   ABT_THREAD_STATE_READY)
                 ;
             ABTU_free(p_thread);
         }
@@ -285,7 +285,7 @@ int ABT_future_set(ABT_future future, void *value)
             } else {
                 /* When the head is an external thread */
                 ABTD_atomic_release_store_int(&p_thread->state,
-                                              ABTI_THREAD_STATE_READY);
+                                              ABT_THREAD_STATE_READY);
             }
 
             /* Next ULT */

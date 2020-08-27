@@ -5,8 +5,8 @@
 
 #include "abti.h"
 
-static inline void ABTD_ythread_terminate(ABTI_xstream *p_local_xstream,
-                                          ABTI_ythread *p_ythread);
+static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
+                                     ABTI_ythread *p_ythread);
 
 void ABTD_ythread_func_wrapper(void *p_arg)
 {
@@ -24,16 +24,16 @@ void ABTD_ythread_func_wrapper(void *p_arg)
      * the context-switchable function (i.e., thread_func()).  We assume that
      * the compiler does not load TLS offset etc before thread_func(). */
     p_local_xstream = ABTI_local_get_xstream(ABTI_local_get_local());
-    ABTD_ythread_terminate(p_local_xstream, p_ythread);
+    ythread_terminate(p_local_xstream, p_ythread);
 }
 
 void ABTD_ythread_exit(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
 {
-    ABTD_ythread_terminate(p_local_xstream, p_ythread);
+    ythread_terminate(p_local_xstream, p_ythread);
 }
 
-static inline void ABTD_ythread_terminate(ABTI_xstream *p_local_xstream,
-                                          ABTI_ythread *p_ythread)
+static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
+                                     ABTI_ythread *p_ythread)
 {
     ABTD_ythread_context *p_ctx = &p_ythread->ctx;
     ABTD_ythread_context *p_link =
@@ -46,7 +46,7 @@ static inline void ABTD_ythread_terminate(ABTI_xstream *p_local_xstream,
             /* Only when the current ULT is on the same ES as p_joiner's,
              * we can jump to the joiner ULT. */
             ABTD_atomic_release_store_int(&p_ythread->thread.state,
-                                          ABTI_THREAD_STATE_TERMINATED);
+                                          ABT_THREAD_STATE_TERMINATED);
             LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n",
                       ABTI_thread_get_id(&p_ythread->thread),
                       p_ythread->thread.p_last_xstream->rank);
@@ -103,7 +103,7 @@ void ABTD_ythread_terminate_no_arg()
      * get the thread descriptor from TLS. */
     ABTI_thread *p_thread = p_local_xstream->p_thread;
     ABTI_ASSERT(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE);
-    ABTD_ythread_terminate(p_local_xstream, ABTI_thread_get_ythread(p_thread));
+    ythread_terminate(p_local_xstream, ABTI_thread_get_ythread(p_thread));
 }
 #endif
 
@@ -111,7 +111,7 @@ void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
 {
     /* When we cancel a ULT, if other ULT is blocked to join the canceled ULT,
      * we have to wake up the joiner ULT.  However, unlike the case when the
-     * ULT has finished its execution and calls ABTD_ythread_terminate/exit,
+     * ULT has finished its execution and calls ythread_terminate/exit,
      * this function is called by the scheduler.  Therefore, we should not
      * context switch to the joiner ULT and need to always wake it up. */
     ABTD_ythread_context *p_ctx = &p_ythread->ctx;

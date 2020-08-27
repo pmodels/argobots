@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static void *ABTDI_xstream_context_thread_func(void *arg)
+static void *xstream_context_thread_func(void *arg)
 {
     ABTD_xstream_context *p_ctx = (ABTD_xstream_context *)arg;
     void *(*thread_f)(void *) = p_ctx->thread_f;
@@ -54,7 +54,7 @@ int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
     pthread_mutex_init(&p_ctx->state_lock, NULL);
     pthread_cond_init(&p_ctx->state_cond, NULL);
     int ret = pthread_create(&p_ctx->native_thread, NULL,
-                             ABTDI_xstream_context_thread_func, p_ctx);
+                             xstream_context_thread_func, p_ctx);
     if (ret != 0) {
         HANDLE_ERROR("pthread_create");
         return ABT_ERR_XSTREAM;

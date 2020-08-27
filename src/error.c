@@ -84,7 +84,7 @@ int ABT_error_get_str(int err, char *str, size_t *len)
     ABTI_CHECK_TRUE(err >= ABT_SUCCESS && err <= ABT_ERR_FEATURE_NA,
                     ABT_ERR_OTHER);
     if (str)
-        ABTU_strcpy(str, err_str[err]);
+        strcpy(str, err_str[err]);
     if (len)
         *len = strlen(err_str[err]);
 

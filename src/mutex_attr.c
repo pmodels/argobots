@@ -35,8 +35,8 @@ int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
     p_newattr->attrs = ABTI_MUTEX_ATTR_NONE;
     p_newattr->nesting_cnt = 0;
     p_newattr->owner_id = 0;
-    p_newattr->max_handovers = ABTI_global_get_mutex_max_handovers();
-    p_newattr->max_wakeups = ABTI_global_get_mutex_max_wakeups();
+    p_newattr->max_handovers = gp_ABTI_global->mutex_max_handovers;
+    p_newattr->max_wakeups = gp_ABTI_global->mutex_max_wakeups;
 
     /* Return value */
     *newattr = ABTI_mutex_attr_get_handle(p_newattr);
@@ -114,35 +114,4 @@ fn_exit:
 fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
-}
-
-/*****************************************************************************/
-/* Private APIs                                                              */
-/*****************************************************************************/
-
-void ABTI_mutex_attr_print(ABTI_mutex_attr *p_attr, FILE *p_os, int indent)
-{
-    char *prefix = ABTU_get_indent_str(indent);
-    char attr[100];
-
-    ABTI_mutex_attr_get_str(p_attr, attr);
-    fprintf(p_os, "%smutex attr: %s\n", prefix, attr);
-    fflush(p_os);
-    ABTU_free(prefix);
-}
-
-void ABTI_mutex_attr_get_str(ABTI_mutex_attr *p_attr, char *p_buf)
-{
-    if (p_attr == NULL) {
-        sprintf(p_buf, "[NULL ATTR]");
-        return;
-    }
-
-    sprintf(p_buf,
-            "["
-            "attrs:%x "
-            "nesting_cnt:%u "
-            "owner_id:%p "
-            "]",
-            p_attr->attrs, p_attr->nesting_cnt, (void *)p_attr->owner_id);
 }

@@ -32,7 +32,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     ABTI_CHECK_TRUE(p_newattr, ABT_ERR_MEM);
 
     /* Default values */
-    ABTI_thread_attr_init(p_newattr, NULL, ABTI_global_get_thread_stacksize(),
+    ABTI_thread_attr_init(p_newattr, NULL, gp_ABTI_global->thread_stacksize,
                           ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK, ABT_TRUE);
 
     /* Return value */
@@ -115,7 +115,7 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
         }
         new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
     } else {
-        if (stacksize == ABTI_global_get_thread_stacksize()) {
+        if (stacksize == gp_ABTI_global->thread_stacksize) {
             new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
         } else {
             new_thread_type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
@@ -191,7 +191,7 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
     /* Set the value */
     p_attr->stacksize = stacksize;
     ABTI_thread_type new_thread_type;
-    if (stacksize == ABTI_global_get_thread_stacksize()) {
+    if (stacksize == gp_ABTI_global->thread_stacksize) {
         new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
     } else {
         new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
@@ -318,55 +318,48 @@ fn_fail:
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
 {
     char *prefix = ABTU_get_indent_str(indent);
-    char attr[100];
 
-    ABTI_thread_attr_get_str(p_attr, attr);
-    fprintf(p_os, "%sULT attr: %s\n", prefix, attr);
+    if (p_attr == NULL) {
+        fprintf(p_os, "%sULT attr: [NULL ATTR]\n", prefix);
+    } else {
+        char *stacktype;
+        if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
+            stacktype = "MEMPOOL_DESC";
+        } else if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC) {
+            stacktype = "MALLOC_DESC";
+        } else if (p_attr->thread_type &
+                   ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK) {
+            stacktype = "MEMPOOL_DESC_STACK";
+        } else if (p_attr->thread_type &
+                   ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
+            stacktype = "MALLOC_DESC_STACK";
+        } else {
+            stacktype = "UNKNOWN";
+        }
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+        fprintf(p_os,
+                "%sULT attr: ["
+                "stack:%p "
+                "stacksize:%zu "
+                "stacktype:%s "
+                "migratable:%s "
+                "cb_arg:%p"
+                "]\n",
+                prefix, p_attr->p_stack, p_attr->stacksize, stacktype,
+                (p_attr->migratable == ABT_TRUE ? "TRUE" : "FALSE"),
+                p_attr->p_cb_arg);
+#else
+        fprintf(p_os,
+                "%sULT attr: ["
+                "stack:%p "
+                "stacksize:%zu "
+                "stacktype:%s "
+                "]\n",
+                prefix, p_attr->p_stack, p_attr->stacksize, stacktype);
+#endif
+    }
     fflush(p_os);
     ABTU_free(prefix);
-}
-
-void ABTI_thread_attr_get_str(ABTI_thread_attr *p_attr, char *p_buf)
-{
-    if (p_attr == NULL) {
-        sprintf(p_buf, "[NULL ATTR]");
-        return;
-    }
-
-    char *stacktype;
-    if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
-        stacktype = "MEMPOOL_DESC";
-    } else if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC) {
-        stacktype = "MALLOC_DESC";
-    } else if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK) {
-        stacktype = "MEMPOOL_DESC_STACK";
-    } else if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
-        stacktype = "MALLOC_DESC_STACK";
-    } else {
-        stacktype = "UNKNOWN";
-    }
-
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    sprintf(p_buf,
-            "["
-            "stack:%p "
-            "stacksize:%zu "
-            "stacktype:%s "
-            "migratable:%s "
-            "cb_arg:%p"
-            "]",
-            p_attr->p_stack, p_attr->stacksize, stacktype,
-            (p_attr->migratable == ABT_TRUE ? "TRUE" : "FALSE"),
-            p_attr->p_cb_arg);
-#else
-    sprintf(p_buf,
-            "["
-            "stack:%p "
-            "stacksize:%zu "
-            "stacktype:%s "
-            "]",
-            p_attr->p_stack, p_attr->stacksize, stacktype);
-#endif
 }
 
 ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr)
@@ -374,7 +367,7 @@ ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr)
     ABTI_thread_attr *p_dupattr;
 
     p_dupattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
-    ABTI_thread_attr_copy(p_dupattr, p_attr);
+    memcpy(p_dupattr, p_attr, sizeof(ABTI_thread_attr));
 
     return p_dupattr;
 }

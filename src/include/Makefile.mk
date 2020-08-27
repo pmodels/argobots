@@ -20,7 +20,6 @@ noinst_HEADERS = \
 	include/abti_error.h \
 	include/abti_eventual.h \
 	include/abti_future.h \
-	include/abti_global.h \
 	include/abti_key.h \
 	include/abti_local.h \
 	include/abti_log.h \
@@ -34,6 +33,7 @@ noinst_HEADERS = \
 	include/abti_self.h \
 	include/abti_spinlock.h \
 	include/abti_stream.h \
+	include/abti_stream_barrier.h \
 	include/abti_sync_lifo.h \
 	include/abti_timer.h \
 	include/abti_thread.h \

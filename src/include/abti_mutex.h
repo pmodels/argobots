@@ -40,8 +40,8 @@ static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 {
     ABTD_atomic_relaxed_store_uint32(&p_mutex->val, 0);
     p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
-    p_mutex->attr.max_handovers = ABTI_global_get_mutex_max_handovers();
-    p_mutex->attr.max_wakeups = ABTI_global_get_mutex_max_wakeups();
+    p_mutex->attr.max_handovers = gp_ABTI_global->mutex_max_handovers;
+    p_mutex->attr.max_wakeups = gp_ABTI_global->mutex_max_wakeups;
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
     p_mutex->p_htable =
         ABTI_ythread_htable_create(gp_ABTI_global->max_xstreams);
@@ -115,7 +115,7 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                     /* Push the previous ULT to its pool */
                     ABTI_ythread *p_giver = p_mutex->p_giver;
                     ABTD_atomic_release_store_int(&p_giver->thread.state,
-                                                  ABTI_THREAD_STATE_READY);
+                                                  ABT_THREAD_STATE_READY);
                     ABTI_pool_push(*pp_local, p_giver->thread.p_pool,
                                    p_giver->thread.unit);
                     break;
@@ -153,12 +153,6 @@ static inline void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
         LOG_DEBUG("%p: unlock w/o wake\n", p_mutex);
     }
 #endif
-}
-
-static inline ABT_bool ABTI_mutex_equal(ABTI_mutex *p_mutex1,
-                                        ABTI_mutex *p_mutex2)
-{
-    return (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
 }
 
 #endif /* ABTI_MUTEX_H_INCLUDED */

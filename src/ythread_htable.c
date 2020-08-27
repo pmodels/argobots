@@ -89,33 +89,6 @@ void ABTI_ythread_htable_push(ABTI_ythread_htable *p_htable, int idx,
     ABTD_atomic_fetch_add_uint32(&p_htable->num_elems, 1);
 }
 
-/* Unlike ABTI_ythread_htable_push, this function pushes p_ythread to the queue
- * only when the queue is not empty. */
-ABT_bool ABTI_ythread_htable_add(ABTI_ythread_htable *p_htable, int idx,
-                                 ABTI_ythread *p_ythread)
-{
-    ABTI_ythread_queue *p_queue;
-
-    p_queue = &p_htable->queue[idx];
-
-    ABTI_ythread_queue_acquire_mutex(p_queue);
-    if (p_queue->head == NULL) {
-        ABTI_ASSERT(p_queue->num_threads == 0);
-        ABTI_ythread_queue_release_mutex(p_queue);
-        return ABT_FALSE;
-    } else {
-        /* Change the ULT's state to BLOCKED */
-        ABTI_ythread_set_blocked(p_ythread);
-
-        p_queue->tail->thread.p_next = &p_ythread->thread;
-        p_queue->tail = p_ythread;
-    }
-    p_queue->num_threads++;
-    ABTI_ythread_queue_release_mutex(p_queue);
-    ABTD_atomic_fetch_add_uint32(&p_htable->num_elems, 1);
-    return ABT_TRUE;
-}
-
 void ABTI_ythread_htable_push_low(ABTI_ythread_htable *p_htable, int idx,
                                   ABTI_ythread *p_ythread)
 {
@@ -151,33 +124,6 @@ void ABTI_ythread_htable_push_low(ABTI_ythread_htable *p_htable, int idx,
     p_queue->low_num_threads++;
     ABTI_ythread_queue_release_low_mutex(p_queue);
     ABTD_atomic_fetch_add_uint32(&p_htable->num_elems, 1);
-}
-
-/* Unlike ABTI_ythread_htable_push_low, this function pushes p_ythread to the
- * queue only when the queue is not empty. */
-ABT_bool ABTI_ythread_htable_add_low(ABTI_ythread_htable *p_htable, int idx,
-                                     ABTI_ythread *p_ythread)
-{
-    ABTI_ythread_queue *p_queue;
-
-    p_queue = &p_htable->queue[idx];
-
-    ABTI_ythread_queue_acquire_low_mutex(p_queue);
-    if (p_queue->low_head == NULL) {
-        ABTI_ASSERT(p_queue->low_num_threads == 0);
-        ABTI_ythread_queue_release_low_mutex(p_queue);
-        return ABT_FALSE;
-    } else {
-        /* Change the ULT's state to BLOCKED */
-        ABTI_ythread_set_blocked(p_ythread);
-
-        p_queue->low_tail->thread.p_next = &p_ythread->thread;
-        p_queue->low_tail = p_ythread;
-    }
-    p_queue->low_num_threads++;
-    ABTI_ythread_queue_release_low_mutex(p_queue);
-    ABTD_atomic_fetch_add_uint32(&p_htable->num_elems, 1);
-    return ABT_TRUE;
 }
 
 ABTI_ythread *ABTI_ythread_htable_pop(ABTI_ythread_htable *p_htable,
@@ -243,7 +189,7 @@ ABT_bool ABTI_ythread_htable_switch_low(ABTI_xstream **pp_local_xstream,
 
         /* Push p_ythread to the queue */
         ABTD_atomic_release_store_int(&p_ythread->thread.state,
-                                      ABTI_THREAD_STATE_BLOCKED);
+                                      ABT_THREAD_STATE_BLOCKED);
         ABTI_tool_event_ythread_suspend(p_local_xstream, p_ythread,
                                         p_ythread->thread.p_parent,
                                         sync_event_type, p_sync);
@@ -265,7 +211,7 @@ ABT_bool ABTI_ythread_htable_switch_low(ABTI_xstream **pp_local_xstream,
 
         /* Context-switch to p_target */
         ABTD_atomic_release_store_int(&p_target->thread.state,
-                                      ABTI_THREAD_STATE_RUNNING);
+                                      ABT_THREAD_STATE_RUNNING);
         ABTI_tool_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream),
                                        p_target,
                                        p_local_xstream

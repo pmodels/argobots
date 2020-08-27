@@ -100,7 +100,7 @@ int ABT_init(int argc, char **argv)
                                  p_local_xstream, &p_main_ythread);
     /* Set as if p_local_xstream is currently running the main thread. */
     ABTD_atomic_relaxed_store_int(&p_main_ythread->thread.state,
-                                  ABTI_THREAD_STATE_RUNNING);
+                                  ABT_THREAD_STATE_RUNNING);
     p_main_ythread->thread.p_last_xstream = p_local_xstream;
     ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_ythread_create_main");
     gp_ABTI_global->p_main_ythread = p_main_ythread;
@@ -268,6 +268,10 @@ int ABT_initialized(void)
 
     return abt_errno;
 }
+
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
 
 /* If new_size is equal to zero, we double max_xstreams.
  * NOTE: This function currently cannot decrease max_xstreams.
