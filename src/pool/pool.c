@@ -593,10 +593,8 @@ void ABTI_pool_free(ABTI_pool *p_pool)
 
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
 {
-    char *prefix = ABTU_get_indent_str(indent);
-
     if (p_pool == NULL) {
-        fprintf(p_os, "%s== NULL POOL ==\n", prefix);
+        fprintf(p_os, "%*s== NULL POOL ==\n", indent, "");
     } else {
         char *access;
 
@@ -622,37 +620,37 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
         }
 
         fprintf(p_os,
-                "%s== POOL (%p) ==\n"
-                "%sid            : %" PRIu64 "\n"
-                "%saccess        : %s\n"
-                "%sautomatic     : %s\n"
-                "%snum_scheds    : %d\n"
+                "%*s== POOL (%p) ==\n"
+                "%*sid            : %" PRIu64 "\n"
+                "%*saccess        : %s\n"
+                "%*sautomatic     : %s\n"
+                "%*snum_scheds    : %d\n"
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-                "%sconsumer ID   : %p\n"
+                "%*sconsumer ID   : %p\n"
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-                "%sproducer ID   : %p\n"
+                "%*sproducer ID   : %p\n"
 #endif
-                "%ssize          : %zu\n"
-                "%snum_blocked   : %d\n"
-                "%snum_migrations: %d\n"
-                "%sdata          : %p\n",
-                prefix, (void *)p_pool, prefix, p_pool->id, prefix, access,
-                prefix, (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
-                prefix, ABTD_atomic_acquire_load_int32(&p_pool->num_scheds),
+                "%*ssize          : %zu\n"
+                "%*snum_blocked   : %d\n"
+                "%*snum_migrations: %d\n"
+                "%*sdata          : %p\n",
+                indent, "", (void *)p_pool, indent, "", p_pool->id, indent, "",
+                access, indent, "",
+                (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent, "",
+                ABTD_atomic_acquire_load_int32(&p_pool->num_scheds),
 #ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-                prefix, (void *)p_pool->consumer_id,
+                indent, "", (void *)p_pool->consumer_id,
 #endif
 #ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-                prefix, (void *)p_pool->producer_id,
+                indent, "", (void *)p_pool->producer_id,
 #endif
-                prefix, ABTI_pool_get_size(p_pool), prefix,
-                ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), prefix,
-                ABTD_atomic_acquire_load_int32(&p_pool->num_migrations), prefix,
-                p_pool->data);
+                indent, "", ABTI_pool_get_size(p_pool), indent, "",
+                ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), indent,
+                "", ABTD_atomic_acquire_load_int32(&p_pool->num_migrations),
+                indent, "", p_pool->data);
     }
     fflush(p_os);
-    ABTU_free(prefix);
 }
 
 /* Check if a pool accept migrations or not. When the producer of the

@@ -765,10 +765,8 @@ size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
 void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                       ABT_bool print_sub)
 {
-    char *prefix = ABTU_get_indent_str(indent);
-
     if (p_sched == NULL) {
-        fprintf(p_os, "%s== NULL SCHED ==\n", prefix);
+        fprintf(p_os, "%*s== NULL SCHED ==\n", indent, "");
     } else {
         ABTI_sched_kind kind;
         char *kind_str, *type, *used;
@@ -827,30 +825,31 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
         pools_str[pos] = ']';
 
         fprintf(p_os,
-                "%s== SCHED (%p) ==\n"
+                "%*s== SCHED (%p) ==\n"
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-                "%sid       : %" PRIu64 "\n"
+                "%*sid       : %" PRIu64 "\n"
 #endif
-                "%skind     : %" PRIxPTR " (%s)\n"
-                "%stype     : %s\n"
-                "%sused     : %s\n"
-                "%sautomatic: %s\n"
-                "%srequest  : 0x%x\n"
-                "%snum_pools: %d\n"
-                "%spools    : %s\n"
-                "%ssize     : %zu\n"
-                "%stot_size : %zu\n"
-                "%sdata     : %p\n",
-                prefix, (void *)p_sched,
+                "%*skind     : %" PRIxPTR " (%s)\n"
+                "%*stype     : %s\n"
+                "%*sused     : %s\n"
+                "%*sautomatic: %s\n"
+                "%*srequest  : 0x%x\n"
+                "%*snum_pools: %d\n"
+                "%*spools    : %s\n"
+                "%*ssize     : %zu\n"
+                "%*stot_size : %zu\n"
+                "%*sdata     : %p\n",
+                indent, "", (void *)p_sched,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-                prefix, p_sched->id,
+                indent, "", p_sched->id,
 #endif
-                prefix, p_sched->kind, kind_str, prefix, type, prefix, used,
-                prefix, (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
-                prefix, ABTD_atomic_acquire_load_uint32(&p_sched->request),
-                prefix, p_sched->num_pools, prefix, pools_str, prefix,
-                ABTI_sched_get_size(p_sched), prefix,
-                ABTI_sched_get_total_size(p_sched), prefix, p_sched->data);
+                indent, "", p_sched->kind, kind_str, indent, "", type, indent,
+                "", used, indent, "",
+                (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent, "",
+                ABTD_atomic_acquire_load_uint32(&p_sched->request), indent, "",
+                p_sched->num_pools, indent, "", pools_str, indent, "",
+                ABTI_sched_get_size(p_sched), indent, "",
+                ABTI_sched_get_total_size(p_sched), indent, "", p_sched->data);
         ABTU_free(pools_str);
 
         if (print_sub == ABT_TRUE) {
@@ -860,9 +859,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
             }
         }
     }
-
     fflush(p_os);
-    ABTU_free(prefix);
 }
 
 static ABTD_atomic_uint64 g_sched_id = ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);

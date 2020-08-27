@@ -1706,10 +1706,8 @@ int ABTI_thread_get_mig_data(ABTI_local *p_local, ABTI_thread *p_thread,
 
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
 {
-    char *prefix = ABTU_get_indent_str(indent);
-
     if (p_thread == NULL) {
-        fprintf(p_os, "%s== NULL thread ==\n", prefix);
+        fprintf(p_os, "%*s== NULL thread ==\n", indent, "");
     } else {
         ABTI_xstream *p_xstream = p_thread->p_last_xstream;
         int xstream_rank = p_xstream ? p_xstream->rank : 0;
@@ -1746,26 +1744,25 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         }
 
         fprintf(p_os,
-                "%s== Thread (%p) ==\n"
-                "%sid        : %" PRIu64 "\n"
-                "%stype      : %s\n"
-                "%syieldable : %s\n"
-                "%sstate     : %s\n"
-                "%slast_ES   : %p (%d)\n"
-                "%sp_arg     : %p\n"
-                "%spool      : %p\n"
-                "%srequest   : 0x%x\n"
-                "%skeytable  : %p\n",
-                prefix, (void *)p_thread, prefix, ABTI_thread_get_id(p_thread),
-                prefix, type, prefix, yieldable, prefix, state, prefix,
-                (void *)p_xstream, xstream_rank, prefix, p_thread->p_arg,
-                prefix, (void *)p_thread->p_pool, prefix,
-                ABTD_atomic_acquire_load_uint32(&p_thread->request), prefix,
+                "%*s== Thread (%p) ==\n"
+                "%*sid        : %" PRIu64 "\n"
+                "%*stype      : %s\n"
+                "%*syieldable : %s\n"
+                "%*sstate     : %s\n"
+                "%*slast_ES   : %p (%d)\n"
+                "%*sp_arg     : %p\n"
+                "%*spool      : %p\n"
+                "%*srequest   : 0x%x\n"
+                "%*skeytable  : %p\n",
+                indent, "", (void *)p_thread, indent, "",
+                ABTI_thread_get_id(p_thread), indent, "", type, indent, "",
+                yieldable, indent, "", state, indent, "", (void *)p_xstream,
+                xstream_rank, indent, "", p_thread->p_arg, indent, "",
+                (void *)p_thread->p_pool, indent, "",
+                ABTD_atomic_acquire_load_uint32(&p_thread->request), indent, "",
                 ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable));
     }
-
     fflush(p_os);
-    ABTU_free(prefix);
 }
 
 static ABTD_atomic_uint64 g_thread_id =

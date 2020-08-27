@@ -317,10 +317,8 @@ fn_fail:
 
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
 {
-    char *prefix = ABTU_get_indent_str(indent);
-
     if (p_attr == NULL) {
-        fprintf(p_os, "%sULT attr: [NULL ATTR]\n", prefix);
+        fprintf(p_os, "%*sULT attr: [NULL ATTR]\n", indent, "");
     } else {
         char *stacktype;
         if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
@@ -338,28 +336,27 @@ void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         fprintf(p_os,
-                "%sULT attr: ["
+                "%*sULT attr: ["
                 "stack:%p "
                 "stacksize:%zu "
                 "stacktype:%s "
                 "migratable:%s "
                 "cb_arg:%p"
                 "]\n",
-                prefix, p_attr->p_stack, p_attr->stacksize, stacktype,
+                indent, "", p_attr->p_stack, p_attr->stacksize, stacktype,
                 (p_attr->migratable == ABT_TRUE ? "TRUE" : "FALSE"),
                 p_attr->p_cb_arg);
 #else
         fprintf(p_os,
-                "%sULT attr: ["
+                "%*sULT attr: ["
                 "stack:%p "
                 "stacksize:%zu "
                 "stacktype:%s "
                 "]\n",
-                prefix, p_attr->p_stack, p_attr->stacksize, stacktype);
+                indent, "", p_attr->p_stack, p_attr->stacksize, stacktype);
 #endif
     }
     fflush(p_os);
-    ABTU_free(prefix);
 }
 
 ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr)

@@ -1235,58 +1235,51 @@ void ABTI_xstream_schedule(void *p_arg)
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub)
 {
-    char *prefix = ABTU_get_indent_str(indent);
-
     if (p_xstream == NULL) {
-        fprintf(p_os, "%s== NULL ES ==\n", prefix);
-        goto fn_exit;
+        fprintf(p_os, "%*s== NULL ES ==\n", indent, "");
+    } else {
+        char *type, *state;
+        switch (p_xstream->type) {
+            case ABTI_XSTREAM_TYPE_PRIMARY:
+                type = "PRIMARY";
+                break;
+            case ABTI_XSTREAM_TYPE_SECONDARY:
+                type = "SECONDARY";
+                break;
+            default:
+                type = "UNKNOWN";
+                break;
+        }
+        switch (ABTD_atomic_acquire_load_int(&p_xstream->state)) {
+            case ABT_XSTREAM_STATE_RUNNING:
+                state = "RUNNING";
+                break;
+            case ABT_XSTREAM_STATE_TERMINATED:
+                state = "TERMINATED";
+                break;
+            default:
+                state = "UNKNOWN";
+                break;
+        }
+
+        fprintf(p_os,
+                "%*s== ES (%p) ==\n"
+                "%*srank      : %d\n"
+                "%*stype      : %s\n"
+                "%*sstate     : %s\n"
+                "%*srequest   : 0x%x\n"
+                "%*smain_sched: %p\n",
+                indent, "", (void *)p_xstream, indent, "", p_xstream->rank,
+                indent, "", type, indent, "", state, indent, "",
+                ABTD_atomic_acquire_load_uint32(&p_xstream->request), indent,
+                "", (void *)p_xstream->p_main_sched);
+
+        if (print_sub == ABT_TRUE) {
+            ABTI_sched_print(p_xstream->p_main_sched, p_os,
+                             indent + ABTI_INDENT, ABT_TRUE);
+        }
     }
-
-    char *type, *state;
-
-    switch (p_xstream->type) {
-        case ABTI_XSTREAM_TYPE_PRIMARY:
-            type = "PRIMARY";
-            break;
-        case ABTI_XSTREAM_TYPE_SECONDARY:
-            type = "SECONDARY";
-            break;
-        default:
-            type = "UNKNOWN";
-            break;
-    }
-    switch (ABTD_atomic_acquire_load_int(&p_xstream->state)) {
-        case ABT_XSTREAM_STATE_RUNNING:
-            state = "RUNNING";
-            break;
-        case ABT_XSTREAM_STATE_TERMINATED:
-            state = "TERMINATED";
-            break;
-        default:
-            state = "UNKNOWN";
-            break;
-    }
-
-    fprintf(p_os,
-            "%s== ES (%p) ==\n"
-            "%srank      : %d\n"
-            "%stype      : %s\n"
-            "%sstate     : %s\n"
-            "%srequest   : 0x%x\n"
-            "%smain_sched: %p\n",
-            prefix, (void *)p_xstream, prefix, p_xstream->rank, prefix, type,
-            prefix, state, prefix,
-            ABTD_atomic_acquire_load_uint32(&p_xstream->request), prefix,
-            (void *)p_xstream->p_main_sched);
-
-    if (print_sub == ABT_TRUE) {
-        ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT,
-                         ABT_TRUE);
-    }
-
-fn_exit:
     fflush(p_os);
-    ABTU_free(prefix);
 }
 
 void *ABTI_xstream_launch_main_sched(void *p_arg)

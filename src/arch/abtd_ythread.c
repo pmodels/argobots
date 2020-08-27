@@ -144,12 +144,10 @@ void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
 
 void ABTD_ythread_print_context(ABTI_ythread *p_ythread, FILE *p_os, int indent)
 {
-    char *prefix = ABTU_get_indent_str(indent);
     ABTD_ythread_context *p_ctx = &p_ythread->ctx;
-    fprintf(p_os, "%sp_ctx    : %p\n", prefix, p_ctx->p_ctx);
-    fprintf(p_os, "%sp_link   : %p\n", prefix,
+    fprintf(p_os, "%*sp_ctx    : %p\n", indent, "", p_ctx->p_ctx);
+    fprintf(p_os, "%*sp_link   : %p\n", indent, "",
             (void *)ABTD_atomic_acquire_load_ythread_context_ptr(
                 &p_ctx->p_link));
     fflush(p_os);
-    ABTU_free(prefix);
 }
