@@ -511,8 +511,8 @@ void ABTI_pool_reset_id(void);
 void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 
 /* Threads */
-ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_local *p_local,
-                                               ABTI_thread *p_thread);
+int ABTI_thread_get_mig_data(ABTI_local *p_local, ABTI_thread *p_thread,
+                             ABTI_thread_mig_data **pp_mig_data);
 void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 void ABTI_thread_reset_id(void);

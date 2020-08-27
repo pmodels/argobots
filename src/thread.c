@@ -1139,8 +1139,10 @@ int ABT_thread_set_callback(ABT_thread thread,
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    ABTI_thread_mig_data *p_mig_data =
-        ABTI_thread_get_mig_data(p_local, p_thread);
+    ABTI_thread_mig_data *p_mig_data;
+    abt_errno = ABTI_thread_get_mig_data(p_local, p_thread, &p_mig_data);
+    ABTI_CHECK_ERROR(abt_errno);
+
     p_mig_data->f_migration_cb = cb_func;
     p_mig_data->p_migration_cb_arg = cb_arg;
 fn_exit:
@@ -1679,8 +1681,8 @@ void ABTI_ythread_free_main_sched(ABTI_local *p_local, ABTI_ythread *p_ythread)
     thread_free(p_local, p_thread, ABT_FALSE);
 }
 
-ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_local *p_local,
-                                               ABTI_thread *p_thread)
+int ABTI_thread_get_mig_data(ABTI_local *p_local, ABTI_thread *p_thread,
+                             ABTI_thread_mig_data **pp_mig_data)
 {
     ABTI_thread_mig_data *p_mig_data =
         (ABTI_thread_mig_data *)ABTI_ktable_get(&p_thread->p_keytable,
@@ -1689,12 +1691,17 @@ ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_local *p_local,
         int abt_errno;
         abt_errno =
             ABTU_calloc(1, sizeof(ABTI_thread_mig_data), (void **)&p_mig_data);
-        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+        ABTI_CHECK_ERROR_RET(abt_errno);
         abt_errno = ABTI_ktable_set(p_local, &p_thread->p_keytable,
                                     &g_thread_mig_data_key, (void *)p_mig_data);
-        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+            /* Failed to add p_mig_data to p_thread's keytable. */
+            ABTU_free(p_mig_data);
+            return abt_errno;
+        }
     }
-    return p_mig_data;
+    *pp_mig_data = p_mig_data;
+    return ABT_SUCCESS;
 }
 
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
@@ -1975,8 +1982,9 @@ static int thread_migrate_to_pool(ABTI_local **pp_local, ABTI_thread *p_thread,
      * after ABTI_THREAD_REQ_MIGRATE.  The update must be "atomic" (but does not
      * require acq-rel) since two threads can update the pointer value
      * simultaneously. */
-    ABTI_thread_mig_data *p_mig_data =
-        ABTI_thread_get_mig_data(*pp_local, p_thread);
+    ABTI_thread_mig_data *p_mig_data;
+    int abt_errno = ABTI_thread_get_mig_data(*pp_local, p_thread, &p_mig_data);
+    ABTI_CHECK_ERROR_RET(abt_errno);
     ABTD_atomic_relaxed_store_ptr(&p_mig_data->p_migration_pool,
                                   (void *)p_pool);
 

@@ -1651,10 +1651,13 @@ static inline void xstream_schedule_task(ABTI_xstream *p_local_xstream,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 static int xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
 {
+    int abt_errno;
     ABTI_pool *p_pool;
 
-    ABTI_thread_mig_data *p_mig_data =
-        ABTI_thread_get_mig_data(p_local, p_thread);
+    ABTI_thread_mig_data *p_mig_data;
+    abt_errno = ABTI_thread_get_mig_data(p_local, p_thread, &p_mig_data);
+    ABTI_CHECK_ERROR_RET(abt_errno);
+
     /* callback function */
     if (p_mig_data->f_migration_cb) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
@@ -1680,7 +1683,7 @@ static int xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
     p_thread->p_pool = p_pool;
 
     /* Add the unit to the scheduler's pool */
-    int abt_errno = ABTI_pool_push(p_local, p_pool, p_thread->unit);
+    abt_errno = ABTI_pool_push(p_local, p_pool, p_thread->unit);
     /* Check the push.
      * TODO: this error is fatal.  It needs to be handled smartly. */
     ABTI_CHECK_ERROR_RET(abt_errno);
