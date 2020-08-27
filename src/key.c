@@ -115,8 +115,11 @@ int ABT_key_set(ABT_key key, void *value)
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 
     /* Obtain the key-value table pointer. */
-    ABTI_ktable_set(ABTI_xstream_get_local(p_local_xstream),
-                    &p_local_xstream->p_thread->p_keytable, p_key, value);
+    abt_errno =
+        ABTI_ktable_set(ABTI_xstream_get_local(p_local_xstream),
+                        &p_local_xstream->p_thread->p_keytable, p_key, value);
+    ABTI_CHECK_ERROR(abt_errno);
+
 fn_exit:
     return abt_errno;
 

@@ -199,10 +199,10 @@ typedef enum ABTU_MEM_LARGEPAGE_TYPE {
 /* Returns 1 if a given large page type is supported. */
 int ABTU_is_supported_largepage_type(size_t size, size_t alignment_hint,
                                      ABTU_MEM_LARGEPAGE_TYPE requested);
-void *ABTU_alloc_largepage(size_t size, size_t alignment_hint,
-                           const ABTU_MEM_LARGEPAGE_TYPE *requested_types,
-                           int num_requested_types,
-                           ABTU_MEM_LARGEPAGE_TYPE *p_actual);
+int ABTU_alloc_largepage(size_t size, size_t alignment_hint,
+                         const ABTU_MEM_LARGEPAGE_TYPE *requested_types,
+                         int num_requested_types,
+                         ABTU_MEM_LARGEPAGE_TYPE *p_actual, void **p_ptr);
 void ABTU_free_largepage(void *ptr, size_t size, ABTU_MEM_LARGEPAGE_TYPE type);
 
 /* The caller should free the memory returned. */

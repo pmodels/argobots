@@ -480,11 +480,13 @@ static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
                        ABTI_sched *p_sched, int refcount,
                        ABTI_thread **pp_newtask)
 {
+    int abt_errno;
     ABTI_thread *p_newtask;
     ABT_task h_newtask;
 
     /* Allocate a task object */
-    p_newtask = ABTI_mem_alloc_nythread(p_local);
+    abt_errno = ABTI_mem_alloc_nythread(p_local, &p_newtask);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     p_newtask->p_last_xstream = NULL;
     p_newtask->p_parent = NULL;
@@ -516,7 +518,7 @@ static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_thread_get_id(p_newtask));
 
     /* Add this task to the scheduler's pool */
-    int abt_errno = ABTI_pool_push(p_local, p_pool, p_newtask->unit);
+    abt_errno = ABTI_pool_push(p_local, p_pool, p_newtask->unit);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTI_thread_free(p_local, p_newtask);
         return abt_errno;

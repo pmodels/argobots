@@ -86,10 +86,10 @@ int ABTU_is_supported_largepage_type(size_t size, size_t alignment_hint,
     return 0;
 }
 
-void *ABTU_alloc_largepage(size_t size, size_t alignment_hint,
-                           const ABTU_MEM_LARGEPAGE_TYPE *requested_types,
-                           int num_requested_types,
-                           ABTU_MEM_LARGEPAGE_TYPE *p_actual)
+int ABTU_alloc_largepage(size_t size, size_t alignment_hint,
+                         const ABTU_MEM_LARGEPAGE_TYPE *requested_types,
+                         int num_requested_types,
+                         ABTU_MEM_LARGEPAGE_TYPE *p_actual, void **p_ptr)
 {
     int i;
     void *ptr = NULL;
@@ -99,27 +99,33 @@ void *ABTU_alloc_largepage(size_t size, size_t alignment_hint,
             int abt_error = ABTU_malloc(size, &ptr);
             if (abt_error == ABT_SUCCESS && ptr) {
                 *p_actual = ABTU_MEM_LARGEPAGE_MALLOC;
-                return ptr;
+                *p_ptr = ptr;
+                return ABT_SUCCESS;
             }
         } else if (requested == ABTU_MEM_LARGEPAGE_MEMALIGN) {
             int abt_error = ABTU_memalign(alignment_hint, size, &ptr);
             if (abt_error == ABT_SUCCESS && ptr) {
                 *p_actual = ABTU_MEM_LARGEPAGE_MEMALIGN;
-                return ptr;
+                *p_ptr = ptr;
+                return ABT_SUCCESS;
             }
         } else if (requested == ABTU_MEM_LARGEPAGE_MMAP) {
-            *p_actual = ABTU_MEM_LARGEPAGE_MMAP;
             ptr = mmap_regular(size);
-            if (ptr)
-                return ptr;
+            if (ptr) {
+                *p_actual = ABTU_MEM_LARGEPAGE_MMAP;
+                *p_ptr = ptr;
+                return ABT_SUCCESS;
+            }
         } else if (requested == ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE) {
-            *p_actual = ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE;
             ptr = mmap_hugepage(size);
-            if (ptr)
-                return ptr;
+            if (ptr) {
+                *p_actual = ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE;
+                *p_ptr = ptr;
+                return ABT_SUCCESS;
+            }
         }
     }
-    return NULL;
+    return ABT_ERR_MEM;
 }
 
 void ABTU_free_largepage(void *ptr, size_t size, ABTU_MEM_LARGEPAGE_TYPE type)
