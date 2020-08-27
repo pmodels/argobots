@@ -560,57 +560,6 @@ fn_fail:
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-static int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
-                            ABT_bool automatic, ABTI_pool **pp_newpool)
-{
-    ABTI_pool *p_pool;
-
-    p_pool = (ABTI_pool *)ABTU_malloc(sizeof(ABTI_pool));
-    p_pool->access = def->access;
-    p_pool->automatic = automatic;
-    ABTD_atomic_release_store_int32(&p_pool->num_scheds, 0);
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    p_pool->consumer_id = 0;
-#endif
-#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    p_pool->producer_id = 0;
-#endif
-    ABTD_atomic_release_store_int32(&p_pool->num_blocked, 0);
-    ABTD_atomic_release_store_int32(&p_pool->num_migrations, 0);
-    p_pool->data = NULL;
-
-    /* Set up the pool functions from def */
-    p_pool->u_get_type = def->u_get_type;
-    p_pool->u_get_thread = def->u_get_thread;
-    p_pool->u_get_task = def->u_get_task;
-    p_pool->u_is_in_pool = def->u_is_in_pool;
-    p_pool->u_create_from_thread = def->u_create_from_thread;
-    p_pool->u_create_from_task = def->u_create_from_task;
-    p_pool->u_free = def->u_free;
-    p_pool->p_init = def->p_init;
-    p_pool->p_get_size = def->p_get_size;
-    p_pool->p_push = def->p_push;
-    p_pool->p_pop = def->p_pop;
-    p_pool->p_pop_wait = def->p_pop_wait;
-    p_pool->p_pop_timedwait = def->p_pop_timedwait;
-    p_pool->p_remove = def->p_remove;
-    p_pool->p_free = def->p_free;
-    p_pool->p_print_all = def->p_print_all;
-    p_pool->id = ABTI_pool_get_new_id();
-    LOG_DEBUG("[P%" PRIu64 "] created\n", p_pool->id);
-
-    /* Configure the pool */
-    if (p_pool->p_init) {
-        int abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
-        if (abt_errno != ABT_SUCCESS) {
-            ABTU_free(p_pool);
-            return abt_errno;
-        }
-    }
-    *pp_newpool = p_pool;
-    return ABT_SUCCESS;
-}
-
 int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                            ABT_bool automatic, ABTI_pool **pp_newpool)
 {
@@ -744,6 +693,57 @@ void ABTI_pool_reset_id(void)
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
+
+static int ABTI_pool_create(ABT_pool_def *def, ABT_pool_config config,
+                            ABT_bool automatic, ABTI_pool **pp_newpool)
+{
+    ABTI_pool *p_pool;
+
+    p_pool = (ABTI_pool *)ABTU_malloc(sizeof(ABTI_pool));
+    p_pool->access = def->access;
+    p_pool->automatic = automatic;
+    ABTD_atomic_release_store_int32(&p_pool->num_scheds, 0);
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
+    p_pool->consumer_id = 0;
+#endif
+#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
+    p_pool->producer_id = 0;
+#endif
+    ABTD_atomic_release_store_int32(&p_pool->num_blocked, 0);
+    ABTD_atomic_release_store_int32(&p_pool->num_migrations, 0);
+    p_pool->data = NULL;
+
+    /* Set up the pool functions from def */
+    p_pool->u_get_type = def->u_get_type;
+    p_pool->u_get_thread = def->u_get_thread;
+    p_pool->u_get_task = def->u_get_task;
+    p_pool->u_is_in_pool = def->u_is_in_pool;
+    p_pool->u_create_from_thread = def->u_create_from_thread;
+    p_pool->u_create_from_task = def->u_create_from_task;
+    p_pool->u_free = def->u_free;
+    p_pool->p_init = def->p_init;
+    p_pool->p_get_size = def->p_get_size;
+    p_pool->p_push = def->p_push;
+    p_pool->p_pop = def->p_pop;
+    p_pool->p_pop_wait = def->p_pop_wait;
+    p_pool->p_pop_timedwait = def->p_pop_timedwait;
+    p_pool->p_remove = def->p_remove;
+    p_pool->p_free = def->p_free;
+    p_pool->p_print_all = def->p_print_all;
+    p_pool->id = ABTI_pool_get_new_id();
+    LOG_DEBUG("[P%" PRIu64 "] created\n", p_pool->id);
+
+    /* Configure the pool */
+    if (p_pool->p_init) {
+        int abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
+        if (abt_errno != ABT_SUCCESS) {
+            ABTU_free(p_pool);
+            return abt_errno;
+        }
+    }
+    *pp_newpool = p_pool;
+    return ABT_SUCCESS;
+}
 
 static inline uint64_t ABTI_pool_get_new_id(void)
 {

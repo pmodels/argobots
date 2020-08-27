@@ -250,6 +250,10 @@ fn_fail:
 #endif
 }
 
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
 static inline int ABTI_tool_query(ABTI_tool_context *p_tctx,
                                   ABT_tool_query_kind query_kind, void *val)

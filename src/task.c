@@ -472,7 +472,7 @@ int ABT_task_get_specific(ABT_task task, ABT_key key, void **value);
 #endif
 
 /*****************************************************************************/
-/* Private APIs                                                              */
+/* Internal static functions                                                 */
 /*****************************************************************************/
 
 static int ABTI_task_create(ABTI_local *p_local, ABTI_pool *p_pool,

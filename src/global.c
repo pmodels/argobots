@@ -269,6 +269,10 @@ int ABT_initialized(void)
     return abt_errno;
 }
 
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
+
 /* If new_size is equal to zero, we double max_xstreams.
  * NOTE: This function currently cannot decrease max_xstreams.
  */

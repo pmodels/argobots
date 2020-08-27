@@ -306,46 +306,6 @@ fn_fail:
     goto fn_exit;
 }
 
-ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
-{
-    /* Check exit request */
-    if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
-        ABTI_SCHED_REQ_EXIT) {
-        return ABT_TRUE;
-    }
-
-    if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0) {
-        if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
-            ABTI_SCHED_REQ_FINISH) {
-            /* Check join request */
-            if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0)
-                return ABT_TRUE;
-        } else if (p_sched->used == ABTI_SCHED_IN_POOL) {
-            /* If the scheduler is a stacked one, we have to escape from the
-             * scheduling function. The scheduler will be stopped if it is a
-             * tasklet type. However, if the scheduler is a ULT type, we
-             * context switch to the parent scheduler. */
-            if (p_sched->type == ABT_SCHED_TYPE_TASK)
-                return ABT_TRUE;
-            /* If the current caller cannot yield, let's finish it */
-            ABTI_xstream *p_local_xstream =
-                ABTI_local_get_xstream_or_null(*pp_local);
-            if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL)
-                return ABT_TRUE;
-            /* If the current caller is not the scheduler, let's finish. */
-            if (&p_sched->p_ythread->thread != p_local_xstream->p_thread)
-                return ABT_TRUE;
-            /* Yield this scheduler. */
-            ABTI_ythread_context_switch_to_parent(&p_local_xstream,
-                                                  p_sched->p_ythread,
-                                                  ABT_SYNC_EVENT_TYPE_OTHER,
-                                                  NULL);
-            *pp_local = ABTI_xstream_get_local(p_local_xstream);
-        }
-    }
-    return ABT_FALSE;
-}
-
 /**
  * @ingroup SCHED
  * @brief   Set the specific data of the target user-defined scheduler
@@ -475,68 +435,6 @@ fn_fail:
     goto fn_exit;
 }
 
-size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
-{
-    size_t pool_size = 0;
-    int p;
-
-    for (p = 0; p < p_sched->num_pools; p++) {
-        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        pool_size += ABTI_pool_get_total_size(p_pool);
-    }
-
-    return pool_size;
-}
-
-/* Compared to \c ABTI_sched_get_total_size, ABTI_sched_get_effective_size does
- * not count the number of blocked ULTs if a pool has more than one consumer or
- * the caller ES is not the latest consumer. This is necessary when the ES
- * associated with the target scheduler has to be joined and the pool is shared
- * between different schedulers associated with different ESs. */
-size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
-{
-    size_t pool_size = 0;
-    int p;
-
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    ABTI_native_thread_id self_id = ABTI_self_get_native_thread_id(p_local);
-#endif
-
-    for (p = 0; p < p_sched->num_pools; p++) {
-        ABT_pool pool = p_sched->pools[p];
-        ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-        pool_size += ABTI_pool_get_size(p_pool);
-        pool_size += ABTD_atomic_acquire_load_int32(&p_pool->num_migrations);
-        switch (p_pool->access) {
-            case ABT_POOL_ACCESS_PRIV:
-                pool_size +=
-                    ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
-                break;
-            case ABT_POOL_ACCESS_SPSC:
-            case ABT_POOL_ACCESS_MPSC:
-            case ABT_POOL_ACCESS_SPMC:
-            case ABT_POOL_ACCESS_MPMC:
-#ifdef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-                if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1) {
-                    pool_size +=
-                        ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
-                }
-#else
-                if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1 &&
-                    p_pool->consumer_id == self_id) {
-                    pool_size +=
-                        ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
-                }
-#endif
-                break;
-            default:
-                break;
-        }
-    }
-
-    return pool_size;
-}
-
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
@@ -549,65 +447,6 @@ void ABTI_sched_finish(ABTI_sched *p_sched)
 void ABTI_sched_exit(ABTI_sched *p_sched)
 {
     ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_EXIT);
-}
-
-static int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                             ABT_sched_config config, ABT_bool automatic,
-                             ABTI_sched **pp_newsched)
-{
-    ABTI_sched *p_sched;
-    int p;
-
-    p_sched = (ABTI_sched *)ABTU_malloc(sizeof(ABTI_sched));
-
-    /* Copy of the contents of pools */
-    ABT_pool *pool_list;
-    pool_list = (ABT_pool *)ABTU_malloc(num_pools * sizeof(ABT_pool));
-    for (p = 0; p < num_pools; p++) {
-        if (pools[p] == ABT_POOL_NULL) {
-            ABTI_pool *p_newpool;
-            int abt_errno =
-                ABTI_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC,
-                                       ABT_TRUE, &p_newpool);
-            ABTI_CHECK_ERROR_RET(abt_errno);
-            pool_list[p] = ABTI_pool_get_handle(p_newpool);
-        } else {
-            pool_list[p] = pools[p];
-        }
-    }
-
-    /* Check if the pools are available */
-    for (p = 0; p < num_pools; p++) {
-        ABTI_pool_retain(ABTI_pool_get_ptr(pool_list[p]));
-    }
-
-    p_sched->used = ABTI_SCHED_NOT_USED;
-    p_sched->automatic = automatic;
-    p_sched->kind = ABTI_sched_get_kind(def);
-    ABTD_atomic_relaxed_store_uint32(&p_sched->request, 0);
-    p_sched->pools = pool_list;
-    p_sched->num_pools = num_pools;
-    p_sched->type = def->type;
-    p_sched->p_ythread = NULL;
-
-    p_sched->init = def->init;
-    p_sched->run = def->run;
-    p_sched->free = def->free;
-    p_sched->get_migr_pool = def->get_migr_pool;
-
-#ifdef ABT_CONFIG_USE_DEBUG_LOG
-    p_sched->id = ABTI_sched_get_new_id();
-#endif
-    LOG_DEBUG("[S%" PRIu64 "] created\n", p_sched->id);
-
-    /* Return value */
-    ABT_sched newsched = ABTI_sched_get_handle(p_sched);
-
-    /* Specific initialization */
-    p_sched->init(newsched, config);
-    *pp_newsched = p_sched;
-
-    return ABT_SUCCESS;
 }
 
 int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
@@ -795,6 +634,46 @@ int ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
     return ABT_SUCCESS;
 }
 
+ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
+{
+    /* Check exit request */
+    if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
+        ABTI_SCHED_REQ_EXIT) {
+        return ABT_TRUE;
+    }
+
+    if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0) {
+        if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
+            ABTI_SCHED_REQ_FINISH) {
+            /* Check join request */
+            if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0)
+                return ABT_TRUE;
+        } else if (p_sched->used == ABTI_SCHED_IN_POOL) {
+            /* If the scheduler is a stacked one, we have to escape from the
+             * scheduling function. The scheduler will be stopped if it is a
+             * tasklet type. However, if the scheduler is a ULT type, we
+             * context switch to the parent scheduler. */
+            if (p_sched->type == ABT_SCHED_TYPE_TASK)
+                return ABT_TRUE;
+            /* If the current caller cannot yield, let's finish it */
+            ABTI_xstream *p_local_xstream =
+                ABTI_local_get_xstream_or_null(*pp_local);
+            if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL)
+                return ABT_TRUE;
+            /* If the current caller is not the scheduler, let's finish. */
+            if (&p_sched->p_ythread->thread != p_local_xstream->p_thread)
+                return ABT_TRUE;
+            /* Yield this scheduler. */
+            ABTI_ythread_context_switch_to_parent(&p_local_xstream,
+                                                  p_sched->p_ythread,
+                                                  ABT_SYNC_EVENT_TYPE_OTHER,
+                                                  NULL);
+            *pp_local = ABTI_xstream_get_local(p_local_xstream);
+        }
+    }
+    return ABT_FALSE;
+}
+
 /* Get the pool suitable for receiving a migrating ULT */
 int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
                                   ABTI_pool **pp_pool)
@@ -821,9 +700,66 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
     return ABT_SUCCESS;
 }
 
-static inline ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
+size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
 {
-    return (ABTI_sched_kind)def;
+    size_t pool_size = 0;
+    int p;
+
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        pool_size += ABTI_pool_get_total_size(p_pool);
+    }
+
+    return pool_size;
+}
+
+/* Compared to \c ABTI_sched_get_total_size, ABTI_sched_get_effective_size does
+ * not count the number of blocked ULTs if a pool has more than one consumer or
+ * the caller ES is not the latest consumer. This is necessary when the ES
+ * associated with the target scheduler has to be joined and the pool is shared
+ * between different schedulers associated with different ESs. */
+size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
+{
+    size_t pool_size = 0;
+    int p;
+
+#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
+    ABTI_native_thread_id self_id = ABTI_self_get_native_thread_id(p_local);
+#endif
+
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABT_pool pool = p_sched->pools[p];
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+        pool_size += ABTI_pool_get_size(p_pool);
+        pool_size += ABTD_atomic_acquire_load_int32(&p_pool->num_migrations);
+        switch (p_pool->access) {
+            case ABT_POOL_ACCESS_PRIV:
+                pool_size +=
+                    ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
+                break;
+            case ABT_POOL_ACCESS_SPSC:
+            case ABT_POOL_ACCESS_MPSC:
+            case ABT_POOL_ACCESS_SPMC:
+            case ABT_POOL_ACCESS_MPMC:
+#ifdef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
+                if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1) {
+                    pool_size +=
+                        ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
+                }
+#else
+                if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1 &&
+                    p_pool->consumer_id == self_id) {
+                    pool_size +=
+                        ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
+                }
+#endif
+                break;
+            default:
+                break;
+        }
+    }
+
+    return pool_size;
 }
 
 void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
@@ -938,6 +874,70 @@ void ABTI_sched_reset_id(void)
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
+
+static inline ABTI_sched_kind ABTI_sched_get_kind(ABT_sched_def *def)
+{
+    return (ABTI_sched_kind)def;
+}
+
+static int ABTI_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
+                             ABT_sched_config config, ABT_bool automatic,
+                             ABTI_sched **pp_newsched)
+{
+    ABTI_sched *p_sched;
+    int p;
+
+    p_sched = (ABTI_sched *)ABTU_malloc(sizeof(ABTI_sched));
+
+    /* Copy of the contents of pools */
+    ABT_pool *pool_list;
+    pool_list = (ABT_pool *)ABTU_malloc(num_pools * sizeof(ABT_pool));
+    for (p = 0; p < num_pools; p++) {
+        if (pools[p] == ABT_POOL_NULL) {
+            ABTI_pool *p_newpool;
+            int abt_errno =
+                ABTI_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC,
+                                       ABT_TRUE, &p_newpool);
+            ABTI_CHECK_ERROR_RET(abt_errno);
+            pool_list[p] = ABTI_pool_get_handle(p_newpool);
+        } else {
+            pool_list[p] = pools[p];
+        }
+    }
+
+    /* Check if the pools are available */
+    for (p = 0; p < num_pools; p++) {
+        ABTI_pool_retain(ABTI_pool_get_ptr(pool_list[p]));
+    }
+
+    p_sched->used = ABTI_SCHED_NOT_USED;
+    p_sched->automatic = automatic;
+    p_sched->kind = ABTI_sched_get_kind(def);
+    ABTD_atomic_relaxed_store_uint32(&p_sched->request, 0);
+    p_sched->pools = pool_list;
+    p_sched->num_pools = num_pools;
+    p_sched->type = def->type;
+    p_sched->p_ythread = NULL;
+
+    p_sched->init = def->init;
+    p_sched->run = def->run;
+    p_sched->free = def->free;
+    p_sched->get_migr_pool = def->get_migr_pool;
+
+#ifdef ABT_CONFIG_USE_DEBUG_LOG
+    p_sched->id = ABTI_sched_get_new_id();
+#endif
+    LOG_DEBUG("[S%" PRIu64 "] created\n", p_sched->id);
+
+    /* Return value */
+    ABT_sched newsched = ABTI_sched_get_handle(p_sched);
+
+    /* Specific initialization */
+    p_sched->init(newsched, config);
+    *pp_newsched = p_sched;
+
+    return ABT_SUCCESS;
+}
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 static inline uint64_t ABTI_sched_get_new_id(void)

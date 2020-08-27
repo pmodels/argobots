@@ -15,6 +15,9 @@ static int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
                               ABTI_thread *p_thread);
 static inline int ABTI_thread_join(ABTI_local **pp_local,
                                    ABTI_thread *p_thread);
+static inline void ABTI_thread_free_impl(ABTI_local *p_local,
+                                         ABTI_thread *p_thread,
+                                         ABT_bool free_unit);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 static int ABTI_thread_migrate_to_xstream(ABTI_local **pp_local,
                                           ABTI_thread *p_thread,
@@ -1570,6 +1573,225 @@ fn_fail:
 /* Private APIs                                                              */
 /*****************************************************************************/
 
+int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
+                             ABTI_ythread **p_ythread)
+{
+    ABTI_thread_attr attr;
+    ABTI_pool *p_pool;
+
+    /* Get the first pool of ES */
+    p_pool = ABTI_pool_get_ptr(p_xstream->p_main_sched->pools[0]);
+
+    /* Allocate a ULT object */
+
+    /* TODO: Need to set the actual stack address and size for the main ULT */
+    ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
+                          ABT_FALSE);
+
+    /* Although this main ULT is running now, we add this main ULT to the pool
+     * so that the scheduler can schedule the main ULT when the main ULT is
+     * context switched to the scheduler for the first time. */
+    ABT_bool push_pool = ABT_TRUE;
+    int abt_errno =
+        ABTI_ythread_create_internal(p_local, p_pool, NULL, NULL, &attr,
+                                     ABTI_THREAD_TYPE_YIELDABLE |
+                                         ABTI_THREAD_TYPE_MAIN,
+                                     NULL, p_xstream, push_pool, p_ythread);
+    ABTI_CHECK_ERROR_RET(abt_errno);
+    return ABT_SUCCESS;
+}
+
+/* This routine is to create a ULT for the main scheduler of ES. */
+int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
+                                   ABTI_sched *p_sched)
+{
+    /* Create a ULT context */
+    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
+        /* Create a ULT object and its stack */
+        ABTI_ythread *p_newthread;
+        ABTI_thread_attr attr;
+        ABTI_thread_attr_init(&attr, NULL, gp_ABTI_global->sched_stacksize,
+                              ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK,
+                              ABT_FALSE);
+        int abt_errno =
+            ABTI_ythread_create_internal(p_local, NULL, ABTI_xstream_schedule,
+                                         (void *)p_xstream, &attr,
+                                         ABTI_THREAD_TYPE_YIELDABLE |
+                                             ABTI_THREAD_TYPE_MAIN_SCHED,
+                                         p_sched, p_xstream, ABT_FALSE,
+                                         &p_newthread);
+        ABTI_CHECK_ERROR_RET(abt_errno);
+        /* When the main scheduler is terminated, the control will jump to the
+         * primary ULT. */
+        ABTI_ythread *p_main_ythread = gp_ABTI_global->p_main_ythread;
+        ABTD_atomic_relaxed_store_ythread_context_ptr(&p_newthread->ctx.p_link,
+                                                      &p_main_ythread->ctx);
+        p_sched->p_ythread = p_newthread;
+    } else {
+        /* For secondary ESs, the stack of OS thread is used for the main
+         * scheduler's ULT. */
+        ABTI_thread_attr attr;
+        ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
+                              ABT_FALSE);
+        int abt_errno =
+            ABTI_ythread_create_internal(p_local, NULL, ABTI_xstream_schedule,
+                                         (void *)p_xstream, &attr,
+                                         ABTI_THREAD_TYPE_YIELDABLE |
+                                             ABTI_THREAD_TYPE_MAIN_SCHED,
+                                         p_sched, p_xstream, ABT_FALSE,
+                                         &p_sched->p_ythread);
+        ABTI_CHECK_ERROR_RET(abt_errno);
+    }
+    return ABT_SUCCESS;
+}
+
+/* This routine is to create a ULT for the scheduler. */
+int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
+                              ABTI_sched *p_sched)
+{
+    ABTI_thread_attr attr;
+
+    /* Allocate a ULT object and its stack */
+    ABTI_thread_attr_init(&attr, NULL, gp_ABTI_global->sched_stacksize,
+                          ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK, ABT_FALSE);
+    int abt_errno =
+        ABTI_ythread_create_internal(p_local, p_pool,
+                                     (void (*)(void *))p_sched->run,
+                                     (void *)ABTI_sched_get_handle(p_sched),
+                                     &attr, ABTI_THREAD_TYPE_YIELDABLE, p_sched,
+                                     NULL, ABT_TRUE, &p_sched->p_ythread);
+    ABTI_CHECK_ERROR_RET(abt_errno);
+    return ABT_SUCCESS;
+}
+
+void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
+{
+    LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
+              p_thread->p_last_xstream ? p_thread->p_last_xstream->rank : -1);
+    ABTI_thread_free_impl(p_local, p_thread, ABT_TRUE);
+}
+
+void ABTI_ythread_free_main(ABTI_local *p_local, ABTI_ythread *p_ythread)
+{
+    ABTI_thread *p_thread = &p_ythread->thread;
+    LOG_DEBUG("[U%" PRIu64 ":E%d] main ULT freed\n",
+              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
+    ABTI_thread_free_impl(p_local, p_thread, ABT_FALSE);
+}
+
+void ABTI_ythread_free_main_sched(ABTI_local *p_local, ABTI_ythread *p_ythread)
+{
+    ABTI_thread *p_thread = &p_ythread->thread;
+    LOG_DEBUG("[U%" PRIu64 ":E%d] main sched ULT freed\n",
+              ABTI_thread_get_id(p_thread),
+              ABTI_local_get_xstream_or_null(p_local)
+                  ? ABTI_local_get_xstream(p_local)->rank
+                  : -1);
+    ABTI_thread_free_impl(p_local, p_thread, ABT_FALSE);
+}
+
+ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_local *p_local,
+                                               ABTI_thread *p_thread)
+{
+    ABTI_thread_mig_data *p_mig_data =
+        (ABTI_thread_mig_data *)ABTI_ktable_get(&p_thread->p_keytable,
+                                                &g_thread_mig_data_key);
+    if (!p_mig_data) {
+        p_mig_data =
+            (ABTI_thread_mig_data *)ABTU_calloc(1,
+                                                sizeof(ABTI_thread_mig_data));
+        ABTI_ktable_set(p_local, &p_thread->p_keytable, &g_thread_mig_data_key,
+                        (void *)p_mig_data);
+    }
+    return p_mig_data;
+}
+
+void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
+{
+    char *prefix = ABTU_get_indent_str(indent);
+
+    if (p_thread == NULL) {
+        fprintf(p_os, "%s== NULL thread ==\n", prefix);
+    } else {
+        ABTI_xstream *p_xstream = p_thread->p_last_xstream;
+        int xstream_rank = p_xstream ? p_xstream->rank : 0;
+        char *type, *yieldable, *state;
+
+        if (p_thread->type & ABTI_THREAD_TYPE_MAIN) {
+            type = "MAIN";
+        } else if (p_thread->type & ABTI_THREAD_TYPE_MAIN_SCHED) {
+            type = "MAIN_SCHED";
+        } else {
+            type = "USER";
+        }
+        if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+            yieldable = "yes";
+        } else {
+            yieldable = "no";
+        }
+        switch (ABTD_atomic_acquire_load_int(&p_thread->state)) {
+            case ABT_THREAD_STATE_READY:
+                state = "READY";
+                break;
+            case ABT_THREAD_STATE_RUNNING:
+                state = "RUNNING";
+                break;
+            case ABT_THREAD_STATE_BLOCKED:
+                state = "BLOCKED";
+                break;
+            case ABT_THREAD_STATE_TERMINATED:
+                state = "TERMINATED";
+                break;
+            default:
+                state = "UNKNOWN";
+                break;
+        }
+
+        fprintf(p_os,
+                "%s== Thread (%p) ==\n"
+                "%sid        : %" PRIu64 "\n"
+                "%stype      : %s\n"
+                "%syieldable : %s\n"
+                "%sstate     : %s\n"
+                "%slast_ES   : %p (%d)\n"
+                "%sp_arg     : %p\n"
+                "%spool      : %p\n"
+                "%srequest   : 0x%x\n"
+                "%skeytable  : %p\n",
+                prefix, (void *)p_thread, prefix, ABTI_thread_get_id(p_thread),
+                prefix, type, prefix, yieldable, prefix, state, prefix,
+                (void *)p_xstream, xstream_rank, prefix, p_thread->p_arg,
+                prefix, (void *)p_thread->p_pool, prefix,
+                ABTD_atomic_acquire_load_uint32(&p_thread->request), prefix,
+                ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable));
+    }
+
+    fflush(p_os);
+    ABTU_free(prefix);
+}
+
+static ABTD_atomic_uint64 g_thread_id =
+    ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);
+void ABTI_thread_reset_id(void)
+{
+    ABTD_atomic_release_store_uint64(&g_thread_id, 0);
+}
+
+ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread)
+{
+    if (p_thread == NULL)
+        return ABTI_THREAD_INIT_ID;
+
+    if (p_thread->id == ABTI_THREAD_INIT_ID) {
+        p_thread->id = ABTI_thread_get_new_id();
+    }
+    return p_thread->id;
+}
+
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
 static inline int ABTI_ythread_create_internal(
     ABTI_local *p_local, ABTI_pool *p_pool, void (*thread_func)(void *),
     void *arg, ABTI_thread_attr *p_attr, ABTI_thread_type thread_type,
@@ -1752,113 +1974,6 @@ static int ABTI_thread_migrate_to_pool(ABTI_local **pp_local,
 }
 #endif
 
-ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_local *p_local,
-                                               ABTI_thread *p_thread)
-{
-    ABTI_thread_mig_data *p_mig_data =
-        (ABTI_thread_mig_data *)ABTI_ktable_get(&p_thread->p_keytable,
-                                                &g_thread_mig_data_key);
-    if (!p_mig_data) {
-        p_mig_data =
-            (ABTI_thread_mig_data *)ABTU_calloc(1,
-                                                sizeof(ABTI_thread_mig_data));
-        ABTI_ktable_set(p_local, &p_thread->p_keytable, &g_thread_mig_data_key,
-                        (void *)p_mig_data);
-    }
-    return p_mig_data;
-}
-
-int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                             ABTI_ythread **p_ythread)
-{
-    ABTI_thread_attr attr;
-    ABTI_pool *p_pool;
-
-    /* Get the first pool of ES */
-    p_pool = ABTI_pool_get_ptr(p_xstream->p_main_sched->pools[0]);
-
-    /* Allocate a ULT object */
-
-    /* TODO: Need to set the actual stack address and size for the main ULT */
-    ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
-                          ABT_FALSE);
-
-    /* Although this main ULT is running now, we add this main ULT to the pool
-     * so that the scheduler can schedule the main ULT when the main ULT is
-     * context switched to the scheduler for the first time. */
-    ABT_bool push_pool = ABT_TRUE;
-    int abt_errno =
-        ABTI_ythread_create_internal(p_local, p_pool, NULL, NULL, &attr,
-                                     ABTI_THREAD_TYPE_YIELDABLE |
-                                         ABTI_THREAD_TYPE_MAIN,
-                                     NULL, p_xstream, push_pool, p_ythread);
-    ABTI_CHECK_ERROR_RET(abt_errno);
-    return ABT_SUCCESS;
-}
-
-/* This routine is to create a ULT for the main scheduler of ES. */
-int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                                   ABTI_sched *p_sched)
-{
-    /* Create a ULT context */
-    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        /* Create a ULT object and its stack */
-        ABTI_ythread *p_newthread;
-        ABTI_thread_attr attr;
-        ABTI_thread_attr_init(&attr, NULL, gp_ABTI_global->sched_stacksize,
-                              ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK,
-                              ABT_FALSE);
-        int abt_errno =
-            ABTI_ythread_create_internal(p_local, NULL, ABTI_xstream_schedule,
-                                         (void *)p_xstream, &attr,
-                                         ABTI_THREAD_TYPE_YIELDABLE |
-                                             ABTI_THREAD_TYPE_MAIN_SCHED,
-                                         p_sched, p_xstream, ABT_FALSE,
-                                         &p_newthread);
-        ABTI_CHECK_ERROR_RET(abt_errno);
-        /* When the main scheduler is terminated, the control will jump to the
-         * primary ULT. */
-        ABTI_ythread *p_main_ythread = gp_ABTI_global->p_main_ythread;
-        ABTD_atomic_relaxed_store_ythread_context_ptr(&p_newthread->ctx.p_link,
-                                                      &p_main_ythread->ctx);
-        p_sched->p_ythread = p_newthread;
-    } else {
-        /* For secondary ESs, the stack of OS thread is used for the main
-         * scheduler's ULT. */
-        ABTI_thread_attr attr;
-        ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
-                              ABT_FALSE);
-        int abt_errno =
-            ABTI_ythread_create_internal(p_local, NULL, ABTI_xstream_schedule,
-                                         (void *)p_xstream, &attr,
-                                         ABTI_THREAD_TYPE_YIELDABLE |
-                                             ABTI_THREAD_TYPE_MAIN_SCHED,
-                                         p_sched, p_xstream, ABT_FALSE,
-                                         &p_sched->p_ythread);
-        ABTI_CHECK_ERROR_RET(abt_errno);
-    }
-    return ABT_SUCCESS;
-}
-
-/* This routine is to create a ULT for the scheduler. */
-int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
-                              ABTI_sched *p_sched)
-{
-    ABTI_thread_attr attr;
-
-    /* Allocate a ULT object and its stack */
-    ABTI_thread_attr_init(&attr, NULL, gp_ABTI_global->sched_stacksize,
-                          ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK, ABT_FALSE);
-    int abt_errno =
-        ABTI_ythread_create_internal(p_local, p_pool,
-                                     (void (*)(void *))p_sched->run,
-                                     (void *)ABTI_sched_get_handle(p_sched),
-                                     &attr, ABTI_THREAD_TYPE_YIELDABLE, p_sched,
-                                     NULL, ABT_TRUE, &p_sched->p_ythread);
-    ABTI_CHECK_ERROR_RET(abt_errno);
-    return ABT_SUCCESS;
-}
-
 static inline void ABTI_thread_free_impl(ABTI_local *p_local,
                                          ABTI_thread *p_thread,
                                          ABT_bool free_unit)
@@ -1885,118 +2000,6 @@ static inline void ABTI_thread_free_impl(ABTI_local *p_local,
     /* Free ABTI_thread (stack will also be freed) */
     ABTI_mem_free_thread(p_local, p_thread);
 }
-
-void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
-{
-    LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
-              p_thread->p_last_xstream ? p_thread->p_last_xstream->rank : -1);
-    ABTI_thread_free_impl(p_local, p_thread, ABT_TRUE);
-}
-
-void ABTI_ythread_free_main(ABTI_local *p_local, ABTI_ythread *p_ythread)
-{
-    ABTI_thread *p_thread = &p_ythread->thread;
-    LOG_DEBUG("[U%" PRIu64 ":E%d] main ULT freed\n",
-              ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank);
-    ABTI_thread_free_impl(p_local, p_thread, ABT_FALSE);
-}
-
-void ABTI_ythread_free_main_sched(ABTI_local *p_local, ABTI_ythread *p_ythread)
-{
-    ABTI_thread *p_thread = &p_ythread->thread;
-    LOG_DEBUG("[U%" PRIu64 ":E%d] main sched ULT freed\n",
-              ABTI_thread_get_id(p_thread),
-              ABTI_local_get_xstream_or_null(p_local)
-                  ? ABTI_local_get_xstream(p_local)->rank
-                  : -1);
-    ABTI_thread_free_impl(p_local, p_thread, ABT_FALSE);
-}
-
-void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
-{
-    char *prefix = ABTU_get_indent_str(indent);
-
-    if (p_thread == NULL) {
-        fprintf(p_os, "%s== NULL thread ==\n", prefix);
-    } else {
-        ABTI_xstream *p_xstream = p_thread->p_last_xstream;
-        int xstream_rank = p_xstream ? p_xstream->rank : 0;
-        char *type, *yieldable, *state;
-
-        if (p_thread->type & ABTI_THREAD_TYPE_MAIN) {
-            type = "MAIN";
-        } else if (p_thread->type & ABTI_THREAD_TYPE_MAIN_SCHED) {
-            type = "MAIN_SCHED";
-        } else {
-            type = "USER";
-        }
-        if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
-            yieldable = "yes";
-        } else {
-            yieldable = "no";
-        }
-        switch (ABTD_atomic_acquire_load_int(&p_thread->state)) {
-            case ABT_THREAD_STATE_READY:
-                state = "READY";
-                break;
-            case ABT_THREAD_STATE_RUNNING:
-                state = "RUNNING";
-                break;
-            case ABT_THREAD_STATE_BLOCKED:
-                state = "BLOCKED";
-                break;
-            case ABT_THREAD_STATE_TERMINATED:
-                state = "TERMINATED";
-                break;
-            default:
-                state = "UNKNOWN";
-                break;
-        }
-
-        fprintf(p_os,
-                "%s== Thread (%p) ==\n"
-                "%sid        : %" PRIu64 "\n"
-                "%stype      : %s\n"
-                "%syieldable : %s\n"
-                "%sstate     : %s\n"
-                "%slast_ES   : %p (%d)\n"
-                "%sp_arg     : %p\n"
-                "%spool      : %p\n"
-                "%srequest   : 0x%x\n"
-                "%skeytable  : %p\n",
-                prefix, (void *)p_thread, prefix, ABTI_thread_get_id(p_thread),
-                prefix, type, prefix, yieldable, prefix, state, prefix,
-                (void *)p_xstream, xstream_rank, prefix, p_thread->p_arg,
-                prefix, (void *)p_thread->p_pool, prefix,
-                ABTD_atomic_acquire_load_uint32(&p_thread->request), prefix,
-                ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable));
-    }
-
-    fflush(p_os);
-    ABTU_free(prefix);
-}
-
-static ABTD_atomic_uint64 g_thread_id =
-    ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);
-void ABTI_thread_reset_id(void)
-{
-    ABTD_atomic_release_store_uint64(&g_thread_id, 0);
-}
-
-ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread)
-{
-    if (p_thread == NULL)
-        return ABTI_THREAD_INIT_ID;
-
-    if (p_thread->id == ABTI_THREAD_INIT_ID) {
-        p_thread->id = ABTI_thread_get_new_id();
-    }
-    return p_thread->id;
-}
-
-/*****************************************************************************/
-/* Internal static functions                                                 */
-/*****************************************************************************/
 
 static void key_destructor_stackable_sched(void *p_value)
 {

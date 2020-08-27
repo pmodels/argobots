@@ -341,7 +341,7 @@ fn_fail:
 }
 
 /*****************************************************************************/
-/* Internal functions                                                        */
+/* Internal static functions                                                 */
 /*****************************************************************************/
 
 static int ABTI_timer_create(ABTI_timer **pp_newtimer)

@@ -206,20 +206,9 @@ int ABT_sched_config_free(ABT_sched_config *config)
     return ABT_SUCCESS;
 }
 
-static inline size_t ABTI_sched_config_type_size(ABT_sched_config_type type)
-{
-    switch (type) {
-        case ABT_SCHED_CONFIG_INT:
-            return sizeof(int);
-        case ABT_SCHED_CONFIG_DOUBLE:
-            return sizeof(double);
-        case ABT_SCHED_CONFIG_PTR:
-            return sizeof(void *);
-        default:
-            ABTI_ASSERT(0);
-            ABTU_unreachable();
-    }
-}
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
 
 int ABTI_sched_config_read_global(ABT_sched_config config,
                                   ABT_pool_access *access, ABT_bool *automatic)
@@ -298,4 +287,23 @@ int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
         offset += size;
     }
     return ABT_SUCCESS;
+}
+
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
+static inline size_t ABTI_sched_config_type_size(ABT_sched_config_type type)
+{
+    switch (type) {
+        case ABT_SCHED_CONFIG_INT:
+            return sizeof(int);
+        case ABT_SCHED_CONFIG_DOUBLE:
+            return sizeof(double);
+        case ABT_SCHED_CONFIG_PTR:
+            return sizeof(void *);
+        default:
+            ABTI_ASSERT(0);
+            ABTU_unreachable();
+    }
 }
