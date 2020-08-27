@@ -361,7 +361,7 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    ABTI_sched_print(p_sched, fp, 0, ABT_FALSE);
+    ABTI_sched_print(p_sched, fp, 0, ABT_TRUE);
 
 fn_exit:
     return abt_errno;

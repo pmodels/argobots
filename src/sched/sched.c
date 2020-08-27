@@ -770,9 +770,6 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
     } else {
         ABTI_sched_kind kind;
         char *kind_str, *type, *used;
-        char *pools_str;
-        int i;
-        size_t size, pos;
 
         kind = p_sched->kind;
         if (kind == sched_get_kind(ABTI_sched_get_basic_def())) {
@@ -811,19 +808,6 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 break;
         }
 
-        size = sizeof(char) * (p_sched->num_pools * 20 + 4);
-        int abt_errno = ABTU_calloc(size, 1, (void **)&pools_str);
-        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-        pools_str[0] = '[';
-        pools_str[1] = ' ';
-        pos = 2;
-        for (i = 0; i < p_sched->num_pools; i++) {
-            ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
-            sprintf(&pools_str[pos], "%p ", (void *)p_pool);
-            pos = strlen(pools_str);
-        }
-        pools_str[pos] = ']';
-
         fprintf(p_os,
                 "%*s== SCHED (%p) ==\n"
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
@@ -835,7 +819,6 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 "%*sautomatic: %s\n"
                 "%*srequest  : 0x%x\n"
                 "%*snum_pools: %d\n"
-                "%*spools    : %s\n"
                 "%*ssize     : %zu\n"
                 "%*stot_size : %zu\n"
                 "%*sdata     : %p\n",
@@ -847,12 +830,11 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 "", used, indent, "",
                 (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent, "",
                 ABTD_atomic_acquire_load_uint32(&p_sched->request), indent, "",
-                p_sched->num_pools, indent, "", pools_str, indent, "",
-                ABTI_sched_get_size(p_sched), indent, "",
-                ABTI_sched_get_total_size(p_sched), indent, "", p_sched->data);
-        ABTU_free(pools_str);
-
+                p_sched->num_pools, indent, "", ABTI_sched_get_size(p_sched),
+                indent, "", ABTI_sched_get_total_size(p_sched), indent, "",
+                p_sched->data);
         if (print_sub == ABT_TRUE) {
+            int i;
             for (i = 0; i < p_sched->num_pools; i++) {
                 ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
                 ABTI_pool_print(p_pool, p_os, indent + 2);
