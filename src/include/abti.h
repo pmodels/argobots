@@ -536,7 +536,8 @@ int ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
 
 /* Thread attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);
-ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr);
+int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
+                         ABTI_thread_attr **pp_dup_attr);
 
 /* Thread hash table */
 ABTI_ythread_htable *ABTI_ythread_htable_create(uint32_t num_rows);

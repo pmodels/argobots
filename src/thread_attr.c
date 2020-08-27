@@ -359,13 +359,14 @@ void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
     fflush(p_os);
 }
 
-ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr)
+int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
+                         ABTI_thread_attr **pp_dup_attr)
 {
-    ABTI_thread_attr *p_dupattr;
+    ABTI_thread_attr *p_dup_attr;
 
-    int abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_dupattr);
-    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-    memcpy(p_dupattr, p_attr, sizeof(ABTI_thread_attr));
-
-    return p_dupattr;
+    int abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_dup_attr);
+    ABTI_CHECK_ERROR_RET(abt_errno);
+    memcpy(p_dup_attr, p_attr, sizeof(ABTI_thread_attr));
+    *pp_dup_attr = p_dup_attr;
+    return ABT_SUCCESS;
 }

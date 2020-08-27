@@ -1552,7 +1552,8 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
         thread_attr.p_cb_arg = NULL;
     }
 #endif
-    p_attr = ABTI_thread_attr_dup(&thread_attr);
+    abt_errno = ABTI_thread_attr_dup(&thread_attr, &p_attr);
+    ABTI_CHECK_ERROR(abt_errno);
 
     *attr = ABTI_thread_attr_get_handle(p_attr);
 
