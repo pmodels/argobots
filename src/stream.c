@@ -333,7 +333,7 @@ int ABT_xstream_exit(void)
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_ythread);
 
     /* Set the exit request */
-    ABTI_xstream_set_request(p_local_xstream, ABTI_XSTREAM_REQ_EXIT);
+    ABTI_xstream_set_request(p_local_xstream, ABTI_XSTREAM_REQ_TERMINATE);
 
     /* Wait until the ES terminates */
     do {
@@ -1133,7 +1133,7 @@ void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
         ABTI_sched_finish(p_sched);
     }
 
-    if ((request & ABTI_XSTREAM_REQ_EXIT) ||
+    if ((request & ABTI_XSTREAM_REQ_TERMINATE) ||
         (request & ABTI_XSTREAM_REQ_CANCEL)) {
         ABTI_sched_exit(p_sched);
     }
@@ -1196,7 +1196,7 @@ void ABTI_xstream_schedule(void *p_arg)
 
         /* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */
-        if ((request & ABTI_XSTREAM_REQ_EXIT) ||
+        if ((request & ABTI_XSTREAM_REQ_TERMINATE) ||
             (request & ABTI_XSTREAM_REQ_CANCEL))
             break;
 
