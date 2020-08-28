@@ -40,7 +40,6 @@ TESTS = \
 	sched_stack \
 	sched_config \
 	sched_user_ws \
-	pool_access \
 	mutex \
 	mutex_prio \
 	mutex_recursive \
@@ -66,9 +65,6 @@ TESTS = \
 	info_stackdump2
 
 XFAIL_TESTS =
-if ABT_CONFIG_DISABLE_POOL_ACCESS_CHECK
-XFAIL_TESTS += pool_access
-endif
 if ABT_CONFIG_DISABLE_EXT_THREAD
 XFAIL_TESTS += self_type ext_thread ext_thread2
 endif
@@ -117,7 +113,6 @@ sched_set_main_SOURCES = sched_set_main.c
 sched_stack_SOURCES = sched_stack.c
 sched_config_SOURCES = sched_config.c
 sched_user_ws_SOURCES = sched_user_ws.c
-pool_access_SOURCES = pool_access.c
 mutex_SOURCES = mutex.c
 mutex_prio_SOURCES = mutex_prio.c
 mutex_recursive_SOURCES = mutex_recursive.c
@@ -179,7 +174,6 @@ testing:
 	./sched_stack
 	./sched_config
 	./sched_user_ws
-	./pool_access
 	./mutex
 	./mutex_prio
 	./mutex_recursive
