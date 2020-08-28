@@ -1532,14 +1532,11 @@ static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
      * be delayed. */
     uint32_t request =
         ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request);
-    if (request & ABTI_THREAD_REQ_STOP) {
+    if (request & ABTI_THREAD_REQ_TERMINATE) {
         /* The ULT has completed its execution or it called the exit request. */
-        LOG_DEBUG("[U%" PRIu64 ":E%d] %s\n",
-                  ABTI_thread_get_id(&p_ythread->thread), p_local_xstream->rank,
-                  (request & ABTI_THREAD_REQ_TERMINATE
-                       ? "finished"
-                       : ((request & ABTI_THREAD_REQ_EXIT) ? "exit called"
-                                                           : "UNKNOWN")));
+        LOG_DEBUG("[U%" PRIu64 ":E%d] finished\n",
+                  ABTI_thread_get_id(&p_ythread->thread),
+                  p_local_xstream->rank);
         ABTI_xstream_terminate_thread(ABTI_xstream_get_local(p_local_xstream),
                                       &p_ythread->thread);
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL

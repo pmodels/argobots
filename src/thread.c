@@ -458,7 +458,7 @@ int ABT_thread_exit(void)
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_ythread);
 
     /* Set the exit request */
-    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_EXIT);
+    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_TERMINATE);
 
     /* Terminate this ULT */
     ABTD_ythread_exit(p_local_xstream, p_ythread);
