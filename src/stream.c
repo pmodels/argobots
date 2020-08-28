@@ -1371,27 +1371,12 @@ static int xstream_start(ABTI_local *p_local, ABTI_xstream *p_xstream)
     /* The ES's state must be RUNNING */
     ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
                 ABT_XSTREAM_STATE_RUNNING);
-
-    if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        int abt_errno;
-        LOG_DEBUG("[E%d] start\n", p_xstream->rank);
-
-        abt_errno = ABTD_xstream_context_set_self(&p_xstream->ctx);
-        ABTI_CHECK_ERROR_RET(abt_errno);
-
-        /* Create the main sched ULT */
-        ABTI_sched *p_sched = p_xstream->p_main_sched;
-        abt_errno = ABTI_ythread_create_main_sched(p_local, p_xstream, p_sched);
-        ABTI_CHECK_ERROR_RET(abt_errno);
-        p_sched->p_ythread->thread.p_last_xstream = p_xstream;
-
-    } else {
-        /* Start the main scheduler on a different ES */
-        int abt_errno =
-            ABTD_xstream_context_create(ABTI_xstream_launch_main_sched,
-                                        (void *)p_xstream, &p_xstream->ctx);
-        ABTI_CHECK_ERROR_RET(abt_errno);
-    }
+    ABTI_ASSERT(p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY);
+    /* Start the main scheduler on a different ES */
+    int abt_errno =
+        ABTD_xstream_context_create(ABTI_xstream_launch_main_sched,
+                                    (void *)p_xstream, &p_xstream->ctx);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
