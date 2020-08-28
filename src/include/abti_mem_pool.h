@@ -105,12 +105,13 @@ void ABTI_mem_pool_destroy_global_pool(
 void ABTI_mem_pool_init_local_pool(ABTI_mem_pool_local_pool *p_local_pool,
                                    ABTI_mem_pool_global_pool *p_global_pool);
 void ABTI_mem_pool_destroy_local_pool(ABTI_mem_pool_local_pool *p_local_pool);
-ABTI_mem_pool_header *
-ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool);
+int ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool,
+                              ABTI_mem_pool_header **p_bucket);
 void ABTI_mem_pool_return_bucket(ABTI_mem_pool_global_pool *p_global_pool,
                                  ABTI_mem_pool_header *bucket);
 
-static inline void *ABTI_mem_pool_alloc(ABTI_mem_pool_local_pool *p_local_pool)
+static inline int ABTI_mem_pool_alloc(ABTI_mem_pool_local_pool *p_local_pool,
+                                      void **p_mem)
 {
     size_t bucket_index = p_local_pool->bucket_index;
     ABTI_mem_pool_header *cur_bucket = p_local_pool->buckets[bucket_index];
@@ -125,8 +126,18 @@ static inline void *ABTI_mem_pool_alloc(ABTI_mem_pool_local_pool *p_local_pool)
              * Let's get some buckets from the global pool. */
             int i;
             for (i = 0; i < ABT_MEM_POOL_NUM_TAKE_BUCKETS; i++) {
-                p_local_pool->buckets[i] =
-                    ABTI_mem_pool_take_bucket(p_local_pool->p_global_pool);
+                int abt_errno =
+                    ABTI_mem_pool_take_bucket(p_local_pool->p_global_pool,
+                                              &p_local_pool->buckets[i]);
+                if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+                    /* Return buckets that have been already taken. */
+                    int j;
+                    for (j = 0; j < i; j++) {
+                        ABTI_mem_pool_return_bucket(p_local_pool->p_global_pool,
+                                                    p_local_pool->buckets[j]);
+                    }
+                    return abt_errno;
+                }
             }
             p_local_pool->bucket_index = ABT_MEM_POOL_NUM_TAKE_BUCKETS - 1;
         } else {
@@ -140,7 +151,8 @@ static inline void *ABTI_mem_pool_alloc(ABTI_mem_pool_local_pool *p_local_pool)
         p_local_pool->buckets[bucket_index] = p_next;
     }
     /* At least one header is available in the current bucket. */
-    return (void *)cur_bucket;
+    *p_mem = (void *)cur_bucket;
+    return ABT_SUCCESS;
 }
 
 static inline void ABTI_mem_pool_free(ABTI_mem_pool_local_pool *p_local_pool,

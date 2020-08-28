@@ -70,7 +70,9 @@ static int pool_init(ABT_pool pool, ABT_pool_config config)
     int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
 
-    data_t *p_data = (data_t *)ABTU_malloc(sizeof(data_t));
+    data_t *p_data;
+    abt_errno = ABTU_malloc(sizeof(data_t), (void **)&p_data);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     pthread_mutex_init(&p_data->mutex, NULL);
     pthread_cond_init(&p_data->cond, NULL);

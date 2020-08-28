@@ -36,18 +36,20 @@ static inline ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 #endif
 }
 
-static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
+static inline int ABTI_mutex_init(ABTI_mutex *p_mutex)
 {
     ABTD_atomic_relaxed_store_uint32(&p_mutex->val, 0);
     p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
     p_mutex->attr.max_handovers = gp_ABTI_global->mutex_max_handovers;
     p_mutex->attr.max_wakeups = gp_ABTI_global->mutex_max_wakeups;
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
-    p_mutex->p_htable =
-        ABTI_ythread_htable_create(gp_ABTI_global->max_xstreams);
+    int abt_errno = ABTI_ythread_htable_create(gp_ABTI_global->max_xstreams,
+                                               &p_mutex->p_htable);
+    ABTI_CHECK_ERROR_RET(abt_errno);
     p_mutex->p_handover = NULL;
     p_mutex->p_giver = NULL;
 #endif
+    return ABT_SUCCESS;
 }
 
 #ifdef ABT_CONFIG_USE_SIMPLE_MUTEX

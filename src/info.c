@@ -361,7 +361,7 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    ABTI_sched_print(p_sched, fp, 0, ABT_FALSE);
+    ABTI_sched_print(p_sched, fp, 0, ABT_TRUE);
 
 fn_exit:
     return abt_errno;
@@ -592,9 +592,9 @@ struct info_pool_set_t {
 };
 
 static int info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
-static inline void info_initialize_pool_set(struct info_pool_set_t *p_set);
-static inline void info_add_pool_set(ABT_pool pool,
-                                     struct info_pool_set_t *p_set);
+static inline int info_initialize_pool_set(struct info_pool_set_t *p_set);
+static inline int info_add_pool_set(ABT_pool pool,
+                                    struct info_pool_set_t *p_set);
 static inline void info_finalize_pool_set(struct info_pool_set_t *p_set);
 
 #define PRINT_STACK_FLAG_UNSET 0
@@ -644,9 +644,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
         /* All the available ESs are (supposed to be) stopped. We *assume* that
          * no ES is calling and will call Argobots functions except this
          * function while printing stack information. */
-        int i, j;
-        struct info_pool_set_t pool_set;
-        info_initialize_pool_set(&pool_set);
+        int i, j, abt_errno;
+
         FILE *fp = print_stack_fp;
         if (force_print) {
             fprintf(fp,
@@ -654,6 +653,11 @@ void ABTI_info_check_print_all_thread_stacks(void)
                     "timeout (only %d ESs stop)\n",
                     (int)ABTD_atomic_acquire_load_uint32(&print_stack_barrier));
         }
+
+        struct info_pool_set_t pool_set;
+        abt_errno = info_initialize_pool_set(&pool_set);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS)
+            goto print_fail;
         for (i = 0; i < gp_ABTI_global->num_xstreams; i++) {
             ABTI_xstream *p_xstream = gp_ABTI_global->p_xstreams[i];
             ABTI_sched *p_main_sched = p_xstream->p_main_sched;
@@ -666,22 +670,31 @@ void ABTI_info_check_print_all_thread_stacks(void)
                 ABTI_ASSERT(pool != ABT_POOL_NULL);
                 fprintf(fp, "  pools[%d] : %p\n", j,
                         (void *)ABTI_pool_get_ptr(pool));
-                info_add_pool_set(pool, &pool_set);
+                abt_errno = info_add_pool_set(pool, &pool_set);
+                if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+                    info_finalize_pool_set(&pool_set);
+                    goto print_fail;
+                }
             }
         }
         for (i = 0; i < pool_set.num; i++) {
             ABT_pool pool = pool_set.pools[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-            int abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
+            abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
             if (abt_errno != ABT_SUCCESS)
                 fprintf(fp, "  Failed to print (errno = %d).\n", abt_errno);
         }
+        info_finalize_pool_set(&pool_set);
+        goto print_exit;
+
+    print_fail:
+        fprintf(fp, "ABT_info_trigger_print_all_thread_stacks: "
+                    "failed because of memory error.\n");
+    print_exit:
         /* Release the lock that protects ES data. */
         ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
-
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
-        info_finalize_pool_set(&pool_set);
         /* Update print_stack_flag to 3. */
         ABTD_atomic_release_store_uint32(&print_stack_flag,
                                          PRINT_STACK_FLAG_FINALIZE);
@@ -829,12 +842,15 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline void info_initialize_pool_set(struct info_pool_set_t *p_set)
+static inline int info_initialize_pool_set(struct info_pool_set_t *p_set)
 {
     size_t default_len = 16;
-    p_set->pools = (ABT_pool *)ABTU_malloc(sizeof(ABT_pool) * default_len);
+    int abt_errno =
+        ABTU_malloc(sizeof(ABT_pool) * default_len, (void **)&p_set->pools);
+    ABTI_CHECK_ERROR_RET(abt_errno);
     p_set->num = 0;
     p_set->len = default_len;
+    return ABT_SUCCESS;
 }
 
 static inline void info_finalize_pool_set(struct info_pool_set_t *p_set)
@@ -842,23 +858,25 @@ static inline void info_finalize_pool_set(struct info_pool_set_t *p_set)
     ABTU_free(p_set->pools);
 }
 
-static inline void info_add_pool_set(ABT_pool pool,
-                                     struct info_pool_set_t *p_set)
+static inline int info_add_pool_set(ABT_pool pool,
+                                    struct info_pool_set_t *p_set)
 {
     size_t i;
     for (i = 0; i < p_set->num; i++) {
         if (p_set->pools[i] == pool)
-            return;
+            return ABT_SUCCESS;
     }
     /* Add pool to p_set. */
     if (p_set->num == p_set->len) {
         size_t new_len = p_set->len * 2;
-        p_set->pools = (ABT_pool *)ABTU_realloc(p_set->pools,
-                                                sizeof(ABT_pool) * p_set->len,
-                                                sizeof(ABT_pool) * new_len);
+        int abt_errno =
+            ABTU_realloc(sizeof(ABT_pool) * p_set->len,
+                         sizeof(ABT_pool) * new_len, (void **)&p_set->pools);
+        ABTI_CHECK_ERROR_RET(abt_errno);
         p_set->len = new_len;
     }
     p_set->pools[p_set->num++] = pool;
+    return ABT_SUCCESS;
 }
 
 static void info_trigger_print_all_thread_stacks(

@@ -59,12 +59,17 @@ int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
     int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future;
 
-    p_future = (ABTI_future *)ABTU_malloc(sizeof(ABTI_future));
-    ABTI_CHECK_TRUE(p_future != NULL, ABT_ERR_MEM);
+    abt_errno = ABTU_malloc(sizeof(ABTI_future), (void **)&p_future);
+    ABTI_CHECK_ERROR(abt_errno);
     ABTI_spinlock_clear(&p_future->lock);
     ABTD_atomic_relaxed_store_uint32(&p_future->counter, 0);
     p_future->compartments = compartments;
-    p_future->array = ABTU_malloc(compartments * sizeof(void *));
+    abt_errno =
+        ABTU_malloc(compartments * sizeof(void *), (void **)&p_future->array);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_future);
+        goto fn_fail;
+    }
     p_future->p_callback = cb_func;
     p_future->p_head = NULL;
     p_future->p_tail = NULL;
@@ -150,7 +155,11 @@ int ABT_future_wait(ABT_future future)
         }
         if (!p_ythread) {
             /* external thread */
-            p_thread = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
+            abt_errno = ABTU_calloc(1, sizeof(ABTI_thread), (void **)&p_thread);
+            if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+                ABTI_spinlock_release(&p_future->lock);
+                goto fn_fail;
+            }
             p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */
             ABTD_atomic_relaxed_store_int(&p_thread->state,

@@ -34,12 +34,21 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     int abt_errno = ABT_SUCCESS;
     ABTI_eventual *p_eventual;
 
-    p_eventual = (ABTI_eventual *)ABTU_malloc(sizeof(ABTI_eventual));
-    ABTI_CHECK_TRUE(p_eventual != NULL, ABT_ERR_MEM);
+    abt_errno = ABTU_malloc(sizeof(ABTI_eventual), (void **)&p_eventual);
+    ABTI_CHECK_ERROR(abt_errno);
+
     ABTI_spinlock_clear(&p_eventual->lock);
     p_eventual->ready = ABT_FALSE;
     p_eventual->nbytes = nbytes;
-    p_eventual->value = (nbytes == 0) ? NULL : ABTU_malloc(nbytes);
+    if (nbytes == 0) {
+        p_eventual->value = NULL;
+    } else {
+        abt_errno = ABTU_malloc(nbytes, &p_eventual->value);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+            ABTU_free(p_eventual);
+            goto fn_fail;
+        }
+    }
     p_eventual->p_head = NULL;
     p_eventual->p_tail = NULL;
 
@@ -126,7 +135,11 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         }
         if (!p_ythread) {
             /* external thread or non-yieldable thread */
-            p_thread = (ABTI_thread *)ABTU_calloc(1, sizeof(ABTI_thread));
+            abt_errno = ABTU_calloc(1, sizeof(ABTI_thread), (void **)&p_thread);
+            if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+                ABTI_spinlock_release(&p_eventual->lock);
+                goto fn_fail;
+            }
             p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */
             ABTD_atomic_relaxed_store_int(&p_thread->state,

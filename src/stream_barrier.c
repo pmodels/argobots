@@ -30,8 +30,9 @@ int ABT_xstream_barrier_create(uint32_t num_waiters,
     int abt_errno = ABT_SUCCESS;
     ABTI_xstream_barrier *p_newbarrier;
 
-    p_newbarrier =
-        (ABTI_xstream_barrier *)ABTU_malloc(sizeof(ABTI_xstream_barrier));
+    abt_errno =
+        ABTU_malloc(sizeof(ABTI_xstream_barrier), (void **)&p_newbarrier);
+    ABTI_CHECK_ERROR(abt_errno);
 
     p_newbarrier->num_waiters = num_waiters;
     abt_errno = ABTD_xstream_barrier_init(num_waiters, &p_newbarrier->bar);

@@ -26,9 +26,15 @@ int ABT_rwlock_create(ABT_rwlock *newrwlock)
     int abt_errno = ABT_SUCCESS;
     ABTI_rwlock *p_newrwlock;
 
-    p_newrwlock = (ABTI_rwlock *)ABTU_malloc(sizeof(ABTI_rwlock));
+    abt_errno = ABTU_malloc(sizeof(ABTI_rwlock), (void **)&p_newrwlock);
+    ABTI_CHECK_ERROR(abt_errno);
+
     ABTI_CHECK_TRUE(p_newrwlock != NULL, ABT_ERR_MEM);
-    ABTI_mutex_init(&p_newrwlock->mutex);
+    abt_errno = ABTI_mutex_init(&p_newrwlock->mutex);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_newrwlock);
+        goto fn_fail;
+    }
     ABTI_cond_init(&p_newrwlock->cond);
     p_newrwlock->reader_count = 0;
     p_newrwlock->write_flag = 0;

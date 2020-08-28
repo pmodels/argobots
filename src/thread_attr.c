@@ -28,8 +28,8 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_newattr;
 
-    p_newattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
-    ABTI_CHECK_TRUE(p_newattr, ABT_ERR_MEM);
+    abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_newattr);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Default values */
     ABTI_thread_attr_init(p_newattr, NULL, gp_ABTI_global->thread_stacksize,
@@ -317,10 +317,8 @@ fn_fail:
 
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
 {
-    char *prefix = ABTU_get_indent_str(indent);
-
     if (p_attr == NULL) {
-        fprintf(p_os, "%sULT attr: [NULL ATTR]\n", prefix);
+        fprintf(p_os, "%*sULT attr: [NULL ATTR]\n", indent, "");
     } else {
         char *stacktype;
         if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
@@ -338,36 +336,37 @@ void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         fprintf(p_os,
-                "%sULT attr: ["
+                "%*sULT attr: ["
                 "stack:%p "
                 "stacksize:%zu "
                 "stacktype:%s "
                 "migratable:%s "
                 "cb_arg:%p"
                 "]\n",
-                prefix, p_attr->p_stack, p_attr->stacksize, stacktype,
+                indent, "", p_attr->p_stack, p_attr->stacksize, stacktype,
                 (p_attr->migratable == ABT_TRUE ? "TRUE" : "FALSE"),
                 p_attr->p_cb_arg);
 #else
         fprintf(p_os,
-                "%sULT attr: ["
+                "%*sULT attr: ["
                 "stack:%p "
                 "stacksize:%zu "
                 "stacktype:%s "
                 "]\n",
-                prefix, p_attr->p_stack, p_attr->stacksize, stacktype);
+                indent, "", p_attr->p_stack, p_attr->stacksize, stacktype);
 #endif
     }
     fflush(p_os);
-    ABTU_free(prefix);
 }
 
-ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr)
+int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
+                         ABTI_thread_attr **pp_dup_attr)
 {
-    ABTI_thread_attr *p_dupattr;
+    ABTI_thread_attr *p_dup_attr;
 
-    p_dupattr = (ABTI_thread_attr *)ABTU_malloc(sizeof(ABTI_thread_attr));
-    memcpy(p_dupattr, p_attr, sizeof(ABTI_thread_attr));
-
-    return p_dupattr;
+    int abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_dup_attr);
+    ABTI_CHECK_ERROR_RET(abt_errno);
+    memcpy(p_dup_attr, p_attr, sizeof(ABTI_thread_attr));
+    *pp_dup_attr = p_dup_attr;
+    return ABT_SUCCESS;
 }

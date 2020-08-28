@@ -23,6 +23,57 @@ mem_pool_lifo_elem_to_header(ABTI_sync_lifo_element *lifo_elem)
                                           lifo_elem)));
 }
 
+static void
+mem_pool_return_partial_bucket(ABTI_mem_pool_global_pool *p_global_pool,
+                               ABTI_mem_pool_header *bucket)
+{
+    int i;
+    const int num_headers_per_bucket = p_global_pool->num_headers_per_bucket;
+    /* Return headers in the last bucket to partial_bucket. */
+    ABTI_spinlock_acquire(&p_global_pool->partial_bucket_lock);
+    if (!p_global_pool->partial_bucket) {
+        p_global_pool->partial_bucket = bucket;
+    } else {
+        int num_headers_in_partial_bucket =
+            p_global_pool->partial_bucket->bucket_info.num_headers;
+        int num_headers_in_bucket = bucket->bucket_info.num_headers;
+        if (num_headers_in_partial_bucket + num_headers_in_bucket <
+            num_headers_per_bucket) {
+            /* Connect partial_bucket + bucket. Still not enough to make
+             * a complete bucket. */
+            ABTI_mem_pool_header *partial_bucket_tail =
+                p_global_pool->partial_bucket;
+            for (i = 1; i < num_headers_in_partial_bucket; i++) {
+                partial_bucket_tail = partial_bucket_tail->p_next;
+            }
+            partial_bucket_tail->p_next = bucket;
+            p_global_pool->partial_bucket->bucket_info.num_headers =
+                num_headers_in_partial_bucket + num_headers_in_bucket;
+        } else {
+            /* partial_bucket + bucket can make a complete bucket. */
+            ABTI_mem_pool_header *partial_bucket_header =
+                p_global_pool->partial_bucket;
+            for (i = 1; i < num_headers_per_bucket - num_headers_in_bucket;
+                 i++) {
+                partial_bucket_header = partial_bucket_header->p_next;
+            }
+            ABTI_mem_pool_header *new_partial_bucket = NULL;
+            if (num_headers_in_partial_bucket + num_headers_in_bucket !=
+                num_headers_per_bucket) {
+                new_partial_bucket = partial_bucket_header->p_next;
+                new_partial_bucket->bucket_info.num_headers =
+                    num_headers_per_bucket -
+                    (num_headers_in_partial_bucket + num_headers_in_bucket);
+            }
+            partial_bucket_header->p_next = bucket;
+            ABTI_mem_pool_return_bucket(p_global_pool,
+                                        p_global_pool->partial_bucket);
+            p_global_pool->partial_bucket = new_partial_bucket;
+        }
+    }
+    ABTI_spinlock_release(&p_global_pool->partial_bucket_lock);
+}
+
 void ABTI_mem_pool_init_global_pool(
     ABTI_mem_pool_global_pool *p_global_pool, int num_headers_per_bucket,
     size_t header_size, size_t header_offset, size_t page_size,
@@ -82,7 +133,9 @@ void ABTI_mem_pool_init_local_pool(ABTI_mem_pool_local_pool *p_local_pool,
         p_global_pool->num_headers_per_bucket;
     /* There must be always at least one header in the local pool.
      * Let's take one bucket. */
-    p_local_pool->buckets[0] = ABTI_mem_pool_take_bucket(p_global_pool);
+    int abt_errno =
+        ABTI_mem_pool_take_bucket(p_global_pool, &p_local_pool->buckets[0]);
+    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     p_local_pool->bucket_index = 0;
 }
 
@@ -102,57 +155,12 @@ void ABTI_mem_pool_destroy_local_pool(ABTI_mem_pool_local_pool *p_local_pool)
         ABTI_mem_pool_return_bucket(p_local_pool->p_global_pool,
                                     p_local_pool->buckets[bucket_index]);
     } else {
-        ABTI_mem_pool_global_pool *p_global_pool = p_local_pool->p_global_pool;
-        /* Return headers in the last bucket to partial_bucket. */
-        ABTI_spinlock_acquire(&p_global_pool->partial_bucket_lock);
-        if (!p_global_pool->partial_bucket) {
-            p_global_pool->partial_bucket = cur_bucket;
-        } else {
-            int num_headers_in_partial_bucket =
-                p_global_pool->partial_bucket->bucket_info.num_headers;
-            int num_headers_in_cur_bucket = cur_bucket->bucket_info.num_headers;
-            if (num_headers_in_partial_bucket + num_headers_in_cur_bucket <
-                num_headers_per_bucket) {
-                /* Connect partial_bucket + cur_bucket. Still not enough to make
-                 * a complete bucket. */
-                ABTI_mem_pool_header *partial_bucket_tail =
-                    p_global_pool->partial_bucket;
-                for (i = 1; i < num_headers_in_partial_bucket; i++) {
-                    partial_bucket_tail = partial_bucket_tail->p_next;
-                }
-                partial_bucket_tail->p_next = cur_bucket;
-                p_global_pool->partial_bucket->bucket_info.num_headers =
-                    num_headers_in_partial_bucket + num_headers_in_cur_bucket;
-            } else {
-                /* partial_bucket + cur_bucket can make a complete bucket. */
-                ABTI_mem_pool_header *partial_bucket_header =
-                    p_global_pool->partial_bucket;
-                for (i = 1;
-                     i < num_headers_per_bucket - num_headers_in_cur_bucket;
-                     i++) {
-                    partial_bucket_header = partial_bucket_header->p_next;
-                }
-                ABTI_mem_pool_header *new_partial_bucket = NULL;
-                if (num_headers_in_partial_bucket + num_headers_in_cur_bucket !=
-                    num_headers_per_bucket) {
-                    new_partial_bucket = partial_bucket_header->p_next;
-                    new_partial_bucket->bucket_info.num_headers =
-                        num_headers_per_bucket -
-                        (num_headers_in_partial_bucket +
-                         num_headers_in_cur_bucket);
-                }
-                partial_bucket_header->p_next = cur_bucket;
-                ABTI_mem_pool_return_bucket(p_global_pool,
-                                            p_global_pool->partial_bucket);
-                p_global_pool->partial_bucket = new_partial_bucket;
-            }
-        }
-        ABTI_spinlock_release(&p_global_pool->partial_bucket_lock);
+        mem_pool_return_partial_bucket(p_local_pool->p_global_pool, cur_bucket);
     }
 }
 
-ABTI_mem_pool_header *
-ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool)
+int ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool,
+                              ABTI_mem_pool_header **p_bucket)
 {
     /* Try to get a bucket. */
     ABTI_sync_lifo_element *p_popped_bucket_lifo_elem =
@@ -163,7 +171,8 @@ ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool)
         ABTI_mem_pool_header *popped_bucket =
             mem_pool_lifo_elem_to_header(p_popped_bucket_lifo_elem);
         popped_bucket->bucket_info.num_headers = num_headers_per_bucket;
-        return popped_bucket;
+        *p_bucket = popped_bucket;
+        return ABT_SUCCESS;
     } else {
         /* Allocate headers by myself */
         const size_t header_size = p_global_pool->header_size;
@@ -182,13 +191,22 @@ ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool)
                 /* Let's allocate memory by myself */
                 const size_t page_size = p_global_pool->page_size;
                 ABTU_MEM_LARGEPAGE_TYPE lp_type;
-                char *p_alloc_mem = (char *)
+                void *p_alloc_mem;
+                int abt_errno =
                     ABTU_alloc_largepage(page_size,
                                          p_global_pool->alignment_hint,
                                          p_global_pool->lp_type_requests,
                                          p_global_pool->num_lp_type_requests,
-                                         &lp_type);
-                ABTI_ASSERT(p_alloc_mem);
+                                         &lp_type, &p_alloc_mem);
+                if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+                    /* It fails to take a large page. Let's return. */
+                    if (num_headers != 0) {
+                        /* p_head has some elements, so let's return them. */
+                        p_head->bucket_info.num_headers = num_headers;
+                        mem_pool_return_partial_bucket(p_global_pool, p_head);
+                    }
+                    return abt_errno;
+                }
                 p_page =
                     (ABTI_mem_pool_page *)(((char *)p_alloc_mem) + page_size -
                                            sizeof(ABTI_mem_pool_page));
@@ -248,7 +266,8 @@ ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool)
             num_headers += num_provided;
             if (num_headers == num_headers_per_bucket) {
                 p_head->bucket_info.num_headers = num_headers_per_bucket;
-                return p_head;
+                *p_bucket = p_head;
+                return ABT_SUCCESS;
             }
         }
     }

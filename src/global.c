@@ -51,7 +51,8 @@ int ABT_init(int argc, char **argv)
     if (g_ABTI_num_inits++ > 0)
         goto fn_exit;
 
-    gp_ABTI_global = (ABTI_global *)ABTU_malloc(sizeof(ABTI_global));
+    abt_errno = ABTU_malloc(sizeof(ABTI_global), (void **)&gp_ABTI_global);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Initialize the system environment */
     ABTD_env_init(gp_ABTI_global);
@@ -77,9 +78,10 @@ int ABT_init(int argc, char **argv)
 #endif
 
     /* Initialize the ES array */
-    gp_ABTI_global->p_xstreams =
-        (ABTI_xstream **)ABTU_calloc(gp_ABTI_global->max_xstreams,
-                                     sizeof(ABTI_xstream *));
+    abt_errno =
+        ABTU_calloc(gp_ABTI_global->max_xstreams, sizeof(ABTI_xstream *),
+                    (void **)&gp_ABTI_global->p_xstreams);
+    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
     gp_ABTI_global->num_xstreams = 0;
 
     /* Initialize a spinlock */
@@ -278,7 +280,7 @@ int ABT_initialized(void)
  */
 void ABTI_global_update_max_xstreams(int new_size)
 {
-    int i, cur_size;
+    int i, cur_size, abt_errno;
 
     if (new_size != 0 && new_size < gp_ABTI_global->max_xstreams)
         return;
@@ -294,24 +296,28 @@ void ABTI_global_update_max_xstreams(int new_size)
          * ABTI_thread_htable's array size depends on ABT_MAX_NUM_XSTREAMS.
          * To fix this issue, please set a larger number to ABT_MAX_NUM_XSTREAMS
          * in advance. */
-        char *warning_message = (char *)malloc(sizeof(char) * 1024);
-        snprintf(warning_message, 1024,
-                 "Warning: the number of execution streams exceeds "
-                 "ABT_MAX_NUM_XSTREAMS (=%d), which may cause an unexpected "
-                 "error.",
-                 gp_ABTI_global->max_xstreams);
-        HANDLE_WARNING(warning_message);
-        free(warning_message);
-        max_xstreams_warning_once = 1;
+        char *warning_message;
+        abt_errno = ABTU_malloc(sizeof(char) * 1024, (void **)&warning_message);
+        if (!ABTI_IS_ERROR_CHECK_ENABLED || abt_errno == ABT_SUCCESS) {
+            snprintf(warning_message, 1024,
+                     "Warning: the number of execution streams exceeds "
+                     "ABT_MAX_NUM_XSTREAMS (=%d), which may cause an "
+                     "unexpected "
+                     "error.",
+                     gp_ABTI_global->max_xstreams);
+            HANDLE_WARNING(warning_message);
+            ABTU_free(warning_message);
+            max_xstreams_warning_once = 1;
+        }
     }
 
     cur_size = gp_ABTI_global->max_xstreams;
     new_size = (new_size > 0) ? new_size : cur_size * 2;
     gp_ABTI_global->max_xstreams = new_size;
-    gp_ABTI_global->p_xstreams =
-        (ABTI_xstream **)ABTU_realloc(gp_ABTI_global->p_xstreams,
-                                      cur_size * sizeof(ABTI_xstream *),
-                                      new_size * sizeof(ABTI_xstream *));
+    abt_errno = ABTU_realloc(cur_size * sizeof(ABTI_xstream *),
+                             new_size * sizeof(ABTI_xstream *),
+                             (void **)&gp_ABTI_global->p_xstreams);
+    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
 
     for (i = gp_ABTI_global->num_xstreams; i < new_size; i++) {
         gp_ABTI_global->p_xstreams[i] = NULL;

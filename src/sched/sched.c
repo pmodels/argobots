@@ -471,7 +471,10 @@ int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
     if (pools != NULL) {
         /* Copy of the contents of pools */
         ABT_pool *pool_list;
-        pool_list = (ABT_pool *)ABTU_malloc(num_pools * sizeof(ABT_pool));
+        abt_errno =
+            ABTU_malloc(num_pools * sizeof(ABT_pool), (void **)&pool_list);
+        ABTI_CHECK_ERROR_RET(abt_errno);
+
         int p;
         for (p = 0; p < num_pools; p++) {
             if (pools[p] == ABT_POOL_NULL) {
@@ -762,16 +765,11 @@ size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
 void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                       ABT_bool print_sub)
 {
-    char *prefix = ABTU_get_indent_str(indent);
-
     if (p_sched == NULL) {
-        fprintf(p_os, "%s== NULL SCHED ==\n", prefix);
+        fprintf(p_os, "%*s== NULL SCHED ==\n", indent, "");
     } else {
         ABTI_sched_kind kind;
         char *kind_str, *type, *used;
-        char *pools_str;
-        int i;
-        size_t size, pos;
 
         kind = p_sched->kind;
         if (kind == sched_get_kind(ABTI_sched_get_basic_def())) {
@@ -810,55 +808,40 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 break;
         }
 
-        size = sizeof(char) * (p_sched->num_pools * 20 + 4);
-        pools_str = (char *)ABTU_calloc(size, 1);
-        pools_str[0] = '[';
-        pools_str[1] = ' ';
-        pos = 2;
-        for (i = 0; i < p_sched->num_pools; i++) {
-            ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
-            sprintf(&pools_str[pos], "%p ", (void *)p_pool);
-            pos = strlen(pools_str);
-        }
-        pools_str[pos] = ']';
-
         fprintf(p_os,
-                "%s== SCHED (%p) ==\n"
+                "%*s== SCHED (%p) ==\n"
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-                "%sid       : %" PRIu64 "\n"
+                "%*sid       : %" PRIu64 "\n"
 #endif
-                "%skind     : %" PRIxPTR " (%s)\n"
-                "%stype     : %s\n"
-                "%sused     : %s\n"
-                "%sautomatic: %s\n"
-                "%srequest  : 0x%x\n"
-                "%snum_pools: %d\n"
-                "%spools    : %s\n"
-                "%ssize     : %zu\n"
-                "%stot_size : %zu\n"
-                "%sdata     : %p\n",
-                prefix, (void *)p_sched,
+                "%*skind     : %" PRIxPTR " (%s)\n"
+                "%*stype     : %s\n"
+                "%*sused     : %s\n"
+                "%*sautomatic: %s\n"
+                "%*srequest  : 0x%x\n"
+                "%*snum_pools: %d\n"
+                "%*ssize     : %zu\n"
+                "%*stot_size : %zu\n"
+                "%*sdata     : %p\n",
+                indent, "", (void *)p_sched,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
-                prefix, p_sched->id,
+                indent, "", p_sched->id,
 #endif
-                prefix, p_sched->kind, kind_str, prefix, type, prefix, used,
-                prefix, (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE",
-                prefix, ABTD_atomic_acquire_load_uint32(&p_sched->request),
-                prefix, p_sched->num_pools, prefix, pools_str, prefix,
-                ABTI_sched_get_size(p_sched), prefix,
-                ABTI_sched_get_total_size(p_sched), prefix, p_sched->data);
-        ABTU_free(pools_str);
-
+                indent, "", p_sched->kind, kind_str, indent, "", type, indent,
+                "", used, indent, "",
+                (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent, "",
+                ABTD_atomic_acquire_load_uint32(&p_sched->request), indent, "",
+                p_sched->num_pools, indent, "", ABTI_sched_get_size(p_sched),
+                indent, "", ABTI_sched_get_total_size(p_sched), indent, "",
+                p_sched->data);
         if (print_sub == ABT_TRUE) {
+            int i;
             for (i = 0; i < p_sched->num_pools; i++) {
                 ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
                 ABTI_pool_print(p_pool, p_os, indent + 2);
             }
         }
     }
-
     fflush(p_os);
-    ABTU_free(prefix);
 }
 
 static ABTD_atomic_uint64 g_sched_id = ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);
@@ -881,17 +864,22 @@ static int sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
                         ABTI_sched **pp_newsched)
 {
     ABTI_sched *p_sched;
-    int p;
+    int p, abt_errno;
 
-    p_sched = (ABTI_sched *)ABTU_malloc(sizeof(ABTI_sched));
+    abt_errno = ABTU_malloc(sizeof(ABTI_sched), (void **)&p_sched);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     /* Copy of the contents of pools */
     ABT_pool *pool_list;
-    pool_list = (ABT_pool *)ABTU_malloc(num_pools * sizeof(ABT_pool));
+    abt_errno = ABTU_malloc(num_pools * sizeof(ABT_pool), (void **)&pool_list);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_sched);
+        return abt_errno;
+    }
     for (p = 0; p < num_pools; p++) {
         if (pools[p] == ABT_POOL_NULL) {
             ABTI_pool *p_newpool;
-            int abt_errno =
+            abt_errno =
                 ABTI_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC,
                                        ABT_TRUE, &p_newpool);
             ABTI_CHECK_ERROR_RET(abt_errno);

@@ -144,7 +144,8 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
 
     ABTI_CHECK_TRUE(rank >= 0, ABT_ERR_INV_XSTREAM_RANK);
 
-    p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
+    abt_errno = ABTU_malloc(sizeof(ABTI_xstream), (void **)&p_newxstream);
+    ABTI_CHECK_ERROR(abt_errno);
 
     if (xstream_take_rank(p_newxstream, rank) == ABT_FALSE) {
         ABTU_free(p_newxstream);
@@ -1234,58 +1235,51 @@ void ABTI_xstream_schedule(void *p_arg)
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub)
 {
-    char *prefix = ABTU_get_indent_str(indent);
-
     if (p_xstream == NULL) {
-        fprintf(p_os, "%s== NULL ES ==\n", prefix);
-        goto fn_exit;
+        fprintf(p_os, "%*s== NULL ES ==\n", indent, "");
+    } else {
+        char *type, *state;
+        switch (p_xstream->type) {
+            case ABTI_XSTREAM_TYPE_PRIMARY:
+                type = "PRIMARY";
+                break;
+            case ABTI_XSTREAM_TYPE_SECONDARY:
+                type = "SECONDARY";
+                break;
+            default:
+                type = "UNKNOWN";
+                break;
+        }
+        switch (ABTD_atomic_acquire_load_int(&p_xstream->state)) {
+            case ABT_XSTREAM_STATE_RUNNING:
+                state = "RUNNING";
+                break;
+            case ABT_XSTREAM_STATE_TERMINATED:
+                state = "TERMINATED";
+                break;
+            default:
+                state = "UNKNOWN";
+                break;
+        }
+
+        fprintf(p_os,
+                "%*s== ES (%p) ==\n"
+                "%*srank      : %d\n"
+                "%*stype      : %s\n"
+                "%*sstate     : %s\n"
+                "%*srequest   : 0x%x\n"
+                "%*smain_sched: %p\n",
+                indent, "", (void *)p_xstream, indent, "", p_xstream->rank,
+                indent, "", type, indent, "", state, indent, "",
+                ABTD_atomic_acquire_load_uint32(&p_xstream->request), indent,
+                "", (void *)p_xstream->p_main_sched);
+
+        if (print_sub == ABT_TRUE) {
+            ABTI_sched_print(p_xstream->p_main_sched, p_os,
+                             indent + ABTI_INDENT, ABT_TRUE);
+        }
     }
-
-    char *type, *state;
-
-    switch (p_xstream->type) {
-        case ABTI_XSTREAM_TYPE_PRIMARY:
-            type = "PRIMARY";
-            break;
-        case ABTI_XSTREAM_TYPE_SECONDARY:
-            type = "SECONDARY";
-            break;
-        default:
-            type = "UNKNOWN";
-            break;
-    }
-    switch (ABTD_atomic_acquire_load_int(&p_xstream->state)) {
-        case ABT_XSTREAM_STATE_RUNNING:
-            state = "RUNNING";
-            break;
-        case ABT_XSTREAM_STATE_TERMINATED:
-            state = "TERMINATED";
-            break;
-        default:
-            state = "UNKNOWN";
-            break;
-    }
-
-    fprintf(p_os,
-            "%s== ES (%p) ==\n"
-            "%srank      : %d\n"
-            "%stype      : %s\n"
-            "%sstate     : %s\n"
-            "%srequest   : 0x%x\n"
-            "%smain_sched: %p\n",
-            prefix, (void *)p_xstream, prefix, p_xstream->rank, prefix, type,
-            prefix, state, prefix,
-            ABTD_atomic_acquire_load_uint32(&p_xstream->request), prefix,
-            (void *)p_xstream->p_main_sched);
-
-    if (print_sub == ABT_TRUE) {
-        ABTI_sched_print(p_xstream->p_main_sched, p_os, indent + ABTI_INDENT,
-                         ABT_TRUE);
-    }
-
-fn_exit:
     fflush(p_os);
-    ABTU_free(prefix);
 }
 
 void *ABTI_xstream_launch_main_sched(void *p_arg)
@@ -1343,9 +1337,11 @@ void *ABTI_xstream_launch_main_sched(void *p_arg)
 
 static int xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
 {
+    int abt_errno;
     ABTI_xstream *p_newxstream;
 
-    p_newxstream = (ABTI_xstream *)ABTU_malloc(sizeof(ABTI_xstream));
+    abt_errno = ABTU_malloc(sizeof(ABTI_xstream), (void **)&p_newxstream);
+    ABTI_CHECK_ERROR_RET(abt_errno);
 
     xstream_set_new_rank(p_newxstream);
 
@@ -1360,7 +1356,7 @@ static int xstream_create(ABTI_sched *p_sched, ABTI_xstream **pp_xstream)
     ABTI_mem_init_local(p_newxstream);
 
     /* Set the main scheduler */
-    int abt_errno = xstream_init_main_sched(p_newxstream, p_sched);
+    abt_errno = xstream_init_main_sched(p_newxstream, p_sched);
     ABTI_CHECK_ERROR_RET(abt_errno);
 
     LOG_DEBUG("[E%d] created\n", p_newxstream->rank);
@@ -1648,10 +1644,13 @@ static inline void xstream_schedule_task(ABTI_xstream *p_local_xstream,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 static int xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
 {
+    int abt_errno;
     ABTI_pool *p_pool;
 
-    ABTI_thread_mig_data *p_mig_data =
-        ABTI_thread_get_mig_data(p_local, p_thread);
+    ABTI_thread_mig_data *p_mig_data;
+    abt_errno = ABTI_thread_get_mig_data(p_local, p_thread, &p_mig_data);
+    ABTI_CHECK_ERROR_RET(abt_errno);
+
     /* callback function */
     if (p_mig_data->f_migration_cb) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
@@ -1677,7 +1676,7 @@ static int xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
     p_thread->p_pool = p_pool;
 
     /* Add the unit to the scheduler's pool */
-    int abt_errno = ABTI_pool_push(p_local, p_pool, p_thread->unit);
+    abt_errno = ABTI_pool_push(p_local, p_pool, p_thread->unit);
     /* Check the push.
      * TODO: this error is fatal.  It needs to be handled smartly. */
     ABTI_CHECK_ERROR_RET(abt_errno);

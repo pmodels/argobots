@@ -28,16 +28,25 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
     int abt_errno = ABT_SUCCESS;
     ABTI_barrier *p_newbarrier;
 
-    p_newbarrier = (ABTI_barrier *)ABTU_malloc(sizeof(ABTI_barrier));
-    ABTI_CHECK_TRUE(p_newbarrier != NULL, ABT_ERR_MEM);
+    abt_errno = ABTU_malloc(sizeof(ABTI_barrier), (void **)&p_newbarrier);
+    ABTI_CHECK_ERROR(abt_errno);
 
     ABTI_spinlock_clear(&p_newbarrier->lock);
     p_newbarrier->num_waiters = num_waiters;
     p_newbarrier->counter = 0;
-    p_newbarrier->waiters =
-        (ABTI_ythread **)ABTU_malloc(num_waiters * sizeof(ABTI_ythread *));
-    p_newbarrier->waiter_type =
-        (ABT_unit_type *)ABTU_malloc(num_waiters * sizeof(ABT_unit_type));
+    abt_errno = ABTU_malloc(num_waiters * sizeof(ABTI_ythread *),
+                            (void **)&p_newbarrier->waiters);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_newbarrier);
+        goto fn_fail;
+    }
+    abt_errno = ABTU_malloc(num_waiters * sizeof(ABT_unit_type),
+                            (void **)&p_newbarrier->waiter_type);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_newbarrier->waiters);
+        ABTU_free(p_newbarrier);
+        goto fn_fail;
+    }
 
     /* Return value */
     *newbarrier = ABTI_barrier_get_handle(p_newbarrier);
@@ -78,13 +87,22 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
         p_barrier->num_waiters = num_waiters;
     } else if (num_waiters > p_barrier->num_waiters) {
         /* Free existing arrays and reallocate them */
+        ABTI_ythread **new_waiters;
+        ABT_unit_type *new_waiter_types;
+        abt_errno = ABTU_malloc(num_waiters * sizeof(ABTI_ythread *),
+                                (void **)&new_waiters);
+        ABTI_CHECK_ERROR(abt_errno);
+        abt_errno = ABTU_malloc(num_waiters * sizeof(ABT_unit_type),
+                                (void **)&new_waiter_types);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+            ABTU_free(new_waiter_types);
+            goto fn_fail;
+        }
         p_barrier->num_waiters = num_waiters;
         ABTU_free(p_barrier->waiters);
         ABTU_free(p_barrier->waiter_type);
-        p_barrier->waiters =
-            (ABTI_ythread **)ABTU_malloc(num_waiters * sizeof(ABTI_ythread *));
-        p_barrier->waiter_type =
-            (ABT_unit_type *)ABTU_malloc(num_waiters * sizeof(ABT_unit_type));
+        p_barrier->waiters = new_waiters;
+        p_barrier->waiter_type = new_waiter_types;
     }
 
 fn_exit:

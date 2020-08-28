@@ -15,15 +15,22 @@
 
 #include "abt_config.h"
 #include "abt.h"
-#include "abtu.h"
-#include "abti_error.h"
-#include "abti_valgrind.h"
+
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+#define ABTI_IS_ERROR_CHECK_ENABLED 1
+#else
+#define ABTI_IS_ERROR_CHECK_ENABLED 0
+#endif
 
 #ifdef ABT_CONFIG_DISABLE_EXT_THREAD
 #define ABTI_IS_EXT_THREAD_ENABLED 0
 #else
 #define ABTI_IS_EXT_THREAD_ENABLED 1
 #endif
+
+#include "abtu.h"
+#include "abti_error.h"
+#include "abti_valgrind.h"
 
 /* Constants */
 #define ABTI_SCHED_NUM_PRIO 3
@@ -504,8 +511,8 @@ void ABTI_pool_reset_id(void);
 void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 
 /* Threads */
-ABTI_thread_mig_data *ABTI_thread_get_mig_data(ABTI_local *p_local,
-                                               ABTI_thread *p_thread);
+int ABTI_thread_get_mig_data(ABTI_local *p_local, ABTI_thread *p_thread,
+                             ABTI_thread_mig_data **pp_mig_data);
 void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 void ABTI_thread_reset_id(void);
@@ -529,10 +536,12 @@ int ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
 
 /* Thread attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);
-ABTI_thread_attr *ABTI_thread_attr_dup(ABTI_thread_attr *p_attr);
+int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
+                         ABTI_thread_attr **pp_dup_attr);
 
 /* Thread hash table */
-ABTI_ythread_htable *ABTI_ythread_htable_create(uint32_t num_rows);
+int ABTI_ythread_htable_create(uint32_t num_rows,
+                               ABTI_ythread_htable **pp_htable);
 void ABTI_ythread_htable_free(ABTI_ythread_htable *p_htable);
 void ABTI_ythread_htable_push(ABTI_ythread_htable *p_htable, int idx,
                               ABTI_ythread *p_ythread);
