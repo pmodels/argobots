@@ -75,44 +75,35 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
     ABTU_free(newfmt);
 }
 
-void ABTI_log_pool_push(ABTI_local *p_local, ABTI_pool *p_pool, ABT_unit unit)
+void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE)
         return;
 
     ABTI_ythread *p_ythread = NULL;
     ABTI_thread *p_task = NULL;
-    ABTI_native_thread_id producer_id = ABTI_self_get_native_thread_id(p_local);
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:
             p_ythread = ABTI_ythread_get_ptr(p_pool->u_get_thread(unit));
             if (p_ythread->thread.p_last_xstream) {
-                LOG_DEBUG("[U%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
-                          "(producer: NT %p)\n",
+                LOG_DEBUG("[U%" PRIu64 ":E%d] pushed to P%" PRIu64 "\n",
                           ABTI_thread_get_id(&p_ythread->thread),
-                          p_ythread->thread.p_last_xstream->rank, p_pool->id,
-                          (void *)producer_id);
+                          p_ythread->thread.p_last_xstream->rank, p_pool->id);
             } else {
-                LOG_DEBUG("[U%" PRIu64 "] pushed to P%" PRIu64 " "
-                          "(producer: NT %p)\n",
-                          ABTI_thread_get_id(&p_ythread->thread), p_pool->id,
-                          (void *)producer_id);
+                LOG_DEBUG("[U%" PRIu64 "] pushed to P%" PRIu64 "\n",
+                          ABTI_thread_get_id(&p_ythread->thread), p_pool->id);
             }
             break;
 
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_thread_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_last_xstream) {
-                LOG_DEBUG("[T%" PRIu64 ":E%d] pushed to P%" PRIu64 " "
-                          "(producer: NT %p)\n",
+                LOG_DEBUG("[T%" PRIu64 ":E%d] pushed to P%" PRIu64 "\n",
                           ABTI_thread_get_id(p_task),
-                          p_task->p_last_xstream->rank, p_pool->id,
-                          (void *)producer_id);
+                          p_task->p_last_xstream->rank, p_pool->id);
             } else {
-                LOG_DEBUG("[T%" PRIu64 "] pushed to P%" PRIu64 " "
-                          "(producer: NT %p)\n",
-                          ABTI_thread_get_id(p_task), p_pool->id,
-                          (void *)producer_id);
+                LOG_DEBUG("[T%" PRIu64 "] pushed to P%" PRIu64 "\n",
+                          ABTI_thread_get_id(p_task), p_pool->id);
             }
             break;
 
@@ -122,44 +113,35 @@ void ABTI_log_pool_push(ABTI_local *p_local, ABTI_pool *p_pool, ABT_unit unit)
     }
 }
 
-void ABTI_log_pool_remove(ABTI_local *p_local, ABTI_pool *p_pool, ABT_unit unit)
+void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
 {
     if (gp_ABTI_global->use_logging == ABT_FALSE)
         return;
 
     ABTI_ythread *p_ythread = NULL;
     ABTI_thread *p_task = NULL;
-    ABTI_native_thread_id consumer_id = ABTI_self_get_native_thread_id(p_local);
     switch (p_pool->u_get_type(unit)) {
         case ABT_UNIT_TYPE_THREAD:
             p_ythread = ABTI_ythread_get_ptr(p_pool->u_get_thread(unit));
             if (p_ythread->thread.p_last_xstream) {
-                LOG_DEBUG("[U%" PRIu64 ":E%d] removed from "
-                          "P%" PRIu64 " (consumer: NT %p)\n",
+                LOG_DEBUG("[U%" PRIu64 ":E%d] removed from P%" PRIu64 "\n",
                           ABTI_thread_get_id(&p_ythread->thread),
-                          p_ythread->thread.p_last_xstream->rank, p_pool->id,
-                          (void *)consumer_id);
+                          p_ythread->thread.p_last_xstream->rank, p_pool->id);
             } else {
-                LOG_DEBUG("[U%" PRIu64 "] removed from P%" PRIu64 " "
-                          "(consumer: NT %p)\n",
-                          ABTI_thread_get_id(&p_ythread->thread), p_pool->id,
-                          (void *)consumer_id);
+                LOG_DEBUG("[U%" PRIu64 "] removed from P%" PRIu64 "\n",
+                          ABTI_thread_get_id(&p_ythread->thread), p_pool->id);
             }
             break;
 
         case ABT_UNIT_TYPE_TASK:
             p_task = ABTI_thread_get_ptr(p_pool->u_get_task(unit));
             if (p_task->p_last_xstream) {
-                LOG_DEBUG("[T%" PRIu64 ":E%d] removed from "
-                          "P%" PRIu64 " (consumer: NT %p)\n",
+                LOG_DEBUG("[T%" PRIu64 ":E%d] removed from P%" PRIu64 "\n",
                           ABTI_thread_get_id(p_task),
-                          p_task->p_last_xstream->rank, p_pool->id,
-                          (void *)consumer_id);
+                          p_task->p_last_xstream->rank, p_pool->id);
             } else {
-                LOG_DEBUG("[T%" PRIu64 "] removed from P%" PRIu64 " "
-                          "(consumer: NT %p)\n",
-                          ABTI_thread_get_id(p_task), p_pool->id,
-                          (void *)consumer_id);
+                LOG_DEBUG("[T%" PRIu64 "] removed from P%" PRIu64 "\n",
+                          ABTI_thread_get_id(p_task), p_pool->id);
             }
             break;
 

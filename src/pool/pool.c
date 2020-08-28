@@ -300,8 +300,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_UNIT);
 
     /* Save the producer ES information in the pool */
-    abt_errno = ABTI_pool_push(ABTI_local_get_local(), p_pool, unit);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_pool_push(p_pool, unit);
 
 fn_exit:
     return abt_errno;
@@ -327,8 +326,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_pool_remove(ABTI_local_get_local(), p_pool, unit);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_pool_remove(p_pool, unit);
 
 fn_exit:
     return abt_errno;
@@ -465,50 +463,6 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    int p;
-
-    switch (p_pool->access) {
-        case ABT_POOL_ACCESS_PRIV:
-        case ABT_POOL_ACCESS_SPSC:
-        case ABT_POOL_ACCESS_MPSC:
-            /* we need to ensure that the target pool has already an
-             * associated ES */
-            ABTI_CHECK_TRUE(p_pool->consumer_id != 0, ABT_ERR_POOL);
-
-            /* We check that from the pool set of the scheduler we do not find
-             * a pool with another associated pool, and set the right value if
-             * it is okay  */
-            for (p = 0; p < p_sched->num_pools; p++) {
-                abt_errno = ABTI_pool_set_consumer_id(ABTI_pool_get_ptr(
-                                                          p_sched->pools[p]),
-                                                      p_pool->consumer_id);
-                ABTI_CHECK_ERROR(abt_errno);
-            }
-            break;
-
-        case ABT_POOL_ACCESS_SPMC:
-        case ABT_POOL_ACCESS_MPMC:
-            /* we need to ensure that the pool set of the scheduler does
-             * not contain an ES private pool  */
-            for (p = 0; p < p_sched->num_pools; p++) {
-                ABTI_pool *p_local_xstream_pool =
-                    ABTI_pool_get_ptr(p_sched->pools[p]);
-                ABTI_CHECK_TRUE(p_local_xstream_pool->access !=
-                                        ABT_POOL_ACCESS_PRIV &&
-                                    p_local_xstream_pool->access !=
-                                        ABT_POOL_ACCESS_SPSC &&
-                                    p_local_xstream_pool->access !=
-                                        ABT_POOL_ACCESS_MPSC,
-                                ABT_ERR_POOL);
-            }
-            break;
-
-        default:
-            ABTI_CHECK_TRUE(0, ABT_ERR_INV_POOL_ACCESS);
-    }
-#endif
-
     /* Mark the scheduler as it is used in pool */
     ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED, ABT_ERR_INV_SCHED);
     p_sched->used = ABTI_SCHED_IN_POOL;
@@ -625,12 +579,6 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
                 "%*saccess        : %s\n"
                 "%*sautomatic     : %s\n"
                 "%*snum_scheds    : %d\n"
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-                "%*sconsumer ID   : %p\n"
-#endif
-#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-                "%*sproducer ID   : %p\n"
-#endif
                 "%*ssize          : %zu\n"
                 "%*snum_blocked   : %d\n"
                 "%*snum_migrations: %d\n"
@@ -638,46 +586,13 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
                 indent, "", (void *)p_pool, indent, "", p_pool->id, indent, "",
                 access, indent, "",
                 (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent, "",
-                ABTD_atomic_acquire_load_int32(&p_pool->num_scheds),
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-                indent, "", (void *)p_pool->consumer_id,
-#endif
-#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-                indent, "", (void *)p_pool->producer_id,
-#endif
-                indent, "", ABTI_pool_get_size(p_pool), indent, "",
+                ABTD_atomic_acquire_load_int32(&p_pool->num_scheds), indent, "",
+                ABTI_pool_get_size(p_pool), indent, "",
                 ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), indent,
                 "", ABTD_atomic_acquire_load_int32(&p_pool->num_migrations),
                 indent, "", p_pool->data);
     }
     fflush(p_os);
-}
-
-/* Check if a pool accept migrations or not. When the producer of the
- * destination pool is ES private, we have to ensure that we are on the right
- * ES */
-int ABTI_pool_accept_migration(ABTI_pool *p_pool, ABTI_pool *source)
-{
-#if !defined(ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK) &&                        \
-    !defined(ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK)
-    switch (p_pool->access) {
-        /* Need producer in the same ES */
-        case ABT_POOL_ACCESS_PRIV:
-        case ABT_POOL_ACCESS_SPSC:
-        case ABT_POOL_ACCESS_SPMC:
-            if (p_pool->consumer_id == source->producer_id)
-                return ABT_TRUE;
-            return ABT_FALSE;
-
-        case ABT_POOL_ACCESS_MPSC:
-        case ABT_POOL_ACCESS_MPMC:
-            return ABT_TRUE;
-        default:
-            return ABT_FALSE;
-    }
-#else
-    return ABT_TRUE;
-#endif
 }
 
 static ABTD_atomic_uint64 g_pool_id = ABTD_ATOMIC_UINT64_STATIC_INITIALIZER(0);
@@ -702,12 +617,6 @@ static int pool_create(ABT_pool_def *def, ABT_pool_config config,
     p_pool->access = def->access;
     p_pool->automatic = automatic;
     ABTD_atomic_release_store_int32(&p_pool->num_scheds, 0);
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    p_pool->consumer_id = 0;
-#endif
-#ifndef ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK
-    p_pool->producer_id = 0;
-#endif
     ABTD_atomic_release_store_int32(&p_pool->num_blocked, 0);
     ABTD_atomic_release_store_int32(&p_pool->num_migrations, 0);
     p_pool->data = NULL;
