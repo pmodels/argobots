@@ -876,8 +876,12 @@ int ABT_thread_resume(ABT_thread thread)
     ABTI_ythread *p_ythread;
     ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_INV_THREAD);
 
-    abt_errno = ABTI_ythread_set_ready(p_local, p_ythread);
-    ABTI_CHECK_ERROR(abt_errno);
+    /* The ULT must be in BLOCKED state. */
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
+                        ABT_THREAD_STATE_BLOCKED,
+                    ABT_ERR_THREAD);
+
+    ABTI_ythread_set_ready(p_local, p_ythread);
 
 fn_exit:
     return abt_errno;

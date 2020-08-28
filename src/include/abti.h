@@ -524,7 +524,7 @@ int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread);
 void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
                           ABTI_ythread *p_ythread,
                           ABT_sync_event_type sync_event_type, void *p_sync);
-int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread);
+void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread);
 int ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
 
 /* Thread attributes */

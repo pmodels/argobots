@@ -49,13 +49,11 @@ void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
               p_ythread->thread.p_last_xstream->rank);
 }
 
-int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
+void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
 {
-    /* The ULT should be in BLOCKED state. */
-    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(
-                            &p_ythread->thread.state) ==
-                            ABT_THREAD_STATE_BLOCKED,
-                        ABT_ERR_THREAD);
+    /* The ULT must be in BLOCKED state. */
+    ABTI_ASSERT(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
+                ABT_THREAD_STATE_BLOCKED);
 
     /* We should wait until the scheduler of the blocked ULT resets the BLOCK
      * request. Otherwise, the ULT can be pushed to a pool here and be
@@ -84,7 +82,6 @@ int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
 
     /* Decrease the number of blocked threads */
     ABTI_pool_dec_num_blocked(p_pool);
-    return ABT_SUCCESS;
 }
 
 ABTU_no_sanitize_address int ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
