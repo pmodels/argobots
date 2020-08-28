@@ -679,23 +679,16 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
                                   ABTI_pool **pp_pool)
 {
     ABT_sched sched = ABTI_sched_get_handle(p_sched);
-    ABTI_pool *p_pool;
 
     /* Find a pool.  If get_migr_pool is not defined, we pick the first pool */
     if (p_sched->get_migr_pool == NULL) {
-        if (p_sched->num_pools == 0)
-            p_pool = NULL;
-        else
-            p_pool = ABTI_pool_get_ptr(p_sched->pools[0]);
-    } else
-        p_pool = ABTI_pool_get_ptr(p_sched->get_migr_pool(sched));
-
-    /* Check the pool */
-    if (ABTI_pool_accept_migration(p_pool, source_pool) == ABT_TRUE) {
-        *pp_pool = p_pool;
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p_sched->num_pools == 0) {
+            return ABT_ERR_INV_POOL;
+        } else {
+            *pp_pool = ABTI_pool_get_ptr(p_sched->pools[0]);
+        }
     } else {
-        *pp_pool = NULL;
-        ABTI_CHECK_TRUE_RET(0, ABT_ERR_INV_POOL_ACCESS);
+        *pp_pool = ABTI_pool_get_ptr(p_sched->get_migr_pool(sched));
     }
     return ABT_SUCCESS;
 }
@@ -723,10 +716,6 @@ size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
     size_t pool_size = 0;
     int p;
 
-#ifndef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
-    ABTI_native_thread_id self_id = ABTI_self_get_native_thread_id(p_local);
-#endif
-
     for (p = 0; p < p_sched->num_pools; p++) {
         ABT_pool pool = p_sched->pools[p];
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -741,18 +730,10 @@ size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
             case ABT_POOL_ACCESS_MPSC:
             case ABT_POOL_ACCESS_SPMC:
             case ABT_POOL_ACCESS_MPMC:
-#ifdef ABT_CONFIG_DISABLE_POOL_CONSUMER_CHECK
                 if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1) {
                     pool_size +=
                         ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
                 }
-#else
-                if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1 &&
-                    p_pool->consumer_id == self_id) {
-                    pool_size +=
-                        ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
-                }
-#endif
                 break;
             default:
                 break;
