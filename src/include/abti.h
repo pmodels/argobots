@@ -36,24 +36,21 @@
 #define ABTI_SCHED_NUM_PRIO 3
 
 #define ABTI_XSTREAM_REQ_JOIN (1 << 0)
-#define ABTI_XSTREAM_REQ_EXIT (1 << 1)
+#define ABTI_XSTREAM_REQ_TERMINATE (1 << 1)
 #define ABTI_XSTREAM_REQ_CANCEL (1 << 2)
-#define ABTI_XSTREAM_REQ_STOP (1 << 3)
 
 #define ABTI_SCHED_REQ_FINISH (1 << 0)
 #define ABTI_SCHED_REQ_EXIT (1 << 1)
 
 #define ABTI_THREAD_REQ_JOIN (1 << 0)
-#define ABTI_THREAD_REQ_EXIT (1 << 1)
+#define ABTI_THREAD_REQ_TERMINATE (1 << 1)
 #define ABTI_THREAD_REQ_CANCEL (1 << 2)
 #define ABTI_THREAD_REQ_MIGRATE (1 << 3)
-#define ABTI_THREAD_REQ_TERMINATE (1 << 4)
-#define ABTI_THREAD_REQ_BLOCK (1 << 5)
-#define ABTI_THREAD_REQ_ORPHAN (1 << 6)
-#define ABTI_THREAD_REQ_NOPUSH (1 << 7)
-#define ABTI_THREAD_REQ_STOP (ABTI_THREAD_REQ_EXIT | ABTI_THREAD_REQ_TERMINATE)
+#define ABTI_THREAD_REQ_BLOCK (1 << 4)
+#define ABTI_THREAD_REQ_ORPHAN (1 << 5)
+#define ABTI_THREAD_REQ_NOPUSH (1 << 6)
 #define ABTI_THREAD_REQ_NON_YIELD                                              \
-    (ABTI_THREAD_REQ_EXIT | ABTI_THREAD_REQ_CANCEL | ABTI_THREAD_REQ_MIGRATE | \
+    (ABTI_THREAD_REQ_CANCEL | ABTI_THREAD_REQ_MIGRATE |                        \
      ABTI_THREAD_REQ_TERMINATE | ABTI_THREAD_REQ_BLOCK |                       \
      ABTI_THREAD_REQ_ORPHAN | ABTI_THREAD_REQ_NOPUSH)
 
@@ -524,7 +521,7 @@ int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread);
 void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
                           ABTI_ythread *p_ythread,
                           ABT_sync_event_type sync_event_type, void *p_sync);
-int ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread);
+void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread);
 int ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
 
 /* Thread attributes */

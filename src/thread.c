@@ -458,7 +458,7 @@ int ABT_thread_exit(void)
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_ythread);
 
     /* Set the exit request */
-    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_EXIT);
+    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_TERMINATE);
 
     /* Terminate this ULT */
     ABTD_ythread_exit(p_local_xstream, p_ythread);
@@ -876,8 +876,12 @@ int ABT_thread_resume(ABT_thread thread)
     ABTI_ythread *p_ythread;
     ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_INV_THREAD);
 
-    abt_errno = ABTI_ythread_set_ready(p_local, p_ythread);
-    ABTI_CHECK_ERROR(abt_errno);
+    /* The ULT must be in BLOCKED state. */
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
+                        ABT_THREAD_STATE_BLOCKED,
+                    ABT_ERR_THREAD);
+
+    ABTI_ythread_set_ready(p_local, p_ythread);
 
 fn_exit:
     return abt_errno;
