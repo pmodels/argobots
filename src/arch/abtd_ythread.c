@@ -42,7 +42,8 @@ static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
         /* If p_link is set, it means that other ULT has called the join. */
         ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(p_link);
         if (p_ythread->thread.p_last_xstream ==
-            p_joiner->thread.p_last_xstream) {
+                p_joiner->thread.p_last_xstream &&
+            !(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED)) {
             /* Only when the current ULT is on the same ES as p_joiner's,
              * we can jump to the joiner ULT. */
             ABTD_atomic_release_store_int(&p_ythread->thread.state,
@@ -61,7 +62,9 @@ static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
         } else {
             /* If the current ULT's associated ES is different from p_joiner's,
              * we can't directly jump to p_joiner.  Instead, we wake up
-             * p_joiner here so that p_joiner's scheduler can resume it. */
+             * p_joiner here so that p_joiner's scheduler can resume it.
+             * Note that the main scheduler needs to jump back to the root
+             * scheduler, so the main scheduler needs to take this path. */
             ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
                                    p_joiner);
 

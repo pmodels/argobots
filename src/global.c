@@ -185,32 +185,19 @@ int ABT_finalize(void)
     ABTI_tool_event_task_update_callback(NULL, ABT_TOOL_EVENT_TASK_NONE, NULL);
 #endif
 
-    /* Set the join request */
-    ABTI_xstream_set_request(p_local_xstream, ABTI_XSTREAM_REQ_JOIN);
-
-    /* We wait for the remaining jobs */
-    if (ABTD_atomic_acquire_load_int(&p_local_xstream->state) !=
-        ABT_XSTREAM_STATE_TERMINATED) {
-        /* Set the orphan request for the primary ULT */
-        ABTI_thread_set_request(p_self, ABTI_THREAD_REQ_ORPHAN);
-
-        LOG_DEBUG("[U%" PRIu64 ":E%d] yield to scheduler\n",
-                  ABTI_thread_get_id(p_self),
-                  p_ythread->thread.p_last_xstream->rank);
-
-        /* Switch to the parent */
-        ABTI_ythread_context_switch_to_parent(&p_local_xstream, p_ythread,
-                                              ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
-                                              (void *)p_local_xstream);
-
-        /* Back to the original thread */
-        LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
-                  ABTI_thread_get_id(p_self),
-                  p_ythread->thread.p_last_xstream->rank);
-    }
+    /* Set the orphan request for the primary ULT */
+    ABTI_thread_set_request(p_self, ABTI_THREAD_REQ_ORPHAN);
+    /* Finish the main scheduler of this local xstream. */
+    ABTI_sched_finish(p_local_xstream->p_main_sched);
+    /* p_self cannot join the main scheduler since p_self needs to be orphaned.
+     * Let's wait till the main scheduler finishes.  This thread will be
+     * scheduled when the main root thread finishes. */
+    ABTI_ythread_yield(&p_local_xstream, p_ythread, ABT_SYNC_EVENT_TYPE_OTHER,
+                       NULL);
+    ABTI_ASSERT(p_local_xstream == ABTI_local_get_xstream(p_local));
+    ABTI_ASSERT(p_local_xstream->p_thread == p_self);
 
     /* Remove the primary ULT */
-    ABTI_ASSERT(p_local_xstream->p_thread == p_self);
     p_local_xstream->p_thread = NULL;
     ABTI_ythread_free_main(ABTI_xstream_get_local(p_local_xstream), p_ythread);
 

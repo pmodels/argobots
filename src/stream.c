@@ -196,11 +196,14 @@ int ABT_xstream_revive(ABT_xstream xstream)
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     /* Revives the main scheduler thread. */
-    ABTI_ythread *p_main_sched_ythread = p_xstream->p_main_sched->p_ythread;
+    ABTI_sched *p_main_sched = p_xstream->p_main_sched;
+    ABTD_atomic_relaxed_store_uint32(&p_main_sched->request, 0);
+    ABTI_ythread *p_main_sched_ythread = p_main_sched->p_ythread;
     ABTI_tool_event_thread_join(p_local, &p_main_sched_ythread->thread,
                                 ABTI_local_get_xstream_or_null(p_local)
                                     ? ABTI_local_get_xstream(p_local)->p_thread
                                     : NULL);
+
     abt_errno = ABTI_thread_revive(p_local, p_xstream->p_root_pool,
                                    p_main_sched_ythread->thread.f_thread,
                                    p_main_sched_ythread->thread.p_arg,
@@ -208,8 +211,6 @@ int ABT_xstream_revive(ABT_xstream xstream)
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTD_atomic_relaxed_store_int(&p_xstream->state, ABT_XSTREAM_STATE_RUNNING);
-    ABTD_atomic_relaxed_store_uint32(&p_xstream->request, 0);
-    p_xstream->p_req_arg = NULL;
     abt_errno = ABTD_xstream_context_revive(&p_xstream->ctx);
     ABTI_CHECK_ERROR(abt_errno);
 
@@ -256,11 +257,8 @@ int ABT_xstream_free(ABT_xstream *xstream)
                         "The primary xstream cannot be freed explicitly.");
 
     /* Wait until xstream terminates */
-    if (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
-        ABT_XSTREAM_STATE_TERMINATED) {
-        abt_errno = xstream_join(&p_local, p_xstream);
-        ABTI_CHECK_ERROR(abt_errno);
-    }
+    abt_errno = xstream_join(&p_local, p_xstream);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Free the xstream object */
     abt_errno = ABTI_xstream_free(p_local, p_xstream, ABT_FALSE);
@@ -329,15 +327,14 @@ int ABT_xstream_exit(void)
     ABTI_ythread *p_ythread;
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_ythread);
 
-    /* Set the exit request */
-    ABTI_xstream_set_request(p_local_xstream, ABTI_XSTREAM_REQ_TERMINATE);
+    /* Terminate the main scheduler. */
+    ABTD_atomic_fetch_or_uint32(&p_local_xstream->p_main_sched->p_ythread
+                                     ->thread.request,
+                                ABTI_THREAD_REQ_TERMINATE);
+    /* Terminate this ULT */
+    ABTI_ythread_exit(p_local_xstream, p_ythread);
+    ABTU_unreachable();
 
-    /* Wait until the ES terminates */
-    do {
-        ABTI_ythread_yield(&p_local_xstream, p_ythread,
-                           ABT_SYNC_EVENT_TYPE_OTHER, NULL);
-    } while (ABTD_atomic_acquire_load_int(&p_local_xstream->state) !=
-             ABT_XSTREAM_STATE_TERMINATED);
 fn_exit:
     return abt_errno;
 
@@ -363,8 +360,10 @@ int ABT_xstream_cancel(ABT_xstream xstream)
                         ABT_ERR_INV_XSTREAM,
                         "The primary xstream cannot be canceled.");
 
-    /* Set the cancel request */
-    ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_CANCEL);
+    /* Terminate the main scheduler of the target xstream. */
+    ABTD_atomic_fetch_or_uint32(&p_xstream->p_main_sched->p_ythread->thread
+                                     .request,
+                                ABTI_THREAD_REQ_TERMINATE);
 
 fn_exit:
     return abt_errno;
@@ -1113,13 +1112,14 @@ void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 {
     ABTI_info_check_print_all_thread_stacks();
 
-    uint32_t request = ABTD_atomic_acquire_load_uint32(&p_xstream->request);
-    if (request & ABTI_XSTREAM_REQ_JOIN) {
+    uint32_t request = ABTD_atomic_acquire_load_uint32(
+        &p_xstream->p_main_sched->p_ythread->thread.request);
+    if (request & ABTI_THREAD_REQ_JOIN) {
         ABTI_sched_finish(p_sched);
     }
 
-    if ((request & ABTI_XSTREAM_REQ_TERMINATE) ||
-        (request & ABTI_XSTREAM_REQ_CANCEL)) {
+    if ((request & ABTI_THREAD_REQ_TERMINATE) ||
+        (request & ABTI_THREAD_REQ_CANCEL)) {
         ABTI_sched_exit(p_sched);
     }
 }
@@ -1203,12 +1203,10 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                 "%*srank      : %d\n"
                 "%*stype      : %s\n"
                 "%*sstate     : %s\n"
-                "%*srequest   : 0x%x\n"
                 "%*smain_sched: %p\n",
                 indent, "", (void *)p_xstream, indent, "", p_xstream->rank,
                 indent, "", type, indent, "", state, indent, "",
-                ABTD_atomic_acquire_load_uint32(&p_xstream->request), indent,
-                "", (void *)p_xstream->p_main_sched);
+                (void *)p_xstream->p_main_sched);
 
         if (print_sub == ABT_TRUE) {
             ABTI_sched_print(p_xstream->p_main_sched, p_os,
@@ -1266,8 +1264,6 @@ static int xstream_create(ABTI_sched *p_sched, ABTI_xstream_type xstream_type,
                                   ABT_XSTREAM_STATE_RUNNING);
     p_newxstream->scheds = NULL;
     p_newxstream->p_main_sched = NULL;
-    ABTD_atomic_relaxed_store_uint32(&p_newxstream->request, 0);
-    p_newxstream->p_req_arg = NULL;
     p_newxstream->p_thread = NULL;
     ABTI_mem_init_local(p_newxstream);
 
@@ -1321,74 +1317,21 @@ static int xstream_start(ABTI_xstream *p_xstream)
 
 static int xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
 {
-    ABT_bool is_blockable = ABT_FALSE;
-
     /* The primary ES cannot be joined. */
     ABTI_CHECK_TRUE_RET(p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY,
                         ABT_ERR_INV_XSTREAM);
 
-    /* When the associated pool of the caller ULT has multiple-writer access
-     * mode, the ULT can be blocked. Otherwise, the access mode, if it is a
-     * single-writer access mode, may be violated because another ES has to set
-     * the blocked ULT ready. */
-    ABTI_ythread *p_ythread = NULL;
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
-    if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
-        ABTI_thread *p_thread = p_local_xstream->p_thread;
-        ABT_pool_access access = p_thread->p_pool->access;
-        /* The target ES must not be the same as the caller ULT's ES if the
-         * access mode of the associated pool is not MPMC. */
-        if (access != ABT_POOL_ACCESS_MPMC) {
-            /* The target ES should be different. */
-            ABTI_CHECK_TRUE_RET(p_xstream != p_local_xstream,
-                                ABT_ERR_INV_XSTREAM);
-        }
-        p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-        if (p_ythread) {
-            if (access == ABT_POOL_ACCESS_MPSC ||
-                access == ABT_POOL_ACCESS_MPMC) {
-                is_blockable = ABT_TRUE;
-            }
-        }
-    }
-
-    if (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
-        ABT_XSTREAM_STATE_TERMINATED) {
-        /* Wait until the target ES terminates */
-        if (is_blockable == ABT_TRUE) {
-            /* Save the caller ULT to set it ready when the ES is terminated */
-            p_xstream->p_req_arg = (void *)p_ythread;
-            ABTI_ythread_set_blocked(p_ythread);
-
-            /* Set the join request */
-            ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
-
-            /* If the caller is a ULT, it is blocked here */
-            ABTI_ythread_suspend(&p_local_xstream, p_ythread,
-                                 ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
-                                 (void *)p_xstream);
-            *pp_local = ABTI_xstream_get_local(p_local_xstream);
-        } else {
-            /* Set the join request */
-            ABTI_xstream_set_request(p_xstream, ABTI_XSTREAM_REQ_JOIN);
-
-            while (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
-                   ABT_XSTREAM_STATE_TERMINATED) {
-                if (p_ythread) {
-                    ABTI_ythread_yield(&p_local_xstream, p_ythread,
-                                       ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
-                                       (void *)p_xstream);
-                    *pp_local = ABTI_xstream_get_local(p_local_xstream);
-                } else {
-                    ABTD_atomic_pause();
-                }
-            }
-        }
-    }
+    /* Wait until the target ES terminates */
+    ABTI_sched_finish(p_xstream->p_main_sched);
+    ABTI_thread_join(pp_local, &p_xstream->p_main_sched->p_ythread->thread);
 
     /* Normal join request */
     int abt_errno = ABTD_xstream_context_join(&p_xstream->ctx);
     ABTI_CHECK_ERROR_RET(abt_errno);
+
+    ABTI_ASSERT(ABTD_atomic_acquire_load_int(&p_xstream->state) ==
+                ABT_XSTREAM_STATE_TERMINATED);
+
     return ABT_SUCCESS;
 }
 

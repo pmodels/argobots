@@ -455,12 +455,7 @@ int ABT_thread_exit(void)
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_ythread;
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_ythread);
-
-    /* Set the exit request */
-    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_TERMINATE);
-
-    /* Terminate this ULT */
-    ABTD_ythread_exit(p_local_xstream, p_ythread);
+    ABTI_ythread_exit(p_local_xstream, p_ythread);
 
 fn_exit:
     return abt_errno;
@@ -1713,6 +1708,11 @@ int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
     return ABT_SUCCESS;
 }
 
+int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
+{
+    return thread_join(pp_local, p_thread);
+}
+
 void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread)
 {
     LOG_DEBUG("[U%" PRIu64 ":E%d] freed\n", ABTI_thread_get_id(p_thread),
@@ -1733,6 +1733,17 @@ void ABTI_ythread_free_main(ABTI_local *p_local, ABTI_ythread *p_ythread)
 void ABTI_ythread_free_root(ABTI_local *p_local, ABTI_ythread *p_ythread)
 {
     thread_free(p_local, &p_ythread->thread, ABT_FALSE);
+}
+
+ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
+                                     ABTI_ythread *p_ythread)
+{
+    /* Set the exit request */
+    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_TERMINATE);
+
+    /* Terminate this ULT */
+    ABTD_ythread_exit(p_local_xstream, p_ythread);
+    ABTU_unreachable();
 }
 
 int ABTI_thread_get_mig_data(ABTI_local *p_local, ABTI_thread *p_thread,
@@ -2092,8 +2103,7 @@ static inline int thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
     }
 
     /* The main ULT cannot be joined. */
-    ABTI_CHECK_TRUE_RET(!(p_thread->type & (ABTI_THREAD_TYPE_MAIN |
-                                            ABTI_THREAD_TYPE_MAIN_SCHED)),
+    ABTI_CHECK_TRUE_RET(!(p_thread->type & ABTI_THREAD_TYPE_MAIN),
                         ABT_ERR_INV_THREAD);
 
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
@@ -2282,7 +2292,9 @@ static void thread_root_func(void *arg)
             /* The root thread must be executed on the same execution stream. */
             ABTI_ASSERT(p_xstream == p_local_xstream);
         }
-    } while (ABTI_pool_get_total_size(p_root_pool) > 0);
+    } while (ABTD_atomic_acquire_load_int(
+                 &p_local_xstream->p_main_sched->p_ythread->thread.state) !=
+             ABT_THREAD_STATE_TERMINATED);
     /* The main scheduler thread finishes. */
 
     /* Set the ES's state as TERMINATED */
@@ -2307,38 +2319,27 @@ static void thread_main_sched_func(void *arg)
         ABTI_ASSERT(p_local_xstream->p_thread == &p_sched->p_ythread->thread);
 
         LOG_DEBUG("[S%" PRIu64 "] start\n", p_sched->id);
-
         p_sched->run(ABTI_sched_get_handle(p_sched));
+        /* From here the main scheduler can have been already replaced. */
         /* The main scheduler must be executed on the same execution stream. */
         ABTI_ASSERT(p_local == ABTI_local_get_local_uninlined());
-
         LOG_DEBUG("[S%" PRIu64 "] end\n", p_sched->id);
 
-        uint32_t request =
-            ABTD_atomic_acquire_load_uint32(&p_local_xstream->request);
+        p_sched = p_local_xstream->p_main_sched;
+        uint32_t request = ABTD_atomic_acquire_load_uint32(
+            &p_sched->p_ythread->thread.request);
 
         /* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */
-        if ((request & ABTI_XSTREAM_REQ_TERMINATE) ||
-            (request & ABTI_XSTREAM_REQ_CANCEL))
+        if (request & (ABTI_THREAD_REQ_TERMINATE | ABTI_THREAD_REQ_CANCEL))
             break;
 
         /* When join is requested, the ES terminates after finishing
          * execution of all work units. */
-        if (request & ABTI_XSTREAM_REQ_JOIN) {
-            if (ABTI_sched_get_effective_size(p_local,
-                                              p_local_xstream->p_main_sched) ==
-                0) {
-                /* If a ULT has been blocked on the join call, we make it ready
-                 */
-                if (p_local_xstream->p_req_arg) {
-                    ABTI_ythread_set_ready(p_local,
-                                           (ABTI_ythread *)
-                                               p_local_xstream->p_req_arg);
-                    p_local_xstream->p_req_arg = NULL;
-                }
-                break;
-            }
+        if ((ABTD_atomic_relaxed_load_uint32(&p_sched->request) &
+             ABTI_SCHED_REQ_FINISH) &&
+            ABTI_sched_get_effective_size(p_local, p_sched) == 0) {
+            break;
         }
     }
     /* Finish this thread and goes back to the root thread. */

@@ -35,10 +35,6 @@
 /* Constants */
 #define ABTI_SCHED_NUM_PRIO 3
 
-#define ABTI_XSTREAM_REQ_JOIN (1 << 0)
-#define ABTI_XSTREAM_REQ_TERMINATE (1 << 1)
-#define ABTI_XSTREAM_REQ_CANCEL (1 << 2)
-
 #define ABTI_SCHED_REQ_FINISH (1 << 0)
 #define ABTI_SCHED_REQ_EXIT (1 << 1)
 
@@ -242,10 +238,6 @@ struct ABTI_xstream {
     ABTI_sched **scheds;      /* Stack of running schedulers */
     ABTI_sched *p_main_sched; /* Main scheduler, which is the bottom of the
                                * linked list of schedulers */
-
-    ABTD_atomic_uint32 request; /* Request */
-    void *p_req_arg;            /* Request argument */
-
     ABTD_xstream_context ctx; /* ES context */
 
     ABTI_ythread
@@ -510,6 +502,7 @@ int ABTI_thread_get_mig_data(ABTI_local *p_local, ABTI_thread *p_thread,
 int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
                        void (*thread_func)(void *), void *arg,
                        ABTI_thread *p_thread);
+int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread);
 void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 void ABTI_thread_reset_id(void);
@@ -524,6 +517,8 @@ int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
                                    ABTI_sched *p_sched);
 int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
                               ABTI_sched *p_sched);
+ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
+                                     ABTI_ythread *p_ythread);
 void ABTI_ythread_free_main(ABTI_local *p_local, ABTI_ythread *p_ythread);
 void ABTI_ythread_free_root(ABTI_local *p_local, ABTI_ythread *p_ythread);
 void ABTI_ythread_set_blocked(ABTI_ythread *p_ythread);
