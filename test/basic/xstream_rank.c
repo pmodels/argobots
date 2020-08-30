@@ -46,9 +46,15 @@ int main(int argc, char *argv[])
     }
 
     /* Test an invalid rank, which is already taken */
-    ABT_xstream tmp;
-    ret = ABT_xstream_create_with_rank(ABT_SCHED_NULL, 0, &tmp);
-    assert(ret == ABT_ERR_INV_XSTREAM_RANK);
+    ABT_bool is_check_error = ABT_FALSE;
+    ret = ABT_info_query_config(ABT_INFO_QUERY_KIND_ENABLED_CHECK_ERROR,
+                                (void *)&is_check_error);
+    ATS_ERROR(ret, "ABT_info_query_config");
+    if (is_check_error) {
+        ABT_xstream tmp;
+        ret = ABT_xstream_create_with_rank(ABT_SCHED_NULL, 0, &tmp);
+        assert(ret == ABT_ERR_INV_XSTREAM_RANK);
+    }
 
     /* Join and free ESs */
     for (i = 1; i < num_xstreams; i++) {
