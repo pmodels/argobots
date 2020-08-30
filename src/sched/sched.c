@@ -609,19 +609,8 @@ int ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
     ABTU_free(p_sched->pools);
 
     /* Free the associated work unit */
-    if (p_sched->type == ABT_SCHED_TYPE_ULT) {
-        if (p_sched->p_ythread) {
-            if (p_sched->p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED) {
-                ABTI_ythread_free_main_sched(p_local, p_sched->p_ythread);
-            } else {
-                ABTI_thread_free(p_local, &p_sched->p_ythread->thread);
-            }
-        }
-    } else if (p_sched->type == ABT_SCHED_TYPE_TASK) {
-        /* The underlying implementation is ULT. */
-        if (p_sched->p_ythread) {
-            ABTI_thread_free(p_local, &p_sched->p_ythread->thread);
-        }
+    if (p_sched->p_ythread) {
+        ABTI_thread_free(p_local, &p_sched->p_ythread->thread);
     }
 
     LOG_DEBUG("[S%" PRIu64 "] freed\n", p_sched->id);

@@ -272,7 +272,8 @@ static inline int tool_query(ABTI_tool_context *p_tctx,
                     depth++;
                     p_cur = p_cur->p_parent;
                 }
-                *(int *)val = depth;
+                /* We do not count the root thread, so -1. */
+                *(int *)val = depth - 1;
             }
             break;
         case ABT_TOOL_QUERY_KIND_CALLER_TYPE:

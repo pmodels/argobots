@@ -48,6 +48,10 @@ static inline int ABTI_sched_discard_and_free(ABTI_local *p_local,
     if (p_sched->automatic == ABT_TRUE || force_free) {
         int abt_errno = ABTI_sched_free(p_local, p_sched, force_free);
         ABTI_CHECK_ERROR_RET(abt_errno);
+    } else {
+        /* Threads should be discarded here. */
+        ABTI_thread_free(p_local, &p_sched->p_ythread->thread);
+        p_sched->p_ythread = NULL;
     }
     return ABT_SUCCESS;
 }

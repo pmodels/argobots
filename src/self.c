@@ -188,9 +188,7 @@ int ABT_self_suspend(void)
     ABTI_ythread *p_self;
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_self);
 
-    abt_errno = ABTI_ythread_set_blocked(p_self);
-    ABTI_CHECK_ERROR(abt_errno);
-
+    ABTI_ythread_set_blocked(p_self);
     ABTI_ythread_suspend(&p_local_xstream, p_self, ABT_SYNC_EVENT_TYPE_USER,
                          NULL);
 
