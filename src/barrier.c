@@ -95,7 +95,7 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
         abt_errno = ABTU_malloc(num_waiters * sizeof(ABT_unit_type),
                                 (void **)&new_waiter_types);
         if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-            ABTU_free(new_waiter_types);
+            ABTU_free(new_waiters);
             goto fn_fail;
         }
         p_barrier->num_waiters = num_waiters;
