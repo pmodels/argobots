@@ -36,7 +36,7 @@ static inline ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 #endif
 }
 
-static inline int ABTI_mutex_init(ABTI_mutex *p_mutex)
+ABTU_ret_err static inline int ABTI_mutex_init(ABTI_mutex *p_mutex)
 {
     ABTD_atomic_relaxed_store_uint32(&p_mutex->val, 0);
     p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;

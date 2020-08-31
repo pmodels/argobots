@@ -110,8 +110,8 @@ int ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool,
 void ABTI_mem_pool_return_bucket(ABTI_mem_pool_global_pool *p_global_pool,
                                  ABTI_mem_pool_header *bucket);
 
-static inline int ABTI_mem_pool_alloc(ABTI_mem_pool_local_pool *p_local_pool,
-                                      void **p_mem)
+ABTU_ret_err static inline int
+ABTI_mem_pool_alloc(ABTI_mem_pool_local_pool *p_local_pool, void **p_mem)
 {
     size_t bucket_index = p_local_pool->bucket_index;
     ABTI_mem_pool_header *cur_bucket = p_local_pool->buckets[bucket_index];

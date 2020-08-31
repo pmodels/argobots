@@ -28,7 +28,8 @@ static inline void ABTD_ythread_context_make(ABTD_ythread_context *p_ctx,
                                              void *sp, size_t size,
                                              void (*thread_func)(void *))
 {
-    getcontext(&p_ctx->uctx);
+    int ret = getcontext(&p_ctx->uctx);
+    ABTI_ASSERT(ret == 0); /* getcontext() should not return an error. */
     p_ctx->p_ctx = &p_ctx->uctx;
 
     /* uc_link is not used. */
@@ -55,7 +56,9 @@ static inline void ABTD_ythread_context_jump(ABTD_ythread_context *p_old,
                                              void *arg)
 {
     p_new->p_uctx_arg = arg;
-    swapcontext(&p_old->uctx, &p_new->uctx);
+    int ret = swapcontext(&p_old->uctx, &p_new->uctx);
+    /* Fatal.  This out-of-stack error is not recoverable. */
+    ABTI_ASSERT(ret == 0);
 }
 
 ABTU_noreturn static inline void
@@ -63,7 +66,8 @@ ABTD_ythread_context_take(ABTD_ythread_context *p_old,
                           ABTD_ythread_context *p_new, void *arg)
 {
     p_new->p_uctx_arg = arg;
-    setcontext(&p_new->uctx);
+    int ret = setcontext(&p_new->uctx);
+    ABTI_ASSERT(ret == 0); /* setcontext() should not return an error. */
     ABTU_unreachable();
 }
 

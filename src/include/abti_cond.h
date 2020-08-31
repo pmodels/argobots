@@ -57,8 +57,8 @@ static inline ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
 #endif
 }
 
-static inline int ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond,
-                                 ABTI_mutex *p_mutex)
+ABTU_ret_err static inline int
+ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 {
     ABTI_ythread *p_ythread = NULL;
     ABTI_thread *p_thread;

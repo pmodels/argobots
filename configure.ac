@@ -273,6 +273,8 @@ fi
 AC_SUBST([ABT_DEPRECATED])
 # check __attribute__((noreturn))
 AX_GCC_FUNC_ATTRIBUTE(noreturn)
+# check __attribute__((warn_unused_result))
+AX_GCC_FUNC_ATTRIBUTE(warn_unused_result)
 
 dnl ----------------------------------------------------------------------------
 

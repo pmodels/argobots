@@ -36,7 +36,10 @@ int ABT_xstream_barrier_create(uint32_t num_waiters,
 
     p_newbarrier->num_waiters = num_waiters;
     abt_errno = ABTD_xstream_barrier_init(num_waiters, &p_newbarrier->bar);
-    ABTI_CHECK_ERROR(abt_errno);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_newbarrier);
+        goto fn_fail;
+    }
 
     /* Return value */
     *newbarrier = ABTI_xstream_barrier_get_handle(p_newbarrier);
@@ -72,9 +75,7 @@ int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier)
     ABTI_xstream_barrier *p_barrier = ABTI_xstream_barrier_get_ptr(h_barrier);
     ABTI_CHECK_NULL_XSTREAM_BARRIER_PTR(p_barrier);
 
-    abt_errno = ABTD_xstream_barrier_destroy(&p_barrier->bar);
-    ABTI_CHECK_ERROR(abt_errno);
-
+    ABTD_xstream_barrier_destroy(&p_barrier->bar);
     ABTU_free(p_barrier);
 
     /* Return value */

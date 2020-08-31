@@ -64,8 +64,8 @@ static inline int ABTI_ktable_is_valid(ABTI_ktable *p_ktable)
            ((uintptr_t)(void *)0x0);
 }
 
-static inline int ABTI_ktable_create(ABTI_local *p_local,
-                                     ABTI_ktable **pp_ktable)
+ABTU_ret_err static inline int ABTI_ktable_create(ABTI_local *p_local,
+                                                  ABTI_ktable **pp_ktable)
 {
     ABTI_ktable *p_ktable;
     int key_table_size = gp_ABTI_global->key_table_size;
@@ -114,9 +114,10 @@ static inline int ABTI_ktable_create(ABTI_local *p_local,
     return ABT_SUCCESS;
 }
 
-static inline int ABTI_ktable_alloc_elem(ABTI_local *p_local,
-                                         ABTI_ktable *p_ktable, size_t size,
-                                         void **pp_mem)
+ABTU_ret_err static inline int ABTI_ktable_alloc_elem(ABTI_local *p_local,
+                                                      ABTI_ktable *p_ktable,
+                                                      size_t size,
+                                                      void **pp_mem)
 {
     ABTI_ASSERT((size & (ABTU_MAX_ALIGNMENT - 1)) == 0);
     size_t extra_mem_size = p_ktable->extra_mem_size;
@@ -162,9 +163,9 @@ static inline uint32_t ABTI_ktable_get_idx(ABTI_key *p_key, int size)
     return p_key->id & (size - 1);
 }
 
-static inline int ABTI_ktable_set_impl(ABTI_local *p_local,
-                                       ABTI_ktable *p_ktable, ABTI_key *p_key,
-                                       void *value, ABT_bool is_safe)
+ABTU_ret_err static inline int
+ABTI_ktable_set_impl(ABTI_local *p_local, ABTI_ktable *p_ktable,
+                     ABTI_key *p_key, void *value, ABT_bool is_safe)
 {
     uint32_t idx;
     ABTD_atomic_ptr *pp_elem;
@@ -220,9 +221,9 @@ static inline int ABTI_ktable_set_impl(ABTI_local *p_local,
     return ABT_SUCCESS;
 }
 
-static inline int ABTI_ktable_set(ABTI_local *p_local,
-                                  ABTD_atomic_ptr *pp_ktable, ABTI_key *p_key,
-                                  void *value)
+ABTU_ret_err static inline int ABTI_ktable_set(ABTI_local *p_local,
+                                               ABTD_atomic_ptr *pp_ktable,
+                                               ABTI_key *p_key, void *value)
 {
     int abt_errno;
     ABTI_ktable *p_ktable = ABTD_atomic_acquire_load_ptr(pp_ktable);
@@ -261,9 +262,10 @@ static inline int ABTI_ktable_set(ABTI_local *p_local,
     return ABT_SUCCESS;
 }
 
-static inline int ABTI_ktable_set_unsafe(ABTI_local *p_local,
-                                         ABTI_ktable **pp_ktable,
-                                         ABTI_key *p_key, void *value)
+ABTU_ret_err static inline int ABTI_ktable_set_unsafe(ABTI_local *p_local,
+                                                      ABTI_ktable **pp_ktable,
+                                                      ABTI_key *p_key,
+                                                      void *value)
 {
     int abt_errno;
     ABTI_ktable *p_ktable = *pp_ktable;

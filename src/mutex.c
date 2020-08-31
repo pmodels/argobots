@@ -7,7 +7,7 @@
 #include "abti_ythread_htable.h"
 
 static inline void mutex_lock_low(ABTI_local **pp_local, ABTI_mutex *p_mutex);
-static inline int mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex);
+static inline void mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex);
 
 /** @defgroup MUTEX Mutex
  * Mutex is a synchronization method to support mutual exclusion between ULTs.
@@ -721,10 +721,8 @@ static inline void mutex_lock_low(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 }
 
 /* Hand over the mutex to other ULT on the same ES */
-static inline int mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
+static inline void mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_ythread *p_ythread = NULL;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
     if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
@@ -744,7 +742,7 @@ static inline int mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
         ABTD_atomic_release_store_uint32(&p_mutex->val, 0); /* Unlock */
         LOG_DEBUG("%p: unlock_se\n", p_mutex);
         ABTI_mutex_wake_de(*pp_local, p_mutex);
-        return abt_errno;
+        return;
     }
 
     /* Unlock the mutex */
@@ -757,7 +755,7 @@ static inline int mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex)
                                ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             *pp_local = ABTI_xstream_get_local(p_local_xstream);
         }
-        return abt_errno;
+        return;
     }
 
     /* There are ULTs waiting in the mutex queue */
@@ -775,7 +773,7 @@ check_cond:
         ABTI_ythread_yield(&p_local_xstream, p_ythread,
                            ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
-        return abt_errno;
+        return;
     }
 
     /* Hand over the mutex to high-priority ULTs */
@@ -787,7 +785,7 @@ check_cond:
             ABTI_ythread_yield(&p_local_xstream, p_ythread,
                                ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             *pp_local = ABTI_xstream_get_local(p_local_xstream);
-            return abt_errno;
+            return;
         }
     } else {
         p_next = ABTI_ythread_htable_pop(p_htable, p_queue);
@@ -806,7 +804,7 @@ check_cond:
         ABTI_ythread_yield(&p_local_xstream, p_ythread,
                            ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
-        return abt_errno;
+        return;
     } else {
         p_next = ABTI_ythread_htable_pop_low(p_htable, p_queue);
         if (p_next == NULL)
@@ -846,6 +844,4 @@ handover:
     ABTI_tool_event_thread_run(p_local_xstream, &p_ythread->thread,
                                &p_prev->thread, p_ythread->thread.p_parent);
 #endif
-
-    return abt_errno;
 }

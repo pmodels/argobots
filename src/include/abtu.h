@@ -45,6 +45,12 @@
          ? ABTU_alignof(long double)                                           \
          : ABTU_alignof(long long))
 
+#ifdef HAVE_FUNC_ATTRIBUTE_WARN_UNUSED_RESULT
+#define ABTU_ret_err __attribute__((warn_unused_result))
+#else
+#define ABTU_ret_err
+#endif
+
 /*
  * An attribute to hint an alignment of a member variable.
  * Usage:
@@ -101,7 +107,8 @@
 
 /* Utility Functions */
 
-static inline int ABTU_memalign(size_t alignment, size_t size, void **p_ptr)
+ABTU_ret_err static inline int ABTU_memalign(size_t alignment, size_t size,
+                                             void **p_ptr)
 {
     void *ptr;
     int ret = posix_memalign(&ptr, alignment, size);
@@ -119,7 +126,7 @@ static inline void ABTU_free(void *ptr)
 
 #ifdef ABT_CONFIG_USE_ALIGNED_ALLOC
 
-static inline int ABTU_malloc(size_t size, void **p_ptr)
+ABTU_ret_err static inline int ABTU_malloc(size_t size, void **p_ptr)
 {
     /* Round up to the smallest multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE
      * which is greater than or equal to size in order to avoid any
@@ -129,7 +136,8 @@ static inline int ABTU_malloc(size_t size, void **p_ptr)
     return ABTU_memalign(ABT_CONFIG_STATIC_CACHELINE_SIZE, size, p_ptr);
 }
 
-static inline int ABTU_calloc(size_t num, size_t size, void **p_ptr)
+ABTU_ret_err static inline int ABTU_calloc(size_t num, size_t size,
+                                           void **p_ptr)
 {
     void *ptr;
     int ret = ABTU_malloc(num * size, &ptr);
@@ -141,7 +149,8 @@ static inline int ABTU_calloc(size_t num, size_t size, void **p_ptr)
     return ABT_SUCCESS;
 }
 
-static inline int ABTU_realloc(size_t old_size, size_t new_size, void **p_ptr)
+ABTU_ret_err static inline int ABTU_realloc(size_t old_size, size_t new_size,
+                                            void **p_ptr)
 {
     void *new_ptr, *old_ptr = *p_ptr;
     int ret = ABTU_malloc(new_size, &new_ptr);
@@ -156,7 +165,7 @@ static inline int ABTU_realloc(size_t old_size, size_t new_size, void **p_ptr)
 
 #else /* ABT_CONFIG_USE_ALIGNED_ALLOC */
 
-static inline int ABTU_malloc(size_t size, void **p_ptr)
+ABTU_ret_err static inline int ABTU_malloc(size_t size, void **p_ptr)
 {
     void *ptr = malloc(size);
     if (ABTI_IS_ERROR_CHECK_ENABLED && ptr == NULL) {
@@ -166,7 +175,8 @@ static inline int ABTU_malloc(size_t size, void **p_ptr)
     return ABT_SUCCESS;
 }
 
-static inline int ABTU_calloc(size_t num, size_t size, void **p_ptr)
+ABTU_ret_err static inline int ABTU_calloc(size_t num, size_t size,
+                                           void **p_ptr)
 {
     void *ptr = calloc(num, size);
     if (ABTI_IS_ERROR_CHECK_ENABLED && ptr == NULL) {
@@ -176,7 +186,8 @@ static inline int ABTU_calloc(size_t num, size_t size, void **p_ptr)
     return ABT_SUCCESS;
 }
 
-static inline int ABTU_realloc(size_t old_size, size_t new_size, void **p_ptr)
+ABTU_ret_err static inline int ABTU_realloc(size_t old_size, size_t new_size,
+                                            void **p_ptr)
 {
     (void)old_size;
     void *ptr = realloc(*p_ptr, new_size);
@@ -199,10 +210,11 @@ typedef enum ABTU_MEM_LARGEPAGE_TYPE {
 /* Returns 1 if a given large page type is supported. */
 int ABTU_is_supported_largepage_type(size_t size, size_t alignment_hint,
                                      ABTU_MEM_LARGEPAGE_TYPE requested);
-int ABTU_alloc_largepage(size_t size, size_t alignment_hint,
-                         const ABTU_MEM_LARGEPAGE_TYPE *requested_types,
-                         int num_requested_types,
-                         ABTU_MEM_LARGEPAGE_TYPE *p_actual, void **p_ptr);
+ABTU_ret_err int
+ABTU_alloc_largepage(size_t size, size_t alignment_hint,
+                     const ABTU_MEM_LARGEPAGE_TYPE *requested_types,
+                     int num_requested_types, ABTU_MEM_LARGEPAGE_TYPE *p_actual,
+                     void **p_ptr);
 void ABTU_free_largepage(void *ptr, size_t size, ABTU_MEM_LARGEPAGE_TYPE type);
 
 #endif /* ABTU_H_INCLUDED */

@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-static int timer_alloc(ABTI_timer **pp_newtimer);
+ABTU_ret_err static int timer_alloc(ABTI_timer **pp_newtimer);
 
 /** @defgroup TIMER  Timer
  * This group is for Timer.
@@ -344,7 +344,7 @@ fn_fail:
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static int timer_alloc(ABTI_timer **pp_newtimer)
+ABTU_ret_err static int timer_alloc(ABTI_timer **pp_newtimer)
 {
     /* We use libc malloc/free for ABT_timer because ABTU_malloc/free might
      * need the initialization of Argobots if they are not the same as libc

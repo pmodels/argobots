@@ -359,8 +359,8 @@ void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
     fflush(p_os);
 }
 
-int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
-                         ABTI_thread_attr **pp_dup_attr)
+ABTU_ret_err int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
+                                      ABTI_thread_attr **pp_dup_attr)
 {
     ABTI_thread_attr *p_dup_attr;
 
