@@ -170,6 +170,10 @@ static inline void ABTI_tool_event_thread_impl(
                 p_local_xstream ? ABTI_xstream_get_handle(p_local_xstream)
                                 : ABT_XSTREAM_NULL;
             if (p_ythread) {
+                if (p_ythread->thread.type & ABTI_THREAD_TYPE_ROOT) {
+                    /* Root thread should not be visible to users. */
+                    return;
+                }
                 ABT_thread h_thread = ABTI_ythread_get_handle(p_ythread);
                 ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);
                 cb_func_thread(h_thread, h_xstream, event_code, h_tctx,

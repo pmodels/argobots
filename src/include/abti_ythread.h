@@ -347,20 +347,6 @@ ABTI_ythread_finish_context_to_parent(ABTI_xstream *p_local_xstream,
     ABTU_unreachable();
 }
 
-ABTU_noreturn static inline void
-ABTI_ythread_finish_context_sched_to_main_thread(ABTI_sched *p_main_sched)
-{
-    /* The main thread is stored in p_link. */
-    ABTI_ythread *p_sched_ythread = p_main_sched->p_ythread;
-    ABTI_ASSERT(p_sched_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED);
-    ABTD_ythread_context *p_ctx = &p_sched_ythread->ctx;
-    ABTI_ythread *p_main_ythread = ABTI_ythread_context_get_ythread(
-        ABTD_atomic_acquire_load_ythread_context_ptr(&p_ctx->p_link));
-    ABTI_ASSERT(p_main_ythread &&
-                (p_main_ythread->thread.type & ABTI_THREAD_TYPE_MAIN));
-    ABTD_ythread_finish_context(&p_sched_ythread->ctx, &p_main_ythread->ctx);
-}
-
 static inline void ABTI_ythread_yield(ABTI_xstream **pp_local_xstream,
                                       ABTI_ythread *p_ythread,
                                       ABT_sync_event_type sync_event_type,

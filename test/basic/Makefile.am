@@ -40,6 +40,7 @@ TESTS = \
 	sched_stack \
 	sched_config \
 	sched_user_ws \
+	main_sched \
 	mutex \
 	mutex_prio \
 	mutex_recursive \
@@ -113,6 +114,7 @@ sched_set_main_SOURCES = sched_set_main.c
 sched_stack_SOURCES = sched_stack.c
 sched_config_SOURCES = sched_config.c
 sched_user_ws_SOURCES = sched_user_ws.c
+main_sched_SOURCES = main_sched.c
 mutex_SOURCES = mutex.c
 mutex_prio_SOURCES = mutex_prio.c
 mutex_recursive_SOURCES = mutex_recursive.c
@@ -174,6 +176,7 @@ testing:
 	./sched_stack
 	./sched_config
 	./sched_user_ws
+	./main_sched
 	./mutex
 	./mutex_prio
 	./mutex_recursive

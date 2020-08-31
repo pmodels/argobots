@@ -5,11 +5,10 @@
 
 #include "abti.h"
 
-int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread)
+void ABTI_ythread_set_blocked(ABTI_ythread *p_ythread)
 {
-    /* The main sched cannot be blocked */
-    ABTI_CHECK_TRUE_RET(!(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
-                        ABT_ERR_THREAD);
+    /* The root thread cannot be blocked */
+    ABTI_ASSERT(!(p_ythread->thread.type & ABTI_THREAD_TYPE_ROOT));
 
     /* To prevent the scheduler from adding the ULT to the pool */
     ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_BLOCK);
@@ -25,7 +24,6 @@ int ABTI_ythread_set_blocked(ABTI_ythread *p_ythread)
     LOG_DEBUG("[U%" PRIu64 ":E%d] blocked\n",
               ABTI_thread_get_id(&p_ythread->thread),
               p_ythread->thread.p_last_xstream->rank);
-    return ABT_SUCCESS;
 }
 
 /* NOTE: This routine should be called after ABTI_ythread_set_blocked. */
