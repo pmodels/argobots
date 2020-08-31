@@ -77,7 +77,8 @@ static inline void ABTI_pool_add_thread(ABTI_thread *p_thread)
     ABTI_pool_push(p_thread->p_pool, p_thread->unit);
 }
 
-static inline int ABTI_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
+ABTU_ret_err static inline int ABTI_pool_remove(ABTI_pool *p_pool,
+                                                ABT_unit unit)
 {
     LOG_DEBUG_POOL_REMOVE(p_pool, unit);
     return p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);

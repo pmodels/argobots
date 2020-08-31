@@ -6,8 +6,9 @@
 #include "abti.h"
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-static inline int tool_query(ABTI_tool_context *p_tctx,
-                             ABT_tool_query_kind query_kind, void *val);
+ABTU_ret_err static inline int tool_query(ABTI_tool_context *p_tctx,
+                                          ABT_tool_query_kind query_kind,
+                                          void *val);
 #endif
 
 /** @defgroup Tool interface
@@ -255,8 +256,8 @@ fn_fail:
 /*****************************************************************************/
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-static inline int tool_query(ABTI_tool_context *p_tctx,
-                             ABT_tool_query_kind query_kind, void *val)
+ABTU_ret_err static inline int
+tool_query(ABTI_tool_context *p_tctx, ABT_tool_query_kind query_kind, void *val)
 {
     switch (query_kind) {
         case ABT_TOOL_QUERY_KIND_POOL:

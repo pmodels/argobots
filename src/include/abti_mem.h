@@ -30,7 +30,8 @@ void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream);
 int ABTI_mem_check_lp_alloc(int lp_alloc);
 
 /* Inline functions */
-static inline int ABTI_mem_alloc_nythread_malloc(ABTI_thread **pp_thread)
+ABTU_ret_err static inline int
+ABTI_mem_alloc_nythread_malloc(ABTI_thread **pp_thread)
 {
     ABTI_thread *p_thread;
     int abt_errno =
@@ -42,8 +43,8 @@ static inline int ABTI_mem_alloc_nythread_malloc(ABTI_thread **pp_thread)
 }
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
-static inline int ABTI_mem_alloc_nythread_mempool(ABTI_local *p_local,
-                                                  ABTI_thread **pp_thread)
+ABTU_ret_err static inline int
+ABTI_mem_alloc_nythread_mempool(ABTI_local *p_local, ABTI_thread **pp_thread)
 {
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
@@ -61,8 +62,8 @@ static inline int ABTI_mem_alloc_nythread_mempool(ABTI_local *p_local,
 }
 #endif
 
-static inline int ABTI_mem_alloc_nythread(ABTI_local *p_local,
-                                          ABTI_thread **pp_thread)
+ABTU_ret_err static inline int ABTI_mem_alloc_nythread(ABTI_local *p_local,
+                                                       ABTI_thread **pp_thread)
 {
 #ifdef ABT_CONFIG_USE_MEM_POOL
     return ABTI_mem_alloc_nythread_mempool(p_local, pp_thread);
@@ -97,7 +98,7 @@ static inline void ABTI_mem_free_nythread(ABTI_local *p_local,
 }
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
-static inline int ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
+ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
     ABTI_mem_pool_local_pool *p_mem_pool_stack, size_t stacksize,
     ABTI_ythread **pp_ythread, void **pp_stack)
 {
@@ -113,7 +114,7 @@ static inline int ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
 }
 #endif
 
-static inline int ABTI_mem_alloc_ythread_malloc_desc_stack_impl(
+ABTU_ret_err static inline int ABTI_mem_alloc_ythread_malloc_desc_stack_impl(
     size_t stacksize, ABTI_ythread **pp_ythread, void **pp_stack)
 {
     /* stacksize must be a multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE. */
@@ -130,8 +131,8 @@ static inline int ABTI_mem_alloc_ythread_malloc_desc_stack_impl(
     return ABT_SUCCESS;
 }
 
-static inline int ABTI_mem_alloc_ythread_default(ABTI_local *p_local,
-                                                 ABTI_ythread **pp_ythread)
+ABTU_ret_err static inline int
+ABTI_mem_alloc_ythread_default(ABTI_local *p_local, ABTI_ythread **pp_ythread)
 {
     size_t stacksize = gp_ABTI_global->thread_stacksize;
     ABTI_ythread *p_ythread;
@@ -167,7 +168,7 @@ static inline int ABTI_mem_alloc_ythread_default(ABTI_local *p_local,
 }
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
-static inline int ABTI_mem_alloc_ythread_mempool_desc_stack(
+ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack(
     ABTI_local *p_local, ABTI_thread_attr *p_attr, ABTI_ythread **pp_ythread)
 {
     size_t stacksize = gp_ABTI_global->thread_stacksize;
@@ -196,7 +197,7 @@ static inline int ABTI_mem_alloc_ythread_mempool_desc_stack(
 }
 #endif
 
-static inline int
+ABTU_ret_err static inline int
 ABTI_mem_alloc_ythread_malloc_desc_stack(ABTI_thread_attr *p_attr,
                                          ABTI_ythread **pp_ythread)
 {
@@ -217,9 +218,8 @@ ABTI_mem_alloc_ythread_malloc_desc_stack(ABTI_thread_attr *p_attr,
     return ABT_SUCCESS;
 }
 
-static inline int ABTI_mem_alloc_ythread_mempool_desc(ABTI_local *p_local,
-                                                      ABTI_thread_attr *p_attr,
-                                                      ABTI_ythread **pp_ythread)
+ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc(
+    ABTI_local *p_local, ABTI_thread_attr *p_attr, ABTI_ythread **pp_ythread)
 {
     ABTI_ythread *p_ythread;
     if (sizeof(ABTI_ythread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE) {
@@ -295,7 +295,8 @@ static inline void ABTI_mem_free_thread(ABTI_local *p_local,
  * allocated externally (i.e., malloc()) or taken from a memory pool. */
 #define ABTI_MEM_POOL_DESC_SIZE (ABTI_MEM_POOL_DESC_ELEM_SIZE - 4)
 
-static inline int ABTI_mem_alloc_desc(ABTI_local *p_local, void **pp_desc)
+ABTU_ret_err static inline int ABTI_mem_alloc_desc(ABTI_local *p_local,
+                                                   void **pp_desc)
 {
 #ifndef ABT_CONFIG_USE_MEM_POOL
     return ABTU_malloc(ABTI_MEM_POOL_DESC_SIZE, pp_desc);

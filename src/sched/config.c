@@ -219,8 +219,9 @@ int ABT_sched_config_free(ABT_sched_config *config)
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-int ABTI_sched_config_read_global(ABT_sched_config config,
-                                  ABT_pool_access *access, ABT_bool *automatic)
+ABTU_ret_err int ABTI_sched_config_read_global(ABT_sched_config config,
+                                               ABT_pool_access *access,
+                                               ABT_bool *automatic)
 {
     int abt_errno;
     int num_vars = 2;
@@ -248,8 +249,8 @@ int ABTI_sched_config_read_global(ABT_sched_config config,
 }
 
 /* type is 0 if we read the private parameters, else 1 */
-int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
-                           void **variables)
+ABTU_ret_err int ABTI_sched_config_read(ABT_sched_config config, int type,
+                                        int num_vars, void **variables)
 {
     size_t offset = 0;
     int num_params;

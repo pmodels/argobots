@@ -44,8 +44,9 @@ typedef struct ABTD_affinity_cpuset {
 void ABTD_env_init(ABTI_global *p_global);
 
 /* ES Context */
-int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
-                                ABTD_xstream_context *p_ctx);
+ABTU_ret_err int ABTD_xstream_context_create(void *(*f_xstream)(void *),
+                                             void *p_arg,
+                                             ABTD_xstream_context *p_ctx);
 void ABTD_xstream_context_free(ABTD_xstream_context *p_ctx);
 void ABTD_xstream_context_join(ABTD_xstream_context *p_ctx);
 void ABTD_xstream_context_revive(ABTD_xstream_context *p_ctx);
@@ -54,10 +55,11 @@ void ABTD_xstream_context_set_self(ABTD_xstream_context *p_ctx);
 /* ES Affinity */
 void ABTD_affinity_init(const char *affinity_str);
 void ABTD_affinity_finalize(void);
-int ABTD_affinity_cpuset_read(ABTD_xstream_context *p_ctx,
-                              ABTD_affinity_cpuset *p_cpuset);
-int ABTD_affinity_cpuset_apply(ABTD_xstream_context *p_ctx,
-                               const ABTD_affinity_cpuset *p_cpuset);
+ABTU_ret_err int ABTD_affinity_cpuset_read(ABTD_xstream_context *p_ctx,
+                                           ABTD_affinity_cpuset *p_cpuset);
+ABTU_ret_err int
+ABTD_affinity_cpuset_apply(ABTD_xstream_context *p_ctx,
+                           const ABTD_affinity_cpuset *p_cpuset);
 int ABTD_affinity_cpuset_apply_default(ABTD_xstream_context *p_ctx, int rank);
 void ABTD_affinity_cpuset_destroy(ABTD_affinity_cpuset *p_cpuset);
 

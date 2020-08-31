@@ -5,8 +5,8 @@
 
 #include "abti.h"
 
-static int pool_create(ABT_pool_def *def, ABT_pool_config config,
-                       ABT_bool automatic, ABTI_pool **pp_newpool);
+ABTU_ret_err static int pool_create(ABT_pool_def *def, ABT_pool_config config,
+                                    ABT_bool automatic, ABTI_pool **pp_newpool);
 
 /** @defgroup POOL Pool
  * This group is for Pool.
@@ -326,7 +326,8 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    ABTI_pool_remove(p_pool, unit);
+    abt_errno = ABTI_pool_remove(p_pool, unit);
+    ABTI_CHECK_ERROR(abt_errno);
 
 fn_exit:
     return abt_errno;
@@ -513,8 +514,10 @@ fn_fail:
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
-                           ABT_bool automatic, ABTI_pool **pp_newpool)
+ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
+                                        ABT_pool_access access,
+                                        ABT_bool automatic,
+                                        ABTI_pool **pp_newpool)
 {
     int abt_errno;
     ABT_pool_def def;
@@ -606,8 +609,8 @@ void ABTI_pool_reset_id(void)
 /*****************************************************************************/
 
 static inline uint64_t pool_get_new_id(void);
-static int pool_create(ABT_pool_def *def, ABT_pool_config config,
-                       ABT_bool automatic, ABTI_pool **pp_newpool)
+ABTU_ret_err static int pool_create(ABT_pool_def *def, ABT_pool_config config,
+                                    ABT_bool automatic, ABTI_pool **pp_newpool)
 {
     int abt_errno;
     ABTI_pool *p_pool;

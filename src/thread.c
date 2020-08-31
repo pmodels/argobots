@@ -5,23 +5,23 @@
 
 #include "abti.h"
 
-static inline int ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
-                                 void (*thread_func)(void *), void *arg,
-                                 ABTI_thread_attr *p_attr,
-                                 ABTI_thread_type thread_type,
-                                 ABTI_sched *p_sched, ABT_bool push_pool,
-                                 ABTI_ythread **pp_newthread);
+ABTU_ret_err static inline int
+ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
+               void (*thread_func)(void *), void *arg, ABTI_thread_attr *p_attr,
+               ABTI_thread_type thread_type, ABTI_sched *p_sched,
+               ABT_bool push_pool, ABTI_ythread **pp_newthread);
 static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread);
 static inline void thread_free(ABTI_local *p_local, ABTI_thread *p_thread,
                                ABT_bool free_unit);
 static void thread_root_func(void *arg);
 static void thread_main_sched_func(void *arg);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-static int thread_migrate_to_xstream(ABTI_local **pp_local,
-                                     ABTI_thread *p_thread,
-                                     ABTI_xstream *p_xstream);
-static int thread_migrate_to_pool(ABTI_local **p_local, ABTI_thread *p_thread,
-                                  ABTI_pool *p_pool);
+ABTU_ret_err static int thread_migrate_to_xstream(ABTI_local **pp_local,
+                                                  ABTI_thread *p_thread,
+                                                  ABTI_xstream *p_xstream);
+ABTU_ret_err static int thread_migrate_to_pool(ABTI_local **p_local,
+                                               ABTI_thread *p_thread,
+                                               ABTI_pool *p_pool);
 #endif
 static inline ABT_unit_id thread_get_new_id(void);
 
@@ -1612,8 +1612,9 @@ void ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
     ABTI_pool_push(p_pool, p_thread->unit);
 }
 
-int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                             ABTI_ythread **p_ythread)
+ABTU_ret_err int ABTI_ythread_create_main(ABTI_local *p_local,
+                                          ABTI_xstream *p_xstream,
+                                          ABTI_ythread **p_ythread)
 {
     ABTI_thread_attr attr;
     ABTI_pool *p_pool;
@@ -1639,8 +1640,9 @@ int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
     return ABT_SUCCESS;
 }
 
-int ABTI_ythread_create_root(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                             ABTI_ythread **pp_root_ythread)
+ABTU_ret_err int ABTI_ythread_create_root(ABTI_local *p_local,
+                                          ABTI_xstream *p_xstream,
+                                          ABTI_ythread **pp_root_ythread)
 {
     ABTI_thread_attr attr;
     /* Create a ULT context */
@@ -1664,8 +1666,9 @@ int ABTI_ythread_create_root(ABTI_local *p_local, ABTI_xstream *p_xstream,
     return ABT_SUCCESS;
 }
 
-int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                                   ABTI_sched *p_sched)
+ABTU_ret_err int ABTI_ythread_create_main_sched(ABTI_local *p_local,
+                                                ABTI_xstream *p_xstream,
+                                                ABTI_sched *p_sched)
 {
     ABTI_thread_attr attr;
 
@@ -1683,8 +1686,9 @@ int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
 }
 
 /* This routine is to create a ULT for the scheduler. */
-int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
-                              ABTI_sched *p_sched)
+ABTU_ret_err int ABTI_ythread_create_sched(ABTI_local *p_local,
+                                           ABTI_pool *p_pool,
+                                           ABTI_sched *p_sched)
 {
     ABTI_thread_attr attr;
 
@@ -1738,8 +1742,9 @@ ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
     ABTU_unreachable();
 }
 
-int ABTI_thread_get_mig_data(ABTI_local *p_local, ABTI_thread *p_thread,
-                             ABTI_thread_mig_data **pp_mig_data)
+ABTU_ret_err int ABTI_thread_get_mig_data(ABTI_local *p_local,
+                                          ABTI_thread *p_thread,
+                                          ABTI_thread_mig_data **pp_mig_data)
 {
     ABTI_thread_mig_data *p_mig_data =
         (ABTI_thread_mig_data *)ABTI_ktable_get(&p_thread->p_keytable,
@@ -1844,12 +1849,11 @@ ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static inline int ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
-                                 void (*thread_func)(void *), void *arg,
-                                 ABTI_thread_attr *p_attr,
-                                 ABTI_thread_type thread_type,
-                                 ABTI_sched *p_sched, ABT_bool push_pool,
-                                 ABTI_ythread **pp_newthread)
+ABTU_ret_err static inline int
+ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
+               void (*thread_func)(void *), void *arg, ABTI_thread_attr *p_attr,
+               ABTI_thread_type thread_type, ABTI_sched *p_sched,
+               ABT_bool push_pool, ABTI_ythread **pp_newthread)
 {
     int abt_errno;
     ABTI_ythread *p_newthread;
@@ -2001,8 +2005,9 @@ static inline int ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
 }
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-static int thread_migrate_to_pool(ABTI_local **pp_local, ABTI_thread *p_thread,
-                                  ABTI_pool *p_pool)
+ABTU_ret_err static int thread_migrate_to_pool(ABTI_local **pp_local,
+                                               ABTI_thread *p_thread,
+                                               ABTI_pool *p_pool)
 {
     /* checking for cases when migration is not allowed */
     ABTI_CHECK_TRUE_RET(!(p_thread->type & (ABTI_THREAD_TYPE_MAIN |
@@ -2337,9 +2342,9 @@ static void thread_main_sched_func(void *arg)
 }
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-static int thread_migrate_to_xstream(ABTI_local **pp_local,
-                                     ABTI_thread *p_thread,
-                                     ABTI_xstream *p_xstream)
+ABTU_ret_err static int thread_migrate_to_xstream(ABTI_local **pp_local,
+                                                  ABTI_thread *p_thread,
+                                                  ABTI_xstream *p_xstream)
 {
     int abt_errno;
     /* checking for cases when migration is not allowed */

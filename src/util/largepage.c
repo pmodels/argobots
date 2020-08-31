@@ -86,10 +86,11 @@ int ABTU_is_supported_largepage_type(size_t size, size_t alignment_hint,
     return 0;
 }
 
-int ABTU_alloc_largepage(size_t size, size_t alignment_hint,
-                         const ABTU_MEM_LARGEPAGE_TYPE *requested_types,
-                         int num_requested_types,
-                         ABTU_MEM_LARGEPAGE_TYPE *p_actual, void **p_ptr)
+ABTU_ret_err int
+ABTU_alloc_largepage(size_t size, size_t alignment_hint,
+                     const ABTU_MEM_LARGEPAGE_TYPE *requested_types,
+                     int num_requested_types, ABTU_MEM_LARGEPAGE_TYPE *p_actual,
+                     void **p_ptr)
 {
     int i;
     void *ptr = NULL;

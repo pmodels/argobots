@@ -444,7 +444,7 @@ extern ABTI_local_func gp_ABTI_local_func;
 extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
 
 /* Execution Stream (ES) */
-int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
+ABTU_ret_err int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
 void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
                                 ABTI_xstream *p_xstream,
                                 ABTI_ythread *p_ythread);
@@ -464,12 +464,14 @@ ABT_sched_def *ABTI_sched_get_prio_def(void);
 ABT_sched_def *ABTI_sched_get_randws_def(void);
 void ABTI_sched_finish(ABTI_sched *p_sched);
 void ABTI_sched_exit(ABTI_sched *p_sched);
-int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
-                            ABT_pool *pools, ABT_sched_config config,
-                            ABTI_sched **pp_newsched);
+ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
+                                         ABT_pool *pools,
+                                         ABT_sched_config config,
+                                         ABTI_sched **pp_newsched);
 void ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
                      ABT_bool force_free);
-int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
+ABTU_ret_err int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *,
+                                               ABTI_pool **);
 ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched);
 size_t ABTI_sched_get_size(ABTI_sched *p_sched);
 size_t ABTI_sched_get_total_size(ABTI_sched *p_sched);
@@ -479,17 +481,22 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
 void ABTI_sched_reset_id(void);
 
 /* Scheduler config */
-int ABTI_sched_config_read(ABT_sched_config config, int type, int num_vars,
-                           void **variables);
-int ABTI_sched_config_read_global(ABT_sched_config config,
-                                  ABT_pool_access *access, ABT_bool *automatic);
+ABTU_ret_err int ABTI_sched_config_read(ABT_sched_config config, int type,
+                                        int num_vars, void **variables);
+ABTU_ret_err int ABTI_sched_config_read_global(ABT_sched_config config,
+                                               ABT_pool_access *access,
+                                               ABT_bool *automatic);
 
 /* Pool */
-int ABTI_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
-                           ABT_bool automatic, ABTI_pool **pp_newpool);
+ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
+                                        ABT_pool_access access,
+                                        ABT_bool automatic,
+                                        ABTI_pool **pp_newpool);
 void ABTI_pool_free(ABTI_pool *p_pool);
-int ABTI_pool_get_fifo_def(ABT_pool_access access, ABT_pool_def *p_def);
-int ABTI_pool_get_fifo_wait_def(ABT_pool_access access, ABT_pool_def *p_def);
+ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
+                                        ABT_pool_def *p_def);
+ABTU_ret_err int ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
+                                             ABT_pool_def *p_def);
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
 
@@ -497,8 +504,9 @@ void ABTI_pool_reset_id(void);
 void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 
 /* Threads */
-int ABTI_thread_get_mig_data(ABTI_local *p_local, ABTI_thread *p_thread,
-                             ABTI_thread_mig_data **pp_mig_data);
+ABTU_ret_err int ABTI_thread_get_mig_data(ABTI_local *p_local,
+                                          ABTI_thread *p_thread,
+                                          ABTI_thread_mig_data **pp_mig_data);
 void ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
                         void (*thread_func)(void *), void *arg,
                         ABTI_thread *p_thread);
@@ -509,14 +517,18 @@ void ABTI_thread_reset_id(void);
 ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
 
 /* Yieldable threads */
-int ABTI_ythread_create_root(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                             ABTI_ythread **pp_root_ythread);
-int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                             ABTI_ythread **p_ythread);
-int ABTI_ythread_create_main_sched(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                                   ABTI_sched *p_sched);
-int ABTI_ythread_create_sched(ABTI_local *p_local, ABTI_pool *p_pool,
-                              ABTI_sched *p_sched);
+ABTU_ret_err int ABTI_ythread_create_root(ABTI_local *p_local,
+                                          ABTI_xstream *p_xstream,
+                                          ABTI_ythread **pp_root_ythread);
+ABTU_ret_err int ABTI_ythread_create_main(ABTI_local *p_local,
+                                          ABTI_xstream *p_xstream,
+                                          ABTI_ythread **p_ythread);
+ABTU_ret_err int ABTI_ythread_create_main_sched(ABTI_local *p_local,
+                                                ABTI_xstream *p_xstream,
+                                                ABTI_sched *p_sched);
+ABTU_ret_err int ABTI_ythread_create_sched(ABTI_local *p_local,
+                                           ABTI_pool *p_pool,
+                                           ABTI_sched *p_sched);
 ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
                                      ABTI_ythread *p_ythread);
 void ABTI_ythread_free_main(ABTI_local *p_local, ABTI_ythread *p_ythread);
@@ -530,12 +542,13 @@ void ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
 
 /* Thread attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);
-int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
-                         ABTI_thread_attr **pp_dup_attr);
+ABTU_ret_err int
+ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
+                     ABTI_thread_attr **pp_dup_attr) ABTU_ret_err;
 
 /* Thread hash table */
-int ABTI_ythread_htable_create(uint32_t num_rows,
-                               ABTI_ythread_htable **pp_htable);
+ABTU_ret_err int ABTI_ythread_htable_create(uint32_t num_rows,
+                                            ABTI_ythread_htable **pp_htable);
 void ABTI_ythread_htable_free(ABTI_ythread_htable *p_htable);
 void ABTI_ythread_htable_push(ABTI_ythread_htable *p_htable, int idx,
                               ABTI_ythread *p_ythread);

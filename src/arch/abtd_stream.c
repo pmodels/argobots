@@ -45,8 +45,9 @@ static void *xstream_context_thread_func(void *arg)
     return NULL;
 }
 
-int ABTD_xstream_context_create(void *(*f_xstream)(void *), void *p_arg,
-                                ABTD_xstream_context *p_ctx)
+ABTU_ret_err int ABTD_xstream_context_create(void *(*f_xstream)(void *),
+                                             void *p_arg,
+                                             ABTD_xstream_context *p_ctx)
 {
     p_ctx->thread_f = f_xstream;
     p_ctx->p_arg = p_arg;

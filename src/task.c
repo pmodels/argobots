@@ -5,10 +5,10 @@
 
 #include "abti.h"
 
-static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
-                       void (*task_func)(void *), void *arg,
-                       ABTI_sched *p_sched, int refcount,
-                       ABTI_thread **pp_newtask);
+ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
+                                    void (*task_func)(void *), void *arg,
+                                    ABTI_sched *p_sched, int refcount,
+                                    ABTI_thread **pp_newtask);
 
 /** @defgroup TASK Tasklet
  * This group is for Tasklet.
@@ -475,10 +475,10 @@ int ABT_task_get_specific(ABT_task task, ABT_key key, void **value);
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
-                       void (*task_func)(void *), void *arg,
-                       ABTI_sched *p_sched, int refcount,
-                       ABTI_thread **pp_newtask)
+ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
+                                    void (*task_func)(void *), void *arg,
+                                    ABTI_sched *p_sched, int refcount,
+                                    ABTI_thread **pp_newtask)
 {
     ABTI_thread *p_newtask;
     ABT_task h_newtask;

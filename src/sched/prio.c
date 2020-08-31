@@ -56,7 +56,11 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     /* Set the variables from the config */
     void *p_event_freq = &p_data->event_freq;
-    ABTI_sched_config_read(config, 1, 1, &p_event_freq);
+    abt_errno = ABTI_sched_config_read(config, 1, 1, &p_event_freq);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTU_free(p_data);
+        goto fn_fail;
+    }
 
     /* Save the list of pools */
     num_pools = p_sched->num_pools;

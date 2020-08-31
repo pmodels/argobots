@@ -5,10 +5,12 @@
 
 #include "abti.h"
 
-static int xstream_create(ABTI_sched *p_sched, ABTI_xstream_type xstream_type,
-                          int rank, ABTI_xstream **pp_xstream);
-static int xstream_start(ABTI_xstream *p_xstream);
-static int xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream);
+ABTU_ret_err static int xstream_create(ABTI_sched *p_sched,
+                                       ABTI_xstream_type xstream_type, int rank,
+                                       ABTI_xstream **pp_xstream);
+ABTU_ret_err static int xstream_start(ABTI_xstream *p_xstream);
+ABTU_ret_err static int xstream_join(ABTI_local **pp_local,
+                                     ABTI_xstream *p_xstream);
 static ABT_bool xstream_set_new_rank(ABTI_xstream *p_newxstream, int rank);
 static void xstream_return_rank(ABTI_xstream *p_xstream);
 static inline void xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
@@ -17,12 +19,13 @@ static inline void xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                          ABTI_thread *p_task);
 static void xstream_init_main_sched(ABTI_xstream *p_xstream,
                                     ABTI_sched *p_sched);
-static int xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
-                                     ABTI_xstream *p_xstream,
-                                     ABTI_sched *p_sched);
+ABTU_ret_err static int
+xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
+                          ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 static void *xstream_launch_root_ythread(void *p_xstream);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-static int xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread);
+ABTU_ret_err static int xstream_migrate_thread(ABTI_local *p_local,
+                                               ABTI_thread *p_thread);
 #endif
 
 /** @defgroup ES Execution Stream (ES)
@@ -1033,7 +1036,7 @@ fn_fail:
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream)
+ABTU_ret_err int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream)
 {
     int abt_errno;
     ABTI_xstream *p_newxstream;
@@ -1225,8 +1228,9 @@ static void *xstream_launch_root_ythread(void *p_xstream)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static int xstream_create(ABTI_sched *p_sched, ABTI_xstream_type xstream_type,
-                          int rank, ABTI_xstream **pp_xstream)
+ABTU_ret_err static int xstream_create(ABTI_sched *p_sched,
+                                       ABTI_xstream_type xstream_type, int rank,
+                                       ABTI_xstream **pp_xstream)
 {
     int abt_errno;
     ABTI_xstream *p_newxstream;
@@ -1277,7 +1281,7 @@ static int xstream_create(ABTI_sched *p_sched, ABTI_xstream_type xstream_type,
     return ABT_SUCCESS;
 }
 
-static int xstream_start(ABTI_xstream *p_xstream)
+ABTU_ret_err static int xstream_start(ABTI_xstream *p_xstream)
 {
     /* The ES's state must be RUNNING */
     ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
@@ -1296,7 +1300,8 @@ static int xstream_start(ABTI_xstream *p_xstream)
     return ABT_SUCCESS;
 }
 
-static int xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
+ABTU_ret_err static int xstream_join(ABTI_local **pp_local,
+                                     ABTI_xstream *p_xstream)
 {
     /* The primary ES cannot be joined. */
     ABTI_CHECK_TRUE_RET(p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY,
@@ -1482,7 +1487,8 @@ static inline void xstream_schedule_task(ABTI_xstream *p_local_xstream,
 }
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-static int xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
+ABTU_ret_err static int xstream_migrate_thread(ABTI_local *p_local,
+                                               ABTI_thread *p_thread)
 {
     int abt_errno;
     ABTI_pool *p_pool;
@@ -1532,9 +1538,9 @@ static void xstream_init_main_sched(ABTI_xstream *p_xstream,
     p_xstream->p_main_sched = p_sched;
 }
 
-static int xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
-                                     ABTI_xstream *p_xstream,
-                                     ABTI_sched *p_sched)
+ABTU_ret_err static int
+xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
+                          ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 {
     ABTI_ythread *p_ythread = NULL;
     ABTI_sched *p_main_sched;

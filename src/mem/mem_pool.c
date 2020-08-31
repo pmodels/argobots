@@ -159,8 +159,9 @@ void ABTI_mem_pool_destroy_local_pool(ABTI_mem_pool_local_pool *p_local_pool)
     }
 }
 
-int ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool,
-                              ABTI_mem_pool_header **p_bucket)
+ABTU_ret_err int
+ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool,
+                          ABTI_mem_pool_header **p_bucket)
 {
     /* Try to get a bucket. */
     ABTI_sync_lifo_element *p_popped_bucket_lifo_elem =

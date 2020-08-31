@@ -5,7 +5,8 @@
 
 #include "abti.h"
 
-static int info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
+ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
+                                                         ABTI_pool *p_pool);
 static void info_trigger_print_all_thread_stacks(
     FILE *fp, double timeout, void (*cb_func)(ABT_bool, void *), void *arg);
 
@@ -582,10 +583,10 @@ struct info_pool_set_t {
     size_t len;
 };
 
-static int info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool);
-static inline int info_initialize_pool_set(struct info_pool_set_t *p_set);
-static inline int info_add_pool_set(ABT_pool pool,
-                                    struct info_pool_set_t *p_set);
+ABTU_ret_err static inline int
+info_initialize_pool_set(struct info_pool_set_t *p_set);
+ABTU_ret_err static inline int info_add_pool_set(ABT_pool pool,
+                                                 struct info_pool_set_t *p_set);
 static inline void info_finalize_pool_set(struct info_pool_set_t *p_set);
 
 #define PRINT_STACK_FLAG_UNSET 0
@@ -810,7 +811,8 @@ static void info_print_unit(void *arg, ABT_unit unit)
     }
 }
 
-static int info_print_thread_stacks_in_pool(FILE *fp, ABTI_pool *p_pool)
+ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
+                                                         ABTI_pool *p_pool)
 {
     int abt_errno = ABT_SUCCESS;
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
@@ -833,7 +835,8 @@ fn_fail:
     goto fn_exit;
 }
 
-static inline int info_initialize_pool_set(struct info_pool_set_t *p_set)
+ABTU_ret_err static inline int
+info_initialize_pool_set(struct info_pool_set_t *p_set)
 {
     size_t default_len = 16;
     int abt_errno =
@@ -849,8 +852,8 @@ static inline void info_finalize_pool_set(struct info_pool_set_t *p_set)
     ABTU_free(p_set->pools);
 }
 
-static inline int info_add_pool_set(ABT_pool pool,
-                                    struct info_pool_set_t *p_set)
+ABTU_ret_err static inline int info_add_pool_set(ABT_pool pool,
+                                                 struct info_pool_set_t *p_set)
 {
     size_t i;
     for (i = 0; i < p_set->num; i++) {

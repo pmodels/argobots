@@ -5,9 +5,10 @@
 
 #include "abti.h"
 
-static int sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                        ABT_sched_config config, ABT_bool automatic,
-                        ABTI_sched **pp_newsched);
+ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
+                                     ABT_pool *pools, ABT_sched_config config,
+                                     ABT_bool automatic,
+                                     ABTI_sched **pp_newsched);
 static inline ABTI_sched_kind sched_get_kind(ABT_sched_def *def);
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 static inline uint64_t sched_get_new_id(void);
@@ -449,9 +450,10 @@ void ABTI_sched_exit(ABTI_sched *p_sched)
     ABTI_sched_set_request(p_sched, ABTI_SCHED_REQ_EXIT);
 }
 
-int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
-                            ABT_pool *pools, ABT_sched_config config,
-                            ABTI_sched **pp_newsched)
+ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
+                                         ABT_pool *pools,
+                                         ABT_sched_config config,
+                                         ABTI_sched **pp_newsched)
 {
     int abt_errno;
     ABT_pool_access access;
@@ -661,8 +663,9 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
 }
 
 /* Get the pool suitable for receiving a migrating ULT */
-int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
-                                  ABTI_pool **pp_pool)
+ABTU_ret_err int ABTI_sched_get_migration_pool(ABTI_sched *p_sched,
+                                               ABTI_pool *source_pool,
+                                               ABTI_pool **pp_pool)
 {
     ABT_sched sched = ABTI_sched_get_handle(p_sched);
 
@@ -826,9 +829,10 @@ static inline ABTI_sched_kind sched_get_kind(ABT_sched_def *def)
     return (ABTI_sched_kind)def;
 }
 
-static int sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
-                        ABT_sched_config config, ABT_bool automatic,
-                        ABTI_sched **pp_newsched)
+ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
+                                     ABT_pool *pools, ABT_sched_config config,
+                                     ABT_bool automatic,
+                                     ABTI_sched **pp_newsched)
 {
     ABTI_sched *p_sched;
     int p, abt_errno;

@@ -6,8 +6,8 @@
 #include "abti.h"
 #include "abti_ythread_htable.h"
 
-int ABTI_ythread_htable_create(uint32_t num_rows,
-                               ABTI_ythread_htable **pp_htable)
+ABTU_ret_err int ABTI_ythread_htable_create(uint32_t num_rows,
+                                            ABTI_ythread_htable **pp_htable)
 {
     ABTI_STATIC_ASSERT(sizeof(ABTI_ythread_queue) == 192);
 
