@@ -814,25 +814,17 @@ static void info_print_unit(void *arg, ABT_unit unit)
 ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
                                                          ABTI_pool *p_pool)
 {
-    int abt_errno = ABT_SUCCESS;
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
 
     if (!p_pool->p_print_all) {
-        abt_errno = ABT_ERR_POOL;
-        goto fn_fail;
+        return ABT_ERR_POOL;
     }
     fprintf(fp, "== pool (%p) ==\n", (void *)p_pool);
     struct info_print_unit_arg_t arg;
     arg.fp = fp;
     arg.pool = pool;
     p_pool->p_print_all(pool, &arg, info_print_unit);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 ABTU_ret_err static inline int
