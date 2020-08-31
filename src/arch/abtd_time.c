@@ -18,17 +18,17 @@ void ABTD_time_init(void)
 }
 
 /* Obtain the time value */
-int ABTD_time_get(ABTD_time *p_time)
+void ABTD_time_get(ABTD_time *p_time)
 {
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
-    clock_gettime(CLOCK_REALTIME, p_time);
+    int ret = clock_gettime(CLOCK_REALTIME, p_time);
+    ABTI_ASSERT(ret == 0);
 #elif defined(ABT_CONFIG_USE_MACH_ABSOLUTE_TIME)
     *p_time = mach_absolute_time();
 #elif defined(ABT_CONFIG_USE_GETTIMEOFDAY)
-    gettimeofday(p_time, NULL);
+    int ret = gettimeofday(p_time, NULL);
+    ABTI_ASSERT(ret == 0);
 #endif
-
-    return ABT_SUCCESS;
 }
 
 /* Read the time value as seconds (double precision) */

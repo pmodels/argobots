@@ -96,7 +96,7 @@ typedef struct timeval ABTD_time;
 #endif
 
 void ABTD_time_init(void);
-int ABTD_time_get(ABTD_time *p_time);
+void ABTD_time_get(ABTD_time *p_time);
 double ABTD_time_read_sec(ABTD_time *p_time);
 
 #endif /* ABTD_H_INCLUDED */
