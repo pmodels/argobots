@@ -15,7 +15,7 @@ static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
                                            ABTI_ythread *p_ythread);
 static inline void xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                          ABTI_thread *p_task);
-static int xstream_init_main_sched(ABTI_xstream *p_xstream,
+static void xstream_init_main_sched(ABTI_xstream *p_xstream,
                                    ABTI_sched *p_sched);
 static int xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                      ABTI_xstream *p_xstream,
@@ -1255,8 +1255,7 @@ static int xstream_create(ABTI_sched *p_sched, ABTI_xstream_type xstream_type,
     ABTI_mem_init_local(p_newxstream);
 
     /* Set the main scheduler */
-    abt_errno = xstream_init_main_sched(p_newxstream, p_sched);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    xstream_init_main_sched(p_newxstream, p_sched);
 
     /* Create the root thread. */
     abt_errno =
@@ -1518,20 +1517,15 @@ static int xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
 }
 #endif
 
-static int xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
+static void xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
 {
     ABTI_ASSERT(p_xstream->p_main_sched == NULL);
-
     /* The main scheduler will to be a ULT, not a tasklet */
     p_sched->type = ABT_SCHED_TYPE_ULT;
-
     /* Set the scheduler as a main scheduler */
     p_sched->used = ABTI_SCHED_MAIN;
-
     /* Set the scheduler */
     p_xstream->p_main_sched = p_sched;
-
-    return ABT_SUCCESS;
 }
 
 static int xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
