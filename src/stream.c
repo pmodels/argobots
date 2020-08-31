@@ -1303,6 +1303,11 @@ static int xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
     /* The primary ES cannot be joined. */
     ABTI_CHECK_TRUE_RET(p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY,
                         ABT_ERR_INV_XSTREAM);
+    /* The main scheduler cannot join itself. */
+    ABTI_CHECK_TRUE_RET(!ABTI_local_get_xstream_or_null(*pp_local) ||
+                            &p_xstream->p_main_sched->p_ythread->thread !=
+                                ABTI_local_get_xstream(*pp_local)->p_thread,
+                        ABT_ERR_INV_THREAD);
 
     /* Wait until the target ES terminates */
     ABTI_sched_finish(p_xstream->p_main_sched);

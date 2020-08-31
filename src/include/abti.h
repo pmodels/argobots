@@ -502,7 +502,7 @@ int ABTI_thread_get_mig_data(ABTI_local *p_local, ABTI_thread *p_thread,
 int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
                        void (*thread_func)(void *), void *arg,
                        ABTI_thread *p_thread);
-int ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread);
+void ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread);
 void ABTI_thread_free(ABTI_local *p_local, ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 void ABTI_thread_reset_id(void);
