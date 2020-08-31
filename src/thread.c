@@ -77,6 +77,7 @@ int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
     abt_errno = ythread_create(p_local, p_pool, thread_func, arg,
                                ABTI_thread_attr_get_ptr(attr), unit_type, NULL,
                                ABT_TRUE, &p_newthread);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
     if (newthread)
