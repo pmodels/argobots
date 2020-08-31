@@ -283,19 +283,18 @@ int ABT_info_print_all_xstreams(FILE *fp)
     ABTI_SETUP_WITH_INIT_CHECK();
 
     ABTI_global *p_global = gp_ABTI_global;
-    int i;
 
-    ABTI_spinlock_acquire(&p_global->xstreams_lock);
+    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
 
     fprintf(fp, "# of created ESs: %d\n", p_global->num_xstreams);
-    for (i = 0; i < p_global->num_xstreams; i++) {
-        ABTI_xstream *p_xstream = p_global->p_xstreams[i];
-        if (p_xstream) {
-            ABTI_xstream_print(p_xstream, fp, 0, ABT_FALSE);
-        }
+
+    ABTI_xstream *p_xstream = p_global->p_xstream_head;
+    while (p_xstream) {
+        ABTI_xstream_print(p_xstream, fp, 0, ABT_FALSE);
+        p_xstream = p_xstream->p_next;
     }
 
-    ABTI_spinlock_release(&p_global->xstreams_lock);
+    ABTI_spinlock_release(&p_global->xstream_list_lock);
 
     fflush(fp);
 
@@ -618,7 +617,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
 
         /* xstreams_lock is acquired to avoid dynamic ES creation while
          * printing data. */
-        ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
+        ABTI_spinlock_acquire(&gp_ABTI_global->xstream_list_lock);
         while (1) {
             if (ABTD_atomic_acquire_load_uint32(&print_stack_barrier) >=
                 gp_ABTI_global->num_xstreams) {
@@ -629,14 +628,14 @@ void ABTI_info_check_print_all_thread_stacks(void)
                 force_print = ABT_TRUE;
                 break;
             }
-            ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
+            ABTI_spinlock_release(&gp_ABTI_global->xstream_list_lock);
             ABTD_atomic_pause();
-            ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
+            ABTI_spinlock_acquire(&gp_ABTI_global->xstream_list_lock);
         }
         /* All the available ESs are (supposed to be) stopped. We *assume* that
          * no ES is calling and will call Argobots functions except this
          * function while printing stack information. */
-        int i, j, abt_errno;
+        int i, abt_errno;
 
         FILE *fp = print_stack_fp;
         if (force_print) {
@@ -650,17 +649,18 @@ void ABTI_info_check_print_all_thread_stacks(void)
         abt_errno = info_initialize_pool_set(&pool_set);
         if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS)
             goto print_fail;
-        for (i = 0; i < gp_ABTI_global->num_xstreams; i++) {
-            ABTI_xstream *p_xstream = gp_ABTI_global->p_xstreams[i];
+        ABTI_xstream *p_xstream = gp_ABTI_global->p_xstream_head;
+        while (p_xstream) {
             ABTI_sched *p_main_sched = p_xstream->p_main_sched;
-            fprintf(fp, "= xstream[%d] (%p) =\n", i, (void *)p_xstream);
+            fprintf(fp, "= xstream[%d] (%p) =\n", p_xstream->rank,
+                    (void *)p_xstream);
             fprintf(fp, "main_sched : %p\n", (void *)p_main_sched);
             if (!p_main_sched)
                 continue;
-            for (j = 0; j < p_main_sched->num_pools; j++) {
-                ABT_pool pool = p_main_sched->pools[j];
+            for (i = 0; i < p_main_sched->num_pools; i++) {
+                ABT_pool pool = p_main_sched->pools[i];
                 ABTI_ASSERT(pool != ABT_POOL_NULL);
-                fprintf(fp, "  pools[%d] : %p\n", j,
+                fprintf(fp, "  pools[%d] : %p\n", i,
                         (void *)ABTI_pool_get_ptr(pool));
                 abt_errno = info_add_pool_set(pool, &pool_set);
                 if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
@@ -668,6 +668,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
                     goto print_fail;
                 }
             }
+            p_xstream = p_xstream->p_next;
         }
         for (i = 0; i < pool_set.num; i++) {
             ABT_pool pool = pool_set.pools[i];
@@ -684,7 +685,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
                     "failed because of memory error.\n");
     print_exit:
         /* Release the lock that protects ES data. */
-        ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
+        ABTI_spinlock_release(&gp_ABTI_global->xstream_list_lock);
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
         /* Update print_stack_flag to 3. */

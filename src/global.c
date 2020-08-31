@@ -77,15 +77,12 @@ int ABT_init(int argc, char **argv)
                                      0);
 #endif
 
-    /* Initialize the ES array */
-    abt_errno =
-        ABTU_calloc(gp_ABTI_global->max_xstreams, sizeof(ABTI_xstream *),
-                    (void **)&gp_ABTI_global->p_xstreams);
-    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+    /* Initialize the ES list */
+    gp_ABTI_global->p_xstream_head = NULL;
     gp_ABTI_global->num_xstreams = 0;
 
     /* Initialize a spinlock */
-    ABTI_spinlock_clear(&gp_ABTI_global->xstreams_lock);
+    ABTI_spinlock_clear(&gp_ABTI_global->xstream_list_lock);
 
     /* Create the primary ES */
     ABTI_xstream *p_local_xstream;
@@ -210,7 +207,7 @@ int ABT_finalize(void)
     ABTI_local_set_xstream(NULL);
 
     /* Free the ES array */
-    ABTU_free(gp_ABTI_global->p_xstreams);
+    ABTI_ASSERT(gp_ABTI_global->p_xstream_head == NULL);
 
     /* Finalize the memory pool */
     ABTI_mem_finalize(gp_ABTI_global);
@@ -256,59 +253,4 @@ int ABT_initialized(void)
     }
 
     return abt_errno;
-}
-
-/*****************************************************************************/
-/* Private APIs                                                              */
-/*****************************************************************************/
-
-/* If new_size is equal to zero, we double max_xstreams.
- * NOTE: This function currently cannot decrease max_xstreams.
- */
-void ABTI_global_update_max_xstreams(int new_size)
-{
-    int i, cur_size, abt_errno;
-
-    if (new_size != 0 && new_size < gp_ABTI_global->max_xstreams)
-        return;
-
-    ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
-
-    static int max_xstreams_warning_once = 0;
-    if (max_xstreams_warning_once == 0) {
-        /* Because some Argobots functionalities depend on the runtime value
-         * ABT_MAX_NUM_XSTREAMS (or gp_ABTI_global->max_xstreams), changing this
-         * value at run-time can cause an error.  For example, using ABT_mutex
-         * created before updating max_xstreams causes an error since
-         * ABTI_thread_htable's array size depends on ABT_MAX_NUM_XSTREAMS.
-         * To fix this issue, please set a larger number to ABT_MAX_NUM_XSTREAMS
-         * in advance. */
-        char *warning_message;
-        abt_errno = ABTU_malloc(sizeof(char) * 1024, (void **)&warning_message);
-        if (!ABTI_IS_ERROR_CHECK_ENABLED || abt_errno == ABT_SUCCESS) {
-            snprintf(warning_message, 1024,
-                     "Warning: the number of execution streams exceeds "
-                     "ABT_MAX_NUM_XSTREAMS (=%d), which may cause an "
-                     "unexpected "
-                     "error.",
-                     gp_ABTI_global->max_xstreams);
-            HANDLE_WARNING(warning_message);
-            ABTU_free(warning_message);
-            max_xstreams_warning_once = 1;
-        }
-    }
-
-    cur_size = gp_ABTI_global->max_xstreams;
-    new_size = (new_size > 0) ? new_size : cur_size * 2;
-    gp_ABTI_global->max_xstreams = new_size;
-    abt_errno = ABTU_realloc(cur_size * sizeof(ABTI_xstream *),
-                             new_size * sizeof(ABTI_xstream *),
-                             (void **)&gp_ABTI_global->p_xstreams);
-    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-
-    for (i = gp_ABTI_global->num_xstreams; i < new_size; i++) {
-        gp_ABTI_global->p_xstreams[i] = NULL;
-    }
-
-    ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
 }

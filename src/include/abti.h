@@ -167,12 +167,12 @@ struct ABTI_mutex {
 };
 
 struct ABTI_global {
-    int max_xstreams;            /* Max. size of p_xstreams */
-    int num_xstreams;            /* Current # of ESs */
-    ABTI_xstream **p_xstreams;   /* ES array */
-    ABTI_spinlock xstreams_lock; /* Spinlock protecting p_xstreams. Any write
-                                  * to p_xstreams and p_xstreams[*] requires a
-                                  * lock. Dereference does not require a lock.*/
+    int max_xstreams;             /* Largest rank used in Argobots. */
+    int num_xstreams;             /* Current # of ESs */
+    ABTI_xstream *p_xstream_head; /* List of ESs (head). The list is sorted. */
+    ABTI_spinlock
+        xstream_list_lock; /* Spinlock protecting ES list. Any read and
+                            * write to this list requires a lock.*/
 
     int num_cores;                /* Number of CPU cores */
     ABT_bool set_affinity;        /* Whether CPU affinity is used */
@@ -232,6 +232,10 @@ struct ABTI_local_func {
 };
 
 struct ABTI_xstream {
+    /* Linked list to manage all execution streams. */
+    ABTI_xstream *p_prev;
+    ABTI_xstream *p_next;
+
     int rank;                 /* Rank */
     ABTI_xstream_type type;   /* Type */
     ABTD_atomic_int state;    /* State (ABT_xstream_state) */
@@ -438,9 +442,6 @@ extern ABTI_local_func gp_ABTI_local_func;
 
 /* ES Local Data */
 extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
-
-/* Global */
-void ABTI_global_update_max_xstreams(int new_size);
 
 /* Execution Stream (ES) */
 int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);

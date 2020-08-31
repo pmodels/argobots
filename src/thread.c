@@ -1067,27 +1067,19 @@ int ABT_thread_migrate(ABT_thread thread)
     /* TODO: fix the bug(s) */
     int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_xstream *p_xstream;
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    ABTI_xstream **p_xstreams = gp_ABTI_global->p_xstreams;
+    ABTI_CHECK_TRUE(gp_ABTI_global->num_xstreams != 1, ABT_ERR_MIGRATION_NA);
 
     /* Choose the destination xstream */
-    /* FIXME: Currently, the target xstream is randomly chosen. We need a
+    /* FIXME: Currently, the target xstream is linearly chosen. We need a
      * better selection strategy. */
     /* TODO: handle better when no pool accepts migration */
-    /* TODO: choose a pool also when (p_thread->p_pool->consumer == NULL) */
-    while (1) {
-        /* Only one ES */
-        if (gp_ABTI_global->num_xstreams == 1) {
-            abt_errno = ABT_ERR_MIGRATION_NA;
-            break;
-        }
 
-        p_xstream = p_xstreams[rand() % gp_ABTI_global->num_xstreams];
-        if (p_xstream && p_xstream != p_thread->p_last_xstream) {
+    ABTI_xstream *p_xstream = gp_ABTI_global->p_xstream_head;
+    while (p_xstream) {
+        if (p_xstream != p_thread->p_last_xstream) {
             if (ABTD_atomic_acquire_load_int(&p_xstream->state) ==
                 ABT_XSTREAM_STATE_RUNNING) {
                 abt_errno =
@@ -1099,6 +1091,7 @@ int ABT_thread_migrate(ABT_thread thread)
                 }
             }
         }
+        p_xstream = p_xstream->p_next;
     }
 
 fn_exit:

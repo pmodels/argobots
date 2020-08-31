@@ -9,8 +9,7 @@ static int xstream_create(ABTI_sched *p_sched, ABTI_xstream_type xstream_type,
                           int rank, ABTI_xstream **pp_xstream);
 static int xstream_start(ABTI_xstream *p_xstream);
 static int xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream);
-static void xstream_set_new_rank(ABTI_xstream *p_xstream);
-static ABT_bool xstream_take_rank(ABTI_xstream *p_xstream, int rank);
+static ABT_bool xstream_set_new_rank(ABTI_xstream *p_newxstream, int rank);
 static void xstream_return_rank(ABTI_xstream *p_xstream);
 static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
                                            ABTI_ythread *p_ythread);
@@ -1132,8 +1131,7 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
     /* Clean up memory pool. */
     ABTI_mem_finalize_local(p_xstream);
     /* Return rank for reuse. rank must be returned prior to other free
-     * functions so that other xstreams cannot refer to this xstream via
-     * global->p_xstreams. */
+     * functions so that other xstreams cannot refer to this xstream. */
     xstream_return_rank(p_xstream);
 
     /* Free the scheduler */
@@ -1247,13 +1245,12 @@ static int xstream_create(ABTI_sched *p_sched, ABTI_xstream_type xstream_type,
     abt_errno = ABTU_malloc(sizeof(ABTI_xstream), (void **)&p_newxstream);
     ABTI_CHECK_ERROR_RET(abt_errno);
 
-    if (rank >= 0) {
-        if (xstream_take_rank(p_newxstream, rank) == ABT_FALSE) {
-            ABTU_free(p_newxstream);
-            return ABT_ERR_INV_XSTREAM_RANK;
-        }
-    } else {
-        xstream_set_new_rank(p_newxstream);
+    p_newxstream->p_prev = NULL;
+    p_newxstream->p_next = NULL;
+
+    if (xstream_set_new_rank(p_newxstream, rank) == ABT_FALSE) {
+        ABTU_free(p_newxstream);
+        return ABT_ERR_INV_XSTREAM_RANK;
     }
 
     p_newxstream->type = xstream_type;
@@ -1627,67 +1624,116 @@ static int xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
 }
 
 /* Set a new rank to ES */
-static void xstream_set_new_rank(ABTI_xstream *p_xstream)
+static ABT_bool xstream_set_new_rank(ABTI_xstream *p_newxstream, int rank)
 {
-    int i, rank;
-    ABT_bool found = ABT_FALSE;
+    ABTI_global *p_global = gp_ABTI_global;
 
-    while (found == ABT_FALSE) {
-        if (gp_ABTI_global->num_xstreams >= gp_ABTI_global->max_xstreams) {
-            ABTI_global_update_max_xstreams(0);
-        }
+    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
 
-        ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
-        for (i = 0; i < gp_ABTI_global->max_xstreams; i++) {
-            if (gp_ABTI_global->p_xstreams[i] == NULL) {
-                /* Add this ES to the global ES array */
-                gp_ABTI_global->p_xstreams[i] = p_xstream;
-                gp_ABTI_global->num_xstreams++;
-                rank = i;
-                found = ABT_TRUE;
+    ABTI_xstream *p_prev_xstream = p_global->p_xstream_head;
+    ABTI_xstream *p_xstream = p_prev_xstream;
+    if (rank == -1) {
+        /* Find an unused rank from 0. */
+        rank = 0;
+        while (p_xstream) {
+            if (p_xstream->rank == rank) {
+                rank++;
+            } else {
+                /* Use this rank. */
                 break;
             }
+            p_prev_xstream = p_xstream;
+            p_xstream = p_xstream->p_next;
         }
-        ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
+    } else {
+        /* Check if a certain rank is available */
+        while (p_xstream) {
+            if (p_xstream->rank == rank) {
+                ABTI_spinlock_release(&p_global->xstream_list_lock);
+                return ABT_FALSE;
+            } else if (p_xstream->rank > rank) {
+                /* Use this p_xstream. */
+                break;
+            }
+            p_prev_xstream = p_xstream;
+            p_xstream = p_xstream->p_next;
+        }
     }
+    if (!p_xstream) {
+        /* p_newxstream is appended to p_prev_xstream */
+        if (p_prev_xstream) {
+            p_prev_xstream->p_next = p_newxstream;
+            p_newxstream->p_prev = p_prev_xstream;
+            p_newxstream->p_next = NULL;
+        } else {
+            ABTI_ASSERT(p_global->p_xstream_head == NULL);
+            p_newxstream->p_prev = NULL;
+            p_newxstream->p_next = NULL;
+            p_global->p_xstream_head = p_newxstream;
+        }
+    } else {
+        /* p_newxstream is inserted in the middle.
+         * (p_xstream->p_prev) -> p_new_xstream -> p_xstream */
+        if (p_xstream->p_prev) {
+            p_xstream->p_prev->p_next = p_newxstream;
+            p_newxstream->p_prev = p_xstream->p_prev;
+        } else {
+            /* This p_xstream is the first element */
+            ABTI_ASSERT(p_global->p_xstream_head == p_xstream);
+            p_global->p_xstream_head = p_newxstream;
+        }
+        p_xstream->p_prev = p_newxstream;
+        p_newxstream->p_next = p_xstream;
+    }
+    p_global->num_xstreams++;
+    if (rank >= p_global->max_xstreams) {
+        static int max_xstreams_warning_once = 0;
+        if (max_xstreams_warning_once == 0) {
+            /* Because some Argobots functionalities depend on the runtime value
+             * ABT_MAX_NUM_XSTREAMS (or gp_ABTI_global->max_xstreams), changing
+             * this value at run-time can cause an error.  For example, using
+             * ABT_mutex created before updating max_xstreams causes an error
+             * since ABTI_thread_htable's array size depends on
+             * ABT_MAX_NUM_XSTREAMS.  To fix this issue, please set a larger
+             * number to ABT_MAX_NUM_XSTREAMS in advance. */
+            char *warning_message;
+            int abt_errno =
+                ABTU_malloc(sizeof(char) * 1024, (void **)&warning_message);
+            if (!ABTI_IS_ERROR_CHECK_ENABLED || abt_errno == ABT_SUCCESS) {
+                snprintf(warning_message, 1024,
+                         "Warning: the number of execution streams exceeds "
+                         "ABT_MAX_NUM_XSTREAMS (=%d). This may cause an error.",
+                         p_global->max_xstreams);
+                HANDLE_WARNING(warning_message);
+                ABTU_free(warning_message);
+                max_xstreams_warning_once = 1;
+            }
+        }
+        /* Anyway. let's increase max_xstreams. */
+        p_global->max_xstreams = rank + 1;
+    }
+
+    ABTI_spinlock_release(&p_global->xstream_list_lock);
 
     /* Set the rank */
-    p_xstream->rank = rank;
-}
-
-static ABT_bool xstream_take_rank(ABTI_xstream *p_xstream, int rank)
-{
-    ABT_bool ret;
-
-    if (rank >= gp_ABTI_global->max_xstreams) {
-        ABTI_global_update_max_xstreams(rank + 1);
-    }
-
-    ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
-    if (gp_ABTI_global->p_xstreams[rank] == NULL) {
-        /* Add this ES to the global ES array */
-        gp_ABTI_global->p_xstreams[rank] = p_xstream;
-        gp_ABTI_global->num_xstreams++;
-        ret = ABT_TRUE;
-    } else {
-        ret = ABT_FALSE;
-    }
-    ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
-
-    if (ret == ABT_TRUE) {
-
-        /* Set the rank */
-        p_xstream->rank = rank;
-    }
-
-    return ret;
+    p_newxstream->rank = rank;
+    return ABT_TRUE;
 }
 
 static void xstream_return_rank(ABTI_xstream *p_xstream)
 {
-    /* Remove this xstream from the global ES array */
-    ABTI_spinlock_acquire(&gp_ABTI_global->xstreams_lock);
-    gp_ABTI_global->p_xstreams[p_xstream->rank] = NULL;
-    gp_ABTI_global->num_xstreams--;
-    ABTI_spinlock_release(&gp_ABTI_global->xstreams_lock);
+    ABTI_global *p_global = gp_ABTI_global;
+    /* Remove this xstream from the global ES list */
+    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+    if (!p_xstream->p_prev) {
+        ABTI_ASSERT(p_global->p_xstream_head == p_xstream);
+        p_global->p_xstream_head = p_xstream->p_next;
+    } else {
+        p_xstream->p_prev->p_next = p_xstream->p_next;
+    }
+    if (p_xstream->p_next) {
+        p_xstream->p_next->p_prev = p_xstream->p_prev;
+    }
+    p_global->num_xstreams--;
+    ABTI_spinlock_release(&p_global->xstream_list_lock);
 }
