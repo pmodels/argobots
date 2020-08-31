@@ -1155,9 +1155,6 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
     ABTI_ythread_free_root(p_local, p_xstream->p_root_ythread);
     ABTI_pool_free(p_xstream->p_root_pool);
 
-    /* Free the array of sched contexts */
-    ABTU_free(p_xstream->scheds);
-
     /* Free the context if a given xstream is secondary. */
     if (p_xstream->type == ABTI_XSTREAM_TYPE_SECONDARY) {
         int abt_errno = ABTD_xstream_context_free(&p_xstream->ctx);
@@ -1262,7 +1259,6 @@ static int xstream_create(ABTI_sched *p_sched, ABTI_xstream_type xstream_type,
     p_newxstream->type = xstream_type;
     ABTD_atomic_relaxed_store_int(&p_newxstream->state,
                                   ABT_XSTREAM_STATE_RUNNING);
-    p_newxstream->scheds = NULL;
     p_newxstream->p_main_sched = NULL;
     p_newxstream->p_thread = NULL;
     ABTI_mem_init_local(p_newxstream);

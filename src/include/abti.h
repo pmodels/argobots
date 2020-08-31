@@ -235,7 +235,6 @@ struct ABTI_xstream {
     int rank;                 /* Rank */
     ABTI_xstream_type type;   /* Type */
     ABTD_atomic_int state;    /* State (ABT_xstream_state) */
-    ABTI_sched **scheds;      /* Stack of running schedulers */
     ABTI_sched *p_main_sched; /* Main scheduler, which is the bottom of the
                                * linked list of schedulers */
     ABTD_xstream_context ctx; /* ES context */
