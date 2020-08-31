@@ -458,6 +458,8 @@ int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
     ABT_pool_kind kind = ABT_POOL_FIFO;
     ABT_bool automatic;
 
+    ABTI_CHECK_TRUE_RET(!pools || num_pools > 0, ABT_ERR_SCHED);
+
     /* We set the access to the default one */
     access = ABT_POOL_ACCESS_MPSC;
     /* TODO: the default value is different from ABT_sched_create().
@@ -666,13 +668,13 @@ int ABTI_sched_get_migration_pool(ABTI_sched *p_sched, ABTI_pool *source_pool,
 
     /* Find a pool.  If get_migr_pool is not defined, we pick the first pool */
     if (p_sched->get_migr_pool == NULL) {
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p_sched->num_pools == 0) {
-            return ABT_ERR_INV_POOL;
-        } else {
-            *pp_pool = ABTI_pool_get_ptr(p_sched->pools[0]);
-        }
+        *pp_pool = ABTI_pool_get_ptr(p_sched->pools[0]);
     } else {
-        *pp_pool = ABTI_pool_get_ptr(p_sched->get_migr_pool(sched));
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->get_migr_pool(sched));
+        if (ABTI_IS_ERROR_CHECK_ENABLED && p_pool == NULL) {
+            return ABT_ERR_SCHED;
+        }
+        *pp_pool = p_pool;
     }
     return ABT_SUCCESS;
 }
