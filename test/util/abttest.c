@@ -332,6 +332,8 @@ static void ATS_tool_thread_callback(ABT_thread thread, ABT_xstream xstream,
     int ret = ABT_thread_is_unnamed(thread, &is_unnamed);
     ATS_ERROR(ret, "ABT_thread_is_unnamed");
 
+    /* The main scheduler has been already running, but the state is
+     * UNINIT since there is no chance to update it. */
     switch (event) {
         case ABT_TOOL_EVENT_THREAD_CREATE:
             ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_UNINIT);
@@ -344,9 +346,6 @@ static void ATS_tool_thread_callback(ABT_thread thread, ABT_xstream xstream,
             p_entry->state = ATS_TOOL_UNIT_STATE_JOINED;
             break;
         case ABT_TOOL_EVENT_THREAD_FREE:
-            /* The main scheduler has been already running, but the state is
-             * UNINIT since there is no chance to update it.  The state can be
-             * ready if the created work unit cannot be pushed to the pool. */
             if (is_unnamed) {
                 ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_UNINIT &&
                              p_entry->state != ATS_TOOL_UNIT_STATE_READY &&
@@ -368,8 +367,9 @@ static void ATS_tool_thread_callback(ABT_thread thread, ABT_xstream xstream,
             p_entry->last_xstream = xstream;
             break;
         case ABT_TOOL_EVENT_THREAD_FINISH:
-            ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_RUNNING ||
-                         p_entry->last_xstream != xstream);
+            ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_UNINIT &&
+                         !(p_entry->state == ATS_TOOL_UNIT_STATE_RUNNING &&
+                           p_entry->last_xstream == xstream));
             p_entry->state = ATS_TOOL_UNIT_STATE_FINISHED;
             break;
         case ABT_TOOL_EVENT_THREAD_CANCEL:
@@ -377,14 +377,15 @@ static void ATS_tool_thread_callback(ABT_thread thread, ABT_xstream xstream,
             p_entry->state = ATS_TOOL_UNIT_STATE_FINISHED;
             break;
         case ABT_TOOL_EVENT_THREAD_YIELD:
-            ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_RUNNING);
-            ATS_ERROR_IF(p_entry->last_xstream != xstream);
+            ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_UNINIT &&
+                         !(p_entry->state == ATS_TOOL_UNIT_STATE_RUNNING &&
+                           p_entry->last_xstream == xstream));
             p_entry->state = ATS_TOOL_UNIT_STATE_READY;
             break;
         case ABT_TOOL_EVENT_THREAD_SUSPEND:
-            ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_RUNNING);
-            ATS_ERROR_IF(p_entry->state == ATS_TOOL_UNIT_STATE_RUNNING &&
-                         p_entry->last_xstream != xstream);
+            ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_UNINIT &&
+                         !(p_entry->state == ATS_TOOL_UNIT_STATE_RUNNING &&
+                           p_entry->last_xstream == xstream));
             p_entry->state = ATS_TOOL_UNIT_STATE_BLOCKED;
             break;
         case ABT_TOOL_EVENT_THREAD_RESUME:
