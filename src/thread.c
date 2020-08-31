@@ -777,6 +777,18 @@ int ABT_thread_yield_to(ABT_thread thread)
         goto fn_exit;
     }
 
+    /* Remove the target ULT from the pool */
+    if (ABTI_IS_ERROR_CHECK_ENABLED) {
+        /* This is necessary to prevent the size of this pool from 0. */
+        ABTI_pool_inc_num_blocked(p_tar_ythread->thread.p_pool);
+    }
+    abt_errno = ABTI_pool_remove(p_tar_ythread->thread.p_pool,
+                                 p_tar_ythread->thread.unit);
+    if (ABTI_IS_ERROR_CHECK_ENABLED) {
+        ABTI_pool_dec_num_blocked(p_tar_ythread->thread.p_pool);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+
     ABTD_atomic_release_store_int(&p_cur_ythread->thread.state,
                                   ABT_THREAD_STATE_READY);
 
@@ -787,11 +799,6 @@ int ABT_thread_yield_to(ABT_thread thread)
 
     /* Add the current thread to the pool again. */
     ABTI_pool_push(p_cur_ythread->thread.p_pool, p_cur_ythread->thread.unit);
-
-    /* Remove the target ULT from the pool */
-    abt_errno = ABTI_pool_remove(p_tar_ythread->thread.p_pool,
-                                 p_tar_ythread->thread.unit);
-    ABTI_CHECK_ERROR(abt_errno);
 
     /* We set the last ES */
     p_tar_ythread->thread.p_last_xstream = p_local_xstream;
