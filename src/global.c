@@ -106,9 +106,8 @@ int ABT_init(int argc, char **argv)
     p_local_xstream->p_thread = &p_main_ythread->thread;
 
     /* Start the primary ES */
-    abt_errno = ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream,
+    ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream,
                                            p_main_ythread);
-    ABTI_CHECK_ERROR_MSG(abt_errno, "ABTI_xstream_start_primary");
 
     if (gp_ABTI_global->print_config == ABT_TRUE) {
         ABTI_info_print_config(stdout);

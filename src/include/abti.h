@@ -445,7 +445,7 @@ extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
 
 /* Execution Stream (ES) */
 int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
-int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
+void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
                                ABTI_xstream *p_xstream,
                                ABTI_ythread *p_ythread);
 int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,

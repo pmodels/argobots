@@ -210,8 +210,7 @@ int ABT_xstream_revive(ABT_xstream xstream)
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTD_atomic_relaxed_store_int(&p_xstream->state, ABT_XSTREAM_STATE_RUNNING);
-    abt_errno = ABTD_xstream_context_revive(&p_xstream->ctx);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTD_xstream_context_revive(&p_xstream->ctx);
 
 fn_exit:
     return abt_errno;
@@ -1052,10 +1051,9 @@ int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream)
 }
 
 /* This routine starts the primary ES. It should be called in ABT_init. */
-int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
+void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
                                ABTI_xstream *p_xstream, ABTI_ythread *p_ythread)
 {
-    int abt_errno;
     /* p_ythread must be the main thread. */
     ABTI_ASSERT(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN);
     /* The ES's state must be running here. */
@@ -1064,8 +1062,7 @@ int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
 
     LOG_DEBUG("[E%d] start\n", p_xstream->rank);
 
-    abt_errno = ABTD_xstream_context_set_self(&p_xstream->ctx);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTD_xstream_context_set_self(&p_xstream->ctx);
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
@@ -1079,8 +1076,6 @@ int ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
     /* Come back to the main thread.  Now this thread is executed on top of the
      * main scheduler, which is running on the root thread. */
     (*pp_local_xstream)->p_thread = &p_ythread->thread;
-
-    return abt_errno;
 }
 
 int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
@@ -1155,8 +1150,7 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
 
     /* Free the context if a given xstream is secondary. */
     if (p_xstream->type == ABTI_XSTREAM_TYPE_SECONDARY) {
-        int abt_errno = ABTD_xstream_context_free(&p_xstream->ctx);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTD_xstream_context_free(&p_xstream->ctx);
     }
 
     ABTU_free(p_xstream);
@@ -1319,12 +1313,10 @@ static int xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
     ABTI_thread_join(pp_local, &p_xstream->p_main_sched->p_ythread->thread);
 
     /* Normal join request */
-    int abt_errno = ABTD_xstream_context_join(&p_xstream->ctx);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTD_xstream_context_join(&p_xstream->ctx);
 
     ABTI_ASSERT(ABTD_atomic_acquire_load_int(&p_xstream->state) ==
                 ABT_XSTREAM_STATE_TERMINATED);
-
     return ABT_SUCCESS;
 }
 
