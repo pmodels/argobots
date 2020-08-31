@@ -11,8 +11,8 @@ static int xstream_start(ABTI_xstream *p_xstream);
 static int xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream);
 static ABT_bool xstream_set_new_rank(ABTI_xstream *p_newxstream, int rank);
 static void xstream_return_rank(ABTI_xstream *p_xstream);
-static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
-                                           ABTI_ythread *p_ythread);
+static inline void xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
+                                            ABTI_ythread *p_ythread);
 static inline void xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                          ABTI_thread *p_task);
 static void xstream_init_main_sched(ABTI_xstream *p_xstream,
@@ -819,15 +819,14 @@ fn_fail:
  */
 int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
 {
-    int abt_errno;
+    int abt_errno = ABT_SUCCESS;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
 
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, NULL);
 
-    abt_errno = ABTI_xstream_run_unit(&p_local_xstream, unit, p_pool);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_xstream_run_unit(&p_local_xstream, unit, p_pool);
 
 fn_exit:
     return abt_errno;
@@ -1082,8 +1081,8 @@ void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
     (*pp_local_xstream)->p_thread = &p_ythread->thread;
 }
 
-int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
-                          ABTI_pool *p_pool)
+void ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
+                           ABTI_pool *p_pool)
 {
     ABT_unit_type type = p_pool->u_get_type(unit);
 
@@ -1091,19 +1090,14 @@ int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
         ABT_thread thread = p_pool->u_get_thread(unit);
         ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
         /* Switch the context */
-        int abt_errno = xstream_schedule_ythread(pp_local_xstream, p_ythread);
-        ABTI_CHECK_ERROR_RET(abt_errno);
-
-    } else if (type == ABT_UNIT_TYPE_TASK) {
+        xstream_schedule_ythread(pp_local_xstream, p_ythread);
+    } else {
+        ABTI_ASSERT(type == ABT_UNIT_TYPE_TASK);
         ABT_task task = p_pool->u_get_task(unit);
         ABTI_thread *p_task = ABTI_thread_get_ptr(task);
         /* Execute the task */
         xstream_schedule_task(*pp_local_xstream, p_task);
-
-    } else {
-        return ABT_ERR_INV_UNIT;
     }
-    return ABT_SUCCESS;
 }
 
 void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
@@ -1325,8 +1319,8 @@ static int xstream_join(ABTI_local **pp_local, ABTI_xstream *p_xstream)
     return ABT_SUCCESS;
 }
 
-static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
-                                           ABTI_ythread *p_ythread)
+static inline void xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
+                                            ABTI_ythread *p_ythread)
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
 
@@ -1339,7 +1333,7 @@ static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
         ABTD_ythread_cancel(p_local_xstream, p_ythread);
         ABTI_xstream_terminate_thread(ABTI_xstream_get_local(p_local_xstream),
                                       &p_ythread->thread);
-        return ABT_SUCCESS;
+        return;
     }
 #endif
 
@@ -1349,8 +1343,10 @@ static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
         int abt_errno =
             xstream_migrate_thread(ABTI_xstream_get_local(p_local_xstream),
                                    &p_ythread->thread);
-        ABTI_CHECK_ERROR_RET(abt_errno);
-        return ABT_SUCCESS;
+        if (!ABTI_IS_ERROR_CHECK_ENABLED || abt_errno == ABT_SUCCESS) {
+            /* Migration succeeded, so we do not need to schedule p_ythread. */
+            return;
+        }
     }
 #endif
 
@@ -1365,9 +1361,9 @@ static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
     LOG_DEBUG("[U%" PRIu64 ":E%d] start running\n",
               ABTI_thread_get_id(&p_ythread->thread), p_local_xstream->rank);
 
-    ABTI_ythread *p_self;
-    ABTI_CHECK_YIELDABLE_RET(p_local_xstream->p_thread, &p_self,
-                             ABT_ERR_INV_THREAD);
+    /* Since the argument is pp_local_xstream, p_local_xstream->p_thread must be
+     * yieldable. */
+    ABTI_ythread *p_self = ABTI_thread_get_ythread(p_local_xstream->p_thread);
     p_ythread = ABTI_ythread_context_switch_to_child(pp_local_xstream, p_self,
                                                      p_ythread);
     /* The previous ULT (p_ythread) may not be the same as one to which the
@@ -1416,7 +1412,8 @@ static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
         int abt_errno =
             xstream_migrate_thread(ABTI_xstream_get_local(p_local_xstream),
                                    &p_ythread->thread);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        /* Migration is optional, so it is okay if it fails. */
+        (void)abt_errno;
 #endif
     } else if (request & ABTI_THREAD_REQ_ORPHAN) {
         /* The ULT is not pushed back to the pool and is disconnected from any
@@ -1434,9 +1431,9 @@ static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
                   p_local_xstream->rank);
         ABTI_thread_unset_request(&p_ythread->thread, ABTI_THREAD_REQ_NOPUSH);
     } else {
-        return ABT_ERR_THREAD;
+        ABTI_ASSERT(0);
+        ABTU_unreachable();
     }
-    return ABT_SUCCESS;
 }
 
 static inline void xstream_schedule_task(ABTI_xstream *p_local_xstream,

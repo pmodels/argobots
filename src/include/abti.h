@@ -451,8 +451,8 @@ void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
 void ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
                        ABT_bool force_free);
 void ABTI_xstream_schedule(void *p_arg);
-int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
-                          ABTI_pool *p_pool);
+void ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
+                           ABTI_pool *p_pool);
 void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub);
