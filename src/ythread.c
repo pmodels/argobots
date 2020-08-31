@@ -82,14 +82,14 @@ void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
     ABTI_pool_dec_num_blocked(p_pool);
 }
 
-ABTU_no_sanitize_address int ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
-                                                      FILE *p_os)
+ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
+                                                       FILE *p_os)
 {
     void *p_stack = p_ythread->p_stack;
     size_t i, j, stacksize = p_ythread->stacksize;
     if (stacksize == 0 || p_stack == NULL) {
         /* Some threads do not have p_stack (e.g., the main thread) */
-        return ABT_SUCCESS;
+        return;
     }
 
     char buffer[32];
@@ -131,5 +131,4 @@ ABTU_no_sanitize_address int ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
                 fprintf(p_os, "\n");
         }
     }
-    return ABT_SUCCESS;
 }
