@@ -853,13 +853,21 @@ ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
             abt_errno =
                 ABTI_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC,
                                        ABT_TRUE, &p_newpool);
-            ABTI_CHECK_ERROR_RET(abt_errno);
+            if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+                int i;
+                for (i = 0; i < p; i++) {
+                    if (pools[i] == ABT_POOL_NULL)
+                        ABTI_pool_free(ABTI_pool_get_ptr(pool_list[i]));
+                }
+                ABTU_free(pool_list);
+                ABTU_free(p_sched);
+                return abt_errno;
+            }
             pool_list[p] = ABTI_pool_get_handle(p_newpool);
         } else {
             pool_list[p] = pools[p];
         }
     }
-
     /* Check if the pools are available */
     for (p = 0; p < num_pools; p++) {
         ABTI_pool_retain(ABTI_pool_get_ptr(pool_list[p]));
@@ -888,7 +896,20 @@ ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
     ABT_sched newsched = ABTI_sched_get_handle(p_sched);
 
     /* Specific initialization */
-    p_sched->init(newsched, config);
+    abt_errno = p_sched->init(newsched, config);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        for (p = 0; p < num_pools; p++) {
+            if (pools[p] == ABT_POOL_NULL) {
+                ABTI_pool_free(ABTI_pool_get_ptr(pool_list[p]));
+            } else {
+                ABTI_pool_release(ABTI_pool_get_ptr(pool_list[p]));
+            }
+        }
+        ABTU_free(pool_list);
+        ABTU_free(p_sched);
+        return abt_errno;
+    }
+
     *pp_newsched = p_sched;
 
     return ABT_SUCCESS;
