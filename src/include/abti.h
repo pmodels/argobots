@@ -446,10 +446,10 @@ extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
 /* Execution Stream (ES) */
 int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream);
 void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
-                               ABTI_xstream *p_xstream,
-                               ABTI_ythread *p_ythread);
-int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                      ABT_bool force_free);
+                                ABTI_xstream *p_xstream,
+                                ABTI_ythread *p_ythread);
+void ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
+                       ABT_bool force_free);
 void ABTI_xstream_schedule(void *p_arg);
 int ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
                           ABTI_pool *p_pool);
@@ -467,8 +467,8 @@ void ABTI_sched_exit(ABTI_sched *p_sched);
 int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                             ABT_pool *pools, ABT_sched_config config,
                             ABTI_sched **pp_newsched);
-int ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
-                    ABT_bool force_free);
+void ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
+                     ABT_bool force_free);
 int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *, ABTI_pool **);
 ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched);
 size_t ABTI_sched_get_size(ABTI_sched *p_sched);

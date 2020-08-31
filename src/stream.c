@@ -16,7 +16,7 @@ static inline int xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
 static inline void xstream_schedule_task(ABTI_xstream *p_local_xstream,
                                          ABTI_thread *p_task);
 static void xstream_init_main_sched(ABTI_xstream *p_xstream,
-                                   ABTI_sched *p_sched);
+                                    ABTI_sched *p_sched);
 static int xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                      ABTI_xstream *p_xstream,
                                      ABTI_sched *p_sched);
@@ -259,8 +259,7 @@ int ABT_xstream_free(ABT_xstream *xstream)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Free the xstream object */
-    abt_errno = ABTI_xstream_free(p_local, p_xstream, ABT_FALSE);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_xstream_free(p_local, p_xstream, ABT_FALSE);
 
     /* Return value */
     *xstream = ABT_XSTREAM_NULL;
@@ -1052,7 +1051,8 @@ int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream)
 
 /* This routine starts the primary ES. It should be called in ABT_init. */
 void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
-                               ABTI_xstream *p_xstream, ABTI_ythread *p_ythread)
+                                ABTI_xstream *p_xstream,
+                                ABTI_ythread *p_ythread)
 {
     /* p_ythread must be the main thread. */
     ABTI_ASSERT(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN);
@@ -1118,8 +1118,8 @@ void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     }
 }
 
-int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
-                      ABT_bool force_free)
+void ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
+                       ABT_bool force_free)
 {
     LOG_DEBUG("[E%d] freed\n", p_xstream->rank);
 
@@ -1138,9 +1138,7 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
                                         ? ABTI_local_get_xstream(p_local)
                                               ->p_thread
                                         : NULL);
-        int abt_errno =
-            ABTI_sched_discard_and_free(p_local, p_cursched, force_free);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_sched_discard_and_free(p_local, p_cursched, force_free);
         /* The main scheduler thread is also freed. */
     }
 
@@ -1154,7 +1152,6 @@ int ABTI_xstream_free(ABTI_local *p_local, ABTI_xstream *p_xstream,
     }
 
     ABTU_free(p_xstream);
-    return ABT_SUCCESS;
 }
 
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
@@ -1517,7 +1514,8 @@ static int xstream_migrate_thread(ABTI_local *p_local, ABTI_thread *p_thread)
 }
 #endif
 
-static void xstream_init_main_sched(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
+static void xstream_init_main_sched(ABTI_xstream *p_xstream,
+                                    ABTI_sched *p_sched)
 {
     ABTI_ASSERT(p_xstream->p_main_sched == NULL);
     /* The main scheduler will to be a ULT, not a tasklet */
@@ -1532,7 +1530,6 @@ static int xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                      ABTI_xstream *p_xstream,
                                      ABTI_sched *p_sched)
 {
-    int abt_errno;
     ABTI_ythread *p_ythread = NULL;
     ABTI_sched *p_main_sched;
     ABTI_pool *p_tar_pool = NULL;
@@ -1602,10 +1599,8 @@ static int xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
     /* Now, we free the current main scheduler. p_main_sched->p_ythread must
      * be NULL to avoid freeing it in ABTI_sched_discard_and_free(). */
     p_main_sched->p_ythread = NULL;
-    abt_errno =
-        ABTI_sched_discard_and_free(ABTI_xstream_get_local(*pp_local_xstream),
-                                    p_main_sched, ABT_FALSE);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_sched_discard_and_free(ABTI_xstream_get_local(*pp_local_xstream),
+                                p_main_sched, ABT_FALSE);
     return ABT_SUCCESS;
 }
 

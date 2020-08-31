@@ -107,7 +107,7 @@ int ABT_init(int argc, char **argv)
 
     /* Start the primary ES */
     ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream,
-                                           p_main_ythread);
+                               p_main_ythread);
 
     if (gp_ABTI_global->print_config == ABT_TRUE) {
         ABTI_info_print_config(stdout);
@@ -198,9 +198,8 @@ int ABT_finalize(void)
     ABTI_ythread_free_main(ABTI_xstream_get_local(p_local_xstream), p_ythread);
 
     /* Free the primary ES */
-    abt_errno = ABTI_xstream_free(ABTI_xstream_get_local(p_local_xstream),
-                                  p_local_xstream, ABT_TRUE);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_xstream_free(ABTI_xstream_get_local(p_local_xstream), p_local_xstream,
+                      ABT_TRUE);
 
     /* Finalize the ES local data */
     ABTI_local_set_xstream(NULL);
