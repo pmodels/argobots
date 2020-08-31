@@ -282,11 +282,14 @@ int ABT_thread_revive(ABT_pool pool, void (*thread_func)(void *), void *arg,
     ABTI_thread *p_thread = ABTI_thread_get_ptr(*thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
+    ABTI_CHECK_TRUE_RET(ABTD_atomic_relaxed_load_int(&p_thread->state) ==
+                            ABT_THREAD_STATE_TERMINATED,
+                        ABT_ERR_INV_THREAD);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_thread_revive(p_local, p_pool, thread_func, arg, p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_thread_revive(p_local, p_pool, thread_func, arg, p_thread);
 
 fn_exit:
     return abt_errno;
@@ -1556,14 +1559,12 @@ fn_fail:
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
-                       void (*thread_func)(void *), void *arg,
-                       ABTI_thread *p_thread)
+void ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
+                        void (*thread_func)(void *), void *arg,
+                        ABTI_thread *p_thread)
 {
-    ABTI_CHECK_TRUE_RET(ABTD_atomic_relaxed_load_int(&p_thread->state) ==
-                            ABT_THREAD_STATE_TERMINATED,
-                        ABT_ERR_INV_THREAD);
-
+    ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_thread->state) ==
+                ABT_THREAD_STATE_TERMINATED);
     p_thread->f_thread = thread_func;
     p_thread->p_arg = arg;
 
@@ -1609,7 +1610,6 @@ int ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
 
     /* Add this thread to the pool */
     ABTI_pool_push(p_pool, p_thread->unit);
-    return ABT_SUCCESS;
 }
 
 int ABTI_ythread_create_main(ABTI_local *p_local, ABTI_xstream *p_xstream,

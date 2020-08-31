@@ -196,18 +196,22 @@ int ABT_xstream_revive(ABT_xstream xstream)
 
     /* Revives the main scheduler thread. */
     ABTI_sched *p_main_sched = p_xstream->p_main_sched;
-    ABTD_atomic_relaxed_store_uint32(&p_main_sched->request, 0);
     ABTI_ythread *p_main_sched_ythread = p_main_sched->p_ythread;
+    ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(
+                        &p_main_sched_ythread->thread.state) ==
+                        ABT_THREAD_STATE_TERMINATED,
+                    ABT_ERR_INV_THREAD);
+
+    ABTD_atomic_relaxed_store_uint32(&p_main_sched->request, 0);
     ABTI_tool_event_thread_join(p_local, &p_main_sched_ythread->thread,
                                 ABTI_local_get_xstream_or_null(p_local)
                                     ? ABTI_local_get_xstream(p_local)->p_thread
                                     : NULL);
 
-    abt_errno = ABTI_thread_revive(p_local, p_xstream->p_root_pool,
-                                   p_main_sched_ythread->thread.f_thread,
-                                   p_main_sched_ythread->thread.p_arg,
-                                   &p_main_sched_ythread->thread);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_thread_revive(p_local, p_xstream->p_root_pool,
+                       p_main_sched_ythread->thread.f_thread,
+                       p_main_sched_ythread->thread.p_arg,
+                       &p_main_sched_ythread->thread);
 
     ABTD_atomic_relaxed_store_int(&p_xstream->state, ABT_XSTREAM_STATE_RUNNING);
     ABTD_xstream_context_revive(&p_xstream->ctx);
