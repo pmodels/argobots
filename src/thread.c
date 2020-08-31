@@ -2366,26 +2366,23 @@ ABTU_ret_err static int thread_migrate_to_xstream(ABTI_local **pp_local,
                         ABT_ERR_INV_THREAD);
 
     /* We need to find the target scheduler */
-    ABTI_pool *p_pool = NULL;
-    ABTI_sched *p_sched = NULL;
-    do {
-        /* We check the state of the ES */
-        ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_xstream->state) !=
-                                ABT_XSTREAM_STATE_TERMINATED,
-                            ABT_ERR_INV_XSTREAM);
-        /* The migration target should be the main scheduler since it is
-         * hard to guarantee the lifetime of the stackable scheduler. */
-        p_sched = p_xstream->p_main_sched;
+    /* We check the state of the ES */
+    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_xstream->state) !=
+                            ABT_XSTREAM_STATE_TERMINATED,
+                        ABT_ERR_INV_XSTREAM);
+    /* The migration target should be the main scheduler since it is
+     * hard to guarantee the lifetime of the stackable scheduler. */
+    ABTI_sched *p_sched = p_xstream->p_main_sched;
 
-        /* We check the state of the sched */
-        /* Find a pool */
-        abt_errno =
-            ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
-        ABTI_CHECK_ERROR_RET(abt_errno);
-        /* We set the migration counter to prevent the scheduler from
-         * stopping */
-        ABTI_pool_inc_num_migrations(p_pool);
-    } while (p_pool == NULL);
+    /* We check the state of the sched */
+    /* Find a pool */
+    ABTI_pool *p_pool = NULL;
+    abt_errno =
+        ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
+    ABTI_CHECK_ERROR_RET(abt_errno);
+    /* We set the migration counter to prevent the scheduler from
+     * stopping */
+    ABTI_pool_inc_num_migrations(p_pool);
 
     abt_errno = thread_migrate_to_pool(pp_local, p_thread, p_pool);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
