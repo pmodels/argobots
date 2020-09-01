@@ -107,6 +107,19 @@
 
 /* Utility Functions */
 
+#if defined(__ibmxl__) || defined(__xlc__)
+
+/* XL C/C++ compilers fail to compile these static functions correctly.
+ * See https://github.com/pmodels/argobots/issues/244 for details. */
+
+ABTU_ret_err int ABTU_memalign(size_t alignment, size_t size, void **p_ptr);
+void ABTU_free(void *ptr);
+ABTU_ret_err int ABTU_malloc(size_t size, void **p_ptr);
+ABTU_ret_err int ABTU_calloc(size_t num, size_t size, void **p_ptr);
+ABTU_ret_err int ABTU_realloc(size_t old_size, size_t new_size, void **p_ptr);
+
+#else /* !(defined(__ibmxl__) || defined(__xlc__)) */
+
 ABTU_ret_err static inline int ABTU_memalign(size_t alignment, size_t size,
                                              void **p_ptr)
 {
@@ -199,6 +212,8 @@ ABTU_ret_err static inline int ABTU_realloc(size_t old_size, size_t new_size,
 }
 
 #endif /* !ABT_CONFIG_USE_ALIGNED_ALLOC */
+
+#endif /* !(defined(__ibmxl__) || defined(__xlc__)) */
 
 typedef enum ABTU_MEM_LARGEPAGE_TYPE {
     ABTU_MEM_LARGEPAGE_MALLOC,   /* ABTU_malloc(). */

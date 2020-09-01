@@ -4,4 +4,5 @@
 #
 
 abt_sources += \
-	util/largepage.c
+	util/largepage.c \
+	util/util.c
