@@ -74,7 +74,6 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    *newxstream = ABT_XSTREAM_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -177,7 +176,6 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    *newxstream = ABT_XSTREAM_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -383,7 +381,10 @@ fn_fail:
  *
  * \c ABT_xstream_self() returns the handle to ES object associated with
  * the caller work unit through \c xstream.
- * When an error occurs, \c xstream is set to \c ABT_XSTREAM_NULL.
+ *
+ * At present \c xstream is set to \c ABT_XSTREAM_NULL when an error occurs,
+ * but this behavior is deprecated.  The program should not rely on this
+ * behavior.
  *
  * @param[out] xstream  ES handle
  * @return Error code
@@ -394,16 +395,15 @@ fn_fail:
 int ABT_xstream_self(ABT_xstream *xstream)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_xstream ret = ABT_XSTREAM_NULL;
+    *xstream = ABT_XSTREAM_NULL;
 
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     /* Return value */
-    ret = ABTI_xstream_get_handle(p_local_xstream);
+    *xstream = ABTI_xstream_get_handle(p_local_xstream);
 
 fn_exit:
-    *xstream = ret;
     return abt_errno;
 
 fn_fail:
@@ -752,16 +752,14 @@ int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
 int ABT_xstream_get_num(int *num_xstreams)
 {
     int abt_errno = ABT_SUCCESS;
-    int ret = 0;
 
     /* In case that Argobots has not been initialized, return an error code
      * instead of making the call fail. */
     ABTI_SETUP_WITH_INIT_CHECK();
 
-    ret = gp_ABTI_global->num_xstreams;
+    *num_xstreams = gp_ABTI_global->num_xstreams;
 
 fn_exit:
-    *num_xstreams = ret;
     return abt_errno;
 
 fn_fail:

@@ -60,8 +60,6 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    if (newtask)
-        *newtask = ABT_TASK_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -122,8 +120,6 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    if (newtask)
-        *newtask = ABT_TASK_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -203,6 +199,9 @@ int ABT_task_cancel(ABT_task task);
  * \c ABT_task_self() returns the handle of the calling tasklet.
  * If ULTs call this routine, \c ABT_TASK_NULL will be returned to \c task.
  *
+ * At present \c task is set to \c ABT_TASK_NULL when an error occurs, but this
+ * behavior is deprecated.  The program should not rely on this behavior.
+ *
  * @param[out] task  tasklet handle
  * @return Error code
  * @retval ABT_SUCCESS           on success
@@ -213,18 +212,18 @@ int ABT_task_cancel(ABT_task task);
 int ABT_task_self(ABT_task *task)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_task ret = ABT_TASK_NULL;
+    *task = ABT_TASK_NULL;
 
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE),
-                    ABT_ERR_INV_THREAD);
-    ret = ABTI_thread_get_handle(p_thread);
-
+    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+        abt_errno = ABT_ERR_INV_THREAD;
+    } else {
+        *task = ABTI_thread_get_handle(p_thread);
+    }
 fn_exit:
-    *task = ret;
     return abt_errno;
 
 fn_fail:

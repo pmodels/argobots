@@ -53,7 +53,6 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    *newtimer = ABT_TIMER_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }

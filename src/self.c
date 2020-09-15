@@ -34,16 +34,15 @@
 int ABT_self_get_type(ABT_unit_type *type)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_unit_type ret = ABT_UNIT_TYPE_EXT;
+    *type = ABT_UNIT_TYPE_EXT;
 
-    /* If Argobots has not been initialized, set type to ABT_UNIT_TYPE_EXT. */
+    /* Deprecated: if Argobots has not been initialized, set type to
+     * ABT_UNIT_TYPE_EXT. */
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
-    /* This is when an external thread called this routine. */
-    ret = ABTI_thread_type_get_type(p_local_xstream->p_thread->type);
+    *type = ABTI_thread_type_get_type(p_local_xstream->p_thread->type);
 
 fn_exit:
-    *type = ret;
     return abt_errno;
 
 fn_fail:
@@ -70,17 +69,14 @@ fn_fail:
 int ABT_self_is_primary(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_bool ret = ABT_FALSE;
 
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (p_thread->type & ABTI_THREAD_TYPE_MAIN)
-        ret = ABT_TRUE;
+    *flag = (p_thread->type & ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
 
 fn_exit:
-    *flag = ret;
     return abt_errno;
 
 fn_fail:
@@ -106,16 +102,14 @@ fn_fail:
 int ABT_self_on_primary_xstream(ABT_bool *flag)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_bool ret = ABT_FALSE;
 
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     /* Return value */
-    ret = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE
-                                                               : ABT_FALSE;
+    *flag = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE
+                                                                 : ABT_FALSE;
 fn_exit:
-    *flag = ret;
     return abt_errno;
 
 fn_fail:
@@ -144,17 +138,20 @@ fn_fail:
 int ABT_self_get_last_pool_id(int *pool_id)
 {
     int abt_errno = ABT_SUCCESS;
-    int ret = -1;
 
-    ABTI_xstream *p_local_xstream;
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
-
-    ABTI_thread *p_self = p_local_xstream->p_thread;
-    ABTI_ASSERT(p_self->p_pool);
-    ret = p_self->p_pool->id;
+    ABTI_SETUP_WITH_INIT_CHECK();
+    ABTI_xstream *p_local_xstream =
+        ABTI_local_get_xstream_or_null(ABTI_local_get_local());
+    if (ABTI_IS_EXT_THREAD_ENABLED && !p_local_xstream) {
+        /* This is when an external thread called this routine. */
+        *pool_id = -1;
+    } else {
+        ABTI_thread *p_self = p_local_xstream->p_thread;
+        ABTI_ASSERT(p_self->p_pool);
+        *pool_id = p_self->p_pool->id;
+    }
 
 fn_exit:
-    *pool_id = ret;
     return abt_errno;
 
 fn_fail:
@@ -249,15 +246,13 @@ fn_fail:
 int ABT_self_get_arg(void **arg)
 {
     int abt_errno = ABT_SUCCESS;
-    void *ret = NULL;
 
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
-    ret = p_local_xstream->p_thread->p_arg;
+    *arg = p_local_xstream->p_thread->p_arg;
 
 fn_exit:
-    *arg = ret;
     return abt_errno;
 
 fn_fail:
