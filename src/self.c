@@ -33,7 +33,6 @@
  */
 int ABT_self_get_type(ABT_unit_type *type)
 {
-    int abt_errno = ABT_SUCCESS;
     *type = ABT_UNIT_TYPE_EXT;
 
     /* Deprecated: if Argobots has not been initialized, set type to
@@ -41,13 +40,7 @@ int ABT_self_get_type(ABT_unit_type *type)
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
     *type = ABTI_thread_type_get_type(p_local_xstream->p_thread->type);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -68,20 +61,12 @@ fn_fail:
  */
 int ABT_self_is_primary(ABT_bool *flag)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
     *flag = (p_thread->type & ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -101,20 +86,13 @@ fn_fail:
  */
 int ABT_self_on_primary_xstream(ABT_bool *flag)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     /* Return value */
     *flag = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE
                                                                  : ABT_FALSE;
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -137,8 +115,6 @@ fn_fail:
  */
 int ABT_self_get_last_pool_id(int *pool_id)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_SETUP_WITH_INIT_CHECK();
     ABTI_xstream *p_local_xstream =
         ABTI_local_get_xstream_or_null(ABTI_local_get_local());
@@ -150,13 +126,7 @@ int ABT_self_get_last_pool_id(int *pool_id)
         ABTI_ASSERT(p_self->p_pool);
         *pool_id = p_self->p_pool->id;
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -179,8 +149,6 @@ fn_fail:
  */
 int ABT_self_suspend(void)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_self;
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_self);
@@ -188,13 +156,7 @@ int ABT_self_suspend(void)
     ABTI_ythread_set_blocked(p_self);
     ABTI_ythread_suspend(&p_local_xstream, p_self, ABT_SYNC_EVENT_TYPE_USER,
                          NULL);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -212,19 +174,11 @@ fn_fail:
  */
 int ABT_self_set_arg(void *arg)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     p_local_xstream->p_thread->p_arg = arg;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -245,19 +199,11 @@ fn_fail:
  */
 int ABT_self_get_arg(void **arg)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     *arg = p_local_xstream->p_thread->p_arg;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -277,19 +223,11 @@ fn_fail:
  */
 int ABT_self_is_unnamed(ABT_bool *flag)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     *flag = (p_local_xstream->p_thread->type & ABTI_THREAD_TYPE_NAMED)
                 ? ABT_FALSE
                 : ABT_TRUE;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }

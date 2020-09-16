@@ -41,20 +41,12 @@ double ABT_get_wtime(void)
  */
 int ABT_timer_create(ABT_timer *newtimer)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_timer *p_newtimer;
-
-    abt_errno = timer_alloc(&p_newtimer);
+    int abt_errno = timer_alloc(&p_newtimer);
     ABTI_CHECK_ERROR(abt_errno);
 
     *newtimer = ABTI_timer_get_handle(p_newtimer);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -74,25 +66,16 @@ fn_fail:
  */
 int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
     ABTI_timer *p_newtimer;
-
-    abt_errno = timer_alloc(&p_newtimer);
+    int abt_errno = timer_alloc(&p_newtimer);
     ABTI_CHECK_ERROR(abt_errno);
 
     memcpy(p_newtimer, p_timer, sizeof(ABTI_timer));
-
     *newtimer = ABTI_timer_get_handle(p_newtimer);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -111,7 +94,6 @@ fn_fail:
  */
 int ABT_timer_free(ABT_timer *timer)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_timer *p_timer = ABTI_timer_get_ptr(*timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
@@ -121,13 +103,7 @@ int ABT_timer_free(ABT_timer *timer)
      * Argobots initialization. */
     free(p_timer);
     *timer = ABT_TIMER_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -144,18 +120,11 @@ fn_fail:
  */
 int ABT_timer_start(ABT_timer timer)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
     ABTD_time_get(&p_timer->start);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -172,18 +141,11 @@ fn_fail:
  */
 int ABT_timer_stop(ABT_timer timer)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
     ABTD_time_get(&p_timer->end);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -202,23 +164,14 @@ fn_fail:
  */
 int ABT_timer_read(ABT_timer timer, double *secs)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
-    double start, end;
-
-    start = ABTD_time_read_sec(&p_timer->start);
-    end = ABTD_time_read_sec(&p_timer->end);
+    double start = ABTD_time_read_sec(&p_timer->start);
+    double end = ABTD_time_read_sec(&p_timer->end);
 
     *secs = end - start;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -238,24 +191,15 @@ fn_fail:
  */
 int ABT_timer_stop_and_read(ABT_timer timer, double *secs)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
-    double start, end;
-
     ABTD_time_get(&p_timer->end);
-    start = ABTD_time_read_sec(&p_timer->start);
-    end = ABTD_time_read_sec(&p_timer->end);
+    double start = ABTD_time_read_sec(&p_timer->start);
+    double end = ABTD_time_read_sec(&p_timer->end);
 
     *secs = end - start;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -275,24 +219,15 @@ fn_fail:
  */
 int ABT_timer_stop_and_add(ABT_timer timer, double *secs)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
-    double start, end;
-
     ABTD_time_get(&p_timer->end);
-    start = ABTD_time_read_sec(&p_timer->start);
-    end = ABTD_time_read_sec(&p_timer->end);
+    double start = ABTD_time_read_sec(&p_timer->start);
+    double end = ABTD_time_read_sec(&p_timer->end);
 
     *secs += (end - start);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -310,7 +245,7 @@ fn_fail:
  */
 int ABT_timer_get_overhead(double *overhead)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABT_timer h_timer;
     int i;
     const int iter = 5000;
@@ -330,13 +265,7 @@ int ABT_timer_get_overhead(double *overhead)
     ABTI_CHECK_ERROR(abt_errno);
 
     *overhead = sum / iter;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /*****************************************************************************/
@@ -350,9 +279,8 @@ ABTU_ret_err static int timer_alloc(ABTI_timer **pp_newtimer)
      * malloc/free.  This is to allow ABT_timer to be used irrespective of
      * Argobots initialization. */
     ABTI_timer *p_newtimer = (ABTI_timer *)malloc(sizeof(ABTI_timer));
-    ABTI_CHECK_TRUE_RET(p_newtimer != NULL, ABT_ERR_MEM);
+    ABTI_CHECK_TRUE(p_newtimer != NULL, ABT_ERR_MEM);
 
     *pp_newtimer = p_newtimer;
-
     return ABT_SUCCESS;
 }

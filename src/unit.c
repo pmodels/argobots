@@ -26,19 +26,11 @@
  */
 int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     ABTI_unit_set_associated_pool(unit, p_pool);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /*****************************************************************************/

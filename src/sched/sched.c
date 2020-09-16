@@ -41,26 +41,19 @@ static inline uint64_t sched_get_new_id(void);
 int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
                      ABT_sched_config config, ABT_sched *newsched)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_sched;
-
     ABTI_CHECK_TRUE(newsched != NULL, ABT_ERR_SCHED);
+
     /* TODO: the default value of automatic is different from
      * ABT_sched_create_basic(). Make it consistent. */
     const ABT_bool def_automatic = ABT_FALSE;
-    abt_errno =
+    int abt_errno =
         sched_create(def, num_pools, pools, config, def_automatic, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
     *newsched = ABTI_sched_get_handle(p_sched);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -98,19 +91,12 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                            ABT_pool *pools, ABT_sched_config config,
                            ABT_sched *newsched)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_newsched;
-    abt_errno =
+    int abt_errno =
         ABTI_sched_create_basic(predef, num_pools, pools, config, &p_newsched);
     ABTI_CHECK_ERROR(abt_errno);
     *newsched = ABTI_sched_get_handle(p_newsched);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -129,24 +115,17 @@ fn_fail:
  */
 int ABT_sched_free(ABT_sched *sched)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(*sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-    ABTI_CHECK_TRUE_RET(p_sched->used == ABTI_SCHED_NOT_USED, ABT_ERR_SCHED);
+    ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED, ABT_ERR_SCHED);
 
     /* Free the scheduler */
     ABTI_sched_free(p_local, p_sched, ABT_FALSE);
 
     /* Return value */
     *sched = ABT_SCHED_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -164,19 +143,11 @@ fn_fail:
  */
 int ABT_sched_get_num_pools(ABT_sched sched, int *num_pools)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     *num_pools = p_sched->num_pools;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -193,24 +164,15 @@ fn_fail:
 int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
                         ABT_pool *pools)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-
     ABTI_CHECK_TRUE(idx + max_pools <= p_sched->num_pools, ABT_ERR_SCHED);
 
     int p;
     for (p = idx; p < idx + max_pools; p++) {
         pools[p - idx] = p_sched->pools[p];
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -225,19 +187,11 @@ fn_fail:
  */
 int ABT_sched_finish(ABT_sched sched)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     ABTI_sched_finish(p_sched);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -254,18 +208,11 @@ fn_fail:
  */
 int ABT_sched_exit(ABT_sched sched)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     ABTI_sched_exit(p_sched);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -287,19 +234,12 @@ fn_fail:
  */
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     *stop = ABTI_sched_has_to_stop(&p_local, p_sched);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -316,17 +256,11 @@ fn_fail:
  */
 int ABT_sched_set_data(ABT_sched sched, void *data)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+
     p_sched->data = data;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -343,19 +277,11 @@ fn_fail:
  */
 int ABT_sched_get_data(ABT_sched sched, void **data)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     *data = p_sched->data;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -371,19 +297,11 @@ fn_fail:
  */
 int ABT_sched_get_size(ABT_sched sched, size_t *size)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     *size = ABTI_sched_get_size(p_sched);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 size_t ABTI_sched_get_size(ABTI_sched *p_sched)
@@ -412,19 +330,11 @@ size_t ABTI_sched_get_size(ABTI_sched *p_sched)
  */
 int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     *size = ABTI_sched_get_total_size(p_sched);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /*****************************************************************************/
@@ -451,7 +361,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
     ABT_pool_kind kind = ABT_POOL_FIFO;
     ABT_bool automatic;
 
-    ABTI_CHECK_TRUE_RET(!pools || num_pools > 0, ABT_ERR_SCHED);
+    ABTI_CHECK_TRUE(!pools || num_pools > 0, ABT_ERR_SCHED);
 
     /* We set the access to the default one */
     access = ABT_POOL_ACCESS_MPSC;
@@ -460,7 +370,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
     automatic = ABT_TRUE;
     /* We read the config and set the configured parameters */
     abt_errno = ABTI_sched_config_read_global(config, &access, &automatic);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* A pool array is provided, predef has to be compatible */
     if (pools != NULL) {
@@ -468,7 +378,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
         ABT_pool *pool_list;
         abt_errno =
             ABTU_malloc(num_pools * sizeof(ABT_pool), (void **)&pool_list);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
 
         int p;
         for (p = 0; p < num_pools; p++) {
@@ -476,7 +386,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 ABTI_pool *p_newpool;
                 abt_errno = ABTI_pool_create_basic(ABT_POOL_FIFO, access,
                                                    ABT_TRUE, &p_newpool);
-                ABTI_CHECK_ERROR_RET(abt_errno);
+                ABTI_CHECK_ERROR(abt_errno);
                 pool_list[p] = ABTI_pool_get_handle(p_newpool);
             } else {
                 pool_list[p] = pools[p];
@@ -511,7 +421,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
                 break;
         }
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         ABTU_free(pool_list);
     }
 
@@ -536,7 +446,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
-                ABTI_CHECK_ERROR_RET(abt_errno);
+                ABTI_CHECK_ERROR(abt_errno);
                 break;
         }
 
@@ -548,7 +458,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
             ABTI_pool *p_newpool;
             abt_errno =
                 ABTI_pool_create_basic(kind, access, ABT_TRUE, &p_newpool);
-            ABTI_CHECK_ERROR_RET(abt_errno);
+            ABTI_CHECK_ERROR(abt_errno);
             pool_list[p] = ABTI_pool_get_handle(p_newpool);
         }
 
@@ -579,7 +489,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
                 break;
         }
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
     }
     return ABT_SUCCESS;
 }
@@ -829,7 +739,7 @@ ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
     int p, abt_errno;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_sched), (void **)&p_sched);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Copy of the contents of pools */
     ABT_pool *pool_list;

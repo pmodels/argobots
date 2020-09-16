@@ -16,7 +16,7 @@ ABTU_ret_err int ABTI_ythread_htable_create(uint32_t num_rows,
     size_t q_size = num_rows * sizeof(ABTI_ythread_queue);
 
     abt_errno = ABTU_malloc(sizeof(ABTI_ythread_htable), (void **)&p_htable);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno = ABTU_memalign(64, q_size, (void **)&p_htable->queue);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {

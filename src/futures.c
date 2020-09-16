@@ -56,7 +56,7 @@
 int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
                       ABT_future *newfuture)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_future *p_future;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_future), (void **)&p_future);
@@ -68,20 +68,14 @@ int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
         ABTU_malloc(compartments * sizeof(void *), (void **)&p_future->array);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_future);
-        goto fn_fail;
+        ABTI_HANDLE_ERROR(abt_errno);
     }
     p_future->p_callback = cb_func;
     p_future->p_head = NULL;
     p_future->p_tail = NULL;
 
     *newfuture = ABTI_future_get_handle(p_future);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -98,7 +92,6 @@ fn_fail:
  */
 int ABT_future_free(ABT_future *future)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future = ABTI_future_get_ptr(*future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -111,13 +104,7 @@ int ABT_future_free(ABT_future *future)
     ABTU_free(p_future);
 
     *future = ABT_FUTURE_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -137,7 +124,6 @@ fn_fail:
  */
 int ABT_future_wait(ABT_future future)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
@@ -155,10 +141,11 @@ int ABT_future_wait(ABT_future future)
         }
         if (!p_ythread) {
             /* external thread */
-            abt_errno = ABTU_calloc(1, sizeof(ABTI_thread), (void **)&p_thread);
+            int abt_errno =
+                ABTU_calloc(1, sizeof(ABTI_thread), (void **)&p_thread);
             if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
                 ABTI_spinlock_release(&p_future->lock);
-                goto fn_fail;
+                ABTI_HANDLE_ERROR(abt_errno);
             }
             p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */
@@ -196,13 +183,7 @@ int ABT_future_wait(ABT_future future)
     } else {
         ABTI_spinlock_release(&p_future->lock);
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -219,19 +200,12 @@ fn_fail:
  */
 int ABT_future_test(ABT_future future, ABT_bool *flag)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
     uint32_t counter = ABTD_atomic_acquire_load_uint32(&p_future->counter);
     *flag = (counter == p_future->compartments) ? ABT_TRUE : ABT_FALSE;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -253,7 +227,6 @@ fn_fail:
  */
 int ABT_future_set(ABT_future future, void *value)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
@@ -263,9 +236,8 @@ int ABT_future_set(ABT_future future, void *value)
     int counter = ABTD_atomic_relaxed_load_uint32(&p_future->counter);
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     if (counter >= p_future->compartments) {
-        abt_errno = ABT_ERR_FUTURE;
         ABTI_spinlock_release(&p_future->lock);
-        goto fn_fail;
+        ABTI_HANDLE_ERROR(ABT_ERR_FUTURE);
     }
 #endif
     p_future->array[counter] = value;
@@ -278,7 +250,7 @@ int ABT_future_set(ABT_future future, void *value)
 
         if (p_future->p_head == NULL) {
             ABTI_spinlock_release(&p_future->lock);
-            goto fn_exit;
+            return ABT_SUCCESS;
         }
 
         /* Wake up all waiting ULTs */
@@ -309,13 +281,7 @@ int ABT_future_set(ABT_future future, void *value)
     }
 
     ABTI_spinlock_release(&p_future->lock);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -332,18 +298,11 @@ fn_fail:
  */
 int ABT_future_reset(ABT_future future)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
     ABTI_spinlock_acquire(&p_future->lock);
     ABTD_atomic_release_store_uint32(&p_future->counter, 0);
     ABTI_spinlock_release(&p_future->lock);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }

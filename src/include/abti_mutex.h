@@ -45,7 +45,7 @@ ABTU_ret_err static inline int ABTI_mutex_init(ABTI_mutex *p_mutex)
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
     int abt_errno = ABTI_ythread_htable_create(gp_ABTI_global->max_xstreams,
                                                &p_mutex->p_htable);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
     p_mutex->p_handover = NULL;
     p_mutex->p_giver = NULL;
 #endif

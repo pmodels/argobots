@@ -23,7 +23,7 @@
  */
 int ABT_rwlock_create(ABT_rwlock *newrwlock)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_rwlock *p_newrwlock;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_rwlock), (void **)&p_newrwlock);
@@ -33,7 +33,7 @@ int ABT_rwlock_create(ABT_rwlock *newrwlock)
     abt_errno = ABTI_mutex_init(&p_newrwlock->mutex);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_newrwlock);
-        goto fn_fail;
+        ABTI_HANDLE_ERROR(abt_errno);
     }
     ABTI_cond_init(&p_newrwlock->cond);
     p_newrwlock->reader_count = 0;
@@ -41,13 +41,7 @@ int ABT_rwlock_create(ABT_rwlock *newrwlock)
 
     /* Return value */
     *newrwlock = ABTI_rwlock_get_handle(p_newrwlock);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -67,7 +61,6 @@ fn_fail:
  */
 int ABT_rwlock_free(ABT_rwlock *rwlock)
 {
-    int abt_errno = ABT_SUCCESS;
     ABT_rwlock h_rwlock = *rwlock;
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(h_rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
@@ -78,13 +71,7 @@ int ABT_rwlock_free(ABT_rwlock *rwlock)
 
     /* Return value */
     *rwlock = ABT_RWLOCK_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -104,12 +91,12 @@ fn_fail:
  */
 int ABT_rwlock_rdlock(ABT_rwlock rwlock)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
     ABTI_mutex_lock(&p_local, &p_rwlock->mutex);
+    int abt_errno = ABT_SUCCESS;
     while (p_rwlock->write_flag && abt_errno == ABT_SUCCESS) {
         abt_errno = ABTI_cond_wait(&p_local, &p_rwlock->cond, &p_rwlock->mutex);
     }
@@ -118,13 +105,7 @@ int ABT_rwlock_rdlock(ABT_rwlock rwlock)
     }
     ABTI_mutex_unlock(p_local, &p_rwlock->mutex);
     ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -143,12 +124,12 @@ fn_fail:
  */
 int ABT_rwlock_wrlock(ABT_rwlock rwlock)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
     ABTI_mutex_lock(&p_local, &p_rwlock->mutex);
+    int abt_errno = ABT_SUCCESS;
     while ((p_rwlock->write_flag || p_rwlock->reader_count) &&
            abt_errno == ABT_SUCCESS) {
         abt_errno = ABTI_cond_wait(&p_local, &p_rwlock->cond, &p_rwlock->mutex);
@@ -158,13 +139,7 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
     }
     ABTI_mutex_unlock(p_local, &p_rwlock->mutex);
     ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -182,7 +157,6 @@ fn_fail:
  */
 int ABT_rwlock_unlock(ABT_rwlock rwlock)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
@@ -195,11 +169,5 @@ int ABT_rwlock_unlock(ABT_rwlock rwlock)
     }
     ABTI_cond_broadcast(p_local, &p_rwlock->cond);
     ABTI_mutex_unlock(p_local, &p_rwlock->mutex);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }

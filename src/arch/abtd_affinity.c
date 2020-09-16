@@ -234,7 +234,7 @@ ABTU_ret_err static int read_cpuset(pthread_t native_thread,
     }
     p_cpuset->num_cpuids = num_cpuids;
     ret = ABTU_malloc(sizeof(int) * num_cpuids, (void **)&p_cpuset->cpuids);
-    ABTI_CHECK_ERROR_RET(ret);
+    ABTI_CHECK_ERROR(ret);
     for (i = 0, j = 0; i < CPU_SETSIZE; i++) {
         if (CPU_ISSET(i, &cpuset))
             p_cpuset->cpuids[j++] = i;

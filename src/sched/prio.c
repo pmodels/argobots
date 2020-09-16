@@ -38,7 +38,7 @@ static inline sched_data *sched_data_get_ptr(void *data)
 
 static int sched_init(ABT_sched sched, ABT_sched_config config)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     int num_pools;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
@@ -59,7 +59,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
     abt_errno = ABTI_sched_config_read(config, 1, 1, &p_event_freq);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_data);
-        goto fn_fail;
+        ABTI_CHECK_ERROR(abt_errno);
     }
 
     /* Save the list of pools */
@@ -69,18 +69,12 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
         ABTU_malloc(num_pools * sizeof(ABT_pool), (void **)&p_data->pools);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_data);
-        goto fn_fail;
+        ABTI_CHECK_ERROR(abt_errno);
     }
     memcpy(p_data->pools, p_sched->pools, sizeof(ABT_pool) * num_pools);
 
     p_sched->data = p_data;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_WITH_CODE("prio: sched_init", abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 static void sched_run(ABT_sched sched)
