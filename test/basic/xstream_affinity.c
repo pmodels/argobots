@@ -114,6 +114,15 @@ int main(int argc, char *argv[])
 
     ATS_printf(1, "# of ESs: %d\n", num_xstreams);
 
+    ABT_bool is_affinity_enabled = ABT_FALSE;
+    ret = ABT_info_query_config(ABT_INFO_QUERY_KIND_ENABLED_AFFINITY,
+                                (void *)&is_affinity_enabled);
+    ATS_ERROR(ret, "ABT_info_query_config");
+    if (is_affinity_enabled == ABT_FALSE) {
+        /* This test should be skipped. */
+        ATS_ERROR(ABT_ERR_FEATURE_NA, "ABT_info_query_config");
+    }
+
     /* Check the affinity of the primary ES */
     ret = ABT_xstream_self(&primary_es);
     ATS_ERROR(ret, "ABT_xstream_self");
