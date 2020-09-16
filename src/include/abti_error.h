@@ -91,15 +91,6 @@
         }                                                                      \
     } while (0)
 
-#define ABTI_CHECK_ERROR_MSG(abt_errno, msg)                                   \
-    do {                                                                       \
-        if (ABTI_IS_ERROR_CHECK_ENABLED &&                                     \
-            ABTU_unlikely(abt_errno != ABT_SUCCESS)) {                         \
-            HANDLE_ERROR(msg);                                                 \
-            goto fn_fail;                                                      \
-        }                                                                      \
-    } while (0)
-
 #define ABTI_CHECK_ERROR_RET(abt_errno)                                        \
     do {                                                                       \
         if (ABTI_IS_ERROR_CHECK_ENABLED &&                                     \
