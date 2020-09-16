@@ -59,7 +59,6 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    *newsched = ABT_SCHED_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -111,7 +110,6 @@ fn_exit:
 
 fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    *newsched = ABT_SCHED_NULL;
     goto fn_exit;
 }
 
@@ -291,9 +289,6 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
     int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
-
-    *stop = ABT_FALSE;
-
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
@@ -377,15 +372,13 @@ fn_fail:
 int ABT_sched_get_size(ABT_sched sched, size_t *size)
 {
     int abt_errno = ABT_SUCCESS;
-    size_t pool_size = 0;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    pool_size = ABTI_sched_get_size(p_sched);
+    *size = ABTI_sched_get_size(p_sched);
 
 fn_exit:
-    *size = pool_size;
     return abt_errno;
 
 fn_fail:
@@ -420,15 +413,13 @@ size_t ABTI_sched_get_size(ABTI_sched *p_sched)
 int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
 {
     int abt_errno = ABT_SUCCESS;
-    size_t pool_size = 0;
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
-    pool_size = ABTI_sched_get_total_size(p_sched);
+    *size = ABTI_sched_get_total_size(p_sched);
 
 fn_exit:
-    *size = pool_size;
     return abt_errno;
 
 fn_fail:

@@ -87,8 +87,6 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    if (newthread)
-        *newthread = ABT_THREAD_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -163,8 +161,6 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    if (newthread)
-        *newthread = ABT_THREAD_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -510,6 +506,9 @@ fn_fail:
  * If tasklets call this routine, \c ABT_THREAD_NULL will be returned to
  * \c thread.
  *
+ * At present \c thread is set to \c ABT_THREAD_NULL when an error occurs, but
+ * this behavior is deprecated.  The program should not rely on this behavior.
+ *
  * @param[out] thread  ULT handle
  * @return Error code
  * @retval ABT_SUCCESS           on success
@@ -520,14 +519,18 @@ fn_fail:
 int ABT_thread_self(ABT_thread *thread)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_thread ret = ABT_THREAD_NULL;
+    *thread = ABT_THREAD_NULL;
 
-    ABTI_ythread *p_ythread;
-    ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(NULL, &p_ythread);
-    ret = ABTI_ythread_get_handle(p_ythread);
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
+    ABTI_thread *p_thread = p_local_xstream->p_thread;
+    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+        *thread = ABTI_thread_get_handle(p_thread);
+    } else {
+        abt_errno = ABT_ERR_INV_THREAD;
+    }
 fn_exit:
-    *thread = ret;
     return abt_errno;
 
 fn_fail:

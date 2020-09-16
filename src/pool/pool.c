@@ -42,7 +42,6 @@ fn_exit:
     return abt_errno;
 
 fn_fail:
-    *newpool = ABT_POOL_NULL;
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
     goto fn_exit;
 }
@@ -75,7 +74,6 @@ fn_exit:
 
 fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    *newpool = ABT_POOL_NULL;
     goto fn_exit;
 }
 
@@ -204,20 +202,17 @@ fn_fail:
 int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_unit unit;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    unit = ABTI_pool_pop(p_pool);
+    *p_unit = ABTI_pool_pop(p_pool);
 
 fn_exit:
-    *p_unit = unit;
     return abt_errno;
 
 fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    unit = ABT_UNIT_NULL;
     goto fn_exit;
 }
 
@@ -244,40 +239,34 @@ fn_fail:
 int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_unit unit;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    unit = ABTI_pool_pop_wait(p_pool, time_secs);
+    *p_unit = ABTI_pool_pop_wait(p_pool, time_secs);
 
 fn_exit:
-    *p_unit = unit;
     return abt_errno;
 
 fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    unit = ABT_UNIT_NULL;
     goto fn_exit;
 }
 
 int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
 {
     int abt_errno = ABT_SUCCESS;
-    ABT_unit unit;
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    unit = ABTI_pool_pop_timedwait(p_pool, abstime_secs);
+    *p_unit = ABTI_pool_pop_timedwait(p_pool, abstime_secs);
 
 fn_exit:
-    *p_unit = unit;
     return abt_errno;
 
 fn_fail:
     HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    unit = ABT_UNIT_NULL;
     goto fn_exit;
 }
 

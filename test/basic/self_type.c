@@ -108,10 +108,10 @@ void *pthread_hello(void *arg)
     assert(ret == ABT_ERR_INV_XSTREAM && type == ABT_UNIT_TYPE_EXT);
 
     ret = ABT_self_is_primary(&flag);
-    assert(ret == ABT_ERR_INV_XSTREAM && flag == ABT_FALSE);
+    assert(ret == ABT_ERR_INV_XSTREAM);
 
     ret = ABT_self_on_primary_xstream(&flag);
-    assert(ret == ABT_ERR_INV_XSTREAM && flag == ABT_FALSE);
+    assert(ret == ABT_ERR_INV_XSTREAM);
 
     ATS_printf(1, "pthread: external thread\n");
 
@@ -145,10 +145,10 @@ int main(int argc, char *argv[])
     assert(ret == ABT_ERR_UNINITIALIZED && type == ABT_UNIT_TYPE_EXT);
 
     ret = ABT_self_is_primary(&flag);
-    assert(ret == ABT_ERR_UNINITIALIZED && flag == ABT_FALSE);
+    assert(ret == ABT_ERR_UNINITIALIZED);
 
     ret = ABT_self_on_primary_xstream(&flag);
-    assert(ret == ABT_ERR_UNINITIALIZED && flag == ABT_FALSE);
+    assert(ret == ABT_ERR_UNINITIALIZED);
 
     /* Initialize */
     ATS_read_args(argc, argv);
