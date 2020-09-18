@@ -25,22 +25,14 @@
  */
 int ABT_cond_create(ABT_cond *newcond)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_cond *p_newcond;
-
-    abt_errno = ABTU_malloc(sizeof(ABTI_cond), (void **)&p_newcond);
+    int abt_errno = ABTU_malloc(sizeof(ABTI_cond), (void **)&p_newcond);
     ABTI_CHECK_ERROR(abt_errno);
-    ABTI_cond_init(p_newcond);
 
+    ABTI_cond_init(p_newcond);
     /* Return value */
     *newcond = ABTI_cond_get_handle(p_newcond);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -57,25 +49,16 @@ fn_fail:
  */
 int ABT_cond_free(ABT_cond *cond)
 {
-    int abt_errno = ABT_SUCCESS;
     ABT_cond h_cond = *cond;
     ABTI_cond *p_cond = ABTI_cond_get_ptr(h_cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
-
     ABTI_CHECK_TRUE(p_cond->num_waiters == 0, ABT_ERR_COND);
 
     ABTI_cond_fini(p_cond);
     ABTU_free(p_cond);
-
     /* Return value */
     *cond = ABT_COND_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -97,23 +80,15 @@ fn_fail:
  */
 int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
-    abt_errno = ABTI_cond_wait(&p_local, p_cond, p_mutex);
-    if (abt_errno != ABT_SUCCESS)
-        goto fn_fail;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    int abt_errno = ABTI_cond_wait(&p_local, p_cond, p_mutex);
+    ABTI_CHECK_ERROR(abt_errno);
+    return ABT_SUCCESS;
 }
 
 static inline double convert_timespec_to_sec(const struct timespec *p_ts)
@@ -182,7 +157,6 @@ static inline void remove_thread(ABTI_cond *p_cond, ABTI_thread *p_thread)
 int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
                        const struct timespec *abstime)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
@@ -202,8 +176,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     } else {
         if (p_cond->p_waiter_mutex != p_mutex) {
             ABTI_spinlock_release(&p_cond->lock);
-            abt_errno = ABT_ERR_INV_MUTEX;
-            goto fn_fail;
+            ABTI_HANDLE_ERROR(ABT_ERR_INV_MUTEX);
         }
     }
 
@@ -237,8 +210,9 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
         double cur_time = ABTI_get_wtime();
         if (cur_time >= tar_time) {
             remove_thread(p_cond, &thread);
-            abt_errno = ABT_ERR_COND_TIMEDOUT;
-            break;
+            /* Lock the mutex again */
+            ABTI_mutex_lock(&p_local, p_mutex);
+            return ABT_ERR_COND_TIMEDOUT;
         }
         if (p_ythread) {
             ABTI_ythread_yield(&p_local_xstream, p_ythread,
@@ -248,16 +222,9 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
             ABTD_atomic_pause();
         }
     }
-
     /* Lock the mutex again */
     ABTI_mutex_lock(&p_local, p_mutex);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -276,7 +243,6 @@ fn_fail:
  */
 int ABT_cond_signal(ABT_cond cond)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
@@ -285,7 +251,7 @@ int ABT_cond_signal(ABT_cond cond)
 
     if (p_cond->num_waiters == 0) {
         ABTI_spinlock_release(&p_cond->lock);
-        goto fn_exit;
+        return ABT_SUCCESS;
     }
 
     /* Wake up the first waiting ULT */
@@ -313,13 +279,7 @@ int ABT_cond_signal(ABT_cond cond)
     }
 
     ABTI_spinlock_release(&p_cond->lock);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -337,17 +297,10 @@ fn_fail:
  */
 int ABT_cond_broadcast(ABT_cond cond)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
     ABTI_cond_broadcast(p_local, p_cond);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }

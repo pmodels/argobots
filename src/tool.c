@@ -46,7 +46,7 @@ int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
                                       void *user_arg)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
+    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
     if (cb_func == NULL)
         event_mask_thread = ABT_TOOL_EVENT_THREAD_NONE;
@@ -88,7 +88,7 @@ int ABT_tool_register_task_callback(ABT_tool_task_callback_fn cb_func,
                                     uint64_t event_mask_task, void *user_arg)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
+    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
     if (cb_func == NULL)
         event_mask_task = ABT_TOOL_EVENT_TASK_NONE;
@@ -196,21 +196,14 @@ int ABT_tool_query_thread(ABT_tool_context context, uint64_t event_thread,
                           ABT_tool_query_kind query_kind, void *val)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
+    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_tool_context *p_tctx = ABTI_tool_context_get_ptr(context);
     ABTI_CHECK_NULL_TOOL_CONTEXT_PTR(p_tctx);
-    abt_errno = tool_query(p_tctx, query_kind, val);
+
+    int abt_errno = tool_query(p_tctx, query_kind, val);
     ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 #endif
 }
 
@@ -233,21 +226,13 @@ int ABT_tool_query_task(ABT_tool_context context, uint64_t event_task,
                         ABT_tool_query_kind query_kind, void *val)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
+    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_tool_context *p_tctx = ABTI_tool_context_get_ptr(context);
     ABTI_CHECK_NULL_TOOL_CONTEXT_PTR(p_tctx);
-    abt_errno = tool_query(p_tctx, query_kind, val);
+    int abt_errno = tool_query(p_tctx, query_kind, val);
     ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 #endif
 }
 
@@ -342,7 +327,7 @@ tool_query(ABTI_tool_context *p_tctx, ABT_tool_query_kind query_kind, void *val)
             }
             break;
         default:
-            return ABT_ERR_OTHER;
+            ABTI_HANDLE_ERROR(ABT_ERR_OTHER);
     }
     return ABT_SUCCESS;
 }

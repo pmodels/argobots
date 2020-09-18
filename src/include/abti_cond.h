@@ -71,7 +71,7 @@ ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond, ABTI_mutex *p_mutex)
     if (!p_ythread) {
         /* external thread or non-yieldable thread */
         int abt_errno = ABTU_calloc(1, sizeof(ABTI_thread), (void **)&p_thread);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         p_thread->type = ABTI_THREAD_TYPE_EXT;
         /* use state for synchronization */
         ABTD_atomic_relaxed_store_int(&p_thread->state,

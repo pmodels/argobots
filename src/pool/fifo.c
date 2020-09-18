@@ -47,8 +47,6 @@ static inline data_t *pool_get_data_ptr(void *p_data)
 ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
                                         ABT_pool_def *p_def)
 {
-    int abt_errno = ABT_SUCCESS;
-
     /* Definitions according to the access type */
     /* FIXME: need better implementation, e.g., lock-free one */
     switch (access) {
@@ -68,7 +66,7 @@ ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
             break;
 
         default:
-            ABTI_CHECK_TRUE(0, ABT_ERR_INV_POOL_ACCESS);
+            ABTI_HANDLE_ERROR(ABT_ERR_INV_POOL_ACCESS);
     }
 
     /* Common definitions regardless of the access type */
@@ -87,12 +85,7 @@ ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
     p_def->u_create_from_task = unit_create_from_task;
     p_def->u_free = unit_free;
 
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /* Pool functions */
@@ -106,7 +99,7 @@ static int pool_init(ABT_pool pool, ABT_pool_config config)
 
     data_t *p_data;
     abt_errno = ABTU_malloc(sizeof(data_t), (void **)&p_data);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     access = p_pool->access;
 
@@ -350,10 +343,9 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
     data_t *p_data = pool_get_data_ptr(p_pool->data);
     ABTI_thread *p_thread = (ABTI_thread *)unit;
 
-    ABTI_CHECK_TRUE_RET(p_data->num_threads != 0, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) ==
-                            1,
-                        ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_data->num_threads != 0, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) == 1,
+                    ABT_ERR_POOL);
 
     ABTI_spinlock_acquire(&p_data->mutex);
     if (p_data->num_threads == 1) {
@@ -385,10 +377,9 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
     data_t *p_data = pool_get_data_ptr(p_pool->data);
     ABTI_thread *p_thread = (ABTI_thread *)unit;
 
-    ABTI_CHECK_TRUE_RET(p_data->num_threads != 0, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) ==
-                            1,
-                        ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_data->num_threads != 0, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) == 1,
+                    ABT_ERR_POOL);
 
     if (p_data->num_threads == 1) {
         p_data->p_head = NULL;

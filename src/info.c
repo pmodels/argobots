@@ -115,7 +115,6 @@ static void info_trigger_print_all_thread_stacks(
  */
 int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_SETUP_WITH_INIT_CHECK();
 
     switch (query_kind) {
@@ -226,17 +225,10 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         default:
-            abt_errno = ABT_ERR_INV_QUERY_KIND;
-            ABTI_CHECK_ERROR(abt_errno);
+            ABTI_HANDLE_ERROR(ABT_ERR_INV_QUERY_KIND);
             break;
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -253,17 +245,10 @@ fn_fail:
  */
 int ABT_info_print_config(FILE *fp)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_SETUP_WITH_INIT_CHECK();
 
     ABTI_info_print_config(fp);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -280,7 +265,6 @@ fn_fail:
  */
 int ABT_info_print_all_xstreams(FILE *fp)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_SETUP_WITH_INIT_CHECK();
 
     ABTI_global *p_global = gp_ABTI_global;
@@ -298,13 +282,7 @@ int ABT_info_print_all_xstreams(FILE *fp)
     ABTI_spinlock_release(&p_global->xstream_list_lock);
 
     fflush(fp);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -321,18 +299,11 @@ fn_fail:
  */
 int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     ABTI_xstream_print(p_xstream, fp, 0, ABT_FALSE);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -349,18 +320,11 @@ fn_fail:
  */
 int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     ABTI_sched_print(p_sched, fp, 0, ABT_TRUE);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -377,18 +341,11 @@ fn_fail:
  */
 int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     ABTI_pool_print(p_pool, fp, 0);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -405,18 +362,11 @@ fn_fail:
  */
 int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     ABTI_thread_print(p_thread, fp, 0);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -434,18 +384,11 @@ fn_fail:
  */
 int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     ABTI_thread_attr_print(p_attr, fp, 0);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 #ifdef ABT_CONFIG_USE_DOXYGEN
@@ -478,20 +421,13 @@ int ABT_info_print_task(FILE *fp, ABT_task task);
  */
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_ythread *p_ythread;
     ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_INV_THREAD);
 
     ABTI_ythread_print_stack(p_ythread, fp);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -509,19 +445,12 @@ fn_fail:
  */
 int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
+    int abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -833,7 +762,7 @@ info_initialize_pool_set(struct info_pool_set_t *p_set)
     size_t default_len = 16;
     int abt_errno =
         ABTU_malloc(sizeof(ABT_pool) * default_len, (void **)&p_set->pools);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
     p_set->num = 0;
     p_set->len = default_len;
     return ABT_SUCCESS;
@@ -858,7 +787,7 @@ ABTU_ret_err static inline int info_add_pool_set(ABT_pool pool,
         int abt_errno =
             ABTU_realloc(sizeof(ABT_pool) * p_set->len,
                          sizeof(ABT_pool) * new_len, (void **)&p_set->pools);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         p_set->len = new_len;
     }
     p_set->pools[p_set->num++] = pool;

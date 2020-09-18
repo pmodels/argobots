@@ -41,22 +41,15 @@ static ABTD_atomic_uint32 g_key_id =
  */
 int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_key *p_newkey;
-
-    abt_errno = ABTU_malloc(sizeof(ABTI_key), (void **)&p_newkey);
+    int abt_errno = ABTU_malloc(sizeof(ABTI_key), (void **)&p_newkey);
     ABTI_CHECK_ERROR(abt_errno);
+
     p_newkey->f_destructor = destructor;
     p_newkey->id = ABTD_atomic_fetch_add_uint32(&g_key_id, 1);
     /* Return value */
     *newkey = ABTI_key_get_handle(p_newkey);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -74,7 +67,6 @@ fn_fail:
  */
 int ABT_key_free(ABT_key *key)
 {
-    int abt_errno = ABT_SUCCESS;
     ABT_key h_key = *key;
     ABTI_key *p_key = ABTI_key_get_ptr(h_key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
@@ -82,13 +74,7 @@ int ABT_key_free(ABT_key *key)
 
     /* Return value */
     *key = ABT_KEY_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -106,8 +92,6 @@ fn_fail:
  */
 int ABT_key_set(ABT_key key, void *value)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_key *p_key = ABTI_key_get_ptr(key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
@@ -115,17 +99,11 @@ int ABT_key_set(ABT_key key, void *value)
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 
     /* Obtain the key-value table pointer. */
-    abt_errno =
+    int abt_errno =
         ABTI_ktable_set(ABTI_xstream_get_local(p_local_xstream),
                         &p_local_xstream->p_thread->p_keytable, p_key, value);
     ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -146,8 +124,6 @@ fn_fail:
  */
 int ABT_key_get(ABT_key key, void **value)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_key *p_key = ABTI_key_get_ptr(key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
@@ -157,13 +133,7 @@ int ABT_key_get(ABT_key key, void **value)
 
     /* Obtain the key-value table pointer */
     *value = ABTI_ktable_get(&p_local_xstream->p_thread->p_keytable, p_key);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 void ABTI_ktable_free(ABTI_local *p_local, ABTI_ktable *p_ktable)

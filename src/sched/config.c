@@ -60,7 +60,7 @@ ABT_sched_config_var ABT_sched_config_automatic = { .idx = -3,
  */
 int ABT_sched_config_create(ABT_sched_config *config, ...)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_sched_config *p_config;
 
     char *buffer = NULL;
@@ -95,7 +95,7 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
                 ABTU_realloc(cur_buffer_size, buffer_size, (void **)&buffer);
             if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
                 ABTU_free(buffer);
-                goto fn_fail;
+                ABTI_HANDLE_ERROR(abt_errno);
             }
         }
         /* Copy the parameter index */
@@ -125,8 +125,7 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
                 ptr = (void *)&p;
                 break;
             default:
-                abt_errno = ABT_ERR_SCHED_CONFIG;
-                goto fn_fail;
+                ABTI_HANDLE_ERROR(ABT_ERR_SCHED_CONFIG);
         }
 
         memcpy(buffer + offset, ptr, size);
@@ -143,13 +142,7 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
 
     p_config = (ABTI_sched_config *)buffer;
     *config = ABTI_sched_config_get_handle(p_config);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -169,7 +162,7 @@ fn_fail:
  */
 int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     int v;
 
     /* We read all the variables and save the addresses */
@@ -188,13 +181,7 @@ int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTU_free(variables);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -231,14 +218,14 @@ ABTU_ret_err int ABTI_sched_config_read_global(ABT_sched_config config,
 
     void **variables;
     abt_errno = ABTU_malloc(num_vars * sizeof(void *), (void **)&variables);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     variables[(ABT_sched_config_access.idx + 2) * (-1)] = &access_i;
     variables[(ABT_sched_config_automatic.idx + 2) * (-1)] = &automatic_i;
 
     abt_errno = ABTI_sched_config_read(config, 0, num_vars, variables);
     ABTU_free(variables);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     if (access_i != -1)
         *access = (ABT_pool_access)access_i;

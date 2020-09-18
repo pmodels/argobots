@@ -83,7 +83,7 @@ ABTU_ret_err static inline int ABTI_ktable_create(ABTI_local *p_local,
         /* Use memory pool. */
         void *p_mem;
         int abt_errno = ABTI_mem_alloc_desc(p_local, &p_mem);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         ABTI_ktable_mem_header *p_header = (ABTI_ktable_mem_header *)p_mem;
         p_ktable =
             (ABTI_ktable *)(((char *)p_mem) + sizeof(ABTI_ktable_mem_header));
@@ -97,7 +97,7 @@ ABTU_ret_err static inline int ABTI_ktable_create(ABTI_local *p_local,
         void *p_mem;
         int abt_errno =
             ABTU_malloc(ktable_size + sizeof(ABTI_ktable_mem_header), &p_mem);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         ABTI_ktable_mem_header *p_header = (ABTI_ktable_mem_header *)p_mem;
         p_ktable =
             (ABTI_ktable *)(((char *)p_mem) + sizeof(ABTI_ktable_mem_header));
@@ -132,7 +132,7 @@ ABTU_ret_err static inline int ABTI_ktable_alloc_elem(ABTI_local *p_local,
         /* Use memory pool. */
         void *p_mem;
         int abt_errno = ABTI_mem_alloc_desc(p_local, &p_mem);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         ABTI_ktable_mem_header *p_header = (ABTI_ktable_mem_header *)p_mem;
         p_header->p_next = (ABTI_ktable_mem_header *)p_ktable->p_used_mem;
         p_header->is_from_mempool = ABT_TRUE;
@@ -147,7 +147,7 @@ ABTU_ret_err static inline int ABTI_ktable_alloc_elem(ABTI_local *p_local,
         void *p_mem;
         int abt_errno =
             ABTU_malloc(size + sizeof(ABTI_ktable_mem_header), &p_mem);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         ABTI_ktable_mem_header *p_header = (ABTI_ktable_mem_header *)p_mem;
         p_header->p_next = (ABTI_ktable_mem_header *)p_ktable->p_used_mem;
         p_header->is_from_mempool = ABT_FALSE;
@@ -234,7 +234,7 @@ ABTU_ret_err static inline int ABTI_ktable_set(ABTI_local *p_local,
                                               ABTI_KTABLE_LOCKED)) {
                 /* The lock was acquired, so let's allocate this table. */
                 abt_errno = ABTI_ktable_create(p_local, &p_ktable);
-                ABTI_CHECK_ERROR_RET(abt_errno);
+                ABTI_CHECK_ERROR(abt_errno);
 
                 /* Write down the value.  The lock is released here. */
                 ABTD_atomic_release_store_ptr(pp_ktable, p_ktable);
@@ -258,7 +258,7 @@ ABTU_ret_err static inline int ABTI_ktable_set(ABTI_local *p_local,
         }
     }
     abt_errno = ABTI_ktable_set_impl(p_local, p_ktable, p_key, value, ABT_TRUE);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
 
@@ -271,12 +271,12 @@ ABTU_ret_err static inline int ABTI_ktable_set_unsafe(ABTI_local *p_local,
     ABTI_ktable *p_ktable = *pp_ktable;
     if (!p_ktable) {
         abt_errno = ABTI_ktable_create(p_local, &p_ktable);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         *pp_ktable = p_ktable;
     }
     abt_errno =
         ABTI_ktable_set_impl(p_local, p_ktable, p_key, value, ABT_FALSE);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
 

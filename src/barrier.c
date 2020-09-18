@@ -25,7 +25,7 @@
  */
 int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_barrier *p_newbarrier;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_barrier), (void **)&p_newbarrier);
@@ -38,25 +38,19 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
                             (void **)&p_newbarrier->waiters);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_newbarrier);
-        goto fn_fail;
+        ABTI_HANDLE_ERROR(abt_errno);
     }
     abt_errno = ABTU_malloc(num_waiters * sizeof(ABT_unit_type),
                             (void **)&p_newbarrier->waiter_type);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_newbarrier->waiters);
         ABTU_free(p_newbarrier);
-        goto fn_fail;
+        ABTI_HANDLE_ERROR(abt_errno);
     }
 
     /* Return value */
     *newbarrier = ABTI_barrier_get_handle(p_newbarrier);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -74,10 +68,8 @@ fn_fail:
  */
 int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
-
     ABTI_ASSERT(p_barrier->counter == 0);
 
     /* Only when num_waiters is different from p_barrier->num_waiters, we
@@ -87,6 +79,7 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
         p_barrier->num_waiters = num_waiters;
     } else if (num_waiters > p_barrier->num_waiters) {
         /* Free existing arrays and reallocate them */
+        int abt_errno;
         ABTI_ythread **new_waiters;
         ABT_unit_type *new_waiter_types;
         abt_errno = ABTU_malloc(num_waiters * sizeof(ABTI_ythread *),
@@ -96,7 +89,7 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
                                 (void **)&new_waiter_types);
         if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
             ABTU_free(new_waiters);
-            goto fn_fail;
+            ABTI_HANDLE_ERROR(abt_errno);
         }
         p_barrier->num_waiters = num_waiters;
         ABTU_free(p_barrier->waiters);
@@ -104,13 +97,7 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
         p_barrier->waiters = new_waiters;
         p_barrier->waiter_type = new_waiter_types;
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_barrier_reinit", abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -127,7 +114,6 @@ fn_fail:
  */
 int ABT_barrier_free(ABT_barrier *barrier)
 {
-    int abt_errno = ABT_SUCCESS;
     ABT_barrier h_barrier = *barrier;
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(h_barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
@@ -145,13 +131,7 @@ int ABT_barrier_free(ABT_barrier *barrier)
 
     /* Return value */
     *barrier = ABT_BARRIER_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_barrier_free", abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -167,7 +147,6 @@ fn_fail:
  */
 int ABT_barrier_wait(ABT_barrier barrier)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
@@ -244,13 +223,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
 
         ABTI_spinlock_release(&p_barrier->lock);
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -268,16 +241,9 @@ fn_fail:
  */
 int ABT_barrier_get_num_waiters(ABT_barrier barrier, uint32_t *num_waiters)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
 
     *num_waiters = p_barrier->num_waiters;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_WITH_CODE("ABT_barrier_get_num_waiters", abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }

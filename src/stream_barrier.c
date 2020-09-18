@@ -27,7 +27,7 @@ int ABT_xstream_barrier_create(uint32_t num_waiters,
                                ABT_xstream_barrier *newbarrier)
 {
 #ifdef HAVE_PTHREAD_BARRIER_INIT
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_xstream_barrier *p_newbarrier;
 
     abt_errno =
@@ -38,20 +38,14 @@ int ABT_xstream_barrier_create(uint32_t num_waiters,
     abt_errno = ABTD_xstream_barrier_init(num_waiters, &p_newbarrier->bar);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_newbarrier);
-        goto fn_fail;
+        ABTI_HANDLE_ERROR(abt_errno);
     }
 
     /* Return value */
     *newbarrier = ABTI_xstream_barrier_get_handle(p_newbarrier);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 #else
-    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
+    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #endif
 }
 
@@ -70,7 +64,6 @@ fn_fail:
 int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier)
 {
 #ifdef HAVE_PTHREAD_BARRIER_INIT
-    int abt_errno = ABT_SUCCESS;
     ABT_xstream_barrier h_barrier = *barrier;
     ABTI_xstream_barrier *p_barrier = ABTI_xstream_barrier_get_ptr(h_barrier);
     ABTI_CHECK_NULL_XSTREAM_BARRIER_PTR(p_barrier);
@@ -80,15 +73,9 @@ int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier)
 
     /* Return value */
     *barrier = ABT_XSTREAM_BARRIER_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 #else
-    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
+    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #endif
 }
 
@@ -106,21 +93,14 @@ fn_fail:
 int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier)
 {
 #ifdef HAVE_PTHREAD_BARRIER_INIT
-    int abt_errno = ABT_SUCCESS;
     ABTI_xstream_barrier *p_barrier = ABTI_xstream_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_XSTREAM_BARRIER_PTR(p_barrier);
 
     if (p_barrier->num_waiters > 1) {
         ABTD_xstream_barrier_wait(&p_barrier->bar);
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 #else
-    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
+    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #endif
 }

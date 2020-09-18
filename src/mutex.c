@@ -37,7 +37,7 @@ static inline void mutex_unlock_se(ABTI_local **pp_local, ABTI_mutex *p_mutex);
  */
 int ABT_mutex_create(ABT_mutex *newmutex)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_mutex *p_newmutex;
 
     abt_errno = ABTU_calloc(1, sizeof(ABTI_mutex), (void **)&p_newmutex);
@@ -45,18 +45,12 @@ int ABT_mutex_create(ABT_mutex *newmutex)
     abt_errno = ABTI_mutex_init(p_newmutex);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_newmutex);
-        goto fn_fail;
+        ABTI_HANDLE_ERROR(abt_errno);
     }
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -77,7 +71,7 @@ fn_fail:
  */
 int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_mutex_attr *p_attr = ABTI_mutex_attr_get_ptr(attr);
     ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p_attr);
     ABTI_mutex *p_newmutex;
@@ -87,19 +81,13 @@ int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
     abt_errno = ABTI_mutex_init(p_newmutex);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_newmutex);
-        goto fn_fail;
+        ABTI_HANDLE_ERROR(abt_errno);
     }
     memcpy(&p_newmutex->attr, p_attr, sizeof(ABTI_mutex_attr));
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -119,7 +107,6 @@ fn_fail:
  */
 int ABT_mutex_free(ABT_mutex *mutex)
 {
-    int abt_errno = ABT_SUCCESS;
     ABT_mutex h_mutex = *mutex;
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(h_mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
@@ -129,13 +116,7 @@ int ABT_mutex_free(ABT_mutex *mutex)
 
     /* Return value */
     *mutex = ABT_MUTEX_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -158,7 +139,6 @@ fn_fail:
  */
 int ABT_mutex_lock(ABT_mutex mutex)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
@@ -182,13 +162,7 @@ int ABT_mutex_lock(ABT_mutex mutex)
         /* unknown attributes */
         ABTI_mutex_lock(&p_local, p_mutex);
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -206,7 +180,6 @@ fn_fail:
  */
 int ABT_mutex_lock_low(ABT_mutex mutex)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
@@ -230,13 +203,7 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
         /* unknown attributes */
         mutex_lock_low(&p_local, p_mutex);
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 int ABT_mutex_lock_high(ABT_mutex mutex)
@@ -263,10 +230,10 @@ int ABT_mutex_lock_high(ABT_mutex mutex)
  */
 int ABT_mutex_trylock(ABT_mutex mutex)
 {
-    int abt_errno;
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
+    int abt_errno;
     if (p_mutex->attr.attrs == ABTI_MUTEX_ATTR_NONE) {
         /* default attributes */
         abt_errno = ABTI_mutex_trylock(p_mutex);
@@ -290,13 +257,8 @@ int ABT_mutex_trylock(ABT_mutex mutex)
         /* unknown attributes */
         abt_errno = ABTI_mutex_trylock(p_mutex);
     }
-
-fn_exit:
+    /* Trylock always needs to return an error code. */
     return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
 }
 
 /**
@@ -315,7 +277,6 @@ fn_fail:
  */
 int ABT_mutex_spinlock(ABT_mutex mutex)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
@@ -339,13 +300,7 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
         /* unknown attributes */
         ABTI_mutex_spinlock(p_mutex);
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -362,7 +317,6 @@ fn_fail:
  */
 int ABT_mutex_unlock(ABT_mutex mutex)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
@@ -387,13 +341,7 @@ int ABT_mutex_unlock(ABT_mutex mutex)
         /* unknown attributes */
         ABTI_mutex_unlock(p_local, p_mutex);
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -415,7 +363,6 @@ fn_fail:
  */
 int ABT_mutex_unlock_se(ABT_mutex mutex)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
@@ -440,30 +387,17 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
         /* unknown attributes */
         mutex_unlock_se(&p_local, p_mutex);
     }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 int ABT_mutex_unlock_de(ABT_mutex mutex)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
     ABTI_mutex_unlock(p_local, p_mutex);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**

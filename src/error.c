@@ -80,18 +80,11 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_MISSING_JOIN",
                                      "ABT_ERR_FEATURE_NA" };
 
-    int abt_errno = ABT_SUCCESS;
     ABTI_CHECK_TRUE(err >= ABT_SUCCESS && err <= ABT_ERR_FEATURE_NA,
                     ABT_ERR_OTHER);
     if (str)
         strcpy(str, err_str[err]);
     if (len)
         *len = strlen(err_str[err]);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }

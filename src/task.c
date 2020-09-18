@@ -40,28 +40,20 @@ ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
 int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *newtask)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newtask;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     int refcount = (newtask != NULL) ? 1 : 0;
-    abt_errno = task_create(p_local, p_pool, task_func, arg, NULL, refcount,
-                            &p_newtask);
+    int abt_errno = task_create(p_local, p_pool, task_func, arg, NULL, refcount,
+                                &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
-    if (newtask) {
+    if (newtask)
         *newtask = ABTI_thread_get_handle(p_newtask);
-    }
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -98,7 +90,6 @@ fn_fail:
 int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                                void *arg, ABT_task *newtask)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newtask;
 
@@ -108,20 +99,14 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
     /* TODO: need to consider the access type of target pool */
     ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_xstream);
     int refcount = (newtask != NULL) ? 1 : 0;
-    abt_errno = task_create(p_local, p_pool, task_func, arg, NULL, refcount,
-                            &p_newtask);
+    int abt_errno = task_create(p_local, p_pool, task_func, arg, NULL, refcount,
+                                &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
     if (newtask)
         *newtask = ABTI_thread_get_handle(p_newtask);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 #ifdef ABT_CONFIG_USE_DOXYGEN
@@ -211,7 +196,6 @@ int ABT_task_cancel(ABT_task task);
  */
 int ABT_task_self(ABT_task *task)
 {
-    int abt_errno = ABT_SUCCESS;
     *task = ABT_TASK_NULL;
 
     ABTI_xstream *p_local_xstream;
@@ -219,16 +203,11 @@ int ABT_task_self(ABT_task *task)
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
     if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
-        abt_errno = ABT_ERR_INV_THREAD;
+        return ABT_ERR_INV_THREAD;
     } else {
         *task = ABTI_thread_get_handle(p_thread);
     }
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -246,8 +225,6 @@ fn_fail:
  */
 int ABT_task_self_id(ABT_unit_id *id)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
@@ -255,13 +232,7 @@ int ABT_task_self_id(ABT_unit_id *id)
     ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE),
                     ABT_ERR_INV_THREAD);
     *id = ABTI_thread_get_id(p_thread);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 #ifdef ABT_CONFIG_USE_DOXYGEN
@@ -484,7 +455,7 @@ ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
 
     /* Allocate a task object */
     int abt_errno = ABTI_mem_alloc_nythread(p_local, &p_newtask);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     p_newtask->p_last_xstream = NULL;
     p_newtask->p_parent = NULL;

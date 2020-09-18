@@ -31,19 +31,12 @@ ABTU_ret_err static int pool_create(ABT_pool_def *def, ABT_pool_config config,
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
                     ABT_pool *newpool)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_newpool;
-
-    abt_errno = pool_create(def, config, ABT_FALSE, &p_newpool);
+    int abt_errno = pool_create(def, config, ABT_FALSE, &p_newpool);
     ABTI_CHECK_ERROR(abt_errno);
+
     *newpool = ABTI_pool_get_handle(p_newpool);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -63,18 +56,12 @@ fn_fail:
 int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                           ABT_bool automatic, ABT_pool *newpool)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_newpool;
-    abt_errno = ABTI_pool_create_basic(kind, access, automatic, &p_newpool);
+    int abt_errno = ABTI_pool_create_basic(kind, access, automatic, &p_newpool);
     ABTI_CHECK_ERROR(abt_errno);
+
     *newpool = ABTI_pool_get_handle(p_newpool);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -87,8 +74,6 @@ fn_fail:
  */
 int ABT_pool_free(ABT_pool *pool)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABT_pool h_pool = *pool;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(h_pool);
 
@@ -97,13 +82,7 @@ int ABT_pool_free(ABT_pool *pool)
     ABTI_pool_free(p_pool);
 
     *pool = ABT_POOL_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -117,18 +96,11 @@ fn_fail:
  */
 int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     *access = p_pool->access;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -146,19 +118,11 @@ fn_fail:
  */
 int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     *size = ABTI_pool_get_total_size(p_pool);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -175,19 +139,11 @@ fn_fail:
  */
 int ABT_pool_get_size(ABT_pool pool, size_t *size)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     *size = ABTI_pool_get_size(p_pool);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -201,19 +157,11 @@ fn_fail:
  */
 int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     *p_unit = ABTI_pool_pop(p_pool);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -238,36 +186,20 @@ fn_fail:
  */
 int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     *p_unit = ABTI_pool_pop_wait(p_pool, time_secs);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     *p_unit = ABTI_pool_pop_timedwait(p_pool, abstime_secs);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -281,8 +213,6 @@ fn_fail:
  */
 int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
@@ -290,13 +220,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 
     /* Save the producer ES information in the pool */
     ABTI_pool_push(p_pool, unit);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -310,20 +234,12 @@ fn_fail:
  */
 int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    abt_errno = ABTI_pool_remove(p_pool, unit);
+    int abt_errno = ABTI_pool_remove(p_pool, unit);
     ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -348,22 +264,13 @@ fn_fail:
 int ABT_pool_print_all(ABT_pool pool, void *arg,
                        void (*print_fn)(void *, ABT_unit))
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
     if (!p_pool->p_print_all) {
-        abt_errno = ABT_ERR_POOL;
-        goto fn_fail;
+        ABTI_HANDLE_ERROR(ABT_ERR_POOL);
     }
-
     p_pool->p_print_all(pool, arg, print_fn);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -380,19 +287,11 @@ fn_fail:
  */
 int ABT_pool_set_data(ABT_pool pool, void *data)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     p_pool->data = data;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -409,19 +308,11 @@ fn_fail:
  */
 int ABT_pool_get_data(ABT_pool pool, void **data)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     *data = p_pool->data;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -444,7 +335,6 @@ fn_fail:
  */
 int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -460,15 +350,9 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     /* In both ABT_SCHED_TYPE_ULT and ABT_SCHED_TYPE_TASK cases, we use ULT-type
      * scheduler to reduce the code maintenance cost.  ABT_SCHED_TYPE_TASK
      * should be removed in the future. */
-    abt_errno = ABTI_ythread_create_sched(p_local, p_pool, p_sched);
+    int abt_errno = ABTI_ythread_create_sched(p_local, p_pool, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -484,19 +368,11 @@ fn_fail:
  */
 int ABT_pool_get_id(ABT_pool pool, int *id)
 {
-    int abt_errno = ABT_SUCCESS;
-
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     *id = (int)p_pool->id;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /*****************************************************************************/
@@ -522,10 +398,10 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
             abt_errno = ABT_ERR_INV_POOL_KIND;
             break;
     }
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno = pool_create(&def, ABT_POOL_CONFIG_NULL, automatic, pp_newpool);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
 
@@ -604,7 +480,7 @@ ABTU_ret_err static int pool_create(ABT_pool_def *def, ABT_pool_config config,
     int abt_errno;
     ABTI_pool *p_pool;
     abt_errno = ABTU_malloc(sizeof(ABTI_pool), (void **)&p_pool);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     p_pool->access = def->access;
     p_pool->automatic = automatic;

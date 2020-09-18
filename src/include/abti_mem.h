@@ -36,7 +36,7 @@ ABTI_mem_alloc_nythread_malloc(ABTI_thread **pp_thread)
     ABTI_thread *p_thread;
     int abt_errno =
         ABTU_malloc(ABTI_MEM_POOL_DESC_ELEM_SIZE, (void **)&p_thread);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
     p_thread->type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
     *pp_thread = p_thread;
     return ABT_SUCCESS;
@@ -55,7 +55,7 @@ ABTI_mem_alloc_nythread_mempool(ABTI_local *p_local, ABTI_thread **pp_thread)
     ABTI_thread *p_thread;
     int abt_errno = ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc,
                                         (void **)&p_thread);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
     p_thread->type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
     *pp_thread = p_thread;
     return ABT_SUCCESS;
@@ -106,7 +106,7 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
     ABTI_ASSERT((stacksize & (ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0);
     void *p_ythread;
     int abt_errno = ABTI_mem_pool_alloc(p_mem_pool_stack, &p_ythread);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     *pp_stack = (void *)(((char *)p_ythread) - stacksize);
     *pp_ythread = (ABTI_ythread *)p_ythread;
@@ -124,7 +124,7 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_malloc_desc_stack_impl(
     char *p_stack;
     int abt_errno =
         ABTU_malloc(alloc_stacksize + sizeof(ABTI_ythread), (void **)&p_stack);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     *pp_stack = (void *)p_stack;
     *pp_ythread = (ABTI_ythread *)(p_stack + alloc_stacksize);
@@ -143,19 +143,19 @@ ABTI_mem_alloc_ythread_default(ABTI_local *p_local, ABTI_ythread **pp_ythread)
         int abt_errno =
             ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
                                                           &p_stack);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
     } else {
 #ifdef ABT_CONFIG_USE_MEM_POOL
         int abt_errno = ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
             &p_local_xstream->mem_pool_stack, stacksize, &p_ythread, &p_stack);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
 #else
         int abt_errno =
             ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
                                                           &p_stack);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
 #endif
     }
@@ -180,12 +180,12 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack(
         int abt_errno =
             ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
                                                           &p_stack);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
     } else {
         int abt_errno = ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
             &p_local_xstream->mem_pool_stack, stacksize, &p_ythread, &p_stack);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
     }
     /* Copy members of p_attr. */
@@ -207,7 +207,7 @@ ABTI_mem_alloc_ythread_malloc_desc_stack(ABTI_thread_attr *p_attr,
     int abt_errno =
         ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
                                                       &p_stack);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     /* Copy members of p_attr. */
     p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
@@ -227,11 +227,11 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc(
         ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
         int abt_errno =
             ABTI_mem_alloc_nythread(p_local, (ABTI_thread **)&p_ythread);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
     } else {
         /* Do not allocate stack, but Valgrind registration is preferred. */
         int abt_errno = ABTU_malloc(sizeof(ABTI_ythread), (void **)&p_ythread);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
     }
     /* Copy members of p_attr. */
@@ -306,7 +306,7 @@ ABTU_ret_err static inline int ABTI_mem_alloc_desc(ABTI_local *p_local,
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         /* For external threads */
         int abt_errno = ABTU_malloc(ABTI_MEM_POOL_DESC_SIZE, &p_desc);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         *(uint32_t *)(((char *)p_desc) + ABTI_MEM_POOL_DESC_SIZE) = 1;
         *pp_desc = p_desc;
         return ABT_SUCCESS;
@@ -314,7 +314,7 @@ ABTU_ret_err static inline int ABTI_mem_alloc_desc(ABTI_local *p_local,
         /* Find the page that has an empty block */
         int abt_errno =
             ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc, &p_desc);
-        ABTI_CHECK_ERROR_RET(abt_errno);
+        ABTI_CHECK_ERROR(abt_errno);
         /* To distinguish it from a malloc'ed case, assign non-NULL value. */
         *(uint32_t *)(((char *)p_desc) + ABTI_MEM_POOL_DESC_SIZE) = 0;
         *pp_desc = p_desc;

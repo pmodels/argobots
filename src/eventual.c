@@ -31,7 +31,7 @@
  */
 int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
 {
-    int abt_errno = ABT_SUCCESS;
+    int abt_errno;
     ABTI_eventual *p_eventual;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_eventual), (void **)&p_eventual);
@@ -46,20 +46,14 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
         abt_errno = ABTU_malloc(nbytes, &p_eventual->value);
         if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
             ABTU_free(p_eventual);
-            goto fn_fail;
+            ABTI_HANDLE_ERROR(abt_errno);
         }
     }
     p_eventual->p_head = NULL;
     p_eventual->p_tail = NULL;
 
     *neweventual = ABTI_eventual_get_handle(p_eventual);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -76,7 +70,6 @@ fn_fail:
  */
 int ABT_eventual_free(ABT_eventual *eventual)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(*eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
@@ -90,13 +83,7 @@ int ABT_eventual_free(ABT_eventual *eventual)
     ABTU_free(p_eventual);
 
     *eventual = ABT_EVENTUAL_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -118,7 +105,6 @@ fn_fail:
  */
 int ABT_eventual_wait(ABT_eventual eventual, void **value)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
@@ -135,10 +121,11 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
         }
         if (!p_ythread) {
             /* external thread or non-yieldable thread */
-            abt_errno = ABTU_calloc(1, sizeof(ABTI_thread), (void **)&p_thread);
+            int abt_errno =
+                ABTU_calloc(1, sizeof(ABTI_thread), (void **)&p_thread);
             if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
                 ABTI_spinlock_release(&p_eventual->lock);
-                goto fn_fail;
+                ABTI_HANDLE_ERROR(abt_errno);
             }
             p_thread->type = ABTI_THREAD_TYPE_EXT;
             /* use state for synchronization */
@@ -179,13 +166,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     }
     if (value)
         *value = p_eventual->value;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -205,7 +186,6 @@ fn_fail:
  */
 int ABT_eventual_test(ABT_eventual eventual, void **value, int *is_ready)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
     int flag = ABT_FALSE;
@@ -219,13 +199,7 @@ int ABT_eventual_test(ABT_eventual eventual, void **value, int *is_ready)
     ABTI_spinlock_release(&p_eventual->lock);
 
     *is_ready = flag;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -247,7 +221,6 @@ fn_fail:
  */
 int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
@@ -261,7 +234,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 
     if (p_eventual->p_head == NULL) {
         ABTI_spinlock_release(&p_eventual->lock);
-        goto fn_exit;
+        return ABT_SUCCESS;
     }
 
     /* Wake up all waiting ULTs */
@@ -292,13 +265,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     p_eventual->p_tail = NULL;
 
     ABTI_spinlock_release(&p_eventual->lock);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -315,18 +282,11 @@ fn_fail:
  */
 int ABT_eventual_reset(ABT_eventual eventual)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
     ABTI_spinlock_acquire(&p_eventual->lock);
     p_eventual->ready = ABT_FALSE;
     ABTI_spinlock_release(&p_eventual->lock);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }

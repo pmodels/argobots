@@ -73,7 +73,7 @@ static int pool_init(ABT_pool pool, ABT_pool_config config)
 
     data_t *p_data;
     abt_errno = ABTU_malloc(sizeof(data_t), (void **)&p_data);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
 
     pthread_mutex_init(&p_data->mutex, NULL);
     pthread_cond_init(&p_data->cond, NULL);
@@ -276,10 +276,9 @@ static int pool_remove(ABT_pool pool, ABT_unit unit)
     data_t *p_data = pool_get_data_ptr(p_pool->data);
     ABTI_thread *p_thread = (ABTI_thread *)unit;
 
-    ABTI_CHECK_TRUE_RET(p_data->num_threads != 0, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE_RET(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) ==
-                            1,
-                        ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_data->num_threads != 0, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) == 1,
+                    ABT_ERR_POOL);
 
     pthread_mutex_lock(&p_data->mutex);
     if (p_data->num_threads == 1) {

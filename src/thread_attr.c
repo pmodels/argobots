@@ -25,25 +25,15 @@
  */
 int ABT_thread_attr_create(ABT_thread_attr *newattr)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_newattr;
-
-    abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_newattr);
+    int abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_newattr);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Default values */
     ABTI_thread_attr_init(p_newattr, NULL, gp_ABTI_global->thread_stacksize,
                           ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK, ABT_TRUE);
-
-    /* Return value */
     *newattr = ABTI_thread_attr_get_handle(p_newattr);
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -60,23 +50,14 @@ fn_fail:
  */
 int ABT_thread_attr_free(ABT_thread_attr *attr)
 {
-    int abt_errno = ABT_SUCCESS;
     ABT_thread_attr h_attr = *attr;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(h_attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     /* Free the memory */
     ABTU_free(p_attr);
-
-    /* Return value */
     *attr = ABT_THREAD_ATTR_NULL;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -103,15 +84,13 @@ fn_fail:
 int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
                               size_t stacksize)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     ABTI_thread_type new_thread_type;
     if (stackaddr != NULL) {
         if (((uintptr_t)stackaddr & 0x7) != 0) {
-            abt_errno = ABT_ERR_OTHER;
-            goto fn_fail;
+            ABTI_HANDLE_ERROR(ABT_ERR_OTHER);
         }
         new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
     } else {
@@ -127,13 +106,7 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
 
     p_attr->p_stack = stackaddr;
     p_attr->stacksize = stacksize;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -155,19 +128,12 @@ fn_fail:
 int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
                               size_t *stacksize)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     *stackaddr = p_attr->p_stack;
     *stacksize = p_attr->stacksize;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -184,7 +150,6 @@ fn_fail:
  */
 int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
@@ -199,13 +164,7 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
     /* Unset the stack type and set new_thread_type. */
     p_attr->thread_type &= ~ABTI_THREAD_TYPES_MEM;
     p_attr->thread_type |= new_thread_type;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -222,18 +181,11 @@ fn_fail:
  */
 int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
 {
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     *stacksize = p_attr->stacksize;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 }
 
 /**
@@ -255,22 +207,15 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
                                  void *cb_arg)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     /* Set the value */
     p_attr->f_cb = cb_func;
     p_attr->p_cb_arg = cb_arg;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 #else
-    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
+    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #endif
 }
 
@@ -293,21 +238,14 @@ fn_fail:
 int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-    int abt_errno = ABT_SUCCESS;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
     /* Set the value */
     p_attr->migratable = flag;
-
-fn_exit:
-    return abt_errno;
-
-fn_fail:
-    HANDLE_ERROR_FUNC_WITH_CODE(abt_errno);
-    goto fn_exit;
+    return ABT_SUCCESS;
 #else
-    HANDLE_ERROR_FUNC_WITH_CODE_RET(ABT_ERR_FEATURE_NA);
+    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #endif
 }
 
@@ -363,9 +301,9 @@ ABTU_ret_err int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
                                       ABTI_thread_attr **pp_dup_attr)
 {
     ABTI_thread_attr *p_dup_attr;
-
     int abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_dup_attr);
-    ABTI_CHECK_ERROR_RET(abt_errno);
+    ABTI_CHECK_ERROR(abt_errno);
+
     memcpy(p_dup_attr, p_attr, sizeof(ABTI_thread_attr));
     *pp_dup_attr = p_dup_attr;
     return ABT_SUCCESS;
