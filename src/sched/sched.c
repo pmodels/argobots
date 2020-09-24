@@ -782,6 +782,7 @@ ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
     p_sched->num_pools = num_pools;
     p_sched->type = def->type;
     p_sched->p_ythread = NULL;
+    p_sched->data = NULL;
 
     p_sched->init = def->init;
     p_sched->run = def->run;
