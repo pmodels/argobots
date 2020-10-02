@@ -1,0 +1,39 @@
+
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  whitespace:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: pre-commit
+      run: |
+        git branch --track main origin/main
+        ./maint/hook/pre-commit
+
+  build-basic:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: autogen
+      run: |
+        ./autogen.sh
+    - name: configure
+      run: |
+        ./configure
+    - name: make
+      run: |
+        make -j 2
+        cd test
+        make -j 2
+        cd ../examples
+        make -j 2
+        cd ../
