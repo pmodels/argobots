@@ -464,6 +464,14 @@ if test "x$enable_perf_opt" = "xyes"; then
     fi
 fi
 
+# inline is broken in XLC-16.1.1, so disable inlining as a fallback
+# See https://github.com/pmodels/argobots/issues/244 and
+# https:////github.com/pmodels/argobots/issues/251 for details.
+if test "$CC" = "xlc" ; then
+    CFLAGS="$CFLAGS -qnoinline"
+    CXXFLAGS="$CXXFLAGS -qnoinline"
+    CCASFLAGS="$CCASFLAGS -qnoinline"
+fi
 
 # --enable-valgrind: enable valgrind support if requested
 AS_IF([test "x$enable_valgrind" = "xyes"], [
