@@ -206,6 +206,7 @@ chdir($expdir);
 run_cmd("rm -rf README.md");
 run_cmd("find . -name autom4te.cache | xargs rm -rf");
 run_cmd("find . -name .gitignore | xargs rm -rf");
+run_cmd("find . -name .github | xargs rm -rf");
 run_cmd("find . -name .tmp | xargs rm -rf");
 print("done\n");
 
