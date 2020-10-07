@@ -14,10 +14,13 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: pre-commit
+    - name: cleanup
       run: |
-        git branch --track main origin/main
-        ./maint/hook/pre-commit
+        maint/code-cleanup.sh --all --recursive
+        git --no-pager diff
+        if [ x"$(git --no-pager diff)" != x ]; then
+           exit 1
+        fi
 
   build-basic:
     runs-on: ubuntu-latest
