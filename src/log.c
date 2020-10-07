@@ -15,7 +15,7 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
         return;
     ABTI_local *p_local = ABTI_local_get_local_uninlined();
 
-    char *prefix_fmt = NULL, *prefix = NULL;
+    const char *prefix_fmt = NULL, *prefix = NULL;
     char *newfmt;
     uint64_t tid;
     int rank;

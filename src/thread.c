@@ -1536,7 +1536,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     } else {
         ABTI_xstream *p_xstream = p_thread->p_last_xstream;
         int xstream_rank = p_xstream ? p_xstream->rank : 0;
-        char *type, *yieldable, *state;
+        const char *type, *yieldable, *state;
 
         if (p_thread->type & ABTI_THREAD_TYPE_MAIN) {
             type = "MAIN";
