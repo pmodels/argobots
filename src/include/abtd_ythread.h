@@ -14,7 +14,7 @@
 
 void ABTD_ythread_func_wrapper(void *p_arg);
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-void ABTD_ythread_terminate_no_arg();
+void ABTD_ythread_terminate_no_arg(void);
 #endif
 
 static inline void ABTD_ythread_context_create(ABTD_ythread_context *p_link,
@@ -114,7 +114,7 @@ static inline void
 ABTD_ythread_context_dynamic_promote_ythread(void *p_stacktop)
 {
     union fp_conv {
-        void (*f)(void *);
+        void (*f)(void);
         void *ptr;
     } conv;
     conv.f = ABTD_ythread_terminate_no_arg;
