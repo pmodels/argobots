@@ -3,7 +3,7 @@
 # See COPYRIGHT in top-level directory.
 #
 
-m4_define([ABT_VERSION_m4],[1.0])dnl
+m4_define([ABT_VERSION_m4],[1.0.1])dnl
 m4_define([ABT_RELEASE_DATE_m4],[unreleased development copy])dnl
 
 # For libtool ABI versioning rules see:
