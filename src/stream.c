@@ -977,7 +977,7 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
     if (p_xstream == NULL) {
         fprintf(p_os, "%*s== NULL ES ==\n", indent, "");
     } else {
-        char *type, *state;
+        const char *type, *state;
         switch (p_xstream->type) {
             case ABTI_XSTREAM_TYPE_PRIMARY:
                 type = "PRIMARY";

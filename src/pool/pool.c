@@ -418,7 +418,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
     if (p_pool == NULL) {
         fprintf(p_os, "%*s== NULL POOL ==\n", indent, "");
     } else {
-        char *access;
+        const char *access;
 
         switch (p_pool->access) {
             case ABT_POOL_ACCESS_PRIV:

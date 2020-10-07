@@ -258,7 +258,7 @@ void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
     if (p_attr == NULL) {
         fprintf(p_os, "%*sULT attr: [NULL ATTR]\n", indent, "");
     } else {
-        char *stacktype;
+        const char *stacktype;
         if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
             stacktype = "MEMPOOL_DESC";
         } else if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC) {

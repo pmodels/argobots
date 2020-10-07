@@ -851,13 +851,6 @@ int main() {
 
 AM_CONDITIONAL([ABT_USE_INT128_ATOMIC], [test "x$ABT_CONFIG_HAVE_ATOMIC_INT128" != "x"])
 
-# set compiler-specific flags
-if test x"$CC" = x"pgcc" ; then
-  # Suppress PGI warning
-  # #546-D: transfer of control bypasses initialization
-  PAC_APPEND_FLAG([--diag_suppress=546], [CFLAGS])
-fi
-
 dnl ----------------------------------------------------------------------------
 
 AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])

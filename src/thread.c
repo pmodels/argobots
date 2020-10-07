@@ -1536,7 +1536,7 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     } else {
         ABTI_xstream *p_xstream = p_thread->p_last_xstream;
         int xstream_rank = p_xstream ? p_xstream->rank : 0;
-        char *type, *yieldable, *state;
+        const char *type, *yieldable, *state;
 
         if (p_thread->type & ABTI_THREAD_TYPE_MAIN) {
             type = "MAIN";
@@ -1855,31 +1855,77 @@ static void thread_key_destructor_migration(void *p_value)
     ABTU_free(p_mig_data);
 }
 
+static void thread_join_busywait(ABTI_thread *p_thread)
+{
+    while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
+           ABT_THREAD_STATE_TERMINATED) {
+        ABTD_atomic_pause();
+    }
+    ABTI_tool_event_thread_join(NULL, p_thread, NULL);
+}
+
+static void thread_join_yield_ythread(ABTI_xstream **pp_local_xstream,
+                                      ABTI_ythread *p_self,
+                                      ABTI_ythread *p_ythread)
+{
+    while (ABTD_atomic_acquire_load_int(&p_ythread->thread.state) !=
+           ABT_THREAD_STATE_TERMINATED) {
+        ABTI_ythread_yield(pp_local_xstream, p_self,
+                           ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_ythread);
+    }
+    ABTI_tool_event_thread_join(ABTI_xstream_get_local(*pp_local_xstream),
+                                &p_ythread->thread, &p_self->thread);
+}
+
+static void thread_join_yield_task(ABTI_xstream **pp_local_xstream,
+                                   ABTI_ythread *p_self, ABTI_thread *p_task)
+{
+    while (ABTD_atomic_acquire_load_int(&p_task->state) !=
+           ABT_THREAD_STATE_TERMINATED) {
+        ABTI_ythread_yield(pp_local_xstream, p_self,
+                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
+    }
+    ABTI_tool_event_thread_join(ABTI_xstream_get_local(*pp_local_xstream),
+                                p_task, &p_self->thread);
+}
+
 static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
 {
     if (ABTD_atomic_acquire_load_int(&p_thread->state) ==
         ABT_THREAD_STATE_TERMINATED) {
-        goto fn_exit;
+        ABTI_tool_event_thread_join(*pp_local, p_thread,
+                                    ABTI_local_get_xstream_or_null(*pp_local)
+                                        ? ABTI_local_get_xstream(*pp_local)
+                                              ->p_thread
+                                        : NULL);
+        return;
     }
     /* The main ULT cannot be joined. */
     ABTI_ASSERT(!(p_thread->type & ABTI_THREAD_TYPE_MAIN));
 
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && !p_local_xstream)
-        goto busywait_based;
+    if (ABTI_IS_EXT_THREAD_ENABLED && !p_local_xstream) {
+        thread_join_busywait(p_thread);
+        return;
+    }
 
     ABTI_thread *p_self_thread = p_local_xstream->p_thread;
 
     ABTI_ythread *p_self = ABTI_thread_get_ythread_or_null(p_self_thread);
-    if (!p_self)
-        goto busywait_based;
+    if (!p_self) {
+        thread_join_busywait(p_thread);
+        return;
+    }
 
     /* The target ULT should be different. */
     ABTI_ASSERT(p_thread != p_self_thread);
 
     ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-    if (!p_ythread)
-        goto yield_based_task;
+    if (!p_ythread) {
+        thread_join_yield_task(&p_local_xstream, p_self, p_thread);
+        *pp_local = ABTI_xstream_get_local(p_local_xstream);
+        return;
+    }
 
     ABT_pool_access access = p_self->thread.p_pool->access;
 
@@ -1951,7 +1997,9 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         /* FIXME: once we change the suspend/resume mechanism (i.e., asking the
          * scheduler to wake up the blocked ULT), we will be able to handle all
          * access modes. */
-        goto yield_based;
+        thread_join_yield_ythread(&p_local_xstream, p_self, p_ythread);
+        *pp_local = ABTI_xstream_get_local(p_local_xstream);
+        return;
 
     } else {
         /* Tell p_ythread that there has been a join request. */
@@ -1959,8 +2007,11 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
          * terminating. We can't block p_self in this case. */
         uint32_t req = ABTD_atomic_fetch_or_uint32(&p_ythread->thread.request,
                                                    ABTI_THREAD_REQ_JOIN);
-        if (req & ABTI_THREAD_REQ_JOIN)
-            goto yield_based;
+        if (req & ABTI_THREAD_REQ_JOIN) {
+            thread_join_yield_ythread(&p_local_xstream, p_self, p_ythread);
+            *pp_local = ABTI_xstream_get_local(p_local_xstream);
+            return;
+        }
 
         ABTI_ythread_set_blocked(p_self);
         LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
@@ -1995,39 +2046,13 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         LOG_DEBUG("[U%" PRIu64 ":E%d] resume after join\n",
                   ABTI_thread_get_id(&p_self->thread),
                   p_self->thread.p_last_xstream->rank);
-        goto fn_exit;
-    }
-
-yield_based:
-    while (ABTD_atomic_acquire_load_int(&p_ythread->thread.state) !=
-           ABT_THREAD_STATE_TERMINATED) {
-        ABTI_ythread_yield(&p_local_xstream, p_self,
-                           ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_ythread);
+        ABTI_tool_event_thread_join(*pp_local, p_thread, &p_self->thread);
+    } else {
+        /* Use a yield-based method. */
+        thread_join_yield_ythread(&p_local_xstream, p_self, p_ythread);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
+        return;
     }
-    goto fn_exit;
-
-yield_based_task:
-    while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-           ABT_THREAD_STATE_TERMINATED) {
-        ABTI_ythread_yield(&p_local_xstream, p_self,
-                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_thread);
-        *pp_local = ABTI_xstream_get_local(p_local_xstream);
-    }
-    goto fn_exit;
-
-busywait_based:
-    while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-           ABT_THREAD_STATE_TERMINATED) {
-        ABTD_atomic_pause();
-    }
-
-fn_exit:
-    ABTI_tool_event_thread_join(*pp_local, p_thread,
-                                ABTI_local_get_xstream_or_null(*pp_local)
-                                    ? ABTI_local_get_xstream(*pp_local)
-                                          ->p_thread
-                                    : NULL);
 }
 
 static void thread_root_func(void *arg)

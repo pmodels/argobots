@@ -640,7 +640,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
         fprintf(p_os, "%*s== NULL SCHED ==\n", indent, "");
     } else {
         ABTI_sched_kind kind;
-        char *kind_str, *type, *used;
+        const char *kind_str, *type, *used;
 
         kind = p_sched->kind;
         if (kind == sched_get_kind(ABTI_sched_get_basic_def())) {

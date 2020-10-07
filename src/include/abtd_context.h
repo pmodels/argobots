@@ -9,7 +9,9 @@
 #include "abt_config.h"
 
 #ifndef ABT_CONFIG_USE_FCONTEXT
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE
+#endif
 #include <ucontext.h>
 #endif
 
