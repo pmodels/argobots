@@ -118,12 +118,13 @@ int ABT_barrier_free(ABT_barrier *barrier)
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(h_barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
 
-    ABTI_ASSERT(p_barrier->counter == 0);
-
     /* The lock needs to be acquired to safely free the barrier structure.
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
     ABTI_spinlock_acquire(&p_barrier->lock);
+
+    /* p_barrier->counter must be checked after taking a lock. */
+    ABTI_ASSERT(p_barrier->counter == 0);
 
     ABTU_free(p_barrier->waiters);
     ABTU_free(p_barrier->waiter_type);
