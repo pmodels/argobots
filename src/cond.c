@@ -6,6 +6,9 @@
 #include "abti.h"
 #include <sys/time.h>
 
+static inline double convert_timespec_to_sec(const struct timespec *p_ts);
+static inline void remove_thread(ABTI_cond *p_cond, ABTI_thread *p_thread);
+
 /** @defgroup COND Condition Variable
  * This group is for Condition Variable.
  */
@@ -89,47 +92,6 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
     int abt_errno = ABTI_cond_wait(&p_local, p_cond, p_mutex);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
-}
-
-static inline double convert_timespec_to_sec(const struct timespec *p_ts)
-{
-    double secs;
-    secs = ((double)p_ts->tv_sec) + 1.0e-9 * ((double)p_ts->tv_nsec);
-    return secs;
-}
-
-static inline void remove_thread(ABTI_cond *p_cond, ABTI_thread *p_thread)
-{
-    if (p_thread->p_next == NULL)
-        return;
-
-    ABTI_spinlock_acquire(&p_cond->lock);
-
-    if (p_thread->p_next == NULL) {
-        ABTI_spinlock_release(&p_cond->lock);
-        return;
-    }
-
-    /* If p_thread is still in the queue, we have to remove it. */
-    p_cond->num_waiters--;
-    if (p_cond->num_waiters == 0) {
-        p_cond->p_waiter_mutex = NULL;
-        p_cond->p_head = NULL;
-        p_cond->p_tail = NULL;
-    } else {
-        p_thread->p_prev->p_next = p_thread->p_next;
-        p_thread->p_next->p_prev = p_thread->p_prev;
-        if (p_thread == p_cond->p_head) {
-            p_cond->p_head = p_thread->p_next;
-        } else if (p_thread == p_cond->p_tail) {
-            p_cond->p_tail = p_thread->p_prev;
-        }
-    }
-
-    ABTI_spinlock_release(&p_cond->lock);
-
-    p_thread->p_prev = NULL;
-    p_thread->p_next = NULL;
 }
 
 /**
@@ -303,4 +265,49 @@ int ABT_cond_broadcast(ABT_cond cond)
 
     ABTI_cond_broadcast(p_local, p_cond);
     return ABT_SUCCESS;
+}
+
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
+static inline double convert_timespec_to_sec(const struct timespec *p_ts)
+{
+    double secs;
+    secs = ((double)p_ts->tv_sec) + 1.0e-9 * ((double)p_ts->tv_nsec);
+    return secs;
+}
+
+static inline void remove_thread(ABTI_cond *p_cond, ABTI_thread *p_thread)
+{
+    if (p_thread->p_next == NULL)
+        return;
+
+    ABTI_spinlock_acquire(&p_cond->lock);
+
+    if (p_thread->p_next == NULL) {
+        ABTI_spinlock_release(&p_cond->lock);
+        return;
+    }
+
+    /* If p_thread is still in the queue, we have to remove it. */
+    p_cond->num_waiters--;
+    if (p_cond->num_waiters == 0) {
+        p_cond->p_waiter_mutex = NULL;
+        p_cond->p_head = NULL;
+        p_cond->p_tail = NULL;
+    } else {
+        p_thread->p_prev->p_next = p_thread->p_next;
+        p_thread->p_next->p_prev = p_thread->p_prev;
+        if (p_thread == p_cond->p_head) {
+            p_cond->p_head = p_thread->p_next;
+        } else if (p_thread == p_cond->p_tail) {
+            p_cond->p_tail = p_thread->p_prev;
+        }
+    }
+
+    ABTI_spinlock_release(&p_cond->lock);
+
+    p_thread->p_prev = NULL;
+    p_thread->p_next = NULL;
 }
