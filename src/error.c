@@ -44,7 +44,7 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_INV_UNIT",
                                      "ABT_ERR_INV_THREAD",
                                      "ABT_ERR_INV_THREAD_ATTR",
-                                     "ABT_ERR_INV_TASK",
+                                     NULL, /* 18 */
                                      "ABT_ERR_INV_KEY",
                                      "ABT_ERR_INV_MUTEX",
                                      "ABT_ERR_INV_MUTEX_ATTR",
@@ -63,7 +63,7 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_POOL",
                                      "ABT_ERR_UNIT",
                                      "ABT_ERR_THREAD",
-                                     "ABT_ERR_TASK",
+                                     NULL, /* 37 */
                                      "ABT_ERR_KEY",
                                      "ABT_ERR_MUTEX",
                                      "ABT_ERR_MUTEX_LOCKED",
@@ -74,14 +74,18 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_FUTURE",
                                      "ABT_ERR_BARRIER",
                                      "ABT_ERR_TIMER",
-                                     "ABT_ERR_EVENT",
                                      "ABT_ERR_MIGRATION_TARGET",
                                      "ABT_ERR_MIGRATION_NA",
                                      "ABT_ERR_MISSING_JOIN",
-                                     "ABT_ERR_FEATURE_NA" };
+                                     "ABT_ERR_FEATURE_NA",
+                                     "ABT_ERR_INV_TOOL_CONTEXT",
+                                     "ABT_ERR_INV_ARG" };
 
-    ABTI_CHECK_TRUE(err >= ABT_SUCCESS && err <= ABT_ERR_FEATURE_NA,
-                    ABT_ERR_OTHER);
+    ABTI_CHECK_TRUE(err >= ABT_SUCCESS &&
+                        err < sizeof(err_str) / sizeof(err_str[0]),
+                    ABT_ERR_INV_ARG);
+    /* This entry does not exist. */
+    ABTI_CHECK_TRUE(err_str[err], ABT_ERR_INV_ARG);
     if (str)
         strcpy(str, err_str[err]);
     if (len)
