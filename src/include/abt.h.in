@@ -91,6 +91,7 @@ extern "C" {
 #define ABT_ERR_INV_TIMER          27  /* Invalid timer */
 #define ABT_ERR_INV_QUERY_KIND     28  /* Invalid query kind */
 #define ABT_ERR_INV_TOOL_CONTEXT   52  /* Invalid tool context */
+#define ABT_ERR_INV_ARG            53  /* Invalid argument */
 #define ABT_ERR_XSTREAM            29  /* ES-related error */
 #define ABT_ERR_XSTREAM_STATE      30  /* ES state error */
 #define ABT_ERR_XSTREAM_BARRIER    31  /* ES barrier-related error */
@@ -114,7 +115,6 @@ extern "C" {
 #define ABT_ERR_MIGRATION_NA       49  /* Migration not available */
 #define ABT_ERR_MISSING_JOIN       50  /* An ES or more did not join */
 #define ABT_ERR_FEATURE_NA         51  /* Feature not available */
-
 
 /* Constants */
 enum ABT_xstream_state {
