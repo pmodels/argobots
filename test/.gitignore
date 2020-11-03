@@ -59,6 +59,7 @@ basic/timer
 basic/info_print
 basic/info_stackdump
 basic/info_stackdump2
+basic/error
 
 # benchmark
 benchmark/init_finalize

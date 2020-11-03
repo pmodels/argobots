@@ -63,7 +63,8 @@ TESTS = \
 	timer \
 	info_print \
 	info_stackdump \
-	info_stackdump2
+	info_stackdump2 \
+	error
 
 XFAIL_TESTS =
 if ABT_CONFIG_DISABLE_EXT_THREAD
@@ -138,6 +139,7 @@ timer_SOURCES = timer.c
 info_print_SOURCES = info_print.c
 info_stackdump_SOURCES = info_stackdump.c
 info_stackdump2_SOURCES = info_stackdump2.c
+error_SOURCES = error.c
 
 testing:
 	./init_finalize
@@ -200,3 +202,4 @@ testing:
 	./info_print
 	./info_stackdump
 	./info_stackdump2
+	./error
