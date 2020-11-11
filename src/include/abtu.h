@@ -11,6 +11,97 @@
 #include <assert.h>
 #include "abt_config.h"
 
+/* Basic math functions */
+static inline int ABTU_max_int(int a, int b)
+{
+    return a > b ? a : b;
+}
+
+static inline int32_t ABTU_max_int32(int32_t a, int32_t b)
+{
+    return a > b ? a : b;
+}
+
+static inline uint32_t ABTU_max_uint32(uint32_t a, uint32_t b)
+{
+    return a > b ? a : b;
+}
+
+static inline int64_t ABTU_max_int64(int64_t a, int64_t b)
+{
+    return a > b ? a : b;
+}
+
+static inline uint64_t ABTU_max_uint64(uint64_t a, uint64_t b)
+{
+    return a > b ? a : b;
+}
+
+static inline size_t ABTU_max_size(size_t a, size_t b)
+{
+    return a > b ? a : b;
+}
+
+static inline int ABTU_min_int(int a, int b)
+{
+    return a < b ? a : b;
+}
+
+static inline int32_t ABTU_min_int32(int32_t a, int32_t b)
+{
+    return a < b ? a : b;
+}
+
+static inline uint32_t ABTU_min_uint32(uint32_t a, uint32_t b)
+{
+    return a < b ? a : b;
+}
+
+static inline int64_t ABTU_min_int64(int64_t a, int64_t b)
+{
+    return a < b ? a : b;
+}
+
+static inline uint64_t ABTU_min_uint64(uint64_t a, uint64_t b)
+{
+    return a < b ? a : b;
+}
+
+static inline size_t ABTU_min_size(size_t a, size_t b)
+{
+    return a < b ? a : b;
+}
+
+static inline uint32_t ABTU_roundup_uint32(uint32_t val, uint32_t multiple)
+{
+    if ((multiple & (multiple - 1)) == 0) {
+        /* If multiple is a power of two. */
+        return (val + multiple - 1) & (~(multiple - 1));
+    } else {
+        return ((val + multiple - 1) / multiple) * multiple;
+    }
+}
+
+static inline uint64_t ABTU_roundup_uint64(uint64_t val, uint64_t multiple)
+{
+    if ((multiple & (multiple - 1)) == 0) {
+        /* If multiple is a power of two. */
+        return (val + multiple - 1) & (~(multiple - 1));
+    } else {
+        return ((val + multiple - 1) / multiple) * multiple;
+    }
+}
+
+static inline size_t ABTU_roundup_size(size_t val, size_t multiple)
+{
+    if ((multiple & (multiple - 1)) == 0) {
+        /* If multiple is a power of two. */
+        return (val + multiple - 1) & (~(multiple - 1));
+    } else {
+        return ((val + multiple - 1) / multiple) * multiple;
+    }
+}
+
 /* Utility feature */
 
 #ifdef HAVE___BUILTIN_EXPECT
