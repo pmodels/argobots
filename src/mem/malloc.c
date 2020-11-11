@@ -47,9 +47,9 @@ void ABTI_mem_init(ABTI_global *p_global)
     size_t thread_stacksize = p_global->thread_stacksize;
     ABTI_ASSERT((thread_stacksize & (ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) ==
                 0);
-    size_t stacksize = (thread_stacksize + sizeof(ABTI_ythread) +
-                        ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
-                       (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
+    size_t stacksize =
+        ABTU_roundup_size(thread_stacksize + sizeof(ABTI_ythread),
+                          ABT_CONFIG_STATIC_CACHELINE_SIZE);
     if ((stacksize & (2 * ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0) {
         /* Avoid a multiple of 2 * cacheline size to avoid cache bank conflict.
          */

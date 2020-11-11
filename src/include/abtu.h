@@ -132,9 +132,7 @@ static inline size_t ABTU_roundup_size(size_t val, size_t multiple)
 #define ABTU_alignof(type) 16 /* 16 bytes would be a good guess. */
 #endif
 #define ABTU_MAX_ALIGNMENT                                                     \
-    (ABTU_alignof(long double) > ABTU_alignof(long long)                       \
-         ? ABTU_alignof(long double)                                           \
-         : ABTU_alignof(long long))
+    ABTU_max_size(ABTU_alignof(long double), ABTU_alignof(long long))
 
 #ifdef HAVE_FUNC_ATTRIBUTE_WARN_UNUSED_RESULT
 #define ABTU_ret_err __attribute__((warn_unused_result))
@@ -222,8 +220,7 @@ ABTU_ret_err static inline int ABTU_malloc(size_t size, void **p_ptr)
     /* Round up to the smallest multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE
      * which is greater than or equal to size in order to avoid any
      * false-sharing. */
-    size = (size + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
-           (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
+    size = ABTU_roundup_size(size, ABT_CONFIG_STATIC_CACHELINE_SIZE);
     return ABTU_memalign(ABT_CONFIG_STATIC_CACHELINE_SIZE, size, p_ptr);
 }
 
@@ -248,7 +245,7 @@ ABTU_ret_err static inline int ABTU_realloc(size_t old_size, size_t new_size,
     if (ABTI_IS_ERROR_CHECK_ENABLED && ret != ABT_SUCCESS) {
         return ABT_ERR_MEM;
     }
-    memcpy(new_ptr, old_ptr, (old_size < new_size) ? old_size : new_size);
+    memcpy(new_ptr, old_ptr, ABTU_min_size(old_size, new_size));
     ABTU_free(old_ptr);
     *p_ptr = new_ptr;
     return ABT_SUCCESS;

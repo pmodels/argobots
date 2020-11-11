@@ -12,8 +12,7 @@
  * used to determine whether the descriptor is allocated externally (i.e.,
  * malloc()) or taken from a memory pool. */
 #define ABTI_MEM_POOL_DESC_ELEM_SIZE                                           \
-    ((sizeof(ABTI_thread) + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &            \
-     (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)))
+    ABTU_roundup_size(sizeof(ABTI_thread), ABT_CONFIG_STATIC_CACHELINE_SIZE)
 
 enum {
     ABTI_MEM_LP_MALLOC = 0,
@@ -119,8 +118,7 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_malloc_desc_stack_impl(
 {
     /* stacksize must be a multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE. */
     size_t alloc_stacksize =
-        (stacksize + ABT_CONFIG_STATIC_CACHELINE_SIZE - 1) &
-        (~(ABT_CONFIG_STATIC_CACHELINE_SIZE - 1));
+        ABTU_roundup_size(stacksize, ABT_CONFIG_STATIC_CACHELINE_SIZE);
     char *p_stack;
     int abt_errno =
         ABTU_malloc(alloc_stacksize + sizeof(ABTI_ythread), (void **)&p_stack);
