@@ -570,7 +570,7 @@ int ABT_xstream_get_main_pools(ABT_xstream xstream, int max_pools,
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     ABTI_sched *p_sched = p_xstream->p_main_sched;
-    max_pools = p_sched->num_pools > max_pools ? max_pools : p_sched->num_pools;
+    max_pools = ABTU_min_int(p_sched->num_pools, max_pools);
     memcpy(pools, p_sched->pools, sizeof(ABT_pool) * max_pools);
     return ABT_SUCCESS;
 }
@@ -839,7 +839,7 @@ int ABT_xstream_get_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset,
     ABTI_CHECK_ERROR(abt_errno);
 
     int i, n;
-    n = affinity.num_cpuids > cpuset_size ? cpuset_size : affinity.num_cpuids;
+    n = ABTU_min_int(affinity.num_cpuids, cpuset_size);
     *num_cpus = n;
     for (i = 0; i < n; i++) {
         cpuset[i] = affinity.cpuids[i];

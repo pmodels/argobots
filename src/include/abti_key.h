@@ -74,9 +74,9 @@ ABTU_ret_err static inline int ABTI_ktable_create(ABTI_local *p_local,
     /* max alignment must be a power of 2. */
     ABTI_STATIC_ASSERT((ABTU_MAX_ALIGNMENT & (ABTU_MAX_ALIGNMENT - 1)) == 0);
     size_t ktable_size =
-        (offsetof(ABTI_ktable, p_elems) +
-         sizeof(ABTD_atomic_ptr) * key_table_size + ABTU_MAX_ALIGNMENT - 1) &
-        (~(ABTU_MAX_ALIGNMENT - 1));
+        ABTU_roundup_size(offsetof(ABTI_ktable, p_elems) +
+                              sizeof(ABTD_atomic_ptr) * key_table_size,
+                          ABTU_MAX_ALIGNMENT);
     /* Since only one ES can access the memory pool on creation, this uses an
      * unsafe memory pool without taking a lock. */
     if (ABTU_likely(ktable_size <= ABTI_KTABLE_DESC_SIZE)) {
