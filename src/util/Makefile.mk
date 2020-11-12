@@ -4,4 +4,5 @@
 #
 
 abt_sources += \
+	util/atoi.c \
 	util/largepage.c
