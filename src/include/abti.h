@@ -187,7 +187,6 @@ struct ABTI_global {
 
     uint32_t mutex_max_handovers; /* Default max. # of local handovers */
     uint32_t mutex_max_wakeups;   /* Default max. # of wakeups */
-    uint32_t os_page_size;        /* OS page size */
     uint32_t huge_page_size;      /* Huge page size */
 #ifdef ABT_CONFIG_USE_MEM_POOL
     uint32_t mem_page_size;  /* Page size for memory allocation */
