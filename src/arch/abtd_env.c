@@ -89,18 +89,18 @@ void ABTD_env_init(ABTI_global *p_global)
     if (env == NULL)
         env = getenv("ABT_ENV_KEY_TABLE_SIZE");
     if (env != NULL) {
-        p_global->key_table_size = (int)atoi(env);
+        p_global->key_table_size = (uint32_t)atoi(env);
     } else {
         p_global->key_table_size = ABTD_KEY_TABLE_DEFAULT_SIZE;
     }
     /* key_table_size must be a power of 2. */
     {
         int i;
-        for (i = 0; i < sizeof(int) * 8; i++) {
+        for (i = 0; i < sizeof(size_t) * 8; i++) {
             if ((p_global->key_table_size - 1) >> i == 0)
                 break;
         }
-        p_global->key_table_size = 1 << i;
+        p_global->key_table_size = ((uint32_t)1) << i;
     }
 
     /* Default stack size for ULT */
@@ -177,7 +177,7 @@ void ABTD_env_init(ABTI_global *p_global)
     if (env == NULL)
         env = getenv("ABT_ENV_HUGE_PAGE_SIZE");
     if (env != NULL) {
-        p_global->huge_page_size = (uint32_t)atol(env);
+        p_global->huge_page_size = (size_t)atol(env);
     } else {
         p_global->huge_page_size = ABTD_HUGE_PAGE_SIZE;
     }
@@ -188,7 +188,7 @@ void ABTD_env_init(ABTI_global *p_global)
     if (env == NULL)
         env = getenv("ABT_ENV_MEM_PAGE_SIZE");
     if (env != NULL) {
-        p_global->mem_page_size = (uint32_t)atol(env);
+        p_global->mem_page_size = (size_t)atol(env);
     } else {
         p_global->mem_page_size = ABTD_MEM_PAGE_SIZE;
     }

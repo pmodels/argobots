@@ -68,7 +68,7 @@ ABTU_ret_err static inline int ABTI_ktable_create(ABTI_local *p_local,
                                                   ABTI_ktable **pp_ktable)
 {
     ABTI_ktable *p_ktable;
-    int key_table_size = gp_ABTI_global->key_table_size;
+    uint32_t key_table_size = gp_ABTI_global->key_table_size;
     /* size must be a power of 2. */
     ABTI_ASSERT((key_table_size & (key_table_size - 1)) == 0);
     /* max alignment must be a power of 2. */

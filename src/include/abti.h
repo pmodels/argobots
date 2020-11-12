@@ -178,19 +178,19 @@ struct ABTI_global {
     ABT_bool set_affinity;        /* Whether CPU affinity is used */
     ABT_bool use_logging;         /* Whether logging is used */
     ABT_bool use_debug;           /* Whether debug output is used */
-    int key_table_size;           /* Default key table size */
+    uint32_t key_table_size;      /* Default key table size */
     size_t thread_stacksize;      /* Default stack size for ULT (in bytes) */
     size_t sched_stacksize;       /* Default stack size for sched (in bytes) */
     uint32_t sched_event_freq;    /* Default check frequency for sched */
-    long sched_sleep_nsec;        /* Default nanoseconds for scheduler sleep */
+    uint64_t sched_sleep_nsec;    /* Default nanoseconds for scheduler sleep */
     ABTI_ythread *p_main_ythread; /* ULT of the main function */
 
     uint32_t mutex_max_handovers; /* Default max. # of local handovers */
     uint32_t mutex_max_wakeups;   /* Default max. # of wakeups */
-    uint32_t huge_page_size;      /* Huge page size */
+    size_t huge_page_size;        /* Huge page size */
 #ifdef ABT_CONFIG_USE_MEM_POOL
-    uint32_t mem_page_size;  /* Page size for memory allocation */
-    uint32_t mem_sp_size;    /* Stack page size */
+    size_t mem_page_size;    /* Page size for memory allocation */
+    size_t mem_sp_size;      /* Stack page size */
     uint32_t mem_max_stacks; /* Max. # of stacks kept in each ES */
     uint32_t mem_max_descs;  /* Max. # of descriptors kept in each ES */
     int mem_lp_alloc;        /* How to allocate large pages */

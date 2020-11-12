@@ -593,7 +593,7 @@ void ABTI_info_print_config(FILE *fp)
     fprintf(fp, "Argobots Configuration:\n");
     fprintf(fp, " - # of cores: %d\n", p_global->num_cores);
     fprintf(fp, " - cache line size: %u\n", ABT_CONFIG_STATIC_CACHELINE_SIZE);
-    fprintf(fp, " - huge page size: %u\n", p_global->huge_page_size);
+    fprintf(fp, " - huge page size: %zu\n", p_global->huge_page_size);
     fprintf(fp, " - max. # of ESs: %d\n", p_global->max_xstreams);
     fprintf(fp, " - cur. # of ESs: %d\n", p_global->num_xstreams);
     fprintf(fp, " - ES affinity: %s\n",
@@ -602,11 +602,12 @@ void ABTI_info_print_config(FILE *fp)
             (p_global->use_logging == ABT_TRUE) ? "on" : "off");
     fprintf(fp, " - debug output: %s\n",
             (p_global->use_debug == ABT_TRUE) ? "on" : "off");
-    fprintf(fp, " - key table entries: %d\n", p_global->key_table_size);
-    fprintf(fp, " - ULT stack size: %u KB\n",
-            (unsigned)(p_global->thread_stacksize / 1024));
-    fprintf(fp, " - scheduler stack size: %u KB\n",
-            (unsigned)(p_global->sched_stacksize / 1024));
+    fprintf(fp, " - key table entries: %" PRIu32 "\n",
+            p_global->key_table_size);
+    fprintf(fp, " - ULT stack size: %zu KB\n",
+            p_global->thread_stacksize / 1024);
+    fprintf(fp, " - scheduler stack size: %zu KB\n",
+            p_global->sched_stacksize / 1024);
     fprintf(fp, " - scheduler event check frequency: %u\n",
             p_global->sched_event_freq);
 
@@ -622,9 +623,9 @@ void ABTI_info_print_config(FILE *fp)
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
     fprintf(fp, "Memory Pool:\n");
-    fprintf(fp, " - page size for allocation: %u KB\n",
+    fprintf(fp, " - page size for allocation: %zu KB\n",
             p_global->mem_page_size / 1024);
-    fprintf(fp, " - stack page size: %u KB\n", p_global->mem_sp_size / 1024);
+    fprintf(fp, " - stack page size: %zu KB\n", p_global->mem_sp_size / 1024);
     fprintf(fp, " - max. # of stacks per ES: %u\n", p_global->mem_max_stacks);
     switch (p_global->mem_lp_alloc) {
         case ABTI_MEM_LP_MALLOC:
