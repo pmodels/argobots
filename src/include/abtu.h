@@ -305,4 +305,13 @@ ABTU_alloc_largepage(size_t size, size_t alignment_hint,
                      void **p_ptr);
 void ABTU_free_largepage(void *ptr, size_t size, ABTU_MEM_LARGEPAGE_TYPE type);
 
+/* String-to-integer functions. */
+ABTU_ret_err int ABTU_atoi(const char *str, int *p_val, ABT_bool *p_overflow);
+ABTU_ret_err int ABTU_atoui32(const char *str, uint32_t *p_val,
+                              ABT_bool *p_overflow);
+ABTU_ret_err int ABTU_atoui64(const char *str, uint64_t *p_val,
+                              ABT_bool *p_overflow);
+ABTU_ret_err int ABTU_atosz(const char *str, size_t *p_val,
+                            ABT_bool *p_overflow);
+
 #endif /* ABTU_H_INCLUDED */
