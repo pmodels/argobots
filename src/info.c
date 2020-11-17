@@ -508,23 +508,23 @@ ABTU_ret_err static int print_all_thread_stacks(FILE *fp);
 #define PRINT_STACK_FLAG_WAIT 2
 #define PRINT_STACK_FLAG_FINALIZE 3
 
-static ABTD_atomic_uint32 print_stack_flag =
-    ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(PRINT_STACK_FLAG_UNSET);
+static ABTD_atomic_int print_stack_flag =
+    ABTD_ATOMIC_INT_STATIC_INITIALIZER(PRINT_STACK_FLAG_UNSET);
 static FILE *print_stack_fp = NULL;
 static double print_stack_timeout = 0.0;
 static void (*print_cb_func)(ABT_bool, void *) = NULL;
 static void *print_arg = NULL;
-static ABTD_atomic_uint32 print_stack_barrier =
-    ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
+static ABTD_atomic_int print_stack_barrier =
+    ABTD_ATOMIC_INT_STATIC_INITIALIZER(0);
 
 void ABTI_info_check_print_all_thread_stacks(void)
 {
-    if (ABTD_atomic_acquire_load_uint32(&print_stack_flag) !=
+    if (ABTD_atomic_acquire_load_int(&print_stack_flag) !=
         PRINT_STACK_FLAG_WAIT)
         return;
 
     /* Wait for the other execution streams using a barrier mechanism. */
-    uint32_t self_value = ABTD_atomic_fetch_add_uint32(&print_stack_barrier, 1);
+    int self_value = ABTD_atomic_fetch_add_int(&print_stack_barrier, 1);
     if (self_value == 0) {
         /* This ES becomes the main ES. */
         double start_time = ABTI_get_wtime();
@@ -534,7 +534,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
          * printing data. */
         ABTI_spinlock_acquire(&gp_ABTI_global->xstream_list_lock);
         while (1) {
-            if (ABTD_atomic_acquire_load_uint32(&print_stack_barrier) >=
+            if (ABTD_atomic_acquire_load_int(&print_stack_barrier) >=
                 gp_ABTI_global->num_xstreams) {
                 break;
             }
@@ -554,7 +554,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
             fprintf(print_stack_fp,
                     "ABT_info_trigger_print_all_thread_stacks: "
                     "timeout (only %d ESs stop)\n",
-                    (int)ABTD_atomic_acquire_load_uint32(&print_stack_barrier));
+                    ABTD_atomic_acquire_load_int(&print_stack_barrier));
         }
         int abt_errno = print_all_thread_stacks(print_stack_fp);
         if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
@@ -566,23 +566,23 @@ void ABTI_info_check_print_all_thread_stacks(void)
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
         /* Update print_stack_flag to 3. */
-        ABTD_atomic_release_store_uint32(&print_stack_flag,
-                                         PRINT_STACK_FLAG_FINALIZE);
+        ABTD_atomic_release_store_int(&print_stack_flag,
+                                      PRINT_STACK_FLAG_FINALIZE);
     } else {
         /* Wait for the main ES's work. */
-        while (ABTD_atomic_acquire_load_uint32(&print_stack_flag) !=
+        while (ABTD_atomic_acquire_load_int(&print_stack_flag) !=
                PRINT_STACK_FLAG_FINALIZE)
             ABTD_atomic_pause();
     }
-    ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&print_stack_flag) ==
+    ABTI_ASSERT(ABTD_atomic_acquire_load_int(&print_stack_flag) ==
                 PRINT_STACK_FLAG_FINALIZE);
 
     /* Decrement the barrier value. */
-    uint32_t dec_value = ABTD_atomic_fetch_sub_uint32(&print_stack_barrier, 1);
+    int dec_value = ABTD_atomic_fetch_sub_int(&print_stack_barrier, 1);
     if (dec_value == 0) {
         /* The last execution stream resets the flag. */
-        ABTD_atomic_release_store_uint32(&print_stack_flag,
-                                         PRINT_STACK_FLAG_UNSET);
+        ABTD_atomic_release_store_int(&print_stack_flag,
+                                      PRINT_STACK_FLAG_UNSET);
     }
 }
 
@@ -757,21 +757,21 @@ static void info_trigger_print_all_thread_stacks(
 {
     /* This function is signal-safe, so it may not call other functions unless
      * you really know what the called functions do. */
-    if (ABTD_atomic_acquire_load_uint32(&print_stack_flag) ==
+    if (ABTD_atomic_acquire_load_int(&print_stack_flag) ==
         PRINT_STACK_FLAG_UNSET) {
-        if (ABTD_atomic_bool_cas_strong_uint32(&print_stack_flag,
-                                               PRINT_STACK_FLAG_UNSET,
-                                               PRINT_STACK_FLAG_INITIALIZE)) {
+        if (ABTD_atomic_bool_cas_strong_int(&print_stack_flag,
+                                            PRINT_STACK_FLAG_UNSET,
+                                            PRINT_STACK_FLAG_INITIALIZE)) {
             /* Save fp and timeout. */
             print_stack_fp = fp;
             print_stack_timeout = timeout;
             print_cb_func = cb_func;
             print_arg = arg;
             /* Here print_stack_barrier must be 0. */
-            ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&print_stack_barrier) ==
+            ABTI_ASSERT(ABTD_atomic_acquire_load_int(&print_stack_barrier) ==
                         0);
-            ABTD_atomic_release_store_uint32(&print_stack_flag,
-                                             PRINT_STACK_FLAG_WAIT);
+            ABTD_atomic_release_store_int(&print_stack_flag,
+                                          PRINT_STACK_FLAG_WAIT);
         }
     }
 }
