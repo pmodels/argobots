@@ -238,7 +238,7 @@ static inline uint64_t ABTXI_prof_get_cycles()
 #ifdef ABTXI_PROF_USE_CYCLES
 
 #define ABTXI_PROF_T int64_t
-#define ABTXI_PROF_T_INVALID 0xFFFFFFFFFFFFFFFF
+#define ABTXI_PROF_T_INVALID ((int64_t)0xFFFFFFFFFFFFFFFF)
 #define ABTXI_PROF_T_ZERO ((int64_t)0)
 #define ABTXI_prof_get_time() ABTXI_prof_get_cycles()
 #define ABTXI_PROF_T_STRING "HW cycles"
@@ -863,7 +863,7 @@ static char *ABTXI_prof_sprintf(ABTXI_prof_str_mem *p_str, size_t max_n,
     while (p_str->p_next) {
         p_str = p_str->p_next;
     }
-    if (p_str->len - p_str->cursor < max_n) {
+    if (p_str->len - p_str->cursor < (int)max_n) {
         int newlen = max_n > 4096 ? max_n : 4096;
         ABTXI_prof_str_mem *p_new = ABTXI_prof_str_mem_alloc(newlen);
         p_str->p_next = p_new;

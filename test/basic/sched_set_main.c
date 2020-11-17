@@ -78,9 +78,8 @@ static void thread_func(void *arg)
 
 int main(int argc, char *argv[])
 {
-    size_t i;
     int ret;
-    int num_xstreams = DEFAULT_NUM_XSTREAMS;
+    int i, num_xstreams = DEFAULT_NUM_XSTREAMS;
     ABT_xstream *xstreams;
     ABT_pool *pools;
     ABT_thread *threads;
@@ -114,7 +113,7 @@ int main(int argc, char *argv[])
 
     /* Create ULTs */
     for (i = 1; i < num_xstreams; i++) {
-        ret = ABT_thread_create(pools[i], thread_func, (void *)i,
+        ret = ABT_thread_create(pools[i], thread_func, (void *)((uintptr_t)i),
                                 ABT_THREAD_ATTR_NULL, &threads[i]);
         ATS_ERROR(ret, "ABT_thread_create");
     }

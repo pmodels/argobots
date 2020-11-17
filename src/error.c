@@ -82,7 +82,7 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_INV_ARG" };
 
     ABTI_CHECK_TRUE(err >= ABT_SUCCESS &&
-                        err < sizeof(err_str) / sizeof(err_str[0]),
+                        err < (int)(sizeof(err_str) / sizeof(err_str[0])),
                     ABT_ERR_INV_ARG);
     /* This entry does not exist. */
     ABTI_CHECK_TRUE(err_str[err], ABT_ERR_INV_ARG);

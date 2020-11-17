@@ -14,7 +14,7 @@ typedef union ABTI_mem_pool_header_bucket_info {
     /* This is used when it is in ABTI_mem_pool_global_pool */
     ABTI_sync_lifo_element lifo_elem;
     /* This is used when it is in ABTI_mem_pool_local_pool */
-    int num_headers;
+    size_t num_headers;
 } ABTI_mem_pool_header_bucket_info;
 
 typedef struct ABTI_mem_pool_header {
@@ -47,15 +47,16 @@ typedef struct ABTI_mem_pool_page {
  *   .
  */
 typedef struct ABTI_mem_pool_global_pool {
-    size_t header_size;         /* Size of header */
-    size_t page_size;           /* Size of page (mem of ABTI_mem_pool_page) */
-    size_t alignment_hint;      /* Alignment hint for page */
-    size_t header_offset;       /* Offset of ABTI_mem_pool_header from the top
-                                 * of the memory segment; i.e., the pool returns
-                                 * p_header_memory_top + offset. */
-    int num_headers_per_bucket; /* Number of headers per bucket. */
-    int num_lp_type_requests;   /* Number of requests for large page allocation.
-                                 */
+    size_t header_size;    /* Size of header */
+    size_t page_size;      /* Size of page (mem of ABTI_mem_pool_page) */
+    size_t alignment_hint; /* Alignment hint for page */
+    size_t header_offset;  /* Offset of ABTI_mem_pool_header from the top
+                            * of the memory segment; i.e., the pool returns
+                            * p_header_memory_top + offset. */
+    size_t num_headers_per_bucket; /* Number of headers per bucket. */
+    uint32_t
+        num_lp_type_requests; /* Number of requests for large page allocation.
+                               */
     ABTU_MEM_LARGEPAGE_TYPE
     lp_type_requests[4]; /* Requests for large page allocation */
     ABTU_align_member_var(ABT_CONFIG_STATIC_CACHELINE_SIZE)
@@ -96,10 +97,10 @@ typedef struct ABTI_mem_pool_local_pool {
 } ABTI_mem_pool_local_pool;
 
 void ABTI_mem_pool_init_global_pool(
-    ABTI_mem_pool_global_pool *p_global_pool, int num_headers_per_bucket,
+    ABTI_mem_pool_global_pool *p_global_pool, size_t num_headers_per_bucket,
     size_t header_size, size_t header_offset, size_t page_size,
-    const ABTU_MEM_LARGEPAGE_TYPE *lp_type_requests, int num_lp_type_requests,
-    size_t alignment_hint);
+    const ABTU_MEM_LARGEPAGE_TYPE *lp_type_requests,
+    uint32_t num_lp_type_requests, size_t alignment_hint);
 void ABTI_mem_pool_destroy_global_pool(
     ABTI_mem_pool_global_pool *p_global_pool);
 void ABTI_mem_pool_init_local_pool(ABTI_mem_pool_local_pool *p_local_pool,
@@ -115,7 +116,7 @@ ABTI_mem_pool_alloc(ABTI_mem_pool_local_pool *p_local_pool, void **p_mem)
 {
     size_t bucket_index = p_local_pool->bucket_index;
     ABTI_mem_pool_header *cur_bucket = p_local_pool->buckets[bucket_index];
-    int num_headers_in_cur_bucket = cur_bucket->bucket_info.num_headers;
+    size_t num_headers_in_cur_bucket = cur_bucket->bucket_info.num_headers;
     /* At least one header is available in the current bucket, so it must be
      * larger than 0. */
     ABTI_ASSERT(num_headers_in_cur_bucket >= 1);
@@ -124,14 +125,14 @@ ABTI_mem_pool_alloc(ABTI_mem_pool_local_pool *p_local_pool, void **p_mem)
         if (bucket_index == 0) {
             /* cur_bucket is the last header in this pool.
              * Let's get some buckets from the global pool. */
-            int i;
+            size_t i;
             for (i = 0; i < ABT_MEM_POOL_NUM_TAKE_BUCKETS; i++) {
                 int abt_errno =
                     ABTI_mem_pool_take_bucket(p_local_pool->p_global_pool,
                                               &p_local_pool->buckets[i]);
                 if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
                     /* Return buckets that have been already taken. */
-                    int j;
+                    size_t j;
                     for (j = 0; j < i; j++) {
                         ABTI_mem_pool_return_bucket(p_local_pool->p_global_pool,
                                                     p_local_pool->buckets[j]);
@@ -166,7 +167,7 @@ static inline void ABTI_mem_pool_free(ABTI_mem_pool_local_pool *p_local_pool,
         p_local_pool->num_headers_per_bucket) {
         /* cur_bucket is full. */
         if (++bucket_index == ABT_MEM_POOL_MAX_LOCAL_BUCKETS) {
-            int i;
+            size_t i;
             /* All buckets are full, so let's return some old buckets. */
             for (i = 0; i < ABT_MEM_POOL_NUM_RETURN_BUCKETS; i++) {
                 ABTI_mem_pool_return_bucket(p_local_pool->p_global_pool,

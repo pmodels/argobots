@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     ABT_pool(*all_pools)[2];
     ABT_sched *scheds;
     ABT_thread *top_threads;
-    size_t i, t;
+    int i, t;
     uint64_t t_start;
 
     /* read command-line arguments */
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 
         /* warm-up */
         for (i = 0; i < num_xstreams; i++) {
-            ABT_thread_create(all_pools[i][0], test_fn, (void *)i,
+            ABT_thread_create(all_pools[i][0], test_fn, (void *)((uintptr_t)i),
                               ABT_THREAD_ATTR_NULL, &top_threads[i]);
         }
         for (i = 0; i < num_xstreams; i++) {
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
         /* measurement */
         t_start = ATS_get_cycles();
         for (i = 0; i < num_xstreams; i++) {
-            ABT_thread_create(all_pools[i][0], test_fn, (void *)i,
+            ABT_thread_create(all_pools[i][0], test_fn, (void *)((uintptr_t)i),
                               ABT_THREAD_ATTR_NULL, &top_threads[i]);
         }
         for (i = 0; i < num_xstreams; i++) {

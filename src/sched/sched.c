@@ -166,7 +166,8 @@ int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
 {
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-    ABTI_CHECK_TRUE((size_t)(idx + max_pools) <= p_sched->num_pools, ABT_ERR_SCHED);
+    ABTI_CHECK_TRUE((size_t)(idx + max_pools) <= p_sched->num_pools,
+                    ABT_ERR_SCHED);
 
     int p;
     for (p = idx; p < idx + max_pools; p++) {

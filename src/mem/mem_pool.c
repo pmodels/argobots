@@ -75,10 +75,10 @@ mem_pool_return_partial_bucket(ABTI_mem_pool_global_pool *p_global_pool,
 }
 
 void ABTI_mem_pool_init_global_pool(
-    ABTI_mem_pool_global_pool *p_global_pool, int num_headers_per_bucket,
+    ABTI_mem_pool_global_pool *p_global_pool, size_t num_headers_per_bucket,
     size_t header_size, size_t header_offset, size_t page_size,
-    const ABTU_MEM_LARGEPAGE_TYPE *lp_type_requests, int num_lp_type_requests,
-    size_t alignment_hint)
+    const ABTU_MEM_LARGEPAGE_TYPE *lp_type_requests,
+    uint32_t num_lp_type_requests, size_t alignment_hint)
 {
     p_global_pool->num_headers_per_bucket = num_headers_per_bucket;
     ABTI_ASSERT(header_offset + sizeof(ABTI_mem_pool_header) <= header_size);
@@ -148,7 +148,7 @@ void ABTI_mem_pool_destroy_local_pool(ABTI_mem_pool_local_pool *p_local_pool)
         ABTI_mem_pool_return_bucket(p_local_pool->p_global_pool,
                                     p_local_pool->buckets[i]);
     }
-    const int num_headers_per_bucket = p_local_pool->num_headers_per_bucket;
+    const size_t num_headers_per_bucket = p_local_pool->num_headers_per_bucket;
     ABTI_mem_pool_header *cur_bucket = p_local_pool->buckets[bucket_index];
     if (cur_bucket->bucket_info.num_headers == num_headers_per_bucket) {
         /* The last bucket is also full. Return the last bucket as well. */
