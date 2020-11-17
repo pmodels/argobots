@@ -132,8 +132,13 @@ static int ABTX_prof_finalize(ABTX_prof_context context);
  */
 
 #ifndef ABTX_PROF_USE_BUILTIN_EXPECT
+#if defined(__SUNPRO_C) && __SUNPRO_C < 0x5150
+/* Solaris Studio <= 12.5 (Sun C 5.14) does not support __builtin_expect() */
+#define ABTX_PROF_USE_BUILTIN_EXPECT 0
+#else
 #define ABTX_PROF_USE_BUILTIN_EXPECT 1
 #endif
+#endif /* ABTX_PROF_USE_BUILTIN_EXPECT */
 
 #ifndef ABTX_PROF_USE_ALWAYS_INLINE
 #define ABTX_PROF_USE_ALWAYS_INLINE 1
