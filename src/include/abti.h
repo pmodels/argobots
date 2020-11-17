@@ -262,7 +262,7 @@ struct ABTI_sched {
     ABT_sched_type type;        /* Can yield or not (ULT or task) */
     ABTD_atomic_uint32 request; /* Request */
     ABT_pool *pools;            /* Thread pools */
-    int num_pools;              /* Number of thread pools */
+    size_t num_pools;           /* Number of thread pools */
     ABTI_ythread *p_ythread;    /* Associated ULT */
     void *data;                 /* Data for a specific scheduler */
 

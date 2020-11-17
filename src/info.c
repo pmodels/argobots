@@ -778,7 +778,8 @@ static void info_trigger_print_all_thread_stacks(
 
 ABTU_ret_err static int print_all_thread_stacks(FILE *fp)
 {
-    int i, abt_errno;
+    size_t i;
+    int abt_errno;
     struct info_pool_set_t pool_set;
 
     abt_errno = info_initialize_pool_set(&pool_set);
@@ -794,7 +795,7 @@ ABTU_ret_err static int print_all_thread_stacks(FILE *fp)
         for (i = 0; i < p_main_sched->num_pools; i++) {
             ABT_pool pool = p_main_sched->pools[i];
             ABTI_ASSERT(pool != ABT_POOL_NULL);
-            fprintf(fp, "  pools[%d] : %p\n", i,
+            fprintf(fp, "  pools[%zu] : %p\n", i,
                     (void *)ABTI_pool_get_ptr(pool));
             abt_errno = info_add_pool_set(pool, &pool_set);
             if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
