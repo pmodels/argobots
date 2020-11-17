@@ -16,7 +16,7 @@ typedef struct {
 
 int main(int argc, char *argv[])
 {
-    int ret;
+    int ret, i;
 
     /* init and thread creation */
     ATS_read_args(argc, argv);
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
         { "ABT_ERR_INV_ARG", ABT_ERR_INV_ARG },
     };
 
-    for (int i = 0; i < sizeof(error_pairs) / sizeof(error_pairs[0]); i++) {
+    for (i = 0; i < sizeof(error_pairs) / sizeof(error_pairs[0]); i++) {
         char str[256];
         ret = ABT_error_get_str(error_pairs[i].code, str, NULL);
         ATS_ERROR(ret, "ABT_error_get_str");
