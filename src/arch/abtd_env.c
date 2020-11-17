@@ -241,7 +241,7 @@ static uint32_t roundup_pow2_uint32(uint32_t val)
      * 5 -> 8 */
     if (val == 0)
         return 0;
-    int i;
+    uint32_t i;
     for (i = 0; i < sizeof(uint32_t) * 8; i++) {
         if ((val - 1) >> i == 0)
             break;
@@ -254,7 +254,7 @@ static const char *get_abt_env(const char *env_suffix)
     /* Valid prefix is ABT_ and ABT_ENV_. ABT_ is prioritized. */
     char buffer[128];
     const char *prefixes[] = { "ABT_", "ABT_ENV_" };
-    int i;
+    uint32_t i;
     for (i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); i++) {
         strcpy(buffer, prefixes[i]);
         strcpy(buffer + strlen(prefixes[i]), env_suffix);

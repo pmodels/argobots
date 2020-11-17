@@ -183,7 +183,7 @@ typedef cpuset_t cpu_set_t;
 
 typedef struct {
     ABTD_affinity_cpuset initial_cpuset;
-    size_t num_cpusets;
+    uint32_t num_cpusets;
     ABTD_affinity_cpuset *cpusets;
 } global_affinity;
 
@@ -194,8 +194,9 @@ static inline int int_rem(int a, unsigned int b)
     /* Return x where a = n * b + x and 0 <= x < b */
     /* Because of ambiguity in the C specification, it uses a branch to check if
      * the result is positive. */
-    int ret = (a % b) + b;
-    return ret >= b ? (ret - b) : ret;
+    int int_b = b;
+    int ret = (a % int_b) + int_b;
+    return ret >= int_b ? (ret - int_b) : ret;
 }
 
 ABTU_ret_err static int get_num_cores(pthread_t native_thread, int *p_num_cores)
@@ -249,7 +250,7 @@ ABTU_ret_err static int apply_cpuset(pthread_t native_thread,
                                      const ABTD_affinity_cpuset *p_cpuset)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
-    size_t i;
+    uint32_t i;
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     for (i = 0; i < p_cpuset->num_cpuids; i++) {
@@ -268,7 +269,8 @@ void ABTD_affinity_init(const char *affinity_str)
     g_affinity.cpusets = NULL;
     g_affinity.initial_cpuset.cpuids = NULL;
     pthread_t self_native_thread = pthread_self();
-    int i, ret;
+    uint32_t i;
+    int ret;
     ret = get_num_cores(self_native_thread, &gp_ABTI_global->num_cores);
     if (ret != ABT_SUCCESS || gp_ABTI_global->num_cores == 0) {
         gp_ABTI_global->set_affinity = ABT_FALSE;
@@ -299,7 +301,7 @@ void ABTD_affinity_init(const char *affinity_str)
         ABTI_ASSERT(ret == ABT_SUCCESS);
         for (i = 0; i < p_list->num; i++) {
             const ABTD_affinity_id_list *p_id_list = p_list->p_id_lists[i];
-            int j, num_cpuids = 0, len_cpuids = 8;
+            uint32_t j, num_cpuids = 0, len_cpuids = 8;
             ret = ABTU_malloc(sizeof(int) * len_cpuids,
                               (void **)&g_affinity.cpusets[i].cpuids);
             ABTI_ASSERT(ret == ABT_SUCCESS);
@@ -313,7 +315,8 @@ void ABTD_affinity_init(const char *affinity_str)
                                       g_affinity.initial_cpuset.num_cpuids);
                 int cpuid = g_affinity.initial_cpuset.cpuids[cpuid_i];
                 /* If it is unique, add it.*/
-                int k, is_unique = 1;
+                uint32_t k;
+                int is_unique = 1;
                 for (k = 0; k < num_cpuids; k++) {
                     if (g_affinity.cpusets[i].cpuids[k] == cpuid) {
                         is_unique = 0;
@@ -373,7 +376,7 @@ void ABTD_affinity_finalize(void)
     }
     /* Free g_afinity. */
     ABTD_affinity_cpuset_destroy(&g_affinity.initial_cpuset);
-    int i;
+    uint32_t i;
     for (i = 0; i < g_affinity.num_cpusets; i++) {
         ABTD_affinity_cpuset_destroy(&g_affinity.cpusets[i]);
     }

@@ -428,13 +428,13 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
 /*****************************************************************************/
 
 void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
-                     int val)
+                     uint32_t val)
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_ythread_htable *p_htable = p_mutex->p_htable;
     ABTI_ythread *p_self = ABTI_thread_get_ythread(p_local_xstream->p_thread);
 
-    int rank = (int)p_local_xstream->rank;
+    int rank = p_local_xstream->rank;
     ABTI_ASSERT(rank < p_htable->num_rows);
     ABTI_ythread_queue *p_queue = &p_htable->queue[rank];
 
@@ -464,13 +464,13 @@ void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
 }
 
 void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
-                         int val)
+                         uint32_t val)
 {
     ABTI_xstream *p_local_xstream = *pp_local_xstream;
     ABTI_ythread_htable *p_htable = p_mutex->p_htable;
     ABTI_ythread *p_self = ABTI_thread_get_ythread(p_local_xstream->p_thread);
 
-    int rank = (int)p_local_xstream->rank;
+    int rank = p_local_xstream->rank;
     ABTI_ASSERT(rank < p_htable->num_rows);
     ABTI_ythread_queue *p_queue = &p_htable->queue[rank];
 

@@ -21,14 +21,14 @@ static void id_list_free(ABTD_affinity_id_list *p_id_list)
     ABTU_free(p_id_list);
 }
 
-static void id_list_add(ABTD_affinity_id_list *p_id_list, int id, int num,
+static void id_list_add(ABTD_affinity_id_list *p_id_list, int id, uint32_t num,
                         int stride)
 {
     /* Needs to add num ids. */
-    int i, ret;
-    ret = ABTU_realloc(sizeof(int) * p_id_list->num,
-                       sizeof(int) * (p_id_list->num + num),
-                       (void **)&p_id_list->ids);
+    uint32_t i;
+    int ret = ABTU_realloc(sizeof(int) * p_id_list->num,
+                           sizeof(int) * (p_id_list->num + num),
+                           (void **)&p_id_list->ids);
     ABTI_ASSERT(ret == ABT_SUCCESS);
     for (i = 0; i < num; i++) {
         p_id_list->ids[p_id_list->num + i] = id + stride * i;
@@ -48,7 +48,7 @@ static ABTD_affinity_list *list_create(void)
 static void list_free(ABTD_affinity_list *p_list)
 {
     if (p_list) {
-        int i;
+        uint32_t i;
         for (i = 0; i < p_list->num; i++)
             id_list_free(p_list->p_id_lists[i]);
         free(p_list->p_id_lists);
@@ -57,10 +57,11 @@ static void list_free(ABTD_affinity_list *p_list)
 }
 
 static void list_add(ABTD_affinity_list *p_list, ABTD_affinity_id_list *p_base,
-                     int num, int stride)
+                     uint32_t num, int stride)
 {
     /* Needs to add num id-lists. */
-    int i, j, ret;
+    uint32_t i, j;
+    int ret;
 
     ret = ABTU_realloc(sizeof(ABTD_affinity_id_list *) * p_list->num,
                        sizeof(ABTD_affinity_id_list *) * (p_list->num + num),
@@ -86,9 +87,10 @@ static inline int is_whitespace(char c)
 }
 
 /* Integer. */
-static int consume_int(const char *str, int *p_index, int *p_val)
+static int consume_int(const char *str, uint32_t *p_index, int *p_val)
 {
-    int index = *p_index, val = 0, val_sign = 1;
+    uint32_t index = *p_index;
+    int val = 0, val_sign = 1;
     char flag = 'n';
     while (1) {
         char c = *(str + index);
@@ -122,9 +124,10 @@ static int consume_int(const char *str, int *p_index, int *p_val)
 }
 
 /* Positive integer */
-static int consume_pint(const char *str, int *p_index, int *p_val)
+static int consume_pint(const char *str, uint32_t *p_index, int *p_val)
 {
-    int index = *p_index, val;
+    uint32_t index = *p_index;
+    int val;
     /* The value must be positive. */
     if (consume_int(str, &index, &val) && val > 0) {
         *p_index = index;
@@ -135,9 +138,9 @@ static int consume_pint(const char *str, int *p_index, int *p_val)
 }
 
 /* Symbol.  If succeeded, it returns a consumed characters. */
-static int consume_symbol(const char *str, int *p_index, char symbol)
+static int consume_symbol(const char *str, uint32_t *p_index, char symbol)
 {
-    int index = *p_index;
+    uint32_t index = *p_index;
     while (1) {
         char c = *(str + index);
         if (c == symbol) {
@@ -154,7 +157,7 @@ static int consume_symbol(const char *str, int *p_index, char symbol)
 }
 
 static ABTD_affinity_id_list *parse_es_id_list(const char *affinity_str,
-                                               int *p_index)
+                                               uint32_t *p_index)
 {
     ABTD_affinity_id_list *p_id_list = id_list_create();
     int val;
@@ -206,7 +209,7 @@ static ABTD_affinity_list *parse_list(const char *affinity_str)
 {
     if (!affinity_str)
         return NULL;
-    int index = 0;
+    uint32_t index = 0;
     ABTD_affinity_list *p_list = list_create();
     ABTD_affinity_id_list *p_id_list = NULL;
     while (1) {

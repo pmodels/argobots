@@ -166,7 +166,8 @@ int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
 {
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-    ABTI_CHECK_TRUE(idx + max_pools <= p_sched->num_pools, ABT_ERR_SCHED);
+    ABTI_CHECK_TRUE((size_t)(idx + max_pools) <= p_sched->num_pools,
+                    ABT_ERR_SCHED);
 
     int p;
     for (p = idx; p < idx + max_pools; p++) {
@@ -306,8 +307,7 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
 
 size_t ABTI_sched_get_size(ABTI_sched *p_sched)
 {
-    size_t pool_size = 0;
-    int p;
+    size_t pool_size = 0, p;
 
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
@@ -500,7 +500,7 @@ void ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
     ABTI_ASSERT(p_sched->used == ABTI_SCHED_NOT_USED);
     /* If sched is a default provided one, it should free its pool here.
      * Otherwise, freeing the pool is the user's responsibility. */
-    int p;
+    size_t p;
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
         int32_t num_scheds = ABTI_pool_release(p_pool);
@@ -585,8 +585,7 @@ ABTU_ret_err int ABTI_sched_get_migration_pool(ABTI_sched *p_sched,
 
 size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
 {
-    size_t pool_size = 0;
-    int p;
+    size_t pool_size = 0, p;
 
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
@@ -603,8 +602,7 @@ size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
  * between different schedulers associated with different ESs. */
 size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
 {
-    size_t pool_size = 0;
-    int p;
+    size_t pool_size = 0, p;
 
     for (p = 0; p < p_sched->num_pools; p++) {
         ABT_pool pool = p_sched->pools[p];
@@ -689,7 +687,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 "%*sused     : %s\n"
                 "%*sautomatic: %s\n"
                 "%*srequest  : 0x%x\n"
-                "%*snum_pools: %d\n"
+                "%*snum_pools: %zu\n"
                 "%*ssize     : %zu\n"
                 "%*stot_size : %zu\n"
                 "%*sdata     : %p\n",
@@ -705,7 +703,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 indent, "", ABTI_sched_get_total_size(p_sched), indent, "",
                 p_sched->data);
         if (print_sub == ABT_TRUE) {
-            int i;
+            size_t i;
             for (i = 0; i < p_sched->num_pools; i++) {
                 ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[i]);
                 ABTI_pool_print(p_pool, p_os, indent + 2);

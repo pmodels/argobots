@@ -53,7 +53,7 @@ struct ABTI_ythread_htable {
     ABTI_spinlock mutex; /* To protect table */
 #endif
     ABTD_atomic_uint32 num_elems;
-    uint32_t num_rows;
+    int num_rows;
     ABTI_ythread_queue *queue;
 
     ABTI_ythread_queue *h_list; /* list of non-empty high prio. queues */

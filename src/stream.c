@@ -1361,7 +1361,7 @@ xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
     ABTI_ythread *p_ythread = NULL;
     ABTI_sched *p_main_sched;
     ABTI_pool *p_tar_pool = NULL;
-    int p;
+    size_t p;
 
     /* The main scheduler will to be a ULT, not a tasklet */
     p_sched->type = ABT_SCHED_TYPE_ULT;

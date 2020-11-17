@@ -262,7 +262,7 @@ struct ABTI_sched {
     ABT_sched_type type;        /* Can yield or not (ULT or task) */
     ABTD_atomic_uint32 request; /* Request */
     ABT_pool *pools;            /* Thread pools */
-    int num_pools;              /* Number of thread pools */
+    size_t num_pools;           /* Number of thread pools */
     ABTI_ythread *p_ythread;    /* Associated ULT */
     void *data;                 /* Data for a specific scheduler */
 
@@ -391,15 +391,15 @@ struct ABTI_eventual {
     ABTI_spinlock lock;
     ABT_bool ready;
     void *value;
-    int nbytes;
+    size_t nbytes;
     ABTI_thread *p_head; /* Head of waiters */
     ABTI_thread *p_tail; /* Tail of waiters */
 };
 
 struct ABTI_future {
     ABTI_spinlock lock;
-    ABTD_atomic_uint32 counter;
-    uint32_t compartments;
+    ABTD_atomic_size counter;
+    size_t compartments;
     void **array;
     void (*p_callback)(void **arg);
     ABTI_thread *p_head; /* Head of waiters */
@@ -407,8 +407,8 @@ struct ABTI_future {
 };
 
 struct ABTI_barrier {
-    uint32_t num_waiters;
-    volatile uint32_t counter;
+    size_t num_waiters;
+    volatile size_t counter;
     ABTI_ythread **waiters;
     ABT_unit_type *waiter_type;
     ABTI_spinlock lock;
@@ -568,9 +568,9 @@ void ABTI_ktable_free(ABTI_local *p_local, ABTI_ktable *p_ktable);
 
 /* Mutex */
 void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
-                     int val);
+                     uint32_t val);
 void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
-                         int val);
+                         uint32_t val);
 void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex);
 
 /* Information */
