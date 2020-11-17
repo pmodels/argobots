@@ -568,9 +568,9 @@ void ABTI_ktable_free(ABTI_local *p_local, ABTI_ktable *p_ktable);
 
 /* Mutex */
 void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
-                     int val);
+                     uint32_t val);
 void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
-                         int val);
+                         uint32_t val);
 void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex);
 
 /* Information */
