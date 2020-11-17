@@ -33,17 +33,18 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
 {
     int abt_errno;
     ABTI_eventual *p_eventual;
+    size_t arg_nbytes = nbytes;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_eventual), (void **)&p_eventual);
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTI_spinlock_clear(&p_eventual->lock);
     p_eventual->ready = ABT_FALSE;
-    p_eventual->nbytes = nbytes;
-    if (nbytes == 0) {
+    p_eventual->nbytes = arg_nbytes;
+    if (arg_nbytes == 0) {
         p_eventual->value = NULL;
     } else {
-        abt_errno = ABTU_malloc(nbytes, &p_eventual->value);
+        abt_errno = ABTU_malloc(arg_nbytes, &p_eventual->value);
         if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
             ABTU_free(p_eventual);
             ABTI_HANDLE_ERROR(abt_errno);
@@ -224,13 +225,14 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
-    ABTI_CHECK_TRUE(nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);
+    size_t arg_nbytes = nbytes;
+    ABTI_CHECK_TRUE(arg_nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);
 
     ABTI_spinlock_acquire(&p_eventual->lock);
 
     p_eventual->ready = ABT_TRUE;
     if (p_eventual->value)
-        memcpy(p_eventual->value, value, nbytes);
+        memcpy(p_eventual->value, value, arg_nbytes);
 
     if (p_eventual->p_head == NULL) {
         ABTI_spinlock_release(&p_eventual->lock);

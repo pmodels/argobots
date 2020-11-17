@@ -58,14 +58,15 @@ int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
 {
     int abt_errno;
     ABTI_future *p_future;
+    size_t arg_compartments = compartments;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_future), (void **)&p_future);
     ABTI_CHECK_ERROR(abt_errno);
     ABTI_spinlock_clear(&p_future->lock);
-    ABTD_atomic_relaxed_store_uint32(&p_future->counter, 0);
-    p_future->compartments = compartments;
-    abt_errno =
-        ABTU_malloc(compartments * sizeof(void *), (void **)&p_future->array);
+    ABTD_atomic_relaxed_store_size(&p_future->counter, 0);
+    p_future->compartments = arg_compartments;
+    abt_errno = ABTU_malloc(arg_compartments * sizeof(void *),
+                            (void **)&p_future->array);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         ABTU_free(p_future);
         ABTI_HANDLE_ERROR(abt_errno);
@@ -129,7 +130,7 @@ int ABT_future_wait(ABT_future future)
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
     ABTI_spinlock_acquire(&p_future->lock);
-    if (ABTD_atomic_relaxed_load_uint32(&p_future->counter) <
+    if (ABTD_atomic_relaxed_load_size(&p_future->counter) <
         p_future->compartments) {
         ABTI_ythread *p_ythread = NULL;
         ABTI_thread *p_thread;
@@ -203,7 +204,7 @@ int ABT_future_test(ABT_future future, ABT_bool *flag)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-    uint32_t counter = ABTD_atomic_acquire_load_uint32(&p_future->counter);
+    size_t counter = ABTD_atomic_acquire_load_size(&p_future->counter);
     *flag = (counter == p_future->compartments) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
@@ -233,7 +234,7 @@ int ABT_future_set(ABT_future future, void *value)
 
     ABTI_spinlock_acquire(&p_future->lock);
 
-    int counter = ABTD_atomic_relaxed_load_uint32(&p_future->counter);
+    size_t counter = ABTD_atomic_relaxed_load_size(&p_future->counter);
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     if (counter >= p_future->compartments) {
         ABTI_spinlock_release(&p_future->lock);
@@ -242,7 +243,7 @@ int ABT_future_set(ABT_future future, void *value)
 #endif
     p_future->array[counter] = value;
     counter++;
-    ABTD_atomic_release_store_uint32(&p_future->counter, counter);
+    ABTD_atomic_release_store_size(&p_future->counter, counter);
 
     if (counter == p_future->compartments) {
         if (p_future->p_callback != NULL)
@@ -302,7 +303,7 @@ int ABT_future_reset(ABT_future future)
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
     ABTI_spinlock_acquire(&p_future->lock);
-    ABTD_atomic_release_store_uint32(&p_future->counter, 0);
+    ABTD_atomic_release_store_size(&p_future->counter, 0);
     ABTI_spinlock_release(&p_future->lock);
     return ABT_SUCCESS;
 }

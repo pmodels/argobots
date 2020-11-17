@@ -391,15 +391,15 @@ struct ABTI_eventual {
     ABTI_spinlock lock;
     ABT_bool ready;
     void *value;
-    int nbytes;
+    size_t nbytes;
     ABTI_thread *p_head; /* Head of waiters */
     ABTI_thread *p_tail; /* Tail of waiters */
 };
 
 struct ABTI_future {
     ABTI_spinlock lock;
-    ABTD_atomic_uint32 counter;
-    uint32_t compartments;
+    ABTD_atomic_size counter;
+    size_t compartments;
     void **array;
     void (*p_callback)(void **arg);
     ABTI_thread *p_head; /* Head of waiters */
@@ -407,8 +407,8 @@ struct ABTI_future {
 };
 
 struct ABTI_barrier {
-    uint32_t num_waiters;
-    volatile uint32_t counter;
+    size_t num_waiters;
+    volatile size_t counter;
     ABTI_ythread **waiters;
     ABT_unit_type *waiter_type;
     ABTI_spinlock lock;
