@@ -185,11 +185,11 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
  * @return Error code
  * @retval ABT_SUCCESS on success
  */
-int ABT_eventual_test(ABT_eventual eventual, void **value, int *is_ready)
+int ABT_eventual_test(ABT_eventual eventual, void **value, ABT_bool *is_ready)
 {
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
-    int flag = ABT_FALSE;
+    ABT_bool flag = ABT_FALSE;
 
     ABTI_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready != ABT_FALSE) {
