@@ -30,7 +30,8 @@ void fn1(void *args)
 void fn2(void *args)
 {
     ATS_UNUSED(args);
-    int i = 0, is_ready = 0;
+    int i = 0;
+    ABT_bool is_ready = 0;
     void *data;
     ATS_printf(1, "Thread 2 iteration %d waiting from eventual\n", i);
     ABT_eventual_test(myeventual, &data, &is_ready);
