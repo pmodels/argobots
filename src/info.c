@@ -115,10 +115,9 @@ static void info_trigger_print_all_thread_stacks(
  */
 int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 {
-    ABTI_SETUP_WITH_INIT_CHECK();
-
     switch (query_kind) {
         case ABT_INFO_QUERY_KIND_ENABLED_DEBUG:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((ABT_bool *)val) = gp_ABTI_global->use_debug;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO:
@@ -129,6 +128,7 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_LOG:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((ABT_bool *)val) = gp_ABTI_global->use_logging;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_VALGRIND:
@@ -197,24 +197,31 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((ABT_bool *)val) = gp_ABTI_global->print_config;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_AFFINITY:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((ABT_bool *)val) = gp_ABTI_global->set_affinity;
             break;
         case ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((unsigned int *)val) = gp_ABTI_global->max_xstreams;
             break;
         case ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((size_t *)val) = gp_ABTI_global->thread_stacksize;
             break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((size_t *)val) = gp_ABTI_global->sched_stacksize;
             break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((uint64_t *)val) = gp_ABTI_global->sched_event_freq;
             break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((uint64_t *)val) = gp_ABTI_global->sched_sleep_nsec;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_TOOL:
@@ -240,13 +247,15 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
  *
  * @param[in] fp  output stream
  * @return Error code
- * @retval ABT_SUCCESS            on success
- * @retval ABT_ERR_UNINITIALIZED  Argobots has not been initialized
+ * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_config(FILE *fp)
 {
-    ABTI_SETUP_WITH_INIT_CHECK();
-
+    if (!gp_ABTI_global) {
+        fprintf(fp, "Argobots is not initialized.\n");
+        fflush(fp);
+        return ABT_SUCCESS;
+    }
     ABTI_info_print_config(fp);
     return ABT_SUCCESS;
 }
@@ -260,13 +269,15 @@ int ABT_info_print_config(FILE *fp)
  *
  * @param[in] fp  output stream
  * @return Error code
- * @retval ABT_SUCCESS            on success
- * @retval ABT_ERR_UNINITIALIZED  Argobots has not been initialized
+ * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_all_xstreams(FILE *fp)
 {
-    ABTI_SETUP_WITH_INIT_CHECK();
-
+    if (!gp_ABTI_global) {
+        fprintf(fp, "Argobots is not initialized.\n");
+        fflush(fp);
+        return ABT_SUCCESS;
+    }
     ABTI_global *p_global = gp_ABTI_global;
 
     ABTI_spinlock_acquire(&p_global->xstream_list_lock);
