@@ -593,6 +593,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
         ABTI_spinlock_release(&gp_ABTI_global->xstream_list_lock);
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
+        fflush(print_stack_fp);
         /* Update print_stack_flag to 3. */
         ABTD_atomic_release_store_int(&print_stack_flag,
                                       PRINT_STACK_FLAG_FINALIZE);
@@ -745,6 +746,7 @@ ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
     arg.fp = fp;
     arg.pool = pool;
     p_pool->p_print_all(pool, &arg, info_print_unit);
+    fflush(fp);
     return ABT_SUCCESS;
 }
 

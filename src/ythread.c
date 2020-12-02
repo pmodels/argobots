@@ -133,4 +133,5 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
                 fprintf(p_os, "\n");
         }
     }
+    fflush(p_os);
 }
