@@ -35,20 +35,7 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
     ABTI_spinlock_clear(&p_newbarrier->lock);
     p_newbarrier->num_waiters = arg_num_waiters;
     p_newbarrier->counter = 0;
-    abt_errno = ABTU_malloc(arg_num_waiters * sizeof(ABTI_ythread *),
-                            (void **)&p_newbarrier->waiters);
-    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-        ABTU_free(p_newbarrier);
-        ABTI_HANDLE_ERROR(abt_errno);
-    }
-    abt_errno = ABTU_malloc(arg_num_waiters * sizeof(ABT_unit_type),
-                            (void **)&p_newbarrier->waiter_type);
-    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-        ABTU_free(p_newbarrier->waiters);
-        ABTU_free(p_newbarrier);
-        ABTI_HANDLE_ERROR(abt_errno);
-    }
-
+    ABTI_waitlist_init(&p_newbarrier->waitlist);
     /* Return value */
     *newbarrier = ABTI_barrier_get_handle(p_newbarrier);
     return ABT_SUCCESS;
@@ -76,28 +63,9 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
 
     /* Only when num_waiters is different from p_barrier->num_waiters, we
      * change p_barrier. */
-    if (arg_num_waiters < p_barrier->num_waiters) {
+    if (arg_num_waiters != p_barrier->num_waiters) {
         /* We can reuse waiters and waiter_type arrays */
         p_barrier->num_waiters = arg_num_waiters;
-    } else if (arg_num_waiters > p_barrier->num_waiters) {
-        /* Free existing arrays and reallocate them */
-        int abt_errno;
-        ABTI_ythread **new_waiters;
-        ABT_unit_type *new_waiter_types;
-        abt_errno = ABTU_malloc(arg_num_waiters * sizeof(ABTI_ythread *),
-                                (void **)&new_waiters);
-        ABTI_CHECK_ERROR(abt_errno);
-        abt_errno = ABTU_malloc(arg_num_waiters * sizeof(ABT_unit_type),
-                                (void **)&new_waiter_types);
-        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-            ABTU_free(new_waiters);
-            ABTI_HANDLE_ERROR(abt_errno);
-        }
-        p_barrier->num_waiters = arg_num_waiters;
-        ABTU_free(p_barrier->waiters);
-        ABTU_free(p_barrier->waiter_type);
-        p_barrier->waiters = new_waiters;
-        p_barrier->waiter_type = new_waiter_types;
     }
     return ABT_SUCCESS;
 }
@@ -128,8 +96,6 @@ int ABT_barrier_free(ABT_barrier *barrier)
     /* p_barrier->counter must be checked after taking a lock. */
     ABTI_ASSERT(p_barrier->counter == 0);
 
-    ABTU_free(p_barrier->waiters);
-    ABTU_free(p_barrier->waiter_type);
     ABTU_free(p_barrier);
 
     /* Return value */
@@ -153,77 +119,22 @@ int ABT_barrier_wait(ABT_barrier barrier)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
-    size_t pos;
 
     ABTI_spinlock_acquire(&p_barrier->lock);
 
     ABTI_ASSERT(p_barrier->counter < p_barrier->num_waiters);
-    pos = p_barrier->counter++;
+    p_barrier->counter++;
 
     /* If we do not have all the waiters yet */
     if (p_barrier->counter < p_barrier->num_waiters) {
-        ABTI_ythread *p_ythread = NULL;
-        ABT_unit_type type;
-        ABTD_atomic_int32 ext_signal = ABTD_ATOMIC_INT32_STATIC_INITIALIZER(0);
-
-        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-        if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
-            p_ythread =
-                ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
-        }
-        if (p_ythread) {
-            /* yieldable thread */
-            type = ABT_UNIT_TYPE_THREAD;
-        } else {
-            /* external thread or non-yieldable thread */
-            /* Check size if ext_signal can be stored in p_thread. */
-            ABTI_STATIC_ASSERT(sizeof(ext_signal) <= sizeof(p_ythread));
-            p_ythread = (ABTI_ythread *)&ext_signal;
-            type = ABT_UNIT_TYPE_EXT;
-        }
-
-        /* Keep the waiter's information */
-        p_barrier->waiters[pos] = p_ythread;
-        p_barrier->waiter_type[pos] = type;
-
-        if (type == ABT_UNIT_TYPE_THREAD) {
-            /* Change the ULT's state to BLOCKED */
-            ABTI_ythread_set_blocked(p_ythread);
-        }
-
-        ABTI_spinlock_release(&p_barrier->lock);
-
-        if (type == ABT_UNIT_TYPE_THREAD) {
-            /* Suspend the current ULT */
-            ABTI_ythread_suspend(&p_local_xstream, p_ythread,
-                                 ABT_SYNC_EVENT_TYPE_BARRIER,
-                                 (void *)p_barrier);
-        } else {
-            /* External thread is waiting here polling ext_signal. */
-            /* FIXME: need a better implementation */
-            while (!ABTD_atomic_acquire_load_int32(&ext_signal))
-                ;
-        }
+        ABTI_waitlist_wait_and_unlock(&p_local, &p_barrier->waitlist,
+                                      &p_barrier->lock, ABT_FALSE,
+                                      ABT_SYNC_EVENT_TYPE_BARRIER,
+                                      (void *)p_barrier);
     } else {
-        /* Signal all the waiting ULTs */
-        size_t i;
-        for (i = 0; i < p_barrier->num_waiters - 1; i++) {
-            ABTI_ythread *p_ythread = p_barrier->waiters[i];
-            if (p_barrier->waiter_type[i] == ABT_UNIT_TYPE_THREAD) {
-                ABTI_ythread_set_ready(p_local, p_ythread);
-            } else {
-                /* When p_cur is an external thread */
-                ABTD_atomic_int32 *p_ext_signal =
-                    (ABTD_atomic_int32 *)p_ythread;
-                ABTD_atomic_release_store_int32(p_ext_signal, 1);
-            }
-
-            p_barrier->waiters[i] = NULL;
-        }
-
+        ABTI_waitlist_broadcast(p_local, &p_barrier->waitlist);
         /* Reset counter */
         p_barrier->counter = 0;
-
         ABTI_spinlock_release(&p_barrier->lock);
     }
     return ABT_SUCCESS;

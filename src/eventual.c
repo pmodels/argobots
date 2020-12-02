@@ -50,8 +50,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
             ABTI_HANDLE_ERROR(abt_errno);
         }
     }
-    p_eventual->p_head = NULL;
-    p_eventual->p_tail = NULL;
+    ABTI_waitlist_init(&p_eventual->waitlist);
 
     *neweventual = ABTI_eventual_get_handle(p_eventual);
     return ABT_SUCCESS;
@@ -112,59 +111,16 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
 
     ABTI_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready == ABT_FALSE) {
-        ABTI_ythread *p_ythread = NULL;
-        ABTI_thread *p_thread;
-
-        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-        if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
-            p_thread = p_local_xstream->p_thread;
-            p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-        }
-        if (!p_ythread) {
-            /* external thread or non-yieldable thread */
-            int abt_errno =
-                ABTU_calloc(1, sizeof(ABTI_thread), (void **)&p_thread);
-            if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-                ABTI_spinlock_release(&p_eventual->lock);
-                ABTI_HANDLE_ERROR(abt_errno);
-            }
-            p_thread->type = ABTI_THREAD_TYPE_EXT;
-            /* use state for synchronization */
-            ABTD_atomic_relaxed_store_int(&p_thread->state,
-                                          ABT_THREAD_STATE_BLOCKED);
-        }
-
-        p_thread->p_next = NULL;
-        if (p_eventual->p_head == NULL) {
-            p_eventual->p_head = p_thread;
-            p_eventual->p_tail = p_thread;
-        } else {
-            p_eventual->p_tail->p_next = p_thread;
-            p_eventual->p_tail = p_thread;
-        }
-
-        if (p_ythread) {
-            ABTI_ythread_set_blocked(p_ythread);
-
-            ABTI_spinlock_release(&p_eventual->lock);
-
-            /* Suspend the current ULT */
-            ABTI_ythread_suspend(&p_local_xstream, p_ythread,
-                                 ABT_SYNC_EVENT_TYPE_EVENTUAL,
-                                 (void *)p_eventual);
-        } else {
-            ABTI_spinlock_release(&p_eventual->lock);
-
-            /* External thread is waiting here. */
-            while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                   ABT_THREAD_STATE_READY)
-                ;
-            if (p_thread->type == ABTI_THREAD_TYPE_EXT)
-                ABTU_free(p_thread);
-        }
+        ABTI_waitlist_wait_and_unlock(&p_local, &p_eventual->waitlist,
+                                      &p_eventual->lock, ABT_FALSE,
+                                      ABT_SYNC_EVENT_TYPE_EVENTUAL,
+                                      (void *)p_eventual);
     } else {
         ABTI_spinlock_release(&p_eventual->lock);
     }
+    /* This value is updated outside the critical section, but it is okay since
+     * the "pointer" to the memory buffer is constant and there is no way to
+     * avoid updating this memory buffer by ABT_eventual_set() etc. */
     if (value)
         *value = p_eventual->value;
     return ABT_SUCCESS;
@@ -233,38 +189,8 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     p_eventual->ready = ABT_TRUE;
     if (p_eventual->value)
         memcpy(p_eventual->value, value, arg_nbytes);
-
-    if (p_eventual->p_head == NULL) {
-        ABTI_spinlock_release(&p_eventual->lock);
-        return ABT_SUCCESS;
-    }
-
     /* Wake up all waiting ULTs */
-    ABTI_thread *p_head = p_eventual->p_head;
-    ABTI_thread *p_thread = p_head;
-    while (1) {
-        ABTI_thread *p_next = p_thread->p_next;
-        p_thread->p_next = NULL;
-
-        ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-        if (p_ythread) {
-            ABTI_ythread_set_ready(p_local, p_ythread);
-        } else {
-            /* When the head is an external thread */
-            ABTD_atomic_release_store_int(&p_thread->state,
-                                          ABT_THREAD_STATE_READY);
-        }
-
-        /* Next ULT */
-        if (p_next != NULL) {
-            p_thread = p_next;
-        } else {
-            break;
-        }
-    }
-
-    p_eventual->p_head = NULL;
-    p_eventual->p_tail = NULL;
+    ABTI_waitlist_broadcast(p_local, &p_eventual->waitlist);
 
     ABTI_spinlock_release(&p_eventual->lock);
     return ABT_SUCCESS;

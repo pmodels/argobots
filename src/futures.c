@@ -72,8 +72,7 @@ int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
         ABTI_HANDLE_ERROR(abt_errno);
     }
     p_future->p_callback = cb_func;
-    p_future->p_head = NULL;
-    p_future->p_tail = NULL;
+    ABTI_waitlist_init(&p_future->waitlist);
 
     *newfuture = ABTI_future_get_handle(p_future);
     return ABT_SUCCESS;
@@ -132,55 +131,10 @@ int ABT_future_wait(ABT_future future)
     ABTI_spinlock_acquire(&p_future->lock);
     if (ABTD_atomic_relaxed_load_size(&p_future->counter) <
         p_future->compartments) {
-        ABTI_ythread *p_ythread = NULL;
-        ABTI_thread *p_thread;
-
-        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-        if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
-            p_thread = p_local_xstream->p_thread;
-            p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-        }
-        if (!p_ythread) {
-            /* external thread */
-            int abt_errno =
-                ABTU_calloc(1, sizeof(ABTI_thread), (void **)&p_thread);
-            if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-                ABTI_spinlock_release(&p_future->lock);
-                ABTI_HANDLE_ERROR(abt_errno);
-            }
-            p_thread->type = ABTI_THREAD_TYPE_EXT;
-            /* use state for synchronization */
-            ABTD_atomic_relaxed_store_int(&p_thread->state,
-                                          ABT_THREAD_STATE_BLOCKED);
-        }
-
-        p_thread->p_next = NULL;
-        if (p_future->p_head == NULL) {
-            p_future->p_head = p_thread;
-            p_future->p_tail = p_thread;
-        } else {
-            p_future->p_tail->p_next = p_thread;
-            p_future->p_tail = p_thread;
-        }
-
-        if (p_ythread) {
-            ABTI_ythread_set_blocked(p_ythread);
-
-            ABTI_spinlock_release(&p_future->lock);
-
-            /* Suspend the current ULT */
-            ABTI_ythread_suspend(&p_local_xstream, p_ythread,
-                                 ABT_SYNC_EVENT_TYPE_FUTURE, (void *)p_future);
-
-        } else {
-            ABTI_spinlock_release(&p_future->lock);
-
-            /* External thread is waiting here. */
-            while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                   ABT_THREAD_STATE_READY)
-                ;
-            ABTU_free(p_thread);
-        }
+        ABTI_waitlist_wait_and_unlock(&p_local, &p_future->waitlist,
+                                      &p_future->lock, ABT_FALSE,
+                                      ABT_SYNC_EVENT_TYPE_FUTURE,
+                                      (void *)p_future);
     } else {
         ABTI_spinlock_release(&p_future->lock);
     }
@@ -248,37 +202,7 @@ int ABT_future_set(ABT_future future, void *value)
     if (counter == p_future->compartments) {
         if (p_future->p_callback != NULL)
             (*p_future->p_callback)(p_future->array);
-
-        if (p_future->p_head == NULL) {
-            ABTI_spinlock_release(&p_future->lock);
-            return ABT_SUCCESS;
-        }
-
-        /* Wake up all waiting ULTs */
-        ABTI_thread *p_head = p_future->p_head;
-        ABTI_thread *p_thread = p_head;
-        while (1) {
-            ABTI_thread *p_next = p_thread->p_next;
-            p_thread->p_next = NULL;
-
-            ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-            if (p_ythread) {
-                ABTI_ythread_set_ready(p_local, p_ythread);
-            } else {
-                /* When the head is an external thread */
-                ABTD_atomic_release_store_int(&p_thread->state,
-                                              ABT_THREAD_STATE_READY);
-            }
-
-            /* Next ULT */
-            if (p_next != NULL) {
-                p_thread = p_next;
-            } else {
-                break;
-            }
-        }
-        p_future->p_head = NULL;
-        p_future->p_tail = NULL;
+        ABTI_waitlist_broadcast(p_local, &p_future->waitlist);
     }
 
     ABTI_spinlock_release(&p_future->lock);

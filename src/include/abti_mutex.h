@@ -36,125 +36,162 @@ static inline ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 #endif
 }
 
-ABTU_ret_err static inline int ABTI_mutex_init(ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 {
-    ABTD_atomic_relaxed_store_uint32(&p_mutex->val, 0);
-    p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
-    p_mutex->attr.max_handovers = gp_ABTI_global->mutex_max_handovers;
-    p_mutex->attr.max_wakeups = gp_ABTI_global->mutex_max_wakeups;
+    ABTI_spinlock_clear(&p_mutex->lock);
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
-    int abt_errno = ABTI_ythread_htable_create(gp_ABTI_global->max_xstreams,
-                                               &p_mutex->p_htable);
-    ABTI_CHECK_ERROR(abt_errno);
-    p_mutex->p_handover = NULL;
-    p_mutex->p_giver = NULL;
+    ABTI_spinlock_clear(&p_mutex->waiter_lock);
+    ABTI_waitlist_init(&p_mutex->waitlist);
 #endif
-    return ABT_SUCCESS;
+    p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
+    p_mutex->attr.nesting_cnt = 0;
+    p_mutex->attr.owner_id = 0;
 }
 
-#ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
-#define ABTI_mutex_fini(p_mutex)
-#else
 static inline void ABTI_mutex_fini(ABTI_mutex *p_mutex)
 {
-    ABTI_ythread_htable_free(p_mutex->p_htable);
-}
+#ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABTI_spinlock_acquire(&p_mutex->waiter_lock);
 #endif
+}
 
-static inline void ABTI_mutex_spinlock(ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_lock_no_recursion(ABTI_local **pp_local,
+                                                ABTI_mutex *p_mutex)
 {
-    /* ABTI_spinlock_ functions cannot be used since p_mutex->val can take
-     * other values (i.e., not UNLOCKED nor LOCKED.) */
-    while (!ABTD_atomic_bool_cas_weak_uint32(&p_mutex->val, 0, 1)) {
-        while (ABTD_atomic_acquire_load_uint32(&p_mutex->val) != 0)
-            ;
+#ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
+    while (ABTI_spinlock_try_acquire(&p_mutex->lock)) {
+        /* Failed to take a lock, so let's add it to the waiter list. */
+        ABTI_spinlock_acquire(&p_mutex->waiter_lock);
+        /* Maybe the mutex lock has been already released.  Check it. */
+        if (!ABTI_spinlock_try_acquire(&p_mutex->lock)) {
+            /* Lock has been taken. */
+            ABTI_spinlock_release(&p_mutex->waiter_lock);
+            break;
+        }
+        /* Wait on waitlist. */
+        ABTI_waitlist_wait_and_unlock(pp_local, &p_mutex->waitlist,
+                                      &p_mutex->waiter_lock, ABT_FALSE,
+                                      ABT_SYNC_EVENT_TYPE_MUTEX,
+                                      (void *)p_mutex);
     }
-    LOG_DEBUG("%p: spinlock\n", p_mutex);
+    /* Take a lock. */
+#else
+    /* Simple yield-based implementation */
+    ABTI_ythread *p_ythread = NULL;
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
+    if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream)
+        p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
+
+    if (p_ythread) {
+        while (ABTI_spinlock_try_acquire(&p_mutex->lock)) {
+            ABTI_ythread_yield(&p_local_xstream, p_ythread,
+                               ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
+            *pp_local = ABTI_xstream_get_local(p_local_xstream);
+        }
+    } else {
+        /* Use spinlock. */
+        ABTI_spinlock_acquire(&p_mutex->lock);
+    }
+#endif
 }
 
 static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 {
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && !p_local_xstream) {
-        ABTI_mutex_spinlock(p_mutex);
-        return;
-    }
-    ABTI_ythread *p_ythread =
-        ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
-    if (!p_ythread) {
-        ABTI_mutex_spinlock(p_mutex);
-        return;
-    }
-#ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
-    LOG_DEBUG("%p: lock - try\n", p_mutex);
-    while (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
-        ABTI_ythread_yield(&p_local_xstream, p_ythread,
-                           ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
-        *pp_local = ABTI_xstream_get_local(p_local_xstream);
-    }
-    LOG_DEBUG("%p: lock - acquired\n", p_mutex);
-#else
-    /* Only ULTs can yield when the mutex has been locked. For others,
-     * just call mutex_spinlock. */
-    LOG_DEBUG("%p: lock - try\n", p_mutex);
-    int c;
-    if ((c = ABTD_atomic_val_cas_strong_uint32(&p_mutex->val, 0, 1)) != 0) {
-        if (c != 2) {
-            c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
+    if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* Recursive mutex */
+        ABTI_thread_id self_id = ABTI_self_get_thread_id(*pp_local);
+        if (self_id != p_mutex->attr.owner_id) {
+            ABTI_mutex_lock_no_recursion(pp_local, p_mutex);
+            ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
+            p_mutex->attr.owner_id = self_id;
+        } else {
+            /* Increment a nesting count. */
+            p_mutex->attr.nesting_cnt++;
         }
-        while (c != 0) {
-            ABTI_mutex_wait(&p_local_xstream, p_mutex, 2);
-            *pp_local = ABTI_xstream_get_local(p_local_xstream);
-
-            /* If the mutex has been handed over to the current ULT from
-             * other ULT on the same ES, we don't need to change the mutex
-             * state. */
-            if (p_mutex->p_handover) {
-                if (p_ythread == p_mutex->p_handover) {
-                    p_mutex->p_handover = NULL;
-                    ABTD_atomic_release_store_uint32(&p_mutex->val, 2);
-
-                    /* Push the previous ULT to its pool */
-                    ABTI_ythread *p_giver = p_mutex->p_giver;
-                    ABTD_atomic_release_store_int(&p_giver->thread.state,
-                                                  ABT_THREAD_STATE_READY);
-                    ABTI_pool_push(p_giver->thread.p_pool,
-                                   p_giver->thread.unit);
-                    break;
-                }
-            }
-
-            c = ABTD_atomic_exchange_uint32(&p_mutex->val, 2);
-        }
+    } else {
+        ABTI_mutex_lock_no_recursion(pp_local, p_mutex);
     }
-    LOG_DEBUG("%p: lock - acquired\n", p_mutex);
-    return;
-#endif
 }
 
-static inline int ABTI_mutex_trylock(ABTI_mutex *p_mutex)
+static inline int ABTI_mutex_trylock_no_recursion(ABTI_mutex *p_mutex)
 {
-    if (!ABTD_atomic_bool_cas_strong_uint32(&p_mutex->val, 0, 1)) {
-        return ABT_ERR_MUTEX_LOCKED;
+    return ABTI_spinlock_try_acquire(&p_mutex->lock) ? ABT_ERR_MUTEX_LOCKED
+                                                     : ABT_SUCCESS;
+}
+
+static inline int ABTI_mutex_trylock(ABTI_local *p_local, ABTI_mutex *p_mutex)
+{
+    if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* Recursive mutex */
+        ABTI_thread_id self_id = ABTI_self_get_thread_id(p_local);
+        if (self_id != p_mutex->attr.owner_id) {
+            int abt_errno = ABTI_mutex_trylock_no_recursion(p_mutex);
+            if (abt_errno == ABT_SUCCESS) {
+                ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
+                p_mutex->attr.owner_id = self_id;
+            }
+            return abt_errno;
+        } else {
+            /* Increment a nesting count. */
+            p_mutex->attr.nesting_cnt++;
+            return ABT_SUCCESS;
+        }
+    } else {
+        return ABTI_mutex_trylock_no_recursion(p_mutex);
     }
-    return ABT_SUCCESS;
+}
+
+static inline void ABTI_mutex_spinlock_no_recursion(ABTI_mutex *p_mutex)
+{
+    ABTI_spinlock_acquire(&p_mutex->lock);
+}
+
+static inline void ABTI_mutex_spinlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
+{
+    if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* Recursive mutex */
+        ABTI_thread_id self_id = ABTI_self_get_thread_id(p_local);
+        if (self_id != p_mutex->attr.owner_id) {
+            ABTI_mutex_spinlock_no_recursion(p_mutex);
+            ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
+            p_mutex->attr.owner_id = self_id;
+        } else {
+            /* Increment a nesting count. */
+            p_mutex->attr.nesting_cnt++;
+        }
+    } else {
+        ABTI_mutex_spinlock_no_recursion(p_mutex);
+    }
+}
+
+static inline void ABTI_mutex_unlock_no_recursion(ABTI_local *p_local,
+                                                  ABTI_mutex *p_mutex)
+{
+#ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABTI_spinlock_acquire(&p_mutex->waiter_lock);
+    ABTI_spinlock_release(&p_mutex->lock);
+    /* Operations of waitlist must be done while taking waiter_lock. */
+    ABTI_waitlist_broadcast(p_local, &p_mutex->waitlist);
+    ABTI_spinlock_release(&p_mutex->waiter_lock);
+#else
+    ABTI_spinlock_release(&p_mutex->lock);
+#endif
 }
 
 static inline void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
 {
-#ifdef ABT_CONFIG_USE_SIMPLE_MUTEX
-    ABTD_atomic_mem_barrier();
-    ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
-    LOG_DEBUG("%p: unlock w/o wake\n", p_mutex);
-#else
-    if (ABTD_atomic_fetch_sub_uint32(&p_mutex->val, 1) != 1) {
-        ABTD_atomic_release_store_uint32(&p_mutex->val, 0);
-        LOG_DEBUG("%p: unlock with wake\n", p_mutex);
-        ABTI_mutex_wake_de(p_local, p_mutex);
+    if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        /* recursive mutex */
+        if (p_mutex->attr.nesting_cnt == 0) {
+            p_mutex->attr.owner_id = 0;
+            ABTI_mutex_unlock_no_recursion(p_local, p_mutex);
+        } else {
+            p_mutex->attr.nesting_cnt--;
+        }
     } else {
-        LOG_DEBUG("%p: unlock w/o wake\n", p_mutex);
+        /* unknown attributes */
+        ABTI_mutex_unlock_no_recursion(p_local, p_mutex);
     }
-#endif
 }
 
 #endif /* ABTI_MUTEX_H_INCLUDED */
