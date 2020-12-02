@@ -161,7 +161,7 @@ struct ABTI_mutex_attr {
 };
 
 struct ABTI_mutex {
-    ABTD_atomic_uint32 val; /* 0: unlocked, 1: locked */
+    ABTI_spinlock lock;     /* lock */
     ABTI_mutex_attr attr;   /* attributes */
 };
 

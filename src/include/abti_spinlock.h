@@ -33,6 +33,12 @@ static inline void ABTI_spinlock_acquire(ABTI_spinlock *p_lock)
     }
 }
 
+/* Return ABT_FALSE if the lock is acquired. */
+static inline ABT_bool ABTI_spinlock_try_acquire(ABTI_spinlock *p_lock)
+{
+    return ABTD_atomic_test_and_set_bool(&p_lock->val) ? ABT_TRUE : ABT_FALSE;
+}
+
 static inline void ABTI_spinlock_release(ABTI_spinlock *p_lock)
 {
     ABTD_atomic_release_clear_bool(&p_lock->val);
