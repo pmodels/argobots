@@ -51,6 +51,8 @@ void ABTD_xstream_context_free(ABTD_xstream_context *p_ctx);
 void ABTD_xstream_context_join(ABTD_xstream_context *p_ctx);
 void ABTD_xstream_context_revive(ABTD_xstream_context *p_ctx);
 void ABTD_xstream_context_set_self(ABTD_xstream_context *p_ctx);
+void ABTD_xstream_context_print(ABTD_xstream_context *p_ctx, FILE *p_os,
+                                int indent);
 
 /* ES Affinity */
 void ABTD_affinity_init(const char *affinity_str);

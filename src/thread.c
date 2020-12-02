@@ -1536,12 +1536,14 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
     } else {
         ABTI_xstream *p_xstream = p_thread->p_last_xstream;
         int xstream_rank = p_xstream ? p_xstream->rank : 0;
-        const char *type, *yieldable, *state;
+        const char *type, *yieldable, *state, *named, *migratable;
 
         if (p_thread->type & ABTI_THREAD_TYPE_MAIN) {
             type = "MAIN";
         } else if (p_thread->type & ABTI_THREAD_TYPE_MAIN_SCHED) {
             type = "MAIN_SCHED";
+        } else if (p_thread->type & ABTI_THREAD_TYPE_ROOT) {
+            type = "ROOT";
         } else {
             type = "USER";
         }
@@ -1549,6 +1551,16 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             yieldable = "yes";
         } else {
             yieldable = "no";
+        }
+        if (p_thread->type & ABTI_THREAD_TYPE_NAMED) {
+            named = "yes";
+        } else {
+            named = "no";
+        }
+        if (p_thread->type & ABTI_THREAD_TYPE_MIGRATABLE) {
+            migratable = "yes";
+        } else {
+            migratable = "no";
         }
         switch (ABTD_atomic_acquire_load_int(&p_thread->state)) {
             case ABT_THREAD_STATE_READY:
@@ -1567,25 +1579,45 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
                 state = "UNKNOWN";
                 break;
         }
+        ABTI_thread_mig_data *p_mig_data =
+            (ABTI_thread_mig_data *)ABTI_ktable_get(&p_thread->p_keytable,
+                                                    &g_thread_mig_data_key);
+        void *p_migration_cb_arg =
+            p_mig_data ? p_mig_data->p_migration_cb_arg : NULL;
 
         fprintf(p_os,
                 "%*s== Thread (%p) ==\n"
-                "%*sid        : %" PRIu64 "\n"
-                "%*stype      : %s\n"
-                "%*syieldable : %s\n"
-                "%*sstate     : %s\n"
-                "%*slast_ES   : %p (%d)\n"
-                "%*sp_arg     : %p\n"
-                "%*spool      : %p\n"
-                "%*srequest   : 0x%x\n"
-                "%*skeytable  : %p\n",
+                "%*sid         : %" PRIu64 "\n"
+                "%*stype       : %s\n"
+                "%*syieldable  : %s\n"
+                "%*sstate      : %s\n"
+                "%*slast_ES    : %p (%d)\n"
+                "%*sparent     : %p\n"
+                "%*sp_arg      : %p\n"
+                "%*spool       : %p\n"
+                "%*snamed      : %s\n"
+                "%*smigratable : %s\n"
+                "%*srequest    : 0x%x\n"
+                "%*smig_cb_arg : %p\n"
+                "%*skeytable   : %p\n",
                 indent, "", (void *)p_thread, indent, "",
                 ABTI_thread_get_id(p_thread), indent, "", type, indent, "",
                 yieldable, indent, "", state, indent, "", (void *)p_xstream,
-                xstream_rank, indent, "", p_thread->p_arg, indent, "",
-                (void *)p_thread->p_pool, indent, "",
+                xstream_rank, indent, "", (void *)p_thread->p_parent, indent,
+                "", p_thread->p_arg, indent, "", (void *)p_thread->p_pool,
+                indent, "", named, indent, "", migratable, indent, "",
                 ABTD_atomic_acquire_load_uint32(&p_thread->request), indent, "",
+                p_migration_cb_arg, indent, "",
                 ABTD_atomic_acquire_load_ptr(&p_thread->p_keytable));
+
+        if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+            ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
+            fprintf(p_os,
+                    "%*sstack      : %p\n"
+                    "%*sstacksize  : %zu\n",
+                    indent, "", p_ythread->p_stack, indent, "",
+                    p_ythread->stacksize);
+        }
     }
     fflush(p_os);
 }

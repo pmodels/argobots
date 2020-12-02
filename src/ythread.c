@@ -89,6 +89,8 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
     size_t i, j, stacksize = p_ythread->stacksize;
     if (stacksize == 0 || p_stack == NULL) {
         /* Some threads do not have p_stack (e.g., the main thread) */
+        fprintf(p_os, "no stack\n");
+        fflush(0);
         return;
     }
 
@@ -131,4 +133,5 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
                 fprintf(p_os, "\n");
         }
     }
+    fflush(p_os);
 }

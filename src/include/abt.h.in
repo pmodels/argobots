@@ -222,6 +222,10 @@ enum ABT_info_query_kind {
     ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC,
     /* Whether the tool interface is enabled or not */
     ABT_INFO_QUERY_KIND_ENABLED_TOOL,
+    /* Whether fcontext is used for context switch or not */
+    ABT_INFO_QUERY_KIND_FCONTEXT,
+    /* Whether dynamic promotion is used for context switch or not */
+    ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION,
 };
 
 enum ABT_tool_query_kind {

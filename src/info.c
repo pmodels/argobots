@@ -105,6 +105,12 @@ static void info_trigger_print_all_thread_stacks(
  * - ABT_INFO_QUERY_KIND_ENABLED_TOOL
  *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
  *   set to \c *val if the tool is enabled.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_FCONTEXT
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if fcontext is used.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if dynamic promotion is used.  Otherwise, ABT_FALSE is set.
  *
  * @param[in]  query_kind  query kind
  * @param[out] val         a pointer to a result
@@ -115,10 +121,9 @@ static void info_trigger_print_all_thread_stacks(
  */
 int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 {
-    ABTI_SETUP_WITH_INIT_CHECK();
-
     switch (query_kind) {
         case ABT_INFO_QUERY_KIND_ENABLED_DEBUG:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((ABT_bool *)val) = gp_ABTI_global->use_debug;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO:
@@ -129,6 +134,7 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_LOG:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((ABT_bool *)val) = gp_ABTI_global->use_logging;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_VALGRIND:
@@ -152,10 +158,11 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             *((ABT_bool *)val) = ABT_FALSE;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_PRESERVE_FPU:
-#ifdef ABTD_FCONTEXT_PRESERVE_FPU
-            *((ABT_bool *)val) = ABT_TRUE;
-#else
+#if !defined(ABTD_FCONTEXT_PRESERVE_FPU) && defined(ABT_CONFIG_USE_FCONTEXT)
             *((ABT_bool *)val) = ABT_FALSE;
+#else
+            /* If ucontext is used, FPU is preserved. */
+            *((ABT_bool *)val) = ABT_TRUE;
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_THREAD_CANCEL:
@@ -197,28 +204,49 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((ABT_bool *)val) = gp_ABTI_global->print_config;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_AFFINITY:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((ABT_bool *)val) = gp_ABTI_global->set_affinity;
             break;
         case ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((unsigned int *)val) = gp_ABTI_global->max_xstreams;
             break;
         case ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((size_t *)val) = gp_ABTI_global->thread_stacksize;
             break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((size_t *)val) = gp_ABTI_global->sched_stacksize;
             break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((uint64_t *)val) = gp_ABTI_global->sched_event_freq;
             break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC:
+            ABTI_SETUP_WITH_INIT_CHECK();
             *((uint64_t *)val) = gp_ABTI_global->sched_sleep_nsec;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_TOOL:
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_FCONTEXT:
+#ifdef ABT_CONFIG_USE_FCONTEXT
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION:
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
             *((ABT_bool *)val) = ABT_TRUE;
 #else
             *((ABT_bool *)val) = ABT_FALSE;
@@ -240,13 +268,15 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
  *
  * @param[in] fp  output stream
  * @return Error code
- * @retval ABT_SUCCESS            on success
- * @retval ABT_ERR_UNINITIALIZED  Argobots has not been initialized
+ * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_config(FILE *fp)
 {
-    ABTI_SETUP_WITH_INIT_CHECK();
-
+    if (!gp_ABTI_global) {
+        fprintf(fp, "Argobots is not initialized.\n");
+        fflush(fp);
+        return ABT_SUCCESS;
+    }
     ABTI_info_print_config(fp);
     return ABT_SUCCESS;
 }
@@ -260,13 +290,15 @@ int ABT_info_print_config(FILE *fp)
  *
  * @param[in] fp  output stream
  * @return Error code
- * @retval ABT_SUCCESS            on success
- * @retval ABT_ERR_UNINITIALIZED  Argobots has not been initialized
+ * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_all_xstreams(FILE *fp)
 {
-    ABTI_SETUP_WITH_INIT_CHECK();
-
+    if (!gp_ABTI_global) {
+        fprintf(fp, "Argobots is not initialized.\n");
+        fflush(fp);
+        return ABT_SUCCESS;
+    }
     ABTI_global *p_global = gp_ABTI_global;
 
     ABTI_spinlock_acquire(&p_global->xstream_list_lock);
@@ -300,8 +332,6 @@ int ABT_info_print_all_xstreams(FILE *fp)
 int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 {
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
     ABTI_xstream_print(p_xstream, fp, 0, ABT_FALSE);
     return ABT_SUCCESS;
 }
@@ -321,8 +351,6 @@ int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 {
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
-    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-
     ABTI_sched_print(p_sched, fp, 0, ABT_TRUE);
     return ABT_SUCCESS;
 }
@@ -342,8 +370,6 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-    ABTI_CHECK_NULL_POOL_PTR(p_pool);
-
     ABTI_pool_print(p_pool, fp, 0);
     return ABT_SUCCESS;
 }
@@ -363,8 +389,6 @@ int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
     ABTI_thread_print(p_thread, fp, 0);
     return ABT_SUCCESS;
 }
@@ -385,8 +409,6 @@ int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
 {
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
-
     ABTI_thread_attr_print(p_attr, fp, 0);
     return ABT_SUCCESS;
 }
@@ -422,11 +444,19 @@ int ABT_info_print_task(FILE *fp, ABT_task task);
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-    ABTI_ythread *p_ythread;
-    ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_INV_THREAD);
-
-    ABTI_ythread_print_stack(p_ythread, fp);
+    if (!p_thread) {
+        fprintf(fp, "no stack\n");
+        fflush(0);
+    } else {
+        ABTI_ythread *p_ythread;
+        if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+            p_ythread = ABTI_thread_get_ythread(p_thread);
+            ABTI_ythread_print_stack(p_ythread, fp);
+        } else {
+            fprintf(fp, "no stack\n");
+            fflush(0);
+        }
+    }
     return ABT_SUCCESS;
 }
 
@@ -446,8 +476,6 @@ int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-    ABTI_CHECK_NULL_POOL_PTR(p_pool);
-
     int abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
@@ -565,6 +593,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
         ABTI_spinlock_release(&gp_ABTI_global->xstream_list_lock);
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
+        fflush(print_stack_fp);
         /* Update print_stack_flag to 3. */
         ABTD_atomic_release_store_int(&print_stack_flag,
                                       PRINT_STACK_FLAG_FINALIZE);
@@ -591,9 +620,10 @@ void ABTI_info_print_config(FILE *fp)
     ABTI_global *p_global = gp_ABTI_global;
 
     fprintf(fp, "Argobots Configuration:\n");
+    fprintf(fp, " - version: " ABT_VERSION "\n");
     fprintf(fp, " - # of cores: %d\n", p_global->num_cores);
-    fprintf(fp, " - cache line size: %u\n", ABT_CONFIG_STATIC_CACHELINE_SIZE);
-    fprintf(fp, " - huge page size: %zu\n", p_global->huge_page_size);
+    fprintf(fp, " - cache line size: %u B\n", ABT_CONFIG_STATIC_CACHELINE_SIZE);
+    fprintf(fp, " - huge page size: %zu B\n", p_global->huge_page_size);
     fprintf(fp, " - max. # of ESs: %d\n", p_global->max_xstreams);
     fprintf(fp, " - cur. # of ESs: %d\n", p_global->num_xstreams);
     fprintf(fp, " - ES affinity: %s\n",
@@ -602,14 +632,98 @@ void ABTI_info_print_config(FILE *fp)
             (p_global->use_logging == ABT_TRUE) ? "on" : "off");
     fprintf(fp, " - debug output: %s\n",
             (p_global->use_debug == ABT_TRUE) ? "on" : "off");
+    fprintf(fp, " - print errno: "
+#ifdef ABT_CONFIG_PRINT_ABT_ERRNO
+                "on"
+#else
+                "off"
+#endif
+                "\n");
+    fprintf(fp, " - valgrind support: "
+#ifdef HAVE_VALGRIND_SUPPORT
+                "yes"
+#else
+                "no"
+#endif
+                "\n");
+    fprintf(fp, " - thread cancellation: "
+#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
+                "enabled"
+#else
+                "disabled"
+#endif
+                "\n");
+    fprintf(fp, " - task cancellation: "
+#ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
+                "enabled"
+#else
+                "disabled"
+#endif
+                "\n");
+    fprintf(fp, " - thread migration: "
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+                "enabled"
+#else
+                "disabled"
+#endif
+                "\n");
+    fprintf(fp, " - external thread: "
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+                "enabled"
+#else
+                "disabled"
+#endif
+                "\n");
+    fprintf(fp, " - error check: "
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+                "enabled"
+#else
+                "disable"
+#endif
+                "\n");
+    fprintf(fp, " - tool interface: "
+#ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+                "yes"
+#else
+                "no"
+#endif
+                "\n");
+    fprintf(fp, " - context-switch: "
+#ifdef ABT_CONFIG_USE_FCONTEXT
+                "fcontext"
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION &&             \
+    defined(ABTD_FCONTEXT_PRESERVE_FPU)
+                " (dynamic-promotion)"
+#elif ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION &&           \
+    !defined(ABTD_FCONTEXT_PRESERVE_FPU)
+                " (dynamic-promotion, no FPU save)"
+#elif ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION &&           \
+    !defined(ABTD_FCONTEXT_PRESERVE_FPU)
+                " (no FPU save)"
+#endif /* ABT_CONFIG_THREAD_TYPE, ABTD_FCONTEXT_PRESERVE_FPU */
+
+#else  /* ABT_CONFIG_USE_FCONTEXT */
+                "ucontext"
+#endif /* !ABT_CONFIG_USE_FCONTEXT */
+                "\n");
+
     fprintf(fp, " - key table entries: %" PRIu32 "\n",
             p_global->key_table_size);
-    fprintf(fp, " - ULT stack size: %zu KB\n",
+    fprintf(fp, " - default ULT stack size: %zu KB\n",
             p_global->thread_stacksize / 1024);
-    fprintf(fp, " - scheduler stack size: %zu KB\n",
+    fprintf(fp, " - default scheduler stack size: %zu KB\n",
             p_global->sched_stacksize / 1024);
-    fprintf(fp, " - scheduler event check frequency: %u\n",
+    fprintf(fp, " - default scheduler event check frequency: %u\n",
             p_global->sched_event_freq);
+    fprintf(fp, " - default scheduler sleep: "
+#ifdef ABT_CONFIG_USE_SCHED_SLEEP
+                "on"
+#else
+                "off"
+#endif
+                "\n");
+    fprintf(fp, " - default scheduler sleep duration : %" PRIu64 " [ns]\n",
+            p_global->sched_sleep_nsec);
 
     fprintf(fp, " - timer function: "
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
@@ -627,6 +741,7 @@ void ABTI_info_print_config(FILE *fp)
             p_global->mem_page_size / 1024);
     fprintf(fp, " - stack page size: %zu KB\n", p_global->mem_sp_size / 1024);
     fprintf(fp, " - max. # of stacks per ES: %u\n", p_global->mem_max_stacks);
+    fprintf(fp, " - max. # of descs per ES: %u\n", p_global->mem_max_descs);
     switch (p_global->mem_lp_alloc) {
         case ABTI_MEM_LP_MALLOC:
             fprintf(fp, " - large page allocation: malloc\n");
@@ -701,6 +816,12 @@ static void info_print_unit(void *arg, ABT_unit unit)
 ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
                                                          ABTI_pool *p_pool)
 {
+    if (p_pool == NULL) {
+        fprintf(fp, "== NULL pool ==\n");
+        fflush(fp);
+        return ABT_SUCCESS;
+    }
+
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
 
     if (!p_pool->p_print_all) {
@@ -711,6 +832,7 @@ ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
     arg.fp = fp;
     arg.pool = pool;
     p_pool->p_print_all(pool, &arg, info_print_unit);
+    fflush(fp);
     return ABT_SUCCESS;
 }
 

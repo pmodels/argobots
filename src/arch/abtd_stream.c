@@ -108,3 +108,29 @@ void ABTD_xstream_context_set_self(ABTD_xstream_context *p_ctx)
 {
     p_ctx->native_thread = pthread_self();
 }
+
+void ABTD_xstream_context_print(ABTD_xstream_context *p_ctx, FILE *p_os,
+                                int indent)
+{
+    if (p_ctx == NULL) {
+        fprintf(p_os, "%*s== NULL XSTREAM CONTEXT ==\n", indent, "");
+    } else {
+        const char *state;
+        if (p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_RUNNING) {
+            state = "RUNNING";
+        } else if (p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_WAITING) {
+            state = "WAITING";
+        } else if (p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_REQ_JOIN) {
+            state = "REQ_JOIN";
+        } else if (p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_REQ_TERMINATE) {
+            state = "REQ_TERMINATE";
+        } else {
+            state = "UNKNOWN";
+        }
+        fprintf(p_os,
+                "%*s== XSTREAM CONTEXT (%p) ==\n"
+                "%*sstate : %s\n",
+                indent, "", (void *)p_ctx, indent, "", state);
+    }
+    fflush(p_os);
+}

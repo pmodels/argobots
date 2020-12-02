@@ -647,6 +647,8 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
             kind_str = "BASIC_WAIT";
         } else if (kind == sched_get_kind(ABTI_sched_get_prio_def())) {
             kind_str = "PRIO";
+        } else if (kind == sched_get_kind(ABTI_sched_get_randws_def())) {
+            kind_str = "RANDWS";
         } else {
             kind_str = "USER";
         }
@@ -690,6 +692,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 "%*snum_pools: %zu\n"
                 "%*ssize     : %zu\n"
                 "%*stot_size : %zu\n"
+                "%*sthread   : %p\n"
                 "%*sdata     : %p\n",
                 indent, "", (void *)p_sched,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
@@ -701,7 +704,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 ABTD_atomic_acquire_load_uint32(&p_sched->request), indent, "",
                 p_sched->num_pools, indent, "", ABTI_sched_get_size(p_sched),
                 indent, "", ABTI_sched_get_total_size(p_sched), indent, "",
-                p_sched->data);
+                (void *)p_sched->p_ythread, indent, "", p_sched->data);
         if (print_sub == ABT_TRUE) {
             size_t i;
             for (i = 0; i < p_sched->num_pools; i++) {
