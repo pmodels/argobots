@@ -118,6 +118,7 @@ typedef struct ABTI_ythread_queue ABTI_ythread_queue;
 typedef struct ABTI_key ABTI_key;
 typedef struct ABTI_ktelem ABTI_ktelem;
 typedef struct ABTI_ktable ABTI_ktable;
+typedef struct ABTI_waitlist ABTI_waitlist;
 typedef struct ABTI_mutex_attr ABTI_mutex_attr;
 typedef struct ABTI_mutex ABTI_mutex;
 typedef struct ABTI_cond ABTI_cond;
@@ -150,6 +151,11 @@ typedef struct ABTI_spinlock ABTI_spinlock;
 #include "abti_mem_pool.h"
 
 /* Definitions */
+struct ABTI_waitlist {
+    ABTI_thread *p_head;
+    ABTI_thread *p_tail;
+};
+
 struct ABTI_mutex_attr {
     uint32_t attrs;          /* bit-or'ed attributes */
     uint32_t nesting_cnt;    /* nesting count */
@@ -577,6 +583,7 @@ void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex);
 void ABTI_info_print_config(FILE *fp);
 void ABTI_info_check_print_all_thread_stacks(void);
 
+#include "abti_timer.h"
 #include "abti_log.h"
 #include "abti_local.h"
 #include "abti_self.h"
@@ -588,6 +595,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_tool.h"
 #include "abti_ythread.h"
 #include "abti_thread_attr.h"
+#include "abti_waitlist.h"
 #include "abti_mutex.h"
 #include "abti_mutex_attr.h"
 #include "abti_cond.h"
@@ -596,7 +604,6 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_future.h"
 #include "abti_barrier.h"
 #include "abti_stream_barrier.h"
-#include "abti_timer.h"
 #include "abti_mem.h"
 #include "abti_key.h"
 

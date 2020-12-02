@@ -38,6 +38,7 @@ noinst_HEADERS = \
 	include/abti_timer.h \
 	include/abti_thread.h \
 	include/abti_thread_attr.h \
+	include/abti_waitlist.h \
 	include/abti_tool.h \
 	include/abti_valgrind.h \
 	include/abti_ythread.h \
