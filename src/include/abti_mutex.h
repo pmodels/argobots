@@ -39,6 +39,10 @@ static inline ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 {
     ABTI_spinlock_clear(&p_mutex->lock);
+#ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABTI_spinlock_clear(&p_mutex->waiter_lock);
+    ABTI_waitlist_init(&p_mutex->waitlist);
+#endif
     p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
     p_mutex->attr.nesting_cnt = 0;
     p_mutex->attr.owner_id = 0;
@@ -46,11 +50,33 @@ static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 
 static inline void ABTI_mutex_fini(ABTI_mutex *p_mutex)
 {
+#ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABTI_spinlock_acquire(&p_mutex->waiter_lock);
+#endif
 }
 
 static inline void ABTI_mutex_lock_no_recursion(ABTI_local **pp_local,
                                                 ABTI_mutex *p_mutex)
 {
+#ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
+    while (ABTI_spinlock_try_acquire(&p_mutex->lock)) {
+        /* Failed to take a lock, so let's add it to the waiter list. */
+        ABTI_spinlock_acquire(&p_mutex->waiter_lock);
+        /* Maybe the mutex lock has been already released.  Check it. */
+        if (!ABTI_spinlock_try_acquire(&p_mutex->lock)) {
+            /* Lock has been taken. */
+            ABTI_spinlock_release(&p_mutex->waiter_lock);
+            break;
+        }
+        /* Wait on waitlist. */
+        ABTI_waitlist_wait_and_unlock(pp_local, &p_mutex->waitlist,
+                                      &p_mutex->waiter_lock, ABT_FALSE,
+                                      ABT_SYNC_EVENT_TYPE_MUTEX,
+                                      (void *)p_mutex);
+    }
+    /* Take a lock. */
+#else
+    /* Simple yield-based implementation */
     ABTI_ythread *p_ythread = NULL;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
     if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream)
@@ -66,6 +92,7 @@ static inline void ABTI_mutex_lock_no_recursion(ABTI_local **pp_local,
         /* Use spinlock. */
         ABTI_spinlock_acquire(&p_mutex->lock);
     }
+#endif
 }
 
 static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
@@ -137,24 +164,33 @@ static inline void ABTI_mutex_spinlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
     }
 }
 
-static inline void ABTI_mutex_unlock_no_recursion(ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_unlock_no_recursion(ABTI_local *p_local,
+                                                  ABTI_mutex *p_mutex)
 {
+#ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABTI_spinlock_acquire(&p_mutex->waiter_lock);
     ABTI_spinlock_release(&p_mutex->lock);
+    /* Operations of waitlist must be done while taking waiter_lock. */
+    ABTI_waitlist_broadcast(p_local, &p_mutex->waitlist);
+    ABTI_spinlock_release(&p_mutex->waiter_lock);
+#else
+    ABTI_spinlock_release(&p_mutex->lock);
+#endif
 }
 
-static inline void ABTI_mutex_unlock(ABTI_mutex *p_mutex)
+static inline void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
 {
     if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
         if (p_mutex->attr.nesting_cnt == 0) {
             p_mutex->attr.owner_id = 0;
-            ABTI_mutex_unlock_no_recursion(p_mutex);
+            ABTI_mutex_unlock_no_recursion(p_local, p_mutex);
         } else {
             p_mutex->attr.nesting_cnt--;
         }
     } else {
         /* unknown attributes */
-        ABTI_mutex_unlock_no_recursion(p_mutex);
+        ABTI_mutex_unlock_no_recursion(p_local, p_mutex);
     }
 }
 

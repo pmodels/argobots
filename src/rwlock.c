@@ -97,7 +97,7 @@ int ABT_rwlock_rdlock(ABT_rwlock rwlock)
     if (abt_errno == ABT_SUCCESS) {
         p_rwlock->reader_count++;
     }
-    ABTI_mutex_unlock(&p_rwlock->mutex);
+    ABTI_mutex_unlock(p_local, &p_rwlock->mutex);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
@@ -131,7 +131,7 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
     if (abt_errno == ABT_SUCCESS) {
         p_rwlock->write_flag = 1;
     }
-    ABTI_mutex_unlock(&p_rwlock->mutex);
+    ABTI_mutex_unlock(p_local, &p_rwlock->mutex);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
@@ -162,6 +162,6 @@ int ABT_rwlock_unlock(ABT_rwlock rwlock)
         p_rwlock->reader_count--;
     }
     ABTI_cond_broadcast(p_local, &p_rwlock->cond);
-    ABTI_mutex_unlock(&p_rwlock->mutex);
+    ABTI_mutex_unlock(p_local, &p_rwlock->mutex);
     return ABT_SUCCESS;
 }

@@ -226,9 +226,10 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
  */
 int ABT_mutex_unlock(ABT_mutex mutex)
 {
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
-    ABTI_mutex_unlock(p_mutex);
+    ABTI_mutex_unlock(p_local, p_mutex);
     return ABT_SUCCESS;
 }
 
@@ -251,17 +252,19 @@ int ABT_mutex_unlock(ABT_mutex mutex)
  */
 int ABT_mutex_unlock_se(ABT_mutex mutex)
 {
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
-    ABTI_mutex_unlock(p_mutex);
+    ABTI_mutex_unlock(p_local, p_mutex);
     return ABT_SUCCESS;
 }
 
 int ABT_mutex_unlock_de(ABT_mutex mutex)
 {
+    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
-    ABTI_mutex_unlock(p_mutex);
+    ABTI_mutex_unlock(p_local, p_mutex);
     return ABT_SUCCESS;
 }
 

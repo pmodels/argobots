@@ -161,8 +161,12 @@ struct ABTI_mutex_attr {
 };
 
 struct ABTI_mutex {
-    ABTI_spinlock lock;     /* lock */
-    ABTI_mutex_attr attr;   /* attributes */
+    ABTI_spinlock lock;   /* lock */
+    ABTI_mutex_attr attr; /* attributes */
+#ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
+    ABTI_spinlock waiter_lock; /* lock */
+    ABTI_waitlist waitlist;    /* waiting list */
+#endif
 };
 
 struct ABTI_global {
