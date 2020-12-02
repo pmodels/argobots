@@ -620,9 +620,10 @@ void ABTI_info_print_config(FILE *fp)
     ABTI_global *p_global = gp_ABTI_global;
 
     fprintf(fp, "Argobots Configuration:\n");
+    fprintf(fp, " - version: " ABT_VERSION "\n");
     fprintf(fp, " - # of cores: %d\n", p_global->num_cores);
-    fprintf(fp, " - cache line size: %u\n", ABT_CONFIG_STATIC_CACHELINE_SIZE);
-    fprintf(fp, " - huge page size: %zu\n", p_global->huge_page_size);
+    fprintf(fp, " - cache line size: %u B\n", ABT_CONFIG_STATIC_CACHELINE_SIZE);
+    fprintf(fp, " - huge page size: %zu B\n", p_global->huge_page_size);
     fprintf(fp, " - max. # of ESs: %d\n", p_global->max_xstreams);
     fprintf(fp, " - cur. # of ESs: %d\n", p_global->num_xstreams);
     fprintf(fp, " - ES affinity: %s\n",
@@ -631,14 +632,98 @@ void ABTI_info_print_config(FILE *fp)
             (p_global->use_logging == ABT_TRUE) ? "on" : "off");
     fprintf(fp, " - debug output: %s\n",
             (p_global->use_debug == ABT_TRUE) ? "on" : "off");
+    fprintf(fp, " - print errno: "
+#ifdef ABT_CONFIG_PRINT_ABT_ERRNO
+                "on"
+#else
+                "off"
+#endif
+                "\n");
+    fprintf(fp, " - valgrind support: "
+#ifdef HAVE_VALGRIND_SUPPORT
+                "yes"
+#else
+                "no"
+#endif
+                "\n");
+    fprintf(fp, " - thread cancellation: "
+#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
+                "enabled"
+#else
+                "disabled"
+#endif
+                "\n");
+    fprintf(fp, " - task cancellation: "
+#ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
+                "enabled"
+#else
+                "disabled"
+#endif
+                "\n");
+    fprintf(fp, " - thread migration: "
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+                "enabled"
+#else
+                "disabled"
+#endif
+                "\n");
+    fprintf(fp, " - external thread: "
+#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+                "enabled"
+#else
+                "disabled"
+#endif
+                "\n");
+    fprintf(fp, " - error check: "
+#ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
+                "enabled"
+#else
+                "disable"
+#endif
+                "\n");
+    fprintf(fp, " - tool interface: "
+#ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+                "yes"
+#else
+                "no"
+#endif
+                "\n");
+    fprintf(fp, " - context-switch: "
+#ifdef ABT_CONFIG_USE_FCONTEXT
+                "fcontext"
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION &&             \
+    defined(ABTD_FCONTEXT_PRESERVE_FPU)
+                " (dynamic-promotion)"
+#elif ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION &&           \
+    !defined(ABTD_FCONTEXT_PRESERVE_FPU)
+                " (dynamic-promotion, no FPU save)"
+#elif ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION &&           \
+    !defined(ABTD_FCONTEXT_PRESERVE_FPU)
+                " (no FPU save)"
+#endif /* ABT_CONFIG_THREAD_TYPE, ABTD_FCONTEXT_PRESERVE_FPU */
+
+#else  /* ABT_CONFIG_USE_FCONTEXT */
+                "ucontext"
+#endif /* !ABT_CONFIG_USE_FCONTEXT */
+                "\n");
+
     fprintf(fp, " - key table entries: %" PRIu32 "\n",
             p_global->key_table_size);
-    fprintf(fp, " - ULT stack size: %zu KB\n",
+    fprintf(fp, " - default ULT stack size: %zu KB\n",
             p_global->thread_stacksize / 1024);
-    fprintf(fp, " - scheduler stack size: %zu KB\n",
+    fprintf(fp, " - default scheduler stack size: %zu KB\n",
             p_global->sched_stacksize / 1024);
-    fprintf(fp, " - scheduler event check frequency: %u\n",
+    fprintf(fp, " - default scheduler event check frequency: %u\n",
             p_global->sched_event_freq);
+    fprintf(fp, " - default scheduler sleep: "
+#ifdef ABT_CONFIG_USE_SCHED_SLEEP
+                "on"
+#else
+                "off"
+#endif
+                "\n");
+    fprintf(fp, " - default scheduler sleep duration : %" PRIu64 " [ns]\n",
+            p_global->sched_sleep_nsec);
 
     fprintf(fp, " - timer function: "
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
@@ -656,6 +741,7 @@ void ABTI_info_print_config(FILE *fp)
             p_global->mem_page_size / 1024);
     fprintf(fp, " - stack page size: %zu KB\n", p_global->mem_sp_size / 1024);
     fprintf(fp, " - max. # of stacks per ES: %u\n", p_global->mem_max_stacks);
+    fprintf(fp, " - max. # of descs per ES: %u\n", p_global->mem_max_descs);
     switch (p_global->mem_lp_alloc) {
         case ABTI_MEM_LP_MALLOC:
             fprintf(fp, " - large page allocation: malloc\n");

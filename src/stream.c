@@ -1003,18 +1003,26 @@ void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
 
         fprintf(p_os,
                 "%*s== ES (%p) ==\n"
-                "%*srank      : %d\n"
-                "%*stype      : %s\n"
-                "%*sstate     : %s\n"
-                "%*smain_sched: %p\n",
+                "%*srank         : %d\n"
+                "%*stype         : %s\n"
+                "%*sstate        : %s\n"
+                "%*sroot_ythread : %p\n"
+                "%*sroot_pool    : %p\n"
+                "%*sthread       : %p\n"
+                "%*smain_sched   : %p\n",
                 indent, "", (void *)p_xstream, indent, "", p_xstream->rank,
                 indent, "", type, indent, "", state, indent, "",
+                (void *)p_xstream->p_root_ythread, indent, "",
+                (void *)p_xstream->p_root_pool, indent, "",
+                (void *)p_xstream->p_thread, indent, "",
                 (void *)p_xstream->p_main_sched);
 
         if (print_sub == ABT_TRUE) {
             ABTI_sched_print(p_xstream->p_main_sched, p_os,
                              indent + ABTI_INDENT, ABT_TRUE);
         }
+        fprintf(p_os, "%*sctx          :\n", indent, "");
+        ABTD_xstream_context_print(&p_xstream->ctx, p_os, indent + ABTI_INDENT);
     }
     fflush(p_os);
 }
