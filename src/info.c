@@ -105,6 +105,12 @@ static void info_trigger_print_all_thread_stacks(
  * - ABT_INFO_QUERY_KIND_ENABLED_TOOL
  *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
  *   set to \c *val if the tool is enabled.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_FCONTEXT
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if fcontext is used.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if dynamic promotion is used.  Otherwise, ABT_FALSE is set.
  *
  * @param[in]  query_kind  query kind
  * @param[out] val         a pointer to a result
@@ -227,6 +233,20 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_TOOL:
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_FCONTEXT:
+#ifdef ABT_CONFIG_USE_FCONTEXT
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION:
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
             *((ABT_bool *)val) = ABT_TRUE;
 #else
             *((ABT_bool *)val) = ABT_FALSE;
