@@ -65,7 +65,6 @@ int ABT_rwlock_free(ABT_rwlock *rwlock)
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(h_rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
-    ABTI_mutex_fini(&p_rwlock->mutex);
     ABTI_cond_fini(&p_rwlock->cond);
     ABTU_free(p_rwlock);
 

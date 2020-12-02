@@ -26,8 +26,7 @@ abt_sources = \
 	timer.c \
 	tool.c \
 	unit.c \
-	ythread.c \
-	ythread_htable.c
+	ythread.c
 
 include $(top_srcdir)/src/arch/Makefile.mk
 include $(top_srcdir)/src/mem/Makefile.mk

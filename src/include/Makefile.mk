@@ -42,5 +42,4 @@ noinst_HEADERS = \
 	include/abti_tool.h \
 	include/abti_valgrind.h \
 	include/abti_ythread.h \
-	include/abti_ythread_htable.h \
 	include/abtu.h

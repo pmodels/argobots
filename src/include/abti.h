@@ -113,8 +113,6 @@ typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_ythread ABTI_ythread;
 typedef struct ABTI_thread_mig_data ABTI_thread_mig_data;
 typedef uint32_t ABTI_thread_type;
-typedef struct ABTI_ythread_htable ABTI_ythread_htable;
-typedef struct ABTI_ythread_queue ABTI_ythread_queue;
 typedef struct ABTI_key ABTI_key;
 typedef struct ABTI_ktelem ABTI_ktelem;
 typedef struct ABTI_ktable ABTI_ktable;
@@ -160,16 +158,11 @@ struct ABTI_mutex_attr {
     uint32_t attrs;          /* bit-or'ed attributes */
     uint32_t nesting_cnt;    /* nesting count */
     ABTI_thread_id owner_id; /* owner's ID */
-    uint32_t max_handovers;  /* max. # of handovers */
-    uint32_t max_wakeups;    /* max. # of wakeups */
 };
 
 struct ABTI_mutex {
-    ABTD_atomic_uint32 val;        /* 0: unlocked, 1: locked */
-    ABTI_mutex_attr attr;          /* attributes */
-    ABTI_ythread_htable *p_htable; /* a set of queues */
-    ABTI_ythread *p_handover;      /* next ULT for the mutex handover */
-    ABTI_ythread *p_giver;         /* current ULT that hands over the mutex */
+    ABTD_atomic_uint32 val; /* 0: unlocked, 1: locked */
+    ABTI_mutex_attr attr;   /* attributes */
 };
 
 struct ABTI_global {
@@ -191,9 +184,10 @@ struct ABTI_global {
     uint64_t sched_sleep_nsec;    /* Default nanoseconds for scheduler sleep */
     ABTI_ythread *p_main_ythread; /* ULT of the main function */
 
-    uint32_t mutex_max_handovers; /* Default max. # of local handovers */
-    uint32_t mutex_max_wakeups;   /* Default max. # of wakeups */
-    size_t huge_page_size;        /* Huge page size */
+    uint32_t
+        mutex_max_handovers;    /* Default max. # of local handovers (unused) */
+    uint32_t mutex_max_wakeups; /* Default max. # of wakeups (unused) */
+    size_t huge_page_size;      /* Huge page size */
 #ifdef ABT_CONFIG_USE_MEM_POOL
     size_t mem_page_size;    /* Page size for memory allocation */
     size_t mem_sp_size;      /* Stack page size */
@@ -546,33 +540,8 @@ ABTU_ret_err int
 ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
                      ABTI_thread_attr **pp_dup_attr) ABTU_ret_err;
 
-/* Thread hash table */
-ABTU_ret_err int ABTI_ythread_htable_create(uint32_t num_rows,
-                                            ABTI_ythread_htable **pp_htable);
-void ABTI_ythread_htable_free(ABTI_ythread_htable *p_htable);
-void ABTI_ythread_htable_push(ABTI_ythread_htable *p_htable, int idx,
-                              ABTI_ythread *p_ythread);
-void ABTI_ythread_htable_push_low(ABTI_ythread_htable *p_htable, int idx,
-                                  ABTI_ythread *p_ythread);
-ABTI_ythread *ABTI_ythread_htable_pop(ABTI_ythread_htable *p_htable,
-                                      ABTI_ythread_queue *p_queue);
-ABTI_ythread *ABTI_ythread_htable_pop_low(ABTI_ythread_htable *p_htable,
-                                          ABTI_ythread_queue *p_queue);
-ABT_bool ABTI_ythread_htable_switch_low(ABTI_xstream **pp_local_xstream,
-                                        ABTI_ythread_queue *p_queue,
-                                        ABTI_ythread *p_ythread,
-                                        ABTI_ythread_htable *p_htable,
-                                        ABT_sync_event_type sync_event_type,
-                                        void *p_sync);
 /* Key */
 void ABTI_ktable_free(ABTI_local *p_local, ABTI_ktable *p_ktable);
-
-/* Mutex */
-void ABTI_mutex_wait(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
-                     uint32_t val);
-void ABTI_mutex_wait_low(ABTI_xstream **pp_local_xstream, ABTI_mutex *p_mutex,
-                         uint32_t val);
-void ABTI_mutex_wake_de(ABTI_local *p_local, ABTI_mutex *p_mutex);
 
 /* Information */
 void ABTI_info_print_config(FILE *fp);
