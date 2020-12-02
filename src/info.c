@@ -311,8 +311,6 @@ int ABT_info_print_all_xstreams(FILE *fp)
 int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 {
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
-    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
     ABTI_xstream_print(p_xstream, fp, 0, ABT_FALSE);
     return ABT_SUCCESS;
 }
@@ -332,8 +330,6 @@ int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 {
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
-    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-
     ABTI_sched_print(p_sched, fp, 0, ABT_TRUE);
     return ABT_SUCCESS;
 }
@@ -353,8 +349,6 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-    ABTI_CHECK_NULL_POOL_PTR(p_pool);
-
     ABTI_pool_print(p_pool, fp, 0);
     return ABT_SUCCESS;
 }
@@ -374,8 +368,6 @@ int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
     ABTI_thread_print(p_thread, fp, 0);
     return ABT_SUCCESS;
 }
@@ -396,8 +388,6 @@ int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
 {
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
-    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
-
     ABTI_thread_attr_print(p_attr, fp, 0);
     return ABT_SUCCESS;
 }
@@ -433,11 +423,19 @@ int ABT_info_print_task(FILE *fp, ABT_task task);
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-    ABTI_ythread *p_ythread;
-    ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_INV_THREAD);
-
-    ABTI_ythread_print_stack(p_ythread, fp);
+    if (!p_thread) {
+        fprintf(fp, "no stack\n");
+        fflush(0);
+    } else {
+        ABTI_ythread *p_ythread;
+        if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+            p_ythread = ABTI_thread_get_ythread(p_thread);
+            ABTI_ythread_print_stack(p_ythread, fp);
+        } else {
+            fprintf(fp, "no stack\n");
+            fflush(0);
+        }
+    }
     return ABT_SUCCESS;
 }
 
@@ -457,8 +455,6 @@ int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-    ABTI_CHECK_NULL_POOL_PTR(p_pool);
-
     int abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
@@ -712,6 +708,12 @@ static void info_print_unit(void *arg, ABT_unit unit)
 ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
                                                          ABTI_pool *p_pool)
 {
+    if (p_pool == NULL) {
+        fprintf(fp, "== NULL pool ==\n");
+        fflush(fp);
+        return ABT_SUCCESS;
+    }
+
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
 
     if (!p_pool->p_print_all) {
