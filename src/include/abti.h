@@ -381,9 +381,7 @@ struct ABTI_ktable {
 struct ABTI_cond {
     ABTI_spinlock lock;
     ABTI_mutex *p_waiter_mutex;
-    size_t num_waiters;
-    ABTI_thread *p_head; /* Head of waiters */
-    ABTI_thread *p_tail; /* Tail of waiters */
+    ABTI_waitlist waitlist;
 };
 
 struct ABTI_rwlock {
@@ -398,8 +396,7 @@ struct ABTI_eventual {
     ABT_bool ready;
     void *value;
     size_t nbytes;
-    ABTI_thread *p_head; /* Head of waiters */
-    ABTI_thread *p_tail; /* Tail of waiters */
+    ABTI_waitlist waitlist;
 };
 
 struct ABTI_future {
@@ -408,16 +405,14 @@ struct ABTI_future {
     size_t compartments;
     void **array;
     void (*p_callback)(void **arg);
-    ABTI_thread *p_head; /* Head of waiters */
-    ABTI_thread *p_tail; /* Tail of waiters */
+    ABTI_waitlist waitlist;
 };
 
 struct ABTI_barrier {
     size_t num_waiters;
     volatile size_t counter;
-    ABTI_ythread **waiters;
-    ABT_unit_type *waiter_type;
     ABTI_spinlock lock;
+    ABTI_waitlist waitlist;
 };
 
 struct ABTI_xstream_barrier {

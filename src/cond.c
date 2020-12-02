@@ -7,7 +7,6 @@
 #include <sys/time.h>
 
 static inline double convert_timespec_to_sec(const struct timespec *p_ts);
-static inline void remove_thread(ABTI_cond *p_cond, ABTI_thread *p_thread);
 
 /** @defgroup COND Condition Variable
  * This group is for Condition Variable.
@@ -55,7 +54,7 @@ int ABT_cond_free(ABT_cond *cond)
     ABT_cond h_cond = *cond;
     ABTI_cond *p_cond = ABTI_cond_get_ptr(h_cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
-    ABTI_CHECK_TRUE(p_cond->num_waiters == 0, ABT_ERR_COND);
+    ABTI_CHECK_TRUE(!ABTI_waitlist_is_empty(&p_cond->waitlist), ABT_ERR_COND);
 
     ABTI_cond_fini(p_cond);
     ABTU_free(p_cond);
@@ -142,51 +141,17 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
         }
     }
 
-    if (p_cond->num_waiters == 0) {
-        thread.p_prev = &thread;
-        thread.p_next = &thread;
-        p_cond->p_head = &thread;
-        p_cond->p_tail = &thread;
-    } else {
-        p_cond->p_tail->p_next = &thread;
-        p_cond->p_head->p_prev = &thread;
-        thread.p_prev = p_cond->p_tail;
-        thread.p_next = p_cond->p_head;
-        p_cond->p_tail = &thread;
-    }
-
-    p_cond->num_waiters++;
-
-    ABTI_spinlock_release(&p_cond->lock);
-
     /* Unlock the mutex that the calling ULT is holding */
     ABTI_mutex_unlock(p_local, p_mutex);
-
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    ABTI_ythread *p_ythread = NULL;
-    if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
-        p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
-    }
-    while (ABTD_atomic_acquire_load_int(&thread.state) !=
-           ABT_THREAD_STATE_READY) {
-        double cur_time = ABTI_get_wtime();
-        if (cur_time >= tar_time) {
-            remove_thread(p_cond, &thread);
-            /* Lock the mutex again */
-            ABTI_mutex_lock(&p_local, p_mutex);
-            return ABT_ERR_COND_TIMEDOUT;
-        }
-        if (p_ythread) {
-            ABTI_ythread_yield(&p_local_xstream, p_ythread,
-                               ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
-            p_local = ABTI_xstream_get_local(p_local_xstream);
-        } else {
-            ABTD_atomic_pause();
-        }
-    }
+    ABT_bool is_timedout =
+        ABTI_waitlist_wait_timedout_and_unlock(&p_local, &p_cond->waitlist,
+                                               &p_cond->lock, ABT_FALSE,
+                                               tar_time,
+                                               ABT_SYNC_EVENT_TYPE_COND,
+                                               (void *)p_cond);
     /* Lock the mutex again */
     ABTI_mutex_lock(&p_local, p_mutex);
-    return ABT_SUCCESS;
+    return is_timedout ? ABT_ERR_COND_TIMEDOUT : ABT_SUCCESS;
 }
 
 /**
@@ -210,37 +175,9 @@ int ABT_cond_signal(ABT_cond cond)
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
     ABTI_spinlock_acquire(&p_cond->lock);
-
-    if (p_cond->num_waiters == 0) {
-        ABTI_spinlock_release(&p_cond->lock);
-        return ABT_SUCCESS;
-    }
-
-    /* Wake up the first waiting ULT */
-    ABTI_thread *p_thread = p_cond->p_head;
-
-    p_cond->num_waiters--;
-    if (p_cond->num_waiters == 0) {
-        p_cond->p_waiter_mutex = NULL;
-        p_cond->p_head = NULL;
-        p_cond->p_tail = NULL;
-    } else {
-        p_thread->p_prev->p_next = p_thread->p_next;
-        p_thread->p_next->p_prev = p_thread->p_prev;
-        p_cond->p_head = p_thread->p_next;
-    }
-    p_thread->p_prev = NULL;
-    p_thread->p_next = NULL;
-
-    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-    if (p_ythread) {
-        ABTI_ythread_set_ready(p_local, p_ythread);
-    } else {
-        /* When the head is an external thread */
-        ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
-    }
-
+    ABTI_waitlist_signal(p_local, &p_cond->waitlist);
     ABTI_spinlock_release(&p_cond->lock);
+
     return ABT_SUCCESS;
 }
 
@@ -276,38 +213,4 @@ static inline double convert_timespec_to_sec(const struct timespec *p_ts)
     double secs;
     secs = ((double)p_ts->tv_sec) + 1.0e-9 * ((double)p_ts->tv_nsec);
     return secs;
-}
-
-static inline void remove_thread(ABTI_cond *p_cond, ABTI_thread *p_thread)
-{
-    if (p_thread->p_next == NULL)
-        return;
-
-    ABTI_spinlock_acquire(&p_cond->lock);
-
-    if (p_thread->p_next == NULL) {
-        ABTI_spinlock_release(&p_cond->lock);
-        return;
-    }
-
-    /* If p_thread is still in the queue, we have to remove it. */
-    p_cond->num_waiters--;
-    if (p_cond->num_waiters == 0) {
-        p_cond->p_waiter_mutex = NULL;
-        p_cond->p_head = NULL;
-        p_cond->p_tail = NULL;
-    } else {
-        p_thread->p_prev->p_next = p_thread->p_next;
-        p_thread->p_next->p_prev = p_thread->p_prev;
-        if (p_thread == p_cond->p_head) {
-            p_cond->p_head = p_thread->p_next;
-        } else if (p_thread == p_cond->p_tail) {
-            p_cond->p_tail = p_thread->p_prev;
-        }
-    }
-
-    ABTI_spinlock_release(&p_cond->lock);
-
-    p_thread->p_prev = NULL;
-    p_thread->p_next = NULL;
 }
