@@ -152,10 +152,11 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             *((ABT_bool *)val) = ABT_FALSE;
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_PRESERVE_FPU:
-#ifdef ABTD_FCONTEXT_PRESERVE_FPU
-            *((ABT_bool *)val) = ABT_TRUE;
-#else
+#if !defined(ABTD_FCONTEXT_PRESERVE_FPU) && defined(ABT_CONFIG_USE_FCONTEXT)
             *((ABT_bool *)val) = ABT_FALSE;
+#else
+            /* If ucontext is used, FPU is preserved. */
+            *((ABT_bool *)val) = ABT_TRUE;
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_THREAD_CANCEL:
