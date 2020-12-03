@@ -415,7 +415,13 @@ struct ABTI_barrier {
 
 struct ABTI_xstream_barrier {
     uint32_t num_waiters;
+#ifdef HAVE_PTHREAD_BARRIER_INIT
     ABTD_xstream_barrier bar;
+#else
+    ABTI_spinlock lock;
+    uint32_t counter;
+    ABTD_atomic_uint64 tag;
+#endif
 };
 
 struct ABTI_timer {

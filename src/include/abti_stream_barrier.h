@@ -6,7 +6,6 @@
 #ifndef ABTI_XSTREAM_BARRIER_H_INCLUDED
 #define ABTI_XSTREAM_BARRIER_H_INCLUDED
 
-#ifdef HAVE_PTHREAD_BARRIER_INIT
 static inline ABTI_xstream_barrier *
 ABTI_xstream_barrier_get_ptr(ABT_xstream_barrier barrier)
 {
@@ -38,6 +37,5 @@ ABTI_xstream_barrier_get_handle(ABTI_xstream_barrier *p_barrier)
     return (ABT_xstream_barrier)p_barrier;
 #endif
 }
-#endif
 
 #endif /* ABTI_XSTREAM_BARRIER_H_INCLUDED */
