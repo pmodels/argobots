@@ -107,9 +107,18 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
             p_ythread->p_stack, (uint64_t)p_ythread->stacksize);
 
 #ifdef ABT_CONFIG_ENABLE_STACK_UNWIND
-    struct unwind_stack_t arg;
-    arg.fp = p_os;
-    ABTI_ythread_context_peek(p_ythread, ythread_unwind_stack, &arg);
+    {
+        /* Peeking a running context is specially forbidden.  Though it is
+         * incomplete, let's quickly check if a thread is running. */
+        ABT_thread_state state = (ABT_thread_state)ABTD_atomic_acquire_load_int(
+            &p_ythread->thread.state);
+        if (state == ABT_THREAD_STATE_READY ||
+            state == ABT_THREAD_STATE_BLOCKED) {
+            struct unwind_stack_t arg;
+            arg.fp = p_os;
+            ABTI_ythread_context_peek(p_ythread, ythread_unwind_stack, &arg);
+        }
+    }
 #endif
 
     void *p_stack = p_ythread->p_stack;
