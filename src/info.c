@@ -600,11 +600,11 @@ void ABTI_info_check_print_all_thread_stacks(void)
             fprintf(print_stack_fp, "ABT_info_trigger_print_all_thread_stacks: "
                                     "failed because of an internal error.\n");
         }
+        fflush(print_stack_fp);
         /* Release the lock that protects ES data. */
         ABTI_spinlock_release(&gp_ABTI_global->xstream_list_lock);
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
-        fflush(print_stack_fp);
         /* Update print_stack_flag to 3. */
         ABTD_atomic_release_store_int(&print_stack_flag,
                                       PRINT_STACK_FLAG_FINALIZE);
