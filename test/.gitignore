@@ -57,6 +57,7 @@ basic/ext_thread
 basic/ext_thread2
 basic/timer
 basic/info_print
+basic/info_print_stack
 basic/info_stackdump
 basic/info_stackdump2
 basic/error
