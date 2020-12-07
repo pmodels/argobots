@@ -226,6 +226,8 @@ enum ABT_info_query_kind {
     ABT_INFO_QUERY_KIND_FCONTEXT,
     /* Whether dynamic promotion is used for context switch or not */
     ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION,
+    /* Whether the stack unwinding feature is enabled or not */
+    ABT_INFO_QUERY_KIND_ENABLED_STACK_UNWIND,
 };
 
 enum ABT_tool_query_kind {

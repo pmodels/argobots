@@ -222,6 +222,16 @@ AC_ARG_WITH([hugetlbfs],
     AS_HELP_STRING([--with-hugetlbfs=PATH],
         [specify path where hugetlbfs include directory and lib directory can be found]))
 
+# --with-libunwind
+AC_ARG_WITH([libunwind],
+    AS_HELP_STRING([--with-libunwind=PATH],
+        [specify path where libunwind include directory and lib directory can be found]))
+
+# --enable-stack-unwind
+AC_ARG_ENABLE([stack-unwind],
+    AS_HELP_STRING([--enable-stack-unwind],
+                   [enable stack unwinding, which is disabled by default.]))
+
 # --with-papi
 AC_ARG_WITH([papi],
     AS_HELP_STRING([--with-papi=PATH],
@@ -730,6 +740,23 @@ if test "x$with_hugetlbfs" != "x"; then
     AC_CHECK_LIB(hugetlbfs, get_huge_pages)
 fi
 
+# --enable-stack-unwind
+if test "x$enable_stack_unwind" = "xyes"; then
+    # --with-libunwind
+    if test "x$with_libunwind" != "x"; then
+        PAC_PREPEND_FLAG([-I${with_libunwind}/include], [CFLAGS])
+        PAC_PREPEND_FLAG([-Wl,-rpath,${with_libunwind}/lib -L${with_libunwind}/lib], [LDFLAGS])
+    fi
+    AC_CHECK_HEADERS(libunwind.h)
+    AC_CHECK_LIB(unwind, unw_backtrace)
+    if test x"$ac_cv_header_libunwind_h" = x"yes" -a x"$ac_cv_lib_unwind_unw_backtrace" = x"yes" ; then
+        AC_DEFINE(ABT_CONFIG_ENABLE_STACK_UNWIND, 1, [Define to use the stack unwinding feature.])
+        PAC_PREPEND_FLAG([-lunwind], [LDFLAGS])
+    else
+        AC_MSG_ERROR([libunwind is not found.  Either remove --enable-stack-unwind or \
+set --with-libunwind=LIBUNWIND_PREFIX_PATH.])
+    fi
+fi
 
 # --with-papi
 PAPI_CFLAGS=""
