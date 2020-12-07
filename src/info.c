@@ -811,11 +811,6 @@ static void info_print_unit(void *arg, ABT_unit unit)
                 "id        : %" PRIu64 "\n"
                 "ctx       : %p\n",
                 (uint64_t)thread_id, (void *)&p_ythread->ctx);
-        ABTD_ythread_print_context(p_ythread, fp, 2);
-        fprintf(fp,
-                "stack     : %p\n"
-                "stacksize : %" PRIu64 "\n",
-                p_ythread->p_stack, (uint64_t)p_ythread->stacksize);
         ABTI_ythread_print_stack(p_ythread, fp);
     } else if (type == ABT_UNIT_TYPE_TASK) {
         fprintf(fp, "=== tasklet (%p) ===\n", (void *)unit);
