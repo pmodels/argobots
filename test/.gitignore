@@ -10,6 +10,7 @@ basic/thread_create2
 basic/thread_create_on_xstream
 basic/thread_revive
 basic/thread_attr
+basic/thread_attr2
 basic/thread_yield
 basic/thread_yield_to
 basic/thread_self_suspend_resume
