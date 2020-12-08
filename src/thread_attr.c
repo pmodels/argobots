@@ -5,6 +5,9 @@
 
 #include "abti.h"
 
+static void thread_attr_set_stack(ABTI_thread_attr *p_attr, void *stackaddr,
+                                  size_t stacksize);
+
 /** @defgroup ULT_ATTR ULT Attributes
  * Attributes are used to specify ULT behavior that is different from the
  * default. When a ULT is created with \c ABT_thread_create(), attributes
@@ -86,26 +89,10 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
 {
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
-
-    ABTI_thread_type new_thread_type;
-    if (stackaddr != NULL) {
-        if (((uintptr_t)stackaddr & 0x7) != 0) {
-            ABTI_HANDLE_ERROR(ABT_ERR_OTHER);
-        }
-        new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
-    } else {
-        if (stacksize == gp_ABTI_global->thread_stacksize) {
-            new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
-        } else {
-            new_thread_type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
-        }
-    }
-    /* Unset the stack type and set new_thread_type. */
-    p_attr->thread_type &= ~ABTI_THREAD_TYPES_MEM;
-    p_attr->thread_type |= new_thread_type;
-
-    p_attr->p_stack = stackaddr;
-    p_attr->stacksize = stacksize;
+    /* If stackaddr is not NULL, it must be aligned by 8 bytes. */
+    ABTI_CHECK_TRUE(stackaddr == NULL || ((uintptr_t)stackaddr & 0x7) == 0,
+                    ABT_ERR_OTHER);
+    thread_attr_set_stack(p_attr, stackaddr, stacksize);
     return ABT_SUCCESS;
 }
 
@@ -152,18 +139,7 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 {
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
-
-    /* Set the value */
-    p_attr->stacksize = stacksize;
-    ABTI_thread_type new_thread_type;
-    if (stacksize == gp_ABTI_global->thread_stacksize) {
-        new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
-    } else {
-        new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
-    }
-    /* Unset the stack type and set new_thread_type. */
-    p_attr->thread_type &= ~ABTI_THREAD_TYPES_MEM;
-    p_attr->thread_type |= new_thread_type;
+    thread_attr_set_stack(p_attr, p_attr->p_stack, stacksize);
     return ABT_SUCCESS;
 }
 
@@ -307,4 +283,39 @@ ABTU_ret_err int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
     memcpy(p_dup_attr, p_attr, sizeof(ABTI_thread_attr));
     *pp_dup_attr = p_dup_attr;
     return ABT_SUCCESS;
+}
+
+/*****************************************************************************/
+/* Internal static functions                                                 */
+/*****************************************************************************/
+
+static void thread_attr_set_stack(ABTI_thread_attr *p_attr, void *stackaddr,
+                                  size_t stacksize)
+{
+    /* Get the best thread type. */
+    ABTI_thread_type new_thread_type;
+    if (stackaddr != NULL) {
+        /* This check must be done by the caller. */
+        ABTI_ASSERT(((uintptr_t)stackaddr & 0x7) == 0);
+        /* Only a descriptor will be allocated from a memory pool.  A stack
+         * is given by the user. */
+        new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
+    } else {
+        if (stacksize == gp_ABTI_global->thread_stacksize) {
+            /* Both a stack and a descriptor will be allocated from a memory
+             * pool. */
+            new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
+        } else {
+            /* The stack must be allocated by malloc().  Let's allocate both
+             * a stack and a descriptor together by a single malloc(). */
+            new_thread_type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
+        }
+    }
+
+    /* Unset the stack type and set new_thread_type. */
+    p_attr->thread_type &= ~ABTI_THREAD_TYPES_MEM;
+    p_attr->thread_type |= new_thread_type;
+
+    p_attr->p_stack = stackaddr;
+    p_attr->stacksize = stacksize;
 }
