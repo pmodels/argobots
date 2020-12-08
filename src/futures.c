@@ -189,19 +189,23 @@ int ABT_future_set(ABT_future future, void *value)
     ABTI_spinlock_acquire(&p_future->lock);
 
     size_t counter = ABTD_atomic_relaxed_load_size(&p_future->counter);
+    size_t compartments = p_future->compartments;
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
-    if (counter >= p_future->compartments) {
+    if (counter >= compartments) {
         ABTI_spinlock_release(&p_future->lock);
         ABTI_HANDLE_ERROR(ABT_ERR_FUTURE);
     }
 #endif
     p_future->array[counter] = value;
     counter++;
+    /* Call a callback function before setting the counter. */
+    if (counter == compartments && p_future->p_callback != NULL) {
+        (*p_future->p_callback)(p_future->array);
+    }
+
     ABTD_atomic_release_store_size(&p_future->counter, counter);
 
-    if (counter == p_future->compartments) {
-        if (p_future->p_callback != NULL)
-            (*p_future->p_callback)(p_future->array);
+    if (counter == compartments) {
         ABTI_waitlist_broadcast(p_local, &p_future->waitlist);
     }
 
