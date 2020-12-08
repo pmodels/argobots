@@ -133,6 +133,26 @@ init_and_call_fcontext:
 .size init_and_call_fcontext,.-init_and_call_fcontext
 #endif
 
+.text
+.globl peek_fcontext
+.type peek_fcontext,@function
+.align 16
+peek_fcontext:
+    /* temporarily move RSP (pointing to context-data) to R12 (callee-saved) */
+    pushq  %r12
+    movq   %rsp, %r12
+    /* restore RSP (pointing to context-data) from RDI */
+    movq   %rdi, %rsp
+    /* RSP is already 16-byte aligned, so we can call a peek funciton here
+     * rsi(rdx) => second_arg(third_arg) */
+    movq   %rdx, %rdi
+    callq *%rsi
+    /* restore callee-saved registers. */
+    movq   %r12, %rsp
+    popq   %r12
+    ret
+.size peek_fcontext,.-peek_fcontext
+
 /* Mark that we don't need executable stack.  */
 #ifndef __SUNPRO_C
 .section .note.GNU-stack,"",%progbits

@@ -111,6 +111,10 @@ static void info_trigger_print_all_thread_stacks(
  * - ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION
  *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
  *   set to \c *val if dynamic promotion is used.  Otherwise, ABT_FALSE is set.
+ * - ABT_INFO_QUERY_KIND_ENABLED_STACK_UNWIND
+ *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
+ *   set to \c *val if the stack unwinding feature is enabled.  Otherwise,
+ *   ABT_FALSE is set.
  *
  * @param[in]  query_kind  query kind
  * @param[out] val         a pointer to a result
@@ -247,6 +251,13 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             break;
         case ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION:
 #if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+            *((ABT_bool *)val) = ABT_TRUE;
+#else
+            *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_STACK_UNWIND:
+#ifdef ABT_CONFIG_ENABLE_STACK_UNWIND
             *((ABT_bool *)val) = ABT_TRUE;
 #else
             *((ABT_bool *)val) = ABT_FALSE;
@@ -589,11 +600,11 @@ void ABTI_info_check_print_all_thread_stacks(void)
             fprintf(print_stack_fp, "ABT_info_trigger_print_all_thread_stacks: "
                                     "failed because of an internal error.\n");
         }
+        fflush(print_stack_fp);
         /* Release the lock that protects ES data. */
         ABTI_spinlock_release(&gp_ABTI_global->xstream_list_lock);
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
-        fflush(print_stack_fp);
         /* Update print_stack_flag to 3. */
         ABTD_atomic_release_store_int(&print_stack_flag,
                                       PRINT_STACK_FLAG_FINALIZE);
@@ -800,11 +811,6 @@ static void info_print_unit(void *arg, ABT_unit unit)
                 "id        : %" PRIu64 "\n"
                 "ctx       : %p\n",
                 (uint64_t)thread_id, (void *)&p_ythread->ctx);
-        ABTD_ythread_print_context(p_ythread, fp, 2);
-        fprintf(fp,
-                "stack     : %p\n"
-                "stacksize : %" PRIu64 "\n",
-                p_ythread->p_stack, (uint64_t)p_ythread->stacksize);
         ABTI_ythread_print_stack(p_ythread, fp);
     } else if (type == ABT_UNIT_TYPE_TASK) {
         fprintf(fp, "=== tasklet (%p) ===\n", (void *)unit);

@@ -299,6 +299,21 @@ static inline ABTI_ythread *ABTI_ythread_context_switch_to_child_internal(
     }
 }
 
+#ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
+static inline void ABTI_ythread_context_peek(ABTI_ythread *p_ythread,
+                                             void (*peek_func)(void *),
+                                             void *arg)
+{
+#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+    if (!ABTI_ythread_is_dynamic_promoted(p_ythread)) {
+        ABTD_ythread_context_arm_ythread(p_ythread->stacksize,
+                                         p_ythread->p_stack, &p_ythread->ctx);
+    }
+#endif
+    ABTD_ythread_context_peek(&p_ythread->ctx, peek_func, arg);
+}
+#endif
+
 /* Return the previous thread. */
 static inline ABTI_ythread *
 ABTI_ythread_context_switch_to_sibling(ABTI_xstream **pp_local_xstream,

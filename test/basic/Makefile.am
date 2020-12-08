@@ -62,6 +62,7 @@ TESTS = \
 	ext_thread2 \
 	timer \
 	info_print \
+	info_print_stack \
 	info_stackdump \
 	info_stackdump2 \
 	error
@@ -137,6 +138,7 @@ ext_thread_SOURCES = ext_thread.c
 ext_thread2_SOURCES = ext_thread2.c
 timer_SOURCES = timer.c
 info_print_SOURCES = info_print.c
+info_print_stack_SOURCES = info_print_stack.c
 info_stackdump_SOURCES = info_stackdump.c
 info_stackdump2_SOURCES = info_stackdump2.c
 error_SOURCES = error.c
@@ -200,6 +202,7 @@ testing:
 	./ext_thread2
 	./timer
 	./info_print
+	./info_print_stack
 	./info_stackdump
 	./info_stackdump2
 	./error
