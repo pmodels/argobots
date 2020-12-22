@@ -133,8 +133,6 @@ ABTU_ret_err static int init_library(void)
     ABTI_spinlock_clear(&gp_ABTI_global->tool_writer_lock);
     gp_ABTI_global->tool_thread_cb_f = NULL;
     gp_ABTI_global->tool_thread_user_arg = NULL;
-    gp_ABTI_global->tool_task_cb_f = NULL;
-    gp_ABTI_global->tool_task_user_arg = NULL;
     ABTD_atomic_relaxed_store_uint64(&gp_ABTI_global
                                           ->tool_thread_event_mask_tagged,
                                      0);
@@ -210,7 +208,6 @@ ABTU_ret_err static int finailze_library(void)
     /* Turns off the tool interface */
     ABTI_tool_event_thread_update_callback(NULL, ABT_TOOL_EVENT_THREAD_NONE,
                                            NULL);
-    ABTI_tool_event_task_update_callback(NULL, ABT_TOOL_EVENT_TASK_NONE, NULL);
 #endif
 
     /* Set the orphan request for the primary ULT */

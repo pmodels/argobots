@@ -1915,7 +1915,7 @@ static void thread_join_yield_task(ABTI_xstream **pp_local_xstream,
     while (ABTD_atomic_acquire_load_int(&p_task->state) !=
            ABT_THREAD_STATE_TERMINATED) {
         ABTI_ythread_yield(pp_local_xstream, p_self,
-                           ABT_SYNC_EVENT_TYPE_TASK_JOIN, (void *)p_task);
+                           ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_task);
     }
     ABTI_tool_event_thread_join(ABTI_xstream_get_local(*pp_local_xstream),
                                 p_task, &p_self->thread);
