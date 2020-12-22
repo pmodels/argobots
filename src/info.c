@@ -11,117 +11,185 @@ static void info_trigger_print_all_thread_stacks(
     FILE *fp, double timeout, void (*cb_func)(ABT_bool, void *), void *arg);
 
 /** @defgroup INFO  Information
- * This group is for getting diverse runtime information of Argobots.  The
- * routines in this group are meant for debugging and diagnosing Argobots.
+ * This group is for getting runtime information of Argobots.  The routines in
+ * this group are meant for debugging and diagnosing Argobots.
  */
 
 /**
  * @ingroup INFO
- * @brief   Get the configuration information associated with \c query_kind.
+ * @brief   Retrieve the configuration information.
  *
- * \c ABT_info_query_config() gets the configuration information associated with
- * the given \c query_kind and writes a value to \c val.
+ * \c ABT_info_query_config() returns the configuration information associated
+ * with the query kind \c query_kind through \c val.
  *
- * The behavior of \c ABT_info_query_config() depends on \c query_kind.
- * - ABT_INFO_QUERY_KIND_ENABLED_DEBUG
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the debug mode is enabled.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to print an error
- *   number when an error happens.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_LOG
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to print debug
- *   messages.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_VALGRIND
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to be Valgrind
- *   friendly.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_CHECK_ERROR
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_FALSE is
- *   set to \c *val if the Argobots library is configured to ignore some error
- *   checks.  Otherwise, ABT_TRUE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_PRODUCER
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_FALSE is
- *   set to \c *val if the Argobots library is configured to ignore an access
- *   violation error regarding pool producers.  Otherwise, ABT_TRUE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_CONSUMER
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_FALSE is
- *   set to \c *val if the Argobots library is configured to ignore an access
- *   violation error regarding pool consumers.  Otherwise, ABT_TRUE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_PRESERVE_FPU
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to save floating-point
- *   registers on user-level context switching.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_THREAD_CANCEL
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to enable the thread
- *   cancellation feature. Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_TASK_CANCEL
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to enable the task
- *   cancellation feature. Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_MIGRATION
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to enable the
- *   thread/task migration cancellation feature. Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_STACKABLE_SCHED
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to enable the
- *   stackable scheduler feature is supported.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_EXTERNAL_THREAD
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to enable the
- *   external thread feature is supported.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_SCHED_SLEEP
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to enable the sleep
- *   feature of predefined schedulers.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to print all the
- *   configuration settings on ABT_init().  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_AFFINITY
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the Argobots library is configured to enable the affinity
- *   setting.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS
- *   \c val must be a pointer to a variable of the type unsigned int.  The
- *   maximum number of execution streams that can be created in Argobots is set
- *   to \c *val.
- * - ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE
- *   \c val must be a pointer to a variable of the type size_t.  The default
- *   stack size of ULTs is set to \c *val.
- * - ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE
- *   \c val must be a pointer to a variable of the type size_t.  The default
- *   stack size of ULT-type schedulers is set to \c *val.
- * - ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ
- *   \c val must be a pointer to a variable of the type uint64_t.  The default
- *   event-checking frequency of predefined schedulers is set to \c *val.
- * - ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC
- *   \c val must be a pointer to a variable of the type uint64_t.  The default
- *   sleep time (nanoseconds) of predefined schedulers is set to \c *val.
- * - ABT_INFO_QUERY_KIND_ENABLED_TOOL
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the tool is enabled.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_FCONTEXT
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if fcontext is used.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if dynamic promotion is used.  Otherwise, ABT_FALSE is set.
- * - ABT_INFO_QUERY_KIND_ENABLED_STACK_UNWIND
- *   \c val must be a pointer to a variable of the type ABT_bool.  ABT_TRUE is
- *   set to \c *val if the stack unwinding feature is enabled.  Otherwise,
- *   ABT_FALSE is set.
+ * The retrieved information is selected by \c query_kind.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_DEBUG
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the debug mode.
+ *   Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to print an error number when an
+ *   error occurs.  Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_LOG
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to print debug messages.
+ *   Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_VALGRIND
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to be Valgrind friendly.
+ *   Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_CHECK_ERROR
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_FALSE if Argobots is configured to ignore some error checks.
+ *   Otherwise, \c val is set to \c ABT_TRUE
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_PRODUCER
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_FALSE if Argobots is configured to ignore an access violation
+ *   error regarding pool producers.  Otherwise, \c val is set to \c ABT_TRUE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_CONSUMER
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_FALSE if Argobots is configured to ignore an access violation
+ *   error regarding pool consumers.  Otherwise, \c val is set to \c ABT_TRUE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_PRESERVE_FPU
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to save floating-point registers
+ *   on user-level context switching.  Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_THREAD_CANCEL
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the thread cancellation
+ *   feature. Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_TASK_CANCEL
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the task cancellation
+ *   feature. Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_MIGRATION
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the thread/task
+ *   migration cancellation feature.  Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_STACKABLE_SCHED
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the stackable scheduler
+ *   feature is supported.  Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_EXTERNAL_THREAD
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the external thread
+ *   feature is supported.  Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_SCHED_SLEEP
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the sleep feature of
+ *   predefined schedulers.  Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to print all the configuration
+ *   settings in \c ABT_init().  Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_AFFINITY
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the affinity setting.
+ *   Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS
+ *
+ *   \c val must be a pointer to a variable of type \c unsigned \c int.  \c val
+ *   is set to the maximum number of execution streams that can be created by
+ *   Argobots.
+ *
+ * - \c ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE
+ *
+ *   \c val must be a pointer to a variable of type \c size_t.  \c val is set to
+ *   the default stack size of ULTs.
+ *
+ * - \c ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE
+ *
+ *   \c val must be a pointer to a variable of type \c size_t.  \c val is set to
+ *   the default stack size of ULT-type schedulers.
+ *
+ * - \c ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ
+ *
+ *   \c val must be a pointer to a variable of type \c uint64_t.  \c val is set
+ *   to the default event-checking frequency of predefined schedulers.
+ *
+ * - \c ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC
+ *
+ *   \c val must be a pointer to a variable of type \c uint64_t.  \c val is set
+ *   to the default sleep time of predefined schedulers in nanoseconds.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_TOOL
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the tool feature.
+ *   Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_FCONTEXT
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to use fcontext.  Otherwise,
+ *   \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the dynamic promotion
+ *   optimization.  Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_STACK_UNWIND
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable the stack unwinding
+ *   feature.  Otherwise, \c val is set to \c ABT_FALSE.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_INFO_QUERY_KIND{\c query_kind}
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ * \DOC_V20 \DOC_ERROR_UNINITIALIZED_INFO_QUERY
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c val}
  *
  * @param[in]  query_kind  query kind
- * @param[out] val         a pointer to a result
+ * @param[out] val         result
  * @return Error code
- * @retval ABT_SUCCESS            on success
- * @retval ABT_ERR_INV_QUERY_KIND given query kind is invalid
- * @retval ABT_ERR_UNINITIALIZED  Argobots has not been initialized
  */
 int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 {
@@ -272,14 +340,32 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 
 /**
  * @ingroup INFO
- * @brief   Write the configuration information to the output stream.
+ * @brief   Print the runtime information of Argobots.
  *
- * \c ABT_info_print_config() writes the configuration information to the given
+ * \c ABT_info_print_config() writes the runtime information of Argobots to the
  * output stream \c fp.
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_RUNTIME_INFO
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
  *
  * @param[in] fp  output stream
  * @return Error code
- * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_config(FILE *fp)
 {
@@ -294,14 +380,32 @@ int ABT_info_print_config(FILE *fp)
 
 /**
  * @ingroup INFO
- * @brief   Write the information of all created ESs to the output stream.
+ * @brief   Print the information of execution streams.
  *
- * \c ABT_info_print_all_xstreams() writes the information of all ESs to the
- * given output stream \c fp.
+ * \c ABT_info_print_all_xstreams() writes the information of all execution
+ * streams to the output stream \c fp.
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_RUNTIME_INFO
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
  *
  * @param[in] fp  output stream
  * @return Error code
- * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_all_xstreams(FILE *fp)
 {
@@ -330,15 +434,33 @@ int ABT_info_print_all_xstreams(FILE *fp)
 
 /**
  * @ingroup INFO
- * @brief   Write the information of the target ES to the output stream.
+ * @brief   Print the information of an execution stream.
  *
- * \c ABT_info_print_xstream() writes the information of the target ES
- * \c xstream to the given output stream \c fp.
+ * \c ABT_info_print_xstream() writes the information of the execution stream
+ * \c xstream to the output stream \c fp.
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_HANDLE_INFO{\c xstream, \c ABT_XSTREAM_NULL,
+ *                                 \c ABT_ERR_INV_XSTREAM}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
  *
  * @param[in] fp       output stream
- * @param[in] xstream  handle to the target ES
+ * @param[in] xstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 {
@@ -349,15 +471,33 @@ int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 
 /**
  * @ingroup INFO
- * @brief   Write the information of the target scheduler to the output stream.
+ * @brief   Print the information of a scheduler.
  *
- * \c ABT_info_print_sched() writes the information of the target scheduler
- * \c sched to the given output stream \c fp.
+ * \c ABT_info_print_sched() writes the information of the scheduler \c sched to
+ * the output stream \c fp.
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_HANDLE_INFO{\c sched, \c ABT_SCHED_NULL,
+ *                                 \c ABT_ERR_INV_SCHED}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_INV_SCHED_HANDLE{\c sched}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
  *
  * @param[in] fp     output stream
- * @param[in] sched  handle to the target scheduler
+ * @param[in] sched  scheduler handle
  * @return Error code
- * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 {
@@ -368,15 +508,33 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 
 /**
  * @ingroup INFO
- * @brief   Write the information of the target pool to the output stream.
+ * @brief   Print the information of a pool.
  *
- * \c ABT_info_print_pool() writes the information of the target pool
- * \c pool to the given output stream \c fp.
+ * \c ABT_info_print_pool() writes the information of the pool \c pool to the
+ * output stream \c fp.
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_HANDLE_INFO{\c pool, \c ABT_POOL_NULL,
+ *                                 \c ABT_ERR_INV_POOL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
  *
  * @param[in] fp    output stream
- * @param[in] pool  handle to the target pool
+ * @param[in] pool  pool handle
  * @return Error code
- * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 {
@@ -387,15 +545,37 @@ int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 
 /**
  * @ingroup INFO
- * @brief   Write the information of the target ULT to the output stream.
+ * @brief   Print the information of a work unit.
  *
- * \c ABT_info_print_thread() writes the information of the target ULT
- * \c thread to the given output stream \c fp.
+ * \c ABT_info_print_thread() writes the information of the work unit \c thread
+ * to the output stream \c fp.
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_HANDLE_INFO{\c thread, \c ABT_THREAD_NULL,
+ *                                 \c ABT_TASK_NULL, \c ABT_ERR_INV_THREAD}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
  *
  * @param[in] fp      output stream
- * @param[in] thread  handle to the target ULT
+ * @param[in] thread  work unit handle
  * @return Error code
- * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
@@ -406,16 +586,33 @@ int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 
 /**
  * @ingroup INFO
- * @brief   Write the information of the target ULT attribute to the output
- * stream.
+ * @brief   Print the information of a ULT attribute.
  *
- * \c ABT_info_print_thread_attr() writes the information of the target ULT
- * attribute \c attr to the given output stream \c fp.
+ * \c ABT_info_print_thread_attr() writes the information of the ULT attribute
+ * \c attr to the output stream \c fp.
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_HANDLE_INFO{\c attr, \c ABT_THREAD_ATTR_NULL,
+ *                                 \c ABT_ERR_INV_THREAD_ATTR}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_INV_THREAD_ATTR_HANDLE{\c attr}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
  *
  * @param[in] fp    output stream
- * @param[in] attr  handle to the target ULT attribute
+ * @param[in] attr  ULT attribute handle
  * @return Error code
- * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
 {
@@ -427,30 +624,76 @@ int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup INFO
- * @brief   Write the information of the target tasklet to the output stream.
+ * @brief   Print the information of a work unit.
  *
- * \c ABT_info_print_task() writes the information of the target tasklet
- * \c task to the given output stream \c fp.
+ * \c ABT_info_print_task() writes the information of the work unit \c task to
+ * the output stream \c fp.  This routine is deprecated because this routine is
+ * the same as \c ABT_info_print_thread().
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_THREAD{\c task}
+ * @endchangev11
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_HANDLE_INFO{\c task, \c ABT_THREAD_NULL,
+ *                                 \c ABT_TASK_NULL, \c ABT_ERR_INV_TASK}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_INV_TASK_HANDLE{\c task}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
  *
  * @param[in] fp    output stream
- * @param[in] task  handle to the target tasklet
+ * @param[in] task  work unit handle
  * @return Error code
- * @retval ABT_SUCCESS  on success
  */
 int ABT_info_print_task(FILE *fp, ABT_task task);
 #endif
 
 /**
  * @ingroup INFO
- * @brief   Dump the stack of the target thread to the output stream.
+ * @brief   Print stack of a work unit.
  *
- * \c ABT_info_print_thread_stack() dumps the call stack of \c thread
- * to the given output stream \c fp.
+ * \c ABT_info_print_thread_stack() prints the stack of the work unit \c thread
+ * to the output stream \c fp.
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_HANDLE_INFO{\c thread, \c ABT_THREAD_NULL,
+ *                                 \c ABT_TASK_NULL, \c ABT_ERR_INV_THREAD}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
+ * \DOC_UNDEFINED_WORK_UNIT_RUNNING{\c thread}
  *
  * @param[in] fp      output stream
- * @param[in] thread  handle to the target thread
+ * @param[in] thread  work unit handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 {
@@ -473,16 +716,35 @@ int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 
 /**
  * @ingroup INFO
- * @brief   Dump stack information of all the threads in the target pool.
+ * @brief   Print stacks of all work units in a pool.
  *
- * \c ABT_info_print_thread_stacks_in_pool() dumps call stacks of all threads
- * stored in \c pool.  This function returns \c ABT_ERR_POOL if \c pool does not
- * support \c p_print_all.
+ * \c ABT_info_print_thread_stacks_in_pool() prints stacks of all work units in
+ * the pool \c pool to the output stream \c fp.  \c pool must support
+ * \c p_print_all() to check all work units in the pool.
+ *
+ * @note
+ * \DOC_NOTE_INFO_PRINT
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PRINT_HANDLE_INFO{\c pool, \c ABT_POOL_NULL,
+ *                                 \c ABT_ERR_INV_POOL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c p_print_all()}
+ * \DOC_V1X \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
  *
  * @param[in] fp    output stream
- * @param[in] pool  handle to the target pool
+ * @param[in] pool  pool handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
 {
@@ -494,39 +756,62 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
 
 /**
  * @ingroup INFO
- * @brief   Dump stacks of threads in pools existing in Argobots.
+ * @brief   Print stacks of work units in pools associated with all the main
+ *          schedulers.
  *
- * \c ABT_info_trigger_print_all_thread_stacks() tries to dump call stacks of
- * all threads stored in pools in the Argobots runtime. This function itself
- * does not print stacks; it immediately returns after updating a flag. Stacks
- * are printed when all execution streams stop in \c ABT_xstream_check_events().
+ * \c ABT_info_trigger_print_all_thread_stacks() tries to print stacks of all
+ * threads stored in pools associated with all the main schedulers to the output
+ * stream \c fp.  This routine itself does not print stacks; it immediately
+ * returns after updating a flag.  Stacks are printed when all execution streams
+ * stop in \c ABT_xstream_check_events().
  *
- * If some execution streams do not stop within a certain time period, one of
- * the stopped execution streams starts to print stack information. In this
- * case, this function might not work correctly and at worst causes a crash.
- * This function does not work at all if no execution stream executes
- * \c ABT_xstream_check_events().
+ * If some execution streams do not stop within a certain time period specified
+ * by \c timeout in seconds where \c timeout is not negative, one of the
+ * execution streams that stop at \c ABT_xstream_check_events() starts to print
+ * the stack information.  In this case, this routine might not work correctly
+ * and at worst crashes a program.  This routine does not work at all if no
+ * execution stream executes \c ABT_xstream_check_events().
  *
- * \c cb_func is called after completing stack dump unless it is NULL. The first
- * argument is set to \c ABT_TRUE if not all the execution streams stop within
- * \c timeout. Otherwise, \c ABT_FALSE is set. The second argument is
- * user-defined data \c arg. Since \c cb_func is not called by a thread or an
- * execution stream, \c ABT_self_...() functions in \c cb_func return undefined
- * values. Neither signal-safety nor thread-safety is required for \c cb_func.
+ * The callback function \c cb_func() is called after completing printing stacks
+ * unless \c cb_func is \c NULL.  The first argument is set to \c ABT_TRUE if
+ * not all the execution streams stop within \c timeout.  Otherwise,
+ * \c ABT_FALSE is passed.  The second argument is the user-defined data \c arg
+ * passed to this routine.  The caller of \c cb_func() is undefined, so a
+ * program that relies on the caller of \c cb_func() is non-conforming.  Neither
+ * signal-safety nor thread-safety is required for \c cb_func().
  *
- * In Argobots, \c ABT_info_trigger_print_all_thread_stacks is exceptionally
- * signal-safe; it can be safely called in a signal handler.
+ * The following work units are not captured by this routine:
+ * - Work units that are suspending (e.g., by \c ABT_thread_suspend()).
+ * - Work units in pools that are not associated with main schedulers.
  *
- * The following threads are not captured in this function:
- * - threads that are suspending (e.g., by \c ABT_thread_suspend())
- * - threads in pools that are not associated with main schedulers
+ * Calling \c ABT_info_trigger_print_all_thread_stacks() multiple times updates
+ * old values.  The values are atomically updated.
+ *
+ * @note
+ * This routine prints the information in a best-effort basis.  Specifically,
+ * this routine does not return an error regarding \c fp to either the caller of
+ * this routine or \c cb_func().\n
+ * If the timeout mechanism is used, the program may crash, so this
+ * functionality should be used only for debugging and diagnosis.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH \DOC_CONTEXT_NOTE_SIGNAL_SAFE
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c fp}
+ * \DOC_UNDEFINED_NULL_PTR{\c cb_func}
+ * \DOC_UNDEFINED_SYS_FILE{\c fp}
+ * \DOC_UNDEFINED_CHANGE_STATE{\c cb_func()}
  *
  * @param[in] fp       output stream
- * @param[in] timeout  timeout (second). Disabled if the value is negative.
- * @param[in] cb_func  call-back function
- * @param[in] arg      an argument passed to \c cb_func
+ * @param[in] timeout  timeout in seconds
+ * @param[in] cb_func  callback function
+ * @param[in] arg      argument passed to \c cb_func()
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
                                              void (*cb_func)(ABT_bool, void *),

@@ -177,56 +177,61 @@ enum ABT_unit_type {
                              * thread. */
 };
 
+/**
+ * @ingroup INFO
+ * @brief   Query kind for \c ABT_info_query_config().
+ */
 enum ABT_info_query_kind {
-    /* Whether the debug mode is enabled or not */
+    /** Whether the debug mode is enabled or not */
     ABT_INFO_QUERY_KIND_ENABLED_DEBUG,
-    /* Whether Argobots prints an error number when an error happens or not */
+    /** Whether Argobots prints an error number when an error happens or not */
     ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO,
-    /* Whether Argobots prints a debug message or not */
+    /** Whether Argobots prints a debug message or not */
     ABT_INFO_QUERY_KIND_ENABLED_LOG,
-    /* Whether Argobots is configured to be Valgrind friendly */
+    /** Whether Argobots is configured to be Valgrind friendly */
     ABT_INFO_QUERY_KIND_ENABLED_VALGRIND,
-    /* Whether an error is checked or not */
+    /** Whether an error is checked or not */
     ABT_INFO_QUERY_KIND_ENABLED_CHECK_ERROR,
-    /* Whether a pool access violation regarding producer is checked or not */
+    /** Whether a pool access violation regarding producer is checked or not */
     ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_PRODUCER,
-    /* Whether a pool access violation regarding consumer is checked or not */
+    /** Whether a pool access violation regarding consumer is checked or not */
     ABT_INFO_QUERY_KIND_ENABLED_CHECK_POOL_CONSUMER,
-    /* Whether floating-point registers are saved on context switching or not */
+    /** Whether floating-point registers are saved on context switching or not
+     */
     ABT_INFO_QUERY_KIND_ENABLED_PRESERVE_FPU,
-    /* Whether the thread cancellation feature is supported or not */
+    /** Whether the thread cancellation feature is supported or not */
     ABT_INFO_QUERY_KIND_ENABLED_THREAD_CANCEL,
-    /* Whether the task cancellation feature is supported or not */
+    /** Whether the task cancellation feature is supported or not */
     ABT_INFO_QUERY_KIND_ENABLED_TASK_CANCEL,
-    /* Whether the thread and task migration feature is supported or not */
+    /** Whether the thread and task migration feature is supported or not */
     ABT_INFO_QUERY_KIND_ENABLED_MIGRATION,
-    /* Whether the stackable scheduler feature is supported or not */
+    /** Whether the stackable scheduler feature is supported or not */
     ABT_INFO_QUERY_KIND_ENABLED_STACKABLE_SCHED,
-    /* Whether the external thread feature is supported or not */
+    /** Whether the external thread feature is supported or not */
     ABT_INFO_QUERY_KIND_ENABLED_EXTERNAL_THREAD,
-    /* Whether a predefined scheduler sleeps or not */
+    /** Whether a predefined scheduler sleeps or not */
     ABT_INFO_QUERY_KIND_ENABLED_SCHED_SLEEP,
-    /* Whether the Argobots configuration is printed on ABT_init() or not */
+    /** Whether the Argobots configuration is printed on ABT_init() or not */
     ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG,
-    /* Whether the affinity setting is supported or not */
+    /** Whether the affinity setting is supported or not */
     ABT_INFO_QUERY_KIND_ENABLED_AFFINITY,
-    /* The maximum number of execution streams */
+    /** The maximum number of execution streams */
     ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS,
-    /* Default stack size of ULTs */
+    /** Default stack size of ULTs */
     ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE,
-    /* Default stack size of ULT-type schedulers */
+    /** Default stack size of ULT-type schedulers */
     ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE,
-    /* Default event-checking frequency of a predefined scheduler */
+    /** Default event-checking frequency of a predefined scheduler */
     ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ,
-    /* Default sleep time of a predefined scheduler */
+    /** Default sleep time of a predefined scheduler */
     ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC,
-    /* Whether the tool interface is enabled or not */
+    /** Whether the tool interface is enabled or not */
     ABT_INFO_QUERY_KIND_ENABLED_TOOL,
-    /* Whether fcontext is used for context switch or not */
+    /** Whether fcontext is used for context switch or not */
     ABT_INFO_QUERY_KIND_FCONTEXT,
-    /* Whether dynamic promotion is used for context switch or not */
+    /** Whether dynamic promotion is used for context switch or not */
     ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION,
-    /* Whether the stack unwinding feature is enabled or not */
+    /** Whether the stack unwinding feature is enabled or not */
     ABT_INFO_QUERY_KIND_ENABLED_STACK_UNWIND,
 };
 
