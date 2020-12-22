@@ -60,6 +60,12 @@ extern "C" {
 
 #define ABT_DEPRECATED @ABT_DEPRECATED@
 
+#define ABT_ENABLE_VER_20_API_VAL @ABT_ENABLE_VER_20_API@
+#undef ABT_ENABLE_VER_20_API
+#if ABT_ENABLE_VER_20_API_VAL
+#define ABT_ENABLE_VER_20_API 1
+#endif
+
 /* Error Classes */
 #define ABT_SUCCESS                 0  /* Successful return code */
 #define ABT_ERR_UNINITIALIZED       1  /* Uninitialized */
