@@ -654,7 +654,6 @@ int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
     return ABT_SUCCESS;
 }
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup INFO
  * @brief   Print the information of a work unit.
@@ -690,8 +689,16 @@ int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
  * @param[in] task  work unit handle
  * @return Error code
  */
-int ABT_info_print_task(FILE *fp, ABT_task task);
+int ABT_info_print_task(FILE *fp, ABT_task task)
+{
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(task);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x requires a NULL-handle check. */
+    ABTI_CHECK_NULL_TASK_PTR(p_thread);
 #endif
+    ABTI_thread_print(p_thread, fp, 0);
+    return ABT_SUCCESS;
+}
 
 /**
  * @ingroup INFO
