@@ -1780,3 +1780,54 @@ GENERATE_LEGEND        = YES
 # the various graphs.
 
 DOT_CLEANUP            = YES
+
+
+#---------------------------------------------------------------------------
+# Custom style
+#---------------------------------------------------------------------------
+
+ALIASES += contexts="\par Execution context"
+
+ALIASES += errors="\par Errors"
+
+ALIASES += undefined="\par Undefined behavior"
+
+#---------------------------------------------------------------------------
+# Execution context
+#---------------------------------------------------------------------------
+
+ALIASES += DOC_CONTEXT_INIT="This routine can be called in any execution context. Argobots must be initialized."
+
+ALIASES += DOC_CONTEXT_NOCTXSWITCH="This routine does not perform context switching the calling ULT unless any user-defined function that is involved in this routine performs context switching."
+
+ALIASES += DOC_CONTEXT_TOOL_CALLBACK{1}="This routine can be called only in a callback function \1."
+
+#---------------------------------------------------------------------------
+# Description
+#---------------------------------------------------------------------------
+
+ALIASES += DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION="A combination of a callback function, an event mask its argument for a tool interface is updated atomically."
+
+#---------------------------------------------------------------------------
+# Error
+#---------------------------------------------------------------------------
+
+ALIASES += DOC_ERROR_FEATURE_NA{1}="If \1 is not supported, \c ABT_ERR_FEATURE_NA is returned.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{2}="If \1 is not a valid tool query kind for \2, \c ABT_ERR_INV_ARG is returned.\n"
+
+ALIASES += DOC_ERROR_SUCCESS="If this routine succeeds, \c ABT_SUCCESS is returned.\n"
+
+#---------------------------------------------------------------------------
+# Undefined behavior
+#---------------------------------------------------------------------------
+
+ALIASES += DOC_UNDEFINED_CHANGE_STATE{1}="If the internal state of the Argobots is changed in \1, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_NULL_PTR{1}="If \1 is \c NULL, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_TOOL_CALLBACK{1}="If the tool context passed to \1 is accessed after \1 finishes, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_TOOL_QUERY{2}="If \1 is a tool context that is not passed to the calling callback function, the results are undefined.\n If \1 and \2 are not the same pair passed to the calling callback function, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_UNINIT="If Argobots is not initialized, the results are undefined.\n"

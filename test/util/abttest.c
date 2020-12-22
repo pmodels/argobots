@@ -398,64 +398,6 @@ static void ATS_tool_thread_callback(ABT_thread thread, ABT_xstream xstream,
     }
 }
 
-static void ATS_tool_task_callback(ABT_task task, ABT_xstream xstream,
-                                   uint64_t event, ABT_tool_context context,
-                                   void *user_arg)
-{
-    ATS_tool_unit_entry *p_entry = ATS_tool_get_unit_entry((void *)task);
-
-    ABT_bool is_unnamed = ABT_FALSE;
-    int ret = ABT_task_is_unnamed(task, &is_unnamed);
-    ATS_ERROR(ret, "ABT_task_is_unnamed");
-
-    switch (event) {
-        case ABT_TOOL_EVENT_TASK_CREATE:
-            ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_UNINIT);
-            p_entry->state = ATS_TOOL_UNIT_STATE_READY;
-            break;
-        case ABT_TOOL_EVENT_TASK_JOIN:
-            ATS_ERROR_IF(is_unnamed ||
-                         (p_entry->state != ATS_TOOL_UNIT_STATE_FINISHED &&
-                          p_entry->state != ATS_TOOL_UNIT_STATE_JOINED));
-            p_entry->state = ATS_TOOL_UNIT_STATE_JOINED;
-            break;
-        case ABT_TOOL_EVENT_TASK_FREE:
-            /* The state can be ready if the created work unit cannot be pushed
-             * to the pool. */
-            if (is_unnamed) {
-                ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_READY &&
-                             p_entry->state != ATS_TOOL_UNIT_STATE_FINISHED);
-            } else {
-                ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_READY &&
-                             p_entry->state != ATS_TOOL_UNIT_STATE_JOINED);
-            }
-            ATS_tool_remove_unit_entry((void *)task);
-            break;
-        case ABT_TOOL_EVENT_TASK_REVIVE:
-            ATS_ERROR_IF(is_unnamed ||
-                         p_entry->state != ATS_TOOL_UNIT_STATE_JOINED);
-            p_entry->state = ATS_TOOL_UNIT_STATE_READY;
-            break;
-        case ABT_TOOL_EVENT_TASK_RUN:
-            ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_READY);
-            p_entry->state = ATS_TOOL_UNIT_STATE_RUNNING;
-            p_entry->last_xstream = xstream;
-            break;
-        case ABT_TOOL_EVENT_TASK_FINISH:
-            ATS_ERROR_IF(p_entry->state == ATS_TOOL_UNIT_STATE_RUNNING &&
-                         p_entry->last_xstream != xstream);
-            p_entry->state = ATS_TOOL_UNIT_STATE_FINISHED;
-            break;
-        case ABT_TOOL_EVENT_TASK_CANCEL:
-            ATS_ERROR_IF(p_entry->state != ATS_TOOL_UNIT_STATE_READY);
-            p_entry->state = ATS_TOOL_UNIT_STATE_FINISHED;
-            break;
-        default:
-            /* Unknown event. */
-            ATS_ERROR(ABT_ERR_OTHER, "ATS_tool_task_callback");
-    }
-}
-
 static void ATS_tool_init()
 {
     /* Initialize the hash table. */
@@ -479,9 +421,6 @@ static void ATS_tool_init()
     ret = ABT_tool_register_thread_callback(ATS_tool_thread_callback,
                                             ABT_TOOL_EVENT_THREAD_ALL, NULL);
     ATS_ERROR(ret, "ABT_tool_register_thread_callback");
-    ret = ABT_tool_register_task_callback(ATS_tool_task_callback,
-                                          ABT_TOOL_EVENT_TASK_ALL, NULL);
-    ATS_ERROR(ret, "ABT_tool_register_task_callback");
 }
 
 static void ATS_tool_finialize()
@@ -502,6 +441,4 @@ static void ATS_tool_finialize()
     ret = ABT_tool_register_thread_callback(NULL, ABT_TOOL_EVENT_THREAD_NONE,
                                             NULL);
     ATS_ERROR(ret, "ABT_tool_register_thread_callback");
-    ret = ABT_tool_register_task_callback(NULL, ABT_TOOL_EVENT_TASK_NONE, NULL);
-    ATS_ERROR(ret, "ABT_tool_register_task_callback");
 }

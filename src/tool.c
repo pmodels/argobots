@@ -11,47 +11,85 @@ ABTU_ret_err static inline int tool_query(ABTI_tool_context *p_tctx,
                                           void *val);
 #endif
 
-/** @defgroup Tool interface
- * This group is for the tool interface.
+/** @defgroup TOOL Tool
+ * This group is for Tool.
  */
 
 /**
  * @ingroup TOOL
- * @brief   Register a callback function for ULT events
+ * @brief   Register a callback function for work unit events.
  *
- * \c ABT_tool_register_thread_callback() sets a callback function \c cb_func
- * for ULT events.  Events that are not in \c event_mask are excluded.  Users
- * can stop the event callback by setting \c cb_func to zero.
+ * \c ABT_tool_register_thread_callback() sets the callback function
+ * \c cb_func() for work unit events.  The events are enabled if
+ * \c event_mask have their corresponding bits.  The other events are disabled.
+ * Users can stop the event callback by setting \c cb_func to \c NULL.
  *
- * \c cb_func is called with a target thread (the first argument), an underlying
- * execution stream (the second argument), an event code (the third argument,
- * see ABT_TOOL_EVENT_THREAD), and the tool context that can be used for
- * ABT_tool_query().  If the event occurs on an external thread,
- * ABT_XSTREAM_NULL is passed.  The returned tool context is only valid in the
- * callback function.
+ * \c cb_func() is called with the following arguments:
  *
- * An object to which a returned handle points to may be in an intermediate
- * state, so users are discouraged not to read any internal state of such an
- * object (e.g., by ABT_thread_get_state()).
+ * - The first argument: a work unit that triggers the event
+ * - The second argument: a handle of the underlying execution stream
+ * - The third argument: an event code (see \c ABT_TOOL_EVENT_THREAD)
+ * - The fourth argument: a tool context for \c ABT_tool_query_thread()
+ * - The fifth argument: \c user_arg passed to this routine.
+ *
+ * If the event occurs on an external thread, \c ABT_XSTREAM_NULL is passed as
+ * the second argument.  The returned tool context is valid only before the
+ * callback function finishes.
+ *
+ * An object referenced by the returned handle (e.g., a work unit handle) may be
+ * in an intermediate state, so users are discouraged to read any internal state
+ * of such an object (e.g., by \c ABT_thread_get_state()) in \c cb_func().
+ * Instead, the user should use \c ABT_tool_query_thread().  The caller of
+ * \c cb_func() might be neither a work unit that triggers the event nor a work
+ * unit that is running on the same execution stream.  A program that relies on
+ * the caller of \c cb_func() is non-conforming.
+ *
+ * This routine can be called while other work unit events are happening.  This
+ * routine atomically sets \c cb_func(), \c event_mask, and \c user_arg at the
+ * same time.
+ *
+ * @note
+ * Invoking an event in \c cb_func() may cause an infinite invocation of
+ * \c cb_func().  It is the user's responsibility to take a proper measure to
+ * avoid it.
+ *
+ * \DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION
+ *
+ * @note
+ * Even after \c ABT_tool_register_thread_callback() returns, another event call
+ * might be still in the previous \c cb_func() and using the previous
+ * \c user_arg.  Argobots does not provide a method to guarantee that the
+ * previous \c cb_func and \c user_arg get unused.  Hence, the user needs to
+ * carefully maintain consistency before and after
+ * \c ABT_tool_register_thread_callback().
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_FEATURE_NA{the tool feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_TOOL_CALLBACK{\c cb_func()}
+ * \DOC_UNDEFINED_CHANGE_STATE{\c cb_func()}
  *
  * @param[in]  cb_func     callback function pointer
  * @param[in]  event_mask  event code mask
  * @param[in]  user_arg    user argument passed to \c cb_func
  * @return Error code
- * @retval ABT_SUCCESS         on success
- * @retval ABT_ERR_FEATURE_NA  tool feature is not supported
  */
 int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
-                                      uint64_t event_mask_thread,
-                                      void *user_arg)
+                                      uint64_t event_mask, void *user_arg)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
     if (cb_func == NULL)
-        event_mask_thread = ABT_TOOL_EVENT_THREAD_NONE;
+        event_mask = ABT_TOOL_EVENT_THREAD_NONE;
     ABTI_tool_event_thread_update_callback(cb_func,
-                                           event_mask_thread &
+                                           event_mask &
                                                ABT_TOOL_EVENT_THREAD_ALL,
                                            user_arg);
     return ABT_SUCCESS;
@@ -60,139 +98,128 @@ int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
 
 /**
  * @ingroup TOOL
- * @brief   Register a callback function for tasklet events
+ * @brief   Query information associated with a work unit event.
  *
- * \c ABT_tool_register_task_callback() sets a callback function \c cb_func for
- * tasklet events.  Events that are not in \c event_mask are excluded.  Users
- * can stop the event callback by setting \c cb_func to zero.
+ * \c ABT_tool_query_thread() returns information associated with the tool
+ * context \c context through \c val.  Because \c context is valid only in the
+ * callback function, this function must be called in the callback function.
  *
- * \c cb_func is called with a target tasklet (the first argument), an
- * underlying execution stream (the second argument), an event code (the third
- * argument, see ABT_TOOL_EVENT_TASK), and the tool context that can be used
- * for ABT_tool_query().  If the event occurs on an external thread,
- * ABT_XSTREAM_NULL is passed.  The returned tool context is only valid in the
- * callback function.
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_POOL, this routine sets \c val
+ * to \c ABT_pool of a pool to which a work unit is or will be pushed.  The
+ * query is valid when \c event is \c THREAD_CREATE, \c THREAD_REVIVE,
+ * \c THREAD_YIELD, \c THREAD_RESUME.
  *
- * An object to which a returned handle points to may be in an intermediate
- * state, so users are discouraged not to read any internal state of such an
- * object (e.g., by ABT_thread_get_state()).
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_STACK_DEPTH, this routine sets
+ * \c val to the current depth of stackable work units as an \c int value while
+ * the level of the work unit associated with the main scheduler is zero.  For
+ * example, if the current thread is running directly on the main scheduler, the
+ * depth is \a 1.  The query is valid when \c event is \c THREAD_RUN (the depth
+ * after the work unit runs), \c THREAD_FINISH (the depth before the work unit
+ * finishes), \c THREAD_YIELD (the depth before the work unit yields), and
+ * \c THREAD_SUSPEND (the depth before the work unit suspends).
  *
- * @param[in]  cb_func     callback function pointer
- * @param[in]  event_mask  event code mask
- * @param[in]  user_arg    user argument passed to \c cb_func
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_CALLER_TYPE, this routine sets
+ * \c val to \c ABT_exec_entity_type of an entity that incurs this event.  The
+ * query is valid for all events.
+ *
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_CALLER_HANDLE, this routine sets
+ * \c val to a handle of an entity that incurs this event.  Specifically, this
+ * routine sets \c val to a work unit handle (\c ABT_thread) if the caller type
+ * is \c ABT_EXEC_ENTITY_TYPE_THREAD.  If the caller is an external thread, this
+ * routine sets \c val to \c NULL.  The query is valid for all events except for
+ * \c THREAD_CANCEL.  Note that the caller is a previous work unit running on
+ * the same execution stream when \c event is \c THRAED_RUN.
+ *
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_TYPE, this routine
+ * sets \c val to \c ABT_sync_event_type of an synchronization object that
+ * incurs this event.  The synchronization object is returned when \c query_kind
+ * is \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE.  This query is valid for
+ * \c THREAD_YIELD and \c THREAD_SUSPEND.
+ *
+ * Synchronization events, \c ABT_sync_event_type, and synchronization objects
+ * are mapped as follows:
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_USER:
+ *
+ *    The user's explicit call (e.g., \c ABT_thread_yield()).  The
+ *    synchronization object is none, so \c NULL is set to \c val if
+ *    \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE is passed.
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN:
+ *
+ *    Waiting for completion of execution streams (e.g., \c ABT_xstream_join()).
+ *    The synchronization object is an execution stream (\c ABT_xstream).
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_THREAD_JOIN:
+ *
+ *    Waiting for completion of a work unit (e.g., \c ABT_thread_join() or
+ *    \c ABT_task_join()).  The synchronization object is a work unit
+ *    (\c ABT_thread).
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_MUTEX:
+ *
+ *    Synchronization regarding a mutex (e.g., \c ABT_mutex_lock()).  The
+ *    synchronization object is a mutex (\c ABT_mutex).
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_COND:
+ *
+ *    Synchronization regarding a condition variable (e.g., \c ABT_cond_wait()).
+ *    The synchronization object is a condition variable (\c ABT_cond).
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_RWLOCK:
+ *
+ *    Synchronization regarding a readers-writer lock (e.g.,
+ *    \c ABT_rwlock_rdlock()).  The synchronization object is a readers-writer
+ *    lock (\c ABT_rwlock).
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_EVENTUAL:
+ *
+ *    Synchronization regarding an eventual (e.g., \c ABT_eventual_wait()).  The
+ *    synchronization object is an eventual (\c ABT_eventual).
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_FUTURE:
+ *
+ *    Synchronization regarding a future (e.g., \c ABT_future_wait()).  The
+ *    synchronization object is a future (\c ABT_future).
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_BARRIER:
+ *
+ *    Synchronization regarding a barrier (e.g., \c ABT_barrier_wait()).  The
+ *    synchronization object is a barrier (\c ABT_barrier).
+ *
+ *  - \c ABT_SYNC_EVENT_TYPE_OTHER:
+ *
+ *    Unclassified synchronization (e.g., \c ABT_xstream_exit())  The
+ *    synchronization object is none, so \c NULL is set to \c val if
+ *    \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE is passed.
+ *
+ * An object referenced by the returned handle (e.g., the work unit handle) may
+ * be in an intermediate state, so users are recommended not to read any
+ * internal state of such an object (e.g., by \c ABT_task_get_state()) in
+ * \c cb_func().
+ *
+ * @contexts
+ * \DOC_CONTEXT_TOOL_CALLBACK{the tool callback function}
+ * \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{\c query_kind, \c query}
+ * \DOC_ERROR_FEATURE_NA{the tool feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c val}
+ * \DOC_UNDEFINED_CHANGE_STATE{the callback function}
+ * \DOC_UNDEFINED_TOOL_QUERY{\c context, \c event}
+ *
+ * @param[in]  context     tool context handle
+ * @param[in]  event       event code passed to the callback function
+ * @param[in]  query_kind  query kind
+ * @param[out] val         pointer to storage where a returned value is saved
  * @return Error code
- * @retval ABT_SUCCESS         on success
- * @retval ABT_ERR_FEATURE_NA  tool feature is not supported
  */
-int ABT_tool_register_task_callback(ABT_tool_task_callback_fn cb_func,
-                                    uint64_t event_mask_task, void *user_arg)
-{
-#ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
-#else
-    if (cb_func == NULL)
-        event_mask_task = ABT_TOOL_EVENT_TASK_NONE;
-    ABTI_tool_event_task_update_callback(cb_func,
-                                         event_mask_task &
-                                             ABT_TOOL_EVENT_TASK_ALL,
-                                         user_arg);
-    return ABT_SUCCESS;
-#endif
-}
-
-/**
- * @ingroup TOOL
- * @brief   Query information associated with a ULT event.
- *
- * \c ABT_tool_query() returns information associated with the tool context
- * \c context through \c val.  Since \c context is valid only in the callback
- * handler, this function must be called in the callback handler.
- *
- * When \c query_kind is ABT_TOOL_QUERY_KIND_POOL, it sets \c *val to
- * \c ABT_pool of a pool to which a work unit is or will be pushed.  The query
- * is valid when \c event is THREAD_CREATE, THREAD_REVIVE, THREAD_YIELD,
- * THREAD_RESUME, TASK_CREATE, or TASK_REVIVE.  Otherwise, \c *val is set to
- * ABT_POOL_NULL.
- *
- * When \c query_kind is ABT_TOOL_QUERY_KIND_STACK_DEPTH, it sets \c *val to the
- * current depth of stackable work units as an \c int value while the level of
- * the main scheduler is zero.  For example, if the current thread is directly
- * running on the main scheduler, the depth is 1.  The query is valid when
- * \c event is THREAD_RUN and TASK_RUN (the depth after the work unit runs),
- * THREAD_FINISH and TASK_FINISH (the depth before the work unit finishes),
- * THREAD_YIELD (the depth before the work unit yields), and THREAD_SUSPEND
- * (the depth before the work unit suspends).  Otherwise, \c *val is set to
- * zero.
- *
- * When \c query_kind is ABT_TOOL_QUERY_KIND_CALLER_TYPE, \c *val is set to
- * ABT_exec_entity_type of an entity which incurs this event.  The query is
- * valid for all events.
- *
- * When \c query_kind is ABT_TOOL_QUERY_KIND_CALLER_HANDLE, \c *val is set to a
- * handle of an entity which incurs this event.  Specifically, \c *val is set
- * to a ULT handle (ABT_thread) if the caller type is
- * ABT_EXEC_ENTITY_TYPE_THREAD.  \c *val is set to a tasklet handle (ABT_task)
- * if the caller type is ABT_EXEC_ENTITY_TYPE_TASK.  If the caller is an
- * external thread, \c *val is set to NULL.  The query is valid for all events
- * except for THREAD_CANCEL and TASK_CANCEL.  Note that the caller is a
- * previous work unit when \c event is THRAED_RUN or TASK_RUN.
- *
- * When \c query_kind is ABT_TOOL_QUERY_KIND_SYNC_OBJECT_TYPE, \c *val is set to
- * ABT_sync_event_type of an synchronization object which incurs this event.
- * The synchronization object is returned when \c query_kind is
- * ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE.  Synchronization events, and
- * ABT_sync_event_type, and synchronization objects are mapped as follows:
- *  - ABT_SYNC_EVENT_TYPE_USER:
- *      User's explicit call (e.g., ABT_thread_yield())
- *      The synchronization object is not set ((void *)NULL).
- *  - ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN:
- *      Waiting for completion of execution streams (e.g., ABT_xstream_join())
- *      The synchronization object is an execution stream (ABT_xstream).
- *  - ABT_SYNC_EVENT_TYPE_THREAD_JOIN:
- *      Waiting for completion of ULTs (e.g., ABT_thread_join())
- *      The synchronization object is a ULT (ABT_thread).
- *  - ABT_SYNC_EVENT_TYPE_TASK_JOIN:
- *      Waiting for completion of tasklets (e.g., ABT_task_join())
- *      The synchronization object is a tasklet (ABT_task).
- *  - ABT_SYNC_EVENT_TYPE_MUTEX:
- *      Synchronization regarding a mutex (e.g., ABT_mutex_lock())
- *      The synchronization object is a mutex (ABT_mutex).
- *  - ABT_SYNC_EVENT_TYPE_COND:
- *      Synchronization regarding a condition variable(e.g., ABT_cond_wait())
- *      The synchronization object is a condition variable (ABT_cond).
- *  - ABT_SYNC_EVENT_TYPE_RWLOCK:
- *      Synchronization regarding a rwlock (e.g., ABT_rwlock_rdlock())
- *      The synchronization object is a rwlock (ABT_rwlock).
- *  - ABT_SYNC_EVENT_TYPE_EVENTUAL:
- *      Synchronization regarding an eventual (e.g., ABT_eventual_wait())
- *      The synchronization object is an eventual (ABT_eventual).
- *  - ABT_SYNC_EVENT_TYPE_FUTURE:
- *      Synchronization regarding a future (e.g., ABT_future_wait())
- *      The synchronization object is a future (ABT_future).
- *  - ABT_SYNC_EVENT_TYPE_BARRIER:
- *      Synchronization regarding a barrier (e.g., ABT_barrier_wait())
- *      The synchronization object is a barrier (ABT_barrier).
- *  - ABT_SYNC_EVENT_TYPE_OTHER:
- *      Unclassified synchronization (e.g., ABT_xstream_exit())
- *      The synchronization object is not set ((void *)NULL).
- *  - ABT_SYNC_EVENT_TYPE_UNKNOWN
- *      \c event is neither THREAD_YIELD nor THREAD_SUSPEND.
- *      The synchronization object is not set ((void *)NULL).
- * This query is valid for THREAD_YIELD and THREAD_SUSPEND.
- *
- * An object to which a returned handle points to may be in an intermediate
- * state, so users are discouraged not to read any internal state of such an
- * object (e.g., by ABT_thread_get_state() or ABT_pool_get_size()).
- *
- * @param[in]  context    handle to the tool context
- * @param[in]  event      event code passed to the callback function
- * @param[in]  query_kind query kind
- * @param[out] val        pointer to storage where a returned value is saved
- * @return Error code
- * @retval ABT_SUCCESS        on success
- * @retval ABT_ERR_FEATURE_NA the tool feature is not supported
- */
-int ABT_tool_query_thread(ABT_tool_context context, uint64_t event_thread,
+int ABT_tool_query_thread(ABT_tool_context context, uint64_t event,
                           ABT_tool_query_kind query_kind, void *val)
 {
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
@@ -201,35 +228,6 @@ int ABT_tool_query_thread(ABT_tool_context context, uint64_t event_thread,
     ABTI_tool_context *p_tctx = ABTI_tool_context_get_ptr(context);
     ABTI_CHECK_NULL_TOOL_CONTEXT_PTR(p_tctx);
 
-    int abt_errno = tool_query(p_tctx, query_kind, val);
-    ABTI_CHECK_ERROR(abt_errno);
-    return ABT_SUCCESS;
-#endif
-}
-
-/**
- * @ingroup TOOL
- * @brief   Query information associated with a tasklet event.
- *
- * \c ABT_tool_query_task() returns information associated with the tasklet
- * event via \c context.  See \c ABT_tool_query_thread() for details.
- *
- * @param[in]  context     handle to the tool context
- * @param[in]  event_task  tasklet event code passed to the callback function
- * @param[in]  query_kind  query kind
- * @param[out] val         pointer to storage where a returned value is saved
- * @return Error code
- * @retval ABT_SUCCESS        on success
- * @retval ABT_ERR_FEATURE_NA the tool feature is not supported
- */
-int ABT_tool_query_task(ABT_tool_context context, uint64_t event_task,
-                        ABT_tool_query_kind query_kind, void *val)
-{
-#ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
-#else
-    ABTI_tool_context *p_tctx = ABTI_tool_context_get_ptr(context);
-    ABTI_CHECK_NULL_TOOL_CONTEXT_PTR(p_tctx);
     int abt_errno = tool_query(p_tctx, query_kind, val);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
@@ -265,20 +263,15 @@ tool_query(ABTI_tool_context *p_tctx, ABT_tool_query_kind query_kind, void *val)
         case ABT_TOOL_QUERY_KIND_CALLER_TYPE:
             if (!p_tctx->p_caller) {
                 *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_EXT;
-            } else if (p_tctx->p_caller->type & ABTI_THREAD_TYPE_YIELDABLE) {
-                *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_THREAD;
             } else {
-                *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_TASK;
+                *(ABT_exec_entity_type *)val = ABT_EXEC_ENTITY_TYPE_THREAD;
             }
             break;
         case ABT_TOOL_QUERY_KIND_CALLER_HANDLE:
             if (!p_tctx->p_caller) {
                 *(void **)val = NULL;
-            } else if (p_tctx->p_caller->type & ABTI_THREAD_TYPE_YIELDABLE) {
-                *(ABT_thread *)val = ABTI_ythread_get_handle(
-                    ABTI_thread_get_ythread(p_tctx->p_caller));
             } else {
-                *(ABT_task *)val = ABTI_thread_get_handle(p_tctx->p_caller);
+                *(ABT_thread *)val = ABTI_thread_get_handle(p_tctx->p_caller);
             }
             break;
         case ABT_TOOL_QUERY_KIND_SYNC_OBJECT_TYPE:
@@ -291,11 +284,7 @@ tool_query(ABTI_tool_context *p_tctx, ABT_tool_query_kind query_kind, void *val)
                         (ABTI_xstream *)p_tctx->p_sync_object);
                     break;
                 case ABT_SYNC_EVENT_TYPE_THREAD_JOIN:
-                    *(ABT_thread *)val = ABTI_ythread_get_handle(
-                        (ABTI_ythread *)p_tctx->p_sync_object);
-                    break;
-                case ABT_SYNC_EVENT_TYPE_TASK_JOIN:
-                    *(ABT_task *)val = ABTI_thread_get_handle(
+                    *(ABT_thread *)val = ABTI_thread_get_handle(
                         (ABTI_thread *)p_tctx->p_sync_object);
                     break;
                 case ABT_SYNC_EVENT_TYPE_MUTEX:

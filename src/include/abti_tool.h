@@ -52,8 +52,7 @@ ABTI_tool_context_get_handle(ABTI_tool_context *p_tctx)
 
 static inline void
 ABTI_tool_event_thread_update_callback(ABT_tool_thread_callback_fn cb_func,
-                                       uint64_t event_mask_thread,
-                                       void *user_arg)
+                                       uint64_t event_mask, void *user_arg)
 {
     /* The spinlock is needed to avoid data race between two writers. */
     ABTI_global *p_global = gp_ABTI_global;
@@ -80,46 +79,14 @@ ABTI_tool_event_thread_update_callback(ABT_tool_thread_callback_fn cb_func,
         &p_global->tool_thread_event_mask_tagged);
     uint64_t new_tag =
         (current + ABTI_TOOL_EVENT_TAG_INC) & ABTI_TOOL_EVENT_TAG_MASK;
-    uint64_t new_mask =
-        new_tag | (((event_mask_thread & ABT_TOOL_EVENT_THREAD_ALL) |
-                    (current & ABT_TOOL_EVENT_TASK_ALL)) &
-                   ~ABTI_TOOL_EVENT_TAG_DIRTY_BIT);
+    uint64_t new_mask = new_tag | ((event_mask & ABT_TOOL_EVENT_THREAD_ALL) &
+                                   ~ABTI_TOOL_EVENT_TAG_DIRTY_BIT);
     uint64_t dirty_mask = ABTI_TOOL_EVENT_TAG_DIRTY_BIT | new_mask;
 
     ABTD_atomic_release_store_uint64(&p_global->tool_thread_event_mask_tagged,
                                      dirty_mask);
     p_global->tool_thread_cb_f = cb_func;
     p_global->tool_thread_user_arg = user_arg;
-    ABTD_atomic_release_store_uint64(&p_global->tool_thread_event_mask_tagged,
-                                     new_mask);
-
-    ABTI_spinlock_release(&p_global->tool_writer_lock);
-}
-
-static inline void
-ABTI_tool_event_task_update_callback(ABT_tool_task_callback_fn cb_func,
-                                     uint64_t event_mask_task, void *user_arg)
-{
-    ABTI_global *p_global = gp_ABTI_global;
-    /* The spinlock is needed to avoid data race between two writers. */
-    ABTI_spinlock_acquire(&p_global->tool_writer_lock);
-
-    /* This following writing process is needed to avoid data race between a
-     * reader and a writer. */
-    uint64_t current = ABTD_atomic_acquire_load_uint64(
-        &p_global->tool_thread_event_mask_tagged);
-    uint64_t new_tag =
-        (current + ABTI_TOOL_EVENT_TAG_INC) & ABTI_TOOL_EVENT_TAG_MASK;
-    uint64_t new_mask =
-        new_tag | (((event_mask_task & ABT_TOOL_EVENT_TASK_ALL) |
-                    (current & ABT_TOOL_EVENT_THREAD_ALL)) &
-                   ~ABTI_TOOL_EVENT_TAG_DIRTY_BIT);
-    uint64_t dirty_mask = ABTI_TOOL_EVENT_TAG_DIRTY_BIT | new_mask;
-
-    ABTD_atomic_release_store_uint64(&p_global->tool_thread_event_mask_tagged,
-                                     dirty_mask);
-    p_global->tool_task_cb_f = cb_func;
-    p_global->tool_task_user_arg = user_arg;
     ABTD_atomic_release_store_uint64(&p_global->tool_thread_event_mask_tagged,
                                      new_mask);
 
@@ -136,11 +103,6 @@ static inline void ABTI_tool_event_thread_impl(
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     return;
 #else
-    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-    if (!p_ythread) {
-        /* Use an event code for a tasklet-type thread. */
-        event_code *= ABT_TOOL_EVENT_TASK_CREATE;
-    }
     ABTI_global *p_global = gp_ABTI_global;
     while (1) {
         uint64_t current_mask = ABTD_atomic_acquire_load_uint64(
@@ -148,9 +110,7 @@ static inline void ABTI_tool_event_thread_impl(
         if (current_mask & event_code) {
             ABT_tool_thread_callback_fn cb_func_thread =
                 p_global->tool_thread_cb_f;
-            ABT_tool_task_callback_fn cb_func_task = p_global->tool_task_cb_f;
             void *user_arg_thread = p_global->tool_thread_user_arg;
-            void *user_arg_task = p_global->tool_task_user_arg;
             /* Double check the current event mask. */
             uint64_t current_mask2 = ABTD_atomic_acquire_load_uint64(
                 &p_global->tool_thread_event_mask_tagged);
@@ -169,21 +129,10 @@ static inline void ABTI_tool_event_thread_impl(
             ABT_xstream h_xstream =
                 p_local_xstream ? ABTI_xstream_get_handle(p_local_xstream)
                                 : ABT_XSTREAM_NULL;
-            if (p_ythread) {
-                if (p_ythread->thread.type & ABTI_THREAD_TYPE_ROOT) {
-                    /* Root thread should not be visible to users. */
-                    return;
-                }
-                ABT_thread h_thread = ABTI_ythread_get_handle(p_ythread);
-                ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);
-                cb_func_thread(h_thread, h_xstream, event_code, h_tctx,
-                               user_arg_thread);
-            } else {
-                ABT_task h_task = ABTI_thread_get_handle(p_thread);
-                ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);
-                cb_func_task(h_task, h_xstream, event_code, h_tctx,
-                             user_arg_task);
-            }
+            ABT_thread h_thread = ABTI_thread_get_handle(p_thread);
+            ABT_tool_context h_tctx = ABTI_tool_context_get_handle(&tctx);
+            cb_func_thread(h_thread, h_xstream, event_code, h_tctx,
+                           user_arg_thread);
         }
         return;
     }
