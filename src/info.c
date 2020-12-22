@@ -193,6 +193,10 @@ static void info_trigger_print_all_thread_stacks(
  */
 int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x always requires an init check. */
+    ABTI_SETUP_WITH_INIT_CHECK();
+#endif
     switch (query_kind) {
         case ABT_INFO_QUERY_KIND_ENABLED_DEBUG:
             ABTI_SETUP_WITH_INIT_CHECK();
@@ -369,6 +373,10 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
  */
 int ABT_info_print_config(FILE *fp)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x always requires an init check. */
+    ABTI_SETUP_WITH_INIT_CHECK();
+#endif
     if (!gp_ABTI_global) {
         fprintf(fp, "Argobots is not initialized.\n");
         fflush(fp);
@@ -409,11 +417,16 @@ int ABT_info_print_config(FILE *fp)
  */
 int ABT_info_print_all_xstreams(FILE *fp)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x always requires an init check. */
+    ABTI_SETUP_WITH_INIT_CHECK();
+#else
     if (!gp_ABTI_global) {
         fprintf(fp, "Argobots is not initialized.\n");
         fflush(fp);
         return ABT_SUCCESS;
     }
+#endif
     ABTI_global *p_global = gp_ABTI_global;
 
     ABTI_spinlock_acquire(&p_global->xstream_list_lock);
@@ -465,6 +478,10 @@ int ABT_info_print_all_xstreams(FILE *fp)
 int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 {
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x requires a NULL-handle check. */
+    ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
+#endif
     ABTI_xstream_print(p_xstream, fp, 0, ABT_FALSE);
     return ABT_SUCCESS;
 }
@@ -502,6 +519,10 @@ int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 {
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x requires a NULL-handle check. */
+    ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+#endif
     ABTI_sched_print(p_sched, fp, 0, ABT_TRUE);
     return ABT_SUCCESS;
 }
@@ -539,6 +560,10 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x requires a NULL-handle check. */
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+#endif
     ABTI_pool_print(p_pool, fp, 0);
     return ABT_SUCCESS;
 }
@@ -580,6 +605,10 @@ int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x requires a NULL-handle check. */
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+#endif
     ABTI_thread_print(p_thread, fp, 0);
     return ABT_SUCCESS;
 }
@@ -617,6 +646,10 @@ int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
 {
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x requires a NULL-handle check. */
+    ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
+#endif
     ABTI_thread_attr_print(p_attr, fp, 0);
     return ABT_SUCCESS;
 }
@@ -698,6 +731,10 @@ int ABT_info_print_task(FILE *fp, ABT_task task);
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x requires a NULL-handle check. */
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+#endif
     if (!p_thread) {
         fprintf(fp, "no stack\n");
         fflush(0);
@@ -749,6 +786,10 @@ int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x requires a NULL-handle check. */
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+#endif
     int abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;

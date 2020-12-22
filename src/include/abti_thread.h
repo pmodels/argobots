@@ -10,7 +10,7 @@ static inline ABTI_thread *ABTI_thread_get_ptr(ABT_thread thread)
 {
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     ABTI_thread *p_thread;
-    if (thread == ABT_THREAD_NULL) {
+    if (thread == ABT_THREAD_NULL || thread == ABT_TASK_NULL) {
         p_thread = NULL;
     } else {
         p_thread = (ABTI_thread *)thread;
