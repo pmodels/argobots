@@ -1896,29 +1896,17 @@ static void thread_join_busywait(ABTI_thread *p_thread)
     ABTI_tool_event_thread_join(NULL, p_thread, NULL);
 }
 
-static void thread_join_yield_ythread(ABTI_xstream **pp_local_xstream,
-                                      ABTI_ythread *p_self,
-                                      ABTI_ythread *p_ythread)
+static void thread_join_yield_thread(ABTI_xstream **pp_local_xstream,
+                                     ABTI_ythread *p_self,
+                                     ABTI_thread *p_thread)
 {
-    while (ABTD_atomic_acquire_load_int(&p_ythread->thread.state) !=
+    while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
            ABT_THREAD_STATE_TERMINATED) {
         ABTI_ythread_yield(pp_local_xstream, p_self,
-                           ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_ythread);
+                           ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_thread);
     }
     ABTI_tool_event_thread_join(ABTI_xstream_get_local(*pp_local_xstream),
-                                &p_ythread->thread, &p_self->thread);
-}
-
-static void thread_join_yield_task(ABTI_xstream **pp_local_xstream,
-                                   ABTI_ythread *p_self, ABTI_thread *p_task)
-{
-    while (ABTD_atomic_acquire_load_int(&p_task->state) !=
-           ABT_THREAD_STATE_TERMINATED) {
-        ABTI_ythread_yield(pp_local_xstream, p_self,
-                           ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_task);
-    }
-    ABTI_tool_event_thread_join(ABTI_xstream_get_local(*pp_local_xstream),
-                                p_task, &p_self->thread);
+                                p_thread, &p_self->thread);
 }
 
 static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
@@ -1954,7 +1942,7 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
 
     ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
     if (!p_ythread) {
-        thread_join_yield_task(&p_local_xstream, p_self, p_thread);
+        thread_join_yield_thread(&p_local_xstream, p_self, p_thread);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
         return;
     }
@@ -2029,7 +2017,7 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         /* FIXME: once we change the suspend/resume mechanism (i.e., asking the
          * scheduler to wake up the blocked ULT), we will be able to handle all
          * access modes. */
-        thread_join_yield_ythread(&p_local_xstream, p_self, p_ythread);
+        thread_join_yield_thread(&p_local_xstream, p_self, &p_ythread->thread);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
         return;
 
@@ -2040,7 +2028,8 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         uint32_t req = ABTD_atomic_fetch_or_uint32(&p_ythread->thread.request,
                                                    ABTI_THREAD_REQ_JOIN);
         if (req & ABTI_THREAD_REQ_JOIN) {
-            thread_join_yield_ythread(&p_local_xstream, p_self, p_ythread);
+            thread_join_yield_thread(&p_local_xstream, p_self,
+                                     &p_ythread->thread);
             *pp_local = ABTI_xstream_get_local(p_local_xstream);
             return;
         }
@@ -2081,7 +2070,7 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         ABTI_tool_event_thread_join(*pp_local, p_thread, &p_self->thread);
     } else {
         /* Use a yield-based method. */
-        thread_join_yield_ythread(&p_local_xstream, p_self, p_ythread);
+        thread_join_yield_thread(&p_local_xstream, p_self, &p_ythread->thread);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
         return;
     }
