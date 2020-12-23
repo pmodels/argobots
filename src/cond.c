@@ -41,6 +41,10 @@ static inline double convert_timespec_to_sec(const struct timespec *p_ts);
  */
 int ABT_cond_create(ABT_cond *newcond)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newcond to NULL on error. */
+    *newcond = ABT_COND_NULL;
+#endif
     ABTI_cond *p_newcond;
     int abt_errno = ABTU_malloc(sizeof(ABTI_cond), (void **)&p_newcond);
     ABTI_CHECK_ERROR(abt_errno);
@@ -84,7 +88,10 @@ int ABT_cond_free(ABT_cond *cond)
     ABT_cond h_cond = *cond;
     ABTI_cond *p_cond = ABTI_cond_get_ptr(h_cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* This check will be removed in Argobots 2.0 */
     ABTI_CHECK_TRUE(!ABTI_waitlist_is_empty(&p_cond->waitlist), ABT_ERR_COND);
+#endif
 
     ABTI_cond_fini(p_cond);
     ABTU_free(p_cond);
@@ -142,6 +149,15 @@ int ABT_cond_free(ABT_cond *cond)
 int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 {
     ABTI_local *p_local = ABTI_local_get_local();
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x does not allow a tasklet to call this routine. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED && p_local) {
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
+        ABTI_CHECK_TRUE(p_local_xstream->p_thread->type &
+                            ABTI_THREAD_TYPE_YIELDABLE,
+                        ABT_ERR_COND);
+    }
+#endif
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
