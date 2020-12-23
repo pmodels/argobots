@@ -1914,6 +1914,8 @@ ALIASES += DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{2}="If \1 is not a valid tool q
 
 ALIASES += DOC_ERROR_INV_ARG_NEG{1}="If \1 is negative, \c ABT_ERR_INV_ARG is returned.\n"
 
+ALIASES += DOC_ERROR_INV_ARG_SCHED_CONFIG_TYPE="If a variable of type \c ABT_sched_config_var in the given list has an invalid \c type, \c ABT_ERR_INV_ARG is returned.\n"
+
 ALIASES += DOC_ERROR_INV_ARG_ZERO{1}="If \1 is zero, \c ABT_ERR_INV_ARG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_BARRIER_HANDLE{1}="If \1 is \c ABT_BARRIER_NULL, \c ABT_ERR_INV_BARRIER is returned.\n"
@@ -1953,6 +1955,10 @@ ALIASES += DOC_ERROR_INV_POOL_HANDLE{1}="If \1 is \c ABT_POOL_NULL, \c ABT_ERR_I
 ALIASES += DOC_ERROR_INV_RWLOCK_HANDLE{1}="If \1 is \c ABT_RWLOCK_NULL, \c ABT_ERR_INV_RWLOCK is returned.\n"
 
 ALIASES += DOC_ERROR_INV_RWLOCK_PTR{1}="If \1 points to \c ABT_RWLOCK_NULL, \c ABT_ERR_INV_RWLOCK is returned.\n"
+
+ALIASES += DOC_ERROR_INV_SCHED_CONFIG_HANDLE{1}="If \1 is \c ABT_SCHED_CONFIG_NULL, \c ABT_ERR_INV_SCHED_CONFIG is returned.\n"
+
+ALIASES += DOC_ERROR_INV_SCHED_CONFIG_PTR{1}="If \1 points to \c ABT_SCHED_CONFIG_NULL, \c ABT_ERR_INV_SCHED_CONFIG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_SCHED_HANDLE{1}="If \1 is \c ABT_SCHED_NULL, \c ABT_ERR_INV_SCHED is returned.\n"
 
@@ -2006,7 +2012,7 @@ ALIASES += DOC_ERROR_UNINITIALIZED="If the Argobots runtime is not initialized, 
 
 ALIASES += DOC_ERROR_UNINITIALIZED_INFO_QUERY="If the queried information requires initialized Argobots while Argobots is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
 
-ALIASES += DOC_ERROR_USR_SCHED_INIT{1}="If the return value of \1 is not \c ABT_SUCCESS, the error returned by \1 is returned.\n"
+ALIASES += DOC_ERROR_USR_SCHED_INIT{1}="If \1 does not return \c ABT_SUCCESS, the error returned by \1 is returned.\n"
 
 ALIASES += DOC_ERROR_WAITER{2}="If there is a waiter blocked on \1, \2 is returned."
 
@@ -2019,6 +2025,8 @@ ALIASES += DOC_NOTE_DEFAULT_MUTEX_ATTRIBUTE="To check the details of the default
 ALIASES += DOC_NOTE_DEFAULT_POOL="To see the details of the default pool, please check \c ABT_pool_create()."
 
 ALIASES += DOC_NOTE_DEFAULT_POOL_CONFIG=""
+
+ALIASES += DOC_NOTE_DEFAULT_SCHED_AUTOMATIC="To see the details of whether the scheduler is automatically freed or not, please check \c ABT_sched_create() and \c ABT_sched_create_basic()."
 
 ALIASES += DOC_NOTE_DEFAULT_SCHED_CONFIG="To see the details of the default scheduler configuration, please check \c ABT_sched_config_create()."
 
@@ -2055,6 +2063,8 @@ ALIASES += DOC_UNDEFINED_NOT_LOCKED{1}="If \1 is not locked, the results are und
 ALIASES += DOC_UNDEFINED_NULL_PTR_CONDITIONAL{2}="If \2 and \1 is \c NULL, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_NULL_PTR{1}="If \1 is \c NULL, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_SCHED_CONFIG_CREATE_UNFORMATTED="If the \a (2n+1)th element of the given variadic arguments is neither \c ABT_sched_config_var_end nor a variable of type \c ABT_sched_config_var, the results are undefined.\n If the \a (2n+2)th element of the given variadic arguments is not a variable of a type specified by \c type of the \a (2n+1)th element of type \c ABT_sched_config_var, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_SCHED_USED{1}="If \1 is being used, the results are undefined."
 

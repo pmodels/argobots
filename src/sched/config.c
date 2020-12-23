@@ -29,34 +29,68 @@ ABT_sched_config_var ABT_sched_config_automatic = { .idx = -3,
 
 /**
  * @ingroup SCHED_CONFIG
- * @brief   Create a scheduler configuration.
+ * @brief   Create a new scheduler configuration.
  *
- * This function is used to create a specific configuration of a scheduler. The
- * dynamic parameters are a list of tuples composed of the variable of type \c
- * ABT_sched_config_var and a value for this variable. The list must end with a
- * single value \c ABT_sched_config_var_end.
+ * \c ABT_sched_config_create() creates a new scheduler configuration and
+ * returns its handle through \c config.
  *
- * For now the parameters can be
- *   - for all the schedulers
- *     - ABT_sched_config_access: to choose the access type of the
- *     automatically created pools (ABT_POOL_ACCESS_MPSC by default)
- *     - ABT_sched_config_automatic: to automatically free the scheduler when
- *     unused (ABT_TRUE by default)
- *   - for the basic scheduler:
- *     - ABT_sched_basic_freq; to set the frequency on checking events
+ * The variadic arguments are an array of tuples composed of a variable of type
+ * \c ABT_sched_config_var and a value for this variable.  The array must end
+ * with a single value \c ABT_sched_config_var_end.
  *
- * If you want to write your own scheduler and use this function, you can find
- * a good example in the test called \c sched_config.
+ * The current Argobots supports the following hints:
  *
- * For example, if you want to configure the basic scheduler to have a
- * frequency for checking events equal to 5, you will have this call:
+ * - \c ABT_sched_basic_freq:
+ *
+ *   The frequency of event checks of the predefined scheduler.  A smaller value
+ *   indicates a more frequent check.  If this is not specified, the default
+ *   value is used for scheduler creation.
+ *
+ * - \c ABT_sched_config_automatic:
+ *
+ *   Whether the scheduler is automatically freed or not.  If the value is
+ *   \c ABT_TRUE, the scheduler is automatically freed when a work unit
+ *   associated with the scheduler is freed.  If this is not specified, the
+ *   default value of each scheduler creation routine is used for scheduler
+ *   creation.
+ *
+ * - \c ABT_sched_config_access:
+ *
+ *   This is deprecated and ignored.
+ *
+ * @note
+ * \DOC_NOTE_DEFAULT_SCHED_AUTOMATIC
+ *
+ * \c config must be freed by \c ABT_sched_config_free() after its use.
+ *
+ * @note
+ * For example, this routine can be called as follows to configure the
+ * predefined scheduler to have a frequency for checking events equal to \a 5:
+ * @code{.c}
+ * ABT_sched_config config;
  * ABT_sched_config_create(&config, ABT_sched_basic_freq, 5,
- * ABT_sched_config_var_end);
+ *                         ABT_sched_config_var_end);
+ * @endcode
  *
- * @param[out] config   configuration to create
- * @param[in]  ...      list of arguments
+ * If the array contains multiple tuples that have the same \c idx of
+ * \c ABT_sched_config_var, the value associated with \c idx is corrupted.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_SCHED_CONFIG_TYPE
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_SCHED_CONFIG_CREATE_UNFORMATTED
+ * \DOC_UNDEFINED_NULL_PTR{\c config}
+ *
+ * @param[out] config   scheduler configuration handle
+ * @param[in]  ...      array of arguments
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_sched_config_create(ABT_sched_config *config, ...)
 {
@@ -147,18 +181,42 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
 
 /**
  * @ingroup SCHED_CONFIG
- * @brief   Copy the set values from config into the variables passed in the
- *          dynamic list of arguments.
+ * @brief   Retrieve values from a scheduler configuration.
  *
- * The arguments in \c ... are the addresses of the variables where to copy the
- * packed data. The packed data are copied to their corresponding variables.
- * For a good example, see the test \c sched_config.
+ * \c ABT_sched_config_read() reads values from the scheduler configuration
+ * \c config and sets the values to variables given as the variadic arguments
+ * that contain at least \c num_vars pointers.  This routine sets the \a i th
+ * argument where \a i starts from 0 to a value mapped to a tuple that has
+ * \c ABT_sched_config_var with its \c idx = \a i.  Each argument needs to be a
+ * pointer of a type specified by a corresponding \c type of
+ * \c ABT_sched_config_var.  If the \a i th argument is \c NULL, a value
+ * associated with \c idx = \a i is not copied.  If a value associated with
+ * \c idx = \a i does not exist, the \a i th argument is not updated.
  *
- * @param[in] config    configuration to read
- * @param[in] num_vars  number of variable addresses in \c ...
- * @param[in] ...       list of arguments
+ * @note
+ * For example, this routine can be called as follows to get a value is
+ * corresponding to \c ABT_sched_config_var where its \c idx is 1.
+ * @code{.c}
+ * ABT_sched_config_var var = { 1, ABT_SCHED_CONFIG_INT };
+ * int val;
+ * ABT_sched_config_read(&config, 2, NULL, &val);
+ * @endcode
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_NEG{\c num_vars}
+ * \DOC_ERROR_INV_SCHED_CONFIG_HANDLE{\c config}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in]  config    scheduler configuration handle
+ * @param[in]  num_vars  number of variable pointers in \c ...
+ * @param[out] ...       array of variable pointers
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
 {
@@ -186,11 +244,26 @@ int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
 
 /**
  * @ingroup SCHED_CONFIG
- * @brief   Free the configuration.
+ * @brief   Free a scheduler configuration.
  *
- * @param[in,out] config  configuration to free
+ * \c ABT_sched_config_free() deallocates the resource used for the scheduler
+ * configuration \c sched_config and sets \c sched_config to
+ * \c ABT_SCHED_CONFIG_NULL.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_SCHED_CONFIG_PTR{\c config}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c config}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c config}
+ *
+ * @param[in,out] config  scheduler configuration handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_sched_config_free(ABT_sched_config *config)
 {

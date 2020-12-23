@@ -537,26 +537,73 @@ typedef enum ABT_sync_event_type            ABT_sync_event_type;
 #endif
 #define ABT_TASK_NULL ABT_THREAD_NULL
 
-/* Scheduler config */
+/**
+ * @ingroup SCHED_CONFIG
+ * @brief   A struct that sets and gets a scheduler configuration.
+ */
 typedef enum {
-    ABT_SCHED_CONFIG_INT    = 0, /* Parameter of type int */
-    ABT_SCHED_CONFIG_DOUBLE = 1, /* Parameter of type double */
-    ABT_SCHED_CONFIG_PTR    = 2, /* Parameter of type pointer */
+    /** Parameter of type int */
+    ABT_SCHED_CONFIG_INT    = 0,
+    /** Parameter of type double */
+    ABT_SCHED_CONFIG_DOUBLE = 1,
+    /** Parameter of type pointer */
+    ABT_SCHED_CONFIG_PTR    = 2,
 } ABT_sched_config_type;
 
+/**
+ * @ingroup SCHED_CONFIG
+ * @brief   A struct that sets and gets a scheduler configuration.
+ */
 typedef struct {
-  int idx;
-  ABT_sched_config_type type;
+    /** An index of the configuration variable.  It must be non-negative. */
+    int idx;
+    /** Type of the configuration variable. */
+    ABT_sched_config_type type;
 } ABT_sched_config_var;
 
+/**
+ * @ingroup SCHED_CONFIG
+ * @var     ABT_sched_config_var_end
+ * @brief   Predefined ABT_sched_config_var to mark the last parameter.
+ * @hideinitializer
+ *
+ * Check ABT_sched_config_create() for details.  The user may not change its
+ * variables.
+ */
 extern ABT_sched_config_var ABT_sched_config_var_end ABT_API_PUBLIC;
-  /* To mark the last parameter in ABT_sched_config_create */
+/**
+ * @ingroup SCHED_CONFIG
+ * @var     ABT_sched_basic_freq
+ * @brief   Predefined ABT_sched_config_var to configure the frequency for
+ *          checking events of the basic scheduler.
+ *
+ * Its type is int.  The user may not change its variables.
+ * @hideinitializer
+ */
 extern ABT_sched_config_var ABT_sched_basic_freq ABT_API_PUBLIC;
-  /* To configure the frequency for checking events of the basic scheduler */
+/**
+ * @ingroup SCHED_CONFIG
+ * @var     ABT_sched_config_access
+ * @brief   Unused predefined ABT_sched_config_var.
+ * @hideinitializer
+ *
+ * Its type is int.  Currently, this setting is ignored.  The user may not
+ * change its variables.
+ */
 extern ABT_sched_config_var ABT_sched_config_access ABT_API_PUBLIC;
-  /* To configure the access type of the pools created automatically */
+/**
+ * @ingroup SCHED_CONFIG
+ * @var     ABT_sched_config_automatic
+ * @brief   Predefined ABT_sched_config_var to configure whether the scheduler
+ *          is freed automatically or not.
+ *
+ * Its type is int.  If the value is non-zero, the scheduler is freed
+ * automatically after its associated objects are released.  If the value is
+ * zero, the scheduler is configured to be not freed automatically by the
+ * Argobots runtime.  The user may not change its variables.
+ * @hideinitializer
+ */
 extern ABT_sched_config_var ABT_sched_config_automatic ABT_API_PUBLIC;
-  /* To configure whether the scheduler is freed automatically or not */
 
 /* Scheduler Functions */
 typedef int      (*ABT_sched_init_fn)(ABT_sched, ABT_sched_config);
