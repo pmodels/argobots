@@ -6,22 +6,35 @@
 #include "abti.h"
 
 /** @defgroup MUTEX_ATTR Mutex Attributes
- * Attributes are used to specify mutex behavior that is different from the
- * default.  When a mutex is created with \c ABT_mutex_create_with_attr(),
- * attributes can be specified with an \c ABT_mutex_attr object.
+ * Mutex attributes are used to specify mutex behavior that is different from
+ * the default.
  */
 
 /**
  * @ingroup MUTEX_ATTR
- * @brief   Create a new mutex attribute object.
+ * @brief   Create a new mutex attribute.
  *
- * \c ABT_mutex_attr_create() creates a mutex attribute object with default
- * attribute values.  The handle to the attribute object is returned through
- * \c newattr. The attribute object can be used in more than one mutex.
+ * \c ABT_mutex_attr_create() creates a new mutex attribute with default
+ * attribute values and returns its handle through \c newattr.
  *
- * @param[out] newattr  handle to a new attribute object
+ * The default parameters are as follows:
+ * - Not recursive.
+ *
+ * \c newattr must be freed by \c ABT_mutex_attr_free() after its use.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newattr}
+ *
+ * @param[out] newattr  mutex attribute handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
 {
@@ -42,15 +55,25 @@ int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
 
 /**
  * @ingroup MUTEX_ATTR
- * @brief   Free the mutex attribute object.
+ * @brief   Free a mutex attribute.
  *
- * \c ABT_mutex_attr_free() deallocates memory used for the mutex attribute
- * object.  If this function successfully returns, \c attr will be set to
- * \c ABT_MUTEX_ATTR_NULL.
+ * \c ABT_mutex_attr_free() deallocates the resource used for the mutex
+ * attribute \c attr and sets \c attr to \c ABT_MUTEX_ATTR_NULL.
  *
- * @param[in,out] attr  handle to the target attribute object
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_ATTR_PTR{\c attr}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c attr}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c attr}
+ *
+ * @param[in,out] attr  mutex attribute handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_attr_free(ABT_mutex_attr *attr)
 {
@@ -67,16 +90,28 @@ int ABT_mutex_attr_free(ABT_mutex_attr *attr)
 
 /**
  * @ingroup MUTEX_ATTR
- * @brief   Set the recursive property in the attribute object.
+ * @brief   Set a recursive property in a mutex attribute.
  *
  * \c ABT_mutex_attr_set_recursive() sets the recursive property (i.e., whether
- * the mutex can be locked multiple times by the same owner) in the attribute
- * object associated with handle \c attr.
+ * the mutex can be locked multiple times by the same owner or not) in the mutex
+ * attribute \c attr.  If \c recursive is \c ABT_TRUE, the recursive flag of
+ * \c attr is set.  Otherwise, the recursive flag of \c attr is unset.
  *
- * @param[in] attr       handle to the target attribute object
- * @param[in] recursive  boolean value for the recursive locking support
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_ATTR_HANDLE{\c attr}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_BOOL{\c recursive}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c attr}
+ *
+ * @param[in] attr       mutex attribute handle
+ * @param[in] recursive  flag for a recursive locking support
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive)
 {

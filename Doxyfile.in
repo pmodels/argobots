@@ -1910,6 +1910,10 @@ ALIASES += DOC_ERROR_INV_FUTURE_PTR{1}="If \1 points to \c ABT_FUTURE_NULL, \c A
 
 ALIASES += DOC_ERROR_INV_INFO_QUERY_KIND{1}="If \1 is not a valid info query kind, \c ABT_ERR_INV_QUERY_KIND is returned.\n"
 
+ALIASES += DOC_ERROR_INV_MUTEX_ATTR_HANDLE{1}="If \1 is \c ABT_MUTEX_ATTR_NULL, \c ABT_ERR_INV_MUTEX_ATTR is returned.\n"
+
+ALIASES += DOC_ERROR_INV_MUTEX_ATTR_PTR{1}="If \1 points to \c ABT_MUTEX_ATTR_NULL, \c ABT_ERR_INV_MUTEX_ATTR is returned.\n"
+
 ALIASES += DOC_ERROR_INV_MUTEX_HANDLE{1}="If \1 is \c ABT_MUTEX_NULL, \c ABT_ERR_INV_MUTEX is returned.\n"
 
 ALIASES += DOC_ERROR_INV_MUTEX_PTR{1}="If \1 points to \c ABT_MUTEX_NULL, \c ABT_ERR_INV_MUTEX is returned.\n"
@@ -1963,6 +1967,8 @@ ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant
 #---------------------------------------------------------------------------
 # Undefined behavior
 #---------------------------------------------------------------------------
+
+ALIASES += DOC_UNDEFINED_BOOL{1}="If \1 is neither \c ABT_TRUE nor \c ABT_FALSE, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_CHANGE_STATE{1}="If the internal state of the Argobots is changed in \1, the results are undefined.\n"
 
