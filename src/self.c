@@ -105,15 +105,17 @@ int ABT_self_is_primary(ABT_bool *is_primary)
     *is_primary = ABT_FALSE;
     ABTI_ythread *p_ythread;
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(NULL, &p_ythread);
-    *is_primary =
-        (p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
+    *is_primary = (p_ythread->thread.type & ABTI_THREAD_TYPE_PRIMARY)
+                      ? ABT_TRUE
+                      : ABT_FALSE;
 #else
     ABTI_xstream *p_local_xstream =
         ABTI_local_get_xstream_or_null(ABTI_local_get_local());
     if (p_local_xstream) {
-        *is_primary = (p_local_xstream->p_thread->type & ABTI_THREAD_TYPE_MAIN)
-                          ? ABT_TRUE
-                          : ABT_FALSE;
+        *is_primary =
+            (p_local_xstream->p_thread->type & ABTI_THREAD_TYPE_PRIMARY)
+                ? ABT_TRUE
+                : ABT_FALSE;
     } else {
         *is_primary = ABT_FALSE;
     }

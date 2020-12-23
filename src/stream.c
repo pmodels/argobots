@@ -877,7 +877,7 @@ void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
                                 ABTI_ythread *p_ythread)
 {
     /* p_ythread must be the main thread. */
-    ABTI_ASSERT(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN);
+    ABTI_ASSERT(p_ythread->thread.type & ABTI_THREAD_TYPE_PRIMARY);
     /* The ES's state must be running here. */
     ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_xstream->state) ==
                 ABT_XSTREAM_STATE_RUNNING);
@@ -895,8 +895,8 @@ void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
     p_xstream->p_root_ythread->thread.p_last_xstream = p_xstream;
     ABTD_ythread_context_switch(&p_ythread->ctx,
                                 &p_xstream->p_root_ythread->ctx);
-    /* Come back to the main thread.  Now this thread is executed on top of the
-     * main scheduler, which is running on the root thread. */
+    /* Come back to the primary thread.  Now this thread is executed on top of
+     * the main scheduler, which is running on the root thread. */
     (*pp_local_xstream)->p_thread = &p_ythread->thread;
 }
 
@@ -1403,7 +1403,7 @@ xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
         }
     }
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
-        ABTI_CHECK_TRUE(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN,
+        ABTI_CHECK_TRUE(p_ythread->thread.type & ABTI_THREAD_TYPE_PRIMARY,
                         ABT_ERR_THREAD);
 
         /* Since the primary ES does not finish its execution until ABT_finalize
