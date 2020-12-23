@@ -1834,6 +1834,8 @@ ALIASES += DOC_CONTEXT_TOOL_CALLBACK{1}="This routine can be called only in a ca
 
 ALIASES += DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION="A combination of a callback function, an event mask its argument for a tool interface is updated atomically."
 
+ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on the clock resolution by the system."
+
 ALIASES += DOC_DESC_V10_ACCEPT_TASK{1}="\DOC_V10 The user cannot pass a tasklet handle as \1.\n \DOC_V11 This routine accepts a tasklet handle as \1.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
 
 ALIASES += DOC_DESC_V10_ACCEPT_THREAD{1}="\DOC_V10 The user cannot pass a ULT handle as \1.\n \DOC_V11 This routine accepts a ULT handle as \1.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
@@ -1845,6 +1847,8 @@ ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{4}="\DOC_V1X This routine returns \4 w
 ALIASES += DOC_DESC_V1X_PRINT_RUNTIME_INFO="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED when Argobots is not initialized.\n \DOC_V20 This routine prints the queried information and returns \c ABT_SUCCESS when Argobots is not initialized.\n @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
 
 ALIASES += DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized and the queried information cannot be retrieved when Argobots is not initialized.\n @rationale Retrieving static configurations before initializing Argobots is helpful to check if the loaded Argobots implements necessary features. @endrationale"
+
+ALIASES += DOC_DESC_V1X_SET_VALUE_ON_ERROR{2}="\DOC_V1X \1 is set to \2 if an error occurs.\n \DOC_V20 \1 is not updated if an error occurs.\n @rationale To ensure the atomicity of the API, Argobots 2.0 guarantees that the routine has no effect if the routine returns an error (as possible).  Argobots 2.0 does not update a returned value when the routine throws an error. @endrationale"
 
 #---------------------------------------------------------------------------
 # Error
@@ -1866,9 +1870,15 @@ ALIASES += DOC_ERROR_INV_THREAD_ATTR_HANDLE{1}="If \1 is \c ABT_THREAD_ATTR_NULL
 
 ALIASES += DOC_ERROR_INV_THREAD_HANDLE{1}="If \1 is \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_THREAD is returned.\n"
 
+ALIASES += DOC_ERROR_INV_TIMER_HANDLE{1}="If \1 is \c ABT_TIMER_NULL, \c ABT_ERR_INV_TIMER is returned.\n"
+
+ALIASES += DOC_ERROR_INV_TIMER_PTR{1}="If \1 points to \c ABT_TIMER_NULL, \c ABT_ERR_INV_TIMER is returned.\n"
+
 ALIASES += DOC_ERROR_INV_XSTREAM_HANDLE{1}="If \1 is \c ABT_XSTREAM_NULL, \c ABT_ERR_INV_XSTREAM is returned.\n"
 
 ALIASES += DOC_ERROR_POOL_UNSUPPORTED_FEATURE{2}="If \1 does not support \2, \c ABT_ERR_POOL is returned.\n"
+
+ALIASES += DOC_ERROR_RESOURCE="If an error related to memory occurs, \c ABT_ERR_MEM is returned.\n If an error related to system calls occurs, \c ABT_ERR_SYS is returned.\n"
 
 ALIASES += DOC_ERROR_SUCCESS="If this routine succeeds, \c ABT_SUCCESS is returned.\n"
 
@@ -1891,6 +1901,10 @@ ALIASES += DOC_UNDEFINED_CHANGE_STATE{1}="If the internal state of the Argobots 
 ALIASES += DOC_UNDEFINED_NULL_PTR{1}="If \1 is \c NULL, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_SYS_FILE{1}="If an error occurs regarding \1, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_THREAD_UNSAFE_FREE{1}="If \1 is accessed after calling this routine, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_THREAD_UNSAFE{1}="If \1 is accessed concurrently, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_TOOL_CALLBACK{1}="If the tool context passed to \1 is accessed after \1 finishes, the results are undefined.\n"
 
