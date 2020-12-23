@@ -30,7 +30,11 @@ void task_hello(void *arg)
     assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_TASK);
 
     ret = ABT_self_is_primary(&flag);
+#ifdef ABT_ENABLE_VER_20_API
     assert(ret == ABT_SUCCESS && flag == ABT_FALSE);
+#else
+    assert(ret == ABT_ERR_INV_THREAD && flag == ABT_FALSE);
+#endif
 
     ret = ABT_self_on_primary_xstream(&flag);
     assert(ret == ABT_SUCCESS);
@@ -105,13 +109,25 @@ void *pthread_hello(void *arg)
     assert(ret == ABT_ERR_INV_XSTREAM && task == ABT_TASK_NULL);
 
     ret = ABT_self_get_type(&type);
+#ifdef ABT_ENABLE_VER_20_API
+    assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_EXT);
+#else
     assert(ret == ABT_ERR_INV_XSTREAM && type == ABT_UNIT_TYPE_EXT);
+#endif
 
     ret = ABT_self_is_primary(&flag);
-    assert(ret == ABT_ERR_INV_XSTREAM);
+#ifdef ABT_ENABLE_VER_20_API
+    assert(ret == ABT_SUCCESS && flag == ABT_FALSE);
+#else
+    assert(ret == ABT_ERR_INV_XSTREAM && flag == ABT_FALSE);
+#endif
 
     ret = ABT_self_on_primary_xstream(&flag);
-    assert(ret == ABT_ERR_INV_XSTREAM);
+#ifdef ABT_ENABLE_VER_20_API
+    assert(ret == ABT_SUCCESS && flag == ABT_FALSE);
+#else
+    assert(ret == ABT_ERR_INV_XSTREAM && flag == ABT_FALSE);
+#endif
 
     ATS_printf(1, "pthread: external thread\n");
 
@@ -131,6 +147,7 @@ int main(int argc, char *argv[])
     pthread_t pthread;
     int i, ret;
 
+#ifndef ABT_ENABLE_VER_20_API
     /* Self test: we should get ABT_ERR_UNITIALIZED */
     ret = ABT_xstream_self(&xstreams[0]);
     assert(ret == ABT_ERR_UNINITIALIZED && xstreams[0] == ABT_XSTREAM_NULL);
@@ -149,6 +166,7 @@ int main(int argc, char *argv[])
 
     ret = ABT_self_on_primary_xstream(&flag);
     assert(ret == ABT_ERR_UNINITIALIZED);
+#endif
 
     /* Initialize */
     ATS_read_args(argc, argv);

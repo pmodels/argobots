@@ -153,22 +153,22 @@ ABTU_ret_err static int init_library(void)
     /* Init the ES local data */
     ABTI_local_set_xstream(p_local_xstream);
 
-    /* Create the primary ULT, i.e., the main thread */
-    ABTI_ythread *p_main_ythread;
+    /* Create the primary ULT */
+    ABTI_ythread *p_primary_ythread;
     abt_errno =
-        ABTI_ythread_create_main(ABTI_xstream_get_local(p_local_xstream),
-                                 p_local_xstream, &p_main_ythread);
-    /* Set as if p_local_xstream is currently running the main thread. */
-    ABTD_atomic_relaxed_store_int(&p_main_ythread->thread.state,
+        ABTI_ythread_create_primary(ABTI_xstream_get_local(p_local_xstream),
+                                    p_local_xstream, &p_primary_ythread);
+    /* Set as if p_local_xstream is currently running the primary ULT. */
+    ABTD_atomic_relaxed_store_int(&p_primary_ythread->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    p_main_ythread->thread.p_last_xstream = p_local_xstream;
+    p_primary_ythread->thread.p_last_xstream = p_local_xstream;
     ABTI_CHECK_ERROR(abt_errno);
-    gp_ABTI_global->p_main_ythread = p_main_ythread;
-    p_local_xstream->p_thread = &p_main_ythread->thread;
+    gp_ABTI_global->p_primary_ythread = p_primary_ythread;
+    p_local_xstream->p_thread = &p_primary_ythread->thread;
 
     /* Start the primary ES */
     ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream,
-                               p_main_ythread);
+                               p_primary_ythread);
 
     if (gp_ABTI_global->print_config == ABT_TRUE) {
         ABTI_info_print_config(stdout);
@@ -198,7 +198,7 @@ ABTU_ret_err static int finailze_library(void)
                         "ABT_finalize must be called by the primary ES.");
 
     ABTI_thread *p_self = p_local_xstream->p_thread;
-    ABTI_CHECK_TRUE_MSG(p_self->type & ABTI_THREAD_TYPE_MAIN,
+    ABTI_CHECK_TRUE_MSG(p_self->type & ABTI_THREAD_TYPE_PRIMARY,
                         ABT_ERR_INV_THREAD,
                         "ABT_finalize must be called by the primary ULT.");
     ABTI_ythread *p_ythread;
@@ -224,7 +224,8 @@ ABTU_ret_err static int finailze_library(void)
 
     /* Remove the primary ULT */
     p_local_xstream->p_thread = NULL;
-    ABTI_ythread_free_main(ABTI_xstream_get_local(p_local_xstream), p_ythread);
+    ABTI_ythread_free_primary(ABTI_xstream_get_local(p_local_xstream),
+                              p_ythread);
 
     /* Free the primary ES */
     ABTI_xstream_free(ABTI_xstream_get_local(p_local_xstream), p_local_xstream,

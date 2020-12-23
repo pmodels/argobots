@@ -72,7 +72,7 @@ enum ABTI_sched_used {
 #define ABTI_THREAD_TYPE_EXT ((ABTI_thread_type)0)
 #define ABTI_THREAD_TYPE_THREAD ((ABTI_thread_type)(0x1 << 0))
 #define ABTI_THREAD_TYPE_ROOT ((ABTI_thread_type)(0x1 << 1))
-#define ABTI_THREAD_TYPE_MAIN ((ABTI_thread_type)(0x1 << 2))
+#define ABTI_THREAD_TYPE_PRIMARY ((ABTI_thread_type)(0x1 << 2))
 #define ABTI_THREAD_TYPE_MAIN_SCHED ((ABTI_thread_type)(0x1 << 3))
 #define ABTI_THREAD_TYPE_YIELDABLE ((ABTI_thread_type)(0x1 << 4))
 #define ABTI_THREAD_TYPE_NAMED ((ABTI_thread_type)(0x1 << 5))
@@ -177,16 +177,16 @@ struct ABTI_global {
         xstream_list_lock; /* Spinlock protecting ES list. Any read and
                             * write to this list requires a lock.*/
 
-    int num_cores;                /* Number of CPU cores */
-    ABT_bool set_affinity;        /* Whether CPU affinity is used */
-    ABT_bool use_logging;         /* Whether logging is used */
-    ABT_bool use_debug;           /* Whether debug output is used */
-    uint32_t key_table_size;      /* Default key table size */
-    size_t thread_stacksize;      /* Default stack size for ULT (in bytes) */
-    size_t sched_stacksize;       /* Default stack size for sched (in bytes) */
-    uint32_t sched_event_freq;    /* Default check frequency for sched */
-    uint64_t sched_sleep_nsec;    /* Default nanoseconds for scheduler sleep */
-    ABTI_ythread *p_main_ythread; /* ULT of the main function */
+    int num_cores;             /* Number of CPU cores */
+    ABT_bool set_affinity;     /* Whether CPU affinity is used */
+    ABT_bool use_logging;      /* Whether logging is used */
+    ABT_bool use_debug;        /* Whether debug output is used */
+    uint32_t key_table_size;   /* Default key table size */
+    size_t thread_stacksize;   /* Default stack size for ULT (in bytes) */
+    size_t sched_stacksize;    /* Default stack size for sched (in bytes) */
+    uint32_t sched_event_freq; /* Default check frequency for sched */
+    uint64_t sched_sleep_nsec; /* Default nanoseconds for scheduler sleep */
+    ABTI_ythread *p_primary_ythread; /* Primary ULT */
 
     uint32_t
         mutex_max_handovers;    /* Default max. # of local handovers (unused) */
@@ -522,9 +522,9 @@ ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
 ABTU_ret_err int ABTI_ythread_create_root(ABTI_local *p_local,
                                           ABTI_xstream *p_xstream,
                                           ABTI_ythread **pp_root_ythread);
-ABTU_ret_err int ABTI_ythread_create_main(ABTI_local *p_local,
-                                          ABTI_xstream *p_xstream,
-                                          ABTI_ythread **p_ythread);
+ABTU_ret_err int ABTI_ythread_create_primary(ABTI_local *p_local,
+                                             ABTI_xstream *p_xstream,
+                                             ABTI_ythread **p_ythread);
 ABTU_ret_err int ABTI_ythread_create_main_sched(ABTI_local *p_local,
                                                 ABTI_xstream *p_xstream,
                                                 ABTI_sched *p_sched);
@@ -533,7 +533,7 @@ ABTU_ret_err int ABTI_ythread_create_sched(ABTI_local *p_local,
                                            ABTI_sched *p_sched);
 ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
                                      ABTI_ythread *p_ythread);
-void ABTI_ythread_free_main(ABTI_local *p_local, ABTI_ythread *p_ythread);
+void ABTI_ythread_free_primary(ABTI_local *p_local, ABTI_ythread *p_ythread);
 void ABTI_ythread_free_root(ABTI_local *p_local, ABTI_ythread *p_ythread);
 void ABTI_ythread_set_blocked(ABTI_ythread *p_ythread);
 void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
