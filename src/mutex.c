@@ -38,6 +38,10 @@
  */
 int ABT_mutex_create(ABT_mutex *newmutex)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newmutex to NULL on error. */
+    *newmutex = ABT_MUTEX_NULL;
+#endif
     ABTI_mutex *p_newmutex;
 
     int abt_errno = ABTU_malloc(sizeof(ABTI_mutex), (void **)&p_newmutex);
@@ -90,14 +94,20 @@ int ABT_mutex_create(ABT_mutex *newmutex)
  */
 int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newmutex to NULL on error. */
+    *newmutex = ABT_MUTEX_NULL;
+#endif
     ABTI_mutex_attr *p_attr = ABTI_mutex_attr_get_ptr(attr);
-    ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p_attr);
     ABTI_mutex *p_newmutex;
 
     int abt_errno = ABTU_malloc(sizeof(ABTI_mutex), (void **)&p_newmutex);
     ABTI_CHECK_ERROR(abt_errno);
+
     ABTI_mutex_init(p_newmutex);
-    memcpy(&p_newmutex->attr, p_attr, sizeof(ABTI_mutex_attr));
+    if (p_attr) {
+        memcpy(&p_newmutex->attr, p_attr, sizeof(ABTI_mutex_attr));
+    }
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
