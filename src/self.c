@@ -91,13 +91,14 @@ int ABT_self_get_type(ABT_unit_type *type)
  * @param[out] is_primary  result (\c ABT_TRUE: primary ULT, \c ABT_FALSE: not)
  * @return Error code
  */
-int ABT_self_is_primary(ABT_bool *flag)
+int ABT_self_is_primary(ABT_bool *is_primary)
 {
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     ABTI_thread *p_thread = p_local_xstream->p_thread;
-    *flag = (p_thread->type & ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
+    *is_primary =
+        (p_thread->type & ABTI_THREAD_TYPE_MAIN) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
 
@@ -136,14 +137,15 @@ int ABT_self_is_primary(ABT_bool *flag)
  *                                 \c ABT_FALSE: not)
  * @return Error code
  */
-int ABT_self_on_primary_xstream(ABT_bool *flag)
+int ABT_self_on_primary_xstream(ABT_bool *on_primary)
 {
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
     /* Return value */
-    *flag = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) ? ABT_TRUE
-                                                                 : ABT_FALSE;
+    *on_primary = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY)
+                      ? ABT_TRUE
+                      : ABT_FALSE;
     return ABT_SUCCESS;
 }
 
@@ -331,13 +333,13 @@ int ABT_self_get_arg(void **arg)
  * @param[out] is_unnamed  result (\c ABT_TRUE: unnamed, \c ABT_FALSE: not)
  * @return Error code
  */
-int ABT_self_is_unnamed(ABT_bool *flag)
+int ABT_self_is_unnamed(ABT_bool *is_unnamed)
 {
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
 
-    *flag = (p_local_xstream->p_thread->type & ABTI_THREAD_TYPE_NAMED)
-                ? ABT_FALSE
-                : ABT_TRUE;
+    *is_unnamed = (p_local_xstream->p_thread->type & ABTI_THREAD_TYPE_NAMED)
+                      ? ABT_FALSE
+                      : ABT_TRUE;
     return ABT_SUCCESS;
 }
