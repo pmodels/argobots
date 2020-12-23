@@ -1844,6 +1844,8 @@ ALIASES += DOC_DESC_ATOMICITY_FUTURE_READINESS="The readiness of a future is man
 
 ALIASES += DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION="A combination of a callback function, an event mask its argument for a tool interface is updated atomically."
 
+ALIASES += DOC_DESC_ATOMICITY_WORK_UNIT_KEY="Work-unit-specific values associated with a work-unit-specific data key are read and updated atomically."
+
 ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on the clock resolution by the system."
 
 ALIASES += DOC_DESC_V10_ACCEPT_TASK{1}="\DOC_V10 The user cannot pass a tasklet handle as \1.\n \DOC_V11 This routine accepts a tasklet handle as \1.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
@@ -1919,6 +1921,10 @@ ALIASES += DOC_ERROR_INV_FUTURE_HANDLE{1}="If \1 is \c ABT_FUTURE_NULL, \c ABT_E
 ALIASES += DOC_ERROR_INV_FUTURE_PTR{1}="If \1 points to \c ABT_FUTURE_NULL, \c ABT_ERR_INV_FUTURE is returned.\n"
 
 ALIASES += DOC_ERROR_INV_INFO_QUERY_KIND{1}="If \1 is not a valid info query kind, \c ABT_ERR_INV_QUERY_KIND is returned.\n"
+
+ALIASES += DOC_ERROR_INV_KEY_HANDLE{1}="If \1 is \c ABT_KEY_NULL, \c ABT_ERR_INV_KEY is returned.\n"
+
+ALIASES += DOC_ERROR_INV_KEY_PTR{1}="If \1 points to \c ABT_KEY_NULL, \c ABT_ERR_INV_KEY is returned.\n"
 
 ALIASES += DOC_ERROR_INV_MUTEX_ATTR_HANDLE{1}="If \1 is \c ABT_MUTEX_ATTR_NULL, \c ABT_ERR_INV_MUTEX_ATTR is returned.\n"
 
