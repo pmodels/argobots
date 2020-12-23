@@ -43,6 +43,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
 {
     int abt_errno;
     ABTI_eventual *p_eventual;
+    ABTI_CHECK_TRUE(nbytes >= 0, ABT_ERR_INV_ARG);
     size_t arg_nbytes = nbytes;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_eventual), (void **)&p_eventual);
@@ -162,6 +163,16 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
+
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* This routine cannot be called by a tasklet. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED && p_local) {
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
+        ABTI_CHECK_TRUE(p_local_xstream->p_thread->type &
+                            ABTI_THREAD_TYPE_YIELDABLE,
+                        ABT_ERR_EVENTUAL);
+    }
+#endif
 
     ABTI_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready == ABT_FALSE) {
@@ -289,18 +300,32 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
+    ABTI_CHECK_TRUE(nbytes >= 0, ABT_ERR_INV_ARG);
     size_t arg_nbytes = nbytes;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x */
     ABTI_CHECK_TRUE(arg_nbytes <= p_eventual->nbytes, ABT_ERR_INV_EVENTUAL);
+#else
+    /* Argobots 2.0 */
+    ABTI_CHECK_TRUE(arg_nbytes <= p_eventual->nbytes, ABT_ERR_INV_ARG);
+#endif
 
     ABTI_spinlock_acquire(&p_eventual->lock);
 
-    p_eventual->ready = ABT_TRUE;
-    if (p_eventual->value)
-        memcpy(p_eventual->value, value, arg_nbytes);
-    /* Wake up all waiting ULTs */
-    ABTI_waitlist_broadcast(p_local, &p_eventual->waitlist);
+    ABT_bool ready = p_eventual->ready;
+    if (ready == ABT_FALSE) {
+        if (p_eventual->value)
+            memcpy(p_eventual->value, value, arg_nbytes);
+        p_eventual->ready = ABT_TRUE;
+        /* Wake up all waiting ULTs */
+        ABTI_waitlist_broadcast(p_local, &p_eventual->waitlist);
+        ABTI_spinlock_release(&p_eventual->lock);
+    } else {
+        ABTI_spinlock_release(&p_eventual->lock);
+        /* It has been ready.  Error. */
+        ABTI_HANDLE_ERROR(ABT_ERR_EVENTUAL);
+    }
 
-    ABTI_spinlock_release(&p_eventual->lock);
     return ABT_SUCCESS;
 }
 
