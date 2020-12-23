@@ -44,8 +44,13 @@
 int ABT_xstream_barrier_create(uint32_t num_waiters,
                                ABT_xstream_barrier *newbarrier)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newbarrier to NULL on error. */
+    *newbarrier = ABT_XSTREAM_BARRIER_NULL;
+#endif
     int abt_errno;
     ABTI_xstream_barrier *p_newbarrier;
+    ABTI_CHECK_TRUE(num_waiters != 0, ABT_ERR_INV_ARG);
 
     abt_errno =
         ABTU_malloc(sizeof(ABTI_xstream_barrier), (void **)&p_newbarrier);
