@@ -1822,6 +1822,8 @@ ALIASES += DOC_CONTEXT_CTXSWITCH="This routine may perform context switching for
 
 ALIASES += DOC_CONTEXT_INIT="This routine can be called in any execution context. Argobots must be initialized."
 
+ALIASES += DOC_CONTEXT_INIT_NOTASK="This routine can be called in either a ULT context or an external thread context. Argobots must be initialized."
+
 ALIASES += DOC_CONTEXT_NOCTXSWITCH="This routine does not perform context switching the calling ULT unless any user-defined function that is involved in this routine performs context switching."
 
 ALIASES += DOC_CONTEXT_NOTE_SIGNAL_SAFE="This routine is signal-safe.  Note that it is the user's responsibility to call this function properly by, for example, loading the Argobots library and/or resolving the symbol of this routine in a signal handler."
@@ -1832,6 +1834,10 @@ ALIASES += DOC_CONTEXT_TOOL_CALLBACK{1}="This routine can be called only in a ca
 # Description
 #---------------------------------------------------------------------------
 
+ALIASES += DOC_DESC_ATOMICITY_EVENTUAL_READINESS="The readiness of an eventual is managed atomically."
+
+ALIASES += DOC_DESC_ATOMICITY_FUTURE_READINESS="The readiness of a future is managed atomically."
+
 ALIASES += DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION="A combination of a callback function, an event mask its argument for a tool interface is updated atomically."
 
 ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on the clock resolution by the system."
@@ -1839,6 +1845,20 @@ ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on 
 ALIASES += DOC_DESC_V10_ACCEPT_TASK{1}="\DOC_V10 The user cannot pass a tasklet handle as \1.\n \DOC_V11 This routine accepts a tasklet handle as \1.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
 
 ALIASES += DOC_DESC_V10_ACCEPT_THREAD{1}="\DOC_V10 The user cannot pass a ULT handle as \1.\n \DOC_V11 This routine accepts a ULT handle as \1.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
+
+ALIASES += DOC_DESC_V10_BARRIER_NUM_WAITERS{1}="\DOC_V10 This routine accepts zero as \c num_waiters.\n \DOC_V11 This routine returns \c ABT_ERR_INV_ARG if \c num_waiters is zero. @rationale A barrier with \c num_waiters = 0 is useless and should be prohibited.  Even with Argobots 1.0, calling \c ABT_barrier_wait() for a barrier with \c num_waiters = 0 is not allowed. @endrationale"
+
+ALIASES += DOC_DESC_V10_EVENTUAL_UPDATE_READY_BUFFER{1}="\DOC_V10 This routine updates the memory buffer of \1 and returns \c ABT_SUCCESS if \1 is ready.\n \DOC_V11 This routine returns \c ABT_ERR_EVENTUAL if \1 is ready.\n @rationale An update of the memory buffer when \1 is ready breaks the semantics of \c eventual.  Such an update should be prohibited. @endrationale"
+
+ALIASES += DOC_DESC_V10_FUTURE_COMPARTMENT_ORDER="\DOC_V10 The order of elements of \c arg passed to \c cb_func() is the same order as the \c ABT_future_set() calls are terminated.\n \DOC_V11 The order of elements of \c arg passed to \c cb_func() is undefined. @rationale This specification in Argobots 1.0 is unclear and unreasonable because the exact timing of termination of \c ABT_future_set() is not observable if \c ABT_future_set() is called concurrently. @endrationale"
+
+ALIASES += DOC_DESC_V10_REJECT_MUTEX_ATTR_NULL{1}="\DOC_V10 This routine returns \c ABT_ERR_INV_MUTEX_ATTR if \1 is \c ABT_MUTEX_ATTR_NULL.\n \DOC_V11 This routine uses the default mutex attributes if \1 is \c ABT_MUTEX_ATTR_NULL. @rationale Most of the Argobots routines use the default attributes if the given configuration or attributes are NULL.  This routine should also follow this basic rule. @endrationale"
+
+ALIASES += DOC_DESC_V1X_ERROR_CODE_CHANGE{3}="\DOC_V1X \1 is returned if \3.\n \DOC_V20 \2 is returned if \3.\n @rationale Argobots 2.0 changes the error code for consistent behavior with the other Argobots routines. @endrationale"
+
+ALIASES += DOC_DESC_V1X_NOTASK{1}="\DOC_V1X If a tasklet calls this routine, \1 is returned.\n \DOC_V20 A tasklet may call this routine.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
+
+ALIASES += DOC_DESC_V1X_PREMATURE_WAITER_CHECK{2}="\DOC_V1X \2 is returned if this routine finds a waiter on \1.\n \DOC_V20 The results are undefined if a waiter is blocked on \1.\n @rationale Check this is premature considering the asynchronous nature of \1.  From Argobots 2.0, it becomes the user's responsibility to guarantee that there is no waiter on \1. @endrationale"
 
 ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{3}="\DOC_V1X This routine returns \3 when \1 is \2.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2.\n @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
 
@@ -1854,13 +1874,55 @@ ALIASES += DOC_DESC_V1X_SET_VALUE_ON_ERROR{2}="\DOC_V1X \1 is set to \2 if an er
 # Error
 #---------------------------------------------------------------------------
 
+ALIASES += DOC_ERROR_EVENTUAL_READY{1}="If \1 is ready, \c ABT_ERR_EVENTUAL is returned.\n"
+
 ALIASES += DOC_ERROR_FEATURE_NA{1}="If \1 is not supported, \c ABT_ERR_FEATURE_NA is returned.\n"
+
+ALIASES += DOC_ERROR_FUTURE_NO_COMPARTMENT{1}="If the number of compartments of \1 is zero, \c ABT_ERR_FUTURE is returned.\n"
+
+ALIASES += DOC_ERROR_FUTURE_READY{1}="If \1 is ready, \c ABT_ERR_FUTURE is returned.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_GREATER_THAN{2}="If \1 is larger than \2, \c ABT_ERR_INV_ARG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{2}="If \1 is not a valid tool query kind for \2, \c ABT_ERR_INV_ARG is returned.\n"
 
+ALIASES += DOC_ERROR_INV_ARG_NEG{1}="If \1 is negative, \c ABT_ERR_INV_ARG is returned.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_ZERO{1}="If \1 is zero, \c ABT_ERR_INV_ARG is returned.\n"
+
+ALIASES += DOC_ERROR_INV_BARRIER_HANDLE{1}="If \1 is \c ABT_BARRIER_NULL, \c ABT_ERR_INV_BARRIER is returned.\n"
+
+ALIASES += DOC_ERROR_INV_BARRIER_PTR{1}="If \1 points to \c ABT_BARRIER_NULL, \c ABT_ERR_INV_BARRIER is returned.\n"
+
+ALIASES += DOC_ERROR_INV_COND_HANDLE{1}="If \1 is \c ABT_COND_NULL, \c ABT_ERR_INV_COND is returned.\n"
+
+ALIASES += DOC_ERROR_INV_COND_PTR{1}="If \1 points to \c ABT_COND_NULL, \c ABT_ERR_INV_COND is returned.\n"
+
+ALIASES += DOC_ERROR_INV_EVENTUAL_GREATER_THAN{2}="If \1 is larger than \2, \c ABT_ERR_INV_EVENTUAL is returned.\n"
+
+ALIASES += DOC_ERROR_INV_EVENTUAL_HANDLE{1}="If \1 is \c ABT_EVENTUAL_NULL, \c ABT_ERR_INV_EVENTUAL is returned.\n"
+
+ALIASES += DOC_ERROR_INV_EVENTUAL_PTR{1}="If \1 points to \c ABT_EVENTUAL_NULL, \c ABT_ERR_INV_EVENTUAL is returned.\n"
+
+ALIASES += DOC_ERROR_INV_FUTURE_HANDLE{1}="If \1 is \c ABT_FUTURE_NULL, \c ABT_ERR_INV_FUTURE is returned.\n"
+
+ALIASES += DOC_ERROR_INV_FUTURE_PTR{1}="If \1 points to \c ABT_FUTURE_NULL, \c ABT_ERR_INV_FUTURE is returned.\n"
+
 ALIASES += DOC_ERROR_INV_INFO_QUERY_KIND{1}="If \1 is not a valid info query kind, \c ABT_ERR_INV_QUERY_KIND is returned.\n"
 
+ALIASES += DOC_ERROR_INV_MUTEX_ATTR_HANDLE{1}="If \1 is \c ABT_MUTEX_ATTR_NULL, \c ABT_ERR_INV_MUTEX_ATTR is returned.\n"
+
+ALIASES += DOC_ERROR_INV_MUTEX_ATTR_PTR{1}="If \1 points to \c ABT_MUTEX_ATTR_NULL, \c ABT_ERR_INV_MUTEX_ATTR is returned.\n"
+
+ALIASES += DOC_ERROR_INV_MUTEX_HANDLE{1}="If \1 is \c ABT_MUTEX_NULL, \c ABT_ERR_INV_MUTEX is returned.\n"
+
+ALIASES += DOC_ERROR_INV_MUTEX_PTR{1}="If \1 points to \c ABT_MUTEX_NULL, \c ABT_ERR_INV_MUTEX is returned.\n"
+
 ALIASES += DOC_ERROR_INV_POOL_HANDLE{1}="If \1 is \c ABT_POOL_NULL, \c ABT_ERR_INV_POOL is returned.\n"
+
+ALIASES += DOC_ERROR_INV_RWLOCK_HANDLE{1}="If \1 is \c ABT_RWLOCK_NULL, \c ABT_ERR_INV_RWLOCK is returned.\n"
+
+ALIASES += DOC_ERROR_INV_RWLOCK_PTR{1}="If \1 points to \c ABT_RWLOCK_NULL, \c ABT_ERR_INV_RWLOCK is returned.\n"
 
 ALIASES += DOC_ERROR_INV_SCHED_HANDLE{1}="If \1 is \c ABT_SCHED_NULL, \c ABT_ERR_INV_SCHED is returned.\n"
 
@@ -1874,6 +1936,10 @@ ALIASES += DOC_ERROR_INV_TIMER_HANDLE{1}="If \1 is \c ABT_TIMER_NULL, \c ABT_ERR
 
 ALIASES += DOC_ERROR_INV_TIMER_PTR{1}="If \1 points to \c ABT_TIMER_NULL, \c ABT_ERR_INV_TIMER is returned.\n"
 
+ALIASES += DOC_ERROR_INV_XSTREAM_BARRIER_HANDLE{1}="If \1 is \c ABT_XSTREAM_BARRIER_NULL, \c ABT_ERR_INV_XSTREAM_BARRIER is returned.\n"
+
+ALIASES += DOC_ERROR_INV_XSTREAM_BARRIER_PTR{1}="If \1 points to \c ABT_XSTREAM_BARRIER_NULL, \c ABT_ERR_INV_XSTREAM_BARRIER is returned.\n"
+
 ALIASES += DOC_ERROR_INV_XSTREAM_HANDLE{1}="If \1 is \c ABT_XSTREAM_NULL, \c ABT_ERR_INV_XSTREAM is returned.\n"
 
 ALIASES += DOC_ERROR_POOL_UNSUPPORTED_FEATURE{2}="If \1 does not support \2, \c ABT_ERR_POOL is returned.\n"
@@ -1882,13 +1948,27 @@ ALIASES += DOC_ERROR_RESOURCE="If an error related to memory occurs, \c ABT_ERR_
 
 ALIASES += DOC_ERROR_SUCCESS="If this routine succeeds, \c ABT_SUCCESS is returned.\n"
 
+ALIASES += DOC_ERROR_SUCCESS_COND_SIGNALED="If this caller is woken up by a signal, \c ABT_SUCCESS is returned.\n"
+
+ALIASES += DOC_ERROR_SUCCESS_COND_TIMEDOUT="If the system time exceeds \c abstime before \c cond is signaled, \c ABT_ERR_COND_TIMEDOUT is returned.\n"
+
+ALIASES += DOC_ERROR_SUCCESS_LOCK_ACQUIRED{1}="If this routine successfully obtains \1, \c ABT_SUCCESS is returned.\n"
+
+ALIASES += DOC_ERROR_SUCCESS_LOCK_FAILED{1}="If this routine fails to obtain \1, \c ABT_ERR_MUTEX_LOCKED is returned.\n"
+
+ALIASES += DOC_ERROR_TASK{1}="If the caller is a tasklet, \1 is returned.\n"
+
 ALIASES += DOC_ERROR_UNINITIALIZED="If the Argobots runtime is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
 
 ALIASES += DOC_ERROR_UNINITIALIZED_INFO_QUERY="If the queried information requires initialized Argobots while Argobots is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
 
+ALIASES += DOC_ERROR_WAITER{2}="If there is a waiter blocked on \1, \2 is returned."
+
 #---------------------------------------------------------------------------
 # Note
 #---------------------------------------------------------------------------
+
+ALIASES += DOC_NOTE_DEFAULT_MUTEX_ATTRIBUTE="To check the details of the default mutex attributes, please see \c ABT_mutex_attr_create()."
 
 ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant for debugging and diagnosis and can be changed because of an update of the internal implementation of Argobots.  A program that relies on the output of this routine is non-conforming."
 
@@ -1896,7 +1976,21 @@ ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant
 # Undefined behavior
 #---------------------------------------------------------------------------
 
+ALIASES += DOC_UNDEFINED_BOOL{1}="If \1 is neither \c ABT_TRUE nor \c ABT_FALSE, the results are undefined.\n"
+
 ALIASES += DOC_UNDEFINED_CHANGE_STATE{1}="If the internal state of the Argobots is changed in \1, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_COND_WAIT{2}="If \2 is a recursive mutex and has been locked more than once, the results are undefined.\n If \1 has been associated with a mutex other than \2, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_EVENTUAL_BUFFER{2}="If the memory buffer pointed to by \2 is accessed after freeing \1, the results are undefined.\n If the memory buffer pointed to by \2 is modified, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_FUTURE_CALLBACK{2}="If the contents of the argument \2 passed to \1 are accessed after \1 finishes, the results are undefined.\n If a future that triggers \1 is accessed in \1 itself, the results are undefined.\n If the contents of the argument \2 passed to \1 are modified, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{1}="If \1 is a recursive mutex and the caller does not have ownership of \1, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_NOT_LOCKED{1}="If \1 is not locked, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_NULL_PTR_CONDITIONAL{2}="If \2 and \1 is \c NULL, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_NULL_PTR{1}="If \1 is \c NULL, the results are undefined.\n"
 
@@ -1911,5 +2005,7 @@ ALIASES += DOC_UNDEFINED_TOOL_CALLBACK{1}="If the tool context passed to \1 is a
 ALIASES += DOC_UNDEFINED_TOOL_QUERY{2}="If \1 is a tool context that is not passed to the calling callback function, the results are undefined.\n If \1 and \2 are not the same pair passed to the calling callback function, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_UNINIT="If Argobots is not initialized, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_WAITER{1}="If any waiter is blocked on \1, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_WORK_UNIT_RUNNING{1}="If \1 is running, the results are undefined.\n"

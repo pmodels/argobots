@@ -6,33 +6,42 @@
 #include "abti.h"
 
 /** @defgroup MUTEX Mutex
- * Mutex is a synchronization method to support mutual exclusion between ULTs.
- * When more than one ULT competes for locking the same mutex, only one ULT is
- * guaranteed to lock the mutex.  Other ULTs are blocked and wait until the ULT
- * which locked the mutex unlocks it.  When the mutex is unlocked, another ULT
- * is able to lock the mutex again.
- *
- * The mutex is basically intended to be used by ULTs but it can also be used
- * by tasklets or external threads.  In that case, the mutex will behave like
- * a spinlock.
+ * This group is for Mutex.
  */
 
 /**
  * @ingroup MUTEX
  * @brief   Create a new mutex.
  *
- * \c ABT_mutex_create() creates a new mutex object with default attributes and
- * returns its handle through \c newmutex.  To set different attributes, please
- * use \c ABT_mutex_create_with_attr().  If an error occurs in this routine,
- * a non-zero error code will be returned and \c newmutex will be set to
- * \c ABT_MUTEX_NULL.
+ * \c ABT_mutex_create() creates a new mutex with default attributes and returns
+ * its handle through \c newmutex.
  *
- * @param[out] newmutex  handle to a new mutex
+ * \c newmutex must be freed by \c ABT_mutex_free() after its use.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newmutex, \c ABT_MUTEX_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newmutex}
+ *
+ * @param[out] newmutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_create(ABT_mutex *newmutex)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newmutex to NULL on error. */
+    *newmutex = ABT_MUTEX_NULL;
+#endif
     ABTI_mutex *p_newmutex;
 
     int abt_errno = ABTU_malloc(sizeof(ABTI_mutex), (void **)&p_newmutex);
@@ -46,30 +55,59 @@ int ABT_mutex_create(ABT_mutex *newmutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Create a new mutex with attributes.
+ * @brief   Create a new mutex with mutex attributes.
  *
- * \c ABT_mutex_create_with_attr() creates a new mutex object having attributes
- * passed by \c attr and returns its handle through \c newmutex.  Note that
- * \c ABT_mutex_create() can be used to create a mutex with default attributes.
+ * \c ABT_mutex_create_with_attr() creates a new mutex configured with the mutex
+ * attribute \c attr and returns its handle through \c newmutex.  If \c attr is
+ * \c ABT_MUTEX_ATTR_NULL, \c newmutex has default attributes.
  *
- * If an error occurs in this routine, a non-zero error code will be returned
- * and \c newmutex will be set to \c ABT_MUTEX_NULL.
+ * @note
+ * \DOC_NOTE_DEFAULT_MUTEX_ATTRIBUTE
  *
- * @param[in]  attr      handle to the mutex attribute object
- * @param[out] newmutex  handle to a new mutex
+ * This routine does not take the ownership of \c attr, so it is the user's
+ * responsibility to free \c attr after its use.
+ *
+ * \c newmutex must be freed by \c ABT_mutex_free() after its use.
+ *
+ * @changev11
+ * \DOC_DESC_V10_REJECT_MUTEX_ATTR_NULL{\c attr}
+ * @endchangev11
+ *
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newmutex, \c ABT_MUTEX_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newmutex}
+ *
+ * @param[in]  attr      mutex attribute handle
+ * @param[out] newmutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newmutex to NULL on error. */
+    *newmutex = ABT_MUTEX_NULL;
+#endif
     ABTI_mutex_attr *p_attr = ABTI_mutex_attr_get_ptr(attr);
-    ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p_attr);
     ABTI_mutex *p_newmutex;
 
     int abt_errno = ABTU_malloc(sizeof(ABTI_mutex), (void **)&p_newmutex);
     ABTI_CHECK_ERROR(abt_errno);
+
     ABTI_mutex_init(p_newmutex);
-    memcpy(&p_newmutex->attr, p_attr, sizeof(ABTI_mutex_attr));
+    if (p_attr) {
+        memcpy(&p_newmutex->attr, p_attr, sizeof(ABTI_mutex_attr));
+    }
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
@@ -78,18 +116,29 @@ int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Free the mutex object.
+ * @brief   Free a mutex.
  *
- * \c ABT_mutex_free() deallocates the memory used for the mutex object
- * associated with the handle \c mutex.  If it is successfully processed,
- * \c mutex is set to \c ABT_MUTEX_NULL.
+ * \c ABT_mutex_free() deallocates the resource used for the mutex \c mutex and
+ * sets \c mutex to \c ABT_MUTEX_NULL.
  *
- * Using the mutex handle after calling \c ABT_mutex_free() may cause
- * undefined behavior.
+ * @note
+ * This routine frees \c mutex regardless of whether it is locked or not.
  *
- * @param[in,out] mutex  handle to the mutex
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_PTR{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c mutex}
+ * \DOC_UNDEFINED_WAITER{\c mutex}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c mutex}
+ *
+ * @param[in,out] mutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_free(ABT_mutex *mutex)
 {
@@ -106,21 +155,28 @@ int ABT_mutex_free(ABT_mutex *mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Lock the mutex.
+ * @brief   Lock a mutex.
  *
  * \c ABT_mutex_lock() locks the mutex \c mutex.  If this routine successfully
- * returns, the caller work unit acquires the mutex.  If the mutex has already
- * been locked, the caller will be blocked until the mutex becomes available.
- * When the caller is a ULT and is blocked, the context is switched to the
- * scheduler of the associated ES to make progress of other work units.
+ * returns, the caller acquires \c mutex.  If \c mutex has already been locked,
+ * the caller will be blocked on \c mutex until \c mutex becomes available.
  *
- * The mutex can be used by any work units, but tasklets are discouraged to use
- * the mutex because any blocking calls like \c ABT_mutex_lock() may block the
- * associated ES and prevent other work units from being scheduled on the ES.
+ * If \c mutex is recursive, the same caller can acquire multiple levels of
+ * ownership over \c mutex.  \c mutex will remain locked until \c mutex is
+ * unlocked as many times as the level of ownership.
  *
- * @param[in] mutex  handle to the mutex
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] mutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_lock(ABT_mutex mutex)
 {
@@ -133,16 +189,30 @@ int ABT_mutex_lock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Lock the mutex with low priority.
+ * @brief   Lock a mutex with low priority.
  *
- * \c ABT_mutex_lock_low() locks the mutex with low priority, while
- * \c ABT_mutex_lock() does with high priority.  Apart from the priority,
- * other semantics of \c ABT_mutex_lock_low() are the same as those of
- * \c ABT_mutex_lock().
+ * \c ABT_mutex_lock_low() locks the mutex \c mutex with low priority while
+ * \c ABT_mutex_lock() and \c ABT_mutex_lock_high() do with higher priority.
+ * That is, waiters that call the high-priority mutex lock functions might be
+ * prioritized over the same \c mutex.  Except for priority, the semantics of
+ * \c ABT_mutex_lock_low() is the same as that of \c ABT_mutex_lock().
  *
- * @param[in] mutex  handle to the mutex
+ * @note
+ * A program that relies on the scheduling order regarding mutex priorities is
+ * non-conforming.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] mutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_lock_low(ABT_mutex mutex)
 {
@@ -153,6 +223,33 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
     return ABT_SUCCESS;
 }
 
+/**
+ * @ingroup MUTEX
+ * @brief   Lock a mutex with high priority.
+ *
+ * \c ABT_mutex_lock_low() locks the mutex \c mutex with high priority while
+ * \c ABT_mutex_lock() and \c ABT_mutex_lock_low() do with lower priority.  That
+ * is, waiters that call the high-priority mutex lock functions might be
+ * prioritized over the same \c mutex.  Except for priority, the semantics of
+ * \c ABT_mutex_lock_high() is the same as that of \c ABT_mutex_lock().
+ *
+ * @note
+ * A program that relies on the scheduling order regarding mutex priorities is
+ * non-conforming.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] mutex  mutex handle
+ * @return Error code
+ */
 int ABT_mutex_lock_high(ABT_mutex mutex)
 {
     ABTI_local *p_local = ABTI_local_get_local();
@@ -164,20 +261,32 @@ int ABT_mutex_lock_high(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Attempt to lock a mutex without blocking.
+ * @brief   Attempt to lock a mutex.
  *
- * \c ABT_mutex_trylock() attempts to lock the mutex \c mutex without blocking
- * the caller work unit.  If this routine successfully returns, the caller
- * acquires the mutex.
+ * \c ABT_mutex_trylock() attempts to lock the mutex \c mutex.  If this routine
+ * returns \c ABT_SUCCESS, the caller acquires the mutex.  If the caller fails
+ * to take a lock, \c ABT_ERR_MUTEX_LOCKED is returned.
  *
- * If the mutex has already been locked and there happens no error,
- * \c ABT_ERR_MUTEX_LOCKED will be returned immediately without blocking
- * the caller.
+ * If \c mutex is recursive, the same caller can acquire multiple levels of
+ * ownership over \c mutex.  \c mutex will remain locked until \c mutex is
+ * unlocked as many times as the level of ownership.
  *
- * @param[in] mutex  handle to the mutex
+ * This trylock operation is atomically strong, so lock acquisition by this
+ * routine never fails if \c mutex is not locked.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS_LOCK_ACQUIRED{\c mutex}
+ * \DOC_ERROR_SUCCESS_LOCK_FAILED{\c mutex}
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] mutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS          on success
- * @retval ABT_ERR_MUTEX_LOCKED when mutex has already been locked
  */
 int ABT_mutex_trylock(ABT_mutex mutex)
 {
@@ -191,17 +300,36 @@ int ABT_mutex_trylock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Lock the mutex without context switch.
+ * @brief   Lock a mutex in a busy-wait loop.
  *
- * \c ABT_mutex_spinlock() locks the mutex without context switch.  If this
- * routine successfully returns, the caller thread acquires the mutex.
- * If the mutex has already been locked, the caller will be blocked until
- * the mutex becomes available.  Unlike \c ABT_mutex_lock(), the ULT calling
- * this routine continuously tries to lock the mutex without context switch.
+ * \c ABT_mutex_spinlock() locks the mutex \c mutex in a blocking form.  If this
+ * routine successfully returns, the caller acquires \c mutex.  If \c mutex has
+ * already been locked, the caller will be blocked on \c mutex until \c mutex
+ * becomes available.
  *
- * @param[in] mutex  handle to the mutex
+ * If \c mutex is recursive, the same caller can acquire multiple levels of
+ * ownership over \c mutex.  \c mutex will remain locked until \c mutex is
+ * unlocked as many times as the level of ownership.
+ *
+ * @note
+ * \c ABT_mutex_spinlock() might show a slightly better performance than
+ * \c ABT_mutex_lock() if \c mutex is uncontended.  This routine, however,
+ * blocks the underlying execution stream when \c mutex is locked even if the
+ * caller is a ULT.  This blocking behavior is deadlock-prone, so the user must
+ * be cautious when using this routine.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] mutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_spinlock(ABT_mutex mutex)
 {
@@ -214,15 +342,27 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Unlock the mutex.
+ * @brief   Unlock a mutex.
  *
- * \c ABT_mutex_unlock() unlocks the mutex \c mutex.  If the caller locked the
- * mutex, this routine unlocks the mutex.  However, if the caller did not lock
- * the mutex, this routine may result in undefined behavior.
+ * \c ABT_mutex_unlock() unlocks the mutex \c mutex.
  *
- * @param[in] mutex  handle to the mutex
+ * If \c mutex is recursive and has been locked more than once, the caller must
+ * be the same as that of the corresponding locking function.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
+ * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
+ *
+ * @param[in] mutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_unlock(ABT_mutex mutex)
 {
@@ -235,20 +375,38 @@ int ABT_mutex_unlock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Hand over the mutex within the ES.
+ * @brief   Unlock a mutex and try to hand it over a waiter associated with the
+ *          same execution stream.
  *
- * \c ABT_mutex_unlock_se() first tries to hand over the mutex to a ULT, which
- * is waiting for this mutex and is running on the same ES as the caller.  If
- * no ULT on the same ES is waiting, it unlocks the mutex like
+ * \c ABT_mutex_unlock_se() unlocks the mutex \c mutex.
+ *
+ * If \c mutex is recursive and has been locked more than once, the caller must
+ * be the same as that of the corresponding locking function.
+ *
+ * After unlocking the mutex, this routine tries to hand over the ownership of
+ * \c mutex to a waiter that is associated with the same execution stream as an
+ * execution stream running the caller if the caller is a work unit.  If this
+ * attempt fails, the behavior of this routine is the same as that of
  * \c ABT_mutex_unlock().
  *
- * If the caller ULT locked the mutex, this routine unlocks the mutex.
- * However, if the caller ULT did not lock the mutex, this routine may result
- * in undefined behavior.
+ * @note
+ * A program that relies on the handover mechanism provided by this routine is
+ * non-conforming.
  *
- * @param[in] mutex  handle to the mutex
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
+ * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
+ *
+ * @param[in] mutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_unlock_se(ABT_mutex mutex)
 {
@@ -259,6 +417,41 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
     return ABT_SUCCESS;
 }
 
+/**
+ * @ingroup MUTEX
+ * @brief   Unlock a mutex and try to hand it over a waiter associated with an
+ *          execution stream that is different from that of the caller.
+ *
+ * \c ABT_mutex_unlock_de() unlocks the mutex \c mutex.
+ *
+ * If \c mutex is recursive and has been locked more than once, the caller must
+ * be the same as that of the corresponding locking function.
+ *
+ * After unlocking the mutex, this routine tries to hand over the ownership of
+ * \c mutex to a waiter that is associated with an execution stream that is
+ * different from an execution stream running the caller if the caller is a work
+ * unit.  If this attempt fails, the behavior of this routine is the same as
+ * that of \c ABT_mutex_unlock().
+ *
+ * @note
+ * A program that relies on the handover mechanism provided by this routine is
+ * non-conforming.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
+ * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
+ *
+ * @param[in] mutex  mutex handle
+ * @return Error code
+ */
 int ABT_mutex_unlock_de(ABT_mutex mutex)
 {
     ABTI_local *p_local = ABTI_local_get_local();
@@ -272,16 +465,28 @@ int ABT_mutex_unlock_de(ABT_mutex mutex)
  * @ingroup MUTEX
  * @brief   Compare two mutex handles for equality.
  *
- * \c ABT_mutex_equal() compares two mutex handles for equality.  If two
- * handles are associated with the same mutex object, \c result will be set to
- * \c ABT_TRUE.  Otherwise, \c result will be set to \c ABT_FALSE.
+ * \c ABT_mutex_equal() compares two mutex handles \c mutex1 and \c mutex2 for
+ * equality and returns the result through \c result.
  *
- * @param[in]  mutex1  handle to the mutex 1
- * @param[in]  mutex2  handle to the mutex 2
- * @param[out] result  comparison result (<tt>ABT_TRUE</tt>: same,
- *                     <tt>ABT_FALSE</tt>: not same)
+ * This function is deprecated since its behavior is the same as comparing
+ * values of \c mutex1 and \c mutex2.
+ * @code{.c}
+ * *result = (mutex1 == mutex2) ? ABT_TRUE : ABT_FALSE;
+ * @endcode
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c result}
+ *
+ * @param[in]  mutex1  mutex handle 1
+ * @param[in]  mutex2  mutex handle 2
+ * @param[out] result  result (\c ABT_TRUE: same, \c ABT_FALSE: not same)
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
 {

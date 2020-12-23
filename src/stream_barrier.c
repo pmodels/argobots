@@ -5,29 +5,52 @@
 
 #include "abti.h"
 
-/** @defgroup ES_BARRIER ES barrier
- * This group is for ES barrier.
+/** @defgroup ES_BARRIER Execution-Stream Barrier
+ * This group is for Execution-Stream Barrier.
  */
 
 /**
  * @ingroup ES_BARRIER
- * @brief   Create a new ES barrier.
+ * @brief   Create a new execution-stream barrier.
  *
- * \c ABT_xstream_barrier_create() creates a new ES barrier and returns its
- * handle through \c newbarrier.
- * If an error occurs in this routine, a non-zero error code will be returned
- * and \c newbarrier will be set to \c ABT_XSTREAM_BARRIER_NULL.
+ * \c ABT_xstream_barrier_create() creates a new execution-stream barrier and
+ * returns its handle through \c newbarrier.  \c num_waiters specifies the
+ * number of waiters that must call \c ABT_xstream_barrier_create() before any
+ * of the waiters successfully return from the call.  \c num_waiters must be
+ * greater than zero.
+ *
+ * \c newbarrier must be freed by \c ABT_xstream_barrier_free() after its use.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newbarrier, \c ABT_XSTREAM_BARRIER_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_ZERO{\c num_waiters}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newbarrier}
  *
  * @param[in]  num_waiters  number of waiters
- * @param[out] newbarrier   handle to a new ES barrier
+ * @param[out] newbarrier   execution-stream barrier handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_barrier_create(uint32_t num_waiters,
                                ABT_xstream_barrier *newbarrier)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newbarrier to NULL on error. */
+    *newbarrier = ABT_XSTREAM_BARRIER_NULL;
+#endif
     int abt_errno;
     ABTI_xstream_barrier *p_newbarrier;
+    ABTI_CHECK_TRUE(num_waiters != 0, ABT_ERR_INV_ARG);
 
     abt_errno =
         ABTU_malloc(sizeof(ABTI_xstream_barrier), (void **)&p_newbarrier);
@@ -53,15 +76,27 @@ int ABT_xstream_barrier_create(uint32_t num_waiters,
 
 /**
  * @ingroup ES_BARRIER
- * @brief   Free the ES barrier.
+ * @brief   Free an execution-stream barrier.
  *
- * \c ABT_xstream_barrier_free() deallocates the memory used for the ES barrier
- * object associated with the handle \c barrier.  If it is successfully
- * processed, \c barrier is set to \c ABT_XSTREAM_BARRIER_NULL.
+ * \c ABT_xstream_barrier_free() deallocates the resource used for the
+ * execution-stream barrier \c barrier and sets \c barrier to
+ * \c ABT_XSTREAM_BARRIER_NULL.
  *
- * @param[in,out] barrier  handle to the ES barrier
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_BARRIER_PTR{\c barrier}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c barrier}
+ * \DOC_UNDEFINED_WAITER{\c barrier}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c barrier}
+ *
+ * @param[in,out] barrier  execution-stream barrier handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier)
 {
@@ -81,14 +116,26 @@ int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier)
 
 /**
  * @ingroup ES_BARRIER
- * @brief   Wait on the barrier.
+ * @brief   Wait on an execution-stream barrier.
  *
- * The work unit calling \c ABT_xstream_barrier_wait() waits on the barrier and
- * blocks the entire ES until all the participants reach the barrier.
+ * The caller of \c ABT_xstream_barrier_wait() waits on the execution-stream
+ * barrier \c barrier.  The caller is blocked until as many waiters as the
+ * number of waiters specified by \c ABT_xstream_barrier_create() reach
+ * \c barrier.  If the caller is either a ULT or a tasklet, the underlying
+ * execution stream is blocked on \c barrier.
  *
- * @param[in] barrier  handle to the ES barrier
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_BARRIER_HANDLE{\c barrier}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] barrier  execution-stream barrier handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier)
 {

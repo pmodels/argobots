@@ -5,30 +5,48 @@
 
 #include "abti.h"
 
-/** @defgroup RWLOCK Readers Writer Lock
+/** @defgroup RWLOCK Readers-Writer Lock
  * A Readers writer lock allows concurrent access for readers and exclusionary
  * access for writers.
  */
 
 /**
  * @ingroup RWLOCK
- * @brief Create a new rwlock
- * \c ABT_rwlock_create creates a new rwlock object and returns its handle
- * through \c newrwlock. If an error occurs in this routine, a non-zero error
- * code will be returned and \c newrwlock will be set to \c ABT_RWLOCK_NULL.
+ * @brief   Create a new readers-writer lock.
+ * \c ABT_rwlock_create() creates a new readers-writer lock and returns its
+ * handle through \c newrwlock.
  *
- * @param[out] newrwlock  handle to a new rwlock
+ * \c newrwlock must be freed by \c ABT_rwlock_free() after its use.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newrwlock, \c ABT_RWLOCK_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newrwlock}
+ *
+ * @param[out] newrwlock  readers-writer lock handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_rwlock_create(ABT_rwlock *newrwlock)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newrwlock to NULL on error. */
+    *newrwlock = ABT_RWLOCK_NULL;
+#endif
     ABTI_rwlock *p_newrwlock;
 
     int abt_errno = ABTU_malloc(sizeof(ABTI_rwlock), (void **)&p_newrwlock);
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_CHECK_TRUE(p_newrwlock != NULL, ABT_ERR_MEM);
     ABTI_mutex_init(&p_newrwlock->mutex);
     ABTI_cond_init(&p_newrwlock->cond);
     p_newrwlock->reader_count = 0;
@@ -41,18 +59,29 @@ int ABT_rwlock_create(ABT_rwlock *newrwlock)
 
 /**
  * @ingroup RWLOCK
- * @brief   Free the rwlock object.
+ * @brief   Free a readers-writer lock.
  *
- * \c ABT_rwlock_free deallocates the memory used for the rwlock object
- * associated with the handle \c rwlock. If it is successfully processed,
- * \c rwlock is set to \c ABT_RWLOCK_NULL.
+ * \c ABT_rwlock_free() deallocates the resource used for the readers-writer
+ * lock \c rwlock and sets \c rwlock to \c ABT_RWLOCK_NULL.
  *
- * Using the rwlock handle after calling \c ABT_rwlock_free may cause
- * undefined behavior.
+ * @note
+ * This routine frees \c rwlock regardless of whether it is locked or not.
  *
- * @param[in,out] rwlock  handle to the rwlock
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_RWLOCK_PTR{\c rwlock}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c rwlock}
+ * \DOC_UNDEFINED_WAITER{\c rwlock}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c rwlock}
+ *
+ * @param[in,out] rwlock  readers-writer lock handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_rwlock_free(ABT_rwlock *rwlock)
 {
@@ -70,24 +99,54 @@ int ABT_rwlock_free(ABT_rwlock *rwlock)
 
 /**
  * @ingroup RWLOCK
- * @brief   Lock the rwlock as a reader.
+ * @brief   Lock a readers-writer lock as a reader.
  *
- * \c ABT_rwlock_rdlock locks the rwlock \c rwlock. If this routine successfully
- * returns, the caller ULT acquires the rwlock. If the rwlock has been locked
- * by a writer, the caller ULT will be blocked until the rwlock becomes
- * available. rwlocks may be acquired by any number of readers concurrently.
- * When the caller ULT is blocked, the context is switched to the scheduler
- * of the associated ES to make progress of other work units.
+ * \c ABT_rwlock_rdlock() locks the readers-writer lock \c rwlock as a reader.
+ * If this routine successfully returns, the caller acquires \c rwlock.  If
+ * \c rwlock has been locked by a writer, the caller will be blocked on
+ * \c rwlock until \c rwlock becomes available.
  *
- * @param[in] rwlock  handle to the rwlock
+ * \c rwlock may be acquired by multiple readers.
+ *
+ * @note
+ * If \c rwlock is locked by multiple readers, \c ABT_rwlock_unlock() must be
+ * called as many as the number of readers (i.e., the number of calls of
+ * \c ABT_rwlock_rdlock()) to make  \c rwlock available to a writer.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_NOTASK{\c rwlock}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_RWLOCK_HANDLE{\c rwlock}
+ * \DOC_V1X \DOC_ERROR_TASK{\c ABT_ERR_RWLOCK}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] rwlock  readers-writer lock handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_rwlock_rdlock(ABT_rwlock rwlock)
 {
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
+
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Calling this routine on a tasklet is not allowed. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED && p_local) {
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
+        ABTI_CHECK_TRUE(p_local_xstream->p_thread->type &
+                            ABTI_THREAD_TYPE_YIELDABLE,
+                        ABT_ERR_RWLOCK);
+    }
+#endif
 
     ABTI_mutex_lock(&p_local, &p_rwlock->mutex);
     int abt_errno = ABT_SUCCESS;
@@ -104,23 +163,49 @@ int ABT_rwlock_rdlock(ABT_rwlock rwlock)
 
 /**
  * @ingroup RWLOCK
- * @brief   Lock the rwlock as a writer.
+ * @brief   Lock a readers-writer lock as a writer.
  *
- * \c ABT_rwlock_wrlock locks the rwlock \c rwlock. If this routine successfully
- * returns, the caller ULT acquires the rwlock. If the rwlock has been locked
- * by a reader or a writer, the caller ULT will be blocked until the rwlock
- * becomes available. When the caller ULT is blocked, the context is switched
- * to the scheduler of the associated ES to make progress of other work units.
+ * \c ABT_rwlock_wrlock() locks the readers-writer lock \c rwlock as a writer.
+ * If this routine successfully returns, the caller acquires \c rwlock.  If
+ * \c rwlock has been locked by either a reader or a writer, the caller will be
+ * blocked on \c rwlock until \c rwlock becomes available.
  *
- * @param[in] rwlock  handle to the rwlock
+ * \c rwlock may be acquired by a single writer.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_NOTASK{\c rwlock}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_RWLOCK_HANDLE{\c rwlock}
+ * \DOC_V1X \DOC_ERROR_TASK{\c ABT_ERR_RWLOCK}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] rwlock  readers-writer lock handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_rwlock_wrlock(ABT_rwlock rwlock)
 {
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
+
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Calling this routine on a tasklet is not allowed. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED && p_local) {
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
+        ABTI_CHECK_TRUE(p_local_xstream->p_thread->type &
+                            ABTI_THREAD_TYPE_YIELDABLE,
+                        ABT_ERR_RWLOCK);
+    }
+#endif
 
     ABTI_mutex_lock(&p_local, &p_rwlock->mutex);
     int abt_errno = ABT_SUCCESS;
@@ -138,16 +223,23 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
 
 /**
  * @ingroup RWLOCK
- * @brief Unlock the rwlock
+ * @brief   Unlock a readers-writer lock.
  *
- * \c ABT_rwlock_unlock unlocks the rwlock \c rwlock.
- * If the caller ULT locked the rwlock, this routine unlocks the rwlock.
- * However, if the caller ULT did not lock the rwlock, this routine may result
- * in undefined behavior.
+ * \c ABT_rwlock_unlock() unlocks the readers-writer lock \c rwlock.
  *
- * @param[in] rwlock  handle to the rwlock
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_RWLOCK_HANDLE{\c rwlock}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NOT_LOCKED{\c rwlock}
+ *
+ * @param[in] rwlock  readers-writer lock handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_rwlock_unlock(ABT_rwlock rwlock)
 {
