@@ -38,12 +38,15 @@
  */
 int ABT_rwlock_create(ABT_rwlock *newrwlock)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newrwlock to NULL on error. */
+    *newrwlock = ABT_RWLOCK_NULL;
+#endif
     ABTI_rwlock *p_newrwlock;
 
     int abt_errno = ABTU_malloc(sizeof(ABTI_rwlock), (void **)&p_newrwlock);
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_CHECK_TRUE(p_newrwlock != NULL, ABT_ERR_MEM);
     ABTI_mutex_init(&p_newrwlock->mutex);
     ABTI_cond_init(&p_newrwlock->cond);
     p_newrwlock->reader_count = 0;
@@ -135,6 +138,16 @@ int ABT_rwlock_rdlock(ABT_rwlock rwlock)
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
 
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Calling this routine on a tasklet is not allowed. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED && p_local) {
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
+        ABTI_CHECK_TRUE(p_local_xstream->p_thread->type &
+                            ABTI_THREAD_TYPE_YIELDABLE,
+                        ABT_ERR_RWLOCK);
+    }
+#endif
+
     ABTI_mutex_lock(&p_local, &p_rwlock->mutex);
     int abt_errno = ABT_SUCCESS;
     while (p_rwlock->write_flag && abt_errno == ABT_SUCCESS) {
@@ -183,6 +196,16 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
+
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Calling this routine on a tasklet is not allowed. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED && p_local) {
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
+        ABTI_CHECK_TRUE(p_local_xstream->p_thread->type &
+                            ABTI_THREAD_TYPE_YIELDABLE,
+                        ABT_ERR_RWLOCK);
+    }
+#endif
 
     ABTI_mutex_lock(&p_local, &p_rwlock->mutex);
     int abt_errno = ABT_SUCCESS;
