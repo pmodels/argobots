@@ -1786,9 +1786,29 @@ DOT_CLEANUP            = YES
 # Custom style
 #---------------------------------------------------------------------------
 
+ALIASES += DOC_V10="<b>[Argobots 1.0]</b>"
+
+ALIASES += DOC_V11="<b>[Argobots 1.1]</b>"
+
+ALIASES += DOC_V1X="<b>[Argobots 1.x]</b>"
+
+ALIASES += DOC_V20="<b>[Argobots 2.0]</b>"
+
+ALIASES += changev11="<dl class=\"section attention\"><dt>Changes from Argobots 1.0 to Argobots 1.1</dt><dd>"
+
+ALIASES += changev20="<dl class=\"section note\"><dt>Changes from Argobots 1.x to Argobots 2.0 (planned)</dt><dd>"
+
 ALIASES += contexts="\par Execution context"
 
+ALIASES += endchangev11="</dd></dl>"
+
+ALIASES += endchangev20="</dd></dl>"
+
+ALIASES += endrationale="</dd></dl>"
+
 ALIASES += errors="\par Errors"
+
+ALIASES += rationale="<dl class=\"section user\"><dt>Rationale</dt><dd>"
 
 ALIASES += undefined="\par Undefined behavior"
 
@@ -1796,9 +1816,15 @@ ALIASES += undefined="\par Undefined behavior"
 # Execution context
 #---------------------------------------------------------------------------
 
+ALIASES += DOC_CONTEXT_ANY="This routine can be called in any execution context. Argobots does not need to be initialized."
+
+ALIASES += DOC_CONTEXT_CTXSWITCH="This routine may perform context switching for the calling ULT."
+
 ALIASES += DOC_CONTEXT_INIT="This routine can be called in any execution context. Argobots must be initialized."
 
 ALIASES += DOC_CONTEXT_NOCTXSWITCH="This routine does not perform context switching the calling ULT unless any user-defined function that is involved in this routine performs context switching."
+
+ALIASES += DOC_CONTEXT_NOTE_SIGNAL_SAFE="This routine is signal-safe.  Note that it is the user's responsibility to call this function properly by, for example, loading the Argobots library and/or resolving the symbol of this routine in a signal handler."
 
 ALIASES += DOC_CONTEXT_TOOL_CALLBACK{1}="This routine can be called only in a callback function \1."
 
@@ -1808,6 +1834,18 @@ ALIASES += DOC_CONTEXT_TOOL_CALLBACK{1}="This routine can be called only in a ca
 
 ALIASES += DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION="A combination of a callback function, an event mask its argument for a tool interface is updated atomically."
 
+ALIASES += DOC_DESC_V10_ACCEPT_TASK{1}="\DOC_V10 The user cannot pass a tasklet handle as \1.\n \DOC_V11 This routine accepts a tasklet handle as \1.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
+
+ALIASES += DOC_DESC_V10_ACCEPT_THREAD{1}="\DOC_V10 The user cannot pass a ULT handle as \1.\n \DOC_V11 This routine accepts a ULT handle as \1.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
+
+ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{3}="\DOC_V1X This routine returns \3 when \1 is \2.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2.\n @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
+
+ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{4}="\DOC_V1X This routine returns \4 when \1 is \2 or \3.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2 or \3.\n @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
+
+ALIASES += DOC_DESC_V1X_PRINT_RUNTIME_INFO="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED when Argobots is not initialized.\n \DOC_V20 This routine prints the queried information and returns \c ABT_SUCCESS when Argobots is not initialized.\n @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
+
+ALIASES += DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized and the queried information cannot be retrieved when Argobots is not initialized.\n @rationale Retrieving static configurations before initializing Argobots is helpful to check if the loaded Argobots implements necessary features. @endrationale"
+
 #---------------------------------------------------------------------------
 # Error
 #---------------------------------------------------------------------------
@@ -1816,7 +1854,33 @@ ALIASES += DOC_ERROR_FEATURE_NA{1}="If \1 is not supported, \c ABT_ERR_FEATURE_N
 
 ALIASES += DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{2}="If \1 is not a valid tool query kind for \2, \c ABT_ERR_INV_ARG is returned.\n"
 
+ALIASES += DOC_ERROR_INV_INFO_QUERY_KIND{1}="If \1 is not a valid info query kind, \c ABT_ERR_INV_QUERY_KIND is returned.\n"
+
+ALIASES += DOC_ERROR_INV_POOL_HANDLE{1}="If \1 is \c ABT_POOL_NULL, \c ABT_ERR_INV_POOL is returned.\n"
+
+ALIASES += DOC_ERROR_INV_SCHED_HANDLE{1}="If \1 is \c ABT_SCHED_NULL, \c ABT_ERR_INV_SCHED is returned.\n"
+
+ALIASES += DOC_ERROR_INV_TASK_HANDLE{1}="If \1 is \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_TASK is returned.\n"
+
+ALIASES += DOC_ERROR_INV_THREAD_ATTR_HANDLE{1}="If \1 is \c ABT_THREAD_ATTR_NULL, \c ABT_ERR_INV_THREAD_ATTR is returned.\n"
+
+ALIASES += DOC_ERROR_INV_THREAD_HANDLE{1}="If \1 is \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_THREAD is returned.\n"
+
+ALIASES += DOC_ERROR_INV_XSTREAM_HANDLE{1}="If \1 is \c ABT_XSTREAM_NULL, \c ABT_ERR_INV_XSTREAM is returned.\n"
+
+ALIASES += DOC_ERROR_POOL_UNSUPPORTED_FEATURE{2}="If \1 does not support \2, \c ABT_ERR_POOL is returned.\n"
+
 ALIASES += DOC_ERROR_SUCCESS="If this routine succeeds, \c ABT_SUCCESS is returned.\n"
+
+ALIASES += DOC_ERROR_UNINITIALIZED="If the Argobots runtime is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
+
+ALIASES += DOC_ERROR_UNINITIALIZED_INFO_QUERY="If the queried information requires initialized Argobots while Argobots is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
+
+#---------------------------------------------------------------------------
+# Note
+#---------------------------------------------------------------------------
+
+ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant for debugging and diagnosis and can be changed because of an update of the internal implementation of Argobots.  A program that relies on the output of this routine is non-conforming."
 
 #---------------------------------------------------------------------------
 # Undefined behavior
@@ -1826,8 +1890,12 @@ ALIASES += DOC_UNDEFINED_CHANGE_STATE{1}="If the internal state of the Argobots 
 
 ALIASES += DOC_UNDEFINED_NULL_PTR{1}="If \1 is \c NULL, the results are undefined.\n"
 
+ALIASES += DOC_UNDEFINED_SYS_FILE{1}="If an error occurs regarding \1, the results are undefined.\n"
+
 ALIASES += DOC_UNDEFINED_TOOL_CALLBACK{1}="If the tool context passed to \1 is accessed after \1 finishes, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_TOOL_QUERY{2}="If \1 is a tool context that is not passed to the calling callback function, the results are undefined.\n If \1 and \2 are not the same pair passed to the calling callback function, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_UNINIT="If Argobots is not initialized, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_WORK_UNIT_RUNNING{1}="If \1 is running, the results are undefined.\n"

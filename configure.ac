@@ -212,6 +212,11 @@ AC_ARG_ENABLE([static-cacheline-size],
         <value>             - assume [value] bytes (e.g., <value> = 64)
 ],,[enable_static_cacheline_size=auto])
 
+# --enable-ver20-api
+AC_ARG_ENABLE([ver20-api],
+    AS_HELP_STRING([--enable-ver20-api],
+                   [enable an experimental Argobots 2.0 API, which is disabled by default.]))
+
 # --with-lts
 AC_ARG_WITH([lts],
     AS_HELP_STRING([--with-lts=PATH],
@@ -531,6 +536,15 @@ AS_IF([test "x$enable_error_check" = "xno"],
      ABT_NULL="1"],
     [ABT_NULL="0"])
 AC_SUBST([ABT_NULL])
+
+
+AS_IF([test "x$enable_ver20_api" = "xyes"],
+    [AC_DEFINE(ABT_CONFIG_ENABLE_VER_20_API, 1,
+        [Define to enable Argobots 2.0 API])
+     ABT_ENABLE_VER_20_API="1"],
+    [ABT_ENABLE_VER_20_API="0"])
+AC_SUBST([ABT_ENABLE_VER_20_API])
+
 
 AS_IF([test "x$enable_error_check" = "xno" -o "x$enable_pool_producer_check" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_POOL_PRODUCER_CHECK, 1,
