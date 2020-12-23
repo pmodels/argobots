@@ -1852,6 +1852,8 @@ ALIASES += DOC_DESC_V10_EVENTUAL_UPDATE_READY_BUFFER{1}="\DOC_V10 This routine u
 
 ALIASES += DOC_DESC_V10_FUTURE_COMPARTMENT_ORDER="\DOC_V10 The order of elements of \c arg passed to \c cb_func() is the same order as the \c ABT_future_set() calls are terminated.\n \DOC_V11 The order of elements of \c arg passed to \c cb_func() is undefined. @rationale This specification in Argobots 1.0 is unclear and unreasonable because the exact timing of termination of \c ABT_future_set() is not observable if \c ABT_future_set() is called concurrently. @endrationale"
 
+ALIASES += DOC_DESC_V10_REJECT_MUTEX_ATTR_NULL{1}="\DOC_V10 This routine returns \c ABT_ERR_INV_MUTEX_ATTR if \1 is \c ABT_MUTEX_ATTR_NULL.\n \DOC_V11 This routine uses the default mutex attributes if \1 is \c ABT_MUTEX_ATTR_NULL. @rationale Most of the Argobots routines use the default attributes if the given configuration or attributes are NULL.  This routine should also follow this basic rule. @endrationale"
+
 ALIASES += DOC_DESC_V1X_ERROR_CODE_CHANGE{3}="\DOC_V1X \1 is returned if \3.\n \DOC_V20 \2 is returned if \3.\n @rationale Argobots 2.0 changes the error code for consistent behavior with the other Argobots routines. @endrationale"
 
 ALIASES += DOC_DESC_V1X_NOTASK{1}="\DOC_V1X If a tasklet calls this routine, \1 is returned.\n \DOC_V20 A tasklet may call this routine.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
@@ -1910,6 +1912,8 @@ ALIASES += DOC_ERROR_INV_INFO_QUERY_KIND{1}="If \1 is not a valid info query kin
 
 ALIASES += DOC_ERROR_INV_MUTEX_HANDLE{1}="If \1 is \c ABT_MUTEX_NULL, \c ABT_ERR_INV_MUTEX is returned.\n"
 
+ALIASES += DOC_ERROR_INV_MUTEX_PTR{1}="If \1 points to \c ABT_MUTEX_NULL, \c ABT_ERR_INV_MUTEX is returned.\n"
+
 ALIASES += DOC_ERROR_INV_POOL_HANDLE{1}="If \1 is \c ABT_POOL_NULL, \c ABT_ERR_INV_POOL is returned.\n"
 
 ALIASES += DOC_ERROR_INV_SCHED_HANDLE{1}="If \1 is \c ABT_SCHED_NULL, \c ABT_ERR_INV_SCHED is returned.\n"
@@ -1936,6 +1940,10 @@ ALIASES += DOC_ERROR_SUCCESS_COND_SIGNALED="If this caller is woken up by a sign
 
 ALIASES += DOC_ERROR_SUCCESS_COND_TIMEDOUT="If the system time exceeds \c abstime before \c cond is signaled, \c ABT_ERR_COND_TIMEDOUT is returned.\n"
 
+ALIASES += DOC_ERROR_SUCCESS_LOCK_ACQUIRED{1}="If this routine successfully obtains \1, \c ABT_SUCCESS is returned.\n"
+
+ALIASES += DOC_ERROR_SUCCESS_LOCK_FAILED{1}="If this routine fails to obtain \1, \c ABT_ERR_MUTEX_LOCKED is returned.\n"
+
 ALIASES += DOC_ERROR_TASK{1}="If the caller is a tasklet, \1 is returned.\n"
 
 ALIASES += DOC_ERROR_UNINITIALIZED="If the Argobots runtime is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
@@ -1947,6 +1955,8 @@ ALIASES += DOC_ERROR_WAITER{2}="If there is a waiter blocked on \1, \2 is return
 #---------------------------------------------------------------------------
 # Note
 #---------------------------------------------------------------------------
+
+ALIASES += DOC_NOTE_DEFAULT_MUTEX_ATTRIBUTE="To check the details of the default mutex attributes, please see \c ABT_mutex_attr_create()."
 
 ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant for debugging and diagnosis and can be changed because of an update of the internal implementation of Argobots.  A program that relies on the output of this routine is non-conforming."
 
