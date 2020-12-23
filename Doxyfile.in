@@ -1836,6 +1836,8 @@ ALIASES += DOC_CONTEXT_TOOL_CALLBACK{1}="This routine can be called only in a ca
 
 ALIASES += DOC_DESC_ATOMICITY_EVENTUAL_READINESS="The readiness of an eventual is managed atomically."
 
+ALIASES += DOC_DESC_ATOMICITY_FUTURE_READINESS="The readiness of a future is managed atomically."
+
 ALIASES += DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION="A combination of a callback function, an event mask its argument for a tool interface is updated atomically."
 
 ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on the clock resolution by the system."
@@ -1847,6 +1849,8 @@ ALIASES += DOC_DESC_V10_ACCEPT_THREAD{1}="\DOC_V10 The user cannot pass a ULT ha
 ALIASES += DOC_DESC_V10_BARRIER_NUM_WAITERS{1}="\DOC_V10 This routine accepts zero as \c num_waiters.\n \DOC_V11 This routine returns \c ABT_ERR_INV_ARG if \c num_waiters is zero. @rationale A barrier with \c num_waiters = 0 is useless and should be prohibited.  Even with Argobots 1.0, calling \c ABT_barrier_wait() for a barrier with \c num_waiters = 0 is not allowed. @endrationale"
 
 ALIASES += DOC_DESC_V10_EVENTUAL_UPDATE_READY_BUFFER{1}="\DOC_V10 This routine updates the memory buffer of \1 and returns \c ABT_SUCCESS if \1 is ready.\n \DOC_V11 This routine returns \c ABT_ERR_EVENTUAL if \1 is ready.\n @rationale An update of the memory buffer when \1 is ready breaks the semantics of \c eventual.  Such an update should be prohibited. @endrationale"
+
+ALIASES += DOC_DESC_V10_FUTURE_COMPARTMENT_ORDER="\DOC_V10 The order of elements of \c arg passed to \c cb_func() is the same order as the \c ABT_future_set() calls are terminated.\n \DOC_V11 The order of elements of \c arg passed to \c cb_func() is undefined. @rationale This specification in Argobots 1.0 is unclear and unreasonable because the exact timing of termination of \c ABT_future_set() is not observable if \c ABT_future_set() is called concurrently. @endrationale"
 
 ALIASES += DOC_DESC_V1X_ERROR_CODE_CHANGE{3}="\DOC_V1X \1 is returned if \3.\n \DOC_V20 \2 is returned if \3.\n @rationale Argobots 2.0 changes the error code for consistent behavior with the other Argobots routines. @endrationale"
 
@@ -1872,6 +1876,10 @@ ALIASES += DOC_ERROR_EVENTUAL_READY{1}="If \1 is ready, \c ABT_ERR_EVENTUAL is r
 
 ALIASES += DOC_ERROR_FEATURE_NA{1}="If \1 is not supported, \c ABT_ERR_FEATURE_NA is returned.\n"
 
+ALIASES += DOC_ERROR_FUTURE_NO_COMPARTMENT{1}="If the number of compartments of \1 is zero, \c ABT_ERR_FUTURE is returned.\n"
+
+ALIASES += DOC_ERROR_FUTURE_READY{1}="If \1 is ready, \c ABT_ERR_FUTURE is returned.\n"
+
 ALIASES += DOC_ERROR_INV_ARG_GREATER_THAN{2}="If \1 is larger than \2, \c ABT_ERR_INV_ARG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{2}="If \1 is not a valid tool query kind for \2, \c ABT_ERR_INV_ARG is returned.\n"
@@ -1893,6 +1901,10 @@ ALIASES += DOC_ERROR_INV_EVENTUAL_GREATER_THAN{2}="If \1 is larger than \2, \c A
 ALIASES += DOC_ERROR_INV_EVENTUAL_HANDLE{1}="If \1 is \c ABT_EVENTUAL_NULL, \c ABT_ERR_INV_EVENTUAL is returned.\n"
 
 ALIASES += DOC_ERROR_INV_EVENTUAL_PTR{1}="If \1 points to \c ABT_EVENTUAL_NULL, \c ABT_ERR_INV_EVENTUAL is returned.\n"
+
+ALIASES += DOC_ERROR_INV_FUTURE_HANDLE{1}="If \1 is \c ABT_FUTURE_NULL, \c ABT_ERR_INV_FUTURE is returned.\n"
+
+ALIASES += DOC_ERROR_INV_FUTURE_PTR{1}="If \1 points to \c ABT_FUTURE_NULL, \c ABT_ERR_INV_FUTURE is returned.\n"
 
 ALIASES += DOC_ERROR_INV_INFO_QUERY_KIND{1}="If \1 is not a valid info query kind, \c ABT_ERR_INV_QUERY_KIND is returned.\n"
 
@@ -1947,6 +1959,8 @@ ALIASES += DOC_UNDEFINED_CHANGE_STATE{1}="If the internal state of the Argobots 
 ALIASES += DOC_UNDEFINED_COND_WAIT{2}="If \2 is a recursive mutex and has been locked more than once, the results are undefined.\n If \1 has been associated with a mutex other than \2, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_EVENTUAL_BUFFER{2}="If the memory buffer pointed to by \2 is accessed after freeing \1, the results are undefined.\n If the memory buffer pointed to by \2 is modified, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_FUTURE_CALLBACK{2}="If the contents of the argument \2 passed to \1 are accessed after \1 finishes, the results are undefined.\n If a future that triggers \1 is accessed in \1 itself, the results are undefined.\n If the contents of the argument \2 passed to \1 are modified, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{1}="If \1 is a recursive mutex and the caller does not have ownership of \1, the results are undefined.\n"
 
