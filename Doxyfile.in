@@ -1846,6 +1846,8 @@ ALIASES += DOC_DESC_V10_BARRIER_NUM_WAITERS{1}="\DOC_V10 This routine accepts ze
 
 ALIASES += DOC_DESC_V1X_NOTASK{1}="\DOC_V1X If a tasklet calls this routine, \1 is returned.\n \DOC_V20 A tasklet may call this routine.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
 
+ALIASES += DOC_DESC_V1X_PREMATURE_WAITER_CHECK{2}="\DOC_V1X \2 is returned if this routine finds a waiter on \1.\n \DOC_V20 The results are undefined if a waiter is blocked on \1.\n @rationale Check this is premature considering the asynchronous nature of \1.  From Argobots 2.0, it becomes the user's responsibility to guarantee that there is no waiter on \1. @endrationale"
+
 ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{3}="\DOC_V1X This routine returns \3 when \1 is \2.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2.\n @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
 
 ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{4}="\DOC_V1X This routine returns \4 when \1 is \2 or \3.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2 or \3.\n @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
@@ -1870,7 +1872,13 @@ ALIASES += DOC_ERROR_INV_BARRIER_HANDLE{1}="If \1 is \c ABT_BARRIER_NULL, \c ABT
 
 ALIASES += DOC_ERROR_INV_BARRIER_PTR{1}="If \1 points to \c ABT_BARRIER_NULL, \c ABT_ERR_INV_BARRIER is returned.\n"
 
+ALIASES += DOC_ERROR_INV_COND_HANDLE{1}="If \1 is \c ABT_COND_NULL, \c ABT_ERR_INV_COND is returned.\n"
+
+ALIASES += DOC_ERROR_INV_COND_PTR{1}="If \1 points to \c ABT_COND_NULL, \c ABT_ERR_INV_COND is returned.\n"
+
 ALIASES += DOC_ERROR_INV_INFO_QUERY_KIND{1}="If \1 is not a valid info query kind, \c ABT_ERR_INV_QUERY_KIND is returned.\n"
+
+ALIASES += DOC_ERROR_INV_MUTEX_HANDLE{1}="If \1 is \c ABT_MUTEX_NULL, \c ABT_ERR_INV_MUTEX is returned.\n"
 
 ALIASES += DOC_ERROR_INV_POOL_HANDLE{1}="If \1 is \c ABT_POOL_NULL, \c ABT_ERR_INV_POOL is returned.\n"
 
@@ -1894,11 +1902,17 @@ ALIASES += DOC_ERROR_RESOURCE="If an error related to memory occurs, \c ABT_ERR_
 
 ALIASES += DOC_ERROR_SUCCESS="If this routine succeeds, \c ABT_SUCCESS is returned.\n"
 
+ALIASES += DOC_ERROR_SUCCESS_COND_SIGNALED="If this caller is woken up by a signal, \c ABT_SUCCESS is returned.\n"
+
+ALIASES += DOC_ERROR_SUCCESS_COND_TIMEDOUT="If the system time exceeds \c abstime before \c cond is signaled, \c ABT_ERR_COND_TIMEDOUT is returned.\n"
+
 ALIASES += DOC_ERROR_TASK{1}="If the caller is a tasklet, \1 is returned.\n"
 
 ALIASES += DOC_ERROR_UNINITIALIZED="If the Argobots runtime is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
 
 ALIASES += DOC_ERROR_UNINITIALIZED_INFO_QUERY="If the queried information requires initialized Argobots while Argobots is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
+
+ALIASES += DOC_ERROR_WAITER{2}="If there is a waiter blocked on \1, \2 is returned."
 
 #---------------------------------------------------------------------------
 # Note
@@ -1911,6 +1925,12 @@ ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant
 #---------------------------------------------------------------------------
 
 ALIASES += DOC_UNDEFINED_CHANGE_STATE{1}="If the internal state of the Argobots is changed in \1, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_COND_WAIT{2}="If \2 is a recursive mutex and has been locked more than once, the results are undefined.\n If \1 has been associated with a mutex other than \2, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{1}="If \1 is a recursive mutex and the caller does not have ownership of \1, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_NOT_LOCKED{1}="If \1 is not locked, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_NULL_PTR{1}="If \1 is \c NULL, the results are undefined.\n"
 

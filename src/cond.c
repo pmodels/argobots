@@ -18,12 +18,26 @@ static inline double convert_timespec_to_sec(const struct timespec *p_ts);
  *
  * \c ABT_cond_create() creates a new condition variable and returns its handle
  * through \c newcond.
- * If an error occurs in this routine, a non-zero error code will be returned
- * and newcond will be set to \c ABT_COND_NULL.
  *
- * @param[out] newcond  handle to a new condition variable
+ * \c newcond must be freed by \c ABT_cond_free() after its use.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newcond, \c ABT_COND_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newcond}
+ *
+ * @param[out] newcond  condition variable handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_cond_create(ABT_cond *newcond)
 {
@@ -39,15 +53,31 @@ int ABT_cond_create(ABT_cond *newcond)
 
 /**
  * @ingroup COND
- * @brief   Free the condition variable.
+ * @brief   Free a condition variable.
  *
- * \c ABT_cond_free() deallocates the memory used for the condition variable
- * object associated with the handle \c cond. If it is successfully processed,
- * \c cond is set to \c ABT_COND_NULL.
+ * \c ABT_cond_free() deallocates the resource used for the condition variable
+ * \c cond and sets \c cond to \c ABT_COND_NULL.
  *
- * @param[in,out] cond  handle to the condition variable
+ * @changev20
+ * \DOC_DESC_V1X_PREMATURE_WAITER_CHECK{\c cond, \c ABT_ERR_COND}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_COND_PTR{\c cond}
+ * \DOC_V1X \DOC_ERROR_WAITER{\c cond, \c ABT_ERR_COND}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c cond}
+ * \DOC_UNDEFINED_WAITER{\c cond}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c cond}
+ *
+ * @param[in,out] cond  condition variable handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_cond_free(ABT_cond *cond)
 {
@@ -65,20 +95,49 @@ int ABT_cond_free(ABT_cond *cond)
 
 /**
  * @ingroup COND
- * @brief   Wait on the condition.
+ * @brief   Wait on a condition variable.
  *
- * The ULT calling \c ABT_cond_wait() waits on the condition variable until
- * it is signaled.
- * The user should call this routine while the mutex specified as \c mutex is
- * locked. The mutex will be automatically released while waiting. After signal
- * is received and the waiting ULT is awakened, the mutex will be
- * automatically locked for use by the ULT. The user is then responsible for
- * unlocking mutex when the ULT is finished with it.
+ * The caller of \c ABT_cond_wait() waits on the condition variable \c cond
+ * until it is signaled.  The user must call this routine while the mutex
+ * \c mutex is locked.  \c mutex will be automatically released while waiting.
+ * When the caller is woken up, \c mutex will be automatically locked by the
+ * caller.  The user is then responsible for unlocking \c mutex.
  *
- * @param[in] cond   handle to the condition variable
- * @param[in] mutex  handle to the mutex
+ * This routine associates \c mutex with \c cond until this routine returns, so
+ * the user may not use more than one mutex for the same \c cond.
+ *
+ * This routine returns with \c mutex locked even if an error occurs.
+ *
+ * If \c mutex is a recursive mutex, \c mutex must be locked only once by the
+ * caller.
+ *
+ * @note
+ * Unlike other implementations of condition variables, a spurious wakeup never
+ * occurs.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_NOTASK{\c ABT_ERR_COND}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_COND_HANDLE{\c cond}
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ * \DOC_V1X \DOC_ERROR_TASK{\c ABT_ERR_COND}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
+ * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
+ * \DOC_UNDEFINED_COND_WAIT{\c cond, \c mutex}
+ *
+ * @param[in] cond   condition variable handle
+ * @param[in] mutex  mutex handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 {
@@ -95,25 +154,58 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 
 /**
  * @ingroup COND
- * @brief   Wait on the condition.
+ * @brief   Wait on a condition variable with a timeout limit.
  *
- * The ULT calling \c ABT_cond_timedwait() waits on the condition variable
- * until it is signaled or the absolute time specified by \c abstime passes.
- * If system time equals or exceeds \c abstime before \c cond is signaled,
- * the error code \c ABT_ERR_COND_TIMEDOUT is returned.
+ * The caller of \c ABT_cond_timedwait() waits on the condition variable \c cond
+ * until either it is signaled or the absolute time specified by \c abstime
+ * passes.  The user must call this routine while the mutex \c mutex is locked.
+ * \c mutex will be automatically released while waiting.  When the caller is
+ * woken up, \c mutex will be automatically locked by the caller.  The user is
+ * then responsible for unlocking \c mutex.  If the system time exceeds
+ * \c abstime before \c cond is signaled, \c ABT_ERR_COND_TIMEDOUT is returned.
  *
- * The user should call this routine while the mutex specified as \c mutex is
- * locked. The mutex will be automatically released while waiting. After signal
- * is received and the waiting ULT is awakened, the mutex will be
- * automatically locked for use by the ULT. The user is then responsible for
- * unlocking mutex when the ULT is finished with it.
+ * @note
+ * \c clock_gettime() can be used to obtain the current system time.
+ * @code{.c}
+ * // #include <time.h> is needed.
+ * struct timespec ts;
+ * clock_gettime(CLOCK_REALTIME, &ts);
+ * ts.tv_sec += 10; // timeout = current time + 10 seconds.
+ * ABT_cond_timedwait(cond, mutex, &ts);
+ * @endcode
  *
- * @param[in] cond     handle to the condition variable
- * @param[in] mutex    handle to the mutex
+ * This routine associates \c mutex with \c cond until this routine returns, so
+ * the user may not use more than one mutex for the same \c cond.
+ *
+ * This routine returns with \c mutex locked even if an error occurs.
+ *
+ * If \c mutex is a recursive mutex, \c mutex must be locked only once by the
+ * caller.
+ *
+ * @note
+ * Unlike other implementations of condition variables, a spurious wakeup never
+ * occurs.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS_COND_SIGNALED
+ * \DOC_ERROR_SUCCESS_COND_TIMEDOUT
+ * \DOC_ERROR_INV_COND_HANDLE{\c cond}
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c abstime}
+ * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
+ * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
+ * \DOC_UNDEFINED_COND_WAIT{\c cond, \c mutex}
+ *
+ * @param[in] cond     condition variable handle
+ * @param[in] mutex    mutex handle
  * @param[in] abstime  absolute time for timeout
  * @return Error code
- * @retval ABT_SUCCESS            on success
- * @retval ABT_ERR_COND_TIMEDOUT  timeout
  */
 int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
                        const struct timespec *abstime)
@@ -156,17 +248,25 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
 
 /**
  * @ingroup COND
- * @brief   Signal a condition.
+ * @brief   Signal a condition variable.
  *
- * \c ABT_cond_signal() signals another ULT that is waiting on the condition
- * variable. Only one ULT is waken up by the signal and the scheduler
- * determines the ULT.
- * This routine shall have no effect if no ULTs are currently blocked on the
- * condition variable.
+ * \c ABT_cond_signal() signals another waiter that is blocked on the condition
+ * variable \c cond.  Only one waiter is signaled and woken up.  The caller does
+ * not need to hold a mutex associated with \c cond.  This routine has no effect
+ * if no waiter is currently blocked on \c cond.
  *
- * @param[in] cond   handle to the condition variable
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_COND_HANDLE{\c cond}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] cond  condition variable handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_cond_signal(ABT_cond cond)
 {
@@ -183,16 +283,25 @@ int ABT_cond_signal(ABT_cond cond)
 
 /**
  * @ingroup COND
- * @brief   Broadcast a condition.
+ * @brief   Broadcast a condition variable.
  *
- * \c ABT_cond_broadcast() signals all ULTs that are waiting on the
- * condition variable.
- * This routine shall have no effect if no ULTs are currently blocked on the
- * condition variable.
+ * \c ABT_cond_broadcast() signals all waiters that are blocked on the condition
+ * variable \c cond.  The caller does not need to hold a mutex associated with
+ * \c cond.  This routine has no effect if no waiter is currently blocked on
+ * \c cond.
  *
- * @param[in] cond   handle to the condition variable
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_COND_HANDLE{\c cond}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] cond  condition variable handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_cond_broadcast(ABT_cond cond)
 {
