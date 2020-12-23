@@ -5,9 +5,9 @@
 
 #include "abti.h"
 
-/** @defgroup KEY Work-Unit Local Storage (TLS)
+/** @defgroup KEY Work-Unit Local Storage
  * This group is for work-unit specific data, which can be described as
- * work-unit local storage (TLS).
+ * work-unit local storage (which is similar to "thread-local storage" or TLS).
  */
 
 static ABTD_atomic_uint32 g_key_id =
@@ -15,29 +15,53 @@ static ABTD_atomic_uint32 g_key_id =
 
 /**
  * @ingroup KEY
- * @brief   Create an WU-specific data key.
+ * @brief   Create a new work-unit-specific data key.
  *
- * \c ABT_key_create() creates a new work unit (WU)-specific data key visible
- * to all WUs (ULTs or tasklets) in the process and returns its handle through
- * \c newkey.  Although the same key may be used by different WUs, the values
- * bound to the key by \c ABT_key_set() are maintained per WU and persist for
- * the life of the calling WU.
+ * \c ABT_key_create() creates a new work-unit-specific data key visible and
+ * returns its handle through \c newkey.  Although the same key may be used by
+ * different work units, the values bound to the key set by \c ABT_key_set() are
+ * maintained on a per-work-unit and persist for the life of each work unit.
  *
- * Upon key creation, the value \c NULL shall be associated with the new key in
- * all active WUs.  Upon WU creation, the value \c NULL shall be associated
- * with all defined keys in the new WU.
+ * Upon key creation, the value \c NULL will be associated with \c newkey in all
+ * existing work units.  Upon work-unit creation, the value \c NULL will be
+ * associated with all the defined keys in the new work unit.
  *
- * An optional destructor function, \c destructor, may be registered with each
- * key.  When a WU terminates, if a key has a non-NULL destructor pointer, and
- * the WU has a non-NULL value associated with that key, the value of the key
- * is set to \c NULL, and then \c destructor is called with the previously
- * associated value as its sole argument.  The order of destructor calls is
- * unspecified if more than one destructor exists for a WU when it exits.
+ * An optional destructor function \c destructor() may be associated with
+ * \c newkey.  When a work unit is freed, if a key has a non-\c NULL destructor
+ * and the work unit has a non-\c NULL value associated with that key, the value
+ * of the key is set to \c NULL, and then \c destructor() is called with the
+ * last associated value as its sole argument \c value.  The destructor is
+ * called before the work unit is freed.  The order of destructor calls is
+ * undefined if more than one destructor exists for a work unit when it is
+ * freed.
  *
- * @param[in]  destructor  destructor function called when a WU exits
- * @param[out] newkey      handle to a newly created key
+ * @note
+ * \c destructor() is called when a work unit is \b freed (e.g.,
+ * \c ABT_thread_free()), not \b joined (e.g., \c ABT_thread_join()).
+ *
+ * Unlike other implementations (e.g., \c pthread_key_create()), \c destructor()
+ * is not called by the associated work-unit, so a program that relies on a
+ * caller of \c destructor() is non-conforming.
+ *
+ * \c destructor() is called even if the associated key has been freed by
+ * \c ABT_key_free().
+ *
+ * The created key must be freed by \c ABT_key_free() after its use.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newkey}
+ *
+ * @param[in]  destructor  destructor function called when a work unit is freed
+ * @param[out] newkey      work-unit-specific data key handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
 {
@@ -54,16 +78,32 @@ int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
 
 /**
  * @ingroup KEY
- * @brief   Free an WU-specific data key.
+ * @brief   Free a work-unit-specific data key.
  *
- * \c ABT_key_free() deletes the WU-specific data key specified by \c key and
- * deallocates memory used for the key object.  It is the user's responsibility
- * to free memory for values associated with the deleted key.  This routine
- * does not call the destructor function registered by \c ABT_key_create().
+ * \c ABT_key_free() deallocates the resource used for the work-unit-specific
+ * data key \c key and sets \c key to \c ABT_KEY_NULL.  It is the user's
+ * responsibility to free memory for values associated with the deleted key.
  *
- * @param[in,out] key  handle to the target key
+ * The user is allowed to delete a key before terminating all work units that
+ * have non-\c NULL values associated with \c key.  The user cannot refer to a
+ * value via the deleted key, but the destructor of the deleted key will be
+ * called when a work unit that has a non-\c NULL value associated with that key
+ * is freed.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_KEY_PTR{\c key}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c key}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c key}
+ *
+ * @param[in,out] key  work-unit-specific data key handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_key_free(ABT_key *key)
 {
@@ -79,16 +119,35 @@ int ABT_key_free(ABT_key *key)
 
 /**
  * @ingroup KEY
- * @brief   Associate a value with the key.
+ * @brief   Associate a value with a work-unit-specific key in the calling work
+ *          unit.
  *
- * \c ABT_key_set() associates a value, \c value, with the target WU-specific
- * data key, \c key.  Different WUs may bind different values to the same key.
+ * \c ABT_key_set() associates a value \c value of the work-unit-specific data
+ * key \c key in the calling work unit. Different work units may bind different
+ * values to the same key.
  *
- * @param[in] key    handle to the target key
- * @param[in] value  value for the key
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
+ *
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_KEY_HANDLE{\c key}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] key    work-unit-specific data key handle
+ * @param[in] value  value associated with \c key
  * @return Error code
- * @retval ABT_SUCCESS          on success
- * @retval ABT_ERR_INV_XSTREAM  called by an external thread
  */
 int ABT_key_set(ABT_key key, void *value)
 {
@@ -96,7 +155,11 @@ int ABT_key_set(ABT_key key, void *value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     ABTI_xstream *p_local_xstream;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
+#else
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+#endif
 
     /* Obtain the key-value table pointer. */
     int abt_errno =
@@ -108,19 +171,35 @@ int ABT_key_set(ABT_key key, void *value)
 
 /**
  * @ingroup KEY
- * @brief   Get the value associated with the key.
+ * @brief   Get a value associated with a key in the calling work unit.
  *
- * \c ABT_key_get() returns the value associated with the target WU-specific
- * data key, \c key, through \c value on behalf of the calling WU.  Different
- * WUs get different values for the target key via this routine if they have
- * set different values with \c ABT_key_set().  If a WU has never set a value
- * for the key, this routine returns \c NULL to \c value.
+ * \c ABT_key_get() returns the value in the caller associated with the
+ * work-unit-specific data key \c key in the calling work unit through \c value.
+ * If the caller has never set a value for the key, this routine sets \c value
+ * to \c NULL.
  *
- * @param[in] key    handle to the target key
- * @param[in] value  value for the key
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
+ *
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_KEY_HANDLE{\c key}
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c value}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in]  key    work-unit-specific data key handle
+ * @param[out] value  value associated with \c key
  * @return Error code
- * @retval ABT_SUCCESS          on success
- * @retval ABT_ERR_INV_XSTREAM  called by an external thread
  */
 int ABT_key_get(ABT_key key, void **value)
 {
@@ -129,12 +208,20 @@ int ABT_key_get(ABT_key key, void **value)
 
     /* We don't allow an external thread to call this routine. */
     ABTI_xstream *p_local_xstream;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
+#else
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+#endif
 
     /* Obtain the key-value table pointer */
     *value = ABTI_ktable_get(&p_local_xstream->p_thread->p_keytable, p_key);
     return ABT_SUCCESS;
 }
+
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
 
 void ABTI_ktable_free(ABTI_local *p_local, ABTI_ktable *p_ktable)
 {
