@@ -11,7 +11,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config);
 static void sched_run(ABT_sched sched);
 static int sched_free(ABT_sched);
 
-static ABT_sched_def sched_prio_def = { .type = ABT_SCHED_TYPE_TASK,
+static ABT_sched_def sched_prio_def = { .type = ABT_SCHED_TYPE_ULT,
                                         .init = sched_init,
                                         .run = sched_run,
                                         .free = sched_free,

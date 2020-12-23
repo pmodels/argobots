@@ -11,7 +11,7 @@ static int sched_free(ABT_sched);
 static void sched_sort_pools(int num_pools, ABT_pool *pools);
 
 static ABT_sched_def sched_basic_wait_def = {
-    .type = ABT_SCHED_TYPE_TASK,
+    .type = ABT_SCHED_TYPE_ULT,
     .init = sched_init,
     .run = sched_run,
     .free = sched_free,

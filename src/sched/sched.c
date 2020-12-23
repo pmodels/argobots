@@ -840,26 +840,9 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
             if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0)
                 return ABT_TRUE;
         } else if (p_sched->used == ABTI_SCHED_IN_POOL) {
-            /* If the scheduler is a stacked one, we have to escape from the
-             * scheduling function. The scheduler will be stopped if it is a
-             * tasklet type. However, if the scheduler is a ULT type, we
-             * context switch to the parent scheduler. */
-            if (p_sched->type == ABT_SCHED_TYPE_TASK)
-                return ABT_TRUE;
-            /* If the current caller cannot yield, let's finish it */
-            ABTI_xstream *p_local_xstream =
-                ABTI_local_get_xstream_or_null(*pp_local);
-            if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL)
-                return ABT_TRUE;
-            /* If the current caller is not the scheduler, let's finish. */
-            if (&p_sched->p_ythread->thread != p_local_xstream->p_thread)
-                return ABT_TRUE;
-            /* Yield this scheduler. */
-            ABTI_ythread_context_switch_to_parent(&p_local_xstream,
-                                                  p_sched->p_ythread,
-                                                  ABT_SYNC_EVENT_TYPE_OTHER,
-                                                  NULL);
-            *pp_local = ABTI_xstream_get_local(p_local_xstream);
+            /* Let's finish it anyway.
+             * TODO: think about the condition. */
+            return ABT_TRUE;
         }
     }
     return ABT_FALSE;
@@ -940,7 +923,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
         fprintf(p_os, "%*s== NULL SCHED ==\n", indent, "");
     } else {
         ABTI_sched_kind kind;
-        const char *kind_str, *type, *used;
+        const char *kind_str, *used;
 
         kind = p_sched->kind;
         if (kind == sched_get_kind(ABTI_sched_get_basic_def())) {
@@ -955,17 +938,6 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
             kind_str = "USER";
         }
 
-        switch (p_sched->type) {
-            case ABT_SCHED_TYPE_ULT:
-                type = "ULT";
-                break;
-            case ABT_SCHED_TYPE_TASK:
-                type = "TASKLET";
-                break;
-            default:
-                type = "UNKNOWN";
-                break;
-        }
         switch (p_sched->used) {
             case ABTI_SCHED_NOT_USED:
                 used = "NOT_USED";
@@ -987,7 +959,6 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 "%*sid       : %" PRIu64 "\n"
 #endif
                 "%*skind     : %" PRIxPTR " (%s)\n"
-                "%*stype     : %s\n"
                 "%*sused     : %s\n"
                 "%*sautomatic: %s\n"
                 "%*srequest  : 0x%x\n"
@@ -1000,12 +971,12 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
                 indent, "", p_sched->id,
 #endif
-                indent, "", p_sched->kind, kind_str, indent, "", type, indent,
-                "", used, indent, "",
-                (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent, "",
-                ABTD_atomic_acquire_load_uint32(&p_sched->request), indent, "",
-                p_sched->num_pools, indent, "", ABTI_sched_get_size(p_sched),
-                indent, "", ABTI_sched_get_total_size(p_sched), indent, "",
+                indent, "", p_sched->kind, kind_str, indent, "", used, indent,
+                "", (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent,
+                "", ABTD_atomic_acquire_load_uint32(&p_sched->request), indent,
+                "", p_sched->num_pools, indent, "",
+                ABTI_sched_get_size(p_sched), indent, "",
+                ABTI_sched_get_total_size(p_sched), indent, "",
                 (void *)p_sched->p_ythread, indent, "", p_sched->data);
         if (print_sub == ABT_TRUE) {
             size_t i;
