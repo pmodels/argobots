@@ -59,6 +59,9 @@ double ABT_get_wtime(void)
  */
 int ABT_timer_create(ABT_timer *newtimer)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    *newtimer = ABT_TIMER_NULL;
+#endif
     ABTI_timer *p_newtimer;
     int abt_errno = timer_alloc(&p_newtimer);
     ABTI_CHECK_ERROR(abt_errno);
@@ -98,6 +101,9 @@ int ABT_timer_create(ABT_timer *newtimer)
  */
 int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    *newtimer = ABT_TIMER_NULL;
+#endif
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
