@@ -155,7 +155,11 @@ int ABT_key_set(ABT_key key, void *value)
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
     ABTI_xstream *p_local_xstream;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
+#else
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+#endif
 
     /* Obtain the key-value table pointer. */
     int abt_errno =
@@ -204,7 +208,11 @@ int ABT_key_get(ABT_key key, void **value)
 
     /* We don't allow an external thread to call this routine. */
     ABTI_xstream *p_local_xstream;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
+#else
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+#endif
 
     /* Obtain the key-value table pointer */
     *value = ABTI_ktable_get(&p_local_xstream->p_thread->p_keytable, p_key);
