@@ -96,7 +96,11 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
                      ABT_sched_config config, ABT_sched *newsched)
 {
     ABTI_sched *p_sched;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    *newsched = ABT_SCHED_NULL;
     ABTI_CHECK_TRUE(newsched != NULL, ABT_ERR_SCHED);
+#endif
+    ABTI_CHECK_TRUE(num_pools >= 0, ABT_ERR_INV_ARG);
 
     /* TODO: the default value of automatic is different from
      * ABT_sched_create_basic(). Make it consistent. */
@@ -175,6 +179,12 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                            ABT_pool *pools, ABT_sched_config config,
                            ABT_sched *newsched)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    *newsched = ABT_SCHED_NULL;
+    ABTI_CHECK_TRUE(newsched != NULL, ABT_ERR_SCHED);
+#endif
+    ABTI_CHECK_TRUE(num_pools >= 0, ABT_ERR_INV_ARG);
+
     ABTI_sched *p_newsched;
     int abt_errno =
         ABTI_sched_create_basic(predef, num_pools, pools, config, &p_newsched);
@@ -229,7 +239,9 @@ int ABT_sched_free(ABT_sched *sched)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(*sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED, ABT_ERR_SCHED);
+#endif
 
     /* Free the scheduler */
     ABTI_sched_free(p_local, p_sched, ABT_FALSE);
@@ -311,11 +323,19 @@ int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
 {
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    ABTI_CHECK_TRUE(max_pools >= 0, ABT_ERR_INV_ARG);
+    ABTI_CHECK_TRUE(idx >= 0, ABT_ERR_INV_ARG);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_CHECK_TRUE((size_t)(idx + max_pools) <= p_sched->num_pools,
                     ABT_ERR_SCHED);
+#endif
 
-    int p;
-    for (p = idx; p < idx + max_pools; p++) {
+    size_t p;
+    for (p = idx; p < (size_t)idx + max_pools; p++) {
+        if (p >= p_sched->num_pools) {
+            /* Out of range. */
+            break;
+        }
         pools[p - idx] = p_sched->pools[p];
     }
     return ABT_SUCCESS;
@@ -436,9 +456,15 @@ int ABT_sched_exit(ABT_sched sched)
  */
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    *stop = ABT_FALSE;
+#endif
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    ABTI_CHECK_TRUE(p_local, ABT_ERR_INV_XSTREAM);
+#endif
 
     *stop = ABTI_sched_has_to_stop(&p_local, p_sched);
     return ABT_SUCCESS;
@@ -542,6 +568,10 @@ int ABT_sched_get_data(ABT_sched sched, void **data)
  */
 int ABT_sched_get_size(ABT_sched sched, size_t *size)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    *size = 0;
+#endif
+
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
@@ -586,6 +616,10 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
  */
 int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    *size = 0;
+#endif
+
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
