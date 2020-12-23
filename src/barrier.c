@@ -46,8 +46,13 @@
  */
 int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newbarrier to NULL on error. */
+    *newbarrier = ABT_BARRIER_NULL;
+#endif
     int abt_errno;
     ABTI_barrier *p_newbarrier;
+    ABTI_CHECK_TRUE(num_waiters != 0, ABT_ERR_INV_ARG);
     size_t arg_num_waiters = num_waiters;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_barrier), (void **)&p_newbarrier);
@@ -96,6 +101,7 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
     ABTI_ASSERT(p_barrier->counter == 0);
+    ABTI_CHECK_TRUE(num_waiters != 0, ABT_ERR_INV_ARG);
     size_t arg_num_waiters = num_waiters;
 
     /* Only when num_waiters is different from p_barrier->num_waiters, we
@@ -183,6 +189,16 @@ int ABT_barrier_wait(ABT_barrier barrier)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
+
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Calling a barrier on a tasklet is not allowed. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED && p_local) {
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
+        ABTI_CHECK_TRUE(p_local_xstream->p_thread->type &
+                            ABTI_THREAD_TYPE_YIELDABLE,
+                        ABT_ERR_BARRIER);
+    }
+#endif
 
     ABTI_spinlock_acquire(&p_barrier->lock);
 
