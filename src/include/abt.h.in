@@ -840,11 +840,11 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes) ABT_API_PUB
 int ABT_eventual_reset(ABT_eventual eventual) ABT_API_PUBLIC;
 
 /* Futures */
-int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
+int ABT_future_create(uint32_t num_compartments, void (*cb_func)(void **arg),
                       ABT_future *newfuture) ABT_API_PUBLIC;
 int ABT_future_free(ABT_future *future) ABT_API_PUBLIC;
 int ABT_future_wait(ABT_future future) ABT_API_PUBLIC;
-int ABT_future_test(ABT_future future, ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_future_test(ABT_future future, ABT_bool *is_ready) ABT_API_PUBLIC;
 int ABT_future_set(ABT_future future, void *value) ABT_API_PUBLIC;
 int ABT_future_reset(ABT_future future) ABT_API_PUBLIC;
 

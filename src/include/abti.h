@@ -398,7 +398,7 @@ struct ABTI_eventual {
 struct ABTI_future {
     ABTI_spinlock lock;
     ABTD_atomic_size counter;
-    size_t compartments;
+    size_t num_compartments;
     void **array;
     void (*p_callback)(void **arg);
     ABTI_waitlist waitlist;

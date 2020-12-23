@@ -57,23 +57,27 @@
  * @param[out] newfuture         future handle
  * @return Error code
  */
-int ABT_future_create(uint32_t compartments, void (*cb_func)(void **arg),
+int ABT_future_create(uint32_t num_compartments, void (*cb_func)(void **arg),
                       ABT_future *newfuture)
 {
     int abt_errno;
     ABTI_future *p_future;
-    size_t arg_compartments = compartments;
+    size_t arg_num_compartments = num_compartments;
 
     abt_errno = ABTU_malloc(sizeof(ABTI_future), (void **)&p_future);
     ABTI_CHECK_ERROR(abt_errno);
     ABTI_spinlock_clear(&p_future->lock);
     ABTD_atomic_relaxed_store_size(&p_future->counter, 0);
-    p_future->compartments = arg_compartments;
-    abt_errno = ABTU_malloc(arg_compartments * sizeof(void *),
-                            (void **)&p_future->array);
-    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-        ABTU_free(p_future);
-        ABTI_HANDLE_ERROR(abt_errno);
+    p_future->num_compartments = arg_num_compartments;
+    if (arg_num_compartments > 0) {
+        abt_errno = ABTU_malloc(arg_num_compartments * sizeof(void *),
+                                (void **)&p_future->array);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+            ABTU_free(p_future);
+            ABTI_HANDLE_ERROR(abt_errno);
+        }
+    } else {
+        p_future->array = NULL;
     }
     p_future->p_callback = cb_func;
     ABTI_waitlist_init(&p_future->waitlist);
@@ -161,9 +165,19 @@ int ABT_future_wait(ABT_future future)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Calling this routine on a tasklet is not allowed. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED && p_local) {
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
+        ABTI_CHECK_TRUE(p_local_xstream->p_thread->type &
+                            ABTI_THREAD_TYPE_YIELDABLE,
+                        ABT_ERR_FUTURE);
+    }
+#endif
+
     ABTI_spinlock_acquire(&p_future->lock);
     if (ABTD_atomic_relaxed_load_size(&p_future->counter) <
-        p_future->compartments) {
+        p_future->num_compartments) {
         ABTI_waitlist_wait_and_unlock(&p_local, &p_future->waitlist,
                                       &p_future->lock, ABT_FALSE,
                                       ABT_SYNC_EVENT_TYPE_FUTURE,
@@ -200,13 +214,13 @@ int ABT_future_wait(ABT_future future)
  * @param[out] is_ready  \c ABT_TRUE if future is ready; otherwise, \c ABT_FALSE
  * @return Error code
  */
-int ABT_future_test(ABT_future future, ABT_bool *flag)
+int ABT_future_test(ABT_future future, ABT_bool *is_ready)
 {
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
     size_t counter = ABTD_atomic_acquire_load_size(&p_future->counter);
-    *flag = (counter == p_future->compartments) ? ABT_TRUE : ABT_FALSE;
+    *is_ready = (counter == p_future->num_compartments) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
 
@@ -246,9 +260,10 @@ int ABT_future_set(ABT_future future, void *value)
     ABTI_spinlock_acquire(&p_future->lock);
 
     size_t counter = ABTD_atomic_relaxed_load_size(&p_future->counter);
-    size_t compartments = p_future->compartments;
+    size_t num_compartments = p_future->num_compartments;
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
-    if (counter >= compartments) {
+    /* If num_compartments is 0, this routine always returns ABT_ERR_FUTURE */
+    if (counter >= num_compartments) {
         ABTI_spinlock_release(&p_future->lock);
         ABTI_HANDLE_ERROR(ABT_ERR_FUTURE);
     }
@@ -256,13 +271,13 @@ int ABT_future_set(ABT_future future, void *value)
     p_future->array[counter] = value;
     counter++;
     /* Call a callback function before setting the counter. */
-    if (counter == compartments && p_future->p_callback != NULL) {
+    if (counter == num_compartments && p_future->p_callback != NULL) {
         (*p_future->p_callback)(p_future->array);
     }
 
     ABTD_atomic_release_store_size(&p_future->counter, counter);
 
-    if (counter == compartments) {
+    if (counter == num_compartments) {
         ABTI_waitlist_broadcast(p_local, &p_future->waitlist);
     }
 
