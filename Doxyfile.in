@@ -1822,7 +1822,11 @@ ALIASES += DOC_CONTEXT_CTXSWITCH="This routine may perform context switching for
 
 ALIASES += DOC_CONTEXT_INIT="This routine can be called in any execution context. Argobots must be initialized."
 
+ALIASES += DOC_CONTEXT_INIT_NOEXT="This routine can be called in either a ULT context or a tasklet context. Argobots must be initialized."
+
 ALIASES += DOC_CONTEXT_INIT_NOTASK="This routine can be called in either a ULT context or an external thread context. Argobots must be initialized."
+
+ALIASES += DOC_CONTEXT_INIT_YIELDABLE="This routine can be called in a ULT context. Argobots must be initialized."
 
 ALIASES += DOC_CONTEXT_NOCTXSWITCH="This routine does not perform context switching the calling ULT unless any user-defined function that is involved in this routine performs context switching."
 
@@ -1848,6 +1852,8 @@ ALIASES += DOC_DESC_V10_ACCEPT_THREAD{1}="\DOC_V10 The user cannot pass a ULT ha
 
 ALIASES += DOC_DESC_V10_BARRIER_NUM_WAITERS{1}="\DOC_V10 This routine accepts zero as \c num_waiters.\n \DOC_V11 This routine returns \c ABT_ERR_INV_ARG if \c num_waiters is zero. @rationale A barrier with \c num_waiters = 0 is useless and should be prohibited.  Even with Argobots 1.0, calling \c ABT_barrier_wait() for a barrier with \c num_waiters = 0 is not allowed. @endrationale"
 
+ALIASES += DOC_DESC_V10_ERROR_CODE_CHANGE{3}="\DOC_V10 \1 is returned if \3.\n \DOC_V11 \2 is returned if \3.\n @rationale Argobots 1.0 returned an error code which is obviously wrong.  Argobots 1.1 fixes the error code for consistent behavior with the other Argobots routines. @endrationale"
+
 ALIASES += DOC_DESC_V10_EVENTUAL_UPDATE_READY_BUFFER{1}="\DOC_V10 This routine updates the memory buffer of \1 and returns \c ABT_SUCCESS if \1 is ready.\n \DOC_V11 This routine returns \c ABT_ERR_EVENTUAL if \1 is ready.\n @rationale An update of the memory buffer when \1 is ready breaks the semantics of \c eventual.  Such an update should be prohibited. @endrationale"
 
 ALIASES += DOC_DESC_V10_FUTURE_COMPARTMENT_ORDER="\DOC_V10 The order of elements of \c arg passed to \c cb_func() is the same order as the \c ABT_future_set() calls are terminated.\n \DOC_V11 The order of elements of \c arg passed to \c cb_func() is undefined. @rationale This specification in Argobots 1.0 is unclear and unreasonable because the exact timing of termination of \c ABT_future_set() is not observable if \c ABT_future_set() is called concurrently. @endrationale"
@@ -1855,6 +1861,8 @@ ALIASES += DOC_DESC_V10_FUTURE_COMPARTMENT_ORDER="\DOC_V10 The order of elements
 ALIASES += DOC_DESC_V10_REJECT_MUTEX_ATTR_NULL{1}="\DOC_V10 This routine returns \c ABT_ERR_INV_MUTEX_ATTR if \1 is \c ABT_MUTEX_ATTR_NULL.\n \DOC_V11 This routine uses the default mutex attributes if \1 is \c ABT_MUTEX_ATTR_NULL. @rationale Most of the Argobots routines use the default attributes if the given configuration or attributes are NULL.  This routine should also follow this basic rule. @endrationale"
 
 ALIASES += DOC_DESC_V1X_ERROR_CODE_CHANGE{3}="\DOC_V1X \1 is returned if \3.\n \DOC_V20 \2 is returned if \3.\n @rationale Argobots 2.0 changes the error code for consistent behavior with the other Argobots routines. @endrationale"
+
+ALIASES += DOC_DESC_V1X_NOEXT{1}="\DOC_V1X If an external thread calls this routine, \1 is returned.\n \DOC_V20 An external thread may call this routine.\n @rationale Argobots 2.0 allows an external thread as much as possible unless it is semantically wrong. @endrationale"
 
 ALIASES += DOC_DESC_V1X_NOTASK{1}="\DOC_V1X If a tasklet calls this routine, \1 is returned.\n \DOC_V20 A tasklet may call this routine.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
 
@@ -1867,6 +1875,8 @@ ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{4}="\DOC_V1X This routine returns \4 w
 ALIASES += DOC_DESC_V1X_PRINT_RUNTIME_INFO="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED when Argobots is not initialized.\n \DOC_V20 This routine prints the queried information and returns \c ABT_SUCCESS when Argobots is not initialized.\n @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
 
 ALIASES += DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized and the queried information cannot be retrieved when Argobots is not initialized.\n @rationale Retrieving static configurations before initializing Argobots is helpful to check if the loaded Argobots implements necessary features. @endrationale"
+
+ALIASES += DOC_DESC_V1X_RETURN_UNINITIALIZED="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 The results are undefined if Argobots is not initialized.\n @rationale From Argobots 2.0, all the Argobots routines that are not explicitly noted do not check if Argobots is initialized.  This omission can reduce the branches that are mostly unnecessary. @endrationale"
 
 ALIASES += DOC_DESC_V1X_SET_VALUE_ON_ERROR{2}="\DOC_V1X \1 is set to \2 if an error occurs.\n \DOC_V20 \1 is not updated if an error occurs.\n @rationale To ensure the atomicity of the API, Argobots 2.0 guarantees that the routine has no effect if the routine returns an error (as possible).  Argobots 2.0 does not update a returned value when the routine throws an error. @endrationale"
 
@@ -1932,6 +1942,10 @@ ALIASES += DOC_ERROR_INV_THREAD_ATTR_HANDLE{1}="If \1 is \c ABT_THREAD_ATTR_NULL
 
 ALIASES += DOC_ERROR_INV_THREAD_HANDLE{1}="If \1 is \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_THREAD is returned.\n"
 
+ALIASES += DOC_ERROR_INV_THREAD_NY="If the caller is a tasklet, \c ABT_ERR_INV_THREAD is returned.\n"
+
+ALIASES += DOC_ERROR_INV_THREAD_NY{1}="If \1 is a tasklet, \c ABT_ERR_INV_THREAD is returned.\n"
+
 ALIASES += DOC_ERROR_INV_TIMER_HANDLE{1}="If \1 is \c ABT_TIMER_NULL, \c ABT_ERR_INV_TIMER is returned.\n"
 
 ALIASES += DOC_ERROR_INV_TIMER_PTR{1}="If \1 points to \c ABT_TIMER_NULL, \c ABT_ERR_INV_TIMER is returned.\n"
@@ -1939,6 +1953,8 @@ ALIASES += DOC_ERROR_INV_TIMER_PTR{1}="If \1 points to \c ABT_TIMER_NULL, \c ABT
 ALIASES += DOC_ERROR_INV_XSTREAM_BARRIER_HANDLE{1}="If \1 is \c ABT_XSTREAM_BARRIER_NULL, \c ABT_ERR_INV_XSTREAM_BARRIER is returned.\n"
 
 ALIASES += DOC_ERROR_INV_XSTREAM_BARRIER_PTR{1}="If \1 points to \c ABT_XSTREAM_BARRIER_NULL, \c ABT_ERR_INV_XSTREAM_BARRIER is returned.\n"
+
+ALIASES += DOC_ERROR_INV_XSTREAM_EXT="If the caller is an external thread, \c ABT_ERR_INV_XSTREAM is returned.\n"
 
 ALIASES += DOC_ERROR_INV_XSTREAM_HANDLE{1}="If \1 is \c ABT_XSTREAM_NULL, \c ABT_ERR_INV_XSTREAM is returned.\n"
 

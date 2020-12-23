@@ -11,25 +11,37 @@
 
 /**
  * @ingroup SELF
- * @brief   Return the type of calling work unit.
+ * @brief   Obtain a type of the caller.
  *
- * \c ABT_self_get_type() returns the type of calling work unit, e.g.,
- * \c ABT_UNIT_TYPE_THREAD for ULT and \c ABT_UNIT_TYPE_TASK for tasklet,
- * through \c type.
- * If this routine is called when Argobots has not been initialized,
- * \c ABT_ERR_UNINITIALIZED will be returned.
- * If this routine is called by an external thread, e.g., pthread,
- * \c ABT_ERR_INV_XSTREAM will be returned.
+ * \c ABT_self_get_type() returns a type of the calling work unit through
+ * \c type.  If the caller is a ULT, \c type is set to \c ABT_UNIT_TYPE_THREAD.
+ * If the caller is a tasklet, \c type is set to \c ABT_UNIT_TYPE_TASK.
+ * Otherwise (i.e., if the caller is an external thread), \c type is set to
+ * \c ABT_UNIT_TYPE_EXT.
  *
- * Now \c type will be set to \c ABT_UNIT_TYPE_EXT when it returns an
- * error, but this behavior is deprecated; the user should check the error code
- * to check if this routine is called by a thread not managed by Argobots.
+ * @changev20
+ * \DOC_DESC_V1X_NOEXT{\c ABT_ERR_INV_XSTREAM}
  *
- * @param[out] type  work unit type.
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c type, \c ABT_UNIT_TYPE_EXT}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ * \DOC_V1X \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c type}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] type  work unit type
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_get_type(ABT_unit_type *type)
 {
@@ -47,17 +59,37 @@ int ABT_self_get_type(ABT_unit_type *type)
  * @ingroup SELF
  * @brief   Check if the caller is the primary ULT.
  *
- * \c ABT_self_is_primary() confirms whether the caller is the primary ULT and
- * returns the result through \c flag.
- * If the caller is the primary ULT, \c flag is set to \c ABT_TRUE.
- * Otherwise, \c flag is set to \c ABT_FALSE.
+ * \c ABT_self_is_primary() checks whether the caller is the primary ULT and
+ * returns the result through \c is_primary.  If the caller is the primary ULT,
+ * \c is_primary is set to \c ABT_TRUE.  Otherwise, \c is_primary is set to
+ * \c ABT_FALSE.
  *
- * @param[out] flag    result (<tt>ABT_TRUE</tt>: primary ULT,
- *                     <tt>ABT_FALSE</tt>: not)
+ * @changev20
+ * \DOC_DESC_V1X_NOTASK{\c ABT_ERR_INV_THREAD}
+ *
+ * \DOC_DESC_V1X_NOEXT{\c ABT_ERR_INV_XSTREAM}
+ *
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c is_primary, \c ABT_FALSE}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ * \DOC_V1X \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_INV_THREAD_NY
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c is_primary}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] is_primary  result (\c ABT_TRUE: primary ULT, \c ABT_FALSE: not)
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_is_primary(ABT_bool *flag)
 {
@@ -71,18 +103,38 @@ int ABT_self_is_primary(ABT_bool *flag)
 
 /**
  * @ingroup SELF
- * @brief   Check if the caller's ES is the primary ES.
+ * @brief   Check if the caller is running on the primary execution stream.
  *
- * \c ABT_self_on_primary_xstream() checks whether the caller work unit is
- * associated with the primary ES. If the caller is running on the primary ES,
- * \c flag is set to \c ABT_TRUE. Otherwise, \c flag is set to \c ABT_FALSE.
+ * \c ABT_self_on_primary_xstream() checks whether the caller is running on the
+ * primary execution stream and returns the result through \c on_primary.  If
+ * the caller is a work unit running on the primary execution stream,
+ * \c on_primary is set to \c ABT_TRUE.  Otherwise, \c on_primary is set to
+ * \c ABT_FALSE.
  *
- * @param[out] flag    result (<tt>ABT_TRUE</tt>: primary ES,
- *                     <tt>ABT_FALSE</tt>: not)
+ * @changev20
+ * \DOC_DESC_V1X_NOEXT{\c ABT_ERR_INV_XSTREAM}
+ *
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c on_primary, \c ABT_FALSE}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ * \DOC_V1X \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c on_primary}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] on_primary  result (\c ABT_TRUE: primary execution stream,
+ *                                 \c ABT_FALSE: not)
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_on_primary_xstream(ABT_bool *flag)
 {
@@ -97,21 +149,31 @@ int ABT_self_on_primary_xstream(ABT_bool *flag)
 
 /**
  * @ingroup SELF
- * @brief   Get the last pool's ID of calling work unit.
+ * @brief   Get ID of the last pool of the calling work unit.
  *
- * \c ABT_self_get_last_pool_id() returns the last pool's ID of caller work
- * unit.  If the work unit is not running, this routine returns the ID of the
- * pool where it is residing.  Otherwise, it returns the ID of the last pool
- * where the work unit was (i.e., the pool from which the work unit was
- * popped).
- * NOTE: If this routine is not called by Argobots work unit (ULT or tasklet),
- * \c pool_id will be set to \c -1.
+ * \c ABT_self_get_last_pool_id() returns the last pool's ID of the calling work
+ * unit through \c pool_id.
  *
- * @param[out] pool_id  pool id
- * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c pool_id, -1}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c pool_id}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] pool_id  pool ID
+ * @return  Error code
  */
 int ABT_self_get_last_pool_id(int *pool_id)
 {
@@ -131,21 +193,32 @@ int ABT_self_get_last_pool_id(int *pool_id)
 
 /**
  * @ingroup SELF
- * @brief   Suspend the current ULT.
+ * @brief   Suspend the calling ULT.
  *
- * \c ABT_self_suspend() suspends the execution of current ULT and switches
- * to the scheduler.  The caller ULT is not pushed to its associated pool and
- * its state becomes BLOCKED.  It can be awakened and be pushed back to the
- * pool when \c ABT_thread_resume() is called.
+ * \c ABT_self_suspend() suspends the execution of the calling ULT and switches
+ * to its parent ULT.  The caller ULT is not pushed to its associated pool and
+ * its state becomes blocked.  The suspended ULT can be awakened and pushed back
+ * to its associated pool when \c ABT_thread_resume() is called.
  *
- * This routine must be called by a ULT.  Otherwise, it returns
- * \c ABT_ERR_INV_THREAD without suspending the caller.
+ * @changev11
+ * \DOC_DESC_V10_ERROR_CODE_CHANGE{\c ABT_ERR_INV_THREAD,
+ *                                 \c ABT_ERR_INV_XSTREAM,
+ *                                 this routine is called by an external thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
  *
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
- * @retval ABT_ERR_INV_THREAD    called by a non-yieldable thread (tasklet)
  */
 int ABT_self_suspend(void)
 {
@@ -161,16 +234,32 @@ int ABT_self_suspend(void)
 
 /**
  * @ingroup SELF
- * @brief   Set the argument for the work unit function
+ * @brief   Set an argument for a work-unit function of the calling work unit
  *
- * \c ABT_self_set_arg() sets the argument for the caller's work unit
+ * \c ABT_self_set_arg() sets the argument \c arg for the caller's work unit
  * function.
  *
- * @param[in] arg  argument for the work unit function
+ * @note
+ * The newly set argument will be used if the caller is revived.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] arg  argument a work-unit function of the calling work unit
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_set_arg(void *arg)
 {
@@ -183,19 +272,32 @@ int ABT_self_set_arg(void *arg)
 
 /**
  * @ingroup SELF
- * @brief   Retrieve the argument for the work unit function
+ * @brief   Retrieve an argument for a work unit function of the calling work
+ *          unit
  *
  * \c ABT_self_get_arg() returns the argument for the caller's work unit
- * function.  If the caller is a ULT, this routine returns the function argument
- * passed to \c ABT_thread_create() when the caller was created or set by \c
- * ABT_thread_set_arg().  On the other hand, if the caller is a tasklet, this
- * routine returns the function argument passed to \c ABT_task_create().
+ * function.
  *
- * @param[out] arg  argument for the work unit function
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c arg, \c NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c arg}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] arg  argument for the caller's function
  * @return Error code
- * @retval ABT_SUCCESS on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_get_arg(void **arg)
 {
@@ -208,18 +310,26 @@ int ABT_self_get_arg(void **arg)
 
 /**
  * @ingroup SELF
- * @brief   Check if the running work unit is unnamed
+ * @brief   Check if the calling work unit is unnamed
  *
- * \c ABT_self_is_unnamed() returns whether the current work units is unnamed or
- * not.  If the caller is an external thread, it sets ABT_FALSE and returns
- * ABT_ERR_INV_XSTREAM.
+ * \c ABT_self_is_unnamed() checks if the current caller is unnamed and returns
+ * the result through \c is_unnamed.  \c is_unnamed is set to \c ABT_TRUE if the
+ * calling work unit is unnamed.  Otherwise, \c is_unnamed is set to \c
+ * ABT_FALSE.
  *
- * @param[out] flag  result (<tt>ABT_TRUE</tt> if unnamed)
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
  *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c is_unnamed}
+ *
+ * @param[out] is_unnamed  result (\c ABT_TRUE: unnamed, \c ABT_FALSE: not)
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_self_is_unnamed(ABT_bool *flag)
 {
