@@ -146,17 +146,44 @@ enum ABT_sched_state {
     ABT_SCHED_STATE_TERMINATED
 };
 
+/**
+ * @ingroup SCHED
+ * @brief   Predefined scheduler type.
+ *
+ * Relying on a specific scheduling order is not recommended since its
+ * implementation can be changed.  Users can create their own scheduler by using
+ * \c ABT_sched_create().
+ */
 enum ABT_sched_predef {
-    ABT_SCHED_DEFAULT,   /* Default scheduler */
-    ABT_SCHED_BASIC,     /* Basic scheduler */
-    ABT_SCHED_PRIO,      /* Priority scheduler */
-    ABT_SCHED_RANDWS,    /* Random work-stealing scheduler */
-    ABT_SCHED_BASIC_WAIT /* Basic scheduler with ability to wait for units */
+    /** Default scheduler.  \c ABT_SCHED_BASIC is used. */
+    ABT_SCHED_DEFAULT,
+    /** Basic scheduler. */
+    ABT_SCHED_BASIC,
+    /**
+     * Priority scheduler.  This scheduler type is not recommended because this
+     * scheduler does not work as the user expects. */
+    ABT_SCHED_PRIO,
+    /**
+     * Random work-stealing scheduler.  This scheduler type is not recommended
+     * because this scheduler does not work as the user expects. */
+    ABT_SCHED_RANDWS,
+    /** Basic scheduler with the ability to wait for work units. */
+    ABT_SCHED_BASIC_WAIT,
 };
 
+/**
+ * @ingroup SCHED
+ * @brief   Scheduler's work unit type.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ALWAYS_SCHED_TYPE_ULT
+ * @endchangev11
+ */
 enum ABT_sched_type {
-    ABT_SCHED_TYPE_ULT,  /* can yield */
-    ABT_SCHED_TYPE_TASK  /* cannot yield */
+    /** A ULT is used for the scheduler's underlying work unit. */
+    ABT_SCHED_TYPE_ULT,
+    /** Ignored.  A ULT is used for the scheduler's underlying work unit. */
+    ABT_SCHED_TYPE_TASK
 };
 
 enum ABT_pool_kind {
@@ -538,13 +565,108 @@ typedef int      (*ABT_sched_free_fn)(ABT_sched);
 /* To get a pool ready for receiving a migration */
 typedef ABT_pool (*ABT_sched_get_migr_pool_fn)(ABT_sched);
 
+/**
+ * @ingroup SCHED
+ * @brief   A struct that defines a scheduler.
+ */
 typedef struct {
-    ABT_sched_type type; /* ULT or tasklet */
-
-    /* Functions of the scheduler */
+    /**
+     * @brief Unused value.
+     *
+     * This value is ignored.  A created scheduler always uses a ULT as an
+     * underlying work unit.
+     */
+    ABT_sched_type type;
+    /**
+     * @fn    int (*init)(ABT_sched sched, ABT_sched_config config)
+     * @brief Function that initializes a scheduler.
+     *
+     * \c init() initializes the scheduler \c sched with the scheduler
+     * configuration \c config.  If \c init() does not return \c ABT_SUCCESS,
+     * the scheduler creation fails.
+     *
+     * \c init() is optional, so the user may set \c init to \c NULL.
+     *
+     * @note
+     * The caller of \c init() is undefined, so a program that relies on the
+     * caller of \c init() is non-conforming.
+     *
+     * \c init() is called only on creating a scheduler.  \c init() is not
+     * called when its associated work unit is revived.
+     */
     ABT_sched_init_fn          init;
+    /**
+     * @fn    void (*run)(ABT_sched sched)
+     * @brief Function that defines a kernel of a scheduler.
+     *
+     * \c run() runs the scheduler \c sched.  The user can freely design this
+     * function, Argobots assumes the following properties:
+     *
+     * - Scheduling loop:
+     *
+     *   \c run() pops units from pools associated with \c sched and run it.
+     *
+     *   \c sched can access pools that are not associated with \c sched.
+     *   However, the Argobots runtime assumes that a scheduler that does not
+     *   have units in its associated pools is idle and should yield to the
+     *   parent.
+     *
+     * - Periodic event check:
+     *
+     *   \c run() calls \c ABT_xstream_check_events() with \c sched
+     *   periodically.
+     *
+     *   The frequency is user-defined, but some Argobots routines such as
+     *   request handling rely on \c ABT_xstream_check_events().
+     *
+     * - Finish \c run() if necessary:
+     *
+     *   \c run() calls \c ABT_sched_has_to_stop() with \c sched periodically
+     *   and if it returns \c ABT_TRUE as \c stop, \c run() should return
+     *   immediately.
+     *
+     *   The frequency is user-defined, but some Argobots routines such as
+     *   request handling rely on the mechanism of \c ABT_sched_has_to_stop().
+     *
+     * The caller of \c run() is a work unit associated with \c sched.  If
+     * \c sched is the main scheduler, the underlying execution stream is
+     * unchanged in \c run().
+     *
+     * \c run() is not optional, so the user must implement this function.
+     */
     ABT_sched_run_fn           run;
+    /**
+     * @fn    int (*free)(ABT_sched sched)
+     * @brief Function that frees a scheduler.
+     *
+     * \c free() finalizes the scheduler \c sched with the scheduler.  The
+     * return value of \c free() is ignored.
+     *
+     * \c free() is optional, so the user may set \c free to \c NULL.
+     *
+     * \c free() is called only on freeing a scheduler.  \c free() is not called
+     * when its associated work unit is terminated.
+     *
+     * The caller of \c free() is undefined, so a program that relies on the
+     * caller of \c free() is non-conforming.
+     */
     ABT_sched_free_fn          free;
+    /**
+     * @fn    ABT_pool (*get_migr_pool)(ABT_sched sched)
+     * @brief Function that returns a pool for migration.
+     *
+     * \c get_migr_pool() returns a pool from pools associated with the
+     * scheduler \c sched as a work unit migration target.  If
+     * \c get_migr_pool() returns either \c ABT_POOL_NULL or a pool that is not
+     * associated with \c sched, the results are undefined.
+     *
+     * \c get_migr_pool() is optional, so the user may set \c get_migr_pool to
+     * \c NULL.  If \c get_migr_pool is \c NULL, the Argobots runtime chooses
+     * a proper pool that is associated with \c sched.
+     *
+     * The caller of \c get_migr_pool() is undefined, so a program that relies
+     * on the caller of \c get_migr_pool() is non-conforming.
+     */
     ABT_sched_get_migr_pool_fn get_migr_pool;
 } ABT_sched_def;
 
