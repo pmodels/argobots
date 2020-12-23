@@ -800,6 +800,10 @@ void ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
                      ABT_bool force_free)
 {
     ABTI_ASSERT(p_sched->used == ABTI_SCHED_NOT_USED);
+    /* Free the scheduler first. */
+    if (p_sched->free) {
+        p_sched->free(ABTI_sched_get_handle(p_sched));
+    }
     /* If sched is a default provided one, it should free its pool here.
      * Otherwise, freeing the pool is the user's responsibility. */
     size_t p;
@@ -818,8 +822,6 @@ void ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
     }
 
     LOG_DEBUG("[S%" PRIu64 "] freed\n", p_sched->id);
-
-    p_sched->free(ABTI_sched_get_handle(p_sched));
     p_sched->data = NULL;
 
     ABTU_free(p_sched);
@@ -1072,18 +1074,20 @@ ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
     ABT_sched newsched = ABTI_sched_get_handle(p_sched);
 
     /* Specific initialization */
-    abt_errno = p_sched->init(newsched, config);
-    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-        for (p = 0; p < num_pools; p++) {
-            if (pools[p] == ABT_POOL_NULL) {
-                ABTI_pool_free(ABTI_pool_get_ptr(pool_list[p]));
-            } else {
-                ABTI_pool_release(ABTI_pool_get_ptr(pool_list[p]));
+    if (p_sched->init) {
+        abt_errno = p_sched->init(newsched, config);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+            for (p = 0; p < num_pools; p++) {
+                if (pools[p] == ABT_POOL_NULL) {
+                    ABTI_pool_free(ABTI_pool_get_ptr(pool_list[p]));
+                } else {
+                    ABTI_pool_release(ABTI_pool_get_ptr(pool_list[p]));
+                }
             }
+            ABTU_free(pool_list);
+            ABTU_free(p_sched);
+            return abt_errno;
         }
-        ABTU_free(pool_list);
-        ABTU_free(p_sched);
-        return abt_errno;
     }
 
     *pp_newsched = p_sched;
