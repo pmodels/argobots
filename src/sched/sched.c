@@ -667,27 +667,31 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
     /* Always use MPMC pools */
     const ABT_pool_access def_access = ABT_POOL_ACCESS_MPMC;
 
-    ABTI_CHECK_TRUE(!pools || num_pools > 0, ABT_ERR_SCHED);
-
     /* A pool array is provided, predef has to be compatible */
     if (pools != NULL) {
         /* Copy of the contents of pools */
         ABT_pool *pool_list;
-        abt_errno =
-            ABTU_malloc(num_pools * sizeof(ABT_pool), (void **)&pool_list);
-        ABTI_CHECK_ERROR(abt_errno);
+        if (num_pools > 0) {
+            abt_errno =
+                ABTU_malloc(num_pools * sizeof(ABT_pool), (void **)&pool_list);
+            ABTI_CHECK_ERROR(abt_errno);
 
-        int p;
-        for (p = 0; p < num_pools; p++) {
-            if (pools[p] == ABT_POOL_NULL) {
-                ABTI_pool *p_newpool;
-                abt_errno = ABTI_pool_create_basic(ABT_POOL_FIFO, def_access,
-                                                   ABT_TRUE, &p_newpool);
-                ABTI_CHECK_ERROR(abt_errno);
-                pool_list[p] = ABTI_pool_get_handle(p_newpool);
-            } else {
-                pool_list[p] = pools[p];
+            int p;
+            for (p = 0; p < num_pools; p++) {
+                if (pools[p] == ABT_POOL_NULL) {
+                    ABTI_pool *p_newpool;
+                    abt_errno =
+                        ABTI_pool_create_basic(ABT_POOL_FIFO, def_access,
+                                               ABT_TRUE, &p_newpool);
+                    ABTI_CHECK_ERROR(abt_errno);
+                    pool_list[p] = ABTI_pool_get_handle(p_newpool);
+                } else {
+                    pool_list[p] = pools[p];
+                }
             }
+        } else {
+            /* TODO: Check if it works. */
+            pool_list = NULL;
         }
 
         /* Creation of the scheduler */
