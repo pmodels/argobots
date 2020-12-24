@@ -50,8 +50,8 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     ABTI_xstream *p_newxstream;
 
     if (sched == ABT_SCHED_NULL) {
-        abt_errno = ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
-                                            ABT_SCHED_CONFIG_NULL, &p_sched);
+        abt_errno =
+            ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, NULL, &p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
         p_sched = ABTI_sched_get_ptr(sched);
@@ -94,10 +94,11 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
 {
     int abt_errno;
     ABTI_xstream *p_newxstream;
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
 
     ABTI_sched *p_sched;
     abt_errno =
-        ABTI_sched_create_basic(predef, num_pools, pools, config, &p_sched);
+        ABTI_sched_create_basic(predef, num_pools, pools, p_config, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno =
@@ -135,8 +136,8 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     ABTI_CHECK_TRUE(rank >= 0, ABT_ERR_INV_XSTREAM_RANK);
 
     if (sched == ABT_SCHED_NULL) {
-        abt_errno = ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
-                                            ABT_SCHED_CONFIG_NULL, &p_sched);
+        abt_errno =
+            ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, NULL, &p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
         p_sched = ABTI_sched_get_ptr(sched);
@@ -478,8 +479,8 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 
     ABTI_sched *p_sched;
     if (sched == ABT_SCHED_NULL) {
-        abt_errno = ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
-                                            ABT_SCHED_CONFIG_NULL, &p_sched);
+        abt_errno =
+            ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, NULL, &p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
         p_sched = ABTI_sched_get_ptr(sched);
@@ -520,8 +521,8 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     ABTI_sched *p_sched;
-    abt_errno = ABTI_sched_create_basic(predef, num_pools, pools,
-                                        ABT_SCHED_CONFIG_NULL, &p_sched);
+    abt_errno =
+        ABTI_sched_create_basic(predef, num_pools, pools, NULL, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno = xstream_update_main_sched(&p_local_xstream, p_xstream, p_sched);
@@ -859,8 +860,8 @@ ABTU_ret_err int ABTI_xstream_create_primary(ABTI_xstream **pp_xstream)
     ABTI_sched *p_sched;
 
     /* For the primary ES, a default scheduler is created. */
-    abt_errno = ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL,
-                                        ABT_SCHED_CONFIG_NULL, &p_sched);
+    abt_errno =
+        ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, NULL, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     abt_errno =

@@ -6,7 +6,8 @@
 #include "abti.h"
 
 ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
-                                     ABT_pool *pools, ABT_sched_config config,
+                                     ABT_pool *pools,
+                                     ABTI_sched_config *p_config,
                                      ABT_bool automatic,
                                      ABTI_sched **pp_newsched);
 static inline ABTI_sched_kind sched_get_kind(ABT_sched_def *def);
@@ -105,8 +106,9 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
     /* TODO: the default value of automatic is different from
      * ABT_sched_create_basic(). Make it consistent. */
     const ABT_bool def_automatic = ABT_FALSE;
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
     int abt_errno =
-        sched_create(def, num_pools, pools, config, def_automatic, &p_sched);
+        sched_create(def, num_pools, pools, p_config, def_automatic, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -186,8 +188,9 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
     ABTI_CHECK_TRUE(num_pools >= 0, ABT_ERR_INV_ARG);
 
     ABTI_sched *p_newsched;
-    int abt_errno =
-        ABTI_sched_create_basic(predef, num_pools, pools, config, &p_newsched);
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
+    int abt_errno = ABTI_sched_create_basic(predef, num_pools, pools, p_config,
+                                            &p_newsched);
     ABTI_CHECK_ERROR(abt_errno);
     *newsched = ABTI_sched_get_handle(p_newsched);
     return ABT_SUCCESS;
@@ -655,7 +658,7 @@ void ABTI_sched_exit(ABTI_sched *p_sched)
 
 ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                                          ABT_pool *pools,
-                                         ABT_sched_config config,
+                                         ABTI_sched_config *p_config,
                                          ABTI_sched **pp_newsched)
 {
     int abt_errno;
@@ -666,13 +669,23 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
     ABTI_CHECK_TRUE(!pools || num_pools > 0, ABT_ERR_SCHED);
 
     /* We set the access to the default one */
-    access = ABT_POOL_ACCESS_MPSC;
+    access = ABT_POOL_ACCESS_MPMC;
     /* TODO: the default value is different from ABT_sched_create().
      * Make it consistent. */
     automatic = ABT_TRUE;
     /* We read the config and set the configured parameters */
-    abt_errno = ABTI_sched_config_read_global(config, &access, &automatic);
-    ABTI_CHECK_ERROR(abt_errno);
+    if (p_config) {
+        abt_errno =
+            ABTI_sched_config_read(p_config, ABT_sched_config_access.idx,
+                                   &access);
+        /* No need to use this error code */
+        (void)abt_errno;
+        abt_errno =
+            ABTI_sched_config_read(p_config, ABT_sched_config_automatic.idx,
+                                   &automatic);
+        /* No need to use this error code */
+        (void)abt_errno;
+    }
 
     /* A pool array is provided, predef has to be compatible */
     if (pools != NULL) {
@@ -699,25 +712,24 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
         switch (predef) {
             case ABT_SCHED_DEFAULT:
             case ABT_SCHED_BASIC:
-                abt_errno = sched_create(ABTI_sched_get_basic_def(), num_pools,
-                                         pool_list, ABT_SCHED_CONFIG_NULL,
-                                         automatic, pp_newsched);
+                abt_errno =
+                    sched_create(ABTI_sched_get_basic_def(), num_pools,
+                                 pool_list, NULL, automatic, pp_newsched);
                 break;
             case ABT_SCHED_BASIC_WAIT:
                 abt_errno =
                     sched_create(ABTI_sched_get_basic_wait_def(), num_pools,
-                                 pool_list, ABT_SCHED_CONFIG_NULL, automatic,
-                                 pp_newsched);
+                                 pool_list, NULL, automatic, pp_newsched);
                 break;
             case ABT_SCHED_PRIO:
-                abt_errno = sched_create(ABTI_sched_get_prio_def(), num_pools,
-                                         pool_list, ABT_SCHED_CONFIG_NULL,
-                                         automatic, pp_newsched);
+                abt_errno =
+                    sched_create(ABTI_sched_get_prio_def(), num_pools,
+                                 pool_list, NULL, automatic, pp_newsched);
                 break;
             case ABT_SCHED_RANDWS:
-                abt_errno = sched_create(ABTI_sched_get_randws_def(), num_pools,
-                                         pool_list, ABT_SCHED_CONFIG_NULL,
-                                         automatic, pp_newsched);
+                abt_errno =
+                    sched_create(ABTI_sched_get_randws_def(), num_pools,
+                                 pool_list, NULL, automatic, pp_newsched);
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
@@ -770,22 +782,22 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
             case ABT_SCHED_BASIC:
                 abt_errno =
                     sched_create(ABTI_sched_get_basic_def(), num_pools,
-                                 pool_list, config, automatic, pp_newsched);
+                                 pool_list, p_config, automatic, pp_newsched);
                 break;
             case ABT_SCHED_BASIC_WAIT:
                 abt_errno =
                     sched_create(ABTI_sched_get_basic_wait_def(), num_pools,
-                                 pool_list, config, automatic, pp_newsched);
+                                 pool_list, p_config, automatic, pp_newsched);
                 break;
             case ABT_SCHED_PRIO:
                 abt_errno =
                     sched_create(ABTI_sched_get_prio_def(), num_pools,
-                                 pool_list, config, automatic, pp_newsched);
+                                 pool_list, p_config, automatic, pp_newsched);
                 break;
             case ABT_SCHED_RANDWS:
                 abt_errno =
                     sched_create(ABTI_sched_get_randws_def(), num_pools,
-                                 pool_list, config, automatic, pp_newsched);
+                                 pool_list, p_config, automatic, pp_newsched);
                 break;
             default:
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
@@ -1007,7 +1019,8 @@ static inline ABTI_sched_kind sched_get_kind(ABT_sched_def *def)
 }
 
 ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
-                                     ABT_pool *pools, ABT_sched_config config,
+                                     ABT_pool *pools,
+                                     ABTI_sched_config *p_config,
                                      ABT_bool automatic,
                                      ABTI_sched **pp_newsched)
 {
@@ -1075,6 +1088,7 @@ ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
 
     /* Specific initialization */
     if (p_sched->init) {
+        ABT_sched_config config = ABTI_sched_config_get_handle(p_config);
         abt_errno = p_sched->init(newsched, config);
         if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
             for (p = 0; p < num_pools; p++) {

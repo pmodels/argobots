@@ -43,23 +43,27 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
 
     /* Default settings */
     sched_data *p_data;
     abt_errno = ABTU_malloc(sizeof(sched_data), (void **)&p_data);
     ABTI_CHECK_ERROR(abt_errno);
-    p_data->event_freq = gp_ABTI_global->sched_event_freq;
 #ifdef ABT_CONFIG_USE_SCHED_SLEEP
     p_data->sleep_time.tv_sec = 0;
     p_data->sleep_time.tv_nsec = gp_ABTI_global->sched_sleep_nsec;
 #endif
 
-    /* Set the variables from the config */
-    void *p_event_freq = &p_data->event_freq;
-    abt_errno = ABTI_sched_config_read(config, 1, 1, &p_event_freq);
-    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-        ABTU_free(p_data);
-        ABTI_CHECK_ERROR(abt_errno);
+    /* Set the default value by default. */
+    p_data->event_freq = gp_ABTI_global->sched_event_freq;
+    if (p_config) {
+        int event_freq;
+        /* Set the variables from config */
+        abt_errno = ABTI_sched_config_read(p_config, ABT_sched_basic_freq.idx,
+                                           &event_freq);
+        if (abt_errno == ABT_SUCCESS) {
+            p_data->event_freq = event_freq;
+        }
     }
 
     /* Save the list of pools */

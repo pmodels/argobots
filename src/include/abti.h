@@ -55,6 +55,9 @@
 
 #define ABTI_INDENT 4
 
+#define ABTI_SCHED_CONFIG_HTABLE_SIZE 8
+#define ABTI_SCHED_CONFIG_UNUSED_INDEX INT_MIN
+
 #define ABT_THREAD_TYPE_FULLY_FLEDGED 0
 #define ABT_THREAD_TYPE_DYNAMIC_PROMOTION 1
 
@@ -103,7 +106,8 @@ typedef struct ABTI_local_func ABTI_local_func;
 typedef struct ABTI_xstream ABTI_xstream;
 typedef enum ABTI_xstream_type ABTI_xstream_type;
 typedef struct ABTI_sched ABTI_sched;
-typedef char *ABTI_sched_config;
+typedef struct ABTI_sched_config_element ABTI_sched_config_element;
+typedef struct ABTI_sched_config ABTI_sched_config;
 typedef enum ABTI_sched_used ABTI_sched_used;
 typedef void *ABTI_sched_id;       /* Scheduler id */
 typedef uintptr_t ABTI_sched_kind; /* Scheduler kind */
@@ -277,6 +281,19 @@ struct ABTI_sched {
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     uint64_t id; /* ID */
 #endif
+};
+
+struct ABTI_sched_config_element {
+    int idx;                    /* Index of this element. */
+    ABT_sched_config_type type; /* Element type. */
+    char val[sizeof(double) > sizeof(void *)
+                 ? sizeof(double)
+                 : sizeof(void *)];    /* Memory for double, int, or pointer */
+    ABTI_sched_config_element *p_next; /* Next element. */
+};
+
+struct ABTI_sched_config {
+    ABTI_sched_config_element elements[ABTI_SCHED_CONFIG_HTABLE_SIZE];
 };
 
 struct ABTI_pool {
@@ -468,7 +485,7 @@ void ABTI_sched_finish(ABTI_sched *p_sched);
 void ABTI_sched_exit(ABTI_sched *p_sched);
 ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                                          ABT_pool *pools,
-                                         ABT_sched_config config,
+                                         ABTI_sched_config *p_config,
                                          ABTI_sched **pp_newsched);
 void ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
                      ABT_bool force_free);
@@ -483,11 +500,8 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
 void ABTI_sched_reset_id(void);
 
 /* Scheduler config */
-ABTU_ret_err int ABTI_sched_config_read(ABT_sched_config config, int type,
-                                        int num_vars, void **variables);
-ABTU_ret_err int ABTI_sched_config_read_global(ABT_sched_config config,
-                                               ABT_pool_access *access,
-                                               ABT_bool *automatic);
+ABTU_ret_err int ABTI_sched_config_read(const ABTI_sched_config *p_config,
+                                        int idx, void *p_val);
 
 /* Pool */
 ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
