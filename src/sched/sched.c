@@ -683,7 +683,19 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                     abt_errno =
                         ABTI_pool_create_basic(ABT_POOL_FIFO, def_access,
                                                ABT_TRUE, &p_newpool);
-                    ABTI_CHECK_ERROR(abt_errno);
+                    if (ABTI_IS_ERROR_CHECK_ENABLED &&
+                        abt_errno != ABT_SUCCESS) {
+                        /* Remove pools that are already created. */
+                        int i;
+                        for (i = 0; i < p; i++) {
+                            if (pools[i] != ABT_POOL_NULL)
+                                continue; /* User given pool. */
+                            /* Free a pool created in this function. */
+                            ABTI_pool_free(ABTI_pool_get_ptr(pool_list[i]));
+                        }
+                        ABTU_free(pool_list);
+                        ABTI_HANDLE_ERROR(abt_errno);
+                    }
                     pool_list[p] = ABTI_pool_get_handle(p_newpool);
                 } else {
                     pool_list[p] = pools[p];
@@ -721,12 +733,20 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
                 break;
         }
-        ABTI_CHECK_ERROR(abt_errno);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+            /* Remove pools that are already created. */
+            int i;
+            for (i = 0; i < num_pools; i++) {
+                if (pools[i] != ABT_POOL_NULL)
+                    continue; /* User given pool. */
+                /* Free a pool created in this function. */
+                ABTI_pool_free(ABTI_pool_get_ptr(pool_list[i]));
+            }
+            ABTU_free(pool_list);
+            ABTI_HANDLE_ERROR(abt_errno);
+        }
         ABTU_free(pool_list);
-    }
-
-    /* No pool array is provided, predef has to be compatible */
-    else {
+    } else { /* No pool array is provided, predef has to be compatible */
         /* Set the number of pools */
         switch (predef) {
             case ABT_SCHED_DEFAULT:
@@ -754,11 +774,23 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
         /* To avoid the malloc overhead, we use a stack array. */
         ABT_pool pool_list[ABTI_SCHED_NUM_PRIO];
         int p;
+        /* ICC 19 warns an unused variable in the following error path.  To
+         * suppress the warning, let's initialize the array member here. */
+        for (p = 0; p < num_pools; p++)
+            pool_list[p] = ABT_POOL_NULL;
         for (p = 0; p < num_pools; p++) {
             ABTI_pool *p_newpool;
             abt_errno =
                 ABTI_pool_create_basic(kind, def_access, ABT_TRUE, &p_newpool);
-            ABTI_CHECK_ERROR(abt_errno);
+            if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+                /* Remove pools that are already created. */
+                int i;
+                for (i = 0; i < p; i++) {
+                    /* Free a pool created in this function. */
+                    ABTI_pool_free(ABTI_pool_get_ptr(pool_list[i]));
+                }
+                ABTI_HANDLE_ERROR(abt_errno);
+            }
             pool_list[p] = ABTI_pool_get_handle(p_newpool);
         }
 
@@ -789,7 +821,15 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                 abt_errno = ABT_ERR_INV_SCHED_PREDEF;
                 break;
         }
-        ABTI_CHECK_ERROR(abt_errno);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+            /* Remove pools that are already created. */
+            int i;
+            for (i = 0; i < num_pools; i++) {
+                /* Free a pool created in this function. */
+                ABTI_pool_free(ABTI_pool_get_ptr(pool_list[i]));
+            }
+            ABTI_HANDLE_ERROR(abt_errno);
+        }
     }
     return ABT_SUCCESS;
 }
