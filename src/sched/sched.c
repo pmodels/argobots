@@ -661,23 +661,13 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
                                          ABTI_sched **pp_newsched)
 {
     int abt_errno;
-    ABT_pool_access access;
     ABT_pool_kind kind = ABT_POOL_FIFO;
     /* The default value is different from ABT_sched_create. */
     const ABT_bool def_automatic = ABT_TRUE;
+    /* Always use MPMC pools */
+    const ABT_pool_access def_access = ABT_POOL_ACCESS_MPMC;
 
     ABTI_CHECK_TRUE(!pools || num_pools > 0, ABT_ERR_SCHED);
-
-    /* We set the access to the default one */
-    access = ABT_POOL_ACCESS_MPMC;
-    /* We read the config and set the configured parameters */
-    if (p_config) {
-        abt_errno =
-            ABTI_sched_config_read(p_config, ABT_sched_config_access.idx,
-                                   &access);
-        /* No need to use this error code */
-        (void)abt_errno;
-    }
 
     /* A pool array is provided, predef has to be compatible */
     if (pools != NULL) {
@@ -691,7 +681,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
         for (p = 0; p < num_pools; p++) {
             if (pools[p] == ABT_POOL_NULL) {
                 ABTI_pool *p_newpool;
-                abt_errno = ABTI_pool_create_basic(ABT_POOL_FIFO, access,
+                abt_errno = ABTI_pool_create_basic(ABT_POOL_FIFO, def_access,
                                                    ABT_TRUE, &p_newpool);
                 ABTI_CHECK_ERROR(abt_errno);
                 pool_list[p] = ABTI_pool_get_handle(p_newpool);
@@ -763,7 +753,7 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
         for (p = 0; p < num_pools; p++) {
             ABTI_pool *p_newpool;
             abt_errno =
-                ABTI_pool_create_basic(kind, access, ABT_TRUE, &p_newpool);
+                ABTI_pool_create_basic(kind, def_access, ABT_TRUE, &p_newpool);
             ABTI_CHECK_ERROR(abt_errno);
             pool_list[p] = ABTI_pool_get_handle(p_newpool);
         }
