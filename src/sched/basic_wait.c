@@ -24,10 +24,6 @@ typedef struct {
     ABT_pool *pools;
 } sched_data;
 
-ABT_sched_config_var ABT_sched_basic_wait_freq = { .idx = 0,
-                                                   .type =
-                                                       ABT_SCHED_CONFIG_INT };
-
 ABT_sched_def *ABTI_sched_get_basic_wait_def(void)
 {
     return &sched_basic_wait_def;

@@ -31,6 +31,9 @@ ABT_sched_config_var ABT_sched_config_automatic = { .idx = -3,
                                                     .type =
                                                         ABT_SCHED_CONFIG_INT };
 
+ABT_sched_config_var ABT_sched_basic_freq = { .idx = -4,
+                                              .type = ABT_SCHED_CONFIG_INT };
+
 /**
  * @ingroup SCHED_CONFIG
  * @brief   Create a new scheduler configuration.
