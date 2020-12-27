@@ -5,17 +5,13 @@
 
 #include "abti.h"
 
-/** @defgroup SCHED_BASIC_WAIT Basic waiting scheduler
- * This group is for the basic waiting scheduler.
- */
-
 static int sched_init(ABT_sched sched, ABT_sched_config config);
 static void sched_run(ABT_sched sched);
 static int sched_free(ABT_sched);
 static void sched_sort_pools(int num_pools, ABT_pool *pools);
 
 static ABT_sched_def sched_basic_wait_def = {
-    .type = ABT_SCHED_TYPE_TASK,
+    .type = ABT_SCHED_TYPE_ULT,
     .init = sched_init,
     .run = sched_run,
     .free = sched_free,
@@ -27,10 +23,6 @@ typedef struct {
     int num_pools;
     ABT_pool *pools;
 } sched_data;
-
-ABT_sched_config_var ABT_sched_basic_wait_freq = { .idx = 0,
-                                                   .type =
-                                                       ABT_SCHED_CONFIG_INT };
 
 ABT_sched_def *ABTI_sched_get_basic_wait_def(void)
 {
@@ -49,20 +41,23 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
 
     /* Default settings */
     sched_data *p_data;
     abt_errno = ABTU_malloc(sizeof(sched_data), (void **)&p_data);
     ABTI_CHECK_ERROR(abt_errno);
 
+    /* Set the default value by default. */
     p_data->event_freq = gp_ABTI_global->sched_event_freq;
-
-    /* Set the variables from the config */
-    void *p_event_freq = &p_data->event_freq;
-    abt_errno = ABTI_sched_config_read(config, 1, 1, &p_event_freq);
-    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-        ABTU_free(p_data);
-        ABTI_CHECK_ERROR(abt_errno);
+    if (p_config) {
+        int event_freq;
+        /* Set the variables from config */
+        abt_errno = ABTI_sched_config_read(p_config, ABT_sched_basic_freq.idx,
+                                           &event_freq);
+        if (abt_errno == ABT_SUCCESS) {
+            p_data->event_freq = event_freq;
+        }
     }
 
     /* Save the list of pools */

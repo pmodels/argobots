@@ -137,6 +137,14 @@ static void create_scheds_and_xstreams(void)
 
         /* Create ES */
         if (i == 0) {
+            /* Move the primary ULT to the least priority pool so that it does
+             * not affect verify_exec_order(). */
+            ABT_thread self_thread;
+            ret = ABT_thread_self(&self_thread);
+            ATS_ERROR(ret, "ABT_thread_self");
+            ret = ABT_thread_set_associated_pool(self_thread,
+                                                 pools[0][num_pools[0] - 1]);
+            ATS_ERROR(ret, "ABT_thread_set_associated_pool");
             ret = ABT_xstream_self(&xstreams[i]);
             ATS_ERROR(ret, "ABT_xstream_self");
             ret = ABT_xstream_set_main_sched(xstreams[i], scheds[i]);

@@ -1842,15 +1842,21 @@ ALIASES += DOC_DESC_ATOMICITY_EVENTUAL_READINESS="The readiness of an eventual i
 
 ALIASES += DOC_DESC_ATOMICITY_FUTURE_READINESS="The readiness of a future is managed atomically."
 
+ALIASES += DOC_DESC_ATOMICITY_SCHED_REQUEST="Management of requests for schedulers is performed atomically."
+
 ALIASES += DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION="A combination of a callback function, an event mask its argument for a tool interface is updated atomically."
 
 ALIASES += DOC_DESC_ATOMICITY_WORK_UNIT_KEY="Work-unit-specific values associated with a work-unit-specific data key are read and updated atomically."
+
+ALIASES += DOC_DESC_SCHED_AUTOMATIC{1}="If \1 is not configured to be automatically freed, it is the user's responsibility to free \1 after its use unless \c newsched is associated with the main scheduler of the primary execution stream.  If \1 is configured to be automatically freed, \1 is automatically freed when a work unit associated with \1 is freed.  If the user never associates \1 with a work unit (e.g., by \c ABT_pool_add_sched() or \c ABT_xstream_set_main_sched()), it is the user's responsibility to free \1."
 
 ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on the clock resolution by the system."
 
 ALIASES += DOC_DESC_V10_ACCEPT_TASK{1}="\DOC_V10 The user cannot pass a tasklet handle as \1.\n \DOC_V11 This routine accepts a tasklet handle as \1.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
 
 ALIASES += DOC_DESC_V10_ACCEPT_THREAD{1}="\DOC_V10 The user cannot pass a ULT handle as \1.\n \DOC_V11 This routine accepts a ULT handle as \1.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
+
+ALIASES += DOC_DESC_V10_ALWAYS_SCHED_TYPE_ULT="\DOC_V10 If \c ABT_SCHED_TYPE_TASK is set, the created scheduler runs on a tasklet.\n \DOC_V11 All schedulers run on ULTs.\n @rationale A scheduler that cannot yield is almost useless; such a scheduler is highly restrictive while it provides tiny performance benefits.  Argobots 1.1 always creates a ULT-based scheduler regardless of \c ABT_sched_type. @endrationale"
 
 ALIASES += DOC_DESC_V10_BARRIER_NUM_WAITERS{1}="\DOC_V10 This routine accepts zero as \c num_waiters.\n \DOC_V11 This routine returns \c ABT_ERR_INV_ARG if \c num_waiters is zero. @rationale A barrier with \c num_waiters = 0 is useless and should be prohibited.  Even with Argobots 1.0, calling \c ABT_barrier_wait() for a barrier with \c num_waiters = 0 is not allowed. @endrationale"
 
@@ -1868,6 +1874,10 @@ ALIASES += DOC_DESC_V1X_NOEXT{1}="\DOC_V1X If an external thread calls this rout
 
 ALIASES += DOC_DESC_V1X_NOTASK{1}="\DOC_V1X If a tasklet calls this routine, \1 is returned.\n \DOC_V20 A tasklet may call this routine.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
 
+ALIASES += DOC_DESC_V1X_NULL_PTR{2}="\DOC_V1X If \1 is \c NULL, \2 is returned.\n \DOC_V20 If \1 is \c NULL, the results are undefined.\n @rationale Argobots 2.0 will not check NULL pointers. @endrationale"
+
+ALIASES += DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{2}="\DOC_V1X \2 is returned if this routine finds \1 is already used.\n \DOC_V20 The results are undefined if \1 is already used.\n @rationale The current mechanism that checks if a scheduler is used is premature since this is not maintained atomically.  From Argobots 2.0, it becomes the user's responsibility to guarantee that \1 is not used. @endrationale"
+
 ALIASES += DOC_DESC_V1X_PREMATURE_WAITER_CHECK{2}="\DOC_V1X \2 is returned if this routine finds a waiter on \1.\n \DOC_V20 The results are undefined if a waiter is blocked on \1.\n @rationale Check this is premature considering the asynchronous nature of \1.  From Argobots 2.0, it becomes the user's responsibility to guarantee that there is no waiter on \1. @endrationale"
 
 ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{3}="\DOC_V1X This routine returns \3 when \1 is \2.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2.\n @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
@@ -1879,6 +1889,8 @@ ALIASES += DOC_DESC_V1X_PRINT_RUNTIME_INFO="\DOC_V1X This routine returns \c ABT
 ALIASES += DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized and the queried information cannot be retrieved when Argobots is not initialized.\n @rationale Retrieving static configurations before initializing Argobots is helpful to check if the loaded Argobots implements necessary features. @endrationale"
 
 ALIASES += DOC_DESC_V1X_RETURN_UNINITIALIZED="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 The results are undefined if Argobots is not initialized.\n @rationale From Argobots 2.0, all the Argobots routines that are not explicitly noted do not check if Argobots is initialized.  This omission can reduce the branches that are mostly unnecessary. @endrationale"
+
+ALIASES += DOC_DESC_V1X_SCHED_GET_POOLS_IDX{4}="\DOC_V1X If the summation of \1 and \2 is larger than the number of pools associated with \3, this routine returns \c ABT_ERR_SCHED.\n \DOC_V20 This routine does not update elements of \4 if corresponding pool elements specified by \1 and \2 are out of range.\n @rationale The restriction is unnecessary and thus this behavior is deprecated. @endrationale"
 
 ALIASES += DOC_DESC_V1X_SET_VALUE_ON_ERROR{2}="\DOC_V1X \1 is set to \2 if an error occurs.\n \DOC_V20 \1 is not updated if an error occurs.\n @rationale To ensure the atomicity of the API, Argobots 2.0 guarantees that the routine has no effect if the routine returns an error (as possible).  Argobots 2.0 does not update a returned value when the routine throws an error. @endrationale"
 
@@ -1896,9 +1908,13 @@ ALIASES += DOC_ERROR_FUTURE_READY{1}="If \1 is ready, \c ABT_ERR_FUTURE is retur
 
 ALIASES += DOC_ERROR_INV_ARG_GREATER_THAN{2}="If \1 is larger than \2, \c ABT_ERR_INV_ARG is returned.\n"
 
+ALIASES += DOC_ERROR_INV_ARG_INV_SCHED_PREDEF{1}="If \1 is not a valid predefined scheduler type, \c ABT_ERR_INV_ARG is returned.\n"
+
 ALIASES += DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{2}="If \1 is not a valid tool query kind for \2, \c ABT_ERR_INV_ARG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_NEG{1}="If \1 is negative, \c ABT_ERR_INV_ARG is returned.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_SCHED_CONFIG_TYPE="If a variable of type \c ABT_sched_config_var in the given list has an invalid \c type, \c ABT_ERR_INV_ARG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_ZERO{1}="If \1 is zero, \c ABT_ERR_INV_ARG is returned.\n"
 
@@ -1940,7 +1956,13 @@ ALIASES += DOC_ERROR_INV_RWLOCK_HANDLE{1}="If \1 is \c ABT_RWLOCK_NULL, \c ABT_E
 
 ALIASES += DOC_ERROR_INV_RWLOCK_PTR{1}="If \1 points to \c ABT_RWLOCK_NULL, \c ABT_ERR_INV_RWLOCK is returned.\n"
 
+ALIASES += DOC_ERROR_INV_SCHED_CONFIG_HANDLE{1}="If \1 is \c ABT_SCHED_CONFIG_NULL, \c ABT_ERR_INV_SCHED_CONFIG is returned.\n"
+
+ALIASES += DOC_ERROR_INV_SCHED_CONFIG_PTR{1}="If \1 points to \c ABT_SCHED_CONFIG_NULL, \c ABT_ERR_INV_SCHED_CONFIG is returned.\n"
+
 ALIASES += DOC_ERROR_INV_SCHED_HANDLE{1}="If \1 is \c ABT_SCHED_NULL, \c ABT_ERR_INV_SCHED is returned.\n"
+
+ALIASES += DOC_ERROR_INV_SCHED_PTR{1}="If \1 points to \c ABT_SCHED_NULL, \c ABT_ERR_INV_SCHED is returned.\n"
 
 ALIASES += DOC_ERROR_INV_TASK_HANDLE{1}="If \1 is \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_TASK is returned.\n"
 
@@ -1964,9 +1986,15 @@ ALIASES += DOC_ERROR_INV_XSTREAM_EXT="If the caller is an external thread, \c AB
 
 ALIASES += DOC_ERROR_INV_XSTREAM_HANDLE{1}="If \1 is \c ABT_XSTREAM_NULL, \c ABT_ERR_INV_XSTREAM is returned.\n"
 
+ALIASES += DOC_ERROR_NULL_PTR{2}="If \1 is \c NULL, \2 is returned.\n"
+
 ALIASES += DOC_ERROR_POOL_UNSUPPORTED_FEATURE{2}="If \1 does not support \2, \c ABT_ERR_POOL is returned.\n"
 
 ALIASES += DOC_ERROR_RESOURCE="If an error related to memory occurs, \c ABT_ERR_MEM is returned.\n If an error related to system calls occurs, \c ABT_ERR_SYS is returned.\n"
+
+ALIASES += DOC_ERROR_SCHED_GET_POOLS_IDX{3}="If the summation of \1 and \2 is larger than the number of pools associated with \3, \c ABT_ERR_SCHED is returned."
+
+ALIASES += DOC_ERROR_SCHED_USED{2}="If \1 is being used, \2 is returned.\n"
 
 ALIASES += DOC_ERROR_SUCCESS="If this routine succeeds, \c ABT_SUCCESS is returned.\n"
 
@@ -1984,6 +2012,8 @@ ALIASES += DOC_ERROR_UNINITIALIZED="If the Argobots runtime is not initialized, 
 
 ALIASES += DOC_ERROR_UNINITIALIZED_INFO_QUERY="If the queried information requires initialized Argobots while Argobots is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
 
+ALIASES += DOC_ERROR_USR_SCHED_INIT{1}="If \1 does not return \c ABT_SUCCESS, the error returned by \1 is returned.\n"
+
 ALIASES += DOC_ERROR_WAITER{2}="If there is a waiter blocked on \1, \2 is returned."
 
 #---------------------------------------------------------------------------
@@ -1992,7 +2022,25 @@ ALIASES += DOC_ERROR_WAITER{2}="If there is a waiter blocked on \1, \2 is return
 
 ALIASES += DOC_NOTE_DEFAULT_MUTEX_ATTRIBUTE="To check the details of the default mutex attributes, please see \c ABT_mutex_attr_create()."
 
+ALIASES += DOC_NOTE_DEFAULT_POOL="To see the details of the default pool, please check \c ABT_pool_create()."
+
+ALIASES += DOC_NOTE_DEFAULT_POOL_CONFIG=""
+
+ALIASES += DOC_NOTE_DEFAULT_SCHED_AUTOMATIC="To see the details of whether the scheduler is automatically freed or not, please check \c ABT_sched_create() and \c ABT_sched_create_basic()."
+
+ALIASES += DOC_NOTE_DEFAULT_SCHED_CONFIG="To see the details of the default scheduler configuration, please check \c ABT_sched_config_create()."
+
+ALIASES += DOC_NOTE_EFFECT_ABT_FINALIZE="\c ABT_finalize() frees the primary execution stream, its main scheduler, and pools associated with the main scheduler."
+
 ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant for debugging and diagnosis and can be changed because of an update of the internal implementation of Argobots.  A program that relies on the output of this routine is non-conforming."
+
+ALIASES += DOC_NOTE_NO_PADDING{2}="This routine does not pad \1 until a total \2 elements have been written to \1.  The remaining elements of \1 that are not written by this routine are unmodified."
+
+ALIASES += DOC_NOTE_POOL_SIZE="To see the details of the size of a pool, please check \c ABT_pool_get_size()."
+
+ALIASES += DOC_NOTE_POOL_TOTAL_SIZE="To see the details of the total size of a pool, please check \c ABT_pool_get_total_size()."
+
+ALIASES += DOC_NOTE_TIMING_REQUEST="The timing of the request fulfillment is undefined, so a program that relies on when the request is fulfilled is non-conforming."
 
 #---------------------------------------------------------------------------
 # Undefined behavior
@@ -2015,6 +2063,10 @@ ALIASES += DOC_UNDEFINED_NOT_LOCKED{1}="If \1 is not locked, the results are und
 ALIASES += DOC_UNDEFINED_NULL_PTR_CONDITIONAL{2}="If \2 and \1 is \c NULL, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_NULL_PTR{1}="If \1 is \c NULL, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_SCHED_CONFIG_CREATE_UNFORMATTED="If the \a (2n+1)th element of the given variadic arguments is neither \c ABT_sched_config_var_end nor a variable of type \c ABT_sched_config_var, the results are undefined.\n If the \a (2n+2)th element of the given variadic arguments is not a variable of a type specified by \c type of the \a (2n+1)th element of type \c ABT_sched_config_var, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_SCHED_USED{1}="If \1 is being used, the results are undefined."
 
 ALIASES += DOC_UNDEFINED_SYS_FILE{1}="If an error occurs regarding \1, the results are undefined.\n"
 
