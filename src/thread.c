@@ -1342,13 +1342,8 @@ void ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
         p_thread->p_pool = p_pool;
 
         /* Create a wrapper unit */
-        if (p_ythread) {
-            ABT_thread h_thread = ABTI_ythread_get_handle(p_ythread);
-            p_thread->unit = p_pool->u_create_from_thread(h_thread);
-        } else {
-            ABT_task task = ABTI_thread_get_handle(p_thread);
-            p_thread->unit = p_pool->u_create_from_task(task);
-        }
+        ABT_thread h_thread = ABTI_thread_get_handle(p_thread);
+        p_thread->unit = p_pool->u_create_from_thread(h_thread);
     }
 
     if (p_ythread) {

@@ -308,12 +308,9 @@ struct ABTI_pool {
     uint64_t id;                      /* ID */
 
     /* Functions to manage units */
-    ABT_unit_get_type_fn u_get_type;
     ABT_unit_get_thread_fn u_get_thread;
-    ABT_unit_get_task_fn u_get_task;
     ABT_unit_is_in_pool_fn u_is_in_pool;
     ABT_unit_create_from_thread_fn u_create_from_thread;
-    ABT_unit_create_from_task_fn u_create_from_task;
     ABT_unit_free_fn u_free;
 
     /* Functions to manage the pool */
@@ -330,12 +327,9 @@ struct ABTI_pool {
 
 struct ABTI_pool_def {
     ABT_pool_access access;
-    ABT_unit_get_type_fn u_get_type;
     ABT_unit_get_thread_fn u_get_thread;
-    ABT_unit_get_task_fn u_get_task;
     ABT_unit_is_in_pool_fn u_is_in_pool;
     ABT_unit_create_from_thread_fn u_create_from_thread;
-    ABT_unit_create_from_task_fn u_create_from_task;
     ABT_unit_free_fn u_free;
     ABT_pool_init_fn p_init;
     ABT_pool_get_size_fn p_get_size;

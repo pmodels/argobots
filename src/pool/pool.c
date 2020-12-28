@@ -79,12 +79,10 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     /* Copy def */
     ABTI_pool_def internal_def;
 
-    internal_def.u_get_type = def->u_get_type;
+    internal_def.access = def->access;
     internal_def.u_get_thread = def->u_get_thread;
-    internal_def.u_get_task = def->u_get_task;
     internal_def.u_is_in_pool = def->u_is_in_pool;
     internal_def.u_create_from_thread = def->u_create_from_thread;
-    internal_def.u_create_from_task = def->u_create_from_task;
     internal_def.u_free = def->u_free;
     internal_def.p_init = def->p_init;
     internal_def.p_get_size = def->p_get_size;
@@ -959,12 +957,9 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
     p_pool->data = NULL;
 
     /* Set up the pool functions from def */
-    p_pool->u_get_type = def->u_get_type;
     p_pool->u_get_thread = def->u_get_thread;
-    p_pool->u_get_task = def->u_get_task;
     p_pool->u_is_in_pool = def->u_is_in_pool;
     p_pool->u_create_from_thread = def->u_create_from_thread;
-    p_pool->u_create_from_task = def->u_create_from_task;
     p_pool->u_free = def->u_free;
     p_pool->p_init = def->p_init;
     p_pool->p_get_size = def->p_get_size;

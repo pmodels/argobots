@@ -1133,22 +1133,22 @@ static void info_print_unit(void *arg, ABT_unit unit)
     FILE *fp = p_arg->fp;
     ABT_pool pool = p_arg->pool;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-    ABT_unit_type type = p_pool->u_get_type(unit);
+    ABT_thread thread = p_pool->u_get_thread(unit);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 
-    if (type == ABT_UNIT_TYPE_THREAD) {
+    if (!p_thread) {
+        fprintf(fp, "=== unknown (%p) ===\n", (void *)unit);
+    } else if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
         fprintf(fp, "=== ULT (%p) ===\n", (void *)unit);
-        ABT_thread thread = p_pool->u_get_thread(unit);
-        ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
+        ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
         ABT_unit_id thread_id = ABTI_thread_get_id(&p_ythread->thread);
         fprintf(fp,
                 "id        : %" PRIu64 "\n"
                 "ctx       : %p\n",
                 (uint64_t)thread_id, (void *)&p_ythread->ctx);
         ABTI_ythread_print_stack(p_ythread, fp);
-    } else if (type == ABT_UNIT_TYPE_TASK) {
-        fprintf(fp, "=== tasklet (%p) ===\n", (void *)unit);
     } else {
-        fprintf(fp, "=== unknown (%p) ===\n", (void *)unit);
+        fprintf(fp, "=== tasklet (%p) ===\n", (void *)unit);
     }
 }
 
