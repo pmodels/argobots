@@ -948,6 +948,7 @@ typedef struct {
      * caller of \c p_pop() is non-conforming.
      */
     ABT_pool_pop_fn           p_pop;
+#ifdef ABT_ENABLE_VER_20_API
     /**
      * @fn    ABT_unit (*p_pop_wait)(ABT_pool pool, double time_secs)
      * @brief Function that pops a work unit from a pool with wait.
@@ -968,6 +969,7 @@ typedef struct {
      * @endchangev20
      */
     ABT_pool_pop_wait_fn      p_pop_wait;
+#endif
     /**
      * @fn    ABT_unit (*p_pop_timedwait)(ABT_pool pool, double abstime_secs)
      * @brief Function that pops a work unit from a pool with wait.

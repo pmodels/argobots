@@ -45,7 +45,7 @@ static inline data_t *pool_get_data_ptr(void *p_data)
 
 /* Obtain the FIFO pool definition according to the access type */
 ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
-                                        ABT_pool_def *p_def)
+                                        ABTI_pool_def *p_def)
 {
     /* Definitions according to the access type */
     /* FIXME: need better implementation, e.g., lock-free one */

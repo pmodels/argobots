@@ -40,7 +40,7 @@ static inline data_t *pool_get_data_ptr(void *p_data)
 }
 
 ABTU_ret_err int ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
-                                             ABT_pool_def *p_def)
+                                             ABTI_pool_def *p_def)
 {
     p_def->access = access;
     p_def->p_init = pool_init;

@@ -5,7 +5,7 @@
 
 #include "abti.h"
 
-ABTU_ret_err static int pool_create(ABT_pool_def *def, ABT_pool_config config,
+ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
                                     ABT_bool automatic, ABTI_pool **pp_newpool);
 
 /** @defgroup POOL Pool
@@ -76,8 +76,32 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     /* Argobots 1.x sets newpool to NULL on error. */
     *newpool = ABT_POOL_NULL;
 #endif
+    /* Copy def */
+    ABTI_pool_def internal_def;
+
+    internal_def.u_get_type = def->u_get_type;
+    internal_def.u_get_thread = def->u_get_thread;
+    internal_def.u_get_task = def->u_get_task;
+    internal_def.u_is_in_pool = def->u_is_in_pool;
+    internal_def.u_create_from_thread = def->u_create_from_thread;
+    internal_def.u_create_from_task = def->u_create_from_task;
+    internal_def.u_free = def->u_free;
+    internal_def.p_init = def->p_init;
+    internal_def.p_get_size = def->p_get_size;
+    internal_def.p_push = def->p_push;
+    internal_def.p_pop = def->p_pop;
+#ifdef ABT_CONFIG_ENABLE_VER_20_API
+    internal_def.p_pop_wait = def->p_pop_wait;
+#else
+    internal_def.p_pop_wait = NULL;
+#endif
+    internal_def.p_pop_timedwait = def->p_pop_timedwait;
+    internal_def.p_remove = def->p_remove;
+    internal_def.p_free = def->p_free;
+    internal_def.p_print_all = def->p_print_all;
+
     ABTI_pool *p_newpool;
-    int abt_errno = pool_create(def, config, ABT_FALSE, &p_newpool);
+    int abt_errno = pool_create(&internal_def, config, ABT_FALSE, &p_newpool);
     ABTI_CHECK_ERROR(abt_errno);
 
     *newpool = ABTI_pool_get_handle(p_newpool);
@@ -824,7 +848,7 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
                                         ABTI_pool **pp_newpool)
 {
     int abt_errno;
-    ABT_pool_def def;
+    ABTI_pool_def def;
 
     ABTI_CHECK_TRUE(access == ABT_POOL_ACCESS_PRIV ||
                         access == ABT_POOL_ACCESS_SPSC ||
@@ -919,7 +943,7 @@ void ABTI_pool_reset_id(void)
 /*****************************************************************************/
 
 static inline uint64_t pool_get_new_id(void);
-ABTU_ret_err static int pool_create(ABT_pool_def *def, ABT_pool_config config,
+ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
                                     ABT_bool automatic, ABTI_pool **pp_newpool)
 {
     int abt_errno;
