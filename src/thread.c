@@ -1943,111 +1943,33 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         return;
     }
 
-    ABT_pool_access access = p_self->thread.p_pool->access;
-
-    if ((p_self->thread.p_pool == p_ythread->thread.p_pool) &&
-        (access == ABT_POOL_ACCESS_PRIV || access == ABT_POOL_ACCESS_MPSC ||
-         access == ABT_POOL_ACCESS_SPSC) &&
-        (ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
-         ABT_THREAD_STATE_READY)) {
-
-        ABTI_xstream *p_xstream = p_self->thread.p_last_xstream;
-
-        /* If other ES is calling ABTI_ythread_set_ready(), p_ythread may not
-         * have been added to the pool yet because ABTI_ythread_set_ready()
-         * changes the state first followed by pushing p_ythread to the pool.
-         * Therefore, we have to check whether p_ythread is in the pool, and if
-         * not, we need to wait until it is added. */
-        while (p_ythread->thread.p_pool->u_is_in_pool(p_ythread->thread.unit) !=
-               ABT_TRUE) {
-        }
-
-        /* This is corresponding to suspension. */
-        ABTI_tool_event_ythread_suspend(p_local_xstream, p_self,
-                                        p_self->thread.p_parent,
-                                        ABT_SYNC_EVENT_TYPE_THREAD_JOIN,
-                                        (void *)p_ythread);
-
-        /* Increase the number of blocked units.  Be sure to execute
-         * ABTI_pool_inc_num_blocked before ABTI_POOL_REMOVE in order not to
-         * underestimate the number of units in a pool. */
-        ABTI_pool_inc_num_blocked(p_self->thread.p_pool);
-        /* Remove the target ULT from the pool */
-        int abt_errno =
-            ABTI_pool_remove(p_ythread->thread.p_pool, p_ythread->thread.unit);
-        /* This failure is fatal. */
-        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
-
-        /* Set the link in the context for the target ULT.  Since p_link will be
-         * referenced by p_self, this update does not require release store. */
-        ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ythread->ctx.p_link,
-                                                      &p_self->ctx);
-        /* Set the last ES */
-        p_ythread->thread.p_last_xstream = p_xstream;
-        ABTD_atomic_release_store_int(&p_ythread->thread.state,
-                                      ABT_THREAD_STATE_RUNNING);
-
-        /* Make the current ULT BLOCKED */
-        ABTD_atomic_release_store_int(&p_self->thread.state,
-                                      ABT_THREAD_STATE_BLOCKED);
-
-        LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
-                  ABTI_thread_get_id(&p_self->thread),
-                  p_self->thread.p_last_xstream->rank,
-                  ABTI_thread_get_id(&p_ythread->thread));
-        LOG_DEBUG("[U%" PRIu64 ":E%d] start running\n",
-                  ABTI_thread_get_id(&p_ythread->thread),
-                  p_ythread->thread.p_last_xstream->rank);
-
-        /* Switch the context */
-        ABTI_ythread *p_prev =
-            ABTI_ythread_context_switch_to_sibling(&p_local_xstream, p_self,
-                                                   p_ythread);
-        *pp_local = ABTI_xstream_get_local(p_local_xstream);
-        ABTI_tool_event_thread_run(p_local_xstream, &p_self->thread,
-                                   &p_prev->thread, p_self->thread.p_parent);
-
-    } else if ((p_self->thread.p_pool != p_ythread->thread.p_pool) &&
-               (access == ABT_POOL_ACCESS_PRIV ||
-                access == ABT_POOL_ACCESS_SPSC)) {
-        /* FIXME: once we change the suspend/resume mechanism (i.e., asking the
-         * scheduler to wake up the blocked ULT), we will be able to handle all
-         * access modes. */
+    /* Tell p_ythread that there has been a join request. */
+    /* If request already has ABTI_THREAD_REQ_JOIN, p_ythread is
+     * terminating. We can't block p_self in this case. */
+    uint32_t req = ABTD_atomic_fetch_or_uint32(&p_ythread->thread.request,
+                                               ABTI_THREAD_REQ_JOIN);
+    if (req & ABTI_THREAD_REQ_JOIN) {
         thread_join_yield_thread(&p_local_xstream, p_self, &p_ythread->thread);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
         return;
-
-    } else {
-        /* Tell p_ythread that there has been a join request. */
-        /* If request already has ABTI_THREAD_REQ_JOIN, p_ythread is
-         * terminating. We can't block p_self in this case. */
-        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_ythread->thread.request,
-                                                   ABTI_THREAD_REQ_JOIN);
-        if (req & ABTI_THREAD_REQ_JOIN) {
-            thread_join_yield_thread(&p_local_xstream, p_self,
-                                     &p_ythread->thread);
-            *pp_local = ABTI_xstream_get_local(p_local_xstream);
-            return;
-        }
-
-        ABTI_ythread_set_blocked(p_self);
-        LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
-                  ABTI_thread_get_id(&p_self->thread),
-                  p_self->thread.p_last_xstream->rank,
-                  ABTI_thread_get_id(&p_ythread->thread));
-
-        /* Set the link in the context of the target ULT. This p_link might be
-         * read by p_ythread running on another ES in parallel, so release-store
-         * is needed here. */
-        ABTD_atomic_release_store_ythread_context_ptr(&p_ythread->ctx.p_link,
-                                                      &p_self->ctx);
-
-        /* Suspend the current ULT */
-        ABTI_ythread_suspend(&p_local_xstream, p_self,
-                             ABT_SYNC_EVENT_TYPE_THREAD_JOIN,
-                             (void *)p_ythread);
-        *pp_local = ABTI_xstream_get_local(p_local_xstream);
     }
+
+    ABTI_ythread_set_blocked(p_self);
+    LOG_DEBUG("[U%" PRIu64 ":E%d] blocked to join U%" PRIu64 "\n",
+              ABTI_thread_get_id(&p_self->thread),
+              p_self->thread.p_last_xstream->rank,
+              ABTI_thread_get_id(&p_ythread->thread));
+
+    /* Set the link in the context of the target ULT. This p_link might be
+     * read by p_ythread running on another ES in parallel, so release-store
+     * is needed here. */
+    ABTD_atomic_release_store_ythread_context_ptr(&p_ythread->ctx.p_link,
+                                                  &p_self->ctx);
+
+    /* Suspend the current ULT */
+    ABTI_ythread_suspend(&p_local_xstream, p_self,
+                         ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_ythread);
+    *pp_local = ABTI_xstream_get_local(p_local_xstream);
 
     /* Resume */
     /* If p_self's state is BLOCKED, the target ULT has terminated on the same
