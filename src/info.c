@@ -1160,12 +1160,10 @@ ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
         fflush(fp);
         return ABT_SUCCESS;
     }
+    ABTI_CHECK_TRUE(p_pool->p_print_all, ABT_ERR_POOL);
 
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
 
-    if (!p_pool->p_print_all) {
-        return ABT_ERR_POOL;
-    }
     fprintf(fp, "== pool (%p) ==\n", (void *)p_pool);
     struct info_print_unit_arg_t arg;
     arg.fp = fp;

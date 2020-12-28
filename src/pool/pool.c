@@ -876,7 +876,9 @@ void ABTI_pool_free(ABTI_pool *p_pool)
 {
     LOG_DEBUG("[P%" PRIu64 "] freed\n", p_pool->id);
     ABT_pool h_pool = ABTI_pool_get_handle(p_pool);
-    p_pool->p_free(h_pool);
+    if (p_pool->p_free) {
+        p_pool->p_free(h_pool);
+    }
     ABTU_free(p_pool);
 }
 

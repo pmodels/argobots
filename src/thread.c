@@ -654,6 +654,9 @@ int ABT_thread_yield_to(ABT_thread thread)
                         ABT_ERR_INV_THREAD,
                         "The target thread's pool is not the same as mine.");
 
+    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->u_is_in_pool, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->p_remove, ABT_ERR_POOL);
+
     /* If the target thread is not in READY, we don't yield.  Note that ULT can
      * be regarded as 'ready' only if its state is READY and it has been
      * pushed into a pool. Since we set ULT's state to READY and then push it

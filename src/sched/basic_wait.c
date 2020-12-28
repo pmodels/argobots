@@ -120,8 +120,16 @@ static void sched_run(ABT_sched sched)
         /* Block briefly on pop_wait() if we didn't find work to do in main loop
          * above. */
         if (!run_cnt_nowait) {
-            ABT_unit unit =
-                ABTI_pool_pop_wait(ABTI_pool_get_ptr(pools[0]), 0.1);
+            ABTI_pool *p_pool = ABTI_pool_get_ptr(pools[0]);
+            ABT_unit unit;
+            if (p_pool->p_pop_wait) {
+                unit = ABTI_pool_pop_wait(p_pool, 0.1);
+            } else if (p_pool->p_pop_timedwait) {
+                unit = ABTI_pool_pop_timedwait(p_pool, ABTI_get_wtime() + 0.1);
+            } else {
+                /* No "wait" pop, so let's use a normal one. */
+                unit = ABTI_pool_pop(p_pool);
+            }
             if (unit != ABT_UNIT_NULL) {
                 ABTI_xstream_run_unit(&p_local_xstream, unit,
                                       ABTI_pool_get_ptr(pools[0]));
