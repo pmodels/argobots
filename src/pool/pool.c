@@ -72,6 +72,10 @@ ABTU_ret_err static int pool_create(ABT_pool_def *def, ABT_pool_config config,
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
                     ABT_pool *newpool)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newpool to NULL on error. */
+    *newpool = ABT_POOL_NULL;
+#endif
     ABTI_pool *p_newpool;
     int abt_errno = pool_create(def, config, ABT_FALSE, &p_newpool);
     ABTI_CHECK_ERROR(abt_errno);
@@ -140,6 +144,10 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
 int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                           ABT_bool automatic, ABT_pool *newpool)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newpool to NULL on error. */
+    *newpool = ABT_POOL_NULL;
+#endif
     ABTI_pool *p_newpool;
     int abt_errno = ABTI_pool_create_basic(kind, access, automatic, &p_newpool);
     ABTI_CHECK_ERROR(abt_errno);
@@ -761,7 +769,9 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
     /* Mark the scheduler as it is used in pool */
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED, ABT_ERR_INV_SCHED);
+#endif
     p_sched->used = ABTI_SCHED_IN_POOL;
 
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
