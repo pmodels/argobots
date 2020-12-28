@@ -189,9 +189,8 @@ int ABT_pool_free(ABT_pool *pool)
 {
     ABT_pool h_pool = *pool;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(h_pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    ABTI_CHECK_TRUE(p_pool != NULL && h_pool != ABT_POOL_NULL,
-                    ABT_ERR_INV_POOL);
     ABTI_pool_free(p_pool);
 
     *pool = ABT_POOL_NULL;
@@ -426,6 +425,7 @@ int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->p_pop_wait, ABT_ERR_POOL);
 
     *p_unit = ABTI_pool_pop_wait(p_pool, time_secs);
     return ABT_SUCCESS;
@@ -491,6 +491,7 @@ int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->p_pop_timedwait, ABT_ERR_POOL);
 
     *p_unit = ABTI_pool_pop_timedwait(p_pool, abstime_secs);
     return ABT_SUCCESS;
@@ -539,7 +540,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_UNIT);
+    ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_INV_UNIT);
 
     /* Save the producer ES information in the pool */
     ABTI_pool_push(p_pool, unit);
@@ -590,6 +591,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->p_remove, ABT_ERR_POOL);
 
     int abt_errno = ABTI_pool_remove(p_pool, unit);
     ABTI_CHECK_ERROR(abt_errno);
@@ -644,9 +646,8 @@ int ABT_pool_print_all(ABT_pool pool, void *arg,
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-    if (!p_pool->p_print_all) {
-        ABTI_HANDLE_ERROR(ABT_ERR_POOL);
-    }
+    ABTI_CHECK_TRUE(p_pool->p_print_all, ABT_ERR_POOL);
+
     p_pool->p_print_all(pool, arg, print_fn);
     return ABT_SUCCESS;
 }
@@ -825,6 +826,12 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
     int abt_errno;
     ABT_pool_def def;
 
+    ABTI_CHECK_TRUE(access == ABT_POOL_ACCESS_PRIV ||
+                        access == ABT_POOL_ACCESS_SPSC ||
+                        access == ABT_POOL_ACCESS_MPSC ||
+                        access == ABT_POOL_ACCESS_SPMC ||
+                        access == ABT_POOL_ACCESS_MPMC,
+                    ABT_ERR_INV_POOL_ACCESS);
     switch (kind) {
         case ABT_POOL_FIFO:
             abt_errno = ABTI_pool_get_fifo_def(access, &def);
