@@ -12,6 +12,7 @@ ABTU_ret_err static int xstream_start(ABTI_xstream *p_xstream);
 ABTU_ret_err static int xstream_join(ABTI_local **pp_local,
                                      ABTI_xstream *p_xstream);
 static ABT_bool xstream_set_new_rank(ABTI_xstream *p_newxstream, int rank);
+static ABT_bool xstream_change_rank(ABTI_xstream *p_xstream, int rank);
 static void xstream_return_rank(ABTI_xstream *p_xstream);
 static inline void xstream_schedule_ythread(ABTI_xstream **pp_local_xstream,
                                             ABTI_ythread *p_ythread);
@@ -687,7 +688,8 @@ int ABT_xstream_set_rank(ABT_xstream xstream, int rank)
     ABTI_CHECK_TRUE(p_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY,
                     ABT_ERR_INV_XSTREAM);
     ABTI_CHECK_TRUE(rank >= 0, ABT_ERR_INV_XSTREAM_RANK);
-    p_xstream->rank = rank;
+    ABT_bool is_changed = xstream_change_rank(p_xstream, rank);
+    ABTI_CHECK_TRUE(is_changed, ABT_ERR_INV_XSTREAM_RANK);
 
     /* Set the CPU affinity for the ES */
     if (gp_ABTI_global->set_affinity == ABT_TRUE) {
@@ -2020,42 +2022,56 @@ static void xstream_update_main_sched(ABTI_xstream **pp_local_xstream,
                                 p_main_sched, ABT_FALSE);
 }
 
-/* Set a new rank to ES */
-static ABT_bool xstream_set_new_rank(ABTI_xstream *p_newxstream, int rank)
+static void xstream_update_max_xstreams(int newrank)
 {
+    /* The lock must be taken. */
     ABTI_global *p_global = gp_ABTI_global;
+    if (newrank >= p_global->max_xstreams) {
+        static int max_xstreams_warning_once = 0;
+        if (max_xstreams_warning_once == 0) {
+            /* Because some Argobots functionalities depend on the runtime value
+             * ABT_MAX_NUM_XSTREAMS (or gp_ABTI_global->max_xstreams), changing
+             * this value at run-time can cause an error.  For example, using
+             * ABT_mutex created before updating max_xstreams causes an error
+             * since ABTI_thread_htable's array size depends on
+             * ABT_MAX_NUM_XSTREAMS.  To fix this issue, please set a larger
+             * number to ABT_MAX_NUM_XSTREAMS in advance. */
+            char *warning_message;
+            int abt_errno =
+                ABTU_malloc(sizeof(char) * 1024, (void **)&warning_message);
+            if (!ABTI_IS_ERROR_CHECK_ENABLED || abt_errno == ABT_SUCCESS) {
+                snprintf(warning_message, 1024,
+                         "Warning: the number of execution streams exceeds "
+                         "ABT_MAX_NUM_XSTREAMS (=%d). This may cause an error.",
+                         p_global->max_xstreams);
+                HANDLE_WARNING(warning_message);
+                ABTU_free(warning_message);
+                max_xstreams_warning_once = 1;
+            }
+        }
+        /* Anyway. let's increase max_xstreams. */
+        p_global->max_xstreams = newrank + 1;
+    }
+}
 
-    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
-
+/* Add p_newxstream to the list. This does not check the rank duplication. */
+static void xstream_add_xstream_list(ABTI_xstream *p_newxstream)
+{
+    int rank = p_newxstream->rank;
+    ABTI_global *p_global = gp_ABTI_global;
     ABTI_xstream *p_prev_xstream = p_global->p_xstream_head;
     ABTI_xstream *p_xstream = p_prev_xstream;
-    if (rank == -1) {
-        /* Find an unused rank from 0. */
-        rank = 0;
-        while (p_xstream) {
-            if (p_xstream->rank == rank) {
-                rank++;
-            } else {
-                /* Use this rank. */
-                break;
-            }
-            p_prev_xstream = p_xstream;
-            p_xstream = p_xstream->p_next;
+    /* Check if a certain rank is available */
+    while (p_xstream) {
+        ABTI_ASSERT(p_xstream->rank != rank);
+        if (p_xstream->rank > rank) {
+            /* Use this p_xstream. */
+            break;
         }
-    } else {
-        /* Check if a certain rank is available */
-        while (p_xstream) {
-            if (p_xstream->rank == rank) {
-                ABTI_spinlock_release(&p_global->xstream_list_lock);
-                return ABT_FALSE;
-            } else if (p_xstream->rank > rank) {
-                /* Use this p_xstream. */
-                break;
-            }
-            p_prev_xstream = p_xstream;
-            p_xstream = p_xstream->p_next;
-        }
+        p_prev_xstream = p_xstream;
+        p_xstream = p_xstream->p_next;
     }
+
     if (!p_xstream) {
         /* p_newxstream is appended to p_prev_xstream */
         if (p_prev_xstream) {
@@ -2082,47 +2098,13 @@ static ABT_bool xstream_set_new_rank(ABTI_xstream *p_newxstream, int rank)
         p_xstream->p_prev = p_newxstream;
         p_newxstream->p_next = p_xstream;
     }
-    p_global->num_xstreams++;
-    if (rank >= p_global->max_xstreams) {
-        static int max_xstreams_warning_once = 0;
-        if (max_xstreams_warning_once == 0) {
-            /* Because some Argobots functionalities depend on the runtime value
-             * ABT_MAX_NUM_XSTREAMS (or gp_ABTI_global->max_xstreams), changing
-             * this value at run-time can cause an error.  For example, using
-             * ABT_mutex created before updating max_xstreams causes an error
-             * since ABTI_thread_htable's array size depends on
-             * ABT_MAX_NUM_XSTREAMS.  To fix this issue, please set a larger
-             * number to ABT_MAX_NUM_XSTREAMS in advance. */
-            char *warning_message;
-            int abt_errno =
-                ABTU_malloc(sizeof(char) * 1024, (void **)&warning_message);
-            if (!ABTI_IS_ERROR_CHECK_ENABLED || abt_errno == ABT_SUCCESS) {
-                snprintf(warning_message, 1024,
-                         "Warning: the number of execution streams exceeds "
-                         "ABT_MAX_NUM_XSTREAMS (=%d). This may cause an error.",
-                         p_global->max_xstreams);
-                HANDLE_WARNING(warning_message);
-                ABTU_free(warning_message);
-                max_xstreams_warning_once = 1;
-            }
-        }
-        /* Anyway. let's increase max_xstreams. */
-        p_global->max_xstreams = rank + 1;
-    }
-
-    ABTI_spinlock_release(&p_global->xstream_list_lock);
-
-    /* Set the rank */
-    p_newxstream->rank = rank;
-    return ABT_TRUE;
 }
 
-static void xstream_return_rank(ABTI_xstream *p_xstream)
+/* Remove p_xstream from the list. */
+static void xstream_remove_xstream_list(ABTI_xstream *p_xstream)
 {
-    ABTI_global *p_global = gp_ABTI_global;
-    /* Remove this xstream from the global ES list */
-    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
     if (!p_xstream->p_prev) {
+        ABTI_global *p_global = gp_ABTI_global;
         ABTI_ASSERT(p_global->p_xstream_head == p_xstream);
         p_global->p_xstream_head = p_xstream->p_next;
     } else {
@@ -2131,6 +2113,92 @@ static void xstream_return_rank(ABTI_xstream *p_xstream)
     if (p_xstream->p_next) {
         p_xstream->p_next->p_prev = p_xstream->p_prev;
     }
+}
+
+/* Set a new rank to ES */
+static ABT_bool xstream_set_new_rank(ABTI_xstream *p_newxstream, int rank)
+{
+    ABTI_global *p_global = gp_ABTI_global;
+
+    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+
+    if (rank == -1) {
+        /* Find an unused rank from 0. */
+        rank = 0;
+        ABTI_xstream *p_xstream = p_global->p_xstream_head;
+        while (p_xstream) {
+            if (p_xstream->rank == rank) {
+                rank++;
+            } else {
+                /* Use this rank. */
+                break;
+            }
+            p_xstream = p_xstream->p_next;
+        }
+    } else {
+        /* Check if a certain rank is available */
+        ABTI_xstream *p_xstream = p_global->p_xstream_head;
+        while (p_xstream) {
+            if (p_xstream->rank == rank) {
+                ABTI_spinlock_release(&p_global->xstream_list_lock);
+                return ABT_FALSE;
+            } else if (p_xstream->rank > rank) {
+                break;
+            }
+            p_xstream = p_xstream->p_next;
+        }
+    }
+    /* Set the rank */
+    p_newxstream->rank = rank;
+    xstream_add_xstream_list(p_newxstream);
+    xstream_update_max_xstreams(rank);
+    p_global->num_xstreams++;
+
+    ABTI_spinlock_release(&p_global->xstream_list_lock);
+    return ABT_TRUE;
+}
+
+/* Change the rank of ES */
+static ABT_bool xstream_change_rank(ABTI_xstream *p_xstream, int rank)
+{
+    if (p_xstream->rank == rank) {
+        /* No need to change the rank. */
+        return ABT_TRUE;
+    }
+    ABTI_global *p_global = gp_ABTI_global;
+
+    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+
+    ABTI_xstream *p_next = p_global->p_xstream_head;
+    /* Check if a certain rank is available. */
+    while (p_next) {
+        if (p_next->rank == rank) {
+            ABTI_spinlock_release(&p_global->xstream_list_lock);
+            return ABT_FALSE;
+        } else if (p_next->rank > rank) {
+            break;
+        }
+        p_next = p_next->p_next;
+    }
+    /* Let's remove p_xstream from the list first. */
+    xstream_remove_xstream_list(p_xstream);
+    /* Then, let's add this p_xstream. */
+    p_xstream->rank = rank;
+    xstream_add_xstream_list(p_xstream);
+    xstream_update_max_xstreams(rank);
+
+    ABTI_spinlock_release(&p_global->xstream_list_lock);
+    return ABT_TRUE;
+}
+
+static void xstream_return_rank(ABTI_xstream *p_xstream)
+{
+    ABTI_global *p_global = gp_ABTI_global;
+    /* Remove this xstream from the global ES list */
+    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+
+    xstream_remove_xstream_list(p_xstream);
     p_global->num_xstreams--;
+
     ABTI_spinlock_release(&p_global->xstream_list_lock);
 }
