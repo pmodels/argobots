@@ -241,11 +241,7 @@ struct example_unit {
     struct example_unit *p_prev;
     struct example_unit *p_next;
     ABT_pool pool;
-    union {
-        ABT_thread thread;
-        ABT_task task;
-    } handle;
-    ABT_unit_type type;
+    ABT_thread thread;
 };
 
 struct example_pool_data {
@@ -266,12 +262,9 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit);
 static int pool_remove_private(ABT_pool pool, ABT_unit unit);
 
 typedef struct example_unit unit_t;
-static ABT_unit_type unit_get_type(ABT_unit unit);
 static ABT_thread unit_get_thread(ABT_unit unit);
-static ABT_task unit_get_task(ABT_unit unit);
 static ABT_bool unit_is_in_pool(ABT_unit unit);
 static ABT_unit unit_create_from_thread(ABT_thread thread);
-static ABT_unit unit_create_from_task(ABT_task task);
 static void unit_free(ABT_unit *unit);
 
 typedef struct example_pool_data data_t;
@@ -313,13 +306,16 @@ static int example_pool_get_def(ABT_pool_access access, ABT_pool_def *p_def)
     p_def->p_init = pool_init;
     p_def->p_free = pool_free;
     p_def->p_get_size = pool_get_size;
-    p_def->u_get_type = unit_get_type;
+    p_def->u_get_type = NULL; /* Unused. */
     p_def->u_get_thread = unit_get_thread;
-    p_def->u_get_task = unit_get_task;
+    p_def->u_get_task = NULL; /* Unused. */
     p_def->u_is_in_pool = unit_is_in_pool;
     p_def->u_create_from_thread = unit_create_from_thread;
-    p_def->u_create_from_task = unit_create_from_task;
+    p_def->u_create_from_task = NULL; /* Unused. */
     p_def->u_free = unit_free;
+    /* Unimplemented. */
+    p_def->p_pop_timedwait = NULL;
+    p_def->p_print_all = NULL;
 
     return abt_errno;
 }
@@ -570,34 +566,12 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
 
 /* Unit functions */
 
-static ABT_unit_type unit_get_type(ABT_unit unit)
-{
-    unit_t *p_unit = (unit_t *)unit;
-    return p_unit->type;
-}
-
 static ABT_thread unit_get_thread(ABT_unit unit)
 {
     ABT_thread h_thread;
     unit_t *p_unit = (unit_t *)unit;
-    if (p_unit->type == ABT_UNIT_TYPE_THREAD) {
-        h_thread = p_unit->handle.thread;
-    } else {
-        h_thread = ABT_THREAD_NULL;
-    }
+    h_thread = p_unit->thread;
     return h_thread;
-}
-
-static ABT_task unit_get_task(ABT_unit unit)
-{
-    ABT_task h_task;
-    unit_t *p_unit = (unit_t *)unit;
-    if (p_unit->type == ABT_UNIT_TYPE_TASK) {
-        h_task = p_unit->handle.task;
-    } else {
-        h_task = ABT_TASK_NULL;
-    }
-    return h_task;
 }
 
 static ABT_bool unit_is_in_pool(ABT_unit unit)
@@ -615,23 +589,7 @@ static ABT_unit unit_create_from_thread(ABT_thread thread)
     p_unit->p_prev = NULL;
     p_unit->p_next = NULL;
     p_unit->pool = ABT_POOL_NULL;
-    p_unit->handle.thread = thread;
-    p_unit->type = ABT_UNIT_TYPE_THREAD;
-
-    return (ABT_unit)p_unit;
-}
-
-static ABT_unit unit_create_from_task(ABT_task task)
-{
-    unit_t *p_unit = malloc(sizeof(unit_t));
-    if (!p_unit)
-        return ABT_UNIT_NULL;
-
-    p_unit->p_prev = NULL;
-    p_unit->p_next = NULL;
-    p_unit->pool = ABT_POOL_NULL;
-    p_unit->handle.task = task;
-    p_unit->type = ABT_UNIT_TYPE_TASK;
+    p_unit->thread = thread;
 
     return (ABT_unit)p_unit;
 }
