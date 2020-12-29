@@ -28,20 +28,53 @@ ABTU_ret_err static int xstream_migrate_thread(ABTI_local *p_local,
                                                ABTI_thread *p_thread);
 #endif
 
-/** @defgroup ES Execution Stream (ES)
+/** @defgroup ES Execution Stream
  * This group is for Execution Stream.
  */
 
 /**
  * @ingroup ES
- * @brief   Create a new ES and return its handle through newxstream.
+ * @brief   Create a new execution stream.
  *
- * @param[in]  sched  handle to the scheduler used for a new ES. If this is
- *                    ABT_SCHED_NULL, the runtime-provided scheduler is used.
- * @param[out] newxstream  handle to a newly created ES. This cannot be NULL
- *                    because unnamed ES is not allowed.
+ * \c ABT_xstream_create() creates a new execution stream with the scheduler
+ * \c sched and returns its handle through \c newxstream.  If \c sched is
+ * \c ABT_SCHED_NULL, the default scheduler with a basic FIFO queue and the
+ * default scheduler configuration is used.
+ *
+ * @note
+ * \DOC_NOTE_DEFAULT_SCHED\n
+ * \DOC_NOTE_DEFAULT_POOL\n
+ * \DOC_NOTE_DEFAULT_SCHED_CONFIG
+ *
+ * If \c sched is not \c ABT_SCHED_NULL, the user may not reuse \c sched to
+ * create another execution stream.  If \c sched is not configured to be
+ * automatically freed, it is the user's responsibility to free \c sched after
+ * \c newxstream is freed.
+ *
+ * \c newxstream must be freed by \c ABT_xstream_free() after its use.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newxstream, \c ABT_XSTREAM_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_RESOURCE
+ * \DOC_V1X \DOC_ERROR_SCHED_USED{\c sched, \c ABT_ERR_INV_SCHED}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newxstream}
+ * \DOC_V20 \DOC_UNDEFINED_SCHED_USED{\c sched}
+ *
+ * @param[in]  sched       scheduler handle for \c newxstream
+ * @param[out] newxstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 {
@@ -74,19 +107,56 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
 
 /**
  * @ingroup ES
- * @brief   Create a new ES with a predefined scheduler and return its handle
- *          through \c newxstream.
+ * @brief   Create a new execution stream with a predefined scheduler.
  *
- * If \c predef is a scheduler that includes automatic creation of pools,
- * \c pools will be equal to NULL.
+ * ABT_xstream_create_basic() creates a new execution stream with the predefined
+ * scheduler \c predef and returns its handle through \c newxstream.  The
+ * functionality provided by this routine is the same as the combination of
+ * \c ABT_sched_create_basic() and \c ABT_xstream_create().
  *
- * @param[in]  predef       predefined scheduler
- * @param[in]  num_pools    number of pools associated with this scheduler
- * @param[in]  pools        pools associated with this scheduler
- * @param[in]  config       specific config used during the scheduler creation
- * @param[out] newxstream   handle to the target ES
+ * @code{.c}
+ * int ABT_xstream_create_basic(...) {
+ *   int abt_errno;
+ *   ABT_sched sched = ABT_SCHED_NULL;
+ *   abt_errno = ABT_sched_create_basic(predef, num_pools, pools, config,
+ *                                      sched);
+ *   if (abt_errno == ABT_SUCCESS)
+ *     abt_errno = ABT_xstream_create(sched, newxstream);
+ *   if (abt_errno != ABT_SUCCESS && sched != ABT_SCHED_NULL)
+ *     ABT_sched_free(&sched);
+ *   return abt_errno;
+ * }
+ * @endcode
+ *
+ * Please see \c ABT_sched_create_basic() and \c ABT_xstream_create() for
+ * details.
+ *
+ * \c newxstream must be freed by \c ABT_xstream_free() after its use.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newxstream, \c ABT_XSTREAM_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_NEG{\c num_pools}
+ * \DOC_ERROR_INV_ARG_INV_SCHED_PREDEF{\c predef}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR_CONDITIONAL{\c pools, \c num_pools is positive}
+ * \DOC_UNDEFINED_NULL_PTR{\c newxstream}
+ *
+ * @param[in]  predef      predefined scheduler
+ * @param[in]  num_pools   number of pools associated with the scheduler
+ * @param[in]  pools       pools associated with the scheduler
+ * @param[in]  config      scheduler config for scheduler creation
+ * @param[out] newxstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
                              ABT_pool *pools, ABT_sched_config config,
@@ -115,16 +185,54 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
 
 /**
  * @ingroup ES
- * @brief   Create a new ES with a specific rank.
+ * @brief   Create a new execution stream with a specific rank.
  *
- * @param[in]  sched  handle to the scheduler used for a new ES. If this is
- *                    ABT_SCHED_NULL, the runtime-provided scheduler is used.
- * @param[in]  rank   target rank
- * @param[out] newxstream  handle to a newly created ES. This cannot be NULL
- *                    because unnamed ES is not allowed.
+ * \c ABT_xstream_create_with_rank() creates a new execution stream with the
+ * scheduler \c sched and returns its handle through \c newxstream.  If \c sched
+ * is \c ABT_SCHED_NULL, the default scheduler with a basic FIFO queue and the
+ * default scheduler configuration is used.
+ *
+ * @note
+ * \DOC_NOTE_DEFAULT_SCHED\n
+ * \DOC_NOTE_DEFAULT_POOL\n
+ * \DOC_NOTE_DEFAULT_SCHED_CONFIG
+ *
+ * If \c sched is not \c ABT_SCHED_NULL, the user may not reuse \c sched to
+ * create another execution stream.  If \c sched is not configured to be
+ * automatically freed, it is the user's responsibility to free \c sched after
+ * \c newxstream is freed.
+ *
+ * This routine allocates the rank \c rank for \c newxstream.  \c rank must be
+ * non-negative value and unique among all the execution streams.
+ *
+ * \DOC_DESC_ATOMICITY_RANK
+ *
+ * \c newxstream must be freed by \c ABT_xstream_free() after its use.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newxstream, \c ABT_XSTREAM_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_RANK{\c rank}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_V1X \DOC_ERROR_SCHED_USED{\c sched, \c ABT_ERR_INV_SCHED}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newxstream}
+ * \DOC_V20 \DOC_UNDEFINED_SCHED_USED{\c sched}
+ *
+ * @param[in]  sched       scheduler handle for \c newxstream
+ * @param[in]  rank        execution stream rank
+ * @param[out] newxstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS               on success
- * @retval ABT_ERR_INV_XSTREAM_RANK  invalid rank
  */
 int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
                                  ABT_xstream *newxstream)
@@ -165,11 +273,33 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
 
 /**
  * @ingroup ES
- * @brief   Restart an ES that has been joined by \c ABT_xstream_join().
+ * @brief   Revive a terminated execution stream.
  *
- * @param[in] xstream  handle to an ES that has been joined but not freed.
+ * \c ABT_xstream_revive() revives the execution stream \c xstream that has been
+ * terminated by \c ABT_xstream_join().  \c xstream starts to run immediately.
+ *
+ * \DOC_DESC_ATOMICITY_XSTREAM_STATE
+ *
+ * \c xstream may not be an execution stream that has been freed by
+ * \c ABT_xstream_free().  An execution stream that is blocked on by
+ * \c ABT_xstream_free() may not be revived.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_INV_XSTREAM_NOT_TERMINATED{\c xstream}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_XSTREAM_BLOCKED{\c xstream, \c ABT_xstream_free()}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c xstream}
+ *
+ * @param[in] xstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_revive(ABT_xstream xstream)
 {
@@ -203,17 +333,44 @@ int ABT_xstream_revive(ABT_xstream xstream)
 
 /**
  * @ingroup ES
- * @brief   Release the ES object associated with ES handle.
+ * @brief   Free an execution stream.
  *
- * This routine deallocates memory used for the ES object. If the xstream
- * is still running when this routine is called, the deallocation happens
- * after the xstream terminates and then this routine returns. If it is
- * successfully processed, xstream is set as ABT_XSTREAM_NULL. The primary
- * ES cannot be freed with this routine.
+ * \c ABT_xstream_free() deallocates the resource used for the execution stream
+ * \c xstream and sets \c xstream to \c ABT_XSTREAM_NULL.  If \c xstream is
+ * still running, this routine will be blocked on \c xstream until \c xstream
+ * terminates.
  *
- * @param[in,out] xstream  handle to the target ES
+ * \DOC_DESC_ATOMICITY_XSTREAM_STATE
+ *
+ * @note
+ * This routine cannot free an execution stream that is running the caller.\n
+ * This routine cannot free the primary execution stream.\n
+ * Only one caller can be blocked on the same \c xstream by
+ * \c ABT_xstream_join() and \c ABT_xstream_free().
+ *
+ * @changev11
+ * \DOC_DESC_V10_ERROR_CODE_CHANGE{\c ABT_SUCCESS, \c ABT_ERR_INV_XSTREAM,
+ *                                 \c xstream is \c ABT_XSTREAM_NULL}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_PTR{\c xstream}
+ * \DOC_ERROR_INV_XSTREAM_PRIMARY{\c xstream}
+ * \DOC_ERROR_INV_XSTREAM_RUNNING_CALLER{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c xstream}
+ * \DOC_UNDEFINED_XSTREAM_BLOCKED{\c xstream, \c ABT_xstream_join() and
+ *                                            \c ABT_xstream_free()}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c xstream}
+ *
+ * @param[in,out] xstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_free(ABT_xstream *xstream)
 {
@@ -248,17 +405,35 @@ int ABT_xstream_free(ABT_xstream *xstream)
 
 /**
  * @ingroup ES
- * @brief   Wait for xstream to terminate.
+ * @brief   Wait for an execution stream to terminate.
  *
- * The target xstream cannot be the same as the xstream associated with calling
- * thread. If they are identical, this routine returns immediately without
- * waiting for the xstream's termination.
+ * The caller of \c ABT_thread_join() waits for the execution stream \c xstream
+ * until \c xstream terminates.
  *
- * @param[in] xstream  handle to the target ES
+ * \DOC_DESC_ATOMICITY_XSTREAM_STATE
+ *
+ * @note
+ * This routine cannot free an execution stream that is running the caller.\n
+ * This routine cannot free the primary execution stream.\n
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_INV_XSTREAM_PRIMARY{\c xstream}
+ * \DOC_ERROR_INV_XSTREAM_RUNNING_CALLER{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_XSTREAM_BLOCKED{\c xstream, \c ABT_xstream_join() and
+ *                                            \c ABT_xstream_free()}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c xstream}
+ *
+ * @param[in] xstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
-
 int ABT_xstream_join(ABT_xstream xstream)
 {
     ABTI_local *p_local = ABTI_local_get_local();
@@ -272,16 +447,36 @@ int ABT_xstream_join(ABT_xstream xstream)
 
 /**
  * @ingroup ES
- * @brief   Terminate the ES associated with the calling ULT.
+ * @brief   Terminate an execution stream that is running the calling ULT.
  *
- * Since the calling ULT's ES terminates, this routine never returns.
- * Tasklets are not allowed to call this routine.
+ * \c ABT_xstream_exit() sends a cancellation request to the execution stream
+ * that is running the calling ULT and terminates the calling ULT.  This routine
+ * does not return if it succeeds.  An execution stream that receives a
+ * cancellation request will terminate.
+ *
+ * \DOC_DESC_ATOMICITY_XSTREAM_REQUEST
+ *
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ * @endchangev20
+ *
+ * @note
+ * \DOC_NOTE_TIMING_REQUEST
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_XSTREAM_PRIMARY{an execution stream that is running the
+ *                                calling ULT}
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
  *
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
- * @retval ABT_ERR_INV_THREAD    called by a non-yieldable thread (tasklet)
  */
 int ABT_xstream_exit(void)
 {
@@ -301,11 +496,31 @@ int ABT_xstream_exit(void)
 
 /**
  * @ingroup ES
- * @brief   Request the cancellation of the target ES.
+ * @brief   Send a cancellation request to an execution stream.
  *
- * @param[in] xstream  handle to the target ES
+ * \c ABT_xstream_cancel() sends a cancellation request to the execution stream
+ * \c xstream.  An execution stream that receives a cancellation request will
+ * terminate.
+ *
+ * \DOC_DESC_ATOMICITY_XSTREAM_REQUEST
+ *
+ * @note
+ * \DOC_NOTE_TIMING_REQUEST
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_INV_XSTREAM_PRIMARY{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_XSTREAM_NOT_RUNNING{\c xstream}
+ *
+ * @param[in] xstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_cancel(ABT_xstream xstream)
 {
@@ -324,20 +539,32 @@ int ABT_xstream_cancel(ABT_xstream xstream)
 
 /**
  * @ingroup ES
- * @brief   Return the ES handle associated with the caller work unit.
+ * @brief   Get an execution stream that is running the calling work unit.
  *
- * \c ABT_xstream_self() returns the handle to ES object associated with
- * the caller work unit through \c xstream.
+ * \c ABT_xstream_self() returns the handle of the execution stream that is
+ * running the calling work unit through \c xstream.
  *
- * At present \c xstream is set to \c ABT_XSTREAM_NULL when an error occurs,
- * but this behavior is deprecated.  The program should not rely on this
- * behavior.
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
  *
- * @param[out] xstream  ES handle
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c xstream, \c ABT_XSTREAM_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c xstream}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] xstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
  */
 int ABT_xstream_self(ABT_xstream *xstream)
 {
@@ -353,13 +580,30 @@ int ABT_xstream_self(ABT_xstream *xstream)
 
 /**
  * @ingroup ES
- * @brief   Return the rank of ES associated with the caller work unit.
+ * @brief   Return a rank of an execution stream associated with a caller.
  *
- * @param[out] rank  ES rank
+ * \c ABT_xstream_self_rank() returns the rank of the execution stream that is
+ * running the calling work unit through \c rank.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c rank}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] rank  execution stream rank
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread, e.g., pthread
  */
 int ABT_xstream_self_rank(int *rank)
 {
@@ -373,12 +617,38 @@ int ABT_xstream_self_rank(int *rank)
 
 /**
  * @ingroup ES
- * @brief   Set the rank for target ES
+ * @brief   Set a rank for an execution stream.
  *
- * @param[in] xstream  handle to the target ES
- * @param[in] rank     ES rank
+ * \c ABT_xstream_set_rank() allocates the new rank \c rank and assigns it to
+ * the execution stream \c xstream.  The original rank of \c xstream is
+ * deallocated.
+ *
+ * \c rank must be non-negative and unique among all the execution streams.
+ *
+ * \DOC_DESC_ATOMICITY_RANK
+ *
+ * The primary execution stream cannot change its rank.
+ *
+ * @note
+ * If the affinity setting is enabled, this routine updates the CPU binding of
+ * \c xstream based on \c rank.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_RANK{\c rank}
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_INV_XSTREAM_PRIMARY{\c xstream}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] xstream  execution stream handle
+ * @param[in] rank     execution stream rank
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_set_rank(ABT_xstream xstream, int rank)
 {
@@ -396,12 +666,27 @@ int ABT_xstream_set_rank(ABT_xstream xstream, int rank)
 
 /**
  * @ingroup ES
- * @brief   Return the rank of ES
+ * @brief   Retrieve a rank of an execution stream.
  *
- * @param[in]  xstream  handle to the target ES
- * @param[out] rank     ES rank
+ * \c ABT_xstream_get_rank() returns a rank of the execution stream \c xstream
+ * through \c rank.
+ *
+ * \DOC_DESC_ATOMICITY_RANK
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c rank}
+ *
+ * @param[in]  xstream  execution stream handle
+ * @param[out] rank     execution stream rank
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
 {
@@ -414,33 +699,81 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
 
 /**
  * @ingroup ES
- * @brief   Set the main scheduler of the target ES.
+ * @brief   Set the main scheduler of an execution stream.
  *
- * \c ABT_xstream_set_main_sched() sets \c sched as the main scheduler for
- * \c xstream.  The scheduler \c sched will first run when the ES \c xstream is
- * started.  Only ULTs can call this routine.
- * If \c xstream is a handle to the primary ES, \c sched will be automatically
- * freed on \c ABT_finalize() or when the main scheduler of the primary ES is
- * changed again.  In this case, the explicit call \c ABT_sched_free() for
- * \c sched may cause undefined behavior.
+ * \c ABT_xstream_set_main_sched() sets \c sched as the main scheduler of the
+ * execution stream \c xstream.  The old scheduler associated with \c xstream
+ * will be freed if it is configured to be automatically freed.
  *
- * NOTE: The current implementation of this routine has some limitations.
- * 1. If the target ES \c xstream is running, the caller ULT must be running on
- * the same ES. However, if the target ES is not in the RUNNING state, the
- * caller can be any ULT that is running on any ES.
- * 2. If the current main scheduler of \c xstream has work units residing in
- * its associated pools, this routine will not be successful. In this case, the
- * user has to complete all work units in the main scheduler's pools or migrate
- * them to unassociated pools.
+ * The caller must be a ULT.
  *
- * @param[in] xstream  handle to the target ES
- * @param[in] sched    handle to the scheduler
+ * This routine works in the following two cases:
+ *
+ * - If \c xstream is terminated:
+ *
+ *   This routine updates the main scheduler of \c xstream to \c sched.
+ *   \c sched will be used when \c xstream is revived.
+ *
+ * - If \c xstream is running:
+ *
+ *   The caller must be running on the main scheduler of \c xstream.  The caller
+ *   will be associated with the first pool of the scheduler.  It is the user's
+ *   responsibility to handle work units in pools associated with the old main
+ *   scheduler.
+ *
+ * If \c sched is \c ABT_SCHED_NULL, the default basic scheduler with the
+ * default scheduler configuration will be created.
+ *
+ * @note
+ * \DOC_NOTE_DEFAULT_SCHED\n
+ * \DOC_NOTE_DEFAULT_SCHED_CONFIG
+ *
+ * @changev11
+ * \DOC_DESC_V10_PREMATURE_SCHED_SIZE_CHECK{\c xstream, \c ABT_ERR_XSTREAM}
+ *
+ * \DOC_DESC_V10_ACCESS_VIOLATION
+ * @endchangev11
+ *
+ * @changev20
+ * \DOC_DESC_V1X_ERROR_CODE_CHANGE{\c ABT_ERR_XSTREAM_STATE,
+ *                                 \c ABT_ERR_INV_XSTREAM,
+ *                                 the caller is not running on \c xstream while
+ *                                 \c xstream is running}
+ *
+ * \DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_RESOURCE_CONDITIONAL{\c sched is \c ABT_SCHED_NULL}
+ * \DOC_V1X \DOC_ERROR_SCHED_USED_CONDITIONAL{\c sched, \c ABT_ERR_INV_SCHED,
+ *                                            \c sched is not \c ABT_SCHED_NULL}
+ * \DOC_V1X \DOC_ERROR_XSTREAM_STATE_RUNNING_CALLER_CONDITIONAL{\c xstream,
+ *                                                              \c xstream is
+ *                                                              running}
+ * \DOC_V20 \DOC_ERROR_INV_XSTREAM_RUNNING_CALLER_CONDITIONAL{\c xstream,
+ *                                                            \c xstream is
+ *                                                            running}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_XSTREAM_SET_MAIN_SCHED
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c sched}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c xstream}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{the old main scheduler associated with
+ *                                   \c xstream}
+ * \DOC_V20 \DOC_UNDEFINED_SCHED_USED_CONDITIONAL{\c sched, \c sched is not
+ *                                                          \c ABT_SCHED_NULL}
+ *
+ * @param[in] xstream  execution stream handle
+ * @param[in] sched    scheduler handle
  * @return Error code
- * @retval ABT_SUCCESS          on success
- * @retval ABT_ERR_XSTREAM      the current main scheduler of \c xstream has
- *                              work units in its associated pools
- * @retval ABT_ERR_INV_XSTREAM  called by an external thread
- * @retval ABT_ERR_INV_THREAD   called by a non-yieldable thread (tasklet)
  */
 int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 {
@@ -495,18 +828,60 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 
 /**
  * @ingroup ES
- * @brief   Set the main scheduler for \c xstream with a predefined scheduler.
+ * @brief   Set the main scheduler of an execution stream to a predefined
+ *          scheduler.
  *
- * See \c ABT_xstream_set_main_sched() for more details.
+ * \c ABT_xstream_set_main_sched() sets the predefined scheduler \c predefined
+ * as the main scheduler of the execution stream \c xstream.  The functionality
+ * provided by this routine is the same as the combination of
+ * \c ABT_sched_create_basic() and \c ABT_xstream_set_main_sched().
  *
- * @param[in] xstream     handle to the target ES
+ * @code{.c}
+ * int ABT_xstream_set_main_sched_basic(...) {
+ *   int abt_errno;
+ *   ABT_sched sched = ABT_SCHED_NULL;
+ *   abt_errno = ABT_sched_create_basic(predef, num_pools, pools,
+ *                                      ABT_SCHED_CONFIG_NULL, sched);
+ *   if (abt_errno == ABT_SUCCESS)
+ *     abt_errno = ABT_xstream_set_main_sched(xstream, sched);
+ *   if (abt_errno != ABT_SUCCESS && sched != ABT_SCHED_NULL)
+ *     ABT_sched_free(&sched);
+ *   return abt_errno;
+ * }
+ * @endcode
+ *
+ * Please check \c ABT_sched_create_basic() and \c ABT_xstream_set_main_sched()
+ * for details.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCESS_VIOLATION
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_INV_ARG_NEG{\c num_pools}
+ * \DOC_ERROR_INV_ARG_INV_SCHED_PREDEF{\c predef}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR_CONDITIONAL{\c pools, \c num_pools is positive}
+ * \DOC_UNDEFINED_XSTREAM_SET_MAIN_SCHED
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c xstream}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{the old main scheduler associated with
+ *                                   \c xstream}
+ *
+ * @param[in] xstream     execution stream handle
  * @param[in] predef      predefined scheduler
- * @param[in] num_pools   number of pools associated with this scheduler
- * @param[in] pools       pools associated with this scheduler
+ * @param[in] num_pools   number of pools associated with the scheduler
+ * @param[in] pools       pools associated with the scheduler
  * @return Error code
- * @retval ABT_SUCCESS          on success
- * @retval ABT_ERR_INV_XSTREAM  called by an external thread
- * @retval ABT_ERR_INV_THREAD   called by a non-yieldable thread (tasklet)
  */
 int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
                                      ABT_sched_predef predef, int num_pools,
@@ -532,15 +907,25 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
 
 /**
  * @ingroup ES
- * @brief   Get the main scheduler of the target ES.
+ * @brief   Retrieve the main scheduler of an execution stream.
  *
- * \c ABT_xstream_get_main_sched() gets the handle of the main scheduler
- * for the target ES \c xstream through \c sched.
+ * \c ABT_xstream_get_main_sched() returns the main scheduler of the execution
+ * stream \c xstream through \c sched.
  *
- * @param[in] xstream  handle to the target ES
- * @param[out] sched   handle to the scheduler
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c sched}
+ *
+ * @param[in]  xstream  execution stream handle
+ * @param[out] sched    scheduler handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_get_main_sched(ABT_xstream xstream, ABT_sched *sched)
 {
@@ -553,16 +938,31 @@ int ABT_xstream_get_main_sched(ABT_xstream xstream, ABT_sched *sched)
 
 /**
  * @ingroup ES
- * @brief   Get the pools of the main scheduler of the target ES.
+ * @brief   Get pools associated with the main scheduler of an execution stream.
  *
- * This function is a convenient function that retrieves the associated pools of
- * the main scheduler.
+ * \c ABT_xstream_get_main_pools() sets the pools \c pools to at maximum
+ * \c max_pools pools associated with the main scheduler of the execution stream
+ * \c xstream.
  *
- * @param[in]  xstream   handle to the target ES
- * @param[in]  max_pools maximum number of pools
- * @param[out] pools     array of handles to the pools
+ * @note
+ * \DOC_NOTE_NO_PADDING{\c pools, \c max_pools}
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_NEG{\c max_pools}
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR_CONDITIONAL{\c pools, \c max_pools is positive}
+ *
+ * @param[in]  xstream    execution stream handle
+ * @param[in]  max_pools  maximum number of pools
+ * @param[out] pools      array of handles to the pools
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_get_main_pools(ABT_xstream xstream, int max_pools,
                                ABT_pool *pools)
@@ -578,12 +978,27 @@ int ABT_xstream_get_main_pools(ABT_xstream xstream, int max_pools,
 
 /**
  * @ingroup ES
- * @brief   Return the state of xstream.
+ * @brief   Get a state of an execution stream.
  *
- * @param[in]  xstream  handle to the target ES
- * @param[out] state    the xstream's state
+ * \c ABT_xstream_get_state() returns the state of the execution stream
+ * \c xstream through \c state.
+ *
+ * \DOC_DESC_ATOMICITY_XSTREAM_STATE
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c state}
+ *
+ * @param[in]  xstream  execution stream handle
+ * @param[out] state    state of \c xstream
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state)
 {
@@ -596,18 +1011,30 @@ int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state)
 
 /**
  * @ingroup ES
- * @brief   Compare two ES handles for equality.
+ * @brief   Compare two execution stream handles for equality.
  *
- * \c ABT_xstream_equal() compares two ES handles for equality. If two handles
- * are associated with the same ES, \c result will be set to \c ABT_TRUE.
- * Otherwise, \c result will be set to \c ABT_FALSE.
+ * \c ABT_xstream_equal() compares two execution stream handles \c xstream1 and
+ * \c xstream2 for equality and returns the result through \c result.
  *
- * @param[in]  xstream1  handle to the ES 1
- * @param[in]  xstream2  handle to the ES 2
- * @param[out] result    comparison result (<tt>ABT_TRUE</tt>: same,
- *                       <tt>ABT_FALSE</tt>: not same)
+ * This function is deprecated since its behavior is the same as comparing
+ * values of \c xstream1 and \c xstream2.
+ * @code{.c}
+ * *result = (xstream1 == xstream2) ? ABT_TRUE : ABT_FALSE;
+ * @endcode
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c result}
+ *
+ * @param[in]  xstream1  execution stream handle 1
+ * @param[in]  xstream2  execution stream handle 2
+ * @param[out] result    result (\c ABT_TRUE: same, \c ABT_FALSE: not same)
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
                       ABT_bool *result)
@@ -620,15 +1047,31 @@ int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
 
 /**
  * @ingroup ES
- * @brief   Return the number of current existing ESs.
+ * @brief   Get the number of current existing execution streams.
  *
- * \c ABT_xstream_get_num() returns the number of ESs that exist in the current
- * Argobots environment through \c num_xstreams.
+ * \c ABT_xstream_get_num() returns the number of execution streams that exist
+ * in the Argobots execution environment through \c num_xstreams.  This routine
+ * counts both running and terminated execution streams.
  *
- * @param[out] num_xstreams  the number of ESs
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c num_xstreams, zero}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c num_xstreams}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] num_xstreams  the number of execution streams
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
  */
 int ABT_xstream_get_num(int *num_xstreams)
 {
@@ -642,17 +1085,27 @@ int ABT_xstream_get_num(int *num_xstreams)
 
 /**
  * @ingroup ES
- * @brief   Check if the target ES is the primary ES.
+ * @brief   Check if the target execution stream is primary.
  *
- * \c ABT_xstream_is_primary() checks whether the target ES is the primary ES.
- * If the ES \c xstream is the primary ES, \c flag is set to \c ABT_TRUE.
- * Otherwise, \c flag is set to \c ABT_FALSE.
+ * \c ABT_xstream_is_primary() checks if the execution stream \c xstream is the
+ * primary execution stream and returns the result through \c is_primary.  If
+ * \c xstream is the primary execution stream, \c is_primary is set to
+ * \c ABT_TRUE.  Otherwise, \c is_primary is set to \c ABT_FALSE.
  *
- * @param[in]  xstream  handle to the target ES
- * @param[out] flag     result (<tt>ABT_TRUE</tt>: primary ES,
- *                      <tt>ABT_FALSE</tt>: not)
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c is_primary}
+ *
+ * @param[in]  xstream     execution stream handle
+ * @param[out] is_primary  result (\c ABT_TRUE: primary, \c ABT_FALSE: not)
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag)
 {
@@ -669,20 +1122,30 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag)
 
 /**
  * @ingroup ES
- * @brief   Execute a unit on the local ES.
+ * @brief   Execute a work unit.
  *
- * This function can be called by a scheduler after picking one unit. So a user
- * will use it for his own defined scheduler.
+ * \c ABT_xstream_run_unit() runs a work unit \c unit associated with the pool
+ * \c pool as a child ULT on the calling ULT, which becomes a parent ULT.  The
+ * calling ULT will be resumed when \c unit finishes or yields.
  *
- * EXPERIMENTAL: this function can be called by a normal ULT, too.  The function
- * name could be changed in the future.
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
  *
- * @param[in] unit handle to the unit to run
- * @param[in] pool pool where unit is from
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_UNIT_HANDLE{\c unit}
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_WORK_UNIT_NOT_READY{\c unit}
+ * \DOC_UNDEFINED_WORK_UNIT_NOT_ASSOCIATED{\c unit, \c pool}
+ *
+ * @param[in] unit  unit handle
+ * @param[in] pool  pool handle
  * @return Error code
- * @retval ABT_SUCCESS          on success
- * @retval ABT_ERR_INV_XSTREAM  called by an external thread
- * @retval ABT_ERR_INV_THREAD   called by a non-yieldable thread (tasklet)
  */
 int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
 {
@@ -697,15 +1160,38 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
 
 /**
  * @ingroup ES
- * @brief   Check the events and process them
+ * @brief   Process events associated with a scheduler
  *
- * This function must be called by a scheduler periodically. Therefore, a user
- * will use it on his own defined scheduler.
+ * \c ABT_xstream_check_events() processes events associated with the scheduler
+ * \c sched.  The calling work unit must be associated with the scheduler
+ * \c sched.
  *
- * @param[in] sched handle to the scheduler where this call is from
+ * This routine must be called by a scheduler periodically.
+ *
+ * @note
+ * For example, a user-defined scheduler should call this routine every hundred
+ * iterations of its scheduling loop.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_SCHED{\c sched} \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_SCHED_HANDLE{\c sched}
+ * \DOC_ERROR_INV_THREAD_NOT_CALLER{a work unit associated with \c sched}
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c sched}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] sched  scheduler handle
  * @return Error code
- * @retval ABT_SUCCESS on success
- * @retval ABT_ERR_INV_XSTREAM  called by an external thread
  */
 int ABT_xstream_check_events(ABT_sched sched)
 {
@@ -721,16 +1207,31 @@ int ABT_xstream_check_events(ABT_sched sched)
 
 /**
  * @ingroup ES
- * @brief   Bind the target ES to a target CPU.
+ * @brief   Bind an execution stream to a target CPU.
  *
- * \c ABT_xstream_set_cpubind() binds the target ES \c xstream to the target
- * CPU whose ID is \c cpuid.  Here, the CPU ID corresponds to the processor
- * index used by OS.
+ * \c ABT_xstream_set_cpubind() binds the execution stream \c xstream to a CPU
+ * that is corresponding to the CPU ID \c cpuid.
  *
- * @param[in] xstream  handle to the target ES
+ * @note
+ * \DOC_NOTE_CPUID
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_SYS_CPUBIND
+ * \DOC_ERROR_CPUID{\c cpuid}
+ * \DOC_ERROR_FEATURE_NA{the affinity feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c xstream}
+ *
+ * @param[in] xstream  execution stream handle
  * @param[in] cpuid    CPU ID
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid)
 {
@@ -748,16 +1249,38 @@ int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid)
 
 /**
  * @ingroup ES
- * @brief   Get the CPU binding for the target ES.
+ * @brief   Get CPU ID of a CPU to which an execution stream is bound.
  *
- * \c ABT_xstream_get_cpubind() returns the ID of CPU, which the target ES
- * \c xstream is bound to.  If \c xstream is bound to more than one CPU, only
- * the first CPU ID is returned.
+ * \c ABT_xstream_get_cpubind() returns the CPU ID of a CPU to which the
+ * execution stream \c xstream is bound through \c cpuid.  If \c xstream is
+ * bound to more than one CPU, one of the CPU IDs is set to \c cpuid.
  *
- * @param[in] xstream  handle to the target ES
- * @param[out] cpuid   CPU ID
+ * @note
+ * \DOC_NOTE_CPUID
+ *
+ * @changev20
+ * \DOC_DESC_V1X_ERROR_CODE_CHANGE{\c ABT_ERR_FEATURE_NA, \c ABT_ERR_CPUID,
+ *                                 \c xstream is not bound to any CPU}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_SYS_CPUBIND
+ * \DOC_ERROR_FEATURE_NA{the affinity feature}
+ * \DOC_V1X \DOC_ERROR_FEATURE_NA_NO_BINDING{\c xstream}
+ * \DOC_V20 \DOC_ERROR_CPUID_NO_BINDING{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c cpuid}
+ *
+ * @param[in]  xstream  execution stream handle
+ * @param[out] cpuid    CPU ID
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid)
 {
@@ -783,17 +1306,36 @@ int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid)
 
 /**
  * @ingroup ES
- * @brief   Set the CPU affinity of the target ES.
+ * @brief   Bind an execution stream to target CPUs.
  *
- * \c ABT_xstream_set_cpubind() binds the target ES \c xstream on the given CPU
- * set, \c cpuset, which is an array of CPU IDs.  Here, the CPU IDs correspond
- * to processor indexes used by OS.
+ * \c ABT_xstream_set_affinity() updates the CPU binding of the execution stream
+ * \c xstream.  If \c num_cpuids is positive, this routine binds \c xstream to
+ * CPUs that are corresponding to \c cpuids that has \c num_cpuids CPU IDs.  If
+ * \c num_cpuids is zero, this routine resets the CPU binding of \c xstream.
  *
- * @param[in] xstream      handle to the target ES
- * @param[in] cpuset_size  the number of \c cpuset entries
- * @param[in] cpuset       array of CPU IDs
+ * @note
+ * \DOC_NOTE_CPUID
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_INV_ARG_NEG{\c num_cpuids}
+ * \DOC_ERROR_SYS_CPUBIND
+ * \DOC_ERROR_CPUID{any of \c cpuids}
+ * \DOC_ERROR_FEATURE_NA{the affinity feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR_CONDITIONAL{\c cpuids, \c num_cpuids is positive}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c xstream}
+ *
+ * @param[in] xstream     execution stream handle
+ * @param[in] num_cpuids  the number of \c cpuids entries
+ * @param[in] cpuids      array of CPU IDs
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset)
 {
@@ -811,23 +1353,51 @@ int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset)
 
 /**
  * @ingroup ES
- * @brief   Get the CPU affinity for the target ES.
+ * @brief   Get CPU IDs of CPUs to which an execution stream is bound.
  *
- * \c ABT_xstream_get_cpubind() writes CPU IDs (at most, \c cpuset_size) to
- * \c cpuset and returns the number of elements written to \c cpuset to
- * \c num_cpus.  If \c num_cpus is \c NULL, it is ignored.
+ * \c ABT_xstream_get_affinity() returns the CPU IDs of CPUs to which the
+ * execution stream \c xstream is bound through \c cpuids and \c num_cpuids.
  *
- * If \c cpuset is \c NULL, \c cpuset_size is ignored and the nubmer of all
- * CPUs on which \c xstream is bound is returned through \c num_cpus.
- * Otherwise, i.e., if \c cpuset is \c NULL, \c cpuset_size must be greater
- * than zero.
+ * If \c max_cpuids is positive, this routine writes at most \c max_cpuids CPU
+ * IDs to \c cpuids.  If \c xstream is not bound to any CPU, \c cpuids is not
+ * updated.
  *
- * @param[in]  xstream      handle to the target ES
- * @param[in]  cpuset_size  the number of \c cpuset entries
- * @param[out] cpuset       array of CPU IDs
- * @param[out] num_cpus     the number of total CPU IDs
+ * @note
+ * \DOC_NOTE_NO_PADDING{\c cpuids, \c max_cpuids}
+ *
+ * If \c num_cpuids is not \c NULL, this routine returns the number of CPUs to
+ * which \c xstream is bound through \c num_cpuids.  If \c xstream is not bound
+ * to any CPU, \c num_cpus is set to zero.
+ *
+ * @note
+ * \DOC_NOTE_CPUID
+ *
+ * @changev20
+ * \DOC_DESC_V1X_ERROR_CODE_CHANGE{\c ABT_ERR_FEATURE_NA, \c ABT_ERR_CPUID,
+ *                                 \c xstream is not bound to any CPU}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_INV_ARG_NEG{\c max_cpuids}
+ * \DOC_ERROR_SYS_CPUBIND
+ * \DOC_ERROR_FEATURE_NA{the affinity feature}
+ * \DOC_V1X \DOC_ERROR_FEATURE_NA_NO_BINDING{\c xstream}
+ * \DOC_V20 \DOC_ERROR_CPUID_NO_BINDING{\c xstream}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR_CONDITIONAL{\c cpuids, \c max_cpuids is positive}
+ *
+ * @param[in]  xstream     execution stream handle
+ * @param[in]  max_cpuids  the number of \c cpuids entries
+ * @param[out] cpuids      array of CPU IDs
+ * @param[out] num_cpuids  the number of total CPU IDs
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_xstream_get_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset,
                              int *num_cpus)

@@ -122,9 +122,14 @@ extern "C" {
 #define ABT_ERR_MISSING_JOIN       50  /* An ES or more did not join */
 #define ABT_ERR_FEATURE_NA         51  /* Feature not available */
 
-/* Constants */
+/**
+ * @ingroup ES
+ * @brief   State of an execution stream.
+ */
 enum ABT_xstream_state {
+    /** The execution stream is running. */
     ABT_XSTREAM_STATE_RUNNING,
+    /** The execution stream is terminated. */
     ABT_XSTREAM_STATE_TERMINATED
 };
 

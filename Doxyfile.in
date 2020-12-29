@@ -1826,6 +1826,8 @@ ALIASES += DOC_CONTEXT_INIT_NOEXT="This routine can be called in either a ULT co
 
 ALIASES += DOC_CONTEXT_INIT_NOTASK="This routine can be called in either a ULT context or an external thread context. Argobots must be initialized."
 
+ALIASES += DOC_CONTEXT_INIT_SCHED{1}="This routine can be called by a work unit that is associated with \1. Argobots must be initialized."
+
 ALIASES += DOC_CONTEXT_INIT_YIELDABLE="This routine can be called in a ULT context. Argobots must be initialized."
 
 ALIASES += DOC_CONTEXT_NOCTXSWITCH="This routine does not perform context switching the calling ULT unless any user-defined function that is involved in this routine performs context switching."
@@ -1842,11 +1844,17 @@ ALIASES += DOC_DESC_ATOMICITY_EVENTUAL_READINESS="The readiness of an eventual i
 
 ALIASES += DOC_DESC_ATOMICITY_FUTURE_READINESS="The readiness of a future is managed atomically."
 
+ALIASES += DOC_DESC_ATOMICITY_RANK="Management of ranks of execution streams is performed atomically."
+
 ALIASES += DOC_DESC_ATOMICITY_SCHED_REQUEST="Management of requests for schedulers is performed atomically."
 
 ALIASES += DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION="A combination of a callback function, an event mask its argument for a tool interface is updated atomically."
 
 ALIASES += DOC_DESC_ATOMICITY_WORK_UNIT_KEY="Work-unit-specific values associated with a work-unit-specific data key are read and updated atomically."
+
+ALIASES += DOC_DESC_ATOMICITY_XSTREAM_REQUEST="Requests for execution streams are updated atomically."
+
+ALIASES += DOC_DESC_ATOMICITY_XSTREAM_STATE="Management of states of execution streams is performed atomically."
 
 ALIASES += DOC_DESC_SCHED_AUTOMATIC{1}="If \1 is not configured to be automatically freed, it is the user's responsibility to free \1 after its use unless \c newsched is associated with the main scheduler of the primary execution stream.  If \1 is configured to be automatically freed, \1 is automatically freed when a work unit associated with \1 is freed.  If the user never associates \1 with a work unit (e.g., by \c ABT_pool_add_sched() or \c ABT_xstream_set_main_sched()), it is the user's responsibility to free \1."
 
@@ -1873,6 +1881,8 @@ ALIASES += DOC_DESC_V10_NOEXT{1}="\DOC_V10 If an external thread calls this rout
 ALIASES += DOC_DESC_V10_POOL_NOACCESS="\DOC_V10 The Argobots runtime respects an access type of a pool and returns an error if possible if a pool access violation happens regarding an access type of a pool.\n \DOC_V11 The Argobots runtime does not check an access type of a pool.  If a pool access violation happens regarding an access type of a pool, the results are undefined.\n @rationale This access type was used for access violation error check.  This check will be removed in Argobots 1.1 since correctly implementing the access violation check could break the actual API compatibility.  From Argobots 1.1, it is the user's responsibility to manage access to pools. @endrationale"
 
 ALIASES += DOC_DESC_V10_POOL_NOTASK="\DOC_V10 A type of \c ABT_unit is \c ABT_UNIT_TYPE_TASK if an encapsulated work unit is a tasklet. Such a unit is created by \c u_create_from_task(). \n \DOC_V11 A type of any \c ABT_unit is \c ABT_UNIT_TYPE_THERAD.  Accordingly, \c u_create_from_thread() is called to create \c ABT_unit for both ULTs and tasklets. \n @rationale In Argobots 1.0, the user needs to use a map (e.g., a hash table) to check if a type of a given \c ABT_unit is either \c ABT_UNIT_TYPE_THREAD or \c ABT_UNIT_TYPE_TASK, which makes the implementation of a user-defined pool extremely tedious.  Argobots 1.1 marks these functions as unused to ease the implementation. @endrationale"
+
+ALIASES += DOC_DESC_V10_PREMATURE_SCHED_SIZE_CHECK{2}="\DOC_V10 If pools associated with the current main scheduler of \1 are not empty, \2 is returned.\n \DOC_V11 This routine works even if pools associated with the current main scheduler of \1 are not empty. @rationale This check unnecessarily limits the applicability of this routine.  It is the user's responsibility to handle work units in pools associated with the old main scheduler, e.g., by migrating them to other pools. @endrationale"
 
 ALIASES += DOC_DESC_V10_REJECT_MUTEX_ATTR_NULL{1}="\DOC_V10 This routine returns \c ABT_ERR_INV_MUTEX_ATTR if \1 is \c ABT_MUTEX_ATTR_NULL.\n \DOC_V11 This routine uses the default mutex attributes if \1 is \c ABT_MUTEX_ATTR_NULL. @rationale Most of the Argobots routines use the default attributes if the given configuration or attributes are NULL.  This routine should also follow this basic rule. @endrationale"
 
@@ -1908,7 +1918,13 @@ ALIASES += DOC_DESC_V1X_SET_VALUE_ON_ERROR{2}="\DOC_V1X \1 is set to \2 if an er
 # Error
 #---------------------------------------------------------------------------
 
+ALIASES += DOC_ERROR_CPUID_NO_BINDING{1}="If \1 is not bound to any CPU, \c ABT_ERR_CPUID is returned.\n"
+
+ALIASES += DOC_ERROR_CPUID{1}="If \1 is an invalid CPU ID, \c ABT_ERR_CPUID is returned.\n"
+
 ALIASES += DOC_ERROR_EVENTUAL_READY{1}="If \1 is ready, \c ABT_ERR_EVENTUAL is returned.\n"
+
+ALIASES += DOC_ERROR_FEATURE_NA_NO_BINDING{1}="If \1 is not bound to any CPU, \c ABT_ERR_FEATURE_NA is returned.\n"
 
 ALIASES += DOC_ERROR_FEATURE_NA{1}="If \1 is not supported, \c ABT_ERR_FEATURE_NA is returned.\n"
 
@@ -1986,6 +2002,8 @@ ALIASES += DOC_ERROR_INV_THREAD_ATTR_HANDLE{1}="If \1 is \c ABT_THREAD_ATTR_NULL
 
 ALIASES += DOC_ERROR_INV_THREAD_HANDLE{1}="If \1 is \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_THREAD is returned.\n"
 
+ALIASES += DOC_ERROR_INV_THREAD_NOT_CALLER{1}="If \1 is not the caller, \c ABT_ERR_INV_THREAD is returned.\n"
+
 ALIASES += DOC_ERROR_INV_THREAD_NY="If the caller is a tasklet, \c ABT_ERR_INV_THREAD is returned.\n"
 
 ALIASES += DOC_ERROR_INV_THREAD_NY{1}="If \1 is a tasklet, \c ABT_ERR_INV_THREAD is returned.\n"
@@ -2004,13 +2022,29 @@ ALIASES += DOC_ERROR_INV_XSTREAM_EXT="If the caller is an external thread, \c AB
 
 ALIASES += DOC_ERROR_INV_XSTREAM_HANDLE{1}="If \1 is \c ABT_XSTREAM_NULL, \c ABT_ERR_INV_XSTREAM is returned.\n"
 
+ALIASES += DOC_ERROR_INV_XSTREAM_NOT_TERMINATED{1}="If \1 is not terminated, \c ABT_ERR_INV_XSTREAM is returned.\n"
+
+ALIASES += DOC_ERROR_INV_XSTREAM_PRIMARY{1}="If \1 is the primary execution stream, \c ABT_ERR_INV_XSTREAM is returned.\n"
+
+ALIASES += DOC_ERROR_INV_XSTREAM_PTR{1}="If \1 points to \c ABT_XSTREAM_NULL, \c ABT_ERR_INV_XSTREAM is returned.\n"
+
+ALIASES += DOC_ERROR_INV_XSTREAM_RANK{1}="If \1 is negative, \c ABT_ERR_INV_XSTREAM_RANK is returned.\n If \1 has been used by another execution stream, \c ABT_ERR_INV_XSTREAM_RANK is returned.\n"
+
+ALIASES += DOC_ERROR_INV_XSTREAM_RUNNING_CALLER_CONDITIONAL{2}="If \2 and \1 is running the calling work unit, \c ABT_ERR_INV_XSTREAM is returned.\n"
+
+ALIASES += DOC_ERROR_INV_XSTREAM_RUNNING_CALLER{1}="If \1 is running the calling work unit, \c ABT_ERR_INV_XSTREAM is returned.\n"
+
 ALIASES += DOC_ERROR_NULL_PTR{2}="If \1 is \c NULL, \2 is returned.\n"
 
 ALIASES += DOC_ERROR_POOL_UNSUPPORTED_FEATURE{2}="If \1 does not support \2, \c ABT_ERR_POOL is returned.\n"
 
 ALIASES += DOC_ERROR_RESOURCE="If an error related to memory occurs, \c ABT_ERR_MEM is returned.\n If an error related to system calls occurs, \c ABT_ERR_SYS is returned.\n"
 
+ALIASES += DOC_ERROR_RESOURCE_CONDITIONAL{1}="If a memory-related error occurs, \c ABT_ERR_MEM is returned.  This error is returned only when \1.\n If a system-resource-related error occurs, \c ABT_ERR_SYS is returned.   This error is returned only when \1.\n"
+
 ALIASES += DOC_ERROR_SCHED_GET_POOLS_IDX{3}="If the summation of \1 and \2 is larger than the number of pools associated with \3, \c ABT_ERR_SCHED is returned."
+
+ALIASES += DOC_ERROR_SCHED_USED_CONDITIONAL{3}="If \3 and \1 is being used, \2 is returned.\n"
 
 ALIASES += DOC_ERROR_SCHED_USED{2}="If \1 is being used, \2 is returned.\n"
 
@@ -2024,6 +2058,8 @@ ALIASES += DOC_ERROR_SUCCESS_LOCK_ACQUIRED{1}="If this routine successfully obta
 
 ALIASES += DOC_ERROR_SUCCESS_LOCK_FAILED{1}="If this routine fails to obtain \1, \c ABT_ERR_MUTEX_LOCKED is returned.\n"
 
+ALIASES += DOC_ERROR_SYS_CPUBIND="If an error occurs in binding the execution stream, \c ABT_ERR_SYS is returned.\n"
+
 ALIASES += DOC_ERROR_TASK{1}="If the caller is a tasklet, \1 is returned.\n"
 
 ALIASES += DOC_ERROR_UNINITIALIZED="If the Argobots runtime is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
@@ -2036,15 +2072,21 @@ ALIASES += DOC_ERROR_USR_SCHED_INIT{1}="If \1 does not return \c ABT_SUCCESS, th
 
 ALIASES += DOC_ERROR_WAITER{2}="If there is a waiter blocked on \1, \2 is returned."
 
+ALIASES += DOC_ERROR_XSTREAM_STATE_RUNNING_CALLER_CONDITIONAL{2}="If \2 and \1 is running the calling work unit, \c ABT_ERR_XSTREAM_STATE is returned.\n"
+
 #---------------------------------------------------------------------------
 # Note
 #---------------------------------------------------------------------------
+
+ALIASES += DOC_NOTE_CPUID="The CPU ID corresponds to the processor index used by an OS."
 
 ALIASES += DOC_NOTE_DEFAULT_MUTEX_ATTRIBUTE="To check the details of the default mutex attributes, please see \c ABT_mutex_attr_create()."
 
 ALIASES += DOC_NOTE_DEFAULT_POOL="To see the details of the default pool, please check \c ABT_pool_create()."
 
 ALIASES += DOC_NOTE_DEFAULT_POOL_CONFIG=""
+
+ALIASES += DOC_NOTE_DEFAULT_SCHED="To see the details of the default scheduler, please check \c ABT_sched_create()."
 
 ALIASES += DOC_NOTE_DEFAULT_SCHED_AUTOMATIC="To see the details of whether the scheduler is automatically freed or not, please check \c ABT_sched_create() and \c ABT_sched_create_basic()."
 
@@ -2088,6 +2130,8 @@ ALIASES += DOC_UNDEFINED_POOL_FREE{1}="If \1 is not empty, the results are undef
 
 ALIASES += DOC_UNDEFINED_SCHED_CONFIG_CREATE_UNFORMATTED="If the \a (2n+1)th element of the given variadic arguments is neither \c ABT_sched_config_var_end nor a variable of type \c ABT_sched_config_var, the results are undefined.\n If the \a (2n+2)th element of the given variadic arguments is not a variable of a type specified by \c type of the \a (2n+1)th element of type \c ABT_sched_config_var, the results are undefined.\n"
 
+ALIASES += DOC_UNDEFINED_SCHED_USED_CONDITIONAL{2}="If \2 and \1 is being used, the results are undefined."
+
 ALIASES += DOC_UNDEFINED_SCHED_USED{1}="If \1 is being used, the results are undefined."
 
 ALIASES += DOC_UNDEFINED_SYS_FILE{1}="If an error occurs regarding \1, the results are undefined.\n"
@@ -2108,4 +2152,12 @@ ALIASES += DOC_UNDEFINED_WORK_UNIT_NOT_ASSOCIATED{2}="If \1 is not associated wi
 
 ALIASES += DOC_UNDEFINED_WORK_UNIT_NOT_IN_POOL{2}="If \2 is not in \1, the results are undefined.\n"
 
+ALIASES += DOC_UNDEFINED_WORK_UNIT_NOT_READY{1}="If \1 is not ready, the results are undefined.\n"
+
 ALIASES += DOC_UNDEFINED_WORK_UNIT_RUNNING{1}="If \1 is running, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_XSTREAM_BLOCKED{2}="If \1 is blocked on by \2, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_XSTREAM_NOT_RUNNING{1}="If \1 is not running, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_XSTREAM_SET_MAIN_SCHED="If the caller cannot be associated with the first pool of the scheduler, the results are undefined.\n"
