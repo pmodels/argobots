@@ -100,7 +100,11 @@ void *pthread_hello(void *arg)
 
     /* Since Argobots has been initialized, we should get ABT_ERR_INV_XXX. */
     ret = ABT_xstream_self(&xstream);
+#ifdef ABT_ENABLE_VER_20_API
+    assert(ret == ABT_ERR_INV_XSTREAM);
+#else
     assert(ret == ABT_ERR_INV_XSTREAM && xstream == ABT_XSTREAM_NULL);
+#endif
 
     ret = ABT_thread_self(&thread);
     assert(ret == ABT_ERR_INV_XSTREAM && thread == ABT_THREAD_NULL);
