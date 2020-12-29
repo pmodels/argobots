@@ -186,17 +186,51 @@ enum ABT_sched_type {
     ABT_SCHED_TYPE_TASK
 };
 
+/**
+ * @ingroup POOL
+ * @brief   Predefined pool type.
+ *
+ * Predefined pools provide all the pool functions that are defined in
+ * \c ABT_pool_def unless otherwise noted.
+ */
 enum ABT_pool_kind {
-    ABT_POOL_FIFO,       /* FIFO pool */
-    ABT_POOL_FIFO_WAIT   /* FIFO pool with ability to wait for units */
+    /** FIFO pool. */
+    ABT_POOL_FIFO,
+    /**
+     * FIFO pool with a waiting ability.  If a caller's pop operation fails,
+     * either an execution stream running the caller or a calling external
+     * thread will suspend for a while.  This can reduce CPU utilization when
+     * a pool is empty, but it increases an overhead of each pool operation.
+     *
+     * If the user does not know how \c ABT_POOL_FIFO_WAIT works,
+     * \c ABT_POOL_FIFO is recommended. */
+    ABT_POOL_FIFO_WAIT
 };
 
+/**
+ * @ingroup POOL
+ * @brief   Pool access type.
+ */
 enum ABT_pool_access {
-    ABT_POOL_ACCESS_PRIV, /* Used by only one ES */
-    ABT_POOL_ACCESS_SPSC, /* Producers on ES1, consumers on ES2 */
-    ABT_POOL_ACCESS_MPSC, /* Producers on any ES, consumers on the same ES */
-    ABT_POOL_ACCESS_SPMC, /* Producers on the same ES, consumers on any ES */
-    ABT_POOL_ACCESS_MPMC  /* Producers on any ES, consumers on any ES */
+    /**
+     * The created pool may be pushed and popped by only one execution stream
+     * in the lifetime of the pool. */
+    ABT_POOL_ACCESS_PRIV,
+    /**
+     * The created pool may be pushed by only one execution stream and popped
+     * by only one execution stream in the lifetime of the pool.  The two
+     * execution streams can be different. */
+    ABT_POOL_ACCESS_SPSC,
+    /**
+     * The created pool may be popped by only one execution stream in the
+     * lifetime of the pool. */
+    ABT_POOL_ACCESS_MPSC,
+    /**
+     * The created pool may be pushed by only one execution stream in the
+     * lifetime of the pool. */
+    ABT_POOL_ACCESS_SPMC,
+    /** No restriction regarding a caller of pushing and popping operations. */
+    ABT_POOL_ACCESS_MPMC
 };
 
 enum ABT_unit_type {
@@ -736,29 +770,271 @@ typedef int           (*ABT_pool_free_fn)(ABT_pool);
 typedef int           (*ABT_pool_print_all_fn)(ABT_pool, void *arg,
                                                void (*)(void*, ABT_unit));
 
+/**
+ * @ingroup POOL
+ * @brief   A struct that defines a pool.
+ */
 typedef struct {
-    ABT_pool_access access; /* Access type */
-
-    /* Functions to manage units */
+    /**
+     * @brief Access type.
+     *
+     * This value is used to determine a value returned by
+     * \c ABT_pool_get_access().  The Argobots assumes all pools can be accessed
+     * by any ULT, tasklet, or external thread.  It is the user's responsibility
+     * to manage the access to pools.
+     *
+     * @changev11
+     * \DOC_DESC_V10_POOL_NOACCESS
+     * @endchangev11
+     */
+    ABT_pool_access access;
+    /**
+     * @brief Unused function
+     *
+     * This function is not used.
+     *
+     * @changev11
+     * \DOC_DESC_V10_POOL_NOTASK
+     * @endchangev11
+     */
     ABT_unit_get_type_fn           u_get_type;
+    /**
+     * @fn    ABT_thread (*u_get_thread)(ABT_unit unit)
+     * @brief Function that extracts an \c ABT_thread handle from an \c ABT_unit
+     *        handle.
+     *
+     * \c u_get_thread() returns a work unit handle from \c unit.  \c unit is
+     * not \c ABT_UNIT_NULL.
+     *
+     * \c u_get_thread() is not optional, so the user must implement this
+     * function.
+     *
+     * The caller of \c u_get_thread() is undefined, so a program that relies on
+     * the caller of \c u_get_thread() is non-conforming.
+     *
+     * @changev11
+     * \DOC_DESC_V10_POOL_NOTASK
+     * @endchangev11
+     */
     ABT_unit_get_thread_fn         u_get_thread;
+    /**
+     * @brief Unused function.
+     *
+     * This function is not used.
+     *
+     * @changev11
+     * \DOC_DESC_V10_POOL_NOTASK
+     * @endchangev11
+     */
     ABT_unit_get_task_fn           u_get_task;
+    /**
+     * @fn    ABT_bool (*u_is_in_pool)(ABT_unit unit)
+     * @brief Function that returns whether a work unit is in its associated
+     *        pool or not.
+     *
+     * \c u_is_in_pool() returns whether the work unit \c unit is in its
+     * associated pool or not.  If \c unit is in its pool, this function returns
+     * \c ABT_TRUE.  Otherwise, this function returns \c ABT_FALSE.  \c unit is
+     * not \c ABT_UNIT_NULL.
+     *
+     * \c u_is_in_pool() is optional, so the user may set \c u_is_in_pool to
+     * \c NULL.  The Argobots does not call \c u_is_in_pool() if it is not
+     * supported.
+     *
+     * The caller of \c u_is_in_pool() is undefined, so a program that relies on
+     * the caller of \c u_is_in_pool() is non-conforming.
+     */
     ABT_unit_is_in_pool_fn         u_is_in_pool;
+    /**
+     * @fn    ABT_unit (*u_create_from_thread)(ABT_thread thread)
+     * @brief Function that creates an \c ABT_unit handle that is associated
+     *        with an \c ABT_thread handle.
+     *
+     * \c u_create_from_thread() creates a user-defined \c ABT_unit handle that
+     * is associated with the work-unit \c thread and returns.  \c thread is
+     * neither \c ABT_THREAD_NULL nor \c ABT_TASK_NULL.
+     *
+     * \c u_create_from_thread() is not optional, so the user must implement
+     * this function.
+     *
+     * The caller of \c u_create_from_thread() is undefined, so a program that
+     * relies on the caller of \c u_create_from_thread() is non-conforming.
+     *
+     * @changev11
+     * \DOC_DESC_V10_POOL_NOTASK
+     * @endchangev11
+     */
     ABT_unit_create_from_thread_fn u_create_from_thread;
+    /**
+     * @brief Unused function.
+     *
+     * This function is not used.
+     *
+     * @changev11
+     * \DOC_DESC_V10_POOL_NOTASK
+     * @endchangev11
+     */
     ABT_unit_create_from_task_fn   u_create_from_task;
+    /**
+     * @fn    void (*u_free)(ABT_unit *unit)
+     * @brief Function that frees a work unit.
+     *
+     * \c u_free() frees the work unit \c unit that is created by
+     * \c u_create_from_thread().  Its associated entity (i.e., \c ABT_thread)
+     * is freed by the Argobots runtime.  \c unit is neither pointing to
+     * \c ABT_UNIT_NULL nor \c NULL.  The user may modify a value of \c unit.
+     *
+     * \c u_free() is not optional, so the user must implement this function.
+     *
+     * The caller of \c u_free() is undefined, so a program that relies on the
+     * caller of \c u_free() is non-conforming.
+     */
     ABT_unit_free_fn               u_free;
-
-    /* Functions to manage the pool */
+    /**
+     * @fn    int (*p_init)(ABT_pool pool, ABT_pool_config pool_config)
+     * @brief Function that frees a work unit.
+     *
+     * \c p_init() sets up the pool \c pool with the pool configuration
+     * \c pool_config.  If \c p_init() does not return \c ABT_SUCCESS, the
+     * pool creation fails.
+     *
+     * \c p_init() is optional, so the user may set \c p_init to \c NULL.
+     *
+     * The caller of \c p_init() is undefined, so a program that relies on the
+     * caller of \c p_init() is non-conforming.
+     */
     ABT_pool_init_fn          p_init;
+    /**
+     * @fn    size_t (*p_get_size)(ABT_pool pool)
+     * @brief Function that returns a work unit.
+     *
+     * \c p_get_size() returns the size of the pool \c pool.  The Argobots
+     * assumes that the size is the number of work units in \c pool.
+     *
+     * @note
+     * Specifically, the current Argobots treats a pool whose size is zero as an
+     * empty pool.
+     *
+     * \c u_free() is not optional, so the user must implement this function.
+     *
+     * The caller of \c p_get_size() is undefined, so a program that relies on
+     * the caller of \c p_get_size() is non-conforming.
+     */
     ABT_pool_get_size_fn      p_get_size;
+    /**
+     * @fn    void (*p_push)(ABT_pool pool, ABT_unit unit)
+     * @brief Function that pushes a work unit to a pool.
+     *
+     * \c p_push() pushes the work unit \c unit to the pool \c pool.  \c unit
+     * must be stored in \c pool and can be popped by its pop functions (e.g.,
+     * \c p_pop()) later.
+     *
+     * \c p_push() is not optional, so the user must implement this function.
+     *
+     * The caller of \c p_push() is undefined, so a program that relies on the
+     * caller of \c p_push() is non-conforming.
+     */
     ABT_pool_push_fn          p_push;
+    /**
+     * @fn    ABT_unit (*p_pop)(ABT_pool pool)
+     * @brief Function that pops a work unit from a pool.
+     *
+     * \c p_pop() pops a work unit from the pool \c pool and returns it.  If
+     * no work unit exists in \c pool, \c ABT_UNIT_NULL must be returned.
+     *
+     * \c p_pop() is not optional, so the user must implement this function.
+     *
+     * The caller of \c p_pop() is undefined, so a program that relies on the
+     * caller of \c p_pop() is non-conforming.
+     */
     ABT_pool_pop_fn           p_pop;
+#ifdef ABT_ENABLE_VER_20_API
+    /**
+     * @fn    ABT_unit (*p_pop_wait)(ABT_pool pool, double time_secs)
+     * @brief Function that pops a work unit from a pool with wait.
+     *
+     * \c p_pop_wait() pops a work unit from the pool \c pool and returns it.
+     * If no work unit exists in \c pool, \c ABT_UNIT_NULL must be returned.
+     * \c time_secs hints at the duration in seconds that indicates how long the
+     * caller should wait on \c pool until a work unit is added to \c pool.
+     *
+     * \c p_pop_wait() is optional, so the user may set \c p_pop_wait to
+     * \c NULL.
+     *
+     * The caller of \c p_pop_wait() is undefined, so a program that relies on
+     * the caller of \c p_pop_wait() is non-conforming.
+     *
+     * @changev20
+     * \DOC_DESC_V1X_P_POP_WAIT
+     * @endchangev20
+     */
     ABT_pool_pop_wait_fn      p_pop_wait;
-    ABT_pool_pop_timedwait_fn p_pop_timedwait; /* Deprecated.  No built-in
-                                                * scheduler uses pop_timedwait().
-                                                * Use p_pop_wait() instead. */
+#endif
+    /**
+     * @fn    ABT_unit (*p_pop_timedwait)(ABT_pool pool, double abstime_secs)
+     * @brief Function that pops a work unit from a pool with wait.
+     *
+     * \c p_pop_timedwait() pops a work unit from the pool \c pool and returns
+     * it.  If no work unit exists in \c pool, \c ABT_UNIT_NULL must be
+     * returned.  \c abstime_secs hints at the system time that indicates how
+     * long the caller should wait on \c pool until a work unit is added to
+     * \c pool.  The current system time is obtained via \c ABT_get_wtime().
+     *
+     * \c p_pop_timedwait() is optional, so the user may set \c p_pop_timedwait
+     * to \c NULL.
+     *
+     * The caller of \c p_pop_timedwait() is undefined, so a program that relies
+     * on the caller of \c p_pop_timedwait() is non-conforming.
+     *
+     * @changev20
+     * \DOC_V20 \c p_pop_timedwait() is deprecated.  The user should use
+     * \c p_pop_wait() instead.
+     * @endchangev20
+     */
+    ABT_pool_pop_timedwait_fn p_pop_timedwait;
+    /**
+     * @fn    int (*p_remove)(ABT_pool pool, ABT_unit unit)
+     * @brief Function that removes a work unit from a pool.
+     *
+     * \c p_remove() removes the work unit \c unit from the pool \c pool.  The
+     * caller of this function guarantees that \c unit exists in the pool.
+     * The return value of this function is ignored.
+     *
+     * \c p_remove() is optional, so the user may set \c p_remove to \c NULL.
+     *
+     * The caller of \c p_remove() is undefined, so a program that relies on
+     * the caller of \c p_remove() is non-conforming.
+     */
     ABT_pool_remove_fn        p_remove;
+    /**
+     * @fn    int (*p_free)(ABT_pool pool)
+     * @brief Function that frees a pool.
+     *
+     * \c p_free() frees the pool \c pool.  The return value of this function is
+     * ignored.
+     *
+     * \c p_free() is optional, so the user may set \c p_free to \c NULL.
+     *
+     * The caller of \c p_free() is undefined, so a program that relies on the
+     * caller of \c p_free() is non-conforming.
+     */
     ABT_pool_free_fn          p_free;
+    /**
+     * @fn    int (*p_print_all)(ABT_pool pool, void *arg,
+     *                           void (*print_f)(void *arg, ABT_unit unit))
+     * @brief Function that applies a function to all work units in a pool.
+     *
+     * \c p_print_all() applies \c print_f to all work units in the pool
+     * \c pool.  \c print_f() is called with the user-given argument \c arg and
+     * the work unit.  The caller guarantees that \c print_f() does not modify
+     * the state of \c pool and work units in \c pool.
+     *
+     * \c p_print_all() is optional, so the user may set \c p_print_all to
+     * \c NULL.
+     *
+     * The caller of \c p_print_all() is undefined, so a program that relies on
+     * the caller of \c p_print_all() is non-conforming.
+     */
     ABT_pool_print_all_fn     p_print_all;
 } ABT_pool_def;
 

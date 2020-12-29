@@ -22,12 +22,9 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit);
 static int pool_print_all(ABT_pool pool, void *arg,
                           void (*print_fn)(void *, ABT_unit));
 
-static ABT_unit_type unit_get_type(ABT_unit unit);
 static ABT_thread unit_get_thread(ABT_unit unit);
-static ABT_task unit_get_task(ABT_unit unit);
 static ABT_bool unit_is_in_pool(ABT_unit unit);
 static ABT_unit unit_create_from_thread(ABT_thread thread);
-static ABT_unit unit_create_from_task(ABT_task task);
 static void unit_free(ABT_unit *unit);
 
 struct data {
@@ -45,7 +42,7 @@ static inline data_t *pool_get_data_ptr(void *p_data)
 
 /* Obtain the FIFO pool definition according to the access type */
 ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
-                                        ABT_pool_def *p_def)
+                                        ABTI_pool_def *p_def)
 {
     /* Definitions according to the access type */
     /* FIXME: need better implementation, e.g., lock-free one */
@@ -77,12 +74,9 @@ ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
     p_def->p_pop_wait = pool_pop_wait;
     p_def->p_pop_timedwait = pool_pop_timedwait;
     p_def->p_print_all = pool_print_all;
-    p_def->u_get_type = unit_get_type;
     p_def->u_get_thread = unit_get_thread;
-    p_def->u_get_task = unit_get_task;
     p_def->u_is_in_pool = unit_is_in_pool;
     p_def->u_create_from_thread = unit_create_from_thread;
-    p_def->u_create_from_task = unit_create_from_task;
     p_def->u_free = unit_free;
 
     return ABT_SUCCESS;
@@ -432,35 +426,10 @@ static int pool_print_all(ABT_pool pool, void *arg,
 
 /* Unit functions */
 
-static ABT_unit_type unit_get_type(ABT_unit unit)
-{
-    ABTI_thread *p_thread = (ABTI_thread *)unit;
-    return ABTI_thread_type_get_type(p_thread->type);
-}
-
 static ABT_thread unit_get_thread(ABT_unit unit)
 {
-    ABT_thread h_thread;
-    ABTI_ythread *p_ythread =
-        ABTI_thread_get_ythread_or_null((ABTI_thread *)unit);
-    if (p_ythread) {
-        h_thread = ABTI_ythread_get_handle(p_ythread);
-    } else {
-        h_thread = ABT_THREAD_NULL;
-    }
-    return h_thread;
-}
-
-static ABT_task unit_get_task(ABT_unit unit)
-{
-    ABT_task h_task;
     ABTI_thread *p_thread = (ABTI_thread *)unit;
-    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
-        h_task = ABTI_thread_get_handle(p_thread);
-    } else {
-        h_task = ABT_TASK_NULL;
-    }
-    return h_task;
+    return ABTI_thread_get_handle(p_thread);
 }
 
 static ABT_bool unit_is_in_pool(ABT_unit unit)
@@ -472,23 +441,10 @@ static ABT_bool unit_is_in_pool(ABT_unit unit)
 
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
-    ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_thread *p_thread = &p_ythread->thread;
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     p_thread->p_prev = NULL;
     p_thread->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_thread->is_in_pool, 0);
-    ABTI_ASSERT(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE);
-
-    return (ABT_unit)p_thread;
-}
-
-static ABT_unit unit_create_from_task(ABT_task task)
-{
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(task);
-    p_thread->p_prev = NULL;
-    p_thread->p_next = NULL;
-    ABTD_atomic_relaxed_store_int(&p_thread->is_in_pool, 0);
-    ABTI_ASSERT(!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE));
 
     return (ABT_unit)p_thread;
 }

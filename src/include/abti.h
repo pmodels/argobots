@@ -112,6 +112,7 @@ typedef enum ABTI_sched_used ABTI_sched_used;
 typedef void *ABTI_sched_id;       /* Scheduler id */
 typedef uintptr_t ABTI_sched_kind; /* Scheduler kind */
 typedef struct ABTI_pool ABTI_pool;
+typedef struct ABTI_pool_def ABTI_pool_def;
 typedef struct ABTI_thread ABTI_thread;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_ythread ABTI_ythread;
@@ -307,15 +308,29 @@ struct ABTI_pool {
     uint64_t id;                      /* ID */
 
     /* Functions to manage units */
-    ABT_unit_get_type_fn u_get_type;
     ABT_unit_get_thread_fn u_get_thread;
-    ABT_unit_get_task_fn u_get_task;
     ABT_unit_is_in_pool_fn u_is_in_pool;
     ABT_unit_create_from_thread_fn u_create_from_thread;
-    ABT_unit_create_from_task_fn u_create_from_task;
     ABT_unit_free_fn u_free;
 
     /* Functions to manage the pool */
+    ABT_pool_init_fn p_init;
+    ABT_pool_get_size_fn p_get_size;
+    ABT_pool_push_fn p_push;
+    ABT_pool_pop_fn p_pop;
+    ABT_pool_pop_wait_fn p_pop_wait;
+    ABT_pool_pop_timedwait_fn p_pop_timedwait;
+    ABT_pool_remove_fn p_remove;
+    ABT_pool_free_fn p_free;
+    ABT_pool_print_all_fn p_print_all;
+};
+
+struct ABTI_pool_def {
+    ABT_pool_access access;
+    ABT_unit_get_thread_fn u_get_thread;
+    ABT_unit_is_in_pool_fn u_is_in_pool;
+    ABT_unit_create_from_thread_fn u_create_from_thread;
+    ABT_unit_free_fn u_free;
     ABT_pool_init_fn p_init;
     ABT_pool_get_size_fn p_get_size;
     ABT_pool_push_fn p_push;
@@ -510,9 +525,9 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
                                         ABTI_pool **pp_newpool);
 void ABTI_pool_free(ABTI_pool *p_pool);
 ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
-                                        ABT_pool_def *p_def);
+                                        ABTI_pool_def *p_def);
 ABTU_ret_err int ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
-                                             ABT_pool_def *p_def);
+                                             ABTI_pool_def *p_def);
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
 

@@ -476,7 +476,7 @@ ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     thread_type |= ABTI_THREAD_TYPE_MIGRATABLE;
 #endif
     p_newtask->type |= thread_type;
-    p_newtask->unit = p_pool->u_create_from_task(h_newtask);
+    p_newtask->unit = p_pool->u_create_from_thread(h_newtask);
 
     ABTI_tool_event_thread_create(p_local, p_newtask,
                                   ABTI_local_get_xstream_or_null(p_local)

@@ -904,19 +904,16 @@ void ABTI_xstream_start_primary(ABTI_xstream **pp_local_xstream,
 void ABTI_xstream_run_unit(ABTI_xstream **pp_local_xstream, ABT_unit unit,
                            ABTI_pool *p_pool)
 {
-    ABT_unit_type type = p_pool->u_get_type(unit);
+    ABT_thread thread = p_pool->u_get_thread(unit);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 
-    if (type == ABT_UNIT_TYPE_THREAD) {
-        ABT_thread thread = p_pool->u_get_thread(unit);
-        ABTI_ythread *p_ythread = ABTI_ythread_get_ptr(thread);
-        /* Switch the context */
+    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+        ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
+        /* Execute a ULT */
         xstream_schedule_ythread(pp_local_xstream, p_ythread);
     } else {
-        ABTI_ASSERT(type == ABT_UNIT_TYPE_TASK);
-        ABT_task task = p_pool->u_get_task(unit);
-        ABTI_thread *p_task = ABTI_thread_get_ptr(task);
-        /* Execute the task */
-        xstream_schedule_task(*pp_local_xstream, p_task);
+        /* Execute a tasklet */
+        xstream_schedule_task(*pp_local_xstream, p_thread);
     }
 }
 
