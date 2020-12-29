@@ -220,8 +220,8 @@ ABTU_ret_err static int get_num_cores(pthread_t native_thread, int *p_num_cores)
 #endif
 }
 
-ABTU_ret_err static int read_cpuset(pthread_t native_thread,
-                                    ABTD_affinity_cpuset *p_cpuset)
+ABTU_ret_err static int create_cpuset(pthread_t native_thread,
+                                      ABTD_affinity_cpuset *p_cpuset)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY_NP
     cpu_set_t cpuset;
@@ -240,6 +240,30 @@ ABTU_ret_err static int read_cpuset(pthread_t native_thread,
         if (CPU_ISSET(i, &cpuset))
             p_cpuset->cpuids[j++] = i;
     }
+    return ABT_SUCCESS;
+#else
+    return ABT_ERR_FEATURE_NA;
+#endif
+}
+
+ABTU_ret_err static int read_cpuset(pthread_t native_thread, int max_cpuids,
+                                    int *cpuids, int *p_num_cpuids)
+{
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
+    cpu_set_t cpuset;
+    int ret = pthread_getaffinity_np(native_thread, sizeof(cpu_set_t), &cpuset);
+    if (ret)
+        return ABT_ERR_SYS;
+    int i, num_cpuids = 0;
+    for (i = 0; i < CPU_SETSIZE; i++) {
+        if (CPU_ISSET(i, &cpuset)) {
+            if (num_cpuids < max_cpuids) {
+                cpuids[num_cpuids] = i;
+            }
+            num_cpuids++;
+        }
+    }
+    *p_num_cpuids = num_cpuids;
     return ABT_SUCCESS;
 #else
     return ABT_ERR_FEATURE_NA;
@@ -282,7 +306,7 @@ void ABTD_affinity_init(const char *affinity_str)
         gp_ABTI_global->set_affinity = ABT_FALSE;
         return;
     }
-    ret = read_cpuset(self_native_thread, &g_affinity.initial_cpuset);
+    ret = create_cpuset(self_native_thread, &g_affinity.initial_cpuset);
     if (ret != ABT_SUCCESS) {
         gp_ABTI_global->set_affinity = ABT_FALSE;
         return;
@@ -392,9 +416,10 @@ void ABTD_affinity_finalize(void)
 }
 
 ABTU_ret_err int ABTD_affinity_cpuset_read(ABTD_xstream_context *p_ctx,
-                                           ABTD_affinity_cpuset *p_cpuset)
+                                           int max_cpuids, int *cpuids,
+                                           int *p_num_cpuids)
 {
-    return read_cpuset(p_ctx->native_thread, p_cpuset);
+    return read_cpuset(p_ctx->native_thread, max_cpuids, cpuids, p_num_cpuids);
 }
 
 ABTU_ret_err int

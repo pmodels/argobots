@@ -1308,23 +1308,17 @@ int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid)
  */
 int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid)
 {
-    int abt_errno;
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
-    ABTD_affinity_cpuset cpuset;
-    cpuset.num_cpuids = 0;
-    cpuset.cpuids = NULL;
-    abt_errno = ABTD_affinity_cpuset_read(&p_xstream->ctx, &cpuset);
+    int num_cpuid;
+    int cpuids[1];
+    int abt_errno =
+        ABTD_affinity_cpuset_read(&p_xstream->ctx, 1, cpuids, &num_cpuid);
     ABTI_CHECK_ERROR(abt_errno);
+    ABTI_CHECK_TRUE(num_cpuid > 0, ABT_ERR_CPUID);
 
-    if (cpuset.num_cpuids != 0) {
-        *cpuid = cpuset.cpuids[0];
-    } else {
-        abt_errno = ABT_ERR_CPUID;
-    }
-    ABTD_affinity_cpuset_destroy(&cpuset);
-    ABTI_CHECK_ERROR(abt_errno);
+    *cpuid = cpuids[0];
     return ABT_SUCCESS;
 }
 
@@ -1431,17 +1425,9 @@ int ABT_xstream_get_affinity(ABT_xstream xstream, int max_cpuids, int *cpuids,
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
     ABTI_CHECK_TRUE(max_cpuids >= 0, ABT_ERR_INV_ARG);
 
-    ABTD_affinity_cpuset affinity;
-    int abt_errno = ABTD_affinity_cpuset_read(&p_xstream->ctx, &affinity);
+    int abt_errno = ABTD_affinity_cpuset_read(&p_xstream->ctx, max_cpuids,
+                                              cpuids, num_cpuids);
     ABTI_CHECK_ERROR(abt_errno);
-
-    int i, n;
-    n = ABTU_min_int(affinity.num_cpuids, max_cpuids);
-    *num_cpuids = n;
-    for (i = 0; i < n; i++) {
-        cpuids[i] = affinity.cpuids[i];
-    }
-    ABTD_affinity_cpuset_destroy(&affinity);
     return abt_errno;
 }
 
