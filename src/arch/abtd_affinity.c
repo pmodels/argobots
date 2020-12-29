@@ -253,8 +253,14 @@ ABTU_ret_err static int apply_cpuset(pthread_t native_thread,
     uint32_t i;
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    for (i = 0; i < p_cpuset->num_cpuids; i++) {
-        CPU_SET(int_rem(p_cpuset->cpuids[i], CPU_SETSIZE), &cpuset);
+    if (p_cpuset->num_cpuids == 0) {
+        /* Use the initial one. */
+        for (i = 0; i < g_affinity.initial_cpuset.num_cpuids; i++)
+            CPU_SET(int_rem(g_affinity.initial_cpuset.cpuids[i], CPU_SETSIZE),
+                    &cpuset);
+    } else {
+        for (i = 0; i < p_cpuset->num_cpuids; i++)
+            CPU_SET(int_rem(p_cpuset->cpuids[i], CPU_SETSIZE), &cpuset);
     }
     int ret = pthread_setaffinity_np(native_thread, sizeof(cpu_set_t), &cpuset);
     return ret == 0 ? ABT_SUCCESS : ABT_ERR_SYS;
