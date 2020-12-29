@@ -121,6 +121,8 @@ extern "C" {
 #define ABT_ERR_MIGRATION_NA       49  /* Migration not available */
 #define ABT_ERR_MISSING_JOIN       50  /* An ES or more did not join */
 #define ABT_ERR_FEATURE_NA         51  /* Feature not available */
+#define ABT_ERR_SYS                54  /* System-related error */
+#define ABT_ERR_CPUID              55  /* CPUID-related error */
 
 /**
  * @ingroup ES
@@ -1081,15 +1083,15 @@ int ABT_xstream_get_state(ABT_xstream xstream, ABT_xstream_state *state) ABT_API
 int ABT_xstream_equal(ABT_xstream xstream1, ABT_xstream xstream2,
                       ABT_bool *result) ABT_API_PUBLIC;
 int ABT_xstream_get_num(int *num_xstreams) ABT_API_PUBLIC;
-int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *is_primary) ABT_API_PUBLIC;
 int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool) ABT_API_PUBLIC;
 int ABT_xstream_check_events(ABT_sched sched) ABT_API_PUBLIC;
 int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid) ABT_API_PUBLIC;
 int ABT_xstream_get_cpubind(ABT_xstream xstream, int *cpuid) ABT_API_PUBLIC;
-int ABT_xstream_set_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset)
+int ABT_xstream_set_affinity(ABT_xstream xstream, int num_cpuids, int *cpuids)
                              ABT_API_PUBLIC;
-int ABT_xstream_get_affinity(ABT_xstream xstream, int cpuset_size, int *cpuset,
-                             int *num_cpus) ABT_API_PUBLIC;
+int ABT_xstream_get_affinity(ABT_xstream xstream, int max_cpuids, int *cpuids,
+                             int *num_cpuids) ABT_API_PUBLIC;
 
 /* ES Barrier */
 int ABT_xstream_barrier_create(uint32_t num_waiters, ABT_xstream_barrier *newbarrier)

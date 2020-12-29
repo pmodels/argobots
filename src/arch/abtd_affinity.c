@@ -207,7 +207,7 @@ ABTU_ret_err static int get_num_cores(pthread_t native_thread, int *p_num_cores)
     cpu_set_t cpuset;
     int ret = pthread_getaffinity_np(native_thread, sizeof(cpu_set_t), &cpuset);
     if (ret)
-        return ABT_ERR_OTHER;
+        return ABT_ERR_SYS;
     for (i = 0; i < CPU_SETSIZE; i++) {
         if (CPU_ISSET(i, &cpuset)) {
             num_cores++;
@@ -227,7 +227,7 @@ ABTU_ret_err static int read_cpuset(pthread_t native_thread,
     cpu_set_t cpuset;
     int ret = pthread_getaffinity_np(native_thread, sizeof(cpu_set_t), &cpuset);
     if (ret)
-        return ABT_ERR_OTHER;
+        return ABT_ERR_SYS;
     int i, j, num_cpuids = 0;
     for (i = 0; i < CPU_SETSIZE; i++) {
         if (CPU_ISSET(i, &cpuset))
@@ -257,7 +257,7 @@ ABTU_ret_err static int apply_cpuset(pthread_t native_thread,
         CPU_SET(int_rem(p_cpuset->cpuids[i], CPU_SETSIZE), &cpuset);
     }
     int ret = pthread_setaffinity_np(native_thread, sizeof(cpu_set_t), &cpuset);
-    return ret == 0 ? ABT_SUCCESS : ABT_ERR_OTHER;
+    return ret == 0 ? ABT_SUCCESS : ABT_ERR_SYS;
 #else
     return ABT_ERR_FEATURE_NA;
 #endif
