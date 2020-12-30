@@ -135,10 +135,18 @@ enum ABT_xstream_state {
     ABT_XSTREAM_STATE_TERMINATED
 };
 
+/**
+ * @ingroup ULT
+ * @brief   State of a work unit.
+ */
 enum ABT_thread_state {
+    /** The work unit is ready to run. */
     ABT_THREAD_STATE_READY,
+    /** The work unit is running. */
     ABT_THREAD_STATE_RUNNING,
+    /** The work unit is blocked. */
     ABT_THREAD_STATE_BLOCKED,
+    /** The work unit is terminated. */
     ABT_THREAD_STATE_TERMINATED
 };
 

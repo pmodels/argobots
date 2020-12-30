@@ -40,25 +40,50 @@ static ABTI_key g_thread_mig_data_key =
 
 /**
  * @ingroup ULT
- * @brief   Create a new thread and return its handle through newthread.
+ * @brief   Create a new ULT.
  *
- * \c ABT_thread_create() creates a new ULT that is pushed into \c pool. The
- * insertion is done from the ES where this call is made. Therefore, the access
- * type of \c pool should comply with that. Only a \a secondary ULT can be
- * created explicitly, and the \a primary ULT is created automatically.
+ * \c ABT_thread_create() creates a new ULT, given by the attributes \c attr,
+ * associates it with the pool \c pool, and returns its handle through
+ * \c newthread.  This routine pushes the created ULT to the pool \c pool.  The
+ * created ULT calls \c thread_func() with \c arg when it is scheduled.
  *
- * If newthread is NULL, the thread object will be automatically released when
- * this \a unnamed thread completes the execution of thread_func. Otherwise,
- * ABT_thread_free() can be used to explicitly release the thread object.
+ * \c attr can be created by \c ABT_thread_attr_create().  If the user passes
+ * \c ABT_THREAD_ATTR_NULL for \c attr, the default ULT attribute is used.
  *
- * @param[in]  pool         handle to the associated pool
- * @param[in]  thread_func  function to be executed by a new thread
- * @param[in]  arg          argument for thread_func
- * @param[in]  attr         thread attribute. If it is ABT_THREAD_ATTR_NULL,
- *                          the default attribute is used.
- * @param[out] newthread    handle to a newly created thread
+ * @note
+ * \DOC_NOTE_DEFAULT_THREAD_ATTRIBUTE
+ *
+ * This routine copies \c attr, so the user can free \c attr after this routine
+ * returns.
+ *
+ * If \c newthread is \c NULL, this routine creates an unnamed ULT.  The unnamed
+ * ULT is automatically released on the completion of \c thread_func().
+ * Otherwise, \c newthread must be explicitly freed by \c ABT_thread_free().
+ *
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR_CONDITIONAL{\c newthread,
+ *                                              \c ABT_THREAD_NULL,
+ *                                              \c newthread is not \c NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread_func}
+ *
+ * @param[in]  pool         pool handle
+ * @param[in]  thread_func  function to be executed by a new ULT
+ * @param[in]  arg          argument for \c thread_func()
+ * @param[in]  attr         ULT attribute
+ * @param[out] newthread    ULT handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
                       ABT_thread_attr attr, ABT_thread *newthread)
@@ -86,43 +111,51 @@ int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
 
 /**
  * @ingroup ULT
- * @brief   Create a new ULT associated with the target ES (\c xstream).
+ * @brief   Create a new ULT associated with an execution stream.
  *
- * \c ABT_thread_create_on_xstream() creates a new ULT associated with the
- * target ES and returns its handle through \c newthread. The new ULT will be
- * inserted into a proper pool associated with the main scheduler of the target
- * ES.
+ * \c ABT_thread_create_on_xstream() creates a new ULT, given by the attributes
+ * \c attr, associates it with the first pool of the main scheduler of the
+ * execution stream \c xstream, and returns its handle through \c newthread.
+ * This routine pushes the created ULT to the pool \c pool.  The created ULT
+ * calls \c thread_func() with \c arg when it is scheduled.
  *
- * This routine is only for convenience. If the user wants to focus on the
- * performance, we recommend to use \c ABT_thread_create() with directly
- * dealing with pools. Pools are a right way to manage work units in Argobots.
- * ES is just an abstract, and it is not a mechanism for execution and
- * performance tuning.
+ * \c attr can be created by \c ABT_thread_attr_create().  If the user passes
+ * \c ABT_THREAD_ATTR_NULL for \c attr, the default ULT attribute is used.
  *
- * If \c attr is \c ABT_THREAD_ATTR_NULL, a new ULT is created with default
- * attributes. For example, the stack size of default attribute is 16KB.
- * If the attribute is specified, attribute values are saved in the ULT object.
- * After creating the ULT object, changes in the attribute object will not
- * affect attributes of the ULT object. A new attribute object can be created
- * with \c ABT_thread_attr_create().
+ * @note
+ * \DOC_NOTE_DEFAULT_THREAD_ATTRIBUTE
  *
- * If \c newthread is \c NULL, this routine creates an unnamed ULT. The object
- * for unnamed ULT will be automatically freed when the unnamed ULT completes
- * its execution. Otherwise, this routine creates a named ULT and
- * \c ABT_thread_free() can be used to explicitly free the object for
- * the named ULT.
+ * This routine copies \c attr, so the user can free \c attr after this routine
+ * returns.
  *
- * If \c newthread is not \c NULL and an error occurs in this routine,
- * a non-zero error code will be returned and \c newthread will be set to
- * \c ABT_THREAD_NULL.
+ * If \c newthread is \c NULL, this routine creates an unnamed ULT.  The unnamed
+ * ULT is automatically released on the completion of \c thread_func().
+ * Otherwise, \c newthread must be explicitly freed by \c ABT_thread_free().
  *
- * @param[in]  xstream      handle to the target ES
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR_CONDITIONAL{\c newthread,
+ *                                              \c ABT_THREAD_NULL,
+ *                                              \c newthread is not \c NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread_func}
+ *
+ * @param[in]  xstream      execution stream handle
  * @param[in]  thread_func  function to be executed by a new ULT
- * @param[in]  arg          argument for <tt>thread_func</tt>
+ * @param[in]  arg          argument for \c thread_func()
  * @param[in]  attr         ULT attribute
- * @param[out] newthread    handle to a newly created ULT
+ * @param[out] newthread    ULT handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_create_on_xstream(ABT_xstream xstream,
                                  void (*thread_func)(void *), void *arg,
@@ -154,26 +187,51 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
 
 /**
  * @ingroup ULT
- * @brief   Create a set of ULTs.
+ * @brief   Create a set of new ULTs.
  *
- * \c ABT_thread_create_many() creates a set of ULTs, i.e., \c num ULTs, having
- * the same attribute and returns ULT handles to \c newthread_list.  Each newly
- * created ULT is pushed to each pool of \c pool_list.  That is, the \a i-th
- * ULT is pushed to \a i-th pool in \c pool_list.
+ * \c ABT_thread_create_many() creates a set of new ULTs, i.e., \c num_threads
+ * ULTs, having the same ULT attribute \c attr and returns ULT handles to
+ * \c newthread_list.  Each newly created ULT calls the corresponding function
+ * of \c thread_func_list that has \c num_threads ULT functions with the
+ * corresponding argument of \c arg_list that has \c num_threads argument
+ * pointers an argument.  Each newly created ULT is pushed to the corresponding
+ * pool of \c pool_list that has \c num_threads of pools handles.  That is, the
+ * \a i th ULT is pushed to \a i th pool of \c pool_list and, when scheduled,
+ * calls the \a i th function of \c thread_func_list with the \a i th argument
+ * of \c arg_list.  This routine pushes newly created ULTs to pools \c pool.
  *
- * NOTE: Since this routine uses the same ULT attribute for creating all ULTs,
- * it does not support using the user-provided stack.  If \c attr contains the
- * user-provided stack, it will return an error. When \c newthread_list is NULL,
- * unnamed threads are created.
+ * \c attr can be created by \c ABT_thread_attr_create().  If the user passes
+ * \c ABT_THREAD_ATTR_NULL for \c attr, the default ULT attribute is used.
  *
- * @param[in] num               the number of array elements
- * @param[in] pool_list         array of pool handles
- * @param[in] thread_func_list  array of ULT functions
- * @param[in] arg_list          array of arguments for each ULT function
- * @param[in] attr              ULT attribute
- * @param[out] newthread_list   array of newly created ULT handles
+ * @note
+ * \DOC_NOTE_DEFAULT_THREAD_ATTRIBUTE\n
+ * Since this routine uses the same ULT attribute for creating all ULTs, this
+ * routine does not support a user-provided stack.
+ *
+ * If \c newthread_list is \c NULL, this routine creates unnamed ULTs.  The
+ * unnamed ULT is automatically released on the completion of \c thread_func().
+ * Otherwise, the creates ULTs must be explicitly freed by \c ABT_thread_free().
+ *
+ * This routine is deprecated because this routine does not provide a way for
+ * the user to keep track of an error that happens during this routine.  The
+ * user should use \c ABT_thread_create() instead.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NO_ERROR_HANDLING
+ *
+ * @param[in]  num_threads       number of array elements
+ * @param[in]  pool_list         array of pool handles
+ * @param[in]  thread_func_list  array of ULT functions
+ * @param[in]  arg_list          array of arguments for each ULT function
+ * @param[in]  attr              ULT attribute
+ * @param[out] newthread_list    array of ULT handles
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_create_many(int num, ABT_pool *pool_list,
                            void (**thread_func_list)(void *), void **arg_list,
@@ -231,22 +289,49 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
 
 /**
  * @ingroup ULT
- * @brief   Revive the ULT.
+ * @brief   Revive a terminated work unit.
  *
- * \c ABT_thread_revive() revives the ULT, \c thread, with \c thread_func and
- * \arg while it does not change the attributes used in creating \c thread.
- * The revived ULT is pushed into \c pool.
+ * \c ABT_thread_revive() revives the work unit \c thread with \c thread_func
+ * and \c arg.  This routine does not change the attributes of \c thread.  The
+ * revived work unit is pushed to \c pool.  Although this routine takes a
+ * pointer of \c ABT_thread, the handle of \c thread is not updated by this
+ * routine.
  *
- * This function must be called with a valid ULT handle, which has not been
- * freed by \c ABT_thread_free().  However, the ULT should have been joined by
- * \c ABT_thread_join() before its handle is used in this routine.
+ * \c thread must be a terminated work unit that has not been freed.  A work
+ * unit that is blocked on by another caller may not be revived.
  *
- * @param[in]     pool         handle to the associated pool
- * @param[in]     thread_func  function to be executed by the ULT
- * @param[in]     arg          argument for thread_func
- * @param[in,out] thread       handle to the ULT
+ * @note
+ * Because an unnamed work unit will be freed immediately after its termination,
+ * an unnamed work unit cannot be revived.
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_STATE
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_INV_THREAD_PTR{\c thread}
+ * \DOC_ERROR_INV_THREAD_NOT_TERMINATED{\c thread}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread_func}
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ * \DOC_UNDEFINED_WORK_UNIT_BLOCKED{\c thread, \c ABT_thread_free()}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ *
+ * @param[in]      pool         pool handle
+ * @param[in]      thread_func  function to be executed by the work unit
+ * @param[in]      arg          argument for \c thread_func()
+ * @param[in,out]  thread       work unit handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_revive(ABT_pool pool, void (*thread_func)(void *), void *arg,
                       ABT_thread *thread)
@@ -270,16 +355,44 @@ int ABT_thread_revive(ABT_pool pool, void (*thread_func)(void *), void *arg,
 
 /**
  * @ingroup ULT
- * @brief   Release the thread object associated with thread handle.
+ * @brief   Free a work unit.
  *
- * This routine deallocates memory used for the thread object. If the thread
- * is still running when this routine is called, the deallocation happens
- * after the thread terminates and then this routine returns. If it is
- * successfully processed, thread is set as ABT_THREAD_NULL.
+ * \c ABT_thread_free() deallocates the resource used for the thread \c thread.
+ * If \c thread is a ULT, \c thread is set to \c ABT_THREAD_NULL.  If \c thread
+ * is a tasklet, \c thread is set to \c ABT_TASK_NULL.  If \c thread is still
+ * running, this routine will be blocked on \c thread until \c thread
+ * terminates.
  *
- * @param[in,out] thread  handle to the target thread
+ * @note
+ * Because an unnamed work unit will be freed immediately after its termination,
+ * an unnamed work unit cannot be freed by this routine.\n
+ * This routine cannot free the calling work unit.\n
+ * This routine cannot free the main ULT or the main scheduler ULT.\n
+ * Only one caller can join or free the same work unit.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_PTR{\c thread}
+ * \DOC_ERROR_INV_THREAD_CALLER{\c thread}
+ * \DOC_ERROR_INV_THREAD_PRIMARY_ULT{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ * \DOC_UNDEFINED_WORK_UNIT_BLOCKED{\c thread, \c ABT_thread_join() and
+ *                                             \c ABT_thread_free()}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c thread}
+ *
+ * @param[in,out] thread  work unit handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_free(ABT_thread *thread)
 {
@@ -314,16 +427,34 @@ int ABT_thread_free(ABT_thread *thread)
 
 /**
  * @ingroup ULT
- * @brief   Release a set of ULT objects.
+ * @brief   Free a set of work units.
  *
- * \c ABT_thread_free_many() releases a set of ULT objects listed in
- * \c thread_list. If it is successfully processed, all elements in
- * \c thread_list are set to \c ABT_THREAD_NULL.
+ * \c ABT_thread_free_many() deallocates a set of work units listed in
+ * \c thread_list that has \c num_threads work unit handles.  Each handle
+ * referenced by \c thread_list is set to \c ABT_THRAED_NULL.
  *
- * @param[in]     num          the number of array elements
- * @param[in,out] thread_list  array of ULT handles
+ * This routine is deprecated because this routine does not provide a way for
+ * the user to keep track of an error that happens during this routine.  The
+ * user should use \c ABT_thread_free() instead.
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_STATE
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{an element of \c thread_list}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NO_ERROR_HANDLING
+ *
+ * @param[in]     num_threads  the number of array elements
+ * @param[in,out] thread_list  array of work unit handles
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_free_many(int num, ABT_thread *thread_list)
 {
@@ -341,13 +472,42 @@ int ABT_thread_free_many(int num, ABT_thread *thread_list)
 
 /**
  * @ingroup ULT
- * @brief   Wait for thread to terminate.
+ * @brief   Wait for a work unit to terminate.
  *
- * The target thread cannot be the same as the calling thread.
+ * The caller of \c ABT_thread_join() waits for the work unit \c thread until
+ * \c thread terminates.
  *
- * @param[in] thread  handle to the target thread
+ * @note
+ * Because an unnamed work unit will be freed immediately after its termination,
+ * an unnamed work unit cannot be joined by this routine.\n
+ * This routine cannot join the calling work unit.\n
+ * This routine cannot join the main ULT or the main scheduler ULT.\n
+ * Only one caller can join or free the same work unit.
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_STATE
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_CALLER{\c thread}
+ * \DOC_ERROR_INV_THREAD_PRIMARY_ULT{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_WORK_UNIT_BLOCKED{\c thread, \c ABT_thread_join() and
+ *                                             \c ABT_thread_free()}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ *
+ * @param[in] thread  work unit handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_join(ABT_thread thread)
 {
@@ -371,15 +531,34 @@ int ABT_thread_join(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Wait for a number of ULTs to terminate.
+ * @brief   Wait for a set of work units to terminate.
  *
- * The caller of \c ABT_thread_join_many() waits until all ULTs in
- * \c thread_list, which should have \c num_threads ULT handles, are terminated.
+ * The caller of \c ABT_thread_join_many() waits for all the work units in
+ * \c thread_list that has \c num_threads work unit handles until all the work
+ * units in \c thread_list terminate.
+ *
+ * This routine is deprecated because this routine does not provide a way for
+ * the user to keep track of an error that happens during this routine.  The
+ * user should use \c ABT_thread_join() instead.
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_STATE
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{an element of \c thread_list}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NO_ERROR_HANDLING
  *
  * @param[in] num_threads  the number of ULTs to join
  * @param[in] thread_list  array of target ULT handles
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
 {
@@ -394,15 +573,28 @@ int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
 
 /**
  * @ingroup ULT
- * @brief   The calling ULT terminates its execution.
+ * @brief   Terminate a calling ULT.
  *
- * Since the calling ULT terminates, this routine never returns.
+ * \c ABT_thread_exit() terminates the calling ULT.  This routine does not
+ * return if it succeeds.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_PRIMARY_ULT{\c the caller}
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
  *
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
- * @retval ABT_ERR_INV_THREAD    called by a non-yieldable thread (tasklet)
  */
 int ABT_thread_exit(void)
 {
@@ -416,11 +608,35 @@ int ABT_thread_exit(void)
 
 /**
  * @ingroup ULT
- * @brief   Request the cancellation of the target thread.
+ * @brief   Send a termination request to a work unit.
  *
- * @param[in] thread  handle to the target thread
+ * \c ABT_thread_cancel() sends a cancellation request to the work unit
+ * \c thread.  \c thread may terminate before its thread function completes.
+ *
+ * @note
+ * \DOC_NOTE_TIMING_REQUEST
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_REQUEST
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_PRIMARY_ULT{\c the caller}
+ * \DOC_ERROR_FEATURE_NA{the cancellation feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_WORK_UNIT_NOT_RUNNING{\c thread}
+ *
+ * @param[in] thread  work unit handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_cancel(ABT_thread thread)
 {
@@ -441,22 +657,35 @@ int ABT_thread_cancel(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Return the handle of the calling ULT.
+ * @brief   Get the calling work unit.
  *
- * \c ABT_thread_self() returns the handle of the calling ULT. Both the primary
- * ULT and secondary ULTs can get their handle through this routine.
- * If tasklets call this routine, \c ABT_THREAD_NULL will be returned to
+ * \c ABT_thread_self() returns the handle of the calling work unit through
  * \c thread.
  *
- * At present \c thread is set to \c ABT_THREAD_NULL when an error occurs, but
- * this behavior is deprecated.  The program should not rely on this behavior.
+ * @changev20
+ * \DOC_DESC_V1X_NOTASK{\c ABT_ERR_INV_THREAD}
  *
- * @param[out] thread  ULT handle
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c thread, \c ABT_THREAD_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_INV_THREAD_NY
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] thread  work unit handle
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
- * @retval ABT_ERR_INV_THREAD    called by a non-yieldable thread (tasklet)
  */
 int ABT_thread_self(ABT_thread *thread)
 {
@@ -476,16 +705,33 @@ int ABT_thread_self(ABT_thread *thread)
 
 /**
  * @ingroup ULT
- * @brief   Return the calling ULT's ID.
+ * @brief   Get ID of the calling work unit.
  *
- * \c ABT_thread_self_id() returns the ID of the calling ULT.
+ * \c ABT_thread_self_id() returns the ID of the calling work unit through
+ * \c id.
  *
- * @param[out] id  ULT id
+ * @changev20
+ * \DOC_DESC_V1X_NOTASK{\c ABT_ERR_INV_THREAD}
+ *
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_INV_THREAD_NY
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c id}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] id  ID of the calling work unit
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
- * @retval ABT_ERR_INV_THREAD    called by a non-yieldable thread (tasklet)
  */
 int ABT_thread_self_id(ABT_unit_id *id)
 {
@@ -498,16 +744,31 @@ int ABT_thread_self_id(ABT_unit_id *id)
 
 /**
  * @ingroup ULT
- * @brief   Get the ES associated with the target thread.
+ * @brief   Get an execution stream associated with a work unit.
  *
- * \c ABT_thread_get_last_xstream() returns the last ES handle associated with
- * the target thread to \c xstream.  If the target thread is not associated
- * with any ES, \c ABT_XSTREAM_NULL is returned to \c xstream.
+ * \c ABT_thread_get_last_xstream() returns the last execution stream associated
+ * with the work unit \c thread through \c xstream.  If \c thread is not
+ * associated with any execution stream, \c xstream is set to
+ * \c ABT_XSTREAM_NULL.
  *
- * @param[in]  thread   handle to the target thread
- * @param[out] xstream  ES handle
+ * @note
+ * The returned \c xstream may point to an invalid handle if the last execution
+ * stream associated with \c thread has already been freed.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c xstream}
+ *
+ * @param[in]  thread   work unit handle
+ * @param[out] xstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_get_last_xstream(ABT_thread thread, ABT_xstream *xstream)
 {
@@ -520,12 +781,35 @@ int ABT_thread_get_last_xstream(ABT_thread thread, ABT_xstream *xstream)
 
 /**
  * @ingroup ULT
- * @brief   Return the state of thread.
+ * @brief   Get a state of a work unit.
  *
- * @param[in]  thread  handle to the target thread
- * @param[out] state   the thread's state
+ * \c ABT_thread_get_state() returns the state of the work unit \c thread
+ * through \c state.
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_STATE
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @note
+ * If \c thread is a tasklet, \c ABT_task_state is converted to the
+ * corresponding \c ABT_thread_state.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c state}
+ *
+ * @param[in]  thread  work unit handle
+ * @param[out] state   state of \c thread
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
 {
@@ -538,15 +822,34 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
 
 /**
  * @ingroup ULT
- * @brief   Return the last pool of ULT.
+ * @brief   Get the last pool of a work unit.
  *
- * If the ULT is not running, we get the pool where it is, else we get the
- * last pool where it was (i.e., the pool from which the ULT was popped).
+ * \c ABT_thread_get_last_pool() returns the last pool associated with the work
+ * unit \c thread through \c pool.  If \c thread is not associated with any
+ * pool, \c pool is set to \c ABT_POOL_NULL.
  *
- * @param[in]  thread handle to the target ULT
- * @param[out] pool   the last pool of the ULT
+ * @note
+ * The returned \c pool may point to an invalid handle if the last pool
+ * associated with \c thread has already been freed.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c pool}
+ *
+ * @param[in]  thread  work unit handle
+ * @param[out] pool    the last pool associated with \c thread
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool)
 {
@@ -559,17 +862,34 @@ int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool)
 
 /**
  * @ingroup ULT
- * @brief   Get the last pool's ID of the ULT
+ * @brief   Get the last pool's ID of a work unit.
  *
- * \c ABT_thread_get_last_pool_id() returns the last pool's ID of \c thread.
- * If the ULT is not running, this routine returns the ID of the pool where it
- * is residing.  Otherwise, it returns the ID of the last pool where the ULT
- * was (i.e., the pool from which the ULT was popped).
+ * \c ABT_thread_get_last_pool_id() returns the ID of the last pool associated
+ * with the work unit \c thread through \c id.
  *
- * @param[in]  thread  handle to the target ULT
- * @param[out] id      pool id
+ * @note
+ * The returned \c pool may point to an invalid handle if the last pool
+ * associated with \c thread has already been freed.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c id}
+ * \DOC_UNDEFINED_FREED{the last pool associated with \c thread}
+ *
+ * @param[in]  thread  work unit handle
+ * @param[out] id      ID of the last pool associated with \c thread
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
 {
@@ -583,20 +903,34 @@ int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
 
 /**
  * @ingroup ULT
- * @brief   Set the associated pool for the target ULT.
+ * @brief   Set an associated pool for the target work unit.
  *
- * \c ABT_thread_set_associated_pool() changes the associated pool of the target
- * ULT \c thread to \c pool.  This routine must be called after \c thread is
- * popped from its original associated pool (i.e., \c thread must not be inside
- * any pool), which is the pool where \c thread was residing in.
+ * \c ABT_thread_set_associated_pool() changes the associated pool of the work
+ * unit \c thread to the pool \c pool.  This routine must be called after
+ * \c thread is popped from its original associated pool (i.e., \c thread must
+ * not be in any pool), which is the pool where \c thread was residing.  This
+ * routine does not push \c thread to \c pool.
  *
- * NOTE: \c ABT_thread_migrate_to_pool() can be used to change the associated
- * pool of \c thread regardless of its location.
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
  *
- * @param[in] thread  handle to the target ULT
- * @param[in] pool    handle to the pool
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_WORK_UNIT_IN_POOL{\c thread}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ *
+ * @param[in] thread  work unit handle
+ * @param[in] pool    pool handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
 {
@@ -611,17 +945,48 @@ int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
 
 /**
  * @ingroup ULT
- * @brief   Yield the processor from the current running thread to the
- *          specific thread.
+ * @brief   Yield the calling ULT to the specific ULT.
  *
- * This function can be used for users to explicitly schedule the next thread
- * to execute.
+ * \c ABT_thread_yield_to() yields the calling ULT and schedules the ULT
+ * \c thread that is in its associated pool.  The calling ULT will be pushed to
+ * its associated pool.
+ *
+ * @note
+ * This routine is experimental.  The details of this function may be updated in
+ * the future.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_YIELD_TASK
+ *
+ * \DOC_DESC_V1X_YIELD_EXT
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_NY{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{the caller}
+ * \DOC_ERROR_INV_THREAD_CALLER{\c thread}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{a pool associated with \c thread,
+ *                                     functions that are necessary for this
+ *                                     routine}
+ * \DOC_V20 \DOC_ERROR_INV_THREAD_NY
+ * \DOC_V20 \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ * \DOC_UNDEFINED_WORK_UNIT_NOT_IN_POOL{\c thread,
+ *                                      the pool associated with \c thread}
+ * \DOC_UNDEFINED_WORK_UNIT_NOT_READY{\c thread}
  *
  * @param[in] thread  handle to the target thread
  * @return Error code
- * @retval ABT_SUCCESS          on success
- * @retval ABT_ERR_INV_XSTREAM  called by an external thread
- * @retval ABT_ERR_INV_THREAD   called by a non-yieldable thread (tasklet)
  */
 int ABT_thread_yield_to(ABT_thread thread)
 {
@@ -708,17 +1073,31 @@ int ABT_thread_yield_to(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Yield the processor from the current running ULT back to the
- *          scheduler.
+ * @brief   Yield the calling ULT to its parent ULT
  *
- * The ULT that yields, goes back to its pool, and eventually will be
- * resumed automatically later.
+ * \c ABT_thread_yield() yields the calling ULT and pushes the calling ULT to
+ * its associated pool.  Its parent ULT will be resumed.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_YIELD_TASK
+ *
+ * \DOC_DESC_V1X_YIELD_EXT
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_V20 \DOC_ERROR_INV_THREAD_NY
+ * \DOC_V20 \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
  *
  * @return Error code
- * @retval ABT_SUCCESS on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
- * @retval ABT_ERR_INV_THREAD    called by a non-yieldable thread (tasklet)
  */
 int ABT_thread_yield(void)
 {
@@ -733,19 +1112,32 @@ int ABT_thread_yield(void)
 
 /**
  * @ingroup ULT
- * @brief   Resume the target ULT.
+ * @brief   Resume a ULT.
  *
- * \c ABT_thread_resume() makes the blocked ULT schedulable by changing the
- * state of the target ULT to READY and pushing it to its associated pool.
- * The ULT will resume its execution when the scheduler schedules it.
+ * \c ABT_thread_resume() resumes the ULT \c thread blocked by
+ * \c ABT_thread_suspend() schedulable by making \c thread ready and pushing
+ * \c thread to its associated pool.
  *
- * The ULT should have been blocked by \c ABT_self_suspend() or
- * \c ABT_thread_suspend().  Otherwise, the behavior of this routine is
- * undefined.
+ * @changev20
+ * \DOC_DESC_V1X_PREMATURE_BLOCKED_CHECK{\c thread, \c ABT_ERR_THREAD}
+ * @endchangev20
  *
- * @param[in] thread   handle to the target ULT
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_NY{\c thread}
+ * \DOC_V1X \DOC_ERROR_THREAD_WORK_UNIT_UNSUSPENDED{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ * \DOC_V20 \DOC_UNDEFINED_WORK_UNIT_UNSUSPENDED{\c thread}
+ *
+ * @param[in] thread  ULT handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_resume(ABT_thread thread)
 {
@@ -767,26 +1159,54 @@ int ABT_thread_resume(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Migrate a thread to a specific ES.
+ * @brief   Request a migration of a work unit to a specific execution stream.
  *
- * The actual migration occurs asynchronously with this function call.  In other
- * words, this function may return immediately without the thread being
- * migrated.  The migration request will be posted on the thread, such that next
- * time a scheduler picks it up, migration will happen.  The target pool is
- * chosen by the running scheduler of the target ES.
+ * \c ABT_thread_migrate_to_xstream() requests a migration of the work unit
+ * \c thread to any pool associated with the main scheduler of execution stream
+ * \c xstream.  The previous migration request is overwritten by the new
+ * migration request.  The requested work unit may be migrated before its work
+ * unit function completes.
  *
- * Note that users must be responsible for keeping the target execution stream,
- * its main scheduler, and the associated pools available during this function
- * and, if this function returns ABT_SUCCESS, until the migration process
- * completes.
+ * @note
+ * \DOC_NOTE_TIMING_REQUEST
  *
- * The migration will fail if the running scheduler has no pool available for
- * migration.
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_REQUEST
  *
- * @param[in] thread   handle to the thread to migrate
- * @param[in] xstream  handle to the ES to migrate the thread to
+ * It is the user's responsibility to keep \c xstream, its main scheduler, and
+ * its associated pools until the migration process completes or \c thread is
+ * freed, whichever is earlier.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ *
+ * \DOC_DESC_V10_PREMATURE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_NOT_MIGRATABLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_MIGRATION_TARGET{\c thread, any pool associated with the main
+ *                                        scheduler of \c xstream}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_FEATURE_NA{the migration feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_MIGRATION{\c thread, \c xstream\, the main scheduler of
+ *                                            \c xstream\, or any pool
+ *                                            associated with the main scheduler
+ *                                            of \c xstream}
+ * \DOC_UNDEFINED_WORK_UNIT_TERMINATED{\c thread}
+ *
+ * @param[in] thread   work unit handle
+ * @param[in] xstream  execution stream handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
 {
@@ -807,25 +1227,50 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
 
 /**
  * @ingroup ULT
- * @brief   Migrate a thread to a specific scheduler.
+ * @brief   Request a migration of a work unit to a specific scheduler.
  *
- * The actual migration occurs asynchronously with this function call.  In other
- * words, this function may return immediately without the thread being
- * migrated.  The migration request will be posted on the thread, such that next
- * time a scheduler picks it up, migration will happen.  The target pool is
- * chosen by the scheduler itself.
+ * \c ABT_thread_migrate_to_sched() requests a migration of the work unit
+ * \c thread to any pool associated with the scheduler \c sched.  The previous
+ * migration request is overwritten by the new migration request.  The requested
+ * work unit may be migrated before its work unit function completes.
  *
- * Note that users must be responsible for keeping the target scheduler and its
- * associated pools available during this function and, if this function returns
- * ABT_SUCCESS, until the migration process completes.
+ * @note
+ * \DOC_NOTE_TIMING_REQUEST
  *
- * The migration will fail if the target scheduler has no pool available for
- * migration.
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_REQUEST
  *
- * @param[in] thread handle to the thread to migrate
- * @param[in] sched  handle to the sched to migrate the thread to
+ * It is the user's responsibility to keep \c sched and its associated pools
+ * until the migration process completes or \c thread is freed, whichever is
+ * earlier.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ *
+ * \DOC_DESC_V10_PREMATURE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_NOT_MIGRATABLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ * \DOC_ERROR_INV_SCHED_HANDLE{\c sched}
+ * \DOC_ERROR_MIGRATION_TARGET{\c thread, any pool associated with \c sched}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_FEATURE_NA{the migration feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_MIGRATION{\c thread, \c sched or any pool associated
+ *                                            with \c sched}
+ * \DOC_UNDEFINED_WORK_UNIT_TERMINATED{\c thread}
+ *
+ * @param[in] thread  work unit handle
+ * @param[in] sched   scheduler handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
 {
@@ -863,22 +1308,48 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
 
 /**
  * @ingroup ULT
- * @brief   Migrate a thread to a specific pool.
+ * @brief   Request a migration of a work unit to a specific pool.
  *
- * The actual migration occurs asynchronously with this function call.
- * In other words, this function may return immediately without the thread
- * being migrated. The migration request will be posted on the thread, such that
- * next time a scheduler picks it up, migration will happen.
+ * \c ABT_thread_migrate_to_pool() requests a migration of the work unit
+ * \c thread to the pool \c pool.  The previous migration request will be
+ * overwritten by the new migration request.  The requested work unit may be
+ * migrated before its work unit function completes.
  *
- * Note that users must be responsible for keeping the target pool available
- * during this function and, if this function returns ABT_SUCCESS, until the
- * migration process completes.
+ * @note
+ * \DOC_NOTE_TIMING_REQUEST
  *
- * @param[in] thread handle to the thread to migrate
- * @param[in] pool   handle to the pool to migrate the thread to
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_REQUEST
+ *
+ * It is the user's responsibility to keep \c pool until the migration process
+ * completes or \c thread is freed, whichever is earlier.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ *
+ * \DOC_DESC_V10_PREMATURE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_NOT_MIGRATABLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_MIGRATION_TARGET{\c thread, \c pool}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_FEATURE_NA{the migration feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_MIGRATION{\c thread, \c pool}
+ * \DOC_UNDEFINED_WORK_UNIT_TERMINATED{\c thread}
+ *
+ * @param[in] thread  work unit handle
+ * @param[in] pool    pool handle
  * @return Error code
- * @retval ABT_SUCCESS              on success
- * @retval ABT_ERR_MIGRATION_TARGET the same pool is used
  */
 int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
 {
@@ -901,24 +1372,56 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
 
 /**
  * @ingroup ULT
- * @brief   Request migration of the thread to an any available ES.
+ * @brief   Request a migration of a work unit to any available execution
+ *          streams.
  *
- * ABT_thread_migrate requests migration of the thread but does not specify
- * the target ES. The target ES will be determined among available ESs by the
- * runtime. Other semantics of this routine are the same as those of
- * \c ABT_thread_migrate_to_xstream().
+ * \c ABT_thread_migrate() requests a migration of the work unit \c thread to
+ * one of the execution streams.  The last execution stream of \c thread is not
+ * chosen as the target execution stream.  The previous migration request will
+ * be overwritten by the new migration request.  The requested work unit may be
+ * migrated before its work unit function completes.
  *
- * Note that users must be responsible for keeping all the execution streams,
- * their main schedulers, and the associated pools available (i.e., not freed)
- * during this function and, if this function returns ABT_SUCCESS, until the
- * whole migration process completes.
+ * @note
+ * \DOC_NOTE_TIMING_REQUEST
  *
- * NOTE: This function may have some bugs.
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_REQUEST
  *
- * @param[in] thread  handle to the thread
+ * It is the user's responsibility to keep all the execution streams, the main
+ * schedulers, and their associated pools until the migration process completes
+ * or \c thread is freed, whichever is earlier.
+ *
+ * This routine is deprecated because this routine will not choose an execution
+ * stream that is expected by the user while this routine is significantly
+ * restrictive.  The user should use other migration functions instead.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ *
+ * \DOC_DESC_V10_PREMATURE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_NOT_MIGRATABLE{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ * \DOC_ERROR_MIGRATION_NA_THREAD_MIGRATE
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_FEATURE_NA{the migration feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_MIGRATION{\c thread, any execution stream\, any main
+ *                                            scheduler of the execution
+ *                                            streams\, or any pool associated
+ *                                            with the main schedulers}
+ * \DOC_UNDEFINED_WORK_UNIT_TERMINATED{\c thread}
+ *
+ * @param[in] thread  work unit handle
  * @return Error code
- * @retval ABT_SUCCESS          on success
- * @retval ABT_ERR_MIGRATION_NA no other available ES for migration
  */
 int ABT_thread_migrate(ABT_thread thread)
 {
@@ -959,16 +1462,43 @@ int ABT_thread_migrate(ABT_thread thread)
 
 /**
  * @ingroup ULT
- * @brief   Set the callback function.
+ * @brief   Set a callback function in a work unit.
  *
- * \c ABT_thread_set_callback sets the callback function to be used when the
- * ULT is migrated.
+ * \c ABT_thread_set_callback() sets the callback function \c cb_func() and its
+ * argument \c cb_arg in the work unit \c thread.  If \c cb_func is not \c NULL,
+ * \c cb_func() is called with \c cb_arg as an argument on the migration of
+ * \c thread.  If \c cb_func is \c NULL, \c thread not call a callback function
+ * on its migration.
  *
- * @param[in] thread   handle to the target ULT
- * @param[in] cb_func  callback function pointer
- * @param[in] cb_arg   argument for the callback function
+ * If the callback function is set, a callback function \c cb_func() will be
+ * called every time on migration of the associated work unit.  The first
+ * argument of \c cb_arg() is the handle of a migrated work unit.  The second
+ * argument is \c cb_arg passed to this routine.  The caller of the callback
+ * function is undefined, so a program that relies on the caller is
+ * non-conforming.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_FEATURE_NA{the migration feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_CHANGE_STATE{\c cb_func()}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ *
+ * @param[in] thread   work unit handle
+ * @param[in] cb_func  callback function
+ * @param[in] cb_arg   argument for \c cb_func()
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_set_callback(ABT_thread thread,
                             void (*cb_func)(ABT_thread thread, void *cb_arg),
@@ -993,18 +1523,40 @@ int ABT_thread_set_callback(ABT_thread thread,
 
 /**
  * @ingroup ULT
- * @brief   Set the ULT's migratability.
+ * @brief   Set the migratability in a work unit.
  *
- * \c ABT_thread_set_migratable sets the secondary ULT's migratability. This
- * routine cannot be used for the primary ULT. If \c flag is \c ABT_TRUE, the
- * target ULT becomes migratable. On the other hand, if \c flag is \c
- * ABT_FALSE, the target ULT becomes unmigratable.
+ * \c ABT_thread_set_migratable() sets the migratability in the work unit
+ * \c thread.  If \c migratable is \c ABT_TRUE, \c thread becomes migratable.
+ * Otherwise, \c thread becomes unmigratable.
  *
- * @param[in] thread  handle to the target ULT
- * @param[in] flag    migratability flag (<tt>ABT_TRUE</tt>: migratable,
- *                    <tt>ABT_FALSE</tt>: not)
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @changev20
+ * \DOC_DESC_V1X_SET_MIGRATABLE{\c thread, \c ABT_ERR_INV_THREAD}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_FEATURE_NA{the migration feature}
+ * \DOC_V20 \DOC_ERROR_INV_THREAD_PRIMARY_ULT{\c thread}
+ * \DOC_V20 \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_BOOL{\c migratable}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ *
+ * @param[in] thread      work unit handle
+ * @param[in] migratable  migratability flag (\c ABT_TRUE: migratable,
+ *                                            \c ABT_FALSE: not)
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
 {
@@ -1028,17 +1580,33 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
 
 /**
  * @ingroup ULT
- * @brief   Get the ULT's migratability.
+ * @brief   Get the migratability of a work unit.
  *
- * \c ABT_thread_is_migratable returns the ULT's migratability through
- * \c flag. If the target ULT is migratable, \c ABT_TRUE is returned to
- * \c flag. Otherwise, \c flag is set to \c ABT_FALSE.
+ * \c ABT_thread_is_migratable() returns the migratability of the work unit
+ * \c thread through \c is_migratable.  If \c thread is migratable,
+ * \c is_migratable is set to \c ABT_TRUE.  Otherwise, \c is_migratable is set
+ * to \c ABT_FALSE.
  *
- * @param[in]  thread  handle to the target ULT
- * @param[out] flag    migratability flag (<tt>ABT_TRUE</tt>: migratable,
- *                     <tt>ABT_FALSE</tt>: not)
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_FEATURE_NA{the migration feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c is_migratable}
+ *
+ * @param[in]  thread         work unit handle
+ * @param[out] is_migratable  result (\c ABT_TRUE: migratable,
+ *                                    \c ABT_FALSE: not)
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
 {
@@ -1056,19 +1624,31 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
 
 /**
  * @ingroup ULT
- * @brief   Check if the target ULT is the primary ULT.
+ * @brief   Check if a work unit is the primary ULT.
  *
- * \c ABT_thread_is_primary confirms whether the target ULT, \c thread,
- * is the primary ULT and returns the result through \c flag.
- * If \c thread is a handle to the primary ULT, \c flag is set to \c ABT_TRUE.
- * Otherwise, \c flag is set to \c ABT_FALSE.
+ * \c ABT_thread_is_primary() checks if the work unit \c thread is the primary
+ * ULT and returns the result through \c is_primary.  If \c thread is the main
+ * ULT, \c is_primary is set to \c ABT_TRUE.  Otherwise, \c is_primary is set to
+ * \c ABT_FALSE.
  *
- * @param[in]  thread  handle to the target ULT
- * @param[out] flag    result (<tt>ABT_TRUE</tt>: primary ULT,
- *                     <tt>ABT_FALSE</tt>: not)
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c flag}
+ *
+ * @param[in]  thread      work unit handle
+ * @param[out] is_primary  result (\c ABT_TRUE: primary ULT, \c ABT_FALSE: not)
  * @return Error code
- * @retval ABT_SUCCESS        on success
- * @retval ABT_ERR_INV_THREAD invalid ULT handle
  */
 int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag)
 {
@@ -1081,17 +1661,30 @@ int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag)
 
 /**
  * @ingroup ULT
- * @brief   Check if the target ULT is unnamed
+ * @brief   Check if a work unit is unnamed
  *
- * \c ABT_thread_is_unnamed() returns whether the target ULT, \c thread, is
- * unnamed or not.  Note that a handle of an unnamed ULT can be obtained by, for
- * example, running \c ABT_thread_self() on an unnamed ULT.
+ * \c ABT_thread_is_primary() checks if the work unit \c thread is unnamed and
+ * returns the result through \c flag.  If \c thread is unnamed, \c flag is set
+ * to \c ABT_TRUE.  Otherwise, \c flag is set to \c ABT_FALSE.
  *
- * @param[in]  thread  handle to the target ULT
- * @param[out] flag    result (<tt>ABT_TRUE</tt> if unnamed)
+ * @note
+ * A handle of an unnamed work unit can be obtained by, for example, running
+ * \c ABT_thread_self() on an unnamed work unit.
  *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c flag}
+ *
+ * @param[in]  thread      work unit handle
+ * @param[out] is_unnamed  result (\c ABT_TRUE: unnamed, \c ABT_FALSE: not)
  * @return Error code
- * @retval ABT_SUCCESS  on success
  */
 int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *flag)
 {
@@ -1104,18 +1697,40 @@ int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *flag)
 
 /**
  * @ingroup ULT
- * @brief   Compare two ULT handles for equality.
+ * @brief   Compare two work unit handles for equality.
  *
- * \c ABT_thread_equal() compares two ULT handles for equality. If two handles
- * are associated with the same ULT object, \c result will be set to
- * \c ABT_TRUE. Otherwise, \c result will be set to \c ABT_FALSE.
+ * \c ABT_thread_equal() compares two work unit handles \c thread1 and
+ * \c thread2 for equality.
  *
- * @param[in]  thread1  handle to the ULT 1
- * @param[in]  thread2  handle to the ULT 2
- * @param[out] result   comparison result (<tt>ABT_TRUE</tt>: same,
- *                      <tt>ABT_FALSE</tt>: not same)
+ * This routine is deprecated since its behavior is the same as comparing values
+ * of \c ABT_thread handles except for handling \c ABT_THREAD_NULL and
+ * \c ABT_TASK_NULL.
+ * @code{.c}
+ * if (thread1 == ABT_THREAD_NULL || thread1 == ABT_TASK_NULL) {
+ *   *result = (thread2 == ABT_THREAD_NULL || thread2 == ABT_TASK_NULL)
+ *             ? ABT_TRUE : ABT_FALSE;
+ * } else {
+ *   *result = (thread1 == thread2) ? ABT_TRUE : ABT_FALSE;
+ * }
+ * @endcode
+ *
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread1 or \c thread2}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c result}
+ *
+ * @param[in]  thread1  work unit handle 1
+ * @param[in]  thread2  work unit handle 2
+ * @param[out] result   result (\c ABT_TRUE: same, \c ABT_FALSE: not same)
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
 {
@@ -1127,14 +1742,31 @@ int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
 
 /**
  * @ingroup ULT
- * @brief   Get the ULT's stack size.
+ * @brief   Get a stack size of a work unit.
  *
- * \c ABT_thread_get_stacksize() returns the stack size of \c thread in bytes.
+ * \c ABT_thread_get_stacksize() returns the stack size of the work unit
+ * \c thread in bytes through \c stacksize.  If \c thread does not have a stack
+ * managed by the Argobots runtime (e.g., the tasklet or the primary ULT),
+ * \c stacksize is set to 0.
  *
- * @param[in]  thread     handle to the target thread
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c stacksize}
+ *
+ * @param[in]  thread     work unit handle
  * @param[out] stacksize  stack size in bytes
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
 {
@@ -1149,14 +1781,29 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
 
 /**
  * @ingroup ULT
- * @brief   Get the ULT's id
+ * @brief   Get ID of a work unit
  *
- * \c ABT_thread_get_id() returns the id of \c a thread.
+ * \c ABT_thread_get_id() returns the ID of the work unit \c a thread through
+ * \c thread_id.
  *
- * @param[in]  thread     handle to the target thread
- * @param[out] thread_id  thread id
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread_id}
+ *
+ * @param[in]  thread     work unit handle
+ * @param[out] thread_id  work unit ID
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_get_id(ABT_thread thread, ABT_unit_id *thread_id)
 {
@@ -1169,14 +1816,29 @@ int ABT_thread_get_id(ABT_thread thread, ABT_unit_id *thread_id)
 
 /**
  * @ingroup ULT
- * @brief   Set the argument for the ULT function
+ * @brief   Set an argument for a work unit function of a work unit.
  *
- * \c ABT_thread_set_arg() sets the argument for the ULT function.
+ * \c ABT_thread_set_arg() sets the argument \c arg for the work unit function
+ * of the work unit \c thread.
  *
- * @param[in] thread  handle to the target ULT
- * @param[in] arg     argument for the ULT function
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ *
+ * @param[in] thread  work unit handle
+ * @param[in] arg     argument for the work unit function
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_set_arg(ABT_thread thread, void *arg)
 {
@@ -1189,16 +1851,29 @@ int ABT_thread_set_arg(ABT_thread thread, void *arg)
 
 /**
  * @ingroup ULT
- * @brief   Retrieve the argument for the ULT function
+ * @brief   Retrieve an argument for a work unit function of a work unit.
  *
- * \c ABT_thread_get_arg() returns the argument for the ULT function, which was
- * passed to \c ABT_thread_create() when the target ULT \c thread was created
- * or was set by \c ABT_thread_set_arg().
+ * \c ABT_thread_get_arg() returns the argument for the work unit function of
+ * the work unit \c thread through \c arg.
  *
- * @param[in]  thread  handle to the target ULT
- * @param[out] arg     argument for the ULT function
+ * @changev11
+ * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c arg}
+ *
+ * @param[in]  thread  work unit handle
+ * @param[out] arg     argument for the work unit function
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_get_arg(ABT_thread thread, void **arg)
 {
@@ -1211,16 +1886,29 @@ int ABT_thread_get_arg(ABT_thread thread, void **arg)
 
 /**
  * @ingroup ULT
- * @brief  Set the ULT-specific value associated with the key
+ * @brief   Set a value with a work-unit-specific key in a work unit.
  *
- * \c ABT_thread_set_specific() associates a value, \c value, with a work
- * unit-specific data key, \c key.  The target work unit is \c thread.
+ * \c ABT_thread_set_specific() associates the value \c value of the
+ * work-unit-specific data key \c key in the work unit \c thread.
  *
- * @param[in] thread  handle to the target ULT
- * @param[in] key     handle to the target key
- * @param[in] value   value for the key
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_KEY_HANDLE{\c key}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] thread  work unit handle
+ * @param[in] key     work-unit-specific data key handle
+ * @param[in] value   value
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value)
 {
@@ -1241,18 +1929,30 @@ int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value)
 
 /**
  * @ingroup ULT
- * @brief   Get the ULT-specific value associated with the key
+ * @brief   Get a value associated with a work-unit-specific key in a work unit.
  *
- * \c ABT_thread_get_specific() returns the value associated with a target work
- * unit-specific data key, \c key, through \c value.  The target work unit is
- * \c thread.  If \c thread has never set a value for the key, this routine
- * returns \c NULL to \c value.
+ * \c ABT_thread_get_specific() returns the value of the work-unit-specific data
+ * key \c key in the work unit \c thread through \c value.  If \c thread has
+ * never set a value for \c key, this routine sets \c value to \c NULL.
  *
- * @param[in]  thread  handle to the target ULT
- * @param[in]  key     handle to the target key
- * @param[out] value   value for the key
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_KEY_HANDLE{\c key}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c value}
+ *
+ * @param[in]  thread  work unit handle
+ * @param[in]  key     work-unit-specific data key handle
+ * @param[out] value   value
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value)
 {
@@ -1269,18 +1969,34 @@ int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value)
 
 /**
  * @ingroup ULT
- * @brief   Get attributes of the target ULT
+ * @brief   Get attributes of a work unit.
  *
- * \c ABT_thread_get_attr() returns the attributes of the ULT \c thread to
- * \c attr.  \c attr contains actual attribute values that may be different
- * from those used to create \c thread.  Since this routine allocates an
- * attribute object, when \c attr is no longer used it should be destroyed
- * using \c ABT_thread_attr_free().
+ * \c ABT_thread_get_attr() returns a newly created attribute object that is
+ * copied from the attributes of the work unit \c thread through \c attr.
+ * Attribute values of \c attr may be different from those used on the creation
+ * of \c thread.  Since this routine allocates a ULT attribute object, it is the
+ * user's responsibility to free \c attr after its use.
  *
- * @param[in]  thread  handle to the target ULT
+ * @changev20
+ * \DOC_DESC_V1X_TASKLET_ATTR{\c thread, \c attr, \c ABT_ERR_INV_THREAD}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_V1X \DOC_ERROR_INV_THREAD_NY{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c attr}
+ *
+ * @param[in]  thread  work unit handle
  * @param[out] attr    ULT attributes
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
 {
