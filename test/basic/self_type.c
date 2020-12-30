@@ -21,7 +21,11 @@ void task_hello(void *arg)
     ATS_ERROR(ret, "ABT_stream_self");
 
     ret = ABT_thread_self(&thread);
+#ifdef ABT_ENABLE_VER_20_API
+    ATS_ERROR(ret, "ABT_thread_self");
+#else
     assert(ret == ABT_ERR_INV_THREAD && thread == ABT_THREAD_NULL);
+#endif
 
     ret = ABT_task_self(&task);
     ATS_ERROR(ret, "ABT_task_self");
@@ -107,7 +111,11 @@ void *pthread_hello(void *arg)
 #endif
 
     ret = ABT_thread_self(&thread);
+#ifdef ABT_ENABLE_VER_20_API
+    assert(ret == ABT_ERR_INV_XSTREAM);
+#else
     assert(ret == ABT_ERR_INV_XSTREAM && thread == ABT_THREAD_NULL);
+#endif
 
     ret = ABT_task_self(&task);
     assert(ret == ABT_ERR_INV_XSTREAM && task == ABT_TASK_NULL);
