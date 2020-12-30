@@ -50,18 +50,6 @@ static inline void ABTI_pool_dec_num_blocked(ABTI_pool *p_pool)
     ABTD_atomic_fetch_sub_int32(&p_pool->num_blocked, 1);
 }
 
-/* The pool will receive a migrated ULT */
-static inline void ABTI_pool_inc_num_migrations(ABTI_pool *p_pool)
-{
-    ABTD_atomic_fetch_add_int32(&p_pool->num_migrations, 1);
-}
-
-/* The pool has received a migrated ULT */
-static inline void ABTI_pool_dec_num_migrations(ABTI_pool *p_pool)
-{
-    ABTD_atomic_fetch_sub_int32(&p_pool->num_migrations, 1);
-}
-
 static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 {
     /* Push unit into pool */
@@ -140,7 +128,6 @@ static inline size_t ABTI_pool_get_total_size(ABTI_pool *p_pool)
     size_t total_size;
     total_size = ABTI_pool_get_size(p_pool);
     total_size += ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
-    total_size += ABTD_atomic_acquire_load_int32(&p_pool->num_migrations);
     return total_size;
 }
 

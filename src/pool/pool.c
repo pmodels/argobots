@@ -260,14 +260,13 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
  * - If \c pool is created by \c ABT_pool_create():
  *
  *   This routine sets \c size to the sum of a value returned by \c p_get_size()
- *   called with \c pool as its argument and the number of blocking and
- *   migrating work units that are associated with \c pool.
+ *   called with \c pool as its argument and the number of blocking work units
+ *   that are associated with \c pool.
  *
  * - If \c pool is created by \c ABT_pool_create_basic():
  *
  *   This routine sets \c size to the sum of the number of work units including
- *   in \c pool and the number of blocking or migrating work units associated
- *   with \c pool.
+ *   in \c pool and the number of blocking work units associated with \c pool.
  *
  * @changev11
  * \DOC_DESC_V10_ACCESS_VIOLATION
@@ -918,7 +917,6 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
                 "%*snum_scheds    : %d\n"
                 "%*ssize          : %zu\n"
                 "%*snum_blocked   : %d\n"
-                "%*snum_migrations: %d\n"
                 "%*sdata          : %p\n",
                 indent, "", (void *)p_pool, indent, "", p_pool->id, indent, "",
                 access, indent, "",
@@ -926,8 +924,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
                 ABTD_atomic_acquire_load_int32(&p_pool->num_scheds), indent, "",
                 ABTI_pool_get_size(p_pool), indent, "",
                 ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), indent,
-                "", ABTD_atomic_acquire_load_int32(&p_pool->num_migrations),
-                indent, "", p_pool->data);
+                "", p_pool->data);
     }
     fflush(p_os);
 }
@@ -955,7 +952,6 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
     p_pool->automatic = automatic;
     ABTD_atomic_release_store_int32(&p_pool->num_scheds, 0);
     ABTD_atomic_release_store_int32(&p_pool->num_blocked, 0);
-    ABTD_atomic_release_store_int32(&p_pool->num_migrations, 0);
     p_pool->data = NULL;
 
     /* Set up the pool functions from def */

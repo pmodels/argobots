@@ -1923,9 +1923,6 @@ ABTU_ret_err static int xstream_migrate_thread(ABTI_local *p_local,
 
     /* Add the unit to the scheduler's pool */
     ABTI_pool_push(p_pool, p_thread->unit);
-
-    ABTI_pool_dec_num_migrations(p_pool);
-
     return ABT_SUCCESS;
 }
 #endif

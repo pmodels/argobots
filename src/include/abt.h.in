@@ -135,10 +135,18 @@ enum ABT_xstream_state {
     ABT_XSTREAM_STATE_TERMINATED
 };
 
+/**
+ * @ingroup ULT
+ * @brief   State of a work unit.
+ */
 enum ABT_thread_state {
+    /** The work unit is ready to run. */
     ABT_THREAD_STATE_READY,
+    /** The work unit is running. */
     ABT_THREAD_STATE_RUNNING,
+    /** The work unit is blocked. */
     ABT_THREAD_STATE_BLOCKED,
+    /** The work unit is terminated. */
     ABT_THREAD_STATE_TERMINATED
 };
 
@@ -1153,14 +1161,14 @@ int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
 int ABT_thread_create_on_xstream(ABT_xstream xstream,
                       void (*thread_func)(void *), void *arg,
                       ABT_thread_attr attr, ABT_thread *newthread) ABT_API_PUBLIC;
-int ABT_thread_create_many(int num, ABT_pool *pool_list,
+int ABT_thread_create_many(int num_threads, ABT_pool *pool_list,
                       void (**thread_func_list)(void *), void **arg_list,
                       ABT_thread_attr attr, ABT_thread *newthread_list)
                       ABT_API_PUBLIC;
 int ABT_thread_revive(ABT_pool pool, void(*thread_func)(void *), void *arg,
                       ABT_thread *thread) ABT_API_PUBLIC;
 int ABT_thread_free(ABT_thread *thread) ABT_API_PUBLIC;
-int ABT_thread_free_many(int num, ABT_thread *thread_list) ABT_API_PUBLIC;
+int ABT_thread_free_many(int num_threads, ABT_thread *thread_list) ABT_API_PUBLIC;
 int ABT_thread_join(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_thread_join_many(int num_threads, ABT_thread *thread_list) ABT_API_PUBLIC;
 int ABT_thread_exit(void) ABT_API_PUBLIC;
@@ -1181,10 +1189,10 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool) ABT_API_PUBLIC;
 int ABT_thread_migrate(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_thread_set_callback(ABT_thread thread,
         void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg) ABT_API_PUBLIC;
-int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag) ABT_API_PUBLIC;
-int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag) ABT_API_PUBLIC;
-int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag) ABT_API_PUBLIC;
-int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *flag) ABT_API_PUBLIC;
+int ABT_thread_set_migratable(ABT_thread thread, ABT_bool migratable) ABT_API_PUBLIC;
+int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *is_migratable) ABT_API_PUBLIC;
+int ABT_thread_is_primary(ABT_thread thread, ABT_bool *is_primary) ABT_API_PUBLIC;
+int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *is_unnamed) ABT_API_PUBLIC;
 int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
                      ABT_API_PUBLIC;
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize) ABT_API_PUBLIC;
@@ -1206,7 +1214,7 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize) ABT_AP
 int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize) ABT_API_PUBLIC;
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,
         void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg) ABT_API_PUBLIC;
-int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag) ABT_API_PUBLIC;
+int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool is_migratable) ABT_API_PUBLIC;
 
 /* Tasklet */
 int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,

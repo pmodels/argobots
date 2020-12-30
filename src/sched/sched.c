@@ -888,21 +888,19 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
     return ABT_FALSE;
 }
 
-/* Get the pool suitable for receiving a migrating ULT */
+/* Get the pool suitable for receiving a migrating thread */
 ABTU_ret_err int ABTI_sched_get_migration_pool(ABTI_sched *p_sched,
                                                ABTI_pool *source_pool,
                                                ABTI_pool **pp_pool)
 {
-    ABT_sched sched = ABTI_sched_get_handle(p_sched);
-
     /* Find a pool.  If get_migr_pool is not defined, we pick the first pool */
     if (p_sched->get_migr_pool == NULL) {
+        ABTI_CHECK_TRUE(p_sched->num_pools > 0, ABT_ERR_MIGRATION_TARGET);
         *pp_pool = ABTI_pool_get_ptr(p_sched->pools[0]);
     } else {
+        ABT_sched sched = ABTI_sched_get_handle(p_sched);
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->get_migr_pool(sched));
-        if (ABTI_IS_ERROR_CHECK_ENABLED && p_pool == NULL) {
-            return ABT_ERR_SCHED;
-        }
+        ABTI_CHECK_TRUE(p_pool, ABT_ERR_MIGRATION_TARGET);
         *pp_pool = p_pool;
     }
     return ABT_SUCCESS;
@@ -933,7 +931,6 @@ size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
         ABT_pool pool = p_sched->pools[p];
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
         pool_size += ABTI_pool_get_size(p_pool);
-        pool_size += ABTD_atomic_acquire_load_int32(&p_pool->num_migrations);
         switch (p_pool->access) {
             case ABT_POOL_ACCESS_PRIV:
                 pool_size +=

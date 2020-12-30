@@ -1852,6 +1852,10 @@ ALIASES += DOC_DESC_ATOMICITY_TOOL_CALLBACK_REGISTRATION="A combination of a cal
 
 ALIASES += DOC_DESC_ATOMICITY_WORK_UNIT_KEY="Work-unit-specific values associated with a work-unit-specific data key are read and updated atomically."
 
+ALIASES += DOC_DESC_ATOMICITY_WORK_UNIT_REQUEST="Requests for work units are updated atomically."
+
+ALIASES += DOC_DESC_ATOMICITY_WORK_UNIT_STATE="Management of states of work units is performed atomically."
+
 ALIASES += DOC_DESC_ATOMICITY_XSTREAM_REQUEST="Requests for execution streams are updated atomically."
 
 ALIASES += DOC_DESC_ATOMICITY_XSTREAM_STATE="Management of states of execution streams is performed atomically."
@@ -1884,6 +1888,8 @@ ALIASES += DOC_DESC_V10_POOL_NOTASK="\DOC_V10 A type of \c ABT_unit is \c ABT_UN
 
 ALIASES += DOC_DESC_V10_PREMATURE_SCHED_SIZE_CHECK{2}="\DOC_V10 If pools associated with the current main scheduler of \1 are not empty, \2 is returned.\n \DOC_V11 This routine works even if pools associated with the current main scheduler of \1 are not empty. @rationale This check unnecessarily limits the applicability of this routine.  It is the user's responsibility to handle work units in pools associated with the old main scheduler, e.g., by migrating them to other pools. @endrationale"
 
+ALIASES += DOC_DESC_V10_PREMATURE_TERMINATION_CHECK{2}="\DOC_V10 \2 is returned if the runtime finds that \1 is terminated.\n \DOC_V11 The results are undefined if \1 is terminated.\n @rationale This check is premature because this check and the request update cannot be updated at the same time atomically. @endrationale"
+
 ALIASES += DOC_DESC_V10_REJECT_MUTEX_ATTR_NULL{1}="\DOC_V10 This routine returns \c ABT_ERR_INV_MUTEX_ATTR if \1 is \c ABT_MUTEX_ATTR_NULL.\n \DOC_V11 This routine uses the default mutex attributes if \1 is \c ABT_MUTEX_ATTR_NULL. @rationale Most of the Argobots routines use the default attributes if the given configuration or attributes are NULL.  This routine should also follow this basic rule. @endrationale"
 
 ALIASES += DOC_DESC_V1X_ERROR_CODE_CHANGE{3}="\DOC_V1X \1 is returned if \3.\n \DOC_V20 \2 is returned if \3.\n @rationale Argobots 2.0 changes the error code for consistent behavior with the other Argobots routines. @endrationale"
@@ -1895,6 +1901,8 @@ ALIASES += DOC_DESC_V1X_NOTASK{1}="\DOC_V1X If a tasklet calls this routine, \1 
 ALIASES += DOC_DESC_V1X_NULL_PTR{2}="\DOC_V1X If \1 is \c NULL, \2 is returned.\n \DOC_V20 If \1 is \c NULL, the results are undefined.\n @rationale Argobots 2.0 will not check NULL pointers. @endrationale"
 
 ALIASES += DOC_DESC_V1X_P_POP_WAIT="\DOC_V1X \c ABT_pool_def does not define \c p_pop_wait. \n \DOC_V20 \c ABT_pool_def defines \c p_pop_wait. \n @rationale To maintain the ABI compatibility, \c p_pop_wait is excluded from \c ABT_pool_def. @endrationale"
+
+ALIASES += DOC_DESC_V1X_PREMATURE_BLOCKED_CHECK{2}="\DOC_V1X \2 is returned if \1 is not suspended.\n \DOC_V20 The results are undefined if \1 is not suspended.\n @rationale This routine does not perform this operation atomically, so this check is premature.  From Argobots 2.0, it becomes the user's responsibility to guarantee that \1 has been suspended. @endrationale"
 
 ALIASES += DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{2}="\DOC_V1X \2 is returned if this routine finds \1 is already used.\n \DOC_V20 The results are undefined if \1 is already used.\n @rationale The current mechanism that checks if a scheduler is used is premature since this is not maintained atomically.  From Argobots 2.0, it becomes the user's responsibility to guarantee that \1 is not used. @endrationale"
 
@@ -1912,7 +1920,17 @@ ALIASES += DOC_DESC_V1X_RETURN_UNINITIALIZED="\DOC_V1X This routine returns \c A
 
 ALIASES += DOC_DESC_V1X_SCHED_GET_POOLS_IDX{4}="\DOC_V1X If the summation of \1 and \2 is larger than the number of pools associated with \3, this routine returns \c ABT_ERR_SCHED.\n \DOC_V20 This routine does not update elements of \4 if corresponding pool elements specified by \1 and \2 are out of range.\n @rationale The restriction is unnecessary and thus this behavior is deprecated. @endrationale"
 
+ALIASES += DOC_DESC_V1X_SET_MIGRATABLE{2}="\DOC_V1X If \1 is the primary ULT or the work unit associated with the main scheduler, this routine has no effect and returns \c ABT_SUCCESS.\n \DOC_V20 If \1 is the primary ULT or the work unit associated with the main scheduler, this routine returns \2.\n @rationale The original behavior is error-prone since this routine does nothing but returns \c ABT_SUCCESS. @endrationale"
+
+ALIASES += DOC_DESC_V1X_SET_VALUE_ON_ERROR_CONDITIONAL{3}="\DOC_V1X \1 is set to \2 if an error occurs and \3.\n \DOC_V20 \1 is not updated if an error occurs and \3.\n @rationale To ensure the atomicity of the API, Argobots 2.0 guarantees that the routine has no effect if the routine returns an error (as possible).  Argobots 2.0 does not update a returned value when the routine throws an error. @endrationale"
+
 ALIASES += DOC_DESC_V1X_SET_VALUE_ON_ERROR{2}="\DOC_V1X \1 is set to \2 if an error occurs.\n \DOC_V20 \1 is not updated if an error occurs.\n @rationale To ensure the atomicity of the API, Argobots 2.0 guarantees that the routine has no effect if the routine returns an error (as possible).  Argobots 2.0 does not update a returned value when the routine throws an error. @endrationale"
+
+ALIASES += DOC_DESC_V1X_TASKLET_ATTR{3}="\DOC_V1X If \1 is a tasklet, this routine returns \3.\n \DOC_V20 If \1 is a tasklet, this routine sets \2 to a properly translated ULT attributes and returns \c ABT_SUCCESS.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
+
+ALIASES += DOC_DESC_V1X_YIELD_EXT="\DOC_V1X This routine returns \c ABT_SUCCESS without any effect if an external thread calls this routine.\n \DOC_V20 This routine returns \c ABT_ERR_INV_XSTREAM if an external thread calls this routine.\n @rationale An external thread cannot achieve the purpose of this routine.  This routine should return an error. @endrationale"
+
+ALIASES += DOC_DESC_V1X_YIELD_TASK="\DOC_V1X This routine returns \c ABT_SUCCESS without any effect if a tasklet calls this routine.\n \DOC_V20 This routine returns \c ABT_ERR_INV_THREAD if a tasklet calls this routine.\n @rationale A tasklet cannot achieve the purpose of this routine.  This routine should return an error. @endrationale"
 
 #---------------------------------------------------------------------------
 # Error
@@ -1935,6 +1953,8 @@ ALIASES += DOC_ERROR_FUTURE_READY{1}="If \1 is ready, \c ABT_ERR_FUTURE is retur
 ALIASES += DOC_ERROR_INV_ARG_GREATER_THAN{2}="If \1 is larger than \2, \c ABT_ERR_INV_ARG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_INV_SCHED_PREDEF{1}="If \1 is not a valid predefined scheduler type, \c ABT_ERR_INV_ARG is returned.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_INV_STACK{1}="If \1 is neither \c NULL nor a memory aligned with 8 bytes, \c ABT_ERR_INV_ARG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{2}="If \1 is not a valid tool query kind for \2, \c ABT_ERR_INV_ARG is returned.\n"
 
@@ -1998,15 +2018,31 @@ ALIASES += DOC_ERROR_INV_SCHED_PTR{1}="If \1 points to \c ABT_SCHED_NULL, \c ABT
 
 ALIASES += DOC_ERROR_INV_TASK_HANDLE{1}="If \1 is \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_TASK is returned.\n"
 
+ALIASES += DOC_ERROR_INV_TASK_PTR{1}="If \1 points to \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_TASK is returned.\n"
+
 ALIASES += DOC_ERROR_INV_THREAD_ATTR_HANDLE{1}="If \1 is \c ABT_THREAD_ATTR_NULL, \c ABT_ERR_INV_THREAD_ATTR is returned.\n"
+
+ALIASES += DOC_ERROR_INV_THREAD_ATTR_PTR{1}="If \1 points to \c ABT_THREAD_ATTR_NULL, \c ABT_ERR_INV_THREAD_ATTR is returned.\n"
+
+ALIASES += DOC_ERROR_INV_THREAD_CALLER{1}="If \1 is the caller, \c ABT_ERR_INV_THREAD is returned.\n"
 
 ALIASES += DOC_ERROR_INV_THREAD_HANDLE{1}="If \1 is \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_THREAD is returned.\n"
 
+ALIASES += DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{1}="If \1 is the work unit of the main scheduler, \c ABT_ERR_INV_THREAD is returned.\n"
+
 ALIASES += DOC_ERROR_INV_THREAD_NOT_CALLER{1}="If \1 is not the caller, \c ABT_ERR_INV_THREAD is returned.\n"
+
+ALIASES += DOC_ERROR_INV_THREAD_NOT_MIGRATABLE{1}="If \1 is not migratable, \c ABT_ERR_INV_THREAD is returned.\n"
+
+ALIASES += DOC_ERROR_INV_THREAD_NOT_TERMINATED{1}="If \1 is not terminated, \c ABT_ERR_INV_THREAD is returned.\n"
 
 ALIASES += DOC_ERROR_INV_THREAD_NY="If the caller is a tasklet, \c ABT_ERR_INV_THREAD is returned.\n"
 
 ALIASES += DOC_ERROR_INV_THREAD_NY{1}="If \1 is a tasklet, \c ABT_ERR_INV_THREAD is returned.\n"
+
+ALIASES += DOC_ERROR_INV_THREAD_PRIMARY_ULT{1}="If \1 is the primary ULT, \c ABT_ERR_INV_THREAD is returned.\n"
+
+ALIASES += DOC_ERROR_INV_THREAD_PTR{1}="If \1 points to \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_THREAD is returned.\n"
 
 ALIASES += DOC_ERROR_INV_TIMER_HANDLE{1}="If \1 is \c ABT_TIMER_NULL, \c ABT_ERR_INV_TIMER is returned.\n"
 
@@ -2033,6 +2069,10 @@ ALIASES += DOC_ERROR_INV_XSTREAM_RANK{1}="If \1 is negative, \c ABT_ERR_INV_XSTR
 ALIASES += DOC_ERROR_INV_XSTREAM_RUNNING_CALLER_CONDITIONAL{2}="If \2 and \1 is running the calling work unit, \c ABT_ERR_INV_XSTREAM is returned.\n"
 
 ALIASES += DOC_ERROR_INV_XSTREAM_RUNNING_CALLER{1}="If \1 is running the calling work unit, \c ABT_ERR_INV_XSTREAM is returned.\n"
+
+ALIASES += DOC_ERROR_MIGRATION_NA_THREAD_MIGRATE="If no execution stream for migration exists, \c ABT_ERR_MIGRATION_NA is returned.\n"
+
+ALIASES += DOC_ERROR_MIGRATION_TARGET{2}="If \1 is associated with \2, \c ABT_ERR_MIGRATION_TARGET is returned.\n"
 
 ALIASES += DOC_ERROR_NULL_PTR{2}="If \1 is \c NULL, \2 is returned.\n"
 
@@ -2061,6 +2101,8 @@ ALIASES += DOC_ERROR_SUCCESS_LOCK_FAILED{1}="If this routine fails to obtain \1,
 ALIASES += DOC_ERROR_SYS_CPUBIND="If an error occurs in binding the execution stream, \c ABT_ERR_SYS is returned.\n"
 
 ALIASES += DOC_ERROR_TASK{1}="If the caller is a tasklet, \1 is returned.\n"
+
+ALIASES += DOC_ERROR_THREAD_WORK_UNIT_UNSUSPENDED{1}="If \1 is not suspended, \c ABT_ERR_THREAD is returned.\n"
 
 ALIASES += DOC_ERROR_UNINITIALIZED="If the Argobots runtime is not initialized, \c ABT_ERR_UNINITIALIZED is returned.\n"
 
@@ -2092,6 +2134,8 @@ ALIASES += DOC_NOTE_DEFAULT_SCHED_AUTOMATIC="To see the details of whether the s
 
 ALIASES += DOC_NOTE_DEFAULT_SCHED_CONFIG="To see the details of the default scheduler configuration, please check \c ABT_sched_config_create()."
 
+ALIASES += DOC_NOTE_DEFAULT_THREAD_ATTRIBUTE="To see the details of the default ULT attributes, please check \c ABT_thread_attr_create()."
+
 ALIASES += DOC_NOTE_EFFECT_ABT_FINALIZE="\c ABT_finalize() frees the primary execution stream, its main scheduler, and pools associated with the main scheduler."
 
 ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant for debugging and diagnosis and can be changed because of an update of the internal implementation of Argobots.  A program that relies on the output of this routine is non-conforming."
@@ -2116,11 +2160,15 @@ ALIASES += DOC_UNDEFINED_COND_WAIT{2}="If \2 is a recursive mutex and has been l
 
 ALIASES += DOC_UNDEFINED_EVENTUAL_BUFFER{2}="If the memory buffer pointed to by \2 is accessed after freeing \1, the results are undefined.\n If the memory buffer pointed to by \2 is modified, the results are undefined.\n"
 
+ALIASES += DOC_UNDEFINED_FREED{1}="If \1 has already been freed, the results are undefined.\n"
+
 ALIASES += DOC_UNDEFINED_FUTURE_CALLBACK{2}="If the contents of the argument \2 passed to \1 are accessed after \1 finishes, the results are undefined.\n If a future that triggers \1 is accessed in \1 itself, the results are undefined.\n If the contents of the argument \2 passed to \1 are modified, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{1}="If \1 is a recursive mutex and the caller does not have ownership of \1, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_NOT_LOCKED{1}="If \1 is not locked, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_NO_ERROR_HANDLING="If any error happens in this routine, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_NULL_PTR_CONDITIONAL{2}="If \2 and \1 is \c NULL, the results are undefined.\n"
 
@@ -2136,6 +2184,8 @@ ALIASES += DOC_UNDEFINED_SCHED_USED{1}="If \1 is being used, the results are und
 
 ALIASES += DOC_UNDEFINED_SYS_FILE{1}="If an error occurs regarding \1, the results are undefined.\n"
 
+ALIASES += DOC_UNDEFINED_THREAD_MIGRATION{2}="If \2 is freed before the migration process completes or \1 is freed, whichever is earlier, the results are undefined.\n"
+
 ALIASES += DOC_UNDEFINED_THREAD_UNSAFE_FREE{1}="If \1 is accessed after calling this routine, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_THREAD_UNSAFE{1}="If \1 is accessed concurrently, the results are undefined.\n"
@@ -2148,13 +2198,23 @@ ALIASES += DOC_UNDEFINED_UNINIT="If Argobots is not initialized, the results are
 
 ALIASES += DOC_UNDEFINED_WAITER{1}="If any waiter is blocked on \1, the results are undefined.\n"
 
+ALIASES += DOC_UNDEFINED_WORK_UNIT_BLOCKED{1}="If \1 is blocked on by \2, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_WORK_UNIT_IN_POOL{1}="If \1 is in a pool, the results are undefined.\n"
+
 ALIASES += DOC_UNDEFINED_WORK_UNIT_NOT_ASSOCIATED{2}="If \1 is not associated with \2, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_WORK_UNIT_NOT_IN_POOL{2}="If \2 is not in \1, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_WORK_UNIT_NOT_READY{1}="If \1 is not ready, the results are undefined.\n"
 
+ALIASES += DOC_UNDEFINED_WORK_UNIT_NOT_RUNNING{1}="If \1 is not running, the results are undefined.\n"
+
 ALIASES += DOC_UNDEFINED_WORK_UNIT_RUNNING{1}="If \1 is running, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_WORK_UNIT_TERMINATED{1}="If \1 is terminated, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_WORK_UNIT_UNSUSPENDED{1}="If \1 is not suspended, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_XSTREAM_BLOCKED{2}="If \1 is blocked on by \2, the results are undefined.\n"
 
