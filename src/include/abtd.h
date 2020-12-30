@@ -58,7 +58,8 @@ void ABTD_xstream_context_print(ABTD_xstream_context *p_ctx, FILE *p_os,
 void ABTD_affinity_init(const char *affinity_str);
 void ABTD_affinity_finalize(void);
 ABTU_ret_err int ABTD_affinity_cpuset_read(ABTD_xstream_context *p_ctx,
-                                           ABTD_affinity_cpuset *p_cpuset);
+                                           int max_cpuids, int *cpuids,
+                                           int *p_num_cpuids);
 ABTU_ret_err int
 ABTD_affinity_cpuset_apply(ABTD_xstream_context *p_ctx,
                            const ABTD_affinity_cpuset *p_cpuset);

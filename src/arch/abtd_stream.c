@@ -56,10 +56,7 @@ ABTU_ret_err int ABTD_xstream_context_create(void *(*f_xstream)(void *),
     pthread_cond_init(&p_ctx->state_cond, NULL);
     int ret = pthread_create(&p_ctx->native_thread, NULL,
                              xstream_context_thread_func, p_ctx);
-    if (ret != 0) {
-        HANDLE_ERROR("pthread_create");
-        return ABT_ERR_XSTREAM;
-    }
+    ABTI_CHECK_TRUE(ret == 0, ABT_ERR_SYS);
     return ABT_SUCCESS;
 }
 
