@@ -138,11 +138,15 @@ void task_func2(void *arg)
     ATS_ERROR(ret, "ABT_info_query_config");
     if (is_check_error) {
         ret = ABT_thread_self(&thread);
+#ifdef ABT_ENABLE_VER_20_API
+        ATS_ERROR(ret, "ABT_thread_self");
+#else
         assert(ret == ABT_ERR_INV_THREAD);
         if (thread != ABT_THREAD_NULL) {
             fprintf(stderr, "ERROR: should not be a ULT\n");
             exit(-1);
         }
+#endif
     }
 
     size_t i;
