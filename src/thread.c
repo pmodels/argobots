@@ -16,10 +16,7 @@ static inline void thread_free(ABTI_local *p_local, ABTI_thread *p_thread,
 static void thread_root_func(void *arg);
 static void thread_main_sched_func(void *arg);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-ABTU_ret_err static int thread_migrate_to_xstream(ABTI_local **pp_local,
-                                                  ABTI_thread *p_thread,
-                                                  ABTI_xstream *p_xstream);
-ABTU_ret_err static int thread_migrate_to_pool(ABTI_local **p_local,
+ABTU_ret_err static int thread_migrate_to_pool(ABTI_local *p_local,
                                                ABTI_thread *p_thread,
                                                ABTI_pool *p_pool);
 #endif
@@ -88,6 +85,11 @@ static ABTI_key g_thread_mig_data_key =
 int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
                       ABT_thread_attr attr, ABT_thread *newthread)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newthread to NULL on error. */
+    if (newthread)
+        *newthread = ABT_THREAD_NULL;
+#endif
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_ythread *p_newthread;
 
@@ -161,6 +163,11 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
                                  void (*thread_func)(void *), void *arg,
                                  ABT_thread_attr attr, ABT_thread *newthread)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newthread to NULL on error. */
+    if (newthread)
+        *newthread = ABT_THREAD_NULL;
+#endif
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_ythread *p_newthread;
 
@@ -233,7 +240,7 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
  * @param[out] newthread_list    array of ULT handles
  * @return Error code
  */
-int ABT_thread_create_many(int num, ABT_pool *pool_list,
+int ABT_thread_create_many(int num_threads, ABT_pool *pool_list,
                            void (**thread_func_list)(void *), void **arg_list,
                            ABT_thread_attr attr, ABT_thread *newthread_list)
 {
@@ -250,7 +257,7 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
     }
 
     if (newthread_list == NULL) {
-        for (i = 0; i < num; i++) {
+        for (i = 0; i < num_threads; i++) {
             ABTI_ythread *p_newthread;
             ABT_pool pool = pool_list[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -265,7 +272,7 @@ int ABT_thread_create_many(int num, ABT_pool *pool_list,
             ABTI_CHECK_ERROR(abt_errno);
         }
     } else {
-        for (i = 0; i < num; i++) {
+        for (i = 0; i < num_threads; i++) {
             ABTI_ythread *p_newthread;
             ABT_pool pool = pool_list[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -401,15 +408,9 @@ int ABT_thread_free(ABT_thread *thread)
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(h_thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    /* We first need to check whether p_local_xstream is NULL because external
-     * threads might call this routine. */
-    ABTI_CHECK_TRUE_MSG(!ABTI_local_get_xstream_or_null(p_local) ||
-                            p_thread !=
-                                ABTI_local_get_xstream(p_local)->p_thread,
-                        ABT_ERR_INV_THREAD,
-                        "The current thread cannot be freed.");
-
+    ABTI_CHECK_TRUE(!ABTI_local_get_xstream_or_null(p_local) ||
+                        p_thread != ABTI_local_get_xstream(p_local)->p_thread,
+                    ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(!(p_thread->type &
                       (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED)),
                     ABT_ERR_INV_THREAD);
@@ -456,12 +457,12 @@ int ABT_thread_free(ABT_thread *thread)
  * @param[in,out] thread_list  array of work unit handles
  * @return Error code
  */
-int ABT_thread_free_many(int num, ABT_thread *thread_list)
+int ABT_thread_free_many(int num_threads, ABT_thread *thread_list)
 {
     ABTI_local *p_local = ABTI_local_get_local();
     int i;
 
-    for (i = 0; i < num; i++) {
+    for (i = 0; i < num_threads; i++) {
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread_list[i]);
         /* TODO: check input */
         thread_join(&p_local, p_thread);
@@ -514,13 +515,9 @@ int ABT_thread_join(ABT_thread thread)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-
-    ABTI_CHECK_TRUE_MSG(!ABTI_local_get_xstream_or_null(p_local) ||
-                            p_thread !=
-                                ABTI_local_get_xstream(p_local)->p_thread,
-                        ABT_ERR_INV_THREAD,
-                        "The current thread cannot be freed.");
-
+    ABTI_CHECK_TRUE(!ABTI_local_get_xstream_or_null(p_local) ||
+                        p_thread != ABTI_local_get_xstream(p_local)->p_thread,
+                    ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(!(p_thread->type &
                       (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED)),
                     ABT_ERR_INV_THREAD);
@@ -600,7 +597,13 @@ int ABT_thread_exit(void)
 {
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_ythread;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_ythread);
+#else
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
+#endif
+    ABTI_CHECK_TRUE(!(p_ythread->thread.type & ABTI_THREAD_TYPE_PRIMARY),
+                    ABT_ERR_INV_THREAD);
 
     ABTI_ythread_exit(p_local_xstream, p_ythread);
     return ABT_SUCCESS;
@@ -645,8 +648,7 @@ int ABT_thread_cancel(ABT_thread thread)
 #else
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-    ABTI_CHECK_TRUE(!(p_thread->type &
-                      (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED)),
+    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_PRIMARY),
                     ABT_ERR_INV_THREAD);
 
     /* Set the cancel request */
@@ -689,17 +691,16 @@ int ABT_thread_cancel(ABT_thread thread)
  */
 int ABT_thread_self(ABT_thread *thread)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
     *thread = ABT_THREAD_NULL;
-
+    ABTI_ythread *p_self;
+    ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(NULL, &p_self);
+    *thread = ABTI_thread_get_handle(&p_self->thread);
+#else
     ABTI_xstream *p_local_xstream;
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
-    ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE)) {
-        /* This is checked even if an error check is disabled. */
-        ABTI_HANDLE_ERROR(ABT_ERR_INV_THREAD);
-    }
-
-    *thread = ABTI_thread_get_handle(p_thread);
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    *thread = ABTI_thread_get_handle(p_local_xstream->p_thread);
+#endif
     return ABT_SUCCESS;
 }
 
@@ -735,10 +736,15 @@ int ABT_thread_self(ABT_thread *thread)
  */
 int ABT_thread_self_id(ABT_unit_id *id)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_ythread *p_self;
     ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(NULL, &p_self);
-
     *id = ABTI_thread_get_id(&p_self->thread);
+#else
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    *id = ABTI_thread_get_id(p_local_xstream->p_thread);
+#endif
     return ABT_SUCCESS;
 }
 
@@ -895,9 +901,7 @@ int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-    ABTI_ASSERT(p_thread->p_pool);
-
-    *id = (int)(p_thread->p_pool->id);
+    *id = (int)p_thread->p_pool->id;
     return ABT_SUCCESS;
 }
 
@@ -990,37 +994,37 @@ int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
  */
 int ABT_thread_yield_to(ABT_thread thread)
 {
-    ABTI_ythread *p_tar_ythread = ABTI_ythread_get_ptr(thread);
-    ABTI_CHECK_NULL_YTHREAD_PTR(p_tar_ythread);
-
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_cur_ythread;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    p_local_xstream = ABTI_local_get_xstream_or_null(ABTI_local_get_local());
+    if (ABTI_IS_ERROR_CHECK_ENABLED && ABTI_IS_EXT_THREAD_ENABLED &&
+        p_local_xstream == NULL) {
+        return ABT_SUCCESS;
+    } else {
+        p_cur_ythread =
+            ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && !p_cur_ythread)
+            return ABT_SUCCESS;
+    }
+#else
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_cur_ythread);
+#endif
+
+    ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
+    ABTI_ythread *p_tar_ythread = ABTI_thread_get_ythread_or_null(p_tar_thread);
+    ABTI_CHECK_NULL_YTHREAD_PTR(p_tar_ythread);
+    ABTI_CHECK_TRUE(p_cur_ythread != p_tar_ythread, ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!(p_cur_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->u_is_in_pool, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->p_remove, ABT_ERR_POOL);
 
     LOG_DEBUG("[U%" PRIu64 ":E%d] yield_to -> U%" PRIu64 "\n",
               ABTI_thread_get_id(&p_cur_ythread->thread),
               p_cur_ythread->thread.p_last_xstream->rank,
               ABTI_thread_get_id(&p_tar_ythread->thread));
-
-    /* The target ULT must be different from the caller ULT. */
-    ABTI_CHECK_TRUE_MSG(p_cur_ythread != p_tar_ythread, ABT_ERR_INV_THREAD,
-                        "The caller and target ULTs are the same.");
-
-    ABTI_CHECK_TRUE_MSG(ABTD_atomic_relaxed_load_int(
-                            &p_tar_ythread->thread.state) !=
-                            ABT_THREAD_STATE_TERMINATED,
-                        ABT_ERR_INV_THREAD,
-                        "Cannot yield to the terminated thread");
-
-    /* Both threads must be associated with the same pool. */
-    /* FIXME: instead of same pool, runnable by the same ES */
-    ABTI_CHECK_TRUE_MSG(p_cur_ythread->thread.p_pool ==
-                            p_tar_ythread->thread.p_pool,
-                        ABT_ERR_INV_THREAD,
-                        "The target thread's pool is not the same as mine.");
-
-    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->u_is_in_pool, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->p_remove, ABT_ERR_POOL);
 
     /* If the target thread is not in READY, we don't yield.  Note that ULT can
      * be regarded as 'ready' only if its state is READY and it has been
@@ -1031,6 +1035,7 @@ int ABT_thread_yield_to(ABT_thread thread)
               p_tar_ythread->thread.unit) == ABT_TRUE &&
           ABTD_atomic_acquire_load_int(&p_tar_ythread->thread.state) ==
               ABT_THREAD_STATE_READY)) {
+        /* This is undefined behavior. */
         return ABT_SUCCESS;
     }
 
@@ -1103,7 +1108,20 @@ int ABT_thread_yield(void)
 {
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_ythread;
-    ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(&p_local_xstream, &p_ythread);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    p_local_xstream = ABTI_local_get_xstream_or_null(ABTI_local_get_local());
+    if (ABTI_IS_ERROR_CHECK_ENABLED && ABTI_IS_EXT_THREAD_ENABLED &&
+        ABTU_unlikely(p_local_xstream == NULL)) {
+        return ABT_SUCCESS;
+    } else {
+        p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
+        if (ABTI_IS_ERROR_CHECK_ENABLED && ABTU_unlikely(!p_ythread)) {
+            return ABT_SUCCESS;
+        }
+    }
+#else
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
+#endif
 
     ABTI_ythread_yield(&p_local_xstream, p_ythread, ABT_SYNC_EVENT_TYPE_USER,
                        NULL);
@@ -1148,10 +1166,12 @@ int ABT_thread_resume(ABT_thread thread)
     ABTI_ythread *p_ythread;
     ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_INV_THREAD);
 
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* The ULT must be in BLOCKED state. */
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
                         ABT_THREAD_STATE_BLOCKED,
                     ABT_ERR_THREAD);
+#endif
 
     ABTI_ythread_set_ready(p_local, p_ythread);
     return ABT_SUCCESS;
@@ -1216,8 +1236,27 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
-
-    int abt_errno = thread_migrate_to_xstream(&p_local, p_thread, p_xstream);
+    ABTI_CHECK_TRUE(p_thread->type & ABTI_THREAD_TYPE_MIGRATABLE,
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    /* Check if a thread is associated with a pool of the main scheduler. */
+    ABTI_sched *p_sched = p_xstream->p_main_sched;
+    if (ABTI_IS_ERROR_CHECK_ENABLED) {
+        size_t p;
+        for (p = 0; p < p_sched->num_pools; p++)
+            ABTI_CHECK_TRUE(ABTI_pool_get_ptr(p_sched->pools[p]) !=
+                                p_thread->p_pool,
+                            ABT_ERR_MIGRATION_TARGET);
+    }
+    /* Get the target pool. */
+    ABTI_pool *p_pool = NULL;
+    int abt_errno;
+    abt_errno =
+        ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
+    /* Request a migration. */
+    abt_errno = thread_migrate_to_pool(p_local, p_thread, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 #else
@@ -1280,23 +1319,26 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
-
-    /* checking for cases when migration is not allowed */
-    ABTI_CHECK_TRUE(!(p_thread->type &
-                      (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED)),
+    ABTI_CHECK_TRUE(p_thread->type & ABTI_THREAD_TYPE_MIGRATABLE,
                     ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                        ABT_THREAD_STATE_TERMINATED,
+    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_MAIN_SCHED),
                     ABT_ERR_INV_THREAD);
-
-    /* Find a pool */
+    /* Check if a thread is associated with a pool of the main scheduler. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED) {
+        size_t p;
+        for (p = 0; p < p_sched->num_pools; p++)
+            ABTI_CHECK_TRUE(ABTI_pool_get_ptr(p_sched->pools[p]) !=
+                                p_thread->p_pool,
+                            ABT_ERR_MIGRATION_TARGET);
+    }
+    /* Get the target pool. */
     ABTI_pool *p_pool;
     int abt_errno;
     abt_errno =
         ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
     ABTI_CHECK_ERROR(abt_errno);
-
-    abt_errno = thread_migrate_to_pool(&p_local, p_thread, p_pool);
+    /* Request a migration. */
+    abt_errno = thread_migrate_to_pool(p_local, p_thread, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 #else
@@ -1357,8 +1399,13 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-
-    int abt_errno = thread_migrate_to_pool(&p_local, p_thread, p_pool);
+    ABTI_CHECK_TRUE(p_thread->type & ABTI_THREAD_TYPE_MIGRATABLE,
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(p_thread->p_pool != p_pool, ABT_ERR_MIGRATION_TARGET);
+    /* Request a migration. */
+    int abt_errno = thread_migrate_to_pool(p_local, p_thread, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 #else
@@ -1424,33 +1471,70 @@ int ABT_thread_migrate(ABT_thread thread)
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     /* TODO: fix the bug(s) */
     ABTI_local *p_local = ABTI_local_get_local();
-
+    ABTI_global *p_global = gp_ABTI_global;
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-    ABTI_CHECK_TRUE(gp_ABTI_global->num_xstreams != 1, ABT_ERR_MIGRATION_NA);
+    ABTI_CHECK_TRUE(p_thread->type & ABTI_THREAD_TYPE_MIGRATABLE,
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
 
-    /* Choose the destination xstream */
-    /* FIXME: Currently, the target xstream is linearly chosen. We need a
-     * better selection strategy. */
-    /* TODO: handle better when no pool accepts migration */
+    /* Copy the target executions streams. */
+    int i, num_xstreams, abt_errno;
+    ABTI_xstream **xstreams;
+    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+    num_xstreams = p_global->num_xstreams;
+    abt_errno =
+        ABTU_malloc(sizeof(ABTI_xstream *) * num_xstreams, (void **)&xstreams);
+    if (!(ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS)) {
+        ABTI_xstream *p_xstream = p_global->p_xstream_head;
+        i = 0;
+        while (p_xstream) {
+            xstreams[i++] = p_xstream;
+            p_xstream = p_xstream->p_next;
+        }
+    }
+    ABTI_spinlock_release(&p_global->xstream_list_lock);
+    ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_xstream *p_xstream = gp_ABTI_global->p_xstream_head;
-    while (p_xstream) {
-        if (p_xstream != p_thread->p_last_xstream) {
-            if (ABTD_atomic_acquire_load_int(&p_xstream->state) ==
-                ABT_XSTREAM_STATE_RUNNING) {
-                int abt_errno =
-                    thread_migrate_to_xstream(&p_local, p_thread, p_xstream);
-                if (abt_errno != ABT_ERR_INV_XSTREAM &&
-                    abt_errno != ABT_ERR_MIGRATION_TARGET) {
-                    ABTI_CHECK_ERROR(abt_errno);
-                    break;
-                }
+    /* Choose the destination xstream.  The user needs to maintain all the pools
+     * and execution streams alive. */
+    for (i = 0; i < num_xstreams; i++) {
+        ABTI_xstream *p_xstream = xstreams[i];
+        if (p_xstream == p_thread->p_last_xstream)
+            continue;
+        if (ABTD_atomic_acquire_load_int(&p_xstream->state) !=
+            ABT_XSTREAM_STATE_RUNNING)
+            continue;
+        /* Check if a thread is associated with a pool of the main scheduler. */
+        ABTI_sched *p_sched = p_xstream->p_main_sched;
+        ABT_bool is_valid = ABT_TRUE;
+        size_t p;
+        for (p = 0; p < p_sched->num_pools; p++) {
+            if (ABTI_pool_get_ptr(p_sched->pools[p]) != p_thread->p_pool) {
+                is_valid = ABT_FALSE;
+                break;
             }
         }
-        p_xstream = p_xstream->p_next;
+        if (!is_valid)
+            continue;
+        /* Get the target pool. */
+        ABTI_pool *p_pool = NULL;
+        abt_errno =
+            ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
+        if (abt_errno != ABT_SUCCESS)
+            continue;
+        /* Request a migration. */
+        abt_errno = thread_migrate_to_pool(p_local, p_thread, p_pool);
+        if (abt_errno != ABT_SUCCESS)
+            continue;
+        /* Succeeds. Return. */
+        ABTU_free(xstreams);
+        return ABT_SUCCESS;
     }
-    return ABT_SUCCESS;
+    /* All attempts failed. */
+    ABTU_free(xstreams);
+    return ABT_ERR_MIGRATION_NA;
 #else
     ABTI_HANDLE_ERROR(ABT_ERR_MIGRATION_NA);
 #endif
@@ -1554,19 +1638,26 @@ int ABT_thread_set_callback(ABT_thread thread,
  *                                            \c ABT_FALSE: not)
  * @return Error code
  */
-int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
+int ABT_thread_set_migratable(ABT_thread thread, ABT_bool migratable)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    if (!(p_thread->type &
-          (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED))) {
-        if (flag) {
-            p_thread->type |= ABTI_THREAD_TYPE_MIGRATABLE;
-        } else {
-            p_thread->type &= ~ABTI_THREAD_TYPE_MIGRATABLE;
-        }
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    if (p_thread->type &
+        (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED))
+        return ABT_SUCCESS;
+#else
+    ABTI_CHECK_TRUE(!(p_thread->type &
+                      (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED)),
+                    ABT_ERR_INV_THREAD);
+#endif
+
+    if (migratable) {
+        p_thread->type |= ABTI_THREAD_TYPE_MIGRATABLE;
+    } else {
+        p_thread->type &= ~ABTI_THREAD_TYPE_MIGRATABLE;
     }
     return ABT_SUCCESS;
 #else
@@ -1604,13 +1695,13 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool flag)
  *                                    \c ABT_FALSE: not)
  * @return Error code
  */
-int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
+int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *is_migratable)
 {
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag =
+    *is_migratable =
         (p_thread->type & ABTI_THREAD_TYPE_MIGRATABLE) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 #else
@@ -1646,12 +1737,13 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *flag)
  * @param[out] is_primary  result (\c ABT_TRUE: primary ULT, \c ABT_FALSE: not)
  * @return Error code
  */
-int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag)
+int ABT_thread_is_primary(ABT_thread thread, ABT_bool *is_primary)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag = (p_thread->type & ABTI_THREAD_TYPE_PRIMARY) ? ABT_TRUE : ABT_FALSE;
+    *is_primary =
+        (p_thread->type & ABTI_THREAD_TYPE_PRIMARY) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
 
@@ -1682,12 +1774,13 @@ int ABT_thread_is_primary(ABT_thread thread, ABT_bool *flag)
  * @param[out] is_unnamed  result (\c ABT_TRUE: unnamed, \c ABT_FALSE: not)
  * @return Error code
  */
-int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *flag)
+int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *is_unnamed)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
-    *flag = (p_thread->type & ABTI_THREAD_TYPE_NAMED) ? ABT_FALSE : ABT_TRUE;
+    *is_unnamed =
+        (p_thread->type & ABTI_THREAD_TYPE_NAMED) ? ABT_FALSE : ABT_TRUE;
     return ABT_SUCCESS;
 }
 
@@ -1768,10 +1861,12 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
 {
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
-    ABTI_ythread *p_ythread;
-    ABTI_CHECK_YIELDABLE(p_thread, &p_ythread, ABT_ERR_INV_THREAD);
-
-    *stacksize = p_ythread->stacksize;
+    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+    if (p_ythread) {
+        *stacksize = p_ythread->stacksize;
+    } else {
+        *stacksize = 0;
+    }
     return ABT_SUCCESS;
 }
 
@@ -2001,6 +2096,10 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
 
     ABTI_thread_attr thread_attr, *p_attr;
     ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    ABTI_CHECK_TRUE(p_ythread, ABT_ERR_INV_THREAD);
+#endif
+
     if (p_ythread) {
         thread_attr.p_stack = p_ythread->p_stack;
         thread_attr.stacksize = p_ythread->stacksize;
@@ -2506,45 +2605,23 @@ ythread_create(ABTI_local *p_local, ABTI_pool *p_pool,
 }
 
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
-ABTU_ret_err static int thread_migrate_to_pool(ABTI_local **pp_local,
+ABTU_ret_err static int thread_migrate_to_pool(ABTI_local *p_local,
                                                ABTI_thread *p_thread,
                                                ABTI_pool *p_pool)
 {
-    /* checking for cases when migration is not allowed */
-    ABTI_CHECK_TRUE(!(p_thread->type &
-                      (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED)),
-                    ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                        ABT_THREAD_STATE_TERMINATED,
-                    ABT_ERR_INV_THREAD);
-
-    /* checking for migration to the same pool */
-    ABTI_CHECK_TRUE(p_thread->p_pool != p_pool, ABT_ERR_MIGRATION_TARGET);
-
-    /* adding request to the thread.  p_migration_pool must be updated before
+    /* Adding request to the thread.  p_migration_pool must be updated before
      * setting the request since the target thread would read p_migration_pool
      * after ABTI_THREAD_REQ_MIGRATE.  The update must be "atomic" (but does not
      * require acq-rel) since two threads can update the pointer value
      * simultaneously. */
+
     ABTI_thread_mig_data *p_mig_data;
-    int abt_errno = ABTI_thread_get_mig_data(*pp_local, p_thread, &p_mig_data);
+    int abt_errno = ABTI_thread_get_mig_data(p_local, p_thread, &p_mig_data);
     ABTI_CHECK_ERROR(abt_errno);
+
     ABTD_atomic_relaxed_store_ptr(&p_mig_data->p_migration_pool,
                                   (void *)p_pool);
-
     ABTI_thread_set_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
-
-    /* yielding if it is the same thread */
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
-    if ((!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) &&
-        p_thread == p_local_xstream->p_thread) {
-        ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-        if (p_ythread) {
-            ABTI_ythread_yield(&p_local_xstream, p_ythread,
-                               ABT_SYNC_EVENT_TYPE_OTHER, NULL);
-            *pp_local = ABTI_xstream_get_local(p_local_xstream);
-        }
-    }
     return ABT_SUCCESS;
 }
 #endif
@@ -2777,48 +2854,6 @@ static void thread_main_sched_func(void *arg)
     }
     /* Finish this thread and goes back to the root thread. */
 }
-
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-ABTU_ret_err static int thread_migrate_to_xstream(ABTI_local **pp_local,
-                                                  ABTI_thread *p_thread,
-                                                  ABTI_xstream *p_xstream)
-{
-    /* checking for cases when migration is not allowed */
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_xstream->state) !=
-                        ABT_XSTREAM_STATE_TERMINATED,
-                    ABT_ERR_INV_XSTREAM);
-    ABTI_CHECK_TRUE(!(p_thread->type &
-                      (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED)),
-                    ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->state) !=
-                        ABT_THREAD_STATE_TERMINATED,
-                    ABT_ERR_INV_THREAD);
-
-    /* We need to find the target scheduler */
-    /* We check the state of the ES */
-    ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_xstream->state) !=
-                        ABT_XSTREAM_STATE_TERMINATED,
-                    ABT_ERR_INV_XSTREAM);
-    /* The migration target should be the main scheduler since it is
-     * hard to guarantee the lifetime of the stackable scheduler. */
-    ABTI_sched *p_sched = p_xstream->p_main_sched;
-
-    /* We check the state of the sched */
-    /* Find a pool */
-    ABTI_pool *p_pool = NULL;
-    int abt_errno;
-    abt_errno =
-        ABTI_sched_get_migration_pool(p_sched, p_thread->p_pool, &p_pool);
-    ABTI_CHECK_ERROR(abt_errno);
-    /* We set the migration counter to prevent the scheduler from
-     * stopping */
-    abt_errno = thread_migrate_to_pool(pp_local, p_thread, p_pool);
-    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-        return abt_errno;
-    }
-    return ABT_SUCCESS;
-}
-#endif
 
 static inline ABT_unit_id thread_get_new_id(void)
 {
