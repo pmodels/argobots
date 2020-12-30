@@ -16,26 +16,40 @@ ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
 
 /**
  * @ingroup TASK
- * @brief   Create a new task and return its handle through newtask.
+ * @brief   Create a new task.
  *
- * \c ABT_task_create() creates a new tasklet that is pushed into \c pool. The
- * insertion is done from the ES where this call is made. Therefore, the access
- * type of \c pool should comply with that. The handle of the newly created
- * tasklet is obtained through \c newtask.
+ * \c ABT_task_create() creates a new tasklet, associates it with the pool
+ * \c pool, and returns its handle through \c newtask.  This routine pushes the
+ * created tasklet to the pool \c pool.  The created tasklet calls
+ * \c task_func() with \c arg when it is scheduled.
  *
- * If this is ABT_XSTREAM_NULL, the new task is managed globally and it can be
- * executed by any ES. Otherwise, the task is scheduled and runs in the
- * specified ES.
- * If newtask is NULL, the task object will be automatically released when
- * this \a unnamed task completes the execution of task_func. Otherwise,
- * ABT_task_free() can be used to explicitly release the task object.
+ * If \c newtask is \c NULL, this routine creates an unnamed tasklet.  The
+ * unnamed tasklet is automatically released on the completion of
+ * \c task_func().  Otherwise, \c newtask must be explicitly freed by
+ * \c ABT_thread_free().
  *
- * @param[in]  pool       handle to the associated pool
- * @param[in]  task_func  function to be executed by a new task
- * @param[in]  arg        argument for task_func
- * @param[out] newtask    handle to a newly created task
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR_CONDITIONAL{\c newtask, \c ABT_TASK_NULL,
+ *                                              \c newtask is not \c NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c task_func}
+ *
+ * @param[in]  pool       pool handle
+ * @param[in]  task_func  function to be executed by a new tasklet
+ * @param[in]  arg        argument for \c task_func()
+ * @param[out] newtask    tasklet handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *newtask)
@@ -58,34 +72,41 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
 
 /**
  * @ingroup TASK
- * @brief   Create a new tasklet associated with the target ES (\c xstream).
+ * @brief   Create a new tasklet associated with an execution stream.
  *
- * \c ABT_task_create_on_xstream() creates a new tasklet associated with
- * the target ES and returns its handle through \c newtask. The new tasklet
- * is inserted into a proper pool associated with the main scheduler of
- * the target ES.
+ * \c ABT_task_create_on_xstream() creates a new tasklet, associates it with the
+ * first pool of the main scheduler of the execution stream \c xstream, and
+ * returns its handle through \c newtask.  This routine pushes the created
+ * tasklet to the pool \c pool.  The created tasklet calls \c task_func() with
+ * \c arg when it is scheduled.
  *
- * This routine is only for convenience. If the user wants to focus on the
- * performance, we recommend to use \c ABT_task_create() with directly
- * dealing with pools. Pools are a right way to manage work units in Argobots.
- * ES is just an abstract, and it is not a mechanism for execution and
- * performance tuning.
+ * If \c newtask is \c NULL, this routine creates an unnamed tasklet.  The
+ * unnamed tasklet is automatically released on the completion of
+ * \c task_func().  Otherwise, \c newtask must be explicitly freed by
+ * \c ABT_thread_free().
  *
- * If \c newtask is \c NULL, this routine creates an unnamed tasklet.
- * The object for unnamed tasklet will be automatically freed when the unnamed
- * tasklet completes its execution. Otherwise, this routine creates a named
- * tasklet and \c ABT_task_free() can be used to explicitly free the tasklet
- * object.
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR_CONDITIONAL{\c newtask, \c ABT_TASK_NULL,
+ *                                              \c newtask is not \c NULL}
+ * @endchangev20
  *
- * If \c newtask is not \c NULL and an error occurs in this routine, a non-zero
- * error code will be returned and \c newtask will be set to \c ABT_TASK_NULL.
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
  *
- * @param[in]  xstream    handle to the target ES
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c task_func}
+ *
+ * @param[in]  xstream    execution stream handle
  * @param[in]  task_func  function to be executed by a new tasklet
- * @param[in]  arg        argument for <tt>task_func</tt>
- * @param[out] newtask    handle to a newly created tasklet
+ * @param[in]  arg        argument for \c task_func()
+ * @param[out] newtask    tasklet handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                                void *arg, ABT_task *newtask)
@@ -112,21 +133,11 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Revive the tasklet.
+ * @brief   Revive a terminated work unit.
  *
- * \c ABT_task_revive() revives the tasklet, \c task, with \c task_func and
- * \arg and pushes the revived tasklet into \c pool.
- *
- * This function must be called with a valid tasklet handle, which has not been
- * freed by \c ABT_task_free().  However, the tasklet should have been joined
- * by \c ABT_task_join() before its handle is used in this routine.
- *
- * @param[in]     pool       handle to the associated pool
- * @param[in]     task_func  function to be executed by the tasklet
- * @param[in]     arg        argument for task_func
- * @param[in,out] task       handle to the tasklet
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as \c ABT_thread_revive()
+ * except for the error code.  \c ABT_task_revive() returns \c ABT_ERR_INV_TASK
+ * in a case where \c ABT_thread_revive() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *task);
@@ -135,16 +146,13 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Release the task object associated with task handle.
+ * @brief   Free a work unit.
  *
- * This routine deallocates memory used for the task object. If the task is
- * still running when this routine is called, the deallocation happens after
- * the task terminates and then this routine returns. If it is successfully
- * processed, task is set as ABT_TASK_NULL.
- *
- * @param[in,out] task  handle to the target task
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as \c ABT_thread_free() except
+ * for the value of \c task after this routine and the error code.
+ * \c ABT_task_free() sets \c task to \c ABT_TASK_NULL instead of
+ * \c ABT_THREAD_NULL.  \c ABT_task_free() returns \c ABT_ERR_INV_TASK in a case
+ * where \c ABT_thread_free() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_free(ABT_task *task);
 #endif
@@ -152,15 +160,11 @@ int ABT_task_free(ABT_task *task);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Wait for the tasklet to terminate.
+ * @brief   Wait for a work unit to terminate.
  *
- * \c ABT_task_join() blocks until the target tasklet \c task terminates.
- * Since this routine blocks, only ULTs can call this routine.  If tasklets use
- * this routine, the behavior is undefined.
- *
- * @param[in] task  handle to the target tasklet
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as \c ABT_thread_join() except
+ * for the error code.  \c ABT_task_join() returns \c ABT_ERR_INV_TASK in a case
+ * where \c ABT_thread_join() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_join(ABT_task task);
 #endif
@@ -168,31 +172,46 @@ int ABT_task_join(ABT_task task);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Request the cancellation of the target task.
+ * @brief   Send a termination request to a work unit.
  *
- * @param[in] task  handle to the target task
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as \c ABT_thread_cancel()
+ * except for the error code.  \c ABT_task_cancel() returns \c ABT_ERR_INV_TASK
+ * in a case where \c ABT_thread_cancel() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_cancel(ABT_task task);
 #endif
 
 /**
  * @ingroup TASK
- * @brief   Return the handle of the calling tasklet.
+ * @brief   Get the calling work unit.
  *
- * \c ABT_task_self() returns the handle of the calling tasklet.
- * If ULTs call this routine, \c ABT_TASK_NULL will be returned to \c task.
+ * \c ABT_task_self() returns the handle of the calling work unit through
+ * \c task.
  *
- * At present \c task is set to \c ABT_TASK_NULL when an error occurs, but this
- * behavior is deprecated.  The program should not rely on this behavior.
+ * @changev20
+ * \DOC_DESC_V1X_NOYIELDABLE{\c ABT_ERR_INV_TASK}
  *
- * @param[out] task  tasklet handle
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ *
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c task, \c ABT_TASK_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_TASK \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_INV_TASK_Y
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c task}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] task  work unit handle
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
- * @retval ABT_ERR_INV_THREAD    called by a yieldable thread (ULT)
  */
 int ABT_task_self(ABT_task *task)
 {
@@ -212,16 +231,32 @@ int ABT_task_self(ABT_task *task)
 
 /**
  * @ingroup TASK
- * @brief   Return the ID of the calling tasklet.
+ * @brief   Get ID of the calling work unit.
  *
- * \c ABT_task_self_id() returns the ID of the calling tasklet.
+ * \c ABT_task_self_id() returns the ID of the calling work unit through \c id.
  *
- * @param[out] id  tasklet id
+ * @changev20
+ * \DOC_DESC_V1X_NOYIELDABLE{\c ABT_ERR_INV_TASK}
+ *
+ * \DOC_DESC_V1X_RETURN_UNINITIALIZED
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_TASK \DOC_CONTEXT_NOCTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_V1X \DOC_ERROR_INV_TASK_Y
+ * \DOC_V1X \DOC_ERROR_UNINITIALIZED
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c id}
+ * \DOC_V20 \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] id  ID of the calling work unit
  * @return Error code
- * @retval ABT_SUCCESS           on success
- * @retval ABT_ERR_UNINITIALIZED Argobots has not been initialized
- * @retval ABT_ERR_INV_XSTREAM   called by an external thread
- * @retval ABT_ERR_INV_THREAD    called by a yieldable thread (ULT)
  */
 int ABT_task_self_id(ABT_unit_id *id)
 {
@@ -238,16 +273,12 @@ int ABT_task_self_id(ABT_unit_id *id)
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Get the ES associated with the target tasklet.
+ * @brief   Get an execution stream associated with a work unit.
  *
- * \c ABT_task_get_xstream() returns the ES handle associated with the target
- * tasklet to \c xstream. If the target tasklet is not associated with any ES,
- * \c ABT_XSTREAM_NULL is returned to \c xstream.
- *
- * @param[in]  task     handle to the target tasklet
- * @param[out] xstream  ES handle
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as
+ * \c ABT_thread_get_last_xstream() except for the error code.
+ * \c ABT_task_get_xstream() returns \c ABT_ERR_INV_TASK in a case where
+ * \c ABT_thread_get_last_xstream() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream);
 #endif
@@ -255,12 +286,33 @@ int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Return the state of task.
+ * @brief   Get a state of a work unit.
  *
- * @param[in]  task   handle to the target task
- * @param[out] state  the task's state
+ * \c ABT_task_get_state() returns the state of the work unit \c task through
+ * \c state.
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_STATE
+ *
+ * @changev20
+ * \DOC_DESC_V1X_TASK_STATE_ACCEPT_THREAD{\c task, \c ABT_ERR_INV_TASK}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_TASK_HANDLE{\c thread}
+ * \DOC_V1X \DOC_ERROR_INV_TASK_Y{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c state}
+ *
+ * @param[in]  task   work unit handle
+ * @param[out] state  state of \c work unit
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_task_get_state(ABT_task task, ABT_task_state *state);
 #endif
@@ -268,15 +320,12 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Return the last pool of task.
+ * @brief   Get the last pool of a work unit.
  *
- * If the task is not running, we get the pool where it is, else we get the
- * last pool where it was (the pool from the task was popped).
- *
- * @param[in]  task  handle to the target task
- * @param[out] pool  the last pool of the task
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as
+ * \c ABT_thread_get_last_pool() except for the error code.
+ * \c ABT_task_get_last_pool() returns \c ABT_ERR_INV_TASK in a case where
+ * \c ABT_thread_get_last_pool() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool);
 #endif
@@ -284,17 +333,12 @@ int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Get the last pool's ID of the tasklet
+ * @brief   Get the last pool's ID of a work unit.
  *
- * \c ABT_task_get_last_pool_id() returns the last pool's ID of \c task.  If
- * the tasklet is not running, this routine returns the ID of the pool where it
- * is residing.  Otherwise, it returns the ID of the last pool where the
- * tasklet was (i.e., the pool from which the tasklet was popped).
- *
- * @param[in]  task  handle to the target tasklet
- * @param[out] id    pool id
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as
+ * \c ABT_thread_get_last_pool_id() except for the error code.
+ * \c ABT_task_get_last_pool_id() returns \c ABT_ERR_INV_TASK in a case where
+ * \c ABT_thread_get_last_pool_id() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_get_last_pool_id(ABT_task task, int *id);
 #endif
@@ -302,19 +346,12 @@ int ABT_task_get_last_pool_id(ABT_task task, int *id);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Set the tasklet's migratability.
+ * @brief   Set the migratability in a work unit.
  *
- * \c ABT_task_set_migratable() sets the tasklet's migratability. By default,
- * all tasklets are migratable.
- * If \c flag is \c ABT_TRUE, the target tasklet becomes migratable. On the
- * other hand, if \c flag is \c ABT_FALSE, the target tasklet becomes
- * unmigratable.
- *
- * @param[in] task  handle to the target tasklet
- * @param[in] flag  migratability flag (<tt>ABT_TRUE</tt>: migratable,
- *                  <tt>ABT_FALSE</tt>: not)
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as
+ * \c ABT_thread_set_migratable() except for the error code.
+ * \c ABT_task_set_migratable() returns \c ABT_ERR_INV_TASK in a case where
+ * \c ABT_thread_set_migratable() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_set_migratable(ABT_task task, ABT_bool flag);
 #endif
@@ -322,17 +359,12 @@ int ABT_task_set_migratable(ABT_task task, ABT_bool flag);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Get the tasklet's migratability.
+ * @brief   Get the migratability of a work unit.
  *
- * \c ABT_task_is_migratable() returns the tasklet's migratability through
- * \c flag. If the target tasklet is migratable, \c ABT_TRUE is returned to
- * \c flag. Otherwise, \c flag is set to \c ABT_FALSE.
- *
- * @param[in]  task  handle to the target tasklet
- * @param[out] flag  migratability flag (<tt>ABT_TRUE</tt>: migratable,
- *                   <tt>ABT_FALSE</tt>: not)
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as
+ * \c ABT_thread_is_migratable() except for the error code.
+ * \c ABT_task_is_migratable() returns \c ABT_ERR_INV_TASK in a case where
+ * \c ABT_thread_is_migratable() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_is_migratable(ABT_task task, ABT_bool *flag);
 #endif
@@ -340,17 +372,9 @@ int ABT_task_is_migratable(ABT_task task, ABT_bool *flag);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Check if the target task is unnamed
+ * @brief   Check if a work unit is unnamed
  *
- * \c ABT_task_is_unnamed() returns whether the target tasklet, \c task, is
- * unnamed or not.  Note that a handle of an unnamed tasklet can be obtained by,
- * for example, running \c ABT_task_self() on an unnamed tasklet.
- *
- * @param[in]  task  handle to the target tasklet
- * @param[out] flag  result (<tt>ABT_TRUE</tt> if unnamed)
- *
- * @return Error code
- * @retval ABT_SUCCESS  on success
+ * The functionality of this routine is the same as \c ABT_thread_is_unnamed().
  */
 int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag);
 #endif
@@ -360,16 +384,7 @@ int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag);
  * @ingroup TASK
  * @brief   Compare two tasklet handles for equality.
  *
- * \c ABT_task_equal() compares two tasklet handles for equality. If two handles
- * are associated with the same tasklet object, \c result will be set to
- * \c ABT_TRUE. Otherwise, \c result will be set to \c ABT_FALSE.
- *
- * @param[in]  task1   handle to the tasklet 1
- * @param[in]  task2   handle to the tasklet 2
- * @param[out] result  comparison result (<tt>ABT_TRUE</tt>: same,
- *                     <tt>ABT_FALSE</tt>: not same)
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as \c ABT_thread_equal().
  */
 int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
 #endif
@@ -377,14 +392,11 @@ int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Get the tasklet's id
+ * @brief   Get ID of a work unit
  *
- * \c ABT_task_get_id() returns the id of \c task.
- *
- * @param[in]  task     handle to the target tasklet
- * @param[out] task_id  tasklet id
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as \c ABT_thread_get_id()
+ * except for the error code.  \c ABT_task_get_id() returns \c ABT_ERR_INV_TASK
+ * in a case where \c ABT_thread_get_id() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id);
 #endif
@@ -392,15 +404,12 @@ int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Retrieve the argument for the tasklet function
+ * @brief   Retrieve an argument for a work unit function of a work unit.
  *
- * \c ABT_task_get_arg() returns the argument for the taslet function, which was
- * passed to \c ABT_task_create() when the target tasklet \c task was created.
- *
- * @param[in]  task  handle to the target tasklet
- * @param[out] arg   argument for the tasklet function
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as \c ABT_thread_get_arg()
+ * except for the error code.  \c ABT_task_get_arg() returns
+ * \c ABT_ERR_INV_TASK in a case where \c ABT_thread_get_arg() returns
+ * \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_get_arg(ABT_task task, void **arg);
 #endif
@@ -408,16 +417,10 @@ int ABT_task_get_arg(ABT_task task, void **arg);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief  Set the tasklet-specific value associated with the key
+ * @brief   Set a value with a work-unit-specific key in a work unit.
  *
- * \c ABT_task_set_specific() associates a value, \c value, with a work
- * unit-specific data key, \c key.  The target work unit is \c task.
- *
- * @param[in] task   handle to the target tasklet
- * @param[in] key    handle to the target key
- * @param[in] value  value for the key
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as
+ * \c ABT_thread_set_specific().
  */
 int ABT_task_set_specific(ABT_task task, ABT_key key, void *value);
 #endif
@@ -425,18 +428,10 @@ int ABT_task_set_specific(ABT_task task, ABT_key key, void *value);
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
- * @brief   Get the tasklet-specific value associated with the key
+ * @brief   Get a value associated with a work-unit-specific key in a work unit.
  *
- * \c ABT_task_get_specific() returns the value associated with a target work
- * unit-specific data key, \c key, through \c value.  The target work unit is
- * \c task.  If \c task has never set a value for the key, this routine returns
- * \c NULL to \c value.
- *
- * @param[in]  task   handle to the target tasklet
- * @param[in]  key    handle to the target key
- * @param[out] value  value for the key
- * @return Error code
- * @retval ABT_SUCCESS on success
+ * The functionality of this routine is the same as
+ * \c ABT_thread_get_specific().
  */
 int ABT_task_get_specific(ABT_task task, ABT_key key, void **value);
 #endif
