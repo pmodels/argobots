@@ -1214,7 +1214,7 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize) ABT_AP
 int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize) ABT_API_PUBLIC;
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,
         void(*cb_func)(ABT_thread thread, void *cb_arg), void *cb_arg) ABT_API_PUBLIC;
-int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag) ABT_API_PUBLIC;
+int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool is_migratable) ABT_API_PUBLIC;
 
 /* Tasklet */
 int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
