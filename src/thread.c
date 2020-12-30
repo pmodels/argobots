@@ -1298,8 +1298,6 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
 
     abt_errno = thread_migrate_to_pool(&p_local, p_thread, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
-
-    ABTI_pool_inc_num_migrations(p_pool);
     return ABT_SUCCESS;
 #else
     ABTI_HANDLE_ERROR(ABT_ERR_MIGRATION_NA);
@@ -1362,8 +1360,6 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
 
     int abt_errno = thread_migrate_to_pool(&p_local, p_thread, p_pool);
     ABTI_CHECK_ERROR(abt_errno);
-
-    ABTI_pool_inc_num_migrations(p_pool);
     return ABT_SUCCESS;
 #else
     ABTI_HANDLE_ERROR(ABT_ERR_MIGRATION_NA);
@@ -2816,11 +2812,8 @@ ABTU_ret_err static int thread_migrate_to_xstream(ABTI_local **pp_local,
     ABTI_CHECK_ERROR(abt_errno);
     /* We set the migration counter to prevent the scheduler from
      * stopping */
-    ABTI_pool_inc_num_migrations(p_pool);
-
     abt_errno = thread_migrate_to_pool(pp_local, p_thread, p_pool);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-        ABTI_pool_dec_num_migrations(p_pool);
         return abt_errno;
     }
     return ABT_SUCCESS;

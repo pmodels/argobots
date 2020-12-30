@@ -301,11 +301,10 @@ struct ABTI_pool {
     ABT_pool_access access; /* Access mode */
     ABT_bool automatic;     /* To know if automatic data free */
     /* NOTE: int32_t to check if still positive */
-    ABTD_atomic_int32 num_scheds;     /* Number of associated schedulers */
-    ABTD_atomic_int32 num_blocked;    /* Number of blocked ULTs */
-    ABTD_atomic_int32 num_migrations; /* Number of migrating ULTs */
-    void *data;                       /* Specific data */
-    uint64_t id;                      /* ID */
+    ABTD_atomic_int32 num_scheds;  /* Number of associated schedulers */
+    ABTD_atomic_int32 num_blocked; /* Number of blocked ULTs */
+    void *data;                    /* Specific data */
+    uint64_t id;                   /* ID */
 
     /* Functions to manage units */
     ABT_unit_get_thread_fn u_get_thread;
