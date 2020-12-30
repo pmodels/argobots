@@ -9,22 +9,42 @@ static void thread_attr_set_stack(ABTI_thread_attr *p_attr, void *stackaddr,
                                   size_t stacksize);
 
 /** @defgroup ULT_ATTR ULT Attributes
- * Attributes are used to specify ULT behavior that is different from the
- * default. When a ULT is created with \c ABT_thread_create(), attributes
- * can be specified with an \c ABT_thread_attr object.
+ * ULT attributes are used to specify ULT behavior that is different from the
+ * default.
  */
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Create a new ULT attribute object.
+ * @brief   Create a new ULT attribute.
  *
- * \c ABT_thread_attr_create() creates a ULT attribute object with default
- * attribute values. The handle to the attribute object is returned through
- * \c newattr. The attribute object can be used in more than one ULT.
+ * \c ABT_thread_attr_create() creates a ULT attribute with default attribute
+ * values and returns its handle through \c newattr.
  *
- * @param[out] newattr  handle to a new attribute object
+ * The default parameters are as follows:
+ * - Using a memory pool for stack allocation.
+ * - Default stack size, which can be set via \c ABT_THREAD_STACKSIZE.
+ * - Migratable.
+ * - Invoking no callback function on migration.
+ *
+ * \c newattr must be freed by \c ABT_thread_attr_free() after its use.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newattr, \c ABT_THREAD_ATTR_NULL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c newattr}
+ *
+ * @param[out] newattr  ULT attribute handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_attr_create(ABT_thread_attr *newattr)
 {
@@ -41,15 +61,25 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Free the ULT attribute object.
+ * @brief   Free a ULT attribute.
  *
- * \c ABT_thread_attr_free() deallocates memory used for the ULT attribute
- * object. If this function successfully returns, \c attr will be set to
- * \c ABT_THREAD_ATTR_NULL.
+ * \c ABT_thread_attr_free() deallocates the resource used for the ULT attribute
+ * \c attr and sets \c attr to \c ABT_THREAD_ATTR_NULL.
  *
- * @param[in,out] attr  handle to the target attribute object
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_ATTR_PTR{\c attr}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c attr}
+ * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c attr}
+ *
+ * @param[in,out] attr  ULT attribute handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_attr_free(ABT_thread_attr *attr)
 {
@@ -65,24 +95,51 @@ int ABT_thread_attr_free(ABT_thread_attr *attr)
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Set stack attributes.
+ * @brief   Set stack attributes in a ULT attribute.
  *
- * \c ABT_thread_attr_set_stack() sets the stack address and the stack size
- * (in bytes) in the attribute object associated with handle \c attr.
- * If \c attr is used to create a ULT, the memory pointed to by \c stackaddr
- * will be used as the stack area for the new ULT.
+ * \c ABT_thread_attr_set_stack() sets the stack address and the stack size (in
+ * bytes) in the ULT attribute \c attr.
  *
- * If \c stackaddr is \c NULL, a stack with size \c stacksize will be created
- * by the Argobots runtime.  If it is not \c NULL, it should be aligned by 8
- * (i.e., \c stackaddr & 0x7 must be zero), and the user has to deallocate
- * the stack memory after the ULT, for which \c attr was used, terminates.
+ * The memory pointed to by \c stackaddr will be used as the stack area for a
+ * created ULT.
  *
- * @param[in] attr       handle to the target attribute object
+ * - If \c stackaddr is \c NULL:
+ *
+ *   A stack with size \c stacksize will be allocated by Argobots on ULT
+ *   creation.  This stack will be automatically freed by the Argobots runtime.
+ *
+ * - If \c stackaddr is not \c NULL:
+ *
+ *   \c stackaddr must be aligned with 8 bytes.  It is the user's responsibility
+ *   to free the stack memory after the ULT, for which \c attr was used, is
+ *   freed.
+ *
+ * @note
+ * Sharing the same stack memory with multiple ULTs is not recommended because
+ * it can easily corrupt function stacks and crash the program.
+ *
+ * @changev11
+ * \DOC_DESC_V10_ERROR_CODE_CHANGE{\c ABT_ERR_OTHERS, \c ABT_ERR_INV_ARG,
+ *                                 \c stackaddr is neither \c NULL nor a memory
+ *                                 aligned with 8 bytes}
+ * @endchangev11
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_ATTR_HANDLE{\c attr}
+ * \DOC_ERROR_INV_ARG_INV_STACK{\c stackaddr}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c attr}
+ *
+ * @param[in] attr       ULT attribute handle
  * @param[in] stackaddr  stack address
  * @param[in] stacksize  stack size in bytes
  * @return Error code
- * @retval ABT_SUCCESS   on success
- * @retval ABT_ERR_OTHER invalid stack address
  */
 int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
                               size_t stacksize)
@@ -98,19 +155,28 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Get stack attributes.
+ * @brief   Get stack attributes from a ULT attribute.
  *
- * \c ABT_thread_attr_get_stack() retrieves the stack address and the stack
- * size (in bytes) from the attribute \c attr to \c stackaddr and \c stacksize,
+ * \c ABT_thread_attr_get_stack() retrieves the stack address and the stack size
+ * (in bytes) from the ULT attribute \c attr to \c stackaddr and \c stacksize,
  * respectively.
  *
- * The user can obtain the ULT's attributes using \c ABT_thread_get_attr().
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
  *
- * @param[in]  attr       handle to the target attribute object
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_ATTR_HANDLE{\c attr}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c stackaddr}
+ * \DOC_UNDEFINED_NULL_PTR{\c stacksize}
+ *
+ * @param[in]  attr       ULT attribute handle
  * @param[out] stackaddr  stack address
  * @param[out] stacksize  stack size in bytes
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
                               size_t *stacksize)
@@ -125,15 +191,27 @@ int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Set the stack size in the attribute object.
+ * @brief   Set stack size in a ULT attribute.
  *
- * \c ABT_thread_attr_set_stacksize() sets the stack size (in bytes) in the
- * attribute object associated with handle \c attr.
+ * \c ABT_thread_attr_set_stacksize() sets the stack size \c stacksize
+ * (in bytes) in the ULT attribute \c attr.  If the stack memory has been
+ * already set by \c ABT_thread_attr_set_stack(), this routine updates the stack
+ * size while keeping the stack memory in \c attr.
  *
- * @param[in] attr       handle to the target attribute object
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_ATTR_HANDLE{\c attr}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c attr}
+ *
+ * @param[in] attr       ULT attribute handle
  * @param[in] stacksize  stack size in bytes
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 {
@@ -145,15 +223,25 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Get the stack size from the attribute object.
+ * @brief   Get the stack size from a ULT attribute.
  *
  * \c ABT_thread_attr_get_stacksize() returns the stack size (in bytes) through
- * \c stacksize from the attribute object associated with handle \c attr.
+ * \c stacksize from the ULT attribute \c attr.
  *
- * @param[in]  attr       handle to the target attribute object
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_ATTR_HANDLE{\c attr}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c stacksize}
+ *
+ * @param[in]  attr       ULT attribute handle
  * @param[out] stacksize  stack size in bytes
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
 {
@@ -166,16 +254,37 @@ int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Set callback function and its argument in the attribute object.
+ * @brief   Set a callback function and its argument in a ULT attribute.
  *
- * \c ABT_thread_attr_set_callback() sets the callback function and its
- * argument, which will be invoked on ULT migration.
+ * \c ABT_thread_attr_set_callback() sets the callback function \c cb_func and
+ * its argument \c cb_arg in the ULT attribute \c attr.  If \c cb_func is
+ * \c NULL, this routine unsets the callback function in \c attr.  Otherwise,
+ * \c cb_func and \c cb_arg are set in \c attr.
  *
- * @param[in] attr     handle to the target attribute object
+ * If the callback function is set, a callback function \c cb_func() will be
+ * called every time on the migration of the associated work unit.  The first
+ * argument of \c cb_arg() is the handle of a migrated work unit.  The second
+ * argument is \c cb_arg passed to this routine.  The caller of the callback
+ * function is undefined, so a program that relies on the caller is
+ * non-conforming.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_ATTR_HANDLE{\c attr}
+ * \DOC_ERROR_FEATURE_NA{the migration feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_CHANGE_STATE{\c cb_func()}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c attr}
+ *
+ * @param[in] attr     ULT attribute handle
  * @param[in] cb_func  callback function pointer
  * @param[in] cb_arg   argument for the callback function
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_attr_set_callback(ABT_thread_attr attr,
                                  void (*cb_func)(ABT_thread thread,
@@ -197,19 +306,30 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
 
 /**
  * @ingroup ULT_ATTR
- * @brief   Set the ULT's migratability in the attribute object.
+ * @brief   Set the ULT's migratability in a ULT attribute.
  *
- * \c ABT_thread_attr_set_migratable() sets the ULT's migratability in the
- * target attribute object.
- * If \c flag is \c ABT_TRUE, the ULT created with this attribute becomes
- * migratable. On the other hand, if \ flag is \c ABT_FALSE, the ULT created
- * with this attribute becomes unmigratable.
+ * \c ABT_thread_attr_set_migratable() sets the ULT's migratability
+ * \c is_migratable in the ULT attribute \c attr.  If \c is_migratable is
+ * \c ABT_TRUE, the ULT created with this attribute is migratable.  If
+ * \c is_migratable is \c ABT_FALSE, the ULT created with this attribute is not
+ * migratable.
  *
- * @param[in] attr  handle to the target attribute object
- * @param[in] flag  migratability flag (<tt>ABT_TRUE</tt>: migratable,
- *                  <tt>ABT_FALSE</tt>: not)
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_ATTR_HANDLE{\c attr}
+ * \DOC_ERROR_FEATURE_NA{the migration feature}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_BOOL{\c is_migratable}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c attr}
+ *
+ * @param[in] attr           ULT attribute handle
+ * @param[in] is_migratable  flag (\c ABT_TRUE: migratable, \c ABT_FALSE: not)
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool flag)
 {
