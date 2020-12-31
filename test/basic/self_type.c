@@ -67,7 +67,11 @@ void thread_hello(void *arg)
     ATS_ERROR(ret, "ABT_thread_get_id");
 
     ret = ABT_task_self(&task);
+#ifdef ABT_ENABLE_VER_20_API
+    ATS_ERROR(ret, "ABT_task_self");
+#else
     assert(ret == ABT_ERR_INV_TASK && task == ABT_TASK_NULL);
+#endif
 
     ret = ABT_self_get_type(&type);
     assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_THREAD);
@@ -118,7 +122,11 @@ void *pthread_hello(void *arg)
 #endif
 
     ret = ABT_task_self(&task);
+#ifdef ABT_ENABLE_VER_20_API
+    assert(ret == ABT_ERR_INV_XSTREAM);
+#else
     assert(ret == ABT_ERR_INV_XSTREAM && task == ABT_TASK_NULL);
+#endif
 
     ret = ABT_self_get_type(&type);
 #ifdef ABT_ENABLE_VER_20_API
@@ -198,7 +206,11 @@ int main(int argc, char *argv[])
     ATS_printf(1, "ID: %lu\n", my_thread_id);
 
     ret = ABT_task_self(&my_task);
+#ifdef ABT_ENABLE_VER_20_API
+    ATS_ERROR(ret, "ABT_task_self");
+#else
     assert(ret == ABT_ERR_INV_TASK && my_task == ABT_TASK_NULL);
+#endif
 
     ret = ABT_self_get_type(&type);
     assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_THREAD);
