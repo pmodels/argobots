@@ -24,30 +24,47 @@ extern "C" {
 #include <stdint.h>
 #include <sys/time.h>
 
-/* ABT_VERSION is the version string. ABT_NUMVERSION is the
- * numeric version that can be used in numeric comparisons.
+/**
+ * @ingroup INFO
+ * @brief   Version string of Argobots.
  *
- * ABT_VERSION uses the following format:
- * Version: [MAJ].[MIN].[REV][EXT][EXT_NUMBER]
+ * \c ABT_VERSION is the version string of Argobots.  \c ABT_VERSION uses the
+ * following format:
+ *
+ * \code{.unparsed}
+ * ABT_VERSION = [MAJ].[MIN].[REV][EXT][EXT_NUMBER]
  * Example: 1.0.7rc1 has
  *          MAJ = 1
  *          MIN = 0
  *          REV = 7
  *          EXT = rc
  *          EXT_NUMBER = 1
+ * \endcode
  *
- * ABT_NUMVERSION will convert EXT to a format number:
- *          ALPHA (a) = 0
- *          BETA (b)  = 1
- *          RC (rc)   = 2
- *          PATCH (p) = 3
- * Regular releases are treated as patch 0
- *
- * Numeric version will have 1 digit for MAJ, 2 digits for MIN, 2
- * digits for REV, 1 digit for EXT and 2 digits for EXT_NUMBER. So,
- * 1.0.7rc1 will have the numeric version 10007201.
+ * Regular releases are treated as patch 0.
  */
 #define ABT_VERSION "@ABT_VERSION@"
+/**
+ * @ingroup INFO
+ * @brief   Version number of Argobots.
+ *
+ * \c ABT_NUMVERSION is the numeric version of Argobots that can be used in
+ * numeric comparisons.  \c ABT_NUMVERSION is calculated as follows.
+ *
+ * \code{.unparsed}
+ * ABT_NUMVERSION = [MAJ] * 10000000 + [MIN] * 100000 + [REV] * 1000
+ *                  + [EXT] * 100 + [EXT_NUMBER]
+ * where [EXT] is converted to the following format number:
+ *    ALPHA (a) = 0 (ABT_RELEASE_TYPE_ALPHA)
+ *    BETA (b)  = 1 (ABT_RELEASE_TYPE_BETA)
+ *    RC (rc)   = 2 (ABT_RELEASE_TYPE_RC)
+ *    PATCH (p) = 3 (ABT_RELEASE_TYPE_PATCH)
+ * \endcode
+ *
+ * \c ABT_NUMVERSION has 1 digit for MAJ, 2 digits for MIN, 2 digits for REV, 1
+ * digit for EXT, and 2 digits for EXT_NUMBER, so 1.0.7rc1 is converted to the
+ * numeric version 10007201.
+ */
 #define ABT_NUMVERSION @ABT_NUMVERSION@
 
 #define ABT_RELEASE_TYPE_ALPHA  0
@@ -66,63 +83,311 @@ extern "C" {
 #define ABT_ENABLE_VER_20_API 1
 #endif
 
-/* Error Classes */
-#define ABT_SUCCESS                 0  /* Successful return code */
-#define ABT_ERR_UNINITIALIZED       1  /* Uninitialized */
-#define ABT_ERR_MEM                 2  /* Memory allocation failure */
-#define ABT_ERR_OTHER               3  /* Other error */
-#define ABT_ERR_INV_XSTREAM         4  /* Invalid ES */
-#define ABT_ERR_INV_XSTREAM_RANK    5  /* Invalid ES rank */
-#define ABT_ERR_INV_XSTREAM_BARRIER 6  /* Invalid ES barrier */
-#define ABT_ERR_INV_SCHED           7  /* Invalid scheduler */
-#define ABT_ERR_INV_SCHED_KIND      8  /* Invalid scheduler kind */
-#define ABT_ERR_INV_SCHED_PREDEF    9  /* Invalid predefined scheduler */
-#define ABT_ERR_INV_SCHED_TYPE     10  /* Invalid scheduler type */
-#define ABT_ERR_INV_SCHED_CONFIG   11  /* Invalid scheduler config */
-#define ABT_ERR_INV_POOL           12  /* Invalid pool */
-#define ABT_ERR_INV_POOL_KIND      13  /* Invalid pool kind */
-#define ABT_ERR_INV_POOL_ACCESS    14  /* Invalid pool access mode */
-#define ABT_ERR_INV_UNIT           15  /* Invalid scheduling unit */
-#define ABT_ERR_INV_THREAD         16  /* Invalid ULT */
-#define ABT_ERR_INV_THREAD_ATTR    17  /* Invalid ULT attribute */
-#define ABT_ERR_INV_TASK           18  /* Invalid tasklet */
-#define ABT_ERR_INV_KEY            19  /* Invalid key */
-#define ABT_ERR_INV_MUTEX          20  /* Invalid mutex */
-#define ABT_ERR_INV_MUTEX_ATTR     21  /* Invalid mutex attribute */
-#define ABT_ERR_INV_COND           22  /* Invalid condition variable */
-#define ABT_ERR_INV_RWLOCK         23  /* Invalid rw lock */
-#define ABT_ERR_INV_EVENTUAL       24  /* Invalid eventual */
-#define ABT_ERR_INV_FUTURE         25  /* Invalid future */
-#define ABT_ERR_INV_BARRIER        26  /* Invalid barrier */
-#define ABT_ERR_INV_TIMER          27  /* Invalid timer */
-#define ABT_ERR_INV_QUERY_KIND     28  /* Invalid query kind */
-#define ABT_ERR_INV_TOOL_CONTEXT   52  /* Invalid tool context */
-#define ABT_ERR_INV_ARG            53  /* Invalid argument */
-#define ABT_ERR_XSTREAM            29  /* ES-related error */
-#define ABT_ERR_XSTREAM_STATE      30  /* ES state error */
-#define ABT_ERR_XSTREAM_BARRIER    31  /* ES barrier-related error */
-#define ABT_ERR_SCHED              32  /* Scheduler-related error */
-#define ABT_ERR_SCHED_CONFIG       33  /* Scheduler config error */
-#define ABT_ERR_POOL               34  /* Pool-related error */
-#define ABT_ERR_UNIT               35  /* Scheduling unit-related error */
-#define ABT_ERR_THREAD             36  /* ULT-related error */
-#define ABT_ERR_TASK               37  /* Tasklet-related error */
-#define ABT_ERR_KEY                38  /* Key-related error */
-#define ABT_ERR_MUTEX              39  /* Mutex-related error */
-#define ABT_ERR_MUTEX_LOCKED       40  /* Return value when mutex is locked */
-#define ABT_ERR_COND               41  /* Condition-related error */
-#define ABT_ERR_COND_TIMEDOUT      42  /* Return value when cond is timed out */
-#define ABT_ERR_RWLOCK             43  /* rwlock-related error */
-#define ABT_ERR_EVENTUAL           44  /* Eventual-related error */
-#define ABT_ERR_FUTURE             45  /* Future-related error */
-#define ABT_ERR_BARRIER            46  /* Barrier-related error */
-#define ABT_ERR_TIMER              47  /* Timer-related error */
-#define ABT_ERR_MIGRATION_TARGET   48  /* Migration target error */
-#define ABT_ERR_MIGRATION_NA       49  /* Migration not available */
-#define ABT_ERR_MISSING_JOIN       50  /* An ES or more did not join */
-#define ABT_ERR_FEATURE_NA         51  /* Feature not available */
-#define ABT_ERR_SYS                54  /* System-related error */
-#define ABT_ERR_CPUID              55  /* CPUID-related error */
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: the routine returns successfully.
+ */
+#define ABT_SUCCESS                 0
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: Argobots it not initialized.
+ */
+#define ABT_ERR_UNINITIALIZED       1
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: Memory allocation failure.
+ *
+ * \c ABT_ERR_MEM is returned if memory allocation functions such as \c malloc()
+ * or \c mmap() fail in the routine.
+ */
+#define ABT_ERR_MEM                 2
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: other error.
+ */
+#define ABT_ERR_OTHER               3
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid executions stream.
+ */
+#define ABT_ERR_INV_XSTREAM         4
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid executions stream rank.
+ */
+#define ABT_ERR_INV_XSTREAM_RANK    5
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid executions stream barrier.
+ */
+#define ABT_ERR_INV_XSTREAM_BARRIER 6
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid scheduler.
+ */
+#define ABT_ERR_INV_SCHED           7
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid scheduler kind.
+ */
+#define ABT_ERR_INV_SCHED_KIND      8
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid predefined scheduler type.
+ */
+#define ABT_ERR_INV_SCHED_PREDEF    9
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Unused error code
+ *
+ * This error code is not used.  This error code is deprecated.
+ */
+#define ABT_ERR_INV_SCHED_TYPE     10
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid scheduler configuration.
+ */
+#define ABT_ERR_INV_SCHED_CONFIG   11
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid pool.
+ */
+#define ABT_ERR_INV_POOL           12
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid pool kind.
+ */
+#define ABT_ERR_INV_POOL_KIND      13
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid pool access type.
+ */
+#define ABT_ERR_INV_POOL_ACCESS    14
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid work unit for scheduling.
+ */
+#define ABT_ERR_INV_UNIT           15
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid work unit.
+ */
+#define ABT_ERR_INV_THREAD         16
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid ULT attribute.
+ */
+#define ABT_ERR_INV_THREAD_ATTR    17
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid work unit.
+ *
+ * @changev20
+ * \DOC_V20 This error code is an alias of \c ABT_ERR_INV_THREAD.
+ * @endchangev20
+ */
+#define ABT_ERR_INV_TASK           18
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid work-unit-specific data key.
+ */
+#define ABT_ERR_INV_KEY            19
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid mutex.
+ */
+#define ABT_ERR_INV_MUTEX          20
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid mutex attribute.
+ */
+#define ABT_ERR_INV_MUTEX_ATTR     21
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid condition variable.
+ */
+#define ABT_ERR_INV_COND           22
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid readers-writer lock.
+ */
+#define ABT_ERR_INV_RWLOCK         23
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid eventual.
+ */
+#define ABT_ERR_INV_EVENTUAL       24
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid future.
+ */
+#define ABT_ERR_INV_FUTURE         25
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid barrier.
+ */
+#define ABT_ERR_INV_BARRIER        26
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid timer.
+ */
+#define ABT_ERR_INV_TIMER          27
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid query kind.
+ */
+#define ABT_ERR_INV_QUERY_KIND     28
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid tool context.
+ */
+#define ABT_ERR_INV_TOOL_CONTEXT   52
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: invalid user argument.
+ */
+#define ABT_ERR_INV_ARG            53
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to an execution stream.
+ */
+#define ABT_ERR_XSTREAM            29
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to an execution stream state.
+ *
+ * This error code is deprecated.
+ */
+#define ABT_ERR_XSTREAM_STATE      30
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to an execution stream.
+ */
+#define ABT_ERR_XSTREAM_BARRIER    31
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a scheduler.
+ */
+#define ABT_ERR_SCHED              32
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a scheduler configuration.
+ */
+#define ABT_ERR_SCHED_CONFIG       33
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a pool.
+ */
+#define ABT_ERR_POOL               34
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a work unit for scheduling.
+ */
+#define ABT_ERR_UNIT               35
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a work unit.
+ */
+#define ABT_ERR_THREAD             36
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a work unit.
+ *
+ * @changev20
+ * \DOC_V20 This error code is an alias of \c ABT_ERR_THREAD.
+ * @endchangev20
+ */
+#define ABT_ERR_TASK               37
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a work-unit-specific data key.
+ */
+#define ABT_ERR_KEY                38
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a mutex.
+ */
+#define ABT_ERR_MUTEX              39
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: a return value when a mutex is locked.
+ *
+ * This error code is used by \c ABT_mutex_trylock().
+ */
+#define ABT_ERR_MUTEX_LOCKED       40
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a condition variable.
+ */
+#define ABT_ERR_COND               41
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: a return value when a condition variable is timed out.
+ *
+ * This error code is used by \c ABT_cond_timedwait().
+ */
+#define ABT_ERR_COND_TIMEDOUT      42
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a readers-writer lock.
+ */
+#define ABT_ERR_RWLOCK             43
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to an eventual.
+ */
+#define ABT_ERR_EVENTUAL           44
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a future.
+ */
+#define ABT_ERR_FUTURE             45
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a barrier.
+ */
+#define ABT_ERR_BARRIER            46
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a timer.
+ */
+#define ABT_ERR_TIMER              47
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to a migration target.
+ */
+#define ABT_ERR_MIGRATION_TARGET   48
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: migration is not supported.
+ *
+ * @changev20
+ * \DOC_V20 This error code is an alias of \c ABT_ERR_FEATURE_NA.
+ * @endchangev20
+ */
+#define ABT_ERR_MIGRATION_NA       49
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Unused error code
+ *
+ * This error code is not used.  This error code is deprecated.
+ */
+#define ABT_ERR_MISSING_JOIN       50
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: unsupported feature.
+ */
+#define ABT_ERR_FEATURE_NA         51
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to system calls.
+ */
+#define ABT_ERR_SYS                54
+/**
+ * @ingroup ERROR_CODE
+ * @brief   Error code: an error related to CPU ID.
+ */
+#define ABT_ERR_CPUID              55
 
 /**
  * @ingroup ES
@@ -167,6 +432,13 @@ enum ABT_task_state {
     ABT_TASK_STATE_TERMINATED
 };
 
+/**
+ * @brief Unused enum.
+ *
+ * @changev20
+ * \DOC_V20 This enum is removed since no Argobots routine uses this.
+ * @endchangev20
+ */
 enum ABT_sched_state {
     ABT_SCHED_STATE_READY,
     ABT_SCHED_STATE_RUNNING,
@@ -261,15 +533,23 @@ enum ABT_pool_access {
     ABT_POOL_ACCESS_MPMC
 };
 
+/**
+ * @ingroup UNIT
+ * @brief   Type of a work unit for scheduling.
+ */
 enum ABT_unit_type {
+    /** A ULT. */
     ABT_UNIT_TYPE_THREAD,
+    /**
+     * A tasklet.
+     *
+     * \DOC_V20 This type is an alias of \c ABT_UNIT_TYPE_THREAD.
+     */
     ABT_UNIT_TYPE_TASK,
-    ABT_UNIT_TYPE_XSTREAM,  /* Deprecated.  No Argobots function uses it. */
-    ABT_UNIT_TYPE_EXT       /* Deprecated.  This is used by ABT_self_get_type().
-                             * The user should instead check the return value
-                             * (i.e., if it returns ABT_SUCCESS or not), to
-                             * check if the underlying work unit is an external
-                             * thread. */
+    /** Deprecated since no Argobots function uses it. */
+    ABT_UNIT_TYPE_XSTREAM,
+    /** An external thread. */
+    ABT_UNIT_TYPE_EXT
 };
 
 /**
@@ -451,11 +731,18 @@ enum ABT_sync_event_type {
 #define ABT_TOOL_EVENT_THREAD_ALL     ((uint64_t)((1 << 12) - 1))
 
 
-/* Constants for ABT_bool */
-#define ABT_TRUE    1
-#define ABT_FALSE   0
+/** @brief  True constant for ABT_bool. */
+#define ABT_TRUE  1
+/** @brief  False constant for ABT_bool. */
+#define ABT_FALSE 0
 
-/* Rank representing any ES */
+/**
+ * @brief Unused macro
+ *
+ * @changev20
+ * \DOC_V20 This constant is removed since no Argobots routine uses it.
+ * @endchangev20
+ */
 #define ABT_XSTREAM_ANY_RANK    -1
 
 /* Data Types */
@@ -480,77 +767,251 @@ struct ABT_barrier_opaque;
 struct ABT_timer_opaque;
 struct ABT_tool_context_opaque;
 
-/* Execution Stream */
+/**
+ * @ingroup ES
+ * @brief   Execution stream handle type.
+ *
+ * A NULL handle of this type is \c ABT_XSTREAM_NULL.
+ */
 typedef struct ABT_xstream_opaque *         ABT_xstream;
-/* ES state */
+/**
+ * @ingroup ES
+ * @brief   Execution stream state type.
+ */
 typedef enum ABT_xstream_state              ABT_xstream_state;
-/* ES barrier */
+/**
+ * @ingroup ES_BARRIER
+ * @brief   Execution stream barrier handle type.
+ *
+ * A NULL handle of this type is \c ABT_XSTREAM_BARRIER_NULL.
+ */
 typedef struct ABT_xstream_barrier_opaque * ABT_xstream_barrier;
-/* Scheduler */
+/**
+ * @ingroup SCHED
+ * @brief   Scheduler handle type.
+ *
+ * A NULL handle of this type is \c ABT_SCHED_NULL.
+ */
 typedef struct ABT_sched_opaque *           ABT_sched;
-/* Sched-specific config */
+/**
+ * @ingroup SCHED_CONFIG
+ * @brief   Scheduler configuration handle type.
+ *
+ * A NULL handle of this type is \c ABT_SCHED_CONFIG_NULL.
+ */
 typedef struct ABT_sched_config_opaque *    ABT_sched_config;
-/* Predefined scheduler */
+/**
+ * @ingroup SCHED
+ * @brief   Predefined scheduler type.
+ */
 typedef enum ABT_sched_predef               ABT_sched_predef;
-/* Scheduler state */
+/**
+ * @ingroup SCHED
+ * @brief   Scheduler state type.
+ *
+ * @changev20
+ * \DOC_V20 This type is removed since no Argobots routine uses this.
+ * @endchangev20
+ */
 typedef enum ABT_sched_state                ABT_sched_state ABT_DEPRECATED;
-/* Scheduler type */
+/**
+ * @ingroup SCHED
+ * @brief   Scheduler's work unit type.
+ */
 typedef enum ABT_sched_type                 ABT_sched_type;
-/* Pool */
+/**
+ * @ingroup POOL
+ * @brief   Pool handle type.
+ *
+ * A NULL handle of this type is \c ABT_POOL_NULL.
+ */
 typedef struct ABT_pool_opaque *            ABT_pool;
-/* Specific pool config */
+/**
+ * @ingroup POOL
+ * @brief   Pool configuration handle type.
+ *
+ * A NULL handle of this type is \c ABT_POOL_CONFIG_NULL.
+ */
 typedef struct ABT_pool_config_opaque *     ABT_pool_config;
-/* Pool kind */
+/**
+ * @ingroup POOL
+ * @brief   Predefined pool type.
+ */
 typedef enum ABT_pool_kind                  ABT_pool_kind;
-/* Pool access mode */
+/**
+ * @ingroup POOL
+ * @brief   Pool access type.
+ */
 typedef enum ABT_pool_access                ABT_pool_access;
-/* Unit */
+/**
+ * @ingroup UNIT
+ * @brief   Work unit handle type for scheduling.
+ *
+ * \c ABT_unit is a work unit handle encapsulated by its associated pool, so
+ * the value of \c ABT_unit is different from its associated \c ABT_thread or
+ * \c ABT_task.
+ *
+ * A NULL handle of this type is \c ABT_UNIT_NULL.
+ */
 typedef struct ABT_unit_opaque *            ABT_unit;
-/* Unit type */
+/**
+ * @ingroup UNIT
+ * @brief   Work unit type.
+ */
 typedef enum ABT_unit_type                  ABT_unit_type;
-/* Unit id */
+/**
+ * @ingroup UNIT
+ * @brief   Work unit ID type.
+ */
 typedef uint64_t                            ABT_unit_id;
-/* User-Level Thread (ULT) */
+/**
+ * @ingroup ULT
+ * @brief   Work unit handle type.
+ *
+ * A NULL handle of this type is \c ABT_THREAD_NULL.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_THREAD_TASK_NULL
+ * @endchangev20
+ */
 typedef struct ABT_thread_opaque *          ABT_thread;
-/* ULT attribute */
+/**
+ * @ingroup ULT
+ * @brief   ULT attribute handle type.
+ *
+ * A NULL handle of this type is \c ABT_THREAD_ATTR_NULL.
+ */
 typedef struct ABT_thread_attr_opaque *     ABT_thread_attr;
-/* ULT state */
+/**
+ * @ingroup ULT
+ * @brief   Work unit state type.
+ */
 typedef enum ABT_thread_state               ABT_thread_state;
-/* Tasklet state */
+/**
+ * @ingroup TASK
+ * @brief   Tasklet state type.
+ *
+ * @changev20
+ * \DOC_V20 This type is replaced by \c ABT_thread_state.
+ * @endchangev20
+ */
 typedef enum ABT_task_state                 ABT_task_state;
-/* ULT id (alias to keep backward compatibility) */
+/**
+ * @ingroup ULT
+ * @brief   Work unit ID type.
+ *
+ * This type is an alias of \c ABT_unit_id.
+ */
 typedef ABT_unit_id                         ABT_thread_id;
-/* Tasklet */
+/**
+ * @ingroup TASK
+ * @brief   Work unit handle type.
+ *
+ * This type is an alias of \c ABT_thread.
+ *
+ * A NULL handle of this type is \c ABT_TASK_NULL.
+ *
+ * @changev20
+ * \DOC_DESC_V1X_THREAD_TASK_NULL
+ * @endchangev20
+ */
 typedef struct ABT_thread_opaque *          ABT_task;
-/* WU-specific data key */
+/**
+ * @ingroup KEY
+ * @brief   Work-unit-specific data key handle type.
+ *
+ * A NULL handle of this type is \c ABT_KEY_NULL.
+ */
 typedef struct ABT_key_opaque *             ABT_key;
-/* Mutex */
+/**
+ * @ingroup MUTEX
+ * @brief   Mutex handle type.
+ *
+ * A NULL handle of this type is \c ABT_MUTEX_NULL.
+ */
 typedef struct ABT_mutex_opaque *           ABT_mutex;
-/* Mutex attribute */
+/**
+ * @ingroup MUTEX_ATTR
+ * @brief   Mutex attribute handle type.
+ *
+ * A NULL handle of this type is \c ABT_MUTEX_ATTR_NULL.
+ */
 typedef struct ABT_mutex_attr_opaque *      ABT_mutex_attr;
-/* Condition variable */
+/**
+ * @ingroup COND
+ * @brief   Condition variable handle type.
+ *
+ * A NULL handle of this type is \c ABT_COND_NULL.
+ */
 typedef struct ABT_cond_opaque *            ABT_cond;
-/* Readers writer lock */
+/**
+ * @ingroup RWLOCK
+ * @brief   Readers-writer lock handle type.
+ *
+ * A NULL handle of this type is \c ABT_RWLOCK_NULL.
+ */
 typedef struct ABT_rwlock_opaque *          ABT_rwlock;
-/* Eventual */
+/**
+ * @ingroup EVENTUAL
+ * @brief   Eventual handle type.
+ *
+ * A NULL handle of this type is \c ABT_EVENTUAL_NULL.
+ */
 typedef struct ABT_eventual_opaque *        ABT_eventual;
-/* Future */
+/**
+ * @ingroup FUTURE
+ * @brief   Future handle type.
+ *
+ * A NULL handle of this type is \c ABT_FUTURE_NULL.
+ */
 typedef struct ABT_future_opaque *          ABT_future;
-/* Barrier */
+/**
+ * @ingroup BARRIER
+ * @brief   Barrier handle type.
+ *
+ * A NULL handle of this type is \c ABT_BARRIER_NULL.
+ */
 typedef struct ABT_barrier_opaque *         ABT_barrier;
-/* Timer */
+/**
+ * @ingroup TIMER
+ * @brief   Timer handle type.
+ *
+ * A NULL handle of this type is \c ABT_TIMER_NULL.
+ */
 typedef struct ABT_timer_opaque *           ABT_timer;
-/* Boolean type */
+/**
+ * @brief  Boolean type.
+ *
+ * The value must be either \c ABT_TRUE or \c ABT_FALSE.  It is guaranteed that
+ * \c ABT_FALSE is zero.
+ */
 typedef int                                 ABT_bool;
-/* Query kind */
+/**
+ * @ingroup INFO
+ * @brief   Query type for \c ABT_info_query_config().
+ */
 typedef enum ABT_info_query_kind            ABT_info_query_kind;
-/* Tool context */
+/**
+ * @ingroup TOOL
+ * @brief   Tool context handle type.
+ *
+ * A NULL handle of this type is \c ABT_TOOL_CONTEXT_NULL.
+ */
 typedef struct ABT_tool_context_opaque *    ABT_tool_context;
-/* Tool query kind */
+/**
+ * @ingroup TOOL
+ * @brief   Tool query type.
+ */
 typedef enum ABT_tool_query_kind            ABT_tool_query_kind;
-/* Type of execution entity */
+/**
+ * @ingroup TOOL
+ * @brief   Execution entity type.
+ */
 typedef enum ABT_exec_entity_type           ABT_exec_entity_type;
-/* Type of synchronization event */
+/**
+ * @ingroup TOOL
+ * @brief   Synchronization event type.
+ */
 typedef enum ABT_sync_event_type            ABT_sync_event_type;
 
 

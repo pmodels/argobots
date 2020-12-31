@@ -5,6 +5,10 @@
 
 #include "abti.h"
 
+/** @defgroup ERROR_CODE Error Code
+ * This group is for Error Code.
+ */
+
 /** @defgroup ERROR Error
  * This group is for Error.
  */

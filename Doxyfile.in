@@ -1938,6 +1938,8 @@ ALIASES += DOC_DESC_V1X_TASKLET_ATTR{3}="\DOC_V1X If \1 is a tasklet, this routi
 
 ALIASES += DOC_DESC_V1X_TASK_STATE_ACCEPT_THREAD{2}="\DOC_V1X If \1 is a ULT, \2 is returned.\n \DOC_V20 This routine accepts a ULT handle as \1.  \c ABT_thread_state and \c ABT_task_state is unified.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
 
+ALIASES += DOC_DESC_V1X_THREAD_TASK_NULL="\DOC_V1X The value of \c ABT_THREAD_NULL is different from that of \c ABT_TASK_NULL.\n \DOC_V20 \c ABT_TASK_NULL is an alias of \c ABT_THREAD_NULL.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
+
 ALIASES += DOC_DESC_V1X_YIELD_EXT="\DOC_V1X This routine returns \c ABT_SUCCESS without any effect if an external thread calls this routine.\n \DOC_V20 This routine returns \c ABT_ERR_INV_XSTREAM if an external thread calls this routine.\n @rationale An external thread cannot achieve the purpose of this routine.  This routine should return an error. @endrationale"
 
 ALIASES += DOC_DESC_V1X_YIELD_TASK="\DOC_V1X This routine returns \c ABT_SUCCESS without any effect if a tasklet calls this routine.\n \DOC_V20 This routine returns \c ABT_ERR_INV_THREAD if a tasklet calls this routine.\n @rationale A tasklet cannot achieve the purpose of this routine.  This routine should return an error. @endrationale"
