@@ -60,7 +60,7 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_INV_UNIT",
                                      "ABT_ERR_INV_THREAD",
                                      "ABT_ERR_INV_THREAD_ATTR",
-                                     NULL, /* 18 */
+                                     "ABT_ERR_INV_TASK",
                                      "ABT_ERR_INV_KEY",
                                      "ABT_ERR_INV_MUTEX",
                                      "ABT_ERR_INV_MUTEX_ATTR",
@@ -79,7 +79,7 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_POOL",
                                      "ABT_ERR_UNIT",
                                      "ABT_ERR_THREAD",
-                                     NULL, /* 37 */
+                                     "ABT_ERR_TASK",
                                      "ABT_ERR_KEY",
                                      "ABT_ERR_MUTEX",
                                      "ABT_ERR_MUTEX_LOCKED",
@@ -95,13 +95,24 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_MISSING_JOIN",
                                      "ABT_ERR_FEATURE_NA",
                                      "ABT_ERR_INV_TOOL_CONTEXT",
-                                     "ABT_ERR_INV_ARG" };
+                                     "ABT_ERR_INV_ARG",
+                                     "ABT_ERR_SYS",
+                                     "ABT_ERR_CPUID" };
 
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    ABTI_CHECK_TRUE(err >= ABT_SUCCESS &&
+                        err < (int)(sizeof(err_str) / sizeof(err_str[0])),
+                    ABT_ERR_OTHER);
+    /* This entry does not exist. */
+    ABTI_CHECK_TRUE(err_str[err], ABT_ERR_OTHER);
+#else
     ABTI_CHECK_TRUE(err >= ABT_SUCCESS &&
                         err < (int)(sizeof(err_str) / sizeof(err_str[0])),
                     ABT_ERR_INV_ARG);
     /* This entry does not exist. */
     ABTI_CHECK_TRUE(err_str[err], ABT_ERR_INV_ARG);
+#endif
+
     if (str)
         strcpy(str, err_str[err]);
     if (len)
