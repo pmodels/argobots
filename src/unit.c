@@ -11,18 +11,29 @@
 
 /**
  * @ingroup UNIT
- * @brief   Set the associated pool for the target work unit.
+ * @brief   Set the associated pool for a work unit.
  *
  * \c ABT_unit_set_associated_pool() changes the associated pool of the target
- * work unit \c unit, such as ULT or tasklet, to \c pool.  This routine must be
- * called after \c unit is popped from its original associated pool (i.e.,
- * \c unit must not be inside any pool), which is the pool where \c unit was
- * residing in.
+ * work unit \c unit to \c pool.  This routine must be called after \c unit is
+ * popped from its original associated pool (i.e., \c unit must not be inside
+ * any pool).
  *
- * @param[in] unit  handle to the work unit
- * @param[in] pool  handle to the pool
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_UNIT_HANDLE{\c unit}
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_WORK_UNIT_IN_POOL{\c unit}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c unit}
+ *
+ * @param[in] unit  work unit handle
+ * @param[in] pool  pool handle
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool)
 {
