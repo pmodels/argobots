@@ -39,6 +39,7 @@ int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_INV_UNIT);
 
     ABTI_unit_set_associated_pool(unit, p_pool);
     return ABT_SUCCESS;
