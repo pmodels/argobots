@@ -1828,6 +1828,8 @@ ALIASES += DOC_CONTEXT_INIT_NOTASK="This routine can be called in either a ULT c
 
 ALIASES += DOC_CONTEXT_INIT_SCHED{1}="This routine can be called by a work unit that is associated with \1. Argobots must be initialized."
 
+ALIASES += DOC_CONTEXT_INIT_TASK="This routine can be called in a tasklet context. Argobots must be initialized."
+
 ALIASES += DOC_CONTEXT_INIT_YIELDABLE="This routine can be called in a ULT context. Argobots must be initialized."
 
 ALIASES += DOC_CONTEXT_NOCTXSWITCH="This routine does not perform context switching the calling ULT unless any user-defined function that is involved in this routine performs context switching."
@@ -1898,6 +1900,8 @@ ALIASES += DOC_DESC_V1X_NOEXT{1}="\DOC_V1X If an external thread calls this rout
 
 ALIASES += DOC_DESC_V1X_NOTASK{1}="\DOC_V1X If a tasklet calls this routine, \1 is returned.\n \DOC_V20 A tasklet may call this routine.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
 
+ALIASES += DOC_DESC_V1X_NOYIELDABLE{1}="\DOC_V1X If a ULT calls this routine, \1 is returned.\n \DOC_V20 A ULT may call this routine.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
+
 ALIASES += DOC_DESC_V1X_NULL_PTR{2}="\DOC_V1X If \1 is \c NULL, \2 is returned.\n \DOC_V20 If \1 is \c NULL, the results are undefined.\n @rationale Argobots 2.0 will not check NULL pointers. @endrationale"
 
 ALIASES += DOC_DESC_V1X_P_POP_WAIT="\DOC_V1X \c ABT_pool_def does not define \c p_pop_wait. \n \DOC_V20 \c ABT_pool_def defines \c p_pop_wait. \n @rationale To maintain the ABI compatibility, \c p_pop_wait is excluded from \c ABT_pool_def. @endrationale"
@@ -1927,6 +1931,8 @@ ALIASES += DOC_DESC_V1X_SET_VALUE_ON_ERROR_CONDITIONAL{3}="\DOC_V1X \1 is set to
 ALIASES += DOC_DESC_V1X_SET_VALUE_ON_ERROR{2}="\DOC_V1X \1 is set to \2 if an error occurs.\n \DOC_V20 \1 is not updated if an error occurs.\n @rationale To ensure the atomicity of the API, Argobots 2.0 guarantees that the routine has no effect if the routine returns an error (as possible).  Argobots 2.0 does not update a returned value when the routine throws an error. @endrationale"
 
 ALIASES += DOC_DESC_V1X_TASKLET_ATTR{3}="\DOC_V1X If \1 is a tasklet, this routine returns \3.\n \DOC_V20 If \1 is a tasklet, this routine sets \2 to a properly translated ULT attributes and returns \c ABT_SUCCESS.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
+
+ALIASES += DOC_DESC_V1X_TASK_STATE_ACCEPT_THREAD{2}="\DOC_V1X If \1 is a ULT, \2 is returned.\n \DOC_V20 This routine accepts a ULT handle as \1.  \c ABT_thread_state and \c ABT_task_state is unified.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
 
 ALIASES += DOC_DESC_V1X_YIELD_EXT="\DOC_V1X This routine returns \c ABT_SUCCESS without any effect if an external thread calls this routine.\n \DOC_V20 This routine returns \c ABT_ERR_INV_XSTREAM if an external thread calls this routine.\n @rationale An external thread cannot achieve the purpose of this routine.  This routine should return an error. @endrationale"
 
@@ -2019,6 +2025,10 @@ ALIASES += DOC_ERROR_INV_SCHED_PTR{1}="If \1 points to \c ABT_SCHED_NULL, \c ABT
 ALIASES += DOC_ERROR_INV_TASK_HANDLE{1}="If \1 is \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_TASK is returned.\n"
 
 ALIASES += DOC_ERROR_INV_TASK_PTR{1}="If \1 points to \c ABT_THREAD_NULL or \c ABT_TASK_NULL, \c ABT_ERR_INV_TASK is returned.\n"
+
+ALIASES += DOC_ERROR_INV_TASK_Y="If the caller is a ULT, \c ABT_ERR_INV_TASK is returned.\n"
+
+ALIASES += DOC_ERROR_INV_TASK_Y{1}="If \1 is a ULT, \c ABT_ERR_INV_TASK is returned.\n"
 
 ALIASES += DOC_ERROR_INV_THREAD_ATTR_HANDLE{1}="If \1 is \c ABT_THREAD_ATTR_NULL, \c ABT_ERR_INV_THREAD_ATTR is returned.\n"
 
