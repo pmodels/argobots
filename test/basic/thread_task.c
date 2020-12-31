@@ -95,11 +95,15 @@ void thread_func(void *arg)
     if (is_check_error) {
         ABT_task task;
         ret = ABT_task_self(&task);
+#ifdef ABT_ENABLE_VER_20_API
+        ATS_ERROR(ret, "ABT_task_self");
+#else
         assert(ret == ABT_ERR_INV_TASK);
         if (task != ABT_TASK_NULL) {
             fprintf(stderr, "ERROR: should not be a tasklet\n");
             exit(-1);
         }
+#endif
     }
 }
 
