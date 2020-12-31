@@ -1960,6 +1960,8 @@ ALIASES += DOC_ERROR_FUTURE_NO_COMPARTMENT{1}="If the number of compartments of 
 
 ALIASES += DOC_ERROR_FUTURE_READY{1}="If \1 is ready, \c ABT_ERR_FUTURE is returned.\n"
 
+ALIASES += DOC_ERROR_INV_ARG_ERR_CODE{1}="If \1 is not a valid error code, \c ABT_ERR_INV_ARG is returned.\n"
+
 ALIASES += DOC_ERROR_INV_ARG_GREATER_THAN{2}="If \1 is larger than \2, \c ABT_ERR_INV_ARG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_INV_SCHED_PREDEF{1}="If \1 is not a valid predefined scheduler type, \c ABT_ERR_INV_ARG is returned.\n"
@@ -2089,6 +2091,8 @@ ALIASES += DOC_ERROR_MIGRATION_NA_THREAD_MIGRATE="If no execution stream for mig
 ALIASES += DOC_ERROR_MIGRATION_TARGET{2}="If \1 is associated with \2, \c ABT_ERR_MIGRATION_TARGET is returned.\n"
 
 ALIASES += DOC_ERROR_NULL_PTR{2}="If \1 is \c NULL, \2 is returned.\n"
+
+ALIASES += DOC_ERROR_OTHER_ERR_CODE{1}="If \1 is not a valid error code, \c ABT_ERR_OTHER is returned.\n"
 
 ALIASES += DOC_ERROR_POOL_UNSUPPORTED_FEATURE{2}="If \1 does not support \2, \c ABT_ERR_POOL is returned.\n"
 
