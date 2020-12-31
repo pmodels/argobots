@@ -29,17 +29,47 @@ static ABTD_atomic_uint32 g_ABTI_initialized =
  * @ingroup ENV
  * @brief   Initialize the Argobots execution environment.
  *
- * \c ABT_init() initializes the Argobots library and its execution environment.
- * It internally creates objects for the \a primary ES and the \a primary ULT.
+ * \c ABT_init() initializes the Argobots execution environment.  If Argobots
+ * has not been initialized, the first caller of \c ABT_init() becomes the
+ * primary ULT that is running on the primary execution stream.  If Argobots has
+ * been already initialized, \c ABT_init() increments a reference counter
+ * atomically.  This routine returns \c ABT_SUCCESS even if Argobots has been
+ * already initialized.
  *
- * \c ABT_init() must be called by the primary ULT before using any other
- * Argobots functions. \c ABT_init() can be called again after
- * \c ABT_finalize() is called.
+ * \DOC_DESC_ATOMICITY_ARGOBOTS_INIT
  *
- * @param[in] argc the number of arguments
- * @param[in] argv the argument vector
+ * Argobots must be finalized by \c ABT_finalize() after its use.  Argobots can
+ * be initialized and finalized multiple times in a nested manner, but the
+ * caller of \c ABT_finalize() must be the same as that of \c ABT_init() at the
+ * same nesting level.
+ *
+ * \c ABT_init() is thread-safe, but calling \c ABT_init() concurrently is
+ * discouraged because the user cannot know the calling order of \c ABT_init(),
+ * which is needed to finalize Argobots correctly.  \c ABT_finalize() needs to
+ * be called by the same caller as that of \c ABT_init() at the same nesting
+ * level.
+ *
+ * @note
+ * Argobots can be reinitialized after freeing Argobots.  That is, \c ABT_init()
+ * can be called again after Argobots is finalized by \c ABT_finalize().
+ *
+ * This routine ignores the arguments \c argc and \c argv.
+ *
+ * @note
+ * Although the arguments are \c argc and \c argv, the caller of \c ABT_init()
+ * does not need to be an external thread that starts a program (e.g., a POSIX
+ * thread that calls \c main()).
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_RESOURCE
+ *
+ * @param[in] argc  ignored parameter
+ * @param[in] argv  ignored parameter
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_init(int argc, char **argv)
 {
@@ -56,19 +86,49 @@ int ABT_init(int argc, char **argv)
 
 /**
  * @ingroup ENV
- * @brief   Terminate the Argobots execution environment.
+ * @brief   Finalize the Argobots execution environment.
  *
- * \c ABT_finalize() terminates the Argobots execution environment and
- * deallocates memory internally used in Argobots. This function also contains
- * deallocation of objects for the primary ES and the primary ULT.
+ * If \c ABT_finalize() is called at the first nesting level, \c ABT_finalize()
+ * deallocates the resource used for the Argobots execution environment and sets
+ * the state of Argobots to uninitialized.  If \c ABT_finalize() is not called
+ * at the first nesting level, \c ABT_finalize() decrements the reference
+ * counter atomically.
  *
- * \c ABT_finalize() must be called by the primary ULT. Invoking the Argobots
- * functions after \c ABT_finalize() is not allowed. To use the Argobots
- * functions after calling \c ABT_finalize(), \c ABT_init() needs to be called
- * again.
+ * \DOC_DESC_ATOMICITY_ARGOBOTS_INIT
+ *
+ * Argobots can be initialized and finalized multiple times in a nested manner,
+ * but the caller of \c ABT_finalize() must be the same as that of
+ * \c ABT_init() at the same nesting level.  Specifically, if \c ABT_finalize()
+ * is called at the first nesting level, the caller must be the primary ULT that
+ * is running on the primary execution stream.
+ *
+ * \c ABT_finalize() is thread-safe, but calling \c ABT_finalize() concurrently
+ * is discouraged because the user cannot guarantee the calling order of
+ * \c ABT_finialize() while \c ABT_finalize() needs to be called by the same
+ * caller as that of \c ABT_init() at the same nesting level.
+ *
+ * If \c ABT_finalize() is called at the first nesting level, this routine
+ * deallocates and invalidates all the resources and the handles associated with
+ * Argobots unless otherwise noted.
+ *
+ * @note
+ * The current specification does not define which routine can be safely called
+ * during the finalization phase, for example, in the user-given scheduler
+ * finalization function \c free() that is associated with the main scheduler of
+ * the primary execution stream, which can be triggered by \c ABT_finalize().
+ * The behavior of this routine will be clarified in the future.
+ *
+ * @contexts
+ * \DOC_CONTEXT_FINALIZE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_FINALIZE
  *
  * @return Error code
- * @retval ABT_SUCCESS on success
  */
 int ABT_finalize(void)
 {
@@ -83,15 +143,22 @@ int ABT_finalize(void)
 
 /**
  * @ingroup ENV
- * @brief   Check whether \c ABT_init() has been called.
+ * @brief   Check if the Argobots execution environment has been initialized.
  *
  * \c ABT_initialized() returns \c ABT_SUCCESS if the Argobots execution
- * environment has been initialized. Otherwise, it returns
+ * environment has been initialized.  Otherwise, it returns
  * \c ABT_ERR_UNINITIALIZED.
  *
+ * \DOC_DESC_ATOMICITY_ARGOBOTS_INIT
+ *
+ * @contexts
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH \DOC_CONTEXT_NOTE_SIGNAL_SAFE
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS_INITIALIZED
+ * \DOC_ERROR_SUCCESS_UNINITIALIZED
+ *
  * @return Error code
- * @retval ABT_SUCCESS           if the environment has been initialized.
- * @retval ABT_ERR_UNINITIALIZED if the environment has not been initialized.
  */
 int ABT_initialized(void)
 {

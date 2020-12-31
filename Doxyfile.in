@@ -1820,6 +1820,8 @@ ALIASES += DOC_CONTEXT_ANY="This routine can be called in any execution context.
 
 ALIASES += DOC_CONTEXT_CTXSWITCH="This routine may perform context switching for the calling ULT."
 
+ALIASES += DOC_CONTEXT_FINALIZE="This routine must be called by the same caller of \c ABT_init() at the same nesting level."
+
 ALIASES += DOC_CONTEXT_INIT="This routine can be called in any execution context. Argobots must be initialized."
 
 ALIASES += DOC_CONTEXT_INIT_NOEXT="This routine can be called in either a ULT context or a tasklet context. Argobots must be initialized."
@@ -1841,6 +1843,8 @@ ALIASES += DOC_CONTEXT_TOOL_CALLBACK{1}="This routine can be called only in a ca
 #---------------------------------------------------------------------------
 # Description
 #---------------------------------------------------------------------------
+
+ALIASES += DOC_DESC_ATOMICITY_ARGOBOTS_INIT="Initialization and finalization of Argobots are performed atomically."
 
 ALIASES += DOC_DESC_ATOMICITY_EVENTUAL_READINESS="The readiness of an eventual is managed atomically."
 
@@ -2104,9 +2108,13 @@ ALIASES += DOC_ERROR_SUCCESS_COND_SIGNALED="If this caller is woken up by a sign
 
 ALIASES += DOC_ERROR_SUCCESS_COND_TIMEDOUT="If the system time exceeds \c abstime before \c cond is signaled, \c ABT_ERR_COND_TIMEDOUT is returned.\n"
 
+ALIASES += DOC_ERROR_SUCCESS_INITIALIZED="If the Argobots execution environment has been initialized, \c ABT_SUCCESS is returned.\n"
+
 ALIASES += DOC_ERROR_SUCCESS_LOCK_ACQUIRED{1}="If this routine successfully obtains \1, \c ABT_SUCCESS is returned.\n"
 
 ALIASES += DOC_ERROR_SUCCESS_LOCK_FAILED{1}="If this routine fails to obtain \1, \c ABT_ERR_MUTEX_LOCKED is returned.\n"
+
+ALIASES += DOC_ERROR_SUCCESS_UNINITIALIZED="If the Argobots execution environment has not been initialized, \c ABT_ERR_UNINITIALIZED is returned."
 
 ALIASES += DOC_ERROR_SYS_CPUBIND="If an error occurs in binding the execution stream, \c ABT_ERR_SYS is returned.\n"
 
@@ -2169,6 +2177,8 @@ ALIASES += DOC_UNDEFINED_CHANGE_STATE{1}="If the internal state of the Argobots 
 ALIASES += DOC_UNDEFINED_COND_WAIT{2}="If \2 is a recursive mutex and has been locked more than once, the results are undefined.\n If \1 has been associated with a mutex other than \2, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_EVENTUAL_BUFFER{2}="If the memory buffer pointed to by \2 is accessed after freeing \1, the results are undefined.\n If the memory buffer pointed to by \2 is modified, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_FINALIZE="If this routine is not called by the caller of \c ABT_init() at the same nesting level, the results are undefined.\n If this routine is called at the first nesting level but is not called by the primary ULT that is running on the primary execution stream, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_FREED{1}="If \1 has already been freed, the results are undefined.\n"
 
