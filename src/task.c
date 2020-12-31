@@ -54,6 +54,11 @@ ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
 int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *newtask)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newtask to NULL on error. */
+    if (newtask)
+        *newtask = ABT_TASK_NULL;
+#endif
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newtask;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -111,6 +116,11 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
 int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                                void *arg, ABT_task *newtask)
 {
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* Argobots 1.x sets newtask to NULL on error. */
+    if (newtask)
+        *newtask = ABT_TASK_NULL;
+#endif
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newtask;
 
@@ -130,7 +140,6 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
     return ABT_SUCCESS;
 }
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Revive a terminated work unit.
@@ -140,10 +149,13 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
  * in a case where \c ABT_thread_revive() returns \c ABT_ERR_INV_THREAD.
  */
 int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
-                    ABT_task *task);
-#endif
+                    ABT_task *task)
+{
+    int abt_errno = ABT_thread_revive(pool, task_func, arg, task);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Free a work unit.
@@ -154,10 +166,16 @@ int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
  * \c ABT_THREAD_NULL.  \c ABT_task_free() returns \c ABT_ERR_INV_TASK in a case
  * where \c ABT_thread_free() returns \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_free(ABT_task *task);
-#endif
+int ABT_task_free(ABT_task *task)
+{
+    int abt_errno = ABT_thread_free(task);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    if (!(ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS)) {
+        *task = ABT_TASK_NULL;
+    }
+    return abt_errno;
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Wait for a work unit to terminate.
@@ -166,10 +184,13 @@ int ABT_task_free(ABT_task *task);
  * for the error code.  \c ABT_task_join() returns \c ABT_ERR_INV_TASK in a case
  * where \c ABT_thread_join() returns \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_join(ABT_task task);
-#endif
+int ABT_task_join(ABT_task task)
+{
+    int abt_errno = ABT_thread_join(task);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Send a termination request to a work unit.
@@ -178,8 +199,12 @@ int ABT_task_join(ABT_task task);
  * except for the error code.  \c ABT_task_cancel() returns \c ABT_ERR_INV_TASK
  * in a case where \c ABT_thread_cancel() returns \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_cancel(ABT_task task);
-#endif
+int ABT_task_cancel(ABT_task task)
+{
+    int abt_errno = ABT_thread_cancel(task);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
 /**
  * @ingroup TASK
@@ -215,17 +240,17 @@ int ABT_task_cancel(ABT_task task);
  */
 int ABT_task_self(ABT_task *task)
 {
-    *task = ABT_TASK_NULL;
-
     ABTI_xstream *p_local_xstream;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    *task = ABT_TASK_NULL;
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
-
-    ABTI_thread *p_thread = p_local_xstream->p_thread;
-    if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
-        return ABT_ERR_INV_THREAD;
-    } else {
-        *task = ABTI_thread_get_handle(p_thread);
-    }
+    ABTI_CHECK_TRUE(!(p_local_xstream->p_thread->type &
+                      ABTI_THREAD_TYPE_YIELDABLE),
+                    ABT_ERR_INV_TASK);
+#else
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+#endif
+    *task = ABTI_thread_get_handle(p_local_xstream->p_thread);
     return ABT_SUCCESS;
 }
 
@@ -261,16 +286,18 @@ int ABT_task_self(ABT_task *task)
 int ABT_task_self_id(ABT_unit_id *id)
 {
     ABTI_xstream *p_local_xstream;
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
-
-    ABTI_thread *p_thread = p_local_xstream->p_thread;
-    ABTI_CHECK_TRUE(!(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE),
-                    ABT_ERR_INV_THREAD);
-    *id = ABTI_thread_get_id(p_thread);
+    ABTI_CHECK_TRUE(!(p_local_xstream->p_thread->type &
+                      ABTI_THREAD_TYPE_YIELDABLE),
+                    ABT_ERR_INV_TASK);
+#else
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+#endif
+    *id = ABTI_thread_get_id(p_local_xstream->p_thread);
     return ABT_SUCCESS;
 }
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get an execution stream associated with a work unit.
@@ -280,10 +307,13 @@ int ABT_task_self_id(ABT_unit_id *id)
  * \c ABT_task_get_xstream() returns \c ABT_ERR_INV_TASK in a case where
  * \c ABT_thread_get_last_xstream() returns \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream);
-#endif
+int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream)
+{
+    int abt_errno = ABT_thread_get_last_xstream(task, xstream);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get a state of a work unit.
@@ -314,10 +344,21 @@ int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream);
  * @param[out] state  state of \c work unit
  * @return Error code
  */
-int ABT_task_get_state(ABT_task task, ABT_task_state *state);
-#endif
+int ABT_task_get_state(ABT_task task, ABT_task_state *state)
+{
+    ABT_thread_state thread_state;
+    int abt_errno = ABT_thread_get_state(task, &thread_state);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    if (thread_state == ABT_THREAD_STATE_READY) {
+        *state = ABT_TASK_STATE_READY;
+    } else if (thread_state == ABT_THREAD_STATE_TERMINATED) {
+        *state = ABT_TASK_STATE_TERMINATED;
+    } else {
+        *state = ABT_TASK_STATE_RUNNING;
+    }
+    return abt_errno;
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get the last pool of a work unit.
@@ -327,10 +368,13 @@ int ABT_task_get_state(ABT_task task, ABT_task_state *state);
  * \c ABT_task_get_last_pool() returns \c ABT_ERR_INV_TASK in a case where
  * \c ABT_thread_get_last_pool() returns \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool);
-#endif
+int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool)
+{
+    int abt_errno = ABT_thread_get_last_pool(task, pool);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get the last pool's ID of a work unit.
@@ -340,10 +384,13 @@ int ABT_task_get_last_pool(ABT_task task, ABT_pool *pool);
  * \c ABT_task_get_last_pool_id() returns \c ABT_ERR_INV_TASK in a case where
  * \c ABT_thread_get_last_pool_id() returns \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_get_last_pool_id(ABT_task task, int *id);
-#endif
+int ABT_task_get_last_pool_id(ABT_task task, int *id)
+{
+    int abt_errno = ABT_thread_get_last_pool_id(task, id);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Set the migratability in a work unit.
@@ -353,10 +400,13 @@ int ABT_task_get_last_pool_id(ABT_task task, int *id);
  * \c ABT_task_set_migratable() returns \c ABT_ERR_INV_TASK in a case where
  * \c ABT_thread_set_migratable() returns \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_set_migratable(ABT_task task, ABT_bool flag);
-#endif
+int ABT_task_set_migratable(ABT_task task, ABT_bool flag)
+{
+    int abt_errno = ABT_thread_set_migratable(task, flag);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get the migratability of a work unit.
@@ -366,8 +416,12 @@ int ABT_task_set_migratable(ABT_task task, ABT_bool flag);
  * \c ABT_task_is_migratable() returns \c ABT_ERR_INV_TASK in a case where
  * \c ABT_thread_is_migratable() returns \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_is_migratable(ABT_task task, ABT_bool *flag);
-#endif
+int ABT_task_is_migratable(ABT_task task, ABT_bool *flag)
+{
+    int abt_errno = ABT_thread_is_migratable(task, flag);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
@@ -379,17 +433,17 @@ int ABT_task_is_migratable(ABT_task task, ABT_bool *flag);
 int ABT_task_is_unnamed(ABT_task task, ABT_bool *flag);
 #endif
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Compare two tasklet handles for equality.
  *
  * The functionality of this routine is the same as \c ABT_thread_equal().
  */
-int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
-#endif
+int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result)
+{
+    return ABT_thread_equal(task1, task2, result);
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Get ID of a work unit
@@ -398,10 +452,13 @@ int ABT_task_equal(ABT_task task1, ABT_task task2, ABT_bool *result);
  * except for the error code.  \c ABT_task_get_id() returns \c ABT_ERR_INV_TASK
  * in a case where \c ABT_thread_get_id() returns \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id);
-#endif
+int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id)
+{
+    int abt_errno = ABT_thread_get_id(task, task_id);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
-#ifdef ABT_CONFIG_USE_DOXYGEN
 /**
  * @ingroup TASK
  * @brief   Retrieve an argument for a work unit function of a work unit.
@@ -411,8 +468,12 @@ int ABT_task_get_id(ABT_task task, ABT_unit_id *task_id);
  * \c ABT_ERR_INV_TASK in a case where \c ABT_thread_get_arg() returns
  * \c ABT_ERR_INV_THREAD.
  */
-int ABT_task_get_arg(ABT_task task, void **arg);
-#endif
+int ABT_task_get_arg(ABT_task task, void **arg)
+{
+    int abt_errno = ABT_thread_get_arg(task, arg);
+    ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);
+    return abt_errno;
+}
 
 #ifdef ABT_CONFIG_USE_DOXYGEN
 /**
