@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
         { "ABT_ERR_INV_UNIT", ABT_ERR_INV_UNIT },
         { "ABT_ERR_INV_THREAD", ABT_ERR_INV_THREAD },
         { "ABT_ERR_INV_THREAD_ATTR", ABT_ERR_INV_THREAD_ATTR },
+        { "ABT_ERR_INV_TASK", ABT_ERR_INV_TASK },
         { "ABT_ERR_INV_KEY", ABT_ERR_INV_KEY },
         { "ABT_ERR_INV_MUTEX", ABT_ERR_INV_MUTEX },
         { "ABT_ERR_INV_MUTEX_ATTR", ABT_ERR_INV_MUTEX_ATTR },
@@ -58,6 +59,7 @@ int main(int argc, char *argv[])
         { "ABT_ERR_POOL", ABT_ERR_POOL },
         { "ABT_ERR_UNIT", ABT_ERR_UNIT },
         { "ABT_ERR_THREAD", ABT_ERR_THREAD },
+        { "ABT_ERR_TASK", ABT_ERR_TASK },
         { "ABT_ERR_KEY", ABT_ERR_KEY },
         { "ABT_ERR_MUTEX", ABT_ERR_MUTEX },
         { "ABT_ERR_MUTEX_LOCKED", ABT_ERR_MUTEX_LOCKED },
@@ -74,6 +76,8 @@ int main(int argc, char *argv[])
         { "ABT_ERR_FEATURE_NA", ABT_ERR_FEATURE_NA },
         { "ABT_ERR_INV_TOOL_CONTEXT", ABT_ERR_INV_TOOL_CONTEXT },
         { "ABT_ERR_INV_ARG", ABT_ERR_INV_ARG },
+        { "ABT_ERR_SYS", ABT_ERR_SYS },
+        { "ABT_ERR_CPUID", ABT_ERR_CPUID },
     };
 
     for (i = 0; i < (int)(sizeof(error_pairs) / sizeof(error_pairs[0])); i++) {

@@ -1820,6 +1820,8 @@ ALIASES += DOC_CONTEXT_ANY="This routine can be called in any execution context.
 
 ALIASES += DOC_CONTEXT_CTXSWITCH="This routine may perform context switching for the calling ULT."
 
+ALIASES += DOC_CONTEXT_FINALIZE="This routine must be called by the same caller of \c ABT_init() at the same nesting level."
+
 ALIASES += DOC_CONTEXT_INIT="This routine can be called in any execution context. Argobots must be initialized."
 
 ALIASES += DOC_CONTEXT_INIT_NOEXT="This routine can be called in either a ULT context or a tasklet context. Argobots must be initialized."
@@ -1841,6 +1843,8 @@ ALIASES += DOC_CONTEXT_TOOL_CALLBACK{1}="This routine can be called only in a ca
 #---------------------------------------------------------------------------
 # Description
 #---------------------------------------------------------------------------
+
+ALIASES += DOC_DESC_ATOMICITY_ARGOBOTS_INIT="Initialization and finalization of Argobots are performed atomically."
 
 ALIASES += DOC_DESC_ATOMICITY_EVENTUAL_READINESS="The readiness of an eventual is managed atomically."
 
@@ -1934,6 +1938,8 @@ ALIASES += DOC_DESC_V1X_TASKLET_ATTR{3}="\DOC_V1X If \1 is a tasklet, this routi
 
 ALIASES += DOC_DESC_V1X_TASK_STATE_ACCEPT_THREAD{2}="\DOC_V1X If \1 is a ULT, \2 is returned.\n \DOC_V20 This routine accepts a ULT handle as \1.  \c ABT_thread_state and \c ABT_task_state is unified.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
 
+ALIASES += DOC_DESC_V1X_THREAD_TASK_NULL="\DOC_V1X The value of \c ABT_THREAD_NULL is different from that of \c ABT_TASK_NULL.\n \DOC_V20 \c ABT_TASK_NULL is an alias of \c ABT_THREAD_NULL.\n @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
+
 ALIASES += DOC_DESC_V1X_YIELD_EXT="\DOC_V1X This routine returns \c ABT_SUCCESS without any effect if an external thread calls this routine.\n \DOC_V20 This routine returns \c ABT_ERR_INV_XSTREAM if an external thread calls this routine.\n @rationale An external thread cannot achieve the purpose of this routine.  This routine should return an error. @endrationale"
 
 ALIASES += DOC_DESC_V1X_YIELD_TASK="\DOC_V1X This routine returns \c ABT_SUCCESS without any effect if a tasklet calls this routine.\n \DOC_V20 This routine returns \c ABT_ERR_INV_THREAD if a tasklet calls this routine.\n @rationale A tasklet cannot achieve the purpose of this routine.  This routine should return an error. @endrationale"
@@ -1955,6 +1961,8 @@ ALIASES += DOC_ERROR_FEATURE_NA{1}="If \1 is not supported, \c ABT_ERR_FEATURE_N
 ALIASES += DOC_ERROR_FUTURE_NO_COMPARTMENT{1}="If the number of compartments of \1 is zero, \c ABT_ERR_FUTURE is returned.\n"
 
 ALIASES += DOC_ERROR_FUTURE_READY{1}="If \1 is ready, \c ABT_ERR_FUTURE is returned.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_ERR_CODE{1}="If \1 is not a valid error code, \c ABT_ERR_INV_ARG is returned.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_GREATER_THAN{2}="If \1 is larger than \2, \c ABT_ERR_INV_ARG is returned.\n"
 
@@ -2086,6 +2094,8 @@ ALIASES += DOC_ERROR_MIGRATION_TARGET{2}="If \1 is associated with \2, \c ABT_ER
 
 ALIASES += DOC_ERROR_NULL_PTR{2}="If \1 is \c NULL, \2 is returned.\n"
 
+ALIASES += DOC_ERROR_OTHER_ERR_CODE{1}="If \1 is not a valid error code, \c ABT_ERR_OTHER is returned.\n"
+
 ALIASES += DOC_ERROR_POOL_UNSUPPORTED_FEATURE{2}="If \1 does not support \2, \c ABT_ERR_POOL is returned.\n"
 
 ALIASES += DOC_ERROR_RESOURCE="If an error related to memory occurs, \c ABT_ERR_MEM is returned.\n If an error related to system calls occurs, \c ABT_ERR_SYS is returned.\n"
@@ -2104,9 +2114,13 @@ ALIASES += DOC_ERROR_SUCCESS_COND_SIGNALED="If this caller is woken up by a sign
 
 ALIASES += DOC_ERROR_SUCCESS_COND_TIMEDOUT="If the system time exceeds \c abstime before \c cond is signaled, \c ABT_ERR_COND_TIMEDOUT is returned.\n"
 
+ALIASES += DOC_ERROR_SUCCESS_INITIALIZED="If the Argobots execution environment has been initialized, \c ABT_SUCCESS is returned.\n"
+
 ALIASES += DOC_ERROR_SUCCESS_LOCK_ACQUIRED{1}="If this routine successfully obtains \1, \c ABT_SUCCESS is returned.\n"
 
 ALIASES += DOC_ERROR_SUCCESS_LOCK_FAILED{1}="If this routine fails to obtain \1, \c ABT_ERR_MUTEX_LOCKED is returned.\n"
+
+ALIASES += DOC_ERROR_SUCCESS_UNINITIALIZED="If the Argobots execution environment has not been initialized, \c ABT_ERR_UNINITIALIZED is returned."
 
 ALIASES += DOC_ERROR_SYS_CPUBIND="If an error occurs in binding the execution stream, \c ABT_ERR_SYS is returned.\n"
 
@@ -2169,6 +2183,8 @@ ALIASES += DOC_UNDEFINED_CHANGE_STATE{1}="If the internal state of the Argobots 
 ALIASES += DOC_UNDEFINED_COND_WAIT{2}="If \2 is a recursive mutex and has been locked more than once, the results are undefined.\n If \1 has been associated with a mutex other than \2, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_EVENTUAL_BUFFER{2}="If the memory buffer pointed to by \2 is accessed after freeing \1, the results are undefined.\n If the memory buffer pointed to by \2 is modified, the results are undefined.\n"
+
+ALIASES += DOC_UNDEFINED_FINALIZE="If this routine is not called by the caller of \c ABT_init() at the same nesting level, the results are undefined.\n If this routine is called at the first nesting level but is not called by the primary ULT that is running on the primary execution stream, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_FREED{1}="If \1 has already been freed, the results are undefined.\n"
 
