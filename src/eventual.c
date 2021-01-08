@@ -142,8 +142,10 @@ int ABT_eventual_free(ABT_eventual *eventual)
  * @endchangev20
  *
  * @contexts
- * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH\n
- * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{
+ * \c eventual is not ready}\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c eventual is
+ *                                                               not ready}
  *
  * @errors
  * \DOC_ERROR_SUCCESS

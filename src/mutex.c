@@ -166,7 +166,8 @@ int ABT_mutex_free(ABT_mutex *mutex)
  * unlocked as many times as the level of ownership.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
+ * therefore the caller fails to take a lock}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
@@ -202,7 +203,8 @@ int ABT_mutex_lock(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
+ * therefore the caller fails to take a lock}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
@@ -238,7 +240,8 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
+ * therefore the caller fails to take a lock}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
@@ -350,7 +353,8 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
  * be the same as that of the corresponding locking function.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                      \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
@@ -394,7 +398,8 @@ int ABT_mutex_unlock(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                      \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
@@ -438,7 +443,8 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                      \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
