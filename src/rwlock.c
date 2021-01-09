@@ -118,8 +118,10 @@ int ABT_rwlock_free(ABT_rwlock *rwlock)
  * @endchangev20
  *
  * @contexts
- * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH\n
- * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{
+ * \c rwlock is locked by a writer}\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{
+ * \c rwlock is locked by a writer}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
@@ -177,8 +179,10 @@ int ABT_rwlock_rdlock(ABT_rwlock rwlock)
  * @endchangev20
  *
  * @contexts
- * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH\n
- * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{
+ * \c rwlock is locked}\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c rwlock is
+ *                                                               locked}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
@@ -228,7 +232,8 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
  * \c ABT_rwlock_unlock() unlocks the readers-writer lock \c rwlock.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                      \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS

@@ -1820,6 +1820,8 @@ ALIASES += DOC_CONTEXT_ANY="This routine can be called in any execution context.
 
 ALIASES += DOC_CONTEXT_CTXSWITCH="This routine may perform context switching for the calling ULT."
 
+ALIASES += DOC_CONTEXT_CTXSWITCH_CONDITIONAL{1}="This routine may perform context switching for the calling ULT if \1.  Otherwise, this routine does not context switch the calling ULT unless any user-defined function that is involved in this routine performs context switching."
+
 ALIASES += DOC_CONTEXT_FINALIZE="This routine must be called by the same caller of \c ABT_init() at the same nesting level."
 
 ALIASES += DOC_CONTEXT_INIT="This routine can be called in any execution context. Argobots must be initialized."

@@ -145,8 +145,10 @@ int ABT_future_free(ABT_future *future)
  * @endchangev20
  *
  * @contexts
- * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH\n
- * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{
+ * \c future is not ready}\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c future is
+ *                                                               not ready}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
