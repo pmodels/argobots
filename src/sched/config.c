@@ -102,12 +102,14 @@ ABT_sched_config_var ABT_sched_basic_freq = { .idx = -4,
 int ABT_sched_config_create(ABT_sched_config *config, ...)
 {
     int abt_errno;
+    int i = 0;
     ABTI_sched_config *p_config;
 
     abt_errno = ABTU_calloc(1, sizeof(ABTI_sched_config), (void **)&p_config);
     ABTI_CHECK_ERROR(abt_errno);
     /* Initialize index. */
-    for (int i = 0; i < ABTI_SCHED_CONFIG_HTABLE_SIZE; i++) {
+
+    for (i = 0; i < ABTI_SCHED_CONFIG_HTABLE_SIZE; i++) {
         p_config->elements[i].idx = ABTI_SCHED_CONFIG_UNUSED_INDEX;
     }
 
