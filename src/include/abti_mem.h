@@ -28,14 +28,37 @@ void ABTI_mem_finalize(ABTI_global *p_global);
 void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream);
 int ABTI_mem_check_lp_alloc(int lp_alloc);
 
+#define ABTI_STACK_CANARY_VALUE ((uint64_t)0xbaadc0debaadc0de)
+
 /* Inline functions */
 static inline void ABTI_mem_register_stack(void *p_stack, size_t stacksize)
 {
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+    /* Write down stack canary. */
+    if (p_stack) {
+        uint64_t i;
+        for (i = 0;
+             i < ABTU_roundup_uint64(ABT_CONFIG_STACK_CHECK_CANARY_SIZE, 8);
+             i += sizeof(uint64_t)) {
+            ((uint64_t *)p_stack)[i] = ABTI_STACK_CANARY_VALUE;
+        }
+    }
+#endif
     ABTI_VALGRIND_REGISTER_STACK(p_stack, stacksize);
 }
 
 static inline void ABTI_mem_unregister_stack(void *p_stack)
 {
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+    if (p_stack) {
+        uint64_t i;
+        for (i = 0;
+             i < ABTU_roundup_uint64(ABT_CONFIG_STACK_CHECK_CANARY_SIZE, 8);
+             i += sizeof(uint64_t)) {
+            ABTI_ASSERT(((uint64_t *)p_stack)[i] == ABTI_STACK_CANARY_VALUE);
+        }
+    }
+#endif
     ABTI_VALGRIND_UNREGISTER_STACK(p_stack);
 }
 
