@@ -200,6 +200,14 @@ AC_ARG_ENABLE([tool],
     AS_HELP_STRING([--enable-tool],
                    [enable the tool interface, which is disabled by default.]))
 
+# --enable-stack-overflow-check
+AC_ARG_ENABLE([stack-overflow-check],
+[  --enable-stack-overflow-check@<:@=OPT@:>@ enable a stack overflow check
+        canary|canary-8     - use an 8-byte stack canary.
+        canary-XX           - use an XX-byte stack canary.
+        none|no
+],,[enable_stack_overflow_check=no])
+
 # --disable-simple-mutex
 AC_ARG_ENABLE([simple-mutex],
     AS_HELP_STRING([--disable-simple-mutex], [use an experimental mutex implementation]),,
@@ -678,6 +686,37 @@ AS_IF([test "x$enable_dynamic_promotion" = "xyes" -a "x$enable_fcontext" != "xno
 AS_IF([test "x$enable_tool" != "xyes"],
       [AC_DEFINE(ABT_CONFIG_DISABLE_TOOL_INTERFACE, 1,
                  [Define to use the tool interface])])
+
+# --enable-stack-overflow-check
+stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_NONE"
+stack_overflow_canary_size=0
+case "$enable_stack_overflow_check" in
+    canary)
+        stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_CANARY"
+        stack_overflow_canary_size="8"
+    ;;
+    canary-*)
+        stack_overflow_canary_size_tmp="`echo $enable_stack_overflow_check | sed -e 's/canary-//g'`"
+        # stack_overflow_canary_size_tmp must be an integer
+        if test x"`echo $stack_overflow_canary_size_tmp | sed -e 's/[[0-9]]//g'`" = x"" ; then
+            stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_CANARY"
+            stack_overflow_canary_size="$stack_overflow_canary_size_tmp"
+        else
+            AC_MSG_WARN([Unknown value $enable_stack_overflow_check for --enable-stack-overflow-check])
+        fi
+    ;;
+    none|no)
+        stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_NONE"
+    ;;
+    *)
+        AC_MSG_WARN([Unknown value $enable_stack_overflow_check for --enable-stack-overflow-check])
+    ;;
+esac
+
+AC_DEFINE_UNQUOTED([ABT_CONFIG_STACK_CHECK_TYPE], [$stack_overflow_check_type],
+          [Define an algorithm of a stack overflow check])
+AC_DEFINE_UNQUOTED([ABT_CONFIG_STACK_CHECK_CANARY_SIZE], [$stack_overflow_canary_size],
+          [Define the size of a stack canary when it is enabled])
 
 # check if __atomic builtins are supported
 AC_TRY_COMPILE(
