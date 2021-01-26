@@ -170,6 +170,12 @@ static void info_trigger_print_all_thread_stacks(
  *   to \c ABT_TRUE if Argobots is configured to enable the stack unwinding
  *   feature.  Otherwise, \c val is set to \c ABT_FALSE.
  *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_STACK_OVERFLOW_CHECK
+ *
+ *   \c val must be a pointer to a variable of type \c int.  \c val is set to 1
+ *   if Argobots is configured to use a stack canary to check stack overflow.
+ *   Otherwise, \c val is set to 0.
+ *
  * @changev20
  * \DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE
  * @endchangev20
@@ -333,6 +339,13 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             *((ABT_bool *)val) = ABT_TRUE;
 #else
             *((ABT_bool *)val) = ABT_FALSE;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_STACK_OVERFLOW_CHECK:
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+            *((int *)val) = 1;
+#else
+            *((int *)val) = 0;
 #endif
             break;
         default:
