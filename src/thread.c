@@ -1137,7 +1137,7 @@ int ABT_thread_yield(void)
  * \c thread to its associated pool.
  *
  * @changev20
- * \DOC_DESC_V1X_PREMATURE_BLOCKED_CHECK{\c thread, \c ABT_ERR_THREAD}
+ * \DOC_DESC_V1X_CRUDE_BLOCKED_CHECK{\c thread, \c ABT_ERR_THREAD}
  * @endchangev20
  *
  * @contexts
@@ -1199,7 +1199,7 @@ int ABT_thread_resume(ABT_thread thread)
  * @changev11
  * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
  *
- * \DOC_DESC_V10_PREMATURE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
+ * \DOC_DESC_V10_CRUDE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
  * @endchangev11
  *
  * @contexts
@@ -1285,7 +1285,7 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
  * @changev11
  * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
  *
- * \DOC_DESC_V10_PREMATURE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
+ * \DOC_DESC_V10_CRUDE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
  * @endchangev11
  *
  * @contexts
@@ -1366,7 +1366,7 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
  * @changev11
  * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
  *
- * \DOC_DESC_V10_PREMATURE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
+ * \DOC_DESC_V10_CRUDE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
  * @endchangev11
  *
  * @contexts
@@ -1440,7 +1440,7 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
  * @changev11
  * \DOC_DESC_V10_ACCEPT_TASK{\c thread}
  *
- * \DOC_DESC_V10_PREMATURE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
+ * \DOC_DESC_V10_CRUDE_TERMINATION_CHECK{\c thread, \c ABT_ERR_INV_THREAD}
  * @endchangev11
  *
  * @contexts

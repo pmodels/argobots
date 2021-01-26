@@ -86,6 +86,8 @@ extern "C" {
 /**
  * @ingroup ERROR_CODE
  * @brief   Error code: the routine returns successfully.
+ *
+ * \c ABT_SUCCESS is guaranteed to have the value of zero.
  */
 #define ABT_SUCCESS                 0
 /**
@@ -98,7 +100,7 @@ extern "C" {
  * @brief   Error code: Memory allocation failure.
  *
  * \c ABT_ERR_MEM is returned if memory allocation functions such as \c malloc()
- * or \c mmap() fail in the routine.
+ * or \c mmap() fail.
  */
 #define ABT_ERR_MEM                 2
 /**
@@ -249,49 +251,49 @@ extern "C" {
 #define ABT_ERR_INV_ARG            53
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to an execution stream.
+ * @brief   Error code: error related to an execution stream.
  */
 #define ABT_ERR_XSTREAM            29
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to an execution stream state.
+ * @brief   Error code: error related to an execution stream state.
  *
  * This error code is deprecated.
  */
 #define ABT_ERR_XSTREAM_STATE      30
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to an execution stream.
+ * @brief   Error code: error related to an execution stream.
  */
 #define ABT_ERR_XSTREAM_BARRIER    31
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a scheduler.
+ * @brief   Error code: error related to a scheduler.
  */
 #define ABT_ERR_SCHED              32
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a scheduler configuration.
+ * @brief   Error code: error related to a scheduler configuration.
  */
 #define ABT_ERR_SCHED_CONFIG       33
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a pool.
+ * @brief   Error code: error related to a pool.
  */
 #define ABT_ERR_POOL               34
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a work unit for scheduling.
+ * @brief   Error code: error related to a work unit for scheduling.
  */
 #define ABT_ERR_UNIT               35
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a work unit.
+ * @brief   Error code: error related to a work unit.
  */
 #define ABT_ERR_THREAD             36
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a work unit.
+ * @brief   Error code: error related to a work unit.
  *
  * @changev20
  * \DOC_V20 This error code is an alias of \c ABT_ERR_THREAD.
@@ -300,12 +302,12 @@ extern "C" {
 #define ABT_ERR_TASK               37
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a work-unit-specific data key.
+ * @brief   Error code: error related to a work-unit-specific data key.
  */
 #define ABT_ERR_KEY                38
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a mutex.
+ * @brief   Error code: error related to a mutex.
  */
 #define ABT_ERR_MUTEX              39
 /**
@@ -317,7 +319,7 @@ extern "C" {
 #define ABT_ERR_MUTEX_LOCKED       40
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a condition variable.
+ * @brief   Error code: error related to a condition variable.
  */
 #define ABT_ERR_COND               41
 /**
@@ -329,32 +331,32 @@ extern "C" {
 #define ABT_ERR_COND_TIMEDOUT      42
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a readers-writer lock.
+ * @brief   Error code: error related to a readers-writer lock.
  */
 #define ABT_ERR_RWLOCK             43
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to an eventual.
+ * @brief   Error code: error related to an eventual.
  */
 #define ABT_ERR_EVENTUAL           44
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a future.
+ * @brief   Error code: error related to a future.
  */
 #define ABT_ERR_FUTURE             45
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a barrier.
+ * @brief   Error code: error related to a barrier.
  */
 #define ABT_ERR_BARRIER            46
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a timer.
+ * @brief   Error code: error related to a timer.
  */
 #define ABT_ERR_TIMER              47
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to a migration target.
+ * @brief   Error code: error related to a migration target.
  */
 #define ABT_ERR_MIGRATION_TARGET   48
 /**
@@ -380,12 +382,18 @@ extern "C" {
 #define ABT_ERR_FEATURE_NA         51
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to system calls.
+ * @brief   Error code: error related to system calls and standard libraries.
+ *
+ * \c ABT_ERR_SYS represents a general error that happens in libraries used by
+ * Argobots.  For example, this error is returned when system calls such as
+ * \c futex() and \c open() or functions provided by standard libraries such as
+ * \c pthread_create() and \c unw_init_local() fail.  Note that \c ABT_ERR_MEM
+ * is returned if the error is caused by memory allocation.
  */
 #define ABT_ERR_SYS                54
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: an error related to CPU ID.
+ * @brief   Error code: error related to CPU ID.
  */
 #define ABT_ERR_CPUID              55
 

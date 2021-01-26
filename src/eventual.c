@@ -199,9 +199,9 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
  *
  * \c ABT_eventual_test() checks if the eventual \c eventual is ready and
  * returns the result through \c is_ready.  If \c eventual is not ready, this
- * routine sets \c is_ready to \c ABT_FALSE and leaves \c value unchanged.  If
+ * routine leaves \c value unchanged and sets \c is_ready to \c ABT_FALSE.  If
  * \c eventual is ready, \c is_ready is set to \c ABT_TRUE and, if \c value is
- * not \c NULL, \c value is set to the memory buffer of \c eventual.   This
+ * not \c NULL, \c value is set to the memory buffer of \c eventual.  This
  * routine returns \c ABT_SUCCESS even if \c eventual is not ready.
  *
  * The memory buffer pointed to by \c value is deallocated when \c eventual is

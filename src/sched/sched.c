@@ -216,7 +216,7 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
  *   \c ABT_SCHED_NULL.
  *
  * @changev20
- * \DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_SCHED}
+ * \DOC_DESC_V1X_CRUDE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_SCHED}
  * @endchangev20
  *
  * @contexts

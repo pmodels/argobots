@@ -27,6 +27,10 @@
  * If \c len is not \c NULL, this routine sets the length of the string to
  * \c len.  If \c len is \c NULL, \c len is not updated.
  *
+ * @note
+ * The length of the string does not count the terminator \c '\0'.  For example,
+ * the length of \c "Hello world" is 11.
+ *
  * @changev20
  * \DOC_DESC_V1X_ERROR_CODE_CHANGE{\c ABT_ERR_OTHER, \c ABT_ERR_INV_ARG,
  *                                 \c err is not a valid error code}

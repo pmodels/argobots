@@ -55,7 +55,7 @@ ABTU_ret_err static int xstream_migrate_thread(ABTI_local *p_local,
  * \c newxstream must be freed by \c ABT_xstream_free() after its use.
  *
  * @changev20
- * \DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
+ * \DOC_DESC_V1X_CRUDE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
  *
  * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newxstream, \c ABT_XSTREAM_NULL}
  * @endchangev20
@@ -223,7 +223,7 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
  * \c newxstream must be freed by \c ABT_xstream_free() after its use.
  *
  * @changev20
- * \DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
+ * \DOC_DESC_V1X_CRUDE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
  *
  * \DOC_DESC_V1X_SET_VALUE_ON_ERROR{\c newxstream, \c ABT_XSTREAM_NULL}
  * @endchangev20
@@ -763,7 +763,7 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
  * \DOC_NOTE_DEFAULT_SCHED_CONFIG
  *
  * @changev11
- * \DOC_DESC_V10_PREMATURE_SCHED_SIZE_CHECK{\c xstream, \c ABT_ERR_XSTREAM}
+ * \DOC_DESC_V10_CRUDE_SCHED_SIZE_CHECK{\c xstream, \c ABT_ERR_XSTREAM}
  *
  * \DOC_DESC_V10_ACCESS_VIOLATION
  * @endchangev11
@@ -774,7 +774,7 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
  *                                 the caller is not running on \c xstream while
  *                                 \c xstream is running}
  *
- * \DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
+ * \DOC_DESC_V1X_CRUDE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
  * @endchangev20
  *
  * @contexts
