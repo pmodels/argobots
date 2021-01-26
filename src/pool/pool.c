@@ -759,7 +759,7 @@ int ABT_pool_get_data(ABT_pool pool, void **data)
  * @endchangev11
  *
  * @changev20
- * \DOC_DESC_V1X_PREMATURE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
+ * \DOC_DESC_V1X_CRUDE_SCHED_USED_CHECK{\c sched, \c ABT_ERR_INV_SCHED}
  * @endchangev20
  *
  * @contexts

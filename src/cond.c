@@ -63,7 +63,7 @@ int ABT_cond_create(ABT_cond *newcond)
  * \c cond and sets \c cond to \c ABT_COND_NULL.
  *
  * @changev20
- * \DOC_DESC_V1X_PREMATURE_WAITER_CHECK{\c cond, \c ABT_ERR_COND}
+ * \DOC_DESC_V1X_CRUDE_WAITER_CHECK{\c cond, \c ABT_ERR_COND}
  * @endchangev20
  *
  * @contexts
@@ -77,8 +77,8 @@ int ABT_cond_create(ABT_cond *newcond)
  * @undefined
  * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NULL_PTR{\c cond}
- * \DOC_UNDEFINED_WAITER{\c cond}
  * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c cond}
+ * \DOC_V20 \DOC_UNDEFINED_WAITER{\c cond}
  *
  * @param[in,out] cond  condition variable handle
  * @return Error code
@@ -264,12 +264,12 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
 
 /**
  * @ingroup COND
- * @brief   Signal a condition variable.
+ * @brief   Signal a condition.
  *
  * \c ABT_cond_signal() signals another waiter that is blocked on the condition
  * variable \c cond.  Only one waiter is signaled and woken up.  The caller does
- * not need to hold a mutex associated with \c cond.  This routine has no effect
- * if no waiter is currently blocked on \c cond.
+ * not need to be holding a mutex associated with \c cond.  This routine has no
+ * effect if no waiter is currently blocked on \c cond.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
@@ -299,12 +299,12 @@ int ABT_cond_signal(ABT_cond cond)
 
 /**
  * @ingroup COND
- * @brief   Broadcast a condition variable.
+ * @brief   Broadcast a condition.
  *
  * \c ABT_cond_broadcast() signals all waiters that are blocked on the condition
- * variable \c cond.  The caller does not need to hold a mutex associated with
- * \c cond.  This routine has no effect if no waiter is currently blocked on
- * \c cond.
+ * variable \c cond.  The caller does not need to be holding a mutex associated
+ * with \c cond.  This routine has no effect if no waiter is currently blocked
+ * on \c cond.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
