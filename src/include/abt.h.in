@@ -616,6 +616,8 @@ enum ABT_info_query_kind {
     ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION,
     /** Whether the stack unwinding feature is enabled or not */
     ABT_INFO_QUERY_KIND_ENABLED_STACK_UNWIND,
+    /** Whether the stack overflow check is enabled or not */
+    ABT_INFO_QUERY_KIND_ENABLED_STACK_OVERFLOW_CHECK,
 };
 
 /**

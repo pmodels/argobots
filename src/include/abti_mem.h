@@ -28,7 +28,40 @@ void ABTI_mem_finalize(ABTI_global *p_global);
 void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream);
 int ABTI_mem_check_lp_alloc(int lp_alloc);
 
+#define ABTI_STACK_CANARY_VALUE ((uint64_t)0xbaadc0debaadc0de)
+
 /* Inline functions */
+static inline void ABTI_mem_register_stack(void *p_stack, size_t stacksize)
+{
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+    /* Write down stack canary. */
+    if (p_stack) {
+        uint64_t i;
+        for (i = 0;
+             i < ABTU_roundup_uint64(ABT_CONFIG_STACK_CHECK_CANARY_SIZE, 8);
+             i += sizeof(uint64_t)) {
+            ((uint64_t *)p_stack)[i] = ABTI_STACK_CANARY_VALUE;
+        }
+    }
+#endif
+    ABTI_VALGRIND_REGISTER_STACK(p_stack, stacksize);
+}
+
+static inline void ABTI_mem_unregister_stack(void *p_stack)
+{
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+    if (p_stack) {
+        uint64_t i;
+        for (i = 0;
+             i < ABTU_roundup_uint64(ABT_CONFIG_STACK_CHECK_CANARY_SIZE, 8);
+             i += sizeof(uint64_t)) {
+            ABTI_ASSERT(((uint64_t *)p_stack)[i] == ABTI_STACK_CANARY_VALUE);
+        }
+    }
+#endif
+    ABTI_VALGRIND_UNREGISTER_STACK(p_stack);
+}
+
 ABTU_ret_err static inline int
 ABTI_mem_alloc_nythread_malloc(ABTI_thread **pp_thread)
 {
@@ -160,7 +193,7 @@ ABTI_mem_alloc_ythread_default(ABTI_local *p_local, ABTI_ythread **pp_ythread)
     /* Initialize members of ABTI_thread_attr. */
     p_ythread->p_stack = p_stack;
     p_ythread->stacksize = stacksize;
-    ABTI_VALGRIND_REGISTER_STACK(p_ythread->p_stack, p_ythread->stacksize);
+    ABTI_mem_register_stack(p_ythread->p_stack, p_ythread->stacksize);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
@@ -189,7 +222,7 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack(
     /* Copy members of p_attr. */
     p_ythread->p_stack = p_stack;
     p_ythread->stacksize = stacksize;
-    ABTI_VALGRIND_REGISTER_STACK(p_ythread->p_stack, p_ythread->stacksize);
+    ABTI_mem_register_stack(p_ythread->p_stack, p_ythread->stacksize);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
@@ -211,7 +244,7 @@ ABTI_mem_alloc_ythread_malloc_desc_stack(ABTI_thread_attr *p_attr,
     p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
     p_ythread->stacksize = stacksize;
     p_ythread->p_stack = p_stack;
-    ABTI_VALGRIND_REGISTER_STACK(p_ythread->p_stack, p_ythread->stacksize);
+    ABTI_mem_register_stack(p_ythread->p_stack, p_ythread->stacksize);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
@@ -236,7 +269,7 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc(
     p_ythread->stacksize = p_attr->stacksize;
     p_ythread->p_stack = p_attr->p_stack;
     /* Note that the valgrind registration is ignored iff p_stack is NULL. */
-    ABTI_VALGRIND_REGISTER_STACK(p_ythread->p_stack, p_ythread->stacksize);
+    ABTI_mem_register_stack(p_ythread->p_stack, p_ythread->stacksize);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
@@ -248,7 +281,7 @@ static inline void ABTI_mem_free_thread(ABTI_local *p_local,
 #ifdef ABT_CONFIG_USE_MEM_POOL
     if (p_thread->type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-        ABTI_VALGRIND_UNREGISTER_STACK(p_ythread->p_stack);
+        ABTI_mem_unregister_stack(p_ythread->p_stack);
 
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
         /* Came from a memory pool. */
@@ -266,24 +299,20 @@ static inline void ABTI_mem_free_thread(ABTI_local *p_local,
 #endif
         if (p_thread->type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
         /* Non-yieldable thread or yieldable thread without stack. */
-#ifdef HAVE_VALGRIND_SUPPORT
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread)
-            ABTI_VALGRIND_UNREGISTER_STACK(p_ythread->p_stack);
-#endif
+            ABTI_mem_unregister_stack(p_ythread->p_stack);
         ABTI_mem_free_nythread(p_local, p_thread);
     } else if (p_thread->type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-        ABTI_VALGRIND_UNREGISTER_STACK(p_ythread->p_stack);
+        ABTI_mem_unregister_stack(p_ythread->p_stack);
         ABTU_free(p_ythread->p_stack);
     } else {
         ABTI_ASSERT(p_thread->type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC);
         ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
-#ifdef HAVE_VALGRIND_SUPPORT
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread)
-            ABTI_VALGRIND_UNREGISTER_STACK(p_ythread->p_stack);
-#endif
+            ABTI_mem_unregister_stack(p_ythread->p_stack);
         ABTU_free(p_thread);
     }
 }
