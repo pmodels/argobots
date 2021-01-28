@@ -189,30 +189,3 @@ AC_LINK_IFELSE([$2],[
 dnl Restore the original ac_link from the stack.
 PAC_VAR_POPVAL([ac_link])
 ])
-dnl
-dnl
-dnl
-dnl PAC_COMPLINK_IFELSE (input1, input2, [action-if-true], [action-if-false])
-dnl
-dnl where input1 and input2 are either AC_LANG_SOURCE or AC_LANG_PROGRAM
-dnl enclosed input programs.
-dnl
-dnl The macro first compiles input1 and uses the object file created
-dnl as part of LIBS during linking.  This macro is nesting safe.
-dnl
-AC_DEFUN([PAC_COMPLINK_IFELSE],[
-AC_COMPILE_IFELSE([$1],[
-    PAC_RUNLOG([mv conftest.$OBJEXT pac_conftest.$OBJEXT])
-    PAC_VAR_PUSHVAL([LIBS])
-    LIBS="pac_conftest.$OBJEXT $pac_FirstSavedValueOf_LIBS"
-    AC_LINK_IFELSE([$2],[
-        ifelse([$3],[],[:],[$3])
-    ],[
-        ifelse([$4],[],[:],[$4])
-    ])
-    PAC_VAR_POPVAL([LIBS])
-    rm -f pac_conftest.$OBJEXT
-],[
-    ifelse([$4],[],[:],[$4])
-])
-])
