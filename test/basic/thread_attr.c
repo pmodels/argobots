@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     /* ULT attribute */
     ret = ABT_thread_attr_create(&attr);
     ATS_ERROR(ret, "ABT_thread_attr_create");
-    ABT_thread_attr_set_stacksize(attr, 8192);
+    ABT_thread_attr_set_stacksize(attr, 262144);
 
     /* Create threads */
     for (i = 0; i < num_xstreams; i++) {
