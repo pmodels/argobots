@@ -501,3 +501,48 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
     *result = (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
     return ABT_SUCCESS;
 }
+
+/**
+ * @ingroup MUTEX
+ * @brief   Get attributes of a mutex.
+ *
+ * \c ABT_mutex_get_attr() returns a newly created attribute object that is
+ * copied from the attributes of the mutex \c mutex through \c attr.  Attribute
+ * values of \c attr may be different from those used on the creation of
+ * \c mutex.  Since this routine allocates a mutex attribute object, it is the
+ * user's responsibility to free \c attr after its use.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c attr}
+ *
+ * @param[in]  mutex  mutex handle
+ * @param[out] attr   mutex attribute handle
+ * @return Error code
+ */
+int ABT_mutex_get_attr(ABT_mutex mutex, ABT_mutex_attr *attr)
+{
+    ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
+    ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+
+    ABTI_mutex_attr *p_newattr;
+    int abt_errno = ABTU_malloc(sizeof(ABTI_mutex_attr), (void **)&p_newattr);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Copy values.  Nesting count must be initialized. */
+    p_newattr->attrs = p_mutex->attr.attrs;
+    p_newattr->nesting_cnt = 0;
+    p_newattr->owner_id = 0;
+
+    /* Return value */
+    *attr = ABTI_mutex_attr_get_handle(p_newattr);
+    return ABT_SUCCESS;
+}
