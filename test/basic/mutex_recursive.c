@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
     ABT_pool *pools;
     ABT_thread **threads;
     thread_arg_t **args;
+    ABT_bool is_recursive;
 
     int i, j;
     int ret, expected;
@@ -81,8 +82,26 @@ int main(int argc, char *argv[])
     ret = ABT_mutex_attr_set_recursive(mattr, ABT_TRUE);
     ATS_ERROR(ret, "ABT_mutex_attr_set_recurvise");
 
+    /* Really recursive? */
+    is_recursive = ABT_FALSE;
+    ret = ABT_mutex_attr_get_recursive(mattr, &is_recursive);
+    ATS_ERROR(ret, "ABT_mutex_attr_get_recursive");
+    assert(is_recursive == ABT_TRUE);
+
     ret = ABT_mutex_create_with_attr(mattr, &g_mutex);
     ATS_ERROR(ret, "ABT_mutex_create_with_attr");
+
+    ret = ABT_mutex_attr_free(&mattr);
+    ATS_ERROR(ret, "ABT_mutex_attr_free");
+
+    /* The created mutex must be recursive.  Check it. */
+    ret = ABT_mutex_get_attr(g_mutex, &mattr);
+    ATS_ERROR(ret, "ABT_mutex_get_attr");
+
+    is_recursive = ABT_FALSE;
+    ret = ABT_mutex_attr_get_recursive(mattr, &is_recursive);
+    ATS_ERROR(ret, "ABT_mutex_attr_get_recursive");
+    assert(is_recursive == ABT_TRUE);
 
     ret = ABT_mutex_attr_free(&mattr);
     ATS_ERROR(ret, "ABT_mutex_attr_free");
