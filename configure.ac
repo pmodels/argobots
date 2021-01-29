@@ -3,10 +3,10 @@
 # See COPYRIGHT in top-level directory.
 #
 
-AC_PREREQ(2.63)
+AC_PREREQ([2.67])
 
 m4_include([maint/version.m4])
-AC_INIT([argobots],ABT_VERSION_m4)
+AC_INIT([argobots],[ABT_VERSION_m4])
 
 ABT_VERSION=ABT_VERSION_m4
 AC_SUBST([ABT_VERSION])
@@ -73,10 +73,9 @@ dnl ----------------------------------------------------------------------------
 dnl ----------------------------------------------------------------------------
 
 dnl ----------------------------------------------------------------------------
-dnl check the compiler and standard headers
+dnl check the compiler
 dnl ----------------------------------------------------------------------------
 PAC_PROG_CC
-AC_HEADER_STDC
 dnl ----------------------------------------------------------------------------
 
 dnl ----------------------------------------------------------------------------
@@ -719,8 +718,8 @@ AC_DEFINE_UNQUOTED([ABT_CONFIG_STACK_CHECK_CANARY_SIZE], [$stack_overflow_canary
           [Define the size of a stack canary when it is enabled])
 
 # check if __atomic builtins are supported
-AC_TRY_COMPILE(
-[#include <stdint.h>],
+AC_COMPILE_IFELSE(
+[AC_LANG_PROGRAM([#include <stdint.h>],
 [int *lock = 0, new = 0, old = 0, val = 0;
  __atomic_test_and_set((char *)lock, __ATOMIC_ACQ_REL);
  __atomic_clear((volatile char *)lock, __ATOMIC_RELEASE);
@@ -734,7 +733,7 @@ AC_TRY_COMPILE(
  __atomic_store_n(lock, val, __ATOMIC_RELEASE);
  __atomic_add_fetch(lock, 1, __ATOMIC_ACQ_REL);
  __atomic_fetch_add(lock, 1, __ATOMIC_ACQ_REL);
- __atomic_thread_fence(__ATOMIC_ACQ_REL);],
+ __atomic_thread_fence(__ATOMIC_ACQ_REL);])],
 [have_atomic_builtin=yes],
 [have_atomic_builtin=no]
 )
@@ -865,9 +864,9 @@ AX_GCC_BUILTIN(__builtin_expect)
 AX_GCC_BUILTIN(__builtin_unreachable)
 
 # check __alignof__
-AC_TRY_COMPILE([], [int a = __alignof__(double); (void)a;],
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [int a = __alignof__(double); (void)a;])],
                [have_alignof=gcc],
-               [AC_TRY_COMPILE([], [int a = alignof(double); (void)a;],
+               [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [int a = alignof(double); (void)a;])],
                                [have_alignof=c11],
                                [have_alignof=no])]
 )
@@ -879,20 +878,20 @@ AS_IF([test "x$have_alignof" = "xc11"],
                  [Define to 1 if you have the `alignof' operator.])])
 
 # check if MAP_ANONYMOUS or MAP_ANON is defined
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 #include <stdio.h>
 #include <sys/mman.h>
 #define FLAGS   (MAP_PRIVATE | MAP_ANONYMOUS)
-],[void *ptr = mmap(NULL, 4096, PROT_READ, FLAGS, 0, 0);],
+],[void *ptr = mmap(NULL, 4096, PROT_READ, FLAGS, 0, 0);])],
 [have_map_anonymous=yes],[have_map_anonymous=no])
 if test "$have_map_anonymous" = "yes" ; then
 AC_DEFINE(HAVE_MAP_ANONYMOUS, 1, [Define if MAP_ANONYMOUS is defined])
 else
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 #include <stdio.h>
 #include <sys/mman.h>
 #define FLAGS   (MAP_PRIVATE | MAP_ANON)
-],[void *ptr = mmap(NULL, 4096, PROT_READ, FLAGS, 0, 0);],
+],[void *ptr = mmap(NULL, 4096, PROT_READ, FLAGS, 0, 0);])],
 [have_map_anon=yes],[have_map_anon=no])
 AS_IF([test "$have_map_anon" = "yes"],
     AC_DEFINE(HAVE_MAP_ANON, 1, [Define if MAP_ANON is defined])])
@@ -900,7 +899,7 @@ fi
 
 if test "$have_map_anonymous" = "yes" -o "$have_map_anon" = "yes" ; then
 # check if MAP_HUGETLB is supported in mmap
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 #include <stdio.h>
 #include <sys/mman.h>
 #ifndef MAP_ANONYMOUS
@@ -909,25 +908,22 @@ AC_TRY_COMPILE([
 #define PROTS       (PROT_READ | PROT_WRITE)
 #define FLAGS_HP    (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB)
 #define PAGESIZE    (2 * 1024 * 1024)
-],[void *ptr = mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);],
+],[void *ptr = mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);])],
 [AC_DEFINE(HAVE_MAP_HUGETLB, 1, [Define if MAP_HUGETLB is supported])],,)
 fi
 
 # check for the availability of int128 CAS. It is hard to get availability of
-# instructions (and compiler support), so we rely on AC_TRY_RUN().
+# instructions (and compiler support), so we rely on AC_RUN_IFELSE().
 atomic_int128_cas_mode="disabled"
-AC_TRY_RUN([
-#include "src/include/asm/abtd_asm_int128_cas.h"
+AC_RUN_IFELSE([AC_LANG_PROGRAM([#include "src/include/asm/abtd_asm_int128_cas.h"],[
 __int128 val, old, neu;
-int main() {
-    int ret1, ret2;
-    val = 0, old = 0, neu = 1;
-    ret1 = ABTD_asm_bool_cas_weak_int128(&val, old, neu) && (val == 1);
-    val = 0, old = 1, neu = 1;
-    ret2 = !ABTD_asm_bool_cas_weak_int128(&val, old, neu) && (val == 0);
-    return !(ret1 && ret2);
-}
-], [AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_INT128, 1, [Define if 128-bit CAS is supported.])])
+int ret1, ret2;
+val = 0, old = 0, neu = 1;
+ret1 = ABTD_asm_bool_cas_weak_int128(&val, old, neu) && (val == 1);
+val = 0, old = 1, neu = 1;
+ret2 = !ABTD_asm_bool_cas_weak_int128(&val, old, neu) && (val == 0);
+return !(ret1 && ret2);
+])], [AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_INT128, 1, [Define if 128-bit CAS is supported.])])
 
 AM_CONDITIONAL([ABT_USE_INT128_ATOMIC], [test "x$ABT_CONFIG_HAVE_ATOMIC_INT128" != "x"])
 
