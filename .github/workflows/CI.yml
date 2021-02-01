@@ -24,6 +24,7 @@ jobs:
 
   build-basic:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       CFLAGS: "-std=gnu90 -Werror -Wextra"
     steps:
@@ -41,4 +42,14 @@ jobs:
         make -j 2
         cd ../examples
         make -j 2
+        cd ../
+    - name: run_test
+      run: |
+        cd test
+        make check -j 2
+        cd ../
+    - name: run_examples
+      run: |
+        cd examples
+        make check -j 2
         cd ../
