@@ -24,6 +24,8 @@ jobs:
 
   build-basic:
     runs-on: ubuntu-latest
+    env:
+      CFLAGS: "-std=gnu90 -Werror -Wextra"
     steps:
     - uses: actions/checkout@v2
     - name: autogen
