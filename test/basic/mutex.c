@@ -101,6 +101,19 @@ int main(int argc, char *argv[])
     ret = ABT_mutex_create(&mutex);
     ATS_ERROR(ret, "ABT_mutex_create");
 
+    /* The default mutex must not be recursive. */
+    ABT_mutex_attr mutex_attr;
+    ret = ABT_mutex_get_attr(mutex, &mutex_attr);
+    ATS_ERROR(ret, "ABT_mutex_get_attr");
+
+    ABT_bool is_recursive = ABT_TRUE;
+    ret = ABT_mutex_attr_get_recursive(mutex_attr, &is_recursive);
+    ATS_ERROR(ret, "ABT_mutex_attr_get_recursive");
+    assert(is_recursive == ABT_FALSE);
+
+    ret = ABT_mutex_attr_free(&mutex_attr);
+    ATS_ERROR(ret, "ABT_mutex_attr_free");
+
     /* Create ULTs */
     for (i = 0; i < num_xstreams; i++) {
         for (j = 0; j < num_threads; j++) {

@@ -1755,11 +1755,13 @@ int ABT_mutex_unlock(ABT_mutex mutex) ABT_API_PUBLIC;
 int ABT_mutex_unlock_se(ABT_mutex mutex) ABT_API_PUBLIC;
 int ABT_mutex_unlock_de(ABT_mutex mutex) ABT_API_PUBLIC;
 int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result) ABT_API_PUBLIC;
+int ABT_mutex_get_attr(ABT_mutex mutex, ABT_mutex_attr *attr) ABT_API_PUBLIC;
 
 /* Mutex Attributes */
 int ABT_mutex_attr_create(ABT_mutex_attr *newattr) ABT_API_PUBLIC;
 int ABT_mutex_attr_free(ABT_mutex_attr *attr) ABT_API_PUBLIC;
 int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive) ABT_API_PUBLIC;
+int ABT_mutex_attr_get_recursive(ABT_mutex_attr attr, ABT_bool *recursive) ABT_API_PUBLIC;
 
 /* Condition variable */
 int ABT_cond_create(ABT_cond *newcond) ABT_API_PUBLIC;

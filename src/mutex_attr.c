@@ -126,3 +126,42 @@ int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive)
     }
     return ABT_SUCCESS;
 }
+
+/**
+ * @ingroup MUTEX_ATTR
+ * @brief   Get a recursive property in a mutex attribute.
+ *
+ * \c ABT_mutex_attr_get_recursive() retrieves the recursive property (i.e.,
+ * whether the mutex can be locked multiple times by the same owner or not) in
+ * the mutex attribute \c attr.  If \c attr is configured to be recursive,
+ * \c recursive is set to \c ABT_TRUE.  Otherwise, \c recursive is set to
+ * \c ABT_FALSE.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_MUTEX_ATTR_HANDLE{\c attr}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c recursive}
+ *
+ * @param[in] attr       mutex attribute handle
+ * @param[in] recursive  flag for a recursive locking support
+ * @return Error code
+ */
+int ABT_mutex_attr_get_recursive(ABT_mutex_attr attr, ABT_bool *recursive)
+{
+    ABTI_mutex_attr *p_attr = ABTI_mutex_attr_get_ptr(attr);
+    ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p_attr);
+
+    /* Get the value */
+    if (p_attr->attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+        *recursive = ABT_TRUE;
+    } else {
+        *recursive = ABT_FALSE;
+    }
+    return ABT_SUCCESS;
+}
