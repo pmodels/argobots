@@ -589,6 +589,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_timer.h"
 #include "abti_log.h"
 #include "abti_local.h"
+#include "abti_global.h"
 #include "abti_self.h"
 #include "abti_pool.h"
 #include "abti_sched.h"
