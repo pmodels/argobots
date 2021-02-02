@@ -48,8 +48,9 @@ int ABT_self_get_type(ABT_unit_type *type)
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* By default, type is ABT_UNIT_TYPE_EXT in Argobots 1.x */
     *type = ABT_UNIT_TYPE_EXT;
+    ABTI_SETUP_GLOBAL(NULL);
     ABTI_xstream *p_local_xstream;
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     *type = ABTI_thread_type_get_type(p_local_xstream->p_thread->type);
 #else
     ABTI_xstream *p_local_xstream =
@@ -103,8 +104,9 @@ int ABT_self_is_primary(ABT_bool *is_primary)
 {
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *is_primary = ABT_FALSE;
+    ABTI_SETUP_GLOBAL(NULL);
     ABTI_ythread *p_ythread;
-    ABTI_SETUP_LOCAL_YTHREAD_WITH_INIT_CHECK(NULL, &p_ythread);
+    ABTI_SETUP_LOCAL_YTHREAD(NULL, &p_ythread);
     *is_primary = (p_ythread->thread.type & ABTI_THREAD_TYPE_PRIMARY)
                       ? ABT_TRUE
                       : ABT_FALSE;
@@ -162,8 +164,9 @@ int ABT_self_on_primary_xstream(ABT_bool *on_primary)
 {
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *on_primary = ABT_FALSE;
+    ABTI_SETUP_GLOBAL(NULL);
     ABTI_xstream *p_local_xstream;
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     *on_primary = (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY)
                       ? ABT_TRUE
                       : ABT_FALSE;
@@ -214,7 +217,8 @@ int ABT_self_get_last_pool_id(int *pool_id)
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *pool_id = -1;
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
+    ABTI_SETUP_GLOBAL(NULL);
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     ABTI_thread *p_self = p_local_xstream->p_thread;
     ABTI_ASSERT(p_self->p_pool);
     *pool_id = p_self->p_pool->id;
@@ -301,10 +305,9 @@ int ABT_self_set_arg(void *arg)
 {
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
-#else
-    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    ABTI_SETUP_GLOBAL(NULL);
 #endif
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 
     p_local_xstream->p_thread->p_arg = arg;
     return ABT_SUCCESS;
@@ -344,10 +347,9 @@ int ABT_self_get_arg(void **arg)
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *arg = NULL;
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
-#else
-    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    ABTI_SETUP_GLOBAL(NULL);
 #endif
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 
     *arg = p_local_xstream->p_thread->p_arg;
     return ABT_SUCCESS;

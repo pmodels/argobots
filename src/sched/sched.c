@@ -238,6 +238,8 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
  */
 int ABT_sched_free(ABT_sched *sched)
 {
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(*sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
@@ -246,7 +248,7 @@ int ABT_sched_free(ABT_sched *sched)
 #endif
 
     /* Free the scheduler */
-    ABTI_sched_free(p_local, p_sched, ABT_FALSE);
+    ABTI_sched_free(p_global, p_local, p_sched, ABT_FALSE);
 
     /* Return value */
     *sched = ABT_SCHED_NULL;
@@ -834,8 +836,8 @@ ABTU_ret_err int ABTI_sched_create_basic(ABT_sched_predef predef, int num_pools,
     return ABT_SUCCESS;
 }
 
-void ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
-                     ABT_bool force_free)
+void ABTI_sched_free(ABTI_global *p_global, ABTI_local *p_local,
+                     ABTI_sched *p_sched, ABT_bool force_free)
 {
     ABTI_ASSERT(p_sched->used == ABTI_SCHED_NOT_USED);
     /* Free the scheduler first. */
@@ -856,7 +858,7 @@ void ABTI_sched_free(ABTI_local *p_local, ABTI_sched *p_sched,
 
     /* Free the associated work unit */
     if (p_sched->p_ythread) {
-        ABTI_thread_free(p_local, &p_sched->p_ythread->thread);
+        ABTI_thread_free(p_global, p_local, &p_sched->p_ythread->thread);
     }
 
     LOG_DEBUG("[S%" PRIu64 "] freed\n", p_sched->id);

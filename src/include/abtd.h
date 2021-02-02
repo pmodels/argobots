@@ -55,8 +55,8 @@ void ABTD_xstream_context_print(ABTD_xstream_context *p_ctx, FILE *p_os,
                                 int indent);
 
 /* ES Affinity */
-void ABTD_affinity_init(const char *affinity_str);
-void ABTD_affinity_finalize(void);
+void ABTD_affinity_init(ABTI_global *p_global, const char *affinity_str);
+void ABTD_affinity_finalize(ABTI_global *p_global);
 ABTU_ret_err int ABTD_affinity_cpuset_read(ABTD_xstream_context *p_ctx,
                                            int max_cpuids, int *cpuids,
                                            int *p_num_cpuids);

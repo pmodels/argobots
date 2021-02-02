@@ -17,7 +17,7 @@ void ABTI_mem_init(ABTI_global *p_global)
 {
     int num_requested_types = 0;
     ABTU_MEM_LARGEPAGE_TYPE requested_types[3];
-    switch (gp_ABTI_global->mem_lp_alloc) {
+    switch (p_global->mem_lp_alloc) {
         case ABTI_MEM_LP_MMAP_RP:
             requested_types[num_requested_types++] = ABTU_MEM_LARGEPAGE_MMAP;
             requested_types[num_requested_types++] = ABTU_MEM_LARGEPAGE_MALLOC;
@@ -61,7 +61,7 @@ void ABTI_mem_init(ABTI_global *p_global)
                                    stacksize, thread_stacksize,
                                    p_global->mem_sp_size, requested_types,
                                    num_requested_types,
-                                   gp_ABTI_global->mem_page_size);
+                                   p_global->mem_page_size);
     /* The last four bytes will be used to store a mempool flag */
     ABTI_STATIC_ASSERT((ABTI_MEM_POOL_DESC_ELEM_SIZE &
                         (ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0);
@@ -71,7 +71,7 @@ void ABTI_mem_init(ABTI_global *p_global)
                                    ABTI_MEM_POOL_DESC_ELEM_SIZE, 0,
                                    p_global->mem_page_size, requested_types,
                                    num_requested_types,
-                                   gp_ABTI_global->mem_page_size);
+                                   p_global->mem_page_size);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     ABTI_spinlock_clear(&p_global->mem_pool_stack_lock);
     ABTI_mem_pool_init_local_pool(&p_global->mem_pool_stack_ext,
@@ -82,12 +82,12 @@ void ABTI_mem_init(ABTI_global *p_global)
 #endif
 }
 
-void ABTI_mem_init_local(ABTI_xstream *p_local_xstream)
+void ABTI_mem_init_local(ABTI_global *p_global, ABTI_xstream *p_local_xstream)
 {
     ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_stack,
-                                  &gp_ABTI_global->mem_pool_stack);
+                                  &p_global->mem_pool_stack);
     ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_desc,
-                                  &gp_ABTI_global->mem_pool_desc);
+                                  &p_global->mem_pool_desc);
 }
 
 void ABTI_mem_finalize(ABTI_global *p_global)
@@ -106,10 +106,10 @@ void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream)
     ABTI_mem_pool_destroy_local_pool(&p_local_xstream->mem_pool_desc);
 }
 
-int ABTI_mem_check_lp_alloc(int lp_alloc)
+int ABTI_mem_check_lp_alloc(ABTI_global *p_global, int lp_alloc)
 {
-    size_t sp_size = gp_ABTI_global->mem_sp_size;
-    size_t pg_size = gp_ABTI_global->mem_page_size;
+    size_t sp_size = p_global->mem_sp_size;
+    size_t pg_size = p_global->mem_page_size;
     size_t alignment = ABT_CONFIG_STATIC_CACHELINE_SIZE;
     switch (lp_alloc) {
         case ABTI_MEM_LP_MMAP_RP:
@@ -136,7 +136,7 @@ int ABTI_mem_check_lp_alloc(int lp_alloc)
                 return ABTI_MEM_LP_MMAP_HP_THP;
             } else if (
                 ABTU_is_supported_largepage_type(pg_size,
-                                                 gp_ABTI_global->huge_page_size,
+                                                 p_global->huge_page_size,
                                                  ABTU_MEM_LARGEPAGE_MEMALIGN)) {
                 return ABTI_MEM_LP_THP;
             } else {
@@ -144,7 +144,7 @@ int ABTI_mem_check_lp_alloc(int lp_alloc)
             }
         case ABTI_MEM_LP_THP:
             if (ABTU_is_supported_largepage_type(pg_size,
-                                                 gp_ABTI_global->huge_page_size,
+                                                 p_global->huge_page_size,
                                                  ABTU_MEM_LARGEPAGE_MEMALIGN)) {
                 return ABTI_MEM_LP_THP;
             } else {
@@ -161,7 +161,7 @@ void ABTI_mem_init(ABTI_global *p_global)
 {
 }
 
-void ABTI_mem_init_local(ABTI_xstream *p_local_xstream)
+void ABTI_mem_init_local(ABTI_global *p_global, ABTI_xstream *p_local_xstream)
 {
 }
 

@@ -55,7 +55,7 @@ void ABTD_env_init(ABTI_global *p_global)
     } else {
         /* By default, we use the CPU affinity */
         p_global->set_affinity = ABT_TRUE;
-        ABTD_affinity_init(env);
+        ABTD_affinity_init(p_global, env);
     }
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG_PRINT
@@ -216,7 +216,7 @@ void ABTD_env_init(ABTI_global *p_global)
 
     /* Check if the requested allocation method is really possible. */
     if (lp_alloc != ABTI_MEM_LP_MALLOC) {
-        p_global->mem_lp_alloc = ABTI_mem_check_lp_alloc(lp_alloc);
+        p_global->mem_lp_alloc = ABTI_mem_check_lp_alloc(p_global, lp_alloc);
     } else {
         p_global->mem_lp_alloc = lp_alloc;
     }

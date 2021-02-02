@@ -293,7 +293,7 @@ ABTU_ret_err static int apply_cpuset(pthread_t native_thread,
 #endif
 }
 
-void ABTD_affinity_init(const char *affinity_str)
+void ABTD_affinity_init(ABTI_global *p_global, const char *affinity_str)
 {
     g_affinity.num_cpusets = 0;
     g_affinity.cpusets = NULL;
@@ -301,21 +301,21 @@ void ABTD_affinity_init(const char *affinity_str)
     pthread_t self_native_thread = pthread_self();
     uint32_t i;
     int ret;
-    ret = get_num_cores(self_native_thread, &gp_ABTI_global->num_cores);
-    if (ret != ABT_SUCCESS || gp_ABTI_global->num_cores == 0) {
-        gp_ABTI_global->set_affinity = ABT_FALSE;
+    ret = get_num_cores(self_native_thread, &p_global->num_cores);
+    if (ret != ABT_SUCCESS || p_global->num_cores == 0) {
+        p_global->set_affinity = ABT_FALSE;
         return;
     }
     ret = create_cpuset(self_native_thread, &g_affinity.initial_cpuset);
     if (ret != ABT_SUCCESS) {
-        gp_ABTI_global->set_affinity = ABT_FALSE;
+        p_global->set_affinity = ABT_FALSE;
         return;
     } else if (g_affinity.initial_cpuset.num_cpuids == 0) {
         ABTD_affinity_cpuset_destroy(&g_affinity.initial_cpuset);
-        gp_ABTI_global->set_affinity = ABT_FALSE;
+        p_global->set_affinity = ABT_FALSE;
         return;
     }
-    gp_ABTI_global->set_affinity = ABT_TRUE;
+    p_global->set_affinity = ABT_TRUE;
     ABTD_affinity_list *p_list = ABTD_affinity_list_create(affinity_str);
     if (p_list) {
         if (p_list->num == 0) {
@@ -337,7 +337,7 @@ void ABTD_affinity_init(const char *affinity_str)
             ABTI_ASSERT(ret == ABT_SUCCESS);
             if (ABTI_IS_ERROR_CHECK_ENABLED && ret != ABT_SUCCESS) {
                 ABTD_affinity_list_free(p_list);
-                gp_ABTI_global->set_affinity = ABT_FALSE;
+                p_global->set_affinity = ABT_FALSE;
                 return;
             }
             for (j = 0; j < p_id_list->num; j++) {
@@ -392,10 +392,10 @@ void ABTD_affinity_init(const char *affinity_str)
     }
 }
 
-void ABTD_affinity_finalize(void)
+void ABTD_affinity_finalize(ABTI_global *p_global)
 {
     pthread_t self_native_thread = pthread_self();
-    if (gp_ABTI_global->set_affinity) {
+    if (p_global->set_affinity) {
         /* Set the affinity of the main native thread to the original one. */
         int abt_errno =
             apply_cpuset(self_native_thread, &g_affinity.initial_cpuset);
@@ -432,12 +432,9 @@ ABTD_affinity_cpuset_apply(ABTD_xstream_context *p_ctx,
 ABTU_ret_err int ABTD_affinity_cpuset_apply_default(ABTD_xstream_context *p_ctx,
                                                     int rank)
 {
-    if (gp_ABTI_global->set_affinity) {
-        ABTD_affinity_cpuset *p_cpuset =
-            &g_affinity.cpusets[rank % g_affinity.num_cpusets];
-        return apply_cpuset(p_ctx->native_thread, p_cpuset);
-    }
-    return ABT_SUCCESS;
+    ABTD_affinity_cpuset *p_cpuset =
+        &g_affinity.cpusets[rank % g_affinity.num_cpusets];
+    return apply_cpuset(p_ctx->native_thread, p_cpuset);
 }
 
 void ABTD_affinity_cpuset_destroy(ABTD_affinity_cpuset *p_cpuset)

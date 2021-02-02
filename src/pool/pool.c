@@ -784,6 +784,9 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
 {
     ABTI_local *p_local = ABTI_local_get_local();
 
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
@@ -800,7 +803,8 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     /* In both ABT_SCHED_TYPE_ULT and ABT_SCHED_TYPE_TASK cases, we use ULT-type
      * scheduler to reduce the code maintenance cost. */
 #endif
-    int abt_errno = ABTI_ythread_create_sched(p_local, p_pool, p_sched);
+    int abt_errno =
+        ABTI_ythread_create_sched(p_global, p_local, p_pool, p_sched);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }

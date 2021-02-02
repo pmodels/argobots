@@ -23,10 +23,10 @@ enum {
 };
 
 void ABTI_mem_init(ABTI_global *p_global);
-void ABTI_mem_init_local(ABTI_xstream *p_local_xstream);
+void ABTI_mem_init_local(ABTI_global *p_global, ABTI_xstream *p_local_xstream);
 void ABTI_mem_finalize(ABTI_global *p_global);
 void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream);
-int ABTI_mem_check_lp_alloc(int lp_alloc);
+int ABTI_mem_check_lp_alloc(ABTI_global *p_global, int lp_alloc);
 
 #define ABTI_STACK_CANARY_VALUE ((uint64_t)0xbaadc0debaadc0de)
 
@@ -104,7 +104,8 @@ ABTU_ret_err static inline int ABTI_mem_alloc_nythread(ABTI_local *p_local,
 #endif
 }
 
-static inline void ABTI_mem_free_nythread(ABTI_local *p_local,
+static inline void ABTI_mem_free_nythread(ABTI_global *p_global,
+                                          ABTI_local *p_local,
                                           ABTI_thread *p_thread)
 {
     /* Return stack. */
@@ -115,9 +116,9 @@ static inline void ABTI_mem_free_nythread(ABTI_local *p_local,
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (p_local_xstream == NULL) {
             /* Return a stack to the global pool. */
-            ABTI_spinlock_acquire(&gp_ABTI_global->mem_pool_desc_lock);
-            ABTI_mem_pool_free(&gp_ABTI_global->mem_pool_desc_ext, p_thread);
-            ABTI_spinlock_release(&gp_ABTI_global->mem_pool_desc_lock);
+            ABTI_spinlock_acquire(&p_global->mem_pool_desc_lock);
+            ABTI_mem_pool_free(&p_global->mem_pool_desc_ext, p_thread);
+            ABTI_spinlock_release(&p_global->mem_pool_desc_lock);
             return;
         }
 #endif
@@ -163,9 +164,10 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_malloc_desc_stack_impl(
 }
 
 ABTU_ret_err static inline int
-ABTI_mem_alloc_ythread_default(ABTI_local *p_local, ABTI_ythread **pp_ythread)
+ABTI_mem_alloc_ythread_default(ABTI_global *p_global, ABTI_local *p_local,
+                               ABTI_ythread **pp_ythread)
 {
-    size_t stacksize = gp_ABTI_global->thread_stacksize;
+    size_t stacksize = p_global->thread_stacksize;
     ABTI_ythread *p_ythread;
     void *p_stack;
     /* If an external thread allocates a stack, we use ABTU_malloc. */
@@ -200,9 +202,10 @@ ABTI_mem_alloc_ythread_default(ABTI_local *p_local, ABTI_ythread **pp_ythread)
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
 ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack(
-    ABTI_local *p_local, ABTI_thread_attr *p_attr, ABTI_ythread **pp_ythread)
+    ABTI_global *p_global, ABTI_local *p_local, ABTI_thread_attr *p_attr,
+    ABTI_ythread **pp_ythread)
 {
-    size_t stacksize = gp_ABTI_global->thread_stacksize;
+    size_t stacksize = p_global->thread_stacksize;
     ABTI_ythread *p_ythread;
     void *p_stack;
     /* If an external thread allocates a stack, we use ABTU_malloc. */
@@ -274,7 +277,8 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc(
     return ABT_SUCCESS;
 }
 
-static inline void ABTI_mem_free_thread(ABTI_local *p_local,
+static inline void ABTI_mem_free_thread(ABTI_global *p_global,
+                                        ABTI_local *p_local,
                                         ABTI_thread *p_thread)
 {
     /* Return stack. */
@@ -288,9 +292,9 @@ static inline void ABTI_mem_free_thread(ABTI_local *p_local,
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (p_local_xstream == NULL) {
             /* Return a stack to the global pool. */
-            ABTI_spinlock_acquire(&gp_ABTI_global->mem_pool_stack_lock);
-            ABTI_mem_pool_free(&gp_ABTI_global->mem_pool_stack_ext, p_ythread);
-            ABTI_spinlock_release(&gp_ABTI_global->mem_pool_stack_lock);
+            ABTI_spinlock_acquire(&p_global->mem_pool_stack_lock);
+            ABTI_mem_pool_free(&p_global->mem_pool_stack_ext, p_ythread);
+            ABTI_spinlock_release(&p_global->mem_pool_stack_lock);
             return;
         }
 #endif
@@ -302,7 +306,7 @@ static inline void ABTI_mem_free_thread(ABTI_local *p_local,
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread)
             ABTI_mem_unregister_stack(p_ythread->p_stack);
-        ABTI_mem_free_nythread(p_local, p_thread);
+        ABTI_mem_free_nythread(p_global, p_local, p_thread);
     } else if (p_thread->type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
         ABTI_mem_unregister_stack(p_ythread->p_stack);
@@ -350,7 +354,8 @@ ABTU_ret_err static inline int ABTI_mem_alloc_desc(ABTI_local *p_local,
 #endif
 }
 
-static inline void ABTI_mem_free_desc(ABTI_local *p_local, void *p_desc)
+static inline void ABTI_mem_free_desc(ABTI_global *p_global,
+                                      ABTI_local *p_local, void *p_desc)
 {
 #ifndef ABT_CONFIG_USE_MEM_POOL
     ABTU_free(p_desc);
@@ -363,9 +368,9 @@ static inline void ABTI_mem_free_desc(ABTI_local *p_local, void *p_desc)
         return;
     } else if (!p_local_xstream) {
         /* Return a stack and a descriptor to their global pools. */
-        ABTI_spinlock_acquire(&gp_ABTI_global->mem_pool_desc_lock);
-        ABTI_mem_pool_free(&gp_ABTI_global->mem_pool_desc_ext, p_desc);
-        ABTI_spinlock_release(&gp_ABTI_global->mem_pool_desc_lock);
+        ABTI_spinlock_acquire(&p_global->mem_pool_desc_lock);
+        ABTI_mem_pool_free(&p_global->mem_pool_desc_ext, p_desc);
+        ABTI_spinlock_release(&p_global->mem_pool_desc_lock);
         return;
     }
 #endif
