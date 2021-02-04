@@ -41,6 +41,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 {
     int abt_errno;
     int num_pools;
+    ABTI_global *p_global = ABTI_global_get_global();
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
@@ -53,11 +54,11 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
 #ifdef ABT_CONFIG_USE_SCHED_SLEEP
     p_data->sleep_time.tv_sec = 0;
-    p_data->sleep_time.tv_nsec = gp_ABTI_global->sched_sleep_nsec;
+    p_data->sleep_time.tv_nsec = p_global->sched_sleep_nsec;
 #endif
 
     /* Set the default value by default. */
-    p_data->event_freq = gp_ABTI_global->sched_event_freq;
+    p_data->event_freq = p_global->sched_event_freq;
     if (p_config) {
         int event_freq;
         /* Set the variables from config */
@@ -91,6 +92,7 @@ static int sched_init(ABT_sched sched, ABT_sched_config config)
 
 static void sched_run(ABT_sched sched)
 {
+    ABTI_global *p_global = ABTI_global_get_global();
     ABTI_xstream *p_local_xstream =
         ABTI_local_get_xstream(ABTI_local_get_local());
     ABT_unit unit = ABT_UNIT_NULL;
@@ -114,7 +116,7 @@ static void sched_run(ABT_sched sched)
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pools[i]);
             ++pop_count;
             if ((unit = ABTI_pool_pop(p_pool)) != ABT_UNIT_NULL) {
-                ABTI_xstream_run_unit(&p_local_xstream, unit, p_pool);
+                ABTI_xstream_run_unit(p_global, &p_local_xstream, unit, p_pool);
                 break;
             }
         }

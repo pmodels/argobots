@@ -51,11 +51,11 @@ ABTI_tool_context_get_handle(ABTI_tool_context *p_tctx)
 #define ABTI_TOOL_EVENT_TAG_DIRTY_BIT ((uint64_t)1 << (uint64_t)(64 - 1))
 
 static inline void
-ABTI_tool_event_thread_update_callback(ABT_tool_thread_callback_fn cb_func,
+ABTI_tool_event_thread_update_callback(ABTI_global *p_global,
+                                       ABT_tool_thread_callback_fn cb_func,
                                        uint64_t event_mask, void *user_arg)
 {
     /* The spinlock is needed to avoid data race between two writers. */
-    ABTI_global *p_global = gp_ABTI_global;
     ABTI_spinlock_acquire(&p_global->tool_writer_lock);
 
     /*

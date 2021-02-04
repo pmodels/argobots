@@ -86,9 +86,12 @@ int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
+
     if (cb_func == NULL)
         event_mask = ABT_TOOL_EVENT_THREAD_NONE;
-    ABTI_tool_event_thread_update_callback(cb_func,
+    ABTI_tool_event_thread_update_callback(p_global, cb_func,
                                            event_mask &
                                                ABT_TOOL_EVENT_THREAD_ALL,
                                            user_arg);

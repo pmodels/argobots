@@ -243,7 +243,8 @@ int ABT_task_self(ABT_task *task)
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *task = ABT_TASK_NULL;
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
+    ABTI_SETUP_GLOBAL(NULL);
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     ABTI_CHECK_TRUE(!(p_local_xstream->p_thread->type &
                       ABTI_THREAD_TYPE_YIELDABLE),
                     ABT_ERR_INV_TASK);
@@ -287,7 +288,8 @@ int ABT_task_self_id(ABT_unit_id *id)
 {
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
+    ABTI_SETUP_GLOBAL(NULL);
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     ABTI_CHECK_TRUE(!(p_local_xstream->p_thread->type &
                       ABTI_THREAD_TYPE_YIELDABLE),
                     ABT_ERR_INV_TASK);

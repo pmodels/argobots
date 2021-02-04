@@ -154,16 +154,15 @@ int ABT_key_set(ABT_key key, void *value)
     ABTI_key *p_key = ABTI_key_get_ptr(key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
+
     ABTI_xstream *p_local_xstream;
-#ifndef ABT_CONFIG_ENABLE_VER_20_API
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
-#else
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
-#endif
 
     /* Obtain the key-value table pointer. */
     int abt_errno =
-        ABTI_ktable_set(ABTI_xstream_get_local(p_local_xstream),
+        ABTI_ktable_set(p_global, ABTI_xstream_get_local(p_local_xstream),
                         &p_local_xstream->p_thread->p_keytable, p_key, value);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
@@ -209,10 +208,9 @@ int ABT_key_get(ABT_key key, void **value)
     /* We don't allow an external thread to call this routine. */
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
-    ABTI_SETUP_LOCAL_XSTREAM_WITH_INIT_CHECK(&p_local_xstream);
-#else
-    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    ABTI_SETUP_GLOBAL(NULL);
 #endif
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 
     /* Obtain the key-value table pointer */
     *value = ABTI_ktable_get(&p_local_xstream->p_thread->p_keytable, p_key);
@@ -223,7 +221,8 @@ int ABT_key_get(ABT_key key, void **value)
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-void ABTI_ktable_free(ABTI_local *p_local, ABTI_ktable *p_ktable)
+void ABTI_ktable_free(ABTI_global *p_global, ABTI_local *p_local,
+                      ABTI_ktable *p_ktable)
 {
     ABTI_ktelem *p_elem;
     int i;
@@ -245,7 +244,7 @@ void ABTI_ktable_free(ABTI_local *p_local, ABTI_ktable *p_ktable)
     while (p_header) {
         ABTI_ktable_mem_header *p_next = p_header->p_next;
         if (ABTU_likely(p_header->is_from_mempool)) {
-            ABTI_mem_free_desc(p_local, (void *)p_header);
+            ABTI_mem_free_desc(p_global, p_local, (void *)p_header);
         } else {
             ABTU_free(p_header);
         }

@@ -11,7 +11,8 @@
 
 void ABTI_log_debug(FILE *fh, const char *format, ...)
 {
-    if (gp_ABTI_global->use_logging == ABT_FALSE)
+    ABTI_global *p_global = ABTI_global_get_global_or_null();
+    if (!p_global || p_global->use_logging == ABT_FALSE)
         return;
     ABTI_local *p_local = ABTI_local_get_local_uninlined();
 
@@ -77,7 +78,8 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
 
 void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 {
-    if (gp_ABTI_global->use_logging == ABT_FALSE)
+    ABTI_global *p_global = ABTI_global_get_global_or_null();
+    if (!p_global || p_global->use_logging == ABT_FALSE)
         return;
     if (unit == ABT_UNIT_NULL)
         return;
@@ -96,7 +98,8 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 
 void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
 {
-    if (gp_ABTI_global->use_logging == ABT_FALSE)
+    ABTI_global *p_global = ABTI_global_get_global_or_null();
+    if (!p_global || p_global->use_logging == ABT_FALSE)
         return;
     if (unit == ABT_UNIT_NULL)
         return;
@@ -115,7 +118,8 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
 
 void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
 {
-    if (gp_ABTI_global->use_logging == ABT_FALSE)
+    ABTI_global *p_global = ABTI_global_get_global_or_null();
+    if (!p_global || p_global->use_logging == ABT_FALSE)
         return;
     if (unit == ABT_UNIT_NULL)
         return;

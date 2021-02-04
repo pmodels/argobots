@@ -181,14 +181,16 @@ ABTU_ret_err static int init_library(void)
         return ABT_SUCCESS;
     }
 
-    abt_errno = ABTU_malloc(sizeof(ABTI_global), (void **)&gp_ABTI_global);
+    ABTI_global *p_global;
+    abt_errno = ABTU_malloc(sizeof(ABTI_global), (void **)&p_global);
     ABTI_CHECK_ERROR(abt_errno);
+    ABTI_global_set_global(p_global);
 
     /* Initialize the system environment */
-    ABTD_env_init(gp_ABTI_global);
+    ABTD_env_init(p_global);
 
     /* Initialize memory pool */
-    ABTI_mem_init(gp_ABTI_global);
+    ABTI_mem_init(p_global);
 
     /* Initialize IDs */
     ABTI_thread_reset_id();
@@ -197,24 +199,23 @@ ABTU_ret_err static int init_library(void)
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     /* Initialize the tool interface */
-    ABTI_spinlock_clear(&gp_ABTI_global->tool_writer_lock);
-    gp_ABTI_global->tool_thread_cb_f = NULL;
-    gp_ABTI_global->tool_thread_user_arg = NULL;
-    ABTD_atomic_relaxed_store_uint64(&gp_ABTI_global
-                                          ->tool_thread_event_mask_tagged,
+    ABTI_spinlock_clear(&p_global->tool_writer_lock);
+    p_global->tool_thread_cb_f = NULL;
+    p_global->tool_thread_user_arg = NULL;
+    ABTD_atomic_relaxed_store_uint64(&p_global->tool_thread_event_mask_tagged,
                                      0);
 #endif
 
     /* Initialize the ES list */
-    gp_ABTI_global->p_xstream_head = NULL;
-    gp_ABTI_global->num_xstreams = 0;
+    p_global->p_xstream_head = NULL;
+    p_global->num_xstreams = 0;
 
     /* Initialize a spinlock */
-    ABTI_spinlock_clear(&gp_ABTI_global->xstream_list_lock);
+    ABTI_spinlock_clear(&p_global->xstream_list_lock);
 
     /* Create the primary ES */
     ABTI_xstream *p_local_xstream;
-    abt_errno = ABTI_xstream_create_primary(&p_local_xstream);
+    abt_errno = ABTI_xstream_create_primary(p_global, &p_local_xstream);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Init the ES local data */
@@ -223,22 +224,23 @@ ABTU_ret_err static int init_library(void)
     /* Create the primary ULT */
     ABTI_ythread *p_primary_ythread;
     abt_errno =
-        ABTI_ythread_create_primary(ABTI_xstream_get_local(p_local_xstream),
+        ABTI_ythread_create_primary(p_global,
+                                    ABTI_xstream_get_local(p_local_xstream),
                                     p_local_xstream, &p_primary_ythread);
     /* Set as if p_local_xstream is currently running the primary ULT. */
     ABTD_atomic_relaxed_store_int(&p_primary_ythread->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
     p_primary_ythread->thread.p_last_xstream = p_local_xstream;
     ABTI_CHECK_ERROR(abt_errno);
-    gp_ABTI_global->p_primary_ythread = p_primary_ythread;
+    p_global->p_primary_ythread = p_primary_ythread;
     p_local_xstream->p_thread = &p_primary_ythread->thread;
 
     /* Start the primary ES */
-    ABTI_xstream_start_primary(&p_local_xstream, p_local_xstream,
+    ABTI_xstream_start_primary(p_global, &p_local_xstream, p_local_xstream,
                                p_primary_ythread);
 
-    if (gp_ABTI_global->print_config == ABT_TRUE) {
-        ABTI_info_print_config(stdout);
+    if (p_global->print_config == ABT_TRUE) {
+        ABTI_info_print_config(p_global, stdout);
     }
     ABTD_atomic_release_store_uint32(&g_ABTI_initialized, 1);
     return ABT_SUCCESS;
@@ -255,6 +257,7 @@ ABTU_ret_err static int finailze_library(void)
         return ABT_SUCCESS;
     }
 
+    ABTI_global *p_global = ABTI_global_get_global();
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
     /* If called by an external thread, return an error. */
     ABTI_CHECK_TRUE(!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream,
@@ -273,8 +276,8 @@ ABTU_ret_err static int finailze_library(void)
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     /* Turns off the tool interface */
-    ABTI_tool_event_thread_update_callback(NULL, ABT_TOOL_EVENT_THREAD_NONE,
-                                           NULL);
+    ABTI_tool_event_thread_update_callback(p_global, NULL,
+                                           ABT_TOOL_EVENT_THREAD_NONE, NULL);
 #endif
 
     /* Set the orphan request for the primary ULT */
@@ -291,30 +294,30 @@ ABTU_ret_err static int finailze_library(void)
 
     /* Remove the primary ULT */
     p_local_xstream->p_thread = NULL;
-    ABTI_ythread_free_primary(ABTI_xstream_get_local(p_local_xstream),
+    ABTI_ythread_free_primary(p_global, ABTI_xstream_get_local(p_local_xstream),
                               p_ythread);
 
     /* Free the primary ES */
-    ABTI_xstream_free(ABTI_xstream_get_local(p_local_xstream), p_local_xstream,
-                      ABT_TRUE);
+    ABTI_xstream_free(p_global, ABTI_xstream_get_local(p_local_xstream),
+                      p_local_xstream, ABT_TRUE);
 
     /* Finalize the ES local data */
     ABTI_local_set_xstream(NULL);
 
     /* Free the ES array */
-    ABTI_ASSERT(gp_ABTI_global->p_xstream_head == NULL);
+    ABTI_ASSERT(p_global->p_xstream_head == NULL);
 
     /* Finalize the memory pool */
-    ABTI_mem_finalize(gp_ABTI_global);
+    ABTI_mem_finalize(p_global);
 
     /* Restore the affinity */
-    if (gp_ABTI_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_finalize();
+    if (p_global->set_affinity == ABT_TRUE) {
+        ABTD_affinity_finalize(p_global);
     }
 
     /* Free the ABTI_global structure */
-    ABTU_free(gp_ABTI_global);
-    gp_ABTI_global = NULL;
+    ABTU_free(p_global);
+    ABTI_global_set_global(NULL);
     ABTD_atomic_release_store_uint32(&g_ABTI_initialized, 0);
     return ABT_SUCCESS;
 }

@@ -5,7 +5,8 @@
 
 #include "abti.h"
 
-static void thread_attr_set_stack(ABTI_thread_attr *p_attr, void *stackaddr,
+static void thread_attr_set_stack(ABTI_global *p_global,
+                                  ABTI_thread_attr *p_attr, void *stackaddr,
                                   size_t stacksize);
 
 /** @defgroup ULT_ATTR ULT Attributes
@@ -52,12 +53,15 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
     /* Argobots 1.x sets newattr to NULL on error. */
     *newattr = ABT_THREAD_ATTR_NULL;
 #endif
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
+
     ABTI_thread_attr *p_newattr;
     int abt_errno = ABTU_malloc(sizeof(ABTI_thread_attr), (void **)&p_newattr);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Default values */
-    ABTI_thread_attr_init(p_newattr, NULL, gp_ABTI_global->thread_stacksize,
+    ABTI_thread_attr_init(p_newattr, NULL, p_global->thread_stacksize,
                           ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK, ABT_TRUE);
     *newattr = ABTI_thread_attr_get_handle(p_newattr);
     return ABT_SUCCESS;
@@ -148,12 +152,15 @@ int ABT_thread_attr_free(ABT_thread_attr *attr)
 int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
                               size_t stacksize)
 {
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
+
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
     /* If stackaddr is not NULL, it must be aligned by 8 bytes. */
     ABTI_CHECK_TRUE(stackaddr == NULL || ((uintptr_t)stackaddr & 0x7) == 0,
                     ABT_ERR_INV_ARG);
-    thread_attr_set_stack(p_attr, stackaddr, stacksize);
+    thread_attr_set_stack(p_global, p_attr, stackaddr, stacksize);
     return ABT_SUCCESS;
 }
 
@@ -219,10 +226,13 @@ int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
  */
 int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 {
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
+
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
-    thread_attr_set_stack(p_attr, p_attr->p_stack, stacksize);
+    thread_attr_set_stack(p_global, p_attr, p_attr->p_stack, stacksize);
     return ABT_SUCCESS;
 }
 
@@ -414,7 +424,8 @@ ABTU_ret_err int ABTI_thread_attr_dup(const ABTI_thread_attr *p_attr,
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-static void thread_attr_set_stack(ABTI_thread_attr *p_attr, void *stackaddr,
+static void thread_attr_set_stack(ABTI_global *p_global,
+                                  ABTI_thread_attr *p_attr, void *stackaddr,
                                   size_t stacksize)
 {
     /* Get the best thread type. */
@@ -426,7 +437,7 @@ static void thread_attr_set_stack(ABTI_thread_attr *p_attr, void *stackaddr,
          * is given by the user. */
         new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
     } else {
-        if (stacksize == gp_ABTI_global->thread_stacksize) {
+        if (stacksize == p_global->thread_stacksize) {
             /* Both a stack and a descriptor will be allocated from a memory
              * pool. */
             new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;

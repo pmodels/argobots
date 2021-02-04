@@ -201,13 +201,14 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 {
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x always requires an init check. */
-    ABTI_SETUP_WITH_INIT_CHECK();
+    ABTI_SETUP_GLOBAL(NULL);
 #endif
     switch (query_kind) {
-        case ABT_INFO_QUERY_KIND_ENABLED_DEBUG:
-            ABTI_SETUP_WITH_INIT_CHECK();
-            *((ABT_bool *)val) = gp_ABTI_global->use_debug;
-            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_DEBUG: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            *((ABT_bool *)val) = p_global->use_debug;
+        } break;
         case ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO:
 #ifdef ABT_CONFIG_PRINT_ABT_ERRNO
             *((ABT_bool *)val) = ABT_TRUE;
@@ -215,10 +216,11 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             *((ABT_bool *)val) = ABT_FALSE;
 #endif
             break;
-        case ABT_INFO_QUERY_KIND_ENABLED_LOG:
-            ABTI_SETUP_WITH_INIT_CHECK();
-            *((ABT_bool *)val) = gp_ABTI_global->use_logging;
-            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_LOG: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            *((ABT_bool *)val) = p_global->use_logging;
+        } break;
         case ABT_INFO_QUERY_KIND_ENABLED_VALGRIND:
 #ifdef HAVE_VALGRIND_SUPPORT
             *((ABT_bool *)val) = ABT_TRUE;
@@ -285,34 +287,41 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             *((ABT_bool *)val) = ABT_FALSE;
 #endif
             break;
-        case ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG:
-            ABTI_SETUP_WITH_INIT_CHECK();
-            *((ABT_bool *)val) = gp_ABTI_global->print_config;
-            break;
-        case ABT_INFO_QUERY_KIND_ENABLED_AFFINITY:
-            ABTI_SETUP_WITH_INIT_CHECK();
-            *((ABT_bool *)val) = gp_ABTI_global->set_affinity;
-            break;
-        case ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS:
-            ABTI_SETUP_WITH_INIT_CHECK();
-            *((unsigned int *)val) = gp_ABTI_global->max_xstreams;
-            break;
-        case ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE:
-            ABTI_SETUP_WITH_INIT_CHECK();
-            *((size_t *)val) = gp_ABTI_global->thread_stacksize;
-            break;
-        case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE:
-            ABTI_SETUP_WITH_INIT_CHECK();
-            *((size_t *)val) = gp_ABTI_global->sched_stacksize;
-            break;
-        case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ:
-            ABTI_SETUP_WITH_INIT_CHECK();
-            *((uint64_t *)val) = gp_ABTI_global->sched_event_freq;
-            break;
-        case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC:
-            ABTI_SETUP_WITH_INIT_CHECK();
-            *((uint64_t *)val) = gp_ABTI_global->sched_sleep_nsec;
-            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            *((ABT_bool *)val) = p_global->print_config;
+        } break;
+        case ABT_INFO_QUERY_KIND_ENABLED_AFFINITY: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            *((ABT_bool *)val) = p_global->set_affinity;
+        } break;
+        case ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            *((unsigned int *)val) = p_global->max_xstreams;
+        } break;
+        case ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            *((size_t *)val) = p_global->thread_stacksize;
+        } break;
+        case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            *((size_t *)val) = p_global->sched_stacksize;
+        } break;
+        case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            *((uint64_t *)val) = p_global->sched_event_freq;
+        } break;
+        case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            *((uint64_t *)val) = p_global->sched_sleep_nsec;
+        } break;
         case ABT_INFO_QUERY_KIND_ENABLED_TOOL:
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
             *((ABT_bool *)val) = ABT_TRUE;
@@ -386,16 +395,19 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
  */
 int ABT_info_print_config(FILE *fp)
 {
+    ABTI_global *p_global;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x always requires an init check. */
-    ABTI_SETUP_WITH_INIT_CHECK();
-#endif
-    if (!gp_ABTI_global) {
+    ABTI_SETUP_GLOBAL(&p_global);
+#else
+    p_global = ABTI_global_get_global_or_null();
+    if (!p_global) {
         fprintf(fp, "Argobots is not initialized.\n");
         fflush(fp);
         return ABT_SUCCESS;
     }
-    ABTI_info_print_config(fp);
+#endif
+    ABTI_info_print_config(p_global, fp);
     return ABT_SUCCESS;
 }
 
@@ -430,17 +442,18 @@ int ABT_info_print_config(FILE *fp)
  */
 int ABT_info_print_all_xstreams(FILE *fp)
 {
+    ABTI_global *p_global;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x always requires an init check. */
-    ABTI_SETUP_WITH_INIT_CHECK();
+    ABTI_SETUP_GLOBAL(&p_global);
 #else
-    if (!gp_ABTI_global) {
+    p_global = ABTI_global_get_global_or_null();
+    if (!p_global) {
         fprintf(fp, "Argobots is not initialized.\n");
         fflush(fp);
         return ABT_SUCCESS;
     }
 #endif
-    ABTI_global *p_global = gp_ABTI_global;
 
     ABTI_spinlock_acquire(&p_global->xstream_list_lock);
 
@@ -886,7 +899,8 @@ int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-ABTU_ret_err static int print_all_thread_stacks(FILE *fp);
+ABTU_ret_err static int print_all_thread_stacks(ABTI_global *p_global,
+                                                FILE *fp);
 
 #define PRINT_STACK_FLAG_UNSET 0
 #define PRINT_STACK_FLAG_INITIALIZE 1
@@ -911,16 +925,17 @@ void ABTI_info_check_print_all_thread_stacks(void)
     /* Wait for the other execution streams using a barrier mechanism. */
     int self_value = ABTD_atomic_fetch_add_int(&print_stack_barrier, 1);
     if (self_value == 0) {
+        ABTI_global *p_global = ABTI_global_get_global();
         /* This ES becomes the main ES. */
         double start_time = ABTI_get_wtime();
         ABT_bool force_print = ABT_FALSE;
 
         /* xstreams_lock is acquired to avoid dynamic ES creation while
          * printing data. */
-        ABTI_spinlock_acquire(&gp_ABTI_global->xstream_list_lock);
+        ABTI_spinlock_acquire(&p_global->xstream_list_lock);
         while (1) {
             if (ABTD_atomic_acquire_load_int(&print_stack_barrier) >=
-                gp_ABTI_global->num_xstreams) {
+                p_global->num_xstreams) {
                 break;
             }
             if (print_stack_timeout >= 0.0 &&
@@ -928,9 +943,9 @@ void ABTI_info_check_print_all_thread_stacks(void)
                 force_print = ABT_TRUE;
                 break;
             }
-            ABTI_spinlock_release(&gp_ABTI_global->xstream_list_lock);
+            ABTI_spinlock_release(&p_global->xstream_list_lock);
             ABTD_atomic_pause();
-            ABTI_spinlock_acquire(&gp_ABTI_global->xstream_list_lock);
+            ABTI_spinlock_acquire(&p_global->xstream_list_lock);
         }
         /* All the available ESs are (supposed to be) stopped. We *assume* that
          * no ES is calling and will call Argobots functions except this
@@ -941,14 +956,14 @@ void ABTI_info_check_print_all_thread_stacks(void)
                     "timeout (only %d ESs stop)\n",
                     ABTD_atomic_acquire_load_int(&print_stack_barrier));
         }
-        int abt_errno = print_all_thread_stacks(print_stack_fp);
+        int abt_errno = print_all_thread_stacks(p_global, print_stack_fp);
         if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
             fprintf(print_stack_fp, "ABT_info_trigger_print_all_thread_stacks: "
                                     "failed because of an internal error.\n");
         }
         fflush(print_stack_fp);
         /* Release the lock that protects ES data. */
-        ABTI_spinlock_release(&gp_ABTI_global->xstream_list_lock);
+        ABTI_spinlock_release(&p_global->xstream_list_lock);
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
         /* Update print_stack_flag to 3. */
@@ -972,10 +987,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
     }
 }
 
-void ABTI_info_print_config(FILE *fp)
+void ABTI_info_print_config(ABTI_global *p_global, FILE *fp)
 {
-    ABTI_global *p_global = gp_ABTI_global;
-
     fprintf(fp, "Argobots Configuration:\n");
     fprintf(fp, " - version: " ABT_VERSION "\n");
     fprintf(fp, " - # of cores: %d\n", p_global->num_cores);
@@ -1248,7 +1261,7 @@ static void info_trigger_print_all_thread_stacks(
     }
 }
 
-ABTU_ret_err static int print_all_thread_stacks(FILE *fp)
+ABTU_ret_err static int print_all_thread_stacks(ABTI_global *p_global, FILE *fp)
 {
     size_t i;
     int abt_errno;
@@ -1256,7 +1269,7 @@ ABTU_ret_err static int print_all_thread_stacks(FILE *fp)
 
     abt_errno = info_initialize_pool_set(&pool_set);
     ABTI_CHECK_ERROR(abt_errno);
-    ABTI_xstream *p_xstream = gp_ABTI_global->p_xstream_head;
+    ABTI_xstream *p_xstream = p_global->p_xstream_head;
     while (p_xstream) {
         ABTI_sched *p_main_sched = p_xstream->p_main_sched;
         fprintf(fp, "= xstream[%d] (%p) =\n", p_xstream->rank,

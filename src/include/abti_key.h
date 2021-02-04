@@ -64,11 +64,12 @@ static inline int ABTI_ktable_is_valid(ABTI_ktable *p_ktable)
            ((uintptr_t)(void *)0x0);
 }
 
-ABTU_ret_err static inline int ABTI_ktable_create(ABTI_local *p_local,
+ABTU_ret_err static inline int ABTI_ktable_create(ABTI_global *p_global,
+                                                  ABTI_local *p_local,
                                                   ABTI_ktable **pp_ktable)
 {
     ABTI_ktable *p_ktable;
-    uint32_t key_table_size = gp_ABTI_global->key_table_size;
+    uint32_t key_table_size = p_global->key_table_size;
     /* size must be a power of 2. */
     ABTI_ASSERT((key_table_size & (key_table_size - 1)) == 0);
     /* max alignment must be a power of 2. */
@@ -221,7 +222,8 @@ ABTI_ktable_set_impl(ABTI_local *p_local, ABTI_ktable *p_ktable,
     return ABT_SUCCESS;
 }
 
-ABTU_ret_err static inline int ABTI_ktable_set(ABTI_local *p_local,
+ABTU_ret_err static inline int ABTI_ktable_set(ABTI_global *p_global,
+                                               ABTI_local *p_local,
                                                ABTD_atomic_ptr *pp_ktable,
                                                ABTI_key *p_key, void *value)
 {
@@ -233,7 +235,7 @@ ABTU_ret_err static inline int ABTI_ktable_set(ABTI_local *p_local,
             if (ABTD_atomic_bool_cas_weak_ptr(pp_ktable, NULL,
                                               ABTI_KTABLE_LOCKED)) {
                 /* The lock was acquired, so let's allocate this table. */
-                abt_errno = ABTI_ktable_create(p_local, &p_ktable);
+                abt_errno = ABTI_ktable_create(p_global, p_local, &p_ktable);
                 ABTI_CHECK_ERROR(abt_errno);
 
                 /* Write down the value.  The lock is released here. */
@@ -262,15 +264,14 @@ ABTU_ret_err static inline int ABTI_ktable_set(ABTI_local *p_local,
     return ABT_SUCCESS;
 }
 
-ABTU_ret_err static inline int ABTI_ktable_set_unsafe(ABTI_local *p_local,
-                                                      ABTI_ktable **pp_ktable,
-                                                      ABTI_key *p_key,
-                                                      void *value)
+ABTU_ret_err static inline int
+ABTI_ktable_set_unsafe(ABTI_global *p_global, ABTI_local *p_local,
+                       ABTI_ktable **pp_ktable, ABTI_key *p_key, void *value)
 {
     int abt_errno;
     ABTI_ktable *p_ktable = *pp_ktable;
     if (!p_ktable) {
-        abt_errno = ABTI_ktable_create(p_local, &p_ktable);
+        abt_errno = ABTI_ktable_create(p_global, p_local, &p_ktable);
         ABTI_CHECK_ERROR(abt_errno);
         *pp_ktable = p_ktable;
     }
