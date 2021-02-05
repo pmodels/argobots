@@ -38,6 +38,9 @@
  */
 int ABT_mutex_create(ABT_mutex *newmutex)
 {
+    /* Check if the size of ABT_mutex_memory is okay. */
+    ABTI_STATIC_ASSERT(sizeof(ABTI_mutex) <= sizeof(ABT_mutex_memory));
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newmutex to NULL on error. */
     *newmutex = ABT_MUTEX_NULL;

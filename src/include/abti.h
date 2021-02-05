@@ -94,7 +94,9 @@ enum ABTI_sched_used {
      ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK |                                 \
      ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK)
 
+/* ABTI_MUTEX_ATTR_NONE must be 0. See ABT_MUTEX_INITIALIZER. */
 #define ABTI_MUTEX_ATTR_NONE 0
+/* ABTI_MUTEX_ATTR_RECURSIVE must be 1. See ABT_RECURSIVE_MUTEX_INITIALIZER. */
 #define ABTI_MUTEX_ATTR_RECURSIVE 1
 
 /* Macro functions */
@@ -165,7 +167,9 @@ struct ABTI_mutex_attr {
 };
 
 struct ABTI_mutex {
-    int attrs;               /* attributes copied from ABTI_mutex_attr. */
+    int attrs;               /* attributes copied from ABTI_mutex_attr.  Check
+                              * ABT_(RECURSIVE_)MUTEX_INITIALIZER to see how
+                              * this variable can be  initialized. */
     ABTI_spinlock lock;      /* lock */
     int nesting_cnt;         /* nesting count (if recursive) */
     ABTI_thread_id owner_id; /* owner's ID (if recursive) */
