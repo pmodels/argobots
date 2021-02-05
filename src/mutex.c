@@ -168,15 +168,12 @@ int ABT_mutex_free(ABT_mutex *mutex)
  * unlocked as many times as the level of ownership.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
  * therefore the caller fails to take a lock}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -205,15 +202,12 @@ int ABT_mutex_lock(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
  * therefore the caller fails to take a lock}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -242,15 +236,12 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
  * therefore the caller fails to take a lock}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -280,15 +271,12 @@ int ABT_mutex_lock_high(ABT_mutex mutex)
  * routine never fails if \c mutex is not locked.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS_LOCK_ACQUIRED{\c mutex}
  * \DOC_ERROR_SUCCESS_LOCK_FAILED{\c mutex}
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -324,14 +312,11 @@ int ABT_mutex_trylock(ABT_mutex mutex)
  * be cautious when using this routine.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -355,15 +340,14 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
  * be the same as that of the corresponding locking function.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
- *                                                      \c mutex}
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                     \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
  * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
  *
@@ -400,15 +384,14 @@ int ABT_mutex_unlock(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
- *                                                      \c mutex}
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                     \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
  * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
  *
@@ -445,15 +428,14 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
- *                                                      \c mutex}
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                     \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
  * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
  *
