@@ -45,8 +45,6 @@ int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
 
     /* Default values */
     p_newattr->attrs = ABTI_MUTEX_ATTR_NONE;
-    p_newattr->nesting_cnt = 0;
-    p_newattr->owner_id = 0;
 
     /* Return value */
     *newattr = ABTI_mutex_attr_get_handle(p_newattr);

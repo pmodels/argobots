@@ -43,9 +43,9 @@ static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
     ABTI_spinlock_clear(&p_mutex->waiter_lock);
     ABTI_waitlist_init(&p_mutex->waitlist);
 #endif
-    p_mutex->attr.attrs = ABTI_MUTEX_ATTR_NONE;
-    p_mutex->attr.nesting_cnt = 0;
-    p_mutex->attr.owner_id = 0;
+    p_mutex->attrs = ABTI_MUTEX_ATTR_NONE;
+    p_mutex->nesting_cnt = 0;
+    p_mutex->owner_id = 0;
 }
 
 static inline void ABTI_mutex_fini(ABTI_mutex *p_mutex)
@@ -97,16 +97,16 @@ static inline void ABTI_mutex_lock_no_recursion(ABTI_local **pp_local,
 
 static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 {
-    if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+    if (p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* Recursive mutex */
         ABTI_thread_id self_id = ABTI_self_get_thread_id(*pp_local);
-        if (self_id != p_mutex->attr.owner_id) {
+        if (self_id != p_mutex->owner_id) {
             ABTI_mutex_lock_no_recursion(pp_local, p_mutex);
-            ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
-            p_mutex->attr.owner_id = self_id;
+            ABTI_ASSERT(p_mutex->nesting_cnt == 0);
+            p_mutex->owner_id = self_id;
         } else {
             /* Increment a nesting count. */
-            p_mutex->attr.nesting_cnt++;
+            p_mutex->nesting_cnt++;
         }
     } else {
         ABTI_mutex_lock_no_recursion(pp_local, p_mutex);
@@ -121,19 +121,19 @@ static inline int ABTI_mutex_trylock_no_recursion(ABTI_mutex *p_mutex)
 
 static inline int ABTI_mutex_trylock(ABTI_local *p_local, ABTI_mutex *p_mutex)
 {
-    if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+    if (p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* Recursive mutex */
         ABTI_thread_id self_id = ABTI_self_get_thread_id(p_local);
-        if (self_id != p_mutex->attr.owner_id) {
+        if (self_id != p_mutex->owner_id) {
             int abt_errno = ABTI_mutex_trylock_no_recursion(p_mutex);
             if (abt_errno == ABT_SUCCESS) {
-                ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
-                p_mutex->attr.owner_id = self_id;
+                ABTI_ASSERT(p_mutex->nesting_cnt == 0);
+                p_mutex->owner_id = self_id;
             }
             return abt_errno;
         } else {
             /* Increment a nesting count. */
-            p_mutex->attr.nesting_cnt++;
+            p_mutex->nesting_cnt++;
             return ABT_SUCCESS;
         }
     } else {
@@ -148,16 +148,16 @@ static inline void ABTI_mutex_spinlock_no_recursion(ABTI_mutex *p_mutex)
 
 static inline void ABTI_mutex_spinlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
 {
-    if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+    if (p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* Recursive mutex */
         ABTI_thread_id self_id = ABTI_self_get_thread_id(p_local);
-        if (self_id != p_mutex->attr.owner_id) {
+        if (self_id != p_mutex->owner_id) {
             ABTI_mutex_spinlock_no_recursion(p_mutex);
-            ABTI_ASSERT(p_mutex->attr.nesting_cnt == 0);
-            p_mutex->attr.owner_id = self_id;
+            ABTI_ASSERT(p_mutex->nesting_cnt == 0);
+            p_mutex->owner_id = self_id;
         } else {
             /* Increment a nesting count. */
-            p_mutex->attr.nesting_cnt++;
+            p_mutex->nesting_cnt++;
         }
     } else {
         ABTI_mutex_spinlock_no_recursion(p_mutex);
@@ -180,13 +180,13 @@ static inline void ABTI_mutex_unlock_no_recursion(ABTI_local *p_local,
 
 static inline void ABTI_mutex_unlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
 {
-    if (p_mutex->attr.attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
+    if (p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) {
         /* recursive mutex */
-        if (p_mutex->attr.nesting_cnt == 0) {
-            p_mutex->attr.owner_id = 0;
+        if (p_mutex->nesting_cnt == 0) {
+            p_mutex->owner_id = 0;
             ABTI_mutex_unlock_no_recursion(p_local, p_mutex);
         } else {
-            p_mutex->attr.nesting_cnt--;
+            p_mutex->nesting_cnt--;
         }
     } else {
         /* unknown attributes */

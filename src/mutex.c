@@ -105,9 +105,8 @@ int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTI_mutex_init(p_newmutex);
-    if (p_attr) {
-        memcpy(&p_newmutex->attr, p_attr, sizeof(ABTI_mutex_attr));
-    }
+    if (p_attr)
+        p_newmutex->attrs = p_attr->attrs;
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
@@ -538,9 +537,7 @@ int ABT_mutex_get_attr(ABT_mutex mutex, ABT_mutex_attr *attr)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Copy values.  Nesting count must be initialized. */
-    p_newattr->attrs = p_mutex->attr.attrs;
-    p_newattr->nesting_cnt = 0;
-    p_newattr->owner_id = 0;
+    p_newattr->attrs = p_mutex->attrs;
 
     /* Return value */
     *attr = ABTI_mutex_attr_get_handle(p_newattr);

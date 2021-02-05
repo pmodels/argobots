@@ -94,10 +94,8 @@ enum ABTI_sched_used {
      ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK |                                 \
      ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK)
 
-enum ABTI_mutex_attr_val {
-    ABTI_MUTEX_ATTR_NONE = 0,
-    ABTI_MUTEX_ATTR_RECURSIVE = 1 << 0
-};
+#define ABTI_MUTEX_ATTR_NONE 0
+#define ABTI_MUTEX_ATTR_RECURSIVE 1
 
 /* Macro functions */
 #define ABTI_UNUSED(a) (void)(a)
@@ -163,14 +161,14 @@ struct ABTI_waitlist {
 };
 
 struct ABTI_mutex_attr {
-    uint32_t attrs;          /* bit-or'ed attributes */
-    uint32_t nesting_cnt;    /* nesting count */
-    ABTI_thread_id owner_id; /* owner's ID */
+    int attrs; /* bit-or'ed attributes */
 };
 
 struct ABTI_mutex {
-    ABTI_spinlock lock;   /* lock */
-    ABTI_mutex_attr attr; /* attributes */
+    int attrs;               /* attributes copied from ABTI_mutex_attr. */
+    ABTI_spinlock lock;      /* lock */
+    int nesting_cnt;         /* nesting count (if recursive) */
+    ABTI_thread_id owner_id; /* owner's ID (if recursive) */
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
     ABTI_spinlock waiter_lock; /* lock */
     ABTI_waitlist waitlist;    /* waiting list */
