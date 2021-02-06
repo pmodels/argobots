@@ -1818,6 +1818,8 @@ ALIASES += undefined="\par Undefined behavior"
 
 ALIASES += DOC_CONTEXT_ANY="This routine can be called in any execution context. Argobots does not need to be initialized."
 
+ALIASES += DOC_CONTEXT_ANY_NOTASK="This routine can be called in a ULT context and an external thread context. Argobots does not need to be initialized."
+
 ALIASES += DOC_CONTEXT_CTXSWITCH="This routine may switch the context of the calling ULT."
 
 ALIASES += DOC_CONTEXT_CTXSWITCH_CONDITIONAL{1}="This routine may switch the context of the calling ULT if \1.  Otherwise, this routine does not switch the context of the calling ULT unless any user-defined function that is involved in this routine switch the context of the calling ULT."

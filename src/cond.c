@@ -130,8 +130,8 @@ int ABT_cond_free(ABT_cond *cond)
  * @endchangev20
  *
  * @contexts
- * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH\n
- * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_V1X \DOC_CONTEXT_ANY_NOTASK \DOC_CONTEXT_CTXSWITCH\n
+ * \DOC_V20 \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS
@@ -140,7 +140,6 @@ int ABT_cond_free(ABT_cond *cond)
  * \DOC_V1X \DOC_ERROR_TASK{\c ABT_ERR_COND}
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
  * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
  * \DOC_UNDEFINED_COND_WAIT{\c cond, \c mutex}
@@ -206,7 +205,7 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
  * occurs.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS_COND_SIGNALED
@@ -215,7 +214,6 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NULL_PTR{\c abstime}
  * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
  * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
@@ -275,14 +273,11 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
  * effect if no waiter is currently blocked on \c cond.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_COND_HANDLE{\c cond}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] cond  condition variable handle
  * @return Error code
@@ -310,14 +305,11 @@ int ABT_cond_signal(ABT_cond cond)
  * on \c cond.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_COND_HANDLE{\c cond}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] cond  condition variable handle
  * @return Error code
