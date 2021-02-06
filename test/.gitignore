@@ -47,6 +47,7 @@ basic/mutex_unlock_se
 basic/cond_test
 basic/cond_join
 basic/cond_signal_in_main
+basic/cond_static
 basic/cond_timedwait
 basic/future_create
 basic/rwlock_reader_incl
