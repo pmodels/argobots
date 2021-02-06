@@ -1161,6 +1161,74 @@ typedef struct {
     ((ABT_mutex)p_mutex_memory)
 
 /**
+ * @ingroup COND
+ * @brief   A struct that can be converted to ABT_cond.
+ * @hideinitializer
+ *
+ * \c ABT_cond_memory is a struct to statically allocate and initialize
+ * \c ABT_cond.  \c ABT_cond_memory can be statically initialized by
+ * \c ABT_COND_MEMORY_INITIALIZER and converted to \c ABT_cond by
+ * \c ABT_COND_MEMORY_GET_HANDLE().
+ *
+ * \c dummy may not be accessed by a user.
+ */
+typedef struct {
+    int dummy[16];
+} ABT_cond_memory;
+
+/**
+ * @ingroup COND
+ * @brief   Initialize \c ABT_cond_memory.
+ *
+ * \c ABT_COND_INITIALIZER() statically initializes \c ABT_cond_memory.
+
+ * The following example shows how to use \c ABT_COND_INITIALIZER.
+ * @code{.c}
+ * ABT_mutex_memory mutex_mem = ABT_MUTEX_INITIALIZER;
+ * ABT_cond_memory cond_mem = ABT_COND_INITIALIZER;
+ *
+ * void thread(void *)
+ * {
+ *     ABT_mutex mutex = ABT_MUTEX_MEMORY_GET_HANDLE(&mutex_mem);
+ *     ABT_cond cond = ABT_COND_MEMORY_GET_HANDLE(&cond_mem);
+ *     ABT_mutex_lock(mutex);
+ *     if (...) {
+ *        ABT_cond_wait(cond, mutex);
+ *     } else {
+ *        ABT_cond_signal(cond);
+ *     }
+ *     ABT_mutex_unlock(mutex);
+ * }
+ * @endcode
+ *
+ * \c ABT_cond obtained by \c ABT_COND_MEMORY_GET_HANDLE() may not be freed by
+ * \c ABT_cond_free().  The lifetime of \c ABT_cond obtained by
+ * \c ABT_COND_MEMORY_GET_HANDLE() is the same as that of \c ABT_cond_memory.
+ *
+ * \c ABT_cond_memory associated with a condition variable that is in use may
+ * not be initialized.
+ */
+#define ABT_COND_INITIALIZER                                                   \
+    { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
+
+/**
+ * @ingroup COND
+ * @brief   Obtain \c ABT_cond from \c ABT_cond_memory.
+ *
+ * \c ABT_COND_MEMORY_GET_HANDLE() takes the pointer \c p_cond_memory, which
+ * points to \c ABT_cond_memory, and returns \c ABT_cond that internally uses
+ * \c p_cond_memory to store the data.  If the memory pointed to by
+ * \c p_cond_memory is not properly initialized, it returns a corrupted
+ * condition variable.
+ *
+ * \c ABT_cond obtained by \c ABT_COND_MEMORY_GET_HANDLE() may not be freed by
+ * \c ABT_cond_free().  The lifetime of \c ABT_cond obtained by
+ * \c ABT_COND_MEMORY_GET_HANDLE() is the same as that of \c ABT_cond_memory.
+ */
+#define ABT_COND_MEMORY_GET_HANDLE(p_cond_memory)                              \
+    ((ABT_cond)p_cond_memory)
+
+/**
  * @ingroup SCHED_CONFIG
  * @brief   A struct that sets and gets a scheduler configuration.
  */

@@ -41,6 +41,9 @@ static inline double convert_timespec_to_sec(const struct timespec *p_ts);
  */
 int ABT_cond_create(ABT_cond *newcond)
 {
+    /* Check if the size of ABT_cond_memory is okay. */
+    ABTI_STATIC_ASSERT(sizeof(ABTI_cond) <= sizeof(ABT_cond_memory));
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newcond to NULL on error. */
     *newcond = ABT_COND_NULL;
