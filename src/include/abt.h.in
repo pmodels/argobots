@@ -1072,6 +1072,95 @@ typedef enum ABT_sync_event_type            ABT_sync_event_type;
 #endif
 
 /**
+ * @ingroup MUTEX
+ * @brief   A struct that can be converted to ABT_mutex.
+ * @hideinitializer
+ *
+ * \c ABT_mutex_memory is a struct to statically allocate and initialize
+ * \c ABT_mutex.  \c ABT_mutex_memory can be statically initialized by
+ * \c ABT_MUTEX_MEMORY_INITIALIZER and \c ABT_RECURSIVE_MUTEX_INITIALIZER and
+ * can be converted to \c ABT_mutex by \c ABT_MUTEX_MEMORY_GET_HANDLE().
+ *
+ * \c dummy may not be accessed by a user.
+ */
+typedef struct {
+    int dummy[16];
+} ABT_mutex_memory;
+
+/**
+ * @ingroup MUTEX
+ * @brief   Initialize \c ABT_mutex_memory.
+ *
+ * \c ABT_MUTEX_INITIALIZER() statically initializes \c ABT_mutex_memory.  The
+ * created mutex is not recursive.
+
+ * The following shows how to use \c ABT_MUTEX_INITIALIZER.
+ * @code{.c}
+ * ABT_mutex_memory mutex_mem = ABT_MUTEX_INITIALIZER;
+ *
+ * void thread(void *)
+ * {
+ *     ABT_mutex mutex = ABT_MUTEX_MEMORY_GET_HANDLE(&mutex_mem);
+ *     ABT_mutex_lock(mutex);
+ *     ABT_mutex_unlock(mutex);
+ * }
+ * @endcode
+ *
+ * \c ABT_mutex obtained by \c ABT_MUTEX_MEMORY_GET_HANDLE() may not be freed by
+ * \c ABT_mutex_free().  The lifetime of \c ABT_mutex obtained by
+ * \c ABT_MUTEX_MEMORY_GET_HANDLE() is the same as that of \c ABT_mutex_memory.
+ *
+ * \c ABT_mutex_memory associated with the mutex that is in use may not be
+ * initialized.
+ */
+#define ABT_MUTEX_INITIALIZER                                                  \
+    { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
+
+/**
+ * @ingroup MUTEX
+ * @brief   Initialize \c ABT_mutex_memory with a recursive property.
+ *
+ * \c ABT_RECURSIVE_MUTEX_INITIALIZER statically initializes
+ * \c ABT_mutex_memory.  The created mutex is recursive.
+ *
+ * The following shows how to use \c ABT_RECURSIVE_MUTEX_INITIALIZER.
+ * @code{.c}
+ * ABT_mutex_memory rec_mutex_mem = ABT_RECURSIVE_MUTEX_INITIALIZER;
+ *
+ * void thread(void *)
+ * {
+ *     ABT_mutex rec_mutex = ABT_MUTEX_MEMORY_GET_HANDLE(&rec_mutex_mem);
+ *     // rec_mutex is recursive.
+ *     ABT_mutex_lock(rec_mutex);
+ *     ABT_mutex_lock(rec_mutex);
+ *     ABT_mutex_unlock(rec_mutex);
+ *     ABT_mutex_unlock(rec_mutex);
+ * }
+ * @endcode
+ *
+ * \c ABT_mutex_memory associated with the mutex that is in use may not be
+ * initialized.
+ */
+#define ABT_RECURSIVE_MUTEX_INITIALIZER                                        \
+    { { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
+
+/**
+ * @ingroup MUTEX
+ * @brief   Obtain \c ABT_mutex from \c ABT_mutex_memory.
+ *
+ * \c ABT_MUTEX_MEMORY_GET_HANDLE() takes the pointer \c p_mutex_memory, which
+ * points to \c ABT_mutex_memory, and returns \c ABT_mutex that internally uses
+ * \c p_mutex_memory to store the data.  If the memory pointed to by
+ * \c p_mutex_memory is not properly initialized, it returns a corrupted mutex.
+ *
+ * \c ABT_mutex obtained by \c ABT_MUTEX_MEMORY_GET_HANDLE() may not be freed by
+ * \c ABT_mutex_free().  The lifetime of \c ABT_mutex obtained by
+ * \c ABT_MUTEX_MEMORY_GET_HANDLE() is the same as that of \c ABT_mutex_memory.
+ */
+#define ABT_MUTEX_MEMORY_GET_HANDLE(p_mutex_memory)                            \
+    ((ABT_mutex)p_mutex_memory)
+
+/**
  * @ingroup SCHED_CONFIG
  * @brief   A struct that sets and gets a scheduler configuration.
  */

@@ -38,6 +38,9 @@
  */
 int ABT_mutex_create(ABT_mutex *newmutex)
 {
+    /* Check if the size of ABT_mutex_memory is okay. */
+    ABTI_STATIC_ASSERT(sizeof(ABTI_mutex) <= sizeof(ABT_mutex_memory));
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newmutex to NULL on error. */
     *newmutex = ABT_MUTEX_NULL;
@@ -105,9 +108,8 @@ int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
     ABTI_CHECK_ERROR(abt_errno);
 
     ABTI_mutex_init(p_newmutex);
-    if (p_attr) {
-        memcpy(&p_newmutex->attr, p_attr, sizeof(ABTI_mutex_attr));
-    }
+    if (p_attr)
+        p_newmutex->attrs = p_attr->attrs;
 
     /* Return value */
     *newmutex = ABTI_mutex_get_handle(p_newmutex);
@@ -166,15 +168,12 @@ int ABT_mutex_free(ABT_mutex *mutex)
  * unlocked as many times as the level of ownership.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
  * therefore the caller fails to take a lock}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -203,15 +202,12 @@ int ABT_mutex_lock(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
  * therefore the caller fails to take a lock}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -240,15 +236,12 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
  * therefore the caller fails to take a lock}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -278,15 +271,12 @@ int ABT_mutex_lock_high(ABT_mutex mutex)
  * routine never fails if \c mutex is not locked.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS_LOCK_ACQUIRED{\c mutex}
  * \DOC_ERROR_SUCCESS_LOCK_FAILED{\c mutex}
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -322,14 +312,11 @@ int ABT_mutex_trylock(ABT_mutex mutex)
  * be cautious when using this routine.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
- *
- * @undefined
- * \DOC_UNDEFINED_UNINIT
  *
  * @param[in] mutex  mutex handle
  * @return Error code
@@ -353,15 +340,14 @@ int ABT_mutex_spinlock(ABT_mutex mutex)
  * be the same as that of the corresponding locking function.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
- *                                                      \c mutex}
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                     \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
  * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
  *
@@ -398,15 +384,14 @@ int ABT_mutex_unlock(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
- *                                                      \c mutex}
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                     \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
  * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
  *
@@ -443,15 +428,14 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
  * non-conforming.
  *
  * @contexts
- * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
- *                                                      \c mutex}
+ * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on
+ *                                                     \c mutex}
  *
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_MUTEX_HANDLE{\c mutex}
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NOT_LOCKED{\c mutex}
  * \DOC_UNDEFINED_MUTEX_ILLEGAL_UNLOCK{\c mutex}
  *
@@ -538,9 +522,7 @@ int ABT_mutex_get_attr(ABT_mutex mutex, ABT_mutex_attr *attr)
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Copy values.  Nesting count must be initialized. */
-    p_newattr->attrs = p_mutex->attr.attrs;
-    p_newattr->nesting_cnt = 0;
-    p_newattr->owner_id = 0;
+    p_newattr->attrs = p_mutex->attrs;
 
     /* Return value */
     *attr = ABTI_mutex_attr_get_handle(p_newattr);
