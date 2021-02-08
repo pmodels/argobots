@@ -17,6 +17,7 @@ TESTS = \
 	thread_attr \
 	thread_attr2 \
 	thread_yield \
+	thread_yield2 \
 	thread_yield_to \
 	thread_self_suspend_resume \
 	thread_get_last_xstream \
@@ -98,6 +99,7 @@ thread_revive_SOURCES = thread_revive.c
 thread_attr_SOURCES = thread_attr.c
 thread_attr2_SOURCES = thread_attr2.c
 thread_yield_SOURCES = thread_yield.c
+thread_yield2_SOURCES = thread_yield2.c
 thread_yield_to_SOURCES = thread_yield_to.c
 thread_self_suspend_resume_SOURCES = thread_self_suspend_resume.c
 thread_get_last_xstream_SOURCES = thread_get_last_xstream.c
@@ -167,6 +169,7 @@ testing:
 	./thread_attr
 	./thread_attr2
 	./thread_yield
+	./thread_yield2
 	./thread_yield_to
 	./thread_self_suspend_resume
 	./thread_get_last_xstream
