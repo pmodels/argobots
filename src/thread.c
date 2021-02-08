@@ -674,6 +674,9 @@ int ABT_thread_cancel(ABT_thread thread)
  * \c ABT_thread_self() returns the handle of the calling work unit through
  * \c thread.
  *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_get_thread()}
+ *
  * @changev20
  * \DOC_DESC_V1X_NOTASK{\c ABT_ERR_INV_THREAD}
  *
@@ -721,6 +724,9 @@ int ABT_thread_self(ABT_thread *thread)
  *
  * \c ABT_thread_self_id() returns the ID of the calling work unit through
  * \c id.
+ *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_get_thread_id()}
  *
  * @changev20
  * \DOC_DESC_V1X_NOTASK{\c ABT_ERR_INV_THREAD}

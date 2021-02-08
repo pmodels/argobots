@@ -11,6 +11,235 @@
 
 /**
  * @ingroup SELF
+ * @brief   Get an execution stream that is running the calling work unit.
+ *
+ * \c ABT_self_get_xstream() returns the handle of the execution stream that is
+ * running the calling work unit through \c xstream.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c xstream}
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] xstream  execution stream handle
+ * @return Error code
+ */
+int ABT_self_get_xstream(ABT_xstream *xstream)
+{
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+
+    /* Return value */
+    *xstream = ABTI_xstream_get_handle(p_local_xstream);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
+ * @brief   Return a rank of an execution stream that is running the calling
+ *          work unit.
+ *
+ * \c ABT_self_get_xstream_rank() returns the rank of the execution stream that
+ * is running the calling work unit through \c rank.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c rank}
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] rank  execution stream rank
+ * @return Error code
+ */
+int ABT_self_get_xstream_rank(int *rank)
+{
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    /* Return value */
+    *rank = (int)p_local_xstream->rank;
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
+ * @brief   Get the calling work unit.
+ *
+ * \c ABT_self_get_thread() returns the handle of the calling work unit through
+ * \c thread.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] thread  work unit handle
+ * @return Error code
+ */
+int ABT_self_get_thread(ABT_thread *thread)
+{
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    *thread = ABTI_thread_get_handle(p_local_xstream->p_thread);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
+ * @brief   Get ID of the calling work unit.
+ *
+ * \c ABT_self_get_thread_id() returns the ID of the calling work unit through
+ * \c id.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c id}
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[out] id  ID of the calling work unit
+ * @return Error code
+ */
+int ABT_self_get_thread_id(ABT_unit_id *id)
+{
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    *id = ABTI_thread_get_id(p_local_xstream->p_thread);
+    return ABT_SUCCESS;
+}
+
+#ifdef ABT_CONFIG_USE_DOXYGEN
+/**
+ * @ingroup SELF
+ * @brief   Get the calling work unit.
+ *
+ * The functionality of this routine is the same as \c ABT_self_get_thread().
+ */
+int ABT_self_get_task(ABT_thread *thread);
+#endif
+
+#ifdef ABT_CONFIG_USE_DOXYGEN
+/**
+ * @ingroup SELF
+ * @brief   Get ID of the calling work unit.
+ *
+ * The functionality of this routine is the same as \c ABT_self_get_thread_id().
+ */
+int ABT_self_get_task_id(ABT_unit_id *id);
+#endif
+
+/**
+ * @ingroup SELF
+ * @brief   Associate a value with a work-unit-specific key in the calling work
+ *          unit.
+ *
+ * \c ABT_self_set_specific() associates a value \c value of the
+ * work-unit-specific data key \c key in the calling work unit. Different work
+ * units may bind different values to the same key.
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_KEY_HANDLE{\c key}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] key    work-unit-specific data key handle
+ * @param[in] value  value associated with \c key
+ * @return Error code
+ */
+int ABT_self_set_specific(ABT_key key, void *value)
+{
+    ABTI_key *p_key = ABTI_key_get_ptr(key);
+    ABTI_CHECK_NULL_KEY_PTR(p_key);
+
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
+
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+
+    /* Obtain the key-value table pointer. */
+    int abt_errno =
+        ABTI_ktable_set(p_global, ABTI_xstream_get_local(p_local_xstream),
+                        &p_local_xstream->p_thread->p_keytable, p_key, value);
+    ABTI_CHECK_ERROR(abt_errno);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
+ * @brief   Get a value associated with a key in the calling work unit.
+ *
+ * \c ABT_self_get_specific() returns the value in the caller associated with
+ * the work-unit-specific data key \c key in the calling work unit through
+ * \c value. If the caller has never set a value for the key, this routine sets
+ * \c value to \c NULL.
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_KEY_HANDLE{\c key}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_NULL_PTR{\c value}
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in]  key    work-unit-specific data key handle
+ * @param[out] value  value associated with \c key
+ * @return Error code
+ */
+int ABT_self_get_specific(ABT_key key, void **value)
+{
+    ABTI_key *p_key = ABTI_key_get_ptr(key);
+    ABTI_CHECK_NULL_KEY_PTR(p_key);
+
+    /* We don't allow an external thread to call this routine. */
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+
+    /* Obtain the key-value table pointer */
+    *value = ABTI_ktable_get(&p_local_xstream->p_thread->p_keytable, p_key);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Obtain a type of the caller.
  *
  * \c ABT_self_get_type() returns a type of the calling work unit through
