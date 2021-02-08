@@ -1019,13 +1019,12 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_ythread *p_cur_ythread;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     p_local_xstream = ABTI_local_get_xstream_or_null(ABTI_local_get_local());
-    if (ABTI_IS_ERROR_CHECK_ENABLED && ABTI_IS_EXT_THREAD_ENABLED &&
-        p_local_xstream == NULL) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         return ABT_SUCCESS;
     } else {
         p_cur_ythread =
             ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
-        if (ABTI_IS_ERROR_CHECK_ENABLED && !p_cur_ythread)
+        if (!p_cur_ythread)
             return ABT_SUCCESS;
     }
 #else
@@ -1134,12 +1133,11 @@ int ABT_thread_yield(void)
     ABTI_ythread *p_ythread;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     p_local_xstream = ABTI_local_get_xstream_or_null(ABTI_local_get_local());
-    if (ABTI_IS_ERROR_CHECK_ENABLED && ABTI_IS_EXT_THREAD_ENABLED &&
-        ABTU_unlikely(p_local_xstream == NULL)) {
+    if (ABTI_IS_EXT_THREAD_ENABLED && ABTU_unlikely(p_local_xstream == NULL)) {
         return ABT_SUCCESS;
     } else {
         p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
-        if (ABTI_IS_ERROR_CHECK_ENABLED && ABTU_unlikely(!p_ythread)) {
+        if (ABTU_unlikely(!p_ythread)) {
             return ABT_SUCCESS;
         }
     }
