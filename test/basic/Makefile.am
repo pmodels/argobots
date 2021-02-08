@@ -52,6 +52,7 @@ TESTS = \
 	cond_test \
 	cond_join \
 	cond_signal_in_main \
+	cond_static \
 	cond_timedwait \
 	rwlock_writer_excl \
 	rwlock_reader_writer_excl \
@@ -131,6 +132,7 @@ mutex_unlock_se_SOURCES = mutex_unlock_se.c
 cond_test_SOURCES = cond_test.c
 cond_join_SOURCES = cond_join.c
 cond_signal_in_main_SOURCES = cond_signal_in_main.c
+cond_static_SOURCES = cond_static.c
 cond_timedwait_SOURCES = cond_timedwait.c
 rwlock_writer_excl_SOURCES = rwlock_writer_excl.c
 rwlock_reader_writer_excl_SOURCES = rwlock_reader_writer_excl.c
@@ -198,6 +200,7 @@ testing:
 	./cond_test
 	./cond_join
 	./cond_signal_in_main
+	./cond_static
 	./cond_timedwait
 	./rwlock_writer_excl
 	./rwlock_reader_writer_excl
