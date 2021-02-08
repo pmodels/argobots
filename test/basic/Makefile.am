@@ -61,6 +61,7 @@ TESTS = \
 	eventual_create \
 	eventual_test \
 	barrier \
+	self_rank_id \
 	self_type \
 	ext_thread \
 	ext_thread2 \
@@ -141,6 +142,7 @@ future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 eventual_test_SOURCES = eventual_test.c
 barrier_SOURCES = barrier.c
+self_rank_id_SOURCES = self_rank_id.c
 self_type_SOURCES = self_type.c
 ext_thread_SOURCES = ext_thread.c
 ext_thread2_SOURCES = ext_thread2.c
@@ -209,6 +211,7 @@ testing:
 	./eventual_create
 	./eventual_test
 	./barrier
+	./self_rank_id
 	./self_type
 	./ext_thread
 	./ext_thread2
