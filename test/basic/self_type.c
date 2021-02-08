@@ -10,15 +10,19 @@
 
 void task_hello(void *arg)
 {
-    ABT_xstream xstream;
-    ABT_thread thread;
-    ABT_task task;
+    ABT_xstream xstream, xstream2;
+    ABT_thread thread, thread2;
+    ABT_task task, task2;
     ABT_unit_type type;
     ABT_bool flag;
     int ret;
 
     ret = ABT_xstream_self(&xstream);
     ATS_ERROR(ret, "ABT_stream_self");
+
+    ret = ABT_self_get_xstream(&xstream2);
+    ATS_ERROR(ret, "ABT_self_get_xstream");
+    assert(xstream == xstream2);
 
     ret = ABT_thread_self(&thread);
 #ifdef ABT_ENABLE_VER_20_API
@@ -27,8 +31,16 @@ void task_hello(void *arg)
     assert(ret == ABT_ERR_INV_THREAD && thread == ABT_THREAD_NULL);
 #endif
 
+    ret = ABT_self_get_thread(&thread2);
+    ATS_ERROR(ret, "ABT_self_get_thread");
+
     ret = ABT_task_self(&task);
     ATS_ERROR(ret, "ABT_task_self");
+
+    ret = ABT_self_get_task(&task2);
+    ATS_ERROR(ret, "ABT_self_get_task");
+
+    assert(task == task2 && task == thread2);
 
     ret = ABT_self_get_type(&type);
     assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_TASK);
@@ -49,11 +61,11 @@ void task_hello(void *arg)
 
 void thread_hello(void *arg)
 {
-    ABT_xstream xstream;
+    ABT_xstream xstream, xstream2;
     ABT_pool pool;
-    ABT_thread thread;
+    ABT_thread thread, thread2;
     ABT_unit_id my_id;
-    ABT_task task;
+    ABT_task task, task2;
     ABT_unit_type type;
     ABT_bool flag;
     int ret;
@@ -61,8 +73,17 @@ void thread_hello(void *arg)
     ret = ABT_xstream_self(&xstream);
     ATS_ERROR(ret, "ABT_stream_self");
 
+    ret = ABT_self_get_xstream(&xstream2);
+    ATS_ERROR(ret, "ABT_self_get_xstream");
+    assert(xstream == xstream2);
+
     ret = ABT_thread_self(&thread);
     ATS_ERROR(ret, "ABT_thread_self");
+
+    ret = ABT_self_get_thread(&thread2);
+    ATS_ERROR(ret, "ABT_self_get_thread");
+    assert(thread == thread2);
+
     ret = ABT_thread_get_id(thread, &my_id);
     ATS_ERROR(ret, "ABT_thread_get_id");
 
@@ -72,6 +93,10 @@ void thread_hello(void *arg)
 #else
     assert(ret == ABT_ERR_INV_TASK && task == ABT_TASK_NULL);
 #endif
+
+    ret = ABT_self_get_task(&task2);
+    ATS_ERROR(ret, "ABT_self_get_task");
+    assert(thread == task2);
 
     ret = ABT_self_get_type(&type);
     assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_THREAD);
@@ -114,6 +139,9 @@ void *pthread_hello(void *arg)
     assert(ret == ABT_ERR_INV_XSTREAM && xstream == ABT_XSTREAM_NULL);
 #endif
 
+    ret = ABT_self_get_xstream(&xstream);
+    assert(ret == ABT_ERR_INV_XSTREAM);
+
     ret = ABT_thread_self(&thread);
 #ifdef ABT_ENABLE_VER_20_API
     assert(ret == ABT_ERR_INV_XSTREAM);
@@ -121,12 +149,18 @@ void *pthread_hello(void *arg)
     assert(ret == ABT_ERR_INV_XSTREAM && thread == ABT_THREAD_NULL);
 #endif
 
+    ret = ABT_self_get_thread(&thread);
+    assert(ret == ABT_ERR_INV_XSTREAM);
+
     ret = ABT_task_self(&task);
 #ifdef ABT_ENABLE_VER_20_API
     assert(ret == ABT_ERR_INV_XSTREAM);
 #else
     assert(ret == ABT_ERR_INV_XSTREAM && task == ABT_TASK_NULL);
 #endif
+
+    ret = ABT_self_get_task(&task);
+    assert(ret == ABT_ERR_INV_XSTREAM);
 
     ret = ABT_self_get_type(&type);
 #ifdef ABT_ENABLE_VER_20_API
@@ -211,6 +245,21 @@ int main(int argc, char *argv[])
 #else
     assert(ret == ABT_ERR_INV_TASK && my_task == ABT_TASK_NULL);
 #endif
+
+    ABT_xstream xstream_tmp;
+    ret = ABT_self_get_xstream(&xstream_tmp);
+    ATS_ERROR(ret, "ABT_self_get_xstream");
+    assert(xstream_tmp == xstreams[0]);
+
+    ABT_thread thread_tmp;
+    ret = ABT_self_get_thread(&thread_tmp);
+    ATS_ERROR(ret, "ABT_self_get_thread");
+    assert(thread_tmp == my_thread);
+
+    ABT_task task_tmp;
+    ret = ABT_self_get_task(&task_tmp);
+    ATS_ERROR(ret, "ABT_self_get_task");
+    assert(task_tmp == my_thread);
 
     ret = ABT_self_get_type(&type);
     assert(ret == ABT_SUCCESS && type == ABT_UNIT_TYPE_THREAD);
