@@ -19,6 +19,7 @@ TESTS = \
 	thread_yield \
 	thread_yield2 \
 	thread_yield_to \
+	thread_exit \
 	thread_self_suspend_resume \
 	thread_get_last_xstream \
 	thread_migrate \
@@ -101,6 +102,7 @@ thread_attr2_SOURCES = thread_attr2.c
 thread_yield_SOURCES = thread_yield.c
 thread_yield2_SOURCES = thread_yield2.c
 thread_yield_to_SOURCES = thread_yield_to.c
+thread_exit_SOURCES = thread_exit.c
 thread_self_suspend_resume_SOURCES = thread_self_suspend_resume.c
 thread_get_last_xstream_SOURCES = thread_get_last_xstream.c
 thread_migrate_SOURCES = thread_migrate.c
@@ -171,6 +173,7 @@ testing:
 	./thread_yield
 	./thread_yield2
 	./thread_yield_to
+	./thread_exit
 	./thread_self_suspend_resume
 	./thread_get_last_xstream
 	./thread_migrate

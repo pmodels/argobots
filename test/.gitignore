@@ -14,6 +14,7 @@ basic/thread_attr2
 basic/thread_yield
 basic/thread_yield2
 basic/thread_yield_to
+basic/thread_exit
 basic/thread_self_suspend_resume
 basic/thread_get_last_xstream
 basic/thread_migrate
