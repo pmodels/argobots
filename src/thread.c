@@ -586,6 +586,9 @@ int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
  * \c ABT_thread_exit() terminates the calling ULT.  This routine does not
  * return if it succeeds.
  *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_exit()}
+ *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
  * @endchangev20
@@ -1100,6 +1103,9 @@ int ABT_thread_yield_to(ABT_thread thread)
  *
  * \c ABT_thread_yield() yields the calling ULT and pushes the calling ULT to
  * its associated pool.  Its parent ULT will be resumed.
+ *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_yield()}
  *
  * @changev20
  * \DOC_DESC_V1X_YIELD_TASK

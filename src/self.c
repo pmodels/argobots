@@ -462,6 +462,38 @@ int ABT_self_get_last_pool_id(int *pool_id)
 
 /**
  * @ingroup SELF
+ * @brief   Yield the calling ULT to its parent ULT
+ *
+ * \c ABT_self_yield() yields the calling ULT and pushes the calling ULT to its
+ * associated pool.  Its parent ULT will be resumed.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ *
+ * @return Error code
+ */
+int ABT_self_yield(void)
+{
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_ythread;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
+
+    ABTI_ythread_yield(&p_local_xstream, p_ythread, ABT_SYNC_EVENT_TYPE_USER,
+                       NULL);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Suspend the calling ULT.
  *
  * \c ABT_self_suspend() suspends the execution of the calling ULT and switches
@@ -498,6 +530,38 @@ int ABT_self_suspend(void)
     ABTI_ythread_set_blocked(p_self);
     ABTI_ythread_suspend(&p_local_xstream, p_self, ABT_SYNC_EVENT_TYPE_USER,
                          NULL);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
+ * @brief   Terminate a calling ULT.
+ *
+ * \c ABT_self_exit() terminates the calling ULT.  This routine does not return
+ * if it succeeds.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_PRIMARY_ULT{\c the caller}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @return Error code
+ */
+int ABT_self_exit(void)
+{
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_ythread;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
+    ABTI_CHECK_TRUE(!(p_ythread->thread.type & ABTI_THREAD_TYPE_PRIMARY),
+                    ABT_ERR_INV_THREAD);
+
+    ABTI_ythread_exit(p_local_xstream, p_ythread);
     return ABT_SUCCESS;
 }
 

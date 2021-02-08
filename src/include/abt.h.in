@@ -1897,7 +1897,9 @@ int ABT_self_is_primary(ABT_bool *is_primary) ABT_API_PUBLIC;
 int ABT_self_on_primary_xstream(ABT_bool *on_primary) ABT_API_PUBLIC;
 int ABT_self_is_unnamed(ABT_bool *is_unnamed) ABT_API_PUBLIC;
 int ABT_self_get_last_pool_id(int *pool_id) ABT_API_PUBLIC;
+int ABT_self_yield(void) ABT_API_PUBLIC;
 int ABT_self_suspend(void) ABT_API_PUBLIC;
+int ABT_self_exit(void) ABT_API_PUBLIC;
 int ABT_self_set_arg(void *arg) ABT_API_PUBLIC;
 int ABT_self_get_arg(void **arg) ABT_API_PUBLIC;
 
