@@ -24,7 +24,6 @@
  * \DOC_ERROR_INV_XSTREAM_EXT
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NULL_PTR{\c xstream}
  * \DOC_UNDEFINED_UNINIT
  *
@@ -57,7 +56,6 @@ int ABT_self_get_xstream(ABT_xstream *xstream)
  * \DOC_ERROR_INV_XSTREAM_EXT
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NULL_PTR{\c rank}
  * \DOC_UNDEFINED_UNINIT
  *
@@ -153,11 +151,11 @@ int ABT_self_get_task_id(ABT_unit_id *id);
 
 /**
  * @ingroup SELF
- * @brief   Associate a value with a work-unit-specific key in the calling work
- *          unit.
+ * @brief   Associate a value with a work-unit-specific data key in the calling
+ *          work unit.
  *
- * \c ABT_self_set_specific() associates a value \c value of the
- * work-unit-specific data key \c key in the calling work unit. Different work
+ * \c ABT_self_set_specific() associates a value \c value with the
+ * work-unit-specific data key \c key in the calling work unit.  Different work
  * units may bind different values to the same key.
  *
  * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
@@ -199,11 +197,12 @@ int ABT_self_set_specific(ABT_key key, void *value)
 
 /**
  * @ingroup SELF
- * @brief   Get a value associated with a key in the calling work unit.
+ * @brief   Get a value associated with a work-unit-specific data key in the
+ *          calling work unit.
  *
  * \c ABT_self_get_specific() returns the value in the caller associated with
  * the work-unit-specific data key \c key in the calling work unit through
- * \c value. If the caller has never set a value for the key, this routine sets
+ * \c value.  If the caller has never set a value for \c key, this routine sets
  * \c value to \c NULL.
  *
  * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
@@ -497,9 +496,9 @@ int ABT_self_yield(void)
  * @brief   Suspend the calling ULT.
  *
  * \c ABT_self_suspend() suspends the execution of the calling ULT and switches
- * to its parent ULT.  The caller ULT is not pushed to its associated pool and
- * its state becomes blocked.  The suspended ULT can be awakened and pushed back
- * to its associated pool when \c ABT_thread_resume() is called.
+ * to its parent ULT.  The calling ULT is not pushed to its associated pool and
+ * its state becomes blocked.  \c ABT_thread_resume() awakens the suspended ULT
+ * and pushes it back to its associated pool.
  *
  * @changev11
  * \DOC_DESC_V10_ERROR_CODE_CHANGE{\c ABT_ERR_INV_THREAD,
@@ -546,7 +545,7 @@ int ABT_self_suspend(void)
  * @errors
  * \DOC_ERROR_INV_XSTREAM_EXT
  * \DOC_ERROR_INV_THREAD_NY
- * \DOC_ERROR_INV_THREAD_PRIMARY_ULT{\c the caller}
+ * \DOC_ERROR_INV_THREAD_PRIMARY_ULT{the caller}
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -569,11 +568,11 @@ int ABT_self_exit(void)
  * @ingroup SELF
  * @brief   Set an argument for a work-unit function of the calling work unit
  *
- * \c ABT_self_set_arg() sets the argument \c arg for the caller's work unit
+ * \c ABT_self_set_arg() sets the argument \c arg for the caller's work-unit
  * function.
  *
  * @note
- * The newly set argument will be used if the caller is revived.
+ * The new argument will be used if the calling work unit is revived.
  *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
@@ -608,11 +607,11 @@ int ABT_self_set_arg(void *arg)
 
 /**
  * @ingroup SELF
- * @brief   Retrieve an argument for a work unit function of the calling work
+ * @brief   Retrieve an argument for a work-unit function of the calling work
  *          unit
  *
- * \c ABT_self_get_arg() returns the argument for the caller's work unit
- * function.
+ * \c ABT_self_get_arg() returns the argument that is passed to the caller's
+ * work-unit function through \c arg.
  *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
@@ -652,10 +651,10 @@ int ABT_self_get_arg(void **arg)
  * @ingroup SELF
  * @brief   Check if the calling work unit is unnamed
  *
- * \c ABT_self_is_unnamed() checks if the current caller is unnamed and returns
- * the result through \c is_unnamed.  \c is_unnamed is set to \c ABT_TRUE if the
- * calling work unit is unnamed.  Otherwise, \c is_unnamed is set to \c
- * ABT_FALSE.
+ * \c ABT_self_is_unnamed() checks if the calling work unit is unnamed and
+ * returns the result through \c is_unnamed.  \c is_unnamed is set to
+ * \c ABT_TRUE if the calling work unit is unnamed.  Otherwise, \c is_unnamed is
+ * set to \c ABT_FALSE.
  *
  * @contexts
  * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH

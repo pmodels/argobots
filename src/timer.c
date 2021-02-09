@@ -74,9 +74,9 @@ int ABT_timer_create(ABT_timer *newtimer)
  * @ingroup TIMER
  * @brief   Duplicate a timer.
  *
- * \c ABT_timer_dup() creates a new timer and copies the time values from the
- * timer \c timer to the new timer.  The handle of the new timer is returned
- * through \c newtimer.
+ * \c ABT_timer_dup() creates a new timer and copies the start and stop time
+ * of the timer \c timer to the new timer.  The handle of the new timer is
+ * returned through \c newtimer.
  *
  * The created timer must be freed by \c ABT_timer_free() after its use.
  *
@@ -215,8 +215,8 @@ int ABT_timer_stop(ABT_timer timer)
  *
  * \c ABT_timer_read() returns the time difference in seconds between the start
  * time and the stop time of the timer \c timer through \c secs.  If either the
- * start time or the stop time \c timer has not been set, \c secs is set to an
- * undefined value.
+ * start time or the stop time of \c timer has not been set, \c secs is set to
+ * an undefined value.
  *
  * \DOC_DESC_TIMER_RESOLUTION
  *

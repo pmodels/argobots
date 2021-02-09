@@ -1818,7 +1818,7 @@ ALIASES += undefined="\par Undefined behavior"
 
 ALIASES += DOC_CONTEXT_ANY="This routine can be called in any execution context. Argobots does not need to be initialized."
 
-ALIASES += DOC_CONTEXT_ANY_NOTASK="This routine can be called in a ULT context and an external thread context. Argobots does not need to be initialized."
+ALIASES += DOC_CONTEXT_ANY_NOTASK="This routine can be called in a ULT context or an external thread context. Argobots does not need to be initialized."
 
 ALIASES += DOC_CONTEXT_CTXSWITCH="This routine may switch the context of the calling ULT."
 
@@ -1828,9 +1828,9 @@ ALIASES += DOC_CONTEXT_FINALIZE="This routine must be called by the same caller 
 
 ALIASES += DOC_CONTEXT_INIT="This routine can be called in any execution context. Argobots must be initialized."
 
-ALIASES += DOC_CONTEXT_INIT_NOEXT="This routine can be called in a ULT context and a tasklet context. Argobots must be initialized."
+ALIASES += DOC_CONTEXT_INIT_NOEXT="This routine can be called in a ULT context or a tasklet context. Argobots must be initialized."
 
-ALIASES += DOC_CONTEXT_INIT_NOTASK="This routine can be called in a ULT context and an external thread context. Argobots must be initialized."
+ALIASES += DOC_CONTEXT_INIT_NOTASK="This routine can be called in a ULT context or an external thread context. Argobots must be initialized."
 
 ALIASES += DOC_CONTEXT_INIT_SCHED{1}="This routine can be called by a work unit that is associated with \1. Argobots must be initialized."
 
@@ -1842,7 +1842,7 @@ ALIASES += DOC_CONTEXT_NOCTXSWITCH="This routine does not switch the context of 
 
 ALIASES += DOC_CONTEXT_NOTE_SIGNAL_SAFE="This routine is signal-safe.  Note that it is the user's responsibility to call this function properly by, for example, loading the Argobots library and/or resolving the symbol of this routine in a signal handler."
 
-ALIASES += DOC_CONTEXT_TOOL_CALLBACK{1}="This routine can be called only in a tool callback function \1."
+ALIASES += DOC_CONTEXT_TOOL_CALLBACK="This routine can be called only in a tool callback function."
 
 #---------------------------------------------------------------------------
 # Description
@@ -1870,69 +1870,67 @@ ALIASES += DOC_DESC_ATOMICITY_XSTREAM_REQUEST="Requests for execution streams ar
 
 ALIASES += DOC_DESC_ATOMICITY_XSTREAM_STATE="Management of states of execution streams is performed atomically."
 
-ALIASES += DOC_DESC_REPLACEMENT{1}="This routine will be replaced by \1 in the future."
-
 ALIASES += DOC_DESC_SCHED_AUTOMATIC{1}="If \1 is not configured to be automatically freed, it is the user's responsibility to free \1 after its use unless \c newsched is associated with the main scheduler of the primary execution stream.  If \1 is configured to be automatically freed, \1 is automatically freed when a work unit associated with \1 is freed.  If the user never associates \1 with a work unit (e.g., by \c ABT_pool_add_sched() or \c ABT_xstream_set_main_sched()), it is the user's responsibility to free \1."
 
-ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on the clock resolution by the system."
+ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on the clock resolution of the system."
 
-ALIASES += DOC_DESC_V10_ACCEPT_TASK{1}="\DOC_V10 The user cannot pass a tasklet handle as \1.\n \DOC_V11 This routine accepts a tasklet handle as \1. @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
+ALIASES += DOC_DESC_V10_ACCEPT_TASK{1}="\DOC_V10 The user cannot pass a tasklet handle as \1.\n \DOC_V11 This routine accepts a tasklet handle as \1. @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 introduces this change since it does not break the compatibility of API and ABI with Argobots 1.0. @endrationale"
 
-ALIASES += DOC_DESC_V10_ACCEPT_THREAD{1}="\DOC_V10 The user cannot pass a ULT handle as \1.\n \DOC_V11 This routine accepts a ULT handle as \1. @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 has introduced this change since this change does not break the compatibility of API and ABI of Argobots 1.0. @endrationale"
+ALIASES += DOC_DESC_V10_ACCEPT_THREAD{1}="\DOC_V10 The user cannot pass a ULT handle as \1.\n \DOC_V11 This routine accepts a ULT handle as \1. @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general.  Argobots 1.1 introduces this change since it does not break the compatibility of API and ABI with Argobots 1.0. @endrationale"
 
-ALIASES += DOC_DESC_V10_ACCESS_VIOLATION="\DOC_V10 If a pool access violation happens regarding an access type of a pool, an error is returned.\n \DOC_V11 If a pool access violation happens regarding an access type of a pool, the results are undefined. @rationale The implementation of Argobots 1.0 does not strictly check this error, so some user programs work without any problem if it is no simultaneously accessed, although it is a user error.  Such an error is often not recoverable, for example, when an execution stream pushes a ULT to a pool that cannot be accessed by this execution stream.  Correctly implementing the access violation check could break the actual API compatibility.  From Argobots 1.1, it is the user's responsibility to manage access to pools. @endrationale"
+ALIASES += DOC_DESC_V10_ACCESS_VIOLATION="\DOC_V10 If a pool access violation happens regarding an access type of a pool, an error is returned.\n \DOC_V11 If a pool access violation happens regarding an access type of a pool, the results of this routine are undefined. @rationale The implementation of Argobots 1.0 does not strictly check this error, so some user programs work without an error if it is no simultaneously accessed although such a program is, strictly speaking, non-conforming.  Such an access violation error is often not recoverable, for example, when an execution stream pushes a ULT to a pool that cannot be accessed by this execution stream.  Existing programs do not work if access violation is strictly checked.  From Argobots 1.1, it is the user's responsibility to manage the access to pools. @endrationale"
 
 ALIASES += DOC_DESC_V10_ALWAYS_SCHED_TYPE_ULT="\DOC_V10 If \c ABT_SCHED_TYPE_TASK is set, the created scheduler runs on a tasklet.\n \DOC_V11 All schedulers run on ULTs. @rationale A scheduler that cannot yield is almost useless; such a scheduler is highly restrictive while it provides tiny performance benefits.  Argobots 1.1 always creates a ULT-based scheduler regardless of \c ABT_sched_type. @endrationale"
 
 ALIASES += DOC_DESC_V10_BARRIER_NUM_WAITERS{1}="\DOC_V10 This routine accepts zero as \c num_waiters.\n \DOC_V11 This routine returns \c ABT_ERR_INV_ARG if \c num_waiters is zero. @rationale A barrier whose \c num_waiters is 0 cannot define a wait operation and should be prohibited.  Note that even Argobots 1.0 does not allow \c ABT_barrier_wait() with a barrier whose \c num_waiters is 0. @endrationale"
 
-ALIASES += DOC_DESC_V10_ERROR_CODE_CHANGE{3}="\DOC_V10 \1 is returned if \3.\n \DOC_V11 \2 is returned if \3. @rationale Argobots 1.0 returned an error code which is obviously wrong.  Argobots 1.1 fixes the error code for consistent behavior with other Argobots routines. @endrationale"
+ALIASES += DOC_DESC_V10_ERROR_CODE_CHANGE{3}="\DOC_V10 \1 is returned if \3.\n \DOC_V11 \2 is returned if \3. @rationale Argobots 1.0 returned a wrong error code.  Argobots 1.1 fixes the error code for consistent behavior with other Argobots routines. @endrationale"
 
 ALIASES += DOC_DESC_V10_EVENTUAL_UPDATE_READY_BUFFER{1}="\DOC_V10 This routine updates the memory buffer of \1 and returns \c ABT_SUCCESS if \1 is ready.\n \DOC_V11 This routine returns \c ABT_ERR_EVENTUAL if \1 is ready. @rationale An update of the memory buffer when \1 is ready breaks the semantics of \c eventual.  Such an update should be prohibited. @endrationale"
 
-ALIASES += DOC_DESC_V10_FUTURE_COMPARTMENT_ORDER="\DOC_V10 The order of elements of \c arg passed to \c cb_func() is the same order as the \c ABT_future_set() calls are terminated.\n \DOC_V11 The order of elements of \c arg passed to \c cb_func() is undefined. @rationale This specification in Argobots 1.0 is unclear and unreasonable because the exact timing of termination of \c ABT_future_set() is not observable if \c ABT_future_set() is called concurrently. @endrationale"
+ALIASES += DOC_DESC_V10_FUTURE_COMPARTMENT_ORDER="\DOC_V10 The order of elements of \c arg passed to \c cb_func() is the same order as the \c ABT_future_set() calls are terminated.\n \DOC_V11 The order of elements of \c arg passed to \c cb_func() is undefined. @rationale This specification in Argobots 1.0 is not reasonable because the exact timing of termination of \c ABT_future_set() is not observable if \c ABT_future_set() is called concurrently. @endrationale"
 
 ALIASES += DOC_DESC_V10_NOEXT{1}="\DOC_V10 If an external thread calls this routine, \1 is returned.\n \DOC_V11 An external thread may call this routine. @rationale Argobots 1.0 narrows the type of the caller without any reason.  Argobots 1.1 fixes it. @endrationale"
 
-ALIASES += DOC_DESC_V10_POOL_NOACCESS="\DOC_V10 The Argobots runtime respects an access type of a pool and returns an error if possible if a pool access violation happens regarding an access type of a pool.\n \DOC_V11 The Argobots runtime does not check an access type of a pool.  If a pool access violation happens regarding an access type of a pool, the results are undefined. @rationale This access type was used for access violation error check.  This check will be removed in Argobots 1.1 since correctly implementing the access violation check could break the actual API compatibility.  From Argobots 1.1, it is the user's responsibility to manage access to pools. @endrationale"
+ALIASES += DOC_DESC_V10_POOL_NOACCESS="\DOC_V10 The Argobots runtime respects an access type of a pool and returns an error in a best-effort basis if a pool access violation happens regarding an access type of a pool.\n \DOC_V11 The Argobots runtime does not check an access type of a pool.  If a pool access violation happens regarding an access type of a pool, the results of this routine are undefined. @rationale The implementation of Argobots 1.0 does not strictly check this error, so some user programs work without an error if it is no simultaneously accessed although such a program is, strictly speaking, non-conforming.  Such an access violation error is often not recoverable, for example, when an execution stream pushes a ULT to a pool that cannot be accessed by this execution stream.  Existing programs do not work if access violation is strictly checked.  From Argobots 1.1, it is the user's responsibility to manage the access to pools. @endrationale"
 
 ALIASES += DOC_DESC_V10_POOL_NOTASK="\DOC_V10 A type of \c ABT_unit is \c ABT_UNIT_TYPE_TASK if an encapsulated work unit is a tasklet. Such a unit is created by \c u_create_from_task(). \n \DOC_V11 A type of any \c ABT_unit is \c ABT_UNIT_TYPE_THERAD.  Accordingly, \c u_create_from_thread() is called to create \c ABT_unit for both ULTs and tasklets.  @rationale In Argobots 1.0, the user needs to use a map (e.g., a hash table) to check if a type of a given \c ABT_unit is either \c ABT_UNIT_TYPE_THREAD or \c ABT_UNIT_TYPE_TASK, which makes the implementation of a user-defined pool extremely tedious.  Argobots 1.1 marks these functions as unused to ease the implementation. @endrationale"
 
 ALIASES += DOC_DESC_V10_INCOMPLETE_SCHED_SIZE_CHECK{2}="\DOC_V10 If pools associated with the current main scheduler of \1 are not empty, \2 is returned.\n \DOC_V11 This routine works even if pools associated with the current main scheduler of \1 are not empty. @rationale This check unnecessarily limits the applicability of this routine.  It is the user's responsibility to handle work units in pools associated with the old main scheduler, e.g., by migrating them to other pools. @endrationale"
 
-ALIASES += DOC_DESC_V10_CRUDE_TERMINATION_CHECK{2}="\DOC_V10 \2 is returned if the runtime finds that \1 is terminated.\n \DOC_V11 The results are undefined if \1 is terminated. @rationale Proper implementation of this check is expensive since it requires atomic management of a work unit state and a request.  Argobots 1.1 eliminates this check. @endrationale"
+ALIASES += DOC_DESC_V10_CRUDE_TERMINATION_CHECK{2}="\DOC_V10 \2 is returned if the runtime finds that \1 is terminated.\n \DOC_V11 The results of this routine are undefined if \1 is terminated. @rationale Proper implementation of this check is expensive since it requires atomic management of a work unit state and a request.  Argobots 1.1 eliminates this check. @endrationale"
 
-ALIASES += DOC_DESC_V10_REJECT_MUTEX_ATTR_NULL{1}="\DOC_V10 This routine returns \c ABT_ERR_INV_MUTEX_ATTR if \1 is \c ABT_MUTEX_ATTR_NULL.\n \DOC_V11 This routine uses the default mutex attributes if \1 is \c ABT_MUTEX_ATTR_NULL. @rationale Most of the Argobots routines use the default attributes if the given configuration or attributes are NULL.  This routine should also follow this basic rule. @endrationale"
+ALIASES += DOC_DESC_V10_REJECT_MUTEX_ATTR_NULL{1}="\DOC_V10 This routine returns \c ABT_ERR_INV_MUTEX_ATTR if \1 is \c ABT_MUTEX_ATTR_NULL.\n \DOC_V11 This routine uses the default mutex attributes if \1 is \c ABT_MUTEX_ATTR_NULL. @rationale Most of the Argobots routines use the default attributes when a NULL handle is passed as a configuration or an attribute.  This routine should follow this behavior. @endrationale"
 
 ALIASES += DOC_DESC_V1X_ERROR_CODE_CHANGE{3}="\DOC_V1X \1 is returned if \3.\n \DOC_V20 \2 is returned if \3. @rationale Argobots 2.0 changes the error code for consistent behavior with other Argobots routines. @endrationale"
 
-ALIASES += DOC_DESC_V1X_NOEXT{1}="\DOC_V1X If an external thread calls this routine, \1 is returned.\n \DOC_V20 An external thread may call this routine. @rationale Argobots 2.0 allows an external thread as much as possible unless it is semantically wrong. @endrationale"
+ALIASES += DOC_DESC_V1X_NOEXT{1}="\DOC_V1X If an external thread calls this routine, \1 is returned.\n \DOC_V20 An external thread may call this routine. @rationale Argobots 2.0 allows an external thread where possible unless it is semantically inappropriate. @endrationale"
 
 ALIASES += DOC_DESC_V1X_NOTASK{1}="\DOC_V1X If a tasklet calls this routine, \1 is returned.\n \DOC_V20 A tasklet may call this routine. @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
 
 ALIASES += DOC_DESC_V1X_NOYIELDABLE{1}="\DOC_V1X If a ULT calls this routine, \1 is returned.\n \DOC_V20 A ULT may call this routine. @rationale Argobots 2.0 integrates a ULT and a tasklet into a single thread concept to make the API more general. @endrationale"
 
-ALIASES += DOC_DESC_V1X_NULL_PTR{2}="\DOC_V1X If \1 is \c NULL, \2 is returned.\n \DOC_V20 If \1 is \c NULL, the results are undefined. @rationale Argobots 2.0 will not check NULL pointers. @endrationale"
+ALIASES += DOC_DESC_V1X_NULL_PTR{2}="\DOC_V1X If \1 is \c NULL, \2 is returned.\n \DOC_V20 If \1 is \c NULL, the results of this routine are undefined. @rationale Argobots 2.0 will not check NULL pointers. @endrationale"
 
-ALIASES += DOC_DESC_V1X_P_POP_WAIT="\DOC_V1X \c ABT_pool_def does not define \c p_pop_wait. \n \DOC_V20 \c ABT_pool_def defines \c p_pop_wait.  @rationale To maintain the ABI compatibility, \c p_pop_wait is excluded from \c ABT_pool_def. @endrationale"
+ALIASES += DOC_DESC_V1X_P_POP_WAIT="\DOC_V1X \c ABT_pool_def does not define \c p_pop_wait. \n \DOC_V20 \c ABT_pool_def defines \c p_pop_wait.  @rationale To maintain the ABI compatibility, Argobots 1.x does not define \c p_pop_wait in \c ABT_pool_def. @endrationale"
 
-ALIASES += DOC_DESC_V1X_CRUDE_BLOCKED_CHECK{2}="\DOC_V1X \2 is returned if \1 is not suspended.\n \DOC_V20 The results are undefined if \1 is not suspended. @rationale This check of the current implementation is not atomic while making this check atomic is expensive.  From Argobots 2.0, it becomes the user's responsibility to guarantee that \1 has been suspended.  Note that Argobots 1.x does not perform this check atomically, so the user may not concurrently call \c ABT_thread_resume() for the same ULT. @endrationale"
+ALIASES += DOC_DESC_V1X_CRUDE_BLOCKED_CHECK{2}="\DOC_V1X \2 is returned if \1 is not suspended.\n \DOC_V20 The results of this routine are undefined if \1 is not suspended. @rationale This check of the current implementation is not atomic while making this check atomic is expensive.  From Argobots 2.0, it becomes the user's responsibility to guarantee that \1 has been suspended.  Note that Argobots 1.x does not perform this check atomically, so the user may not concurrently call \c ABT_thread_resume() for the same ULT. @endrationale"
 
-ALIASES += DOC_DESC_V1X_CRUDE_SCHED_USED_CHECK{2}="\DOC_V1X \2 is returned if this routine finds \1 is already used.\n \DOC_V20 The results are undefined if \1 is already used. @rationale The current implementation of this check is crude since whether a scheduler is used or not is not maintained atomically.  From Argobots 2.0, it becomes the user's responsibility to guarantee that \1 is not used.  Note that Argobots 1.x does not perform this check atomically, so the user may not concurrently call any routines that attempt to use the same scheduler by assuming that only one of them would succeed. @endrationale"
+ALIASES += DOC_DESC_V1X_CRUDE_SCHED_USED_CHECK{2}="\DOC_V1X \2 is returned if this routine finds \1 is already used.\n \DOC_V20 The results of this routine are undefined if \1 is already used. @rationale The current implementation of this check is crude since whether a scheduler is used or not is not maintained atomically.  From Argobots 2.0, it becomes the user's responsibility to guarantee that \1 is not used.  Note that Argobots 1.x does not perform this check atomically, so the user may not concurrently call any routines that attempt to use the same scheduler by assuming that only one of them would succeed. @endrationale"
 
-ALIASES += DOC_DESC_V1X_CRUDE_WAITER_CHECK{2}="\DOC_V1X \2 is returned if this routine finds a waiter on \1.\n \DOC_V20 The results are undefined if a waiter is blocked on \1. @rationale The current implementation of this check is crude considering the asynchronous nature of \1.  From Argobots 2.0, it becomes the user's responsibility to ensure that no waiter is blocked on \1. @endrationale"
+ALIASES += DOC_DESC_V1X_CRUDE_WAITER_CHECK{2}="\DOC_V1X \2 is returned if this routine finds a waiter on \1.\n \DOC_V20 The results of this routine are undefined if a waiter is blocked on \1. @rationale The current implementation of this check is crude considering the asynchronous nature of \1.  From Argobots 2.0, it becomes the user's responsibility to ensure that no waiter is blocked on \1. @endrationale"
 
-ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{3}="\DOC_V1X This routine returns \3 when \1 is \2.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2. @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
+ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{3}="\DOC_V1X This routine returns \3 when \1 is \2.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2. @rationale The information routines are primarily for debugging and diagnosis, so they should avoid returning an error. @endrationale"
 
-ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{4}="\DOC_V1X This routine returns \4 when \1 is \2 or \3.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2 or \3. @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
+ALIASES += DOC_DESC_V1X_PRINT_HANDLE_INFO{4}="\DOC_V1X This routine returns \4 when \1 is \2 or \3.\n \DOC_V20 This routine prints that \1 is an invalid handle when \1 is \2 or \3. @rationale The information routines are primarily for debugging and diagnosis, so they should avoid returning an error. @endrationale"
 
-ALIASES += DOC_DESC_V1X_PRINT_RUNTIME_INFO="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED when Argobots is not initialized.\n \DOC_V20 This routine prints the queried information and returns \c ABT_SUCCESS when Argobots is not initialized. @rationale The information routines primarily for debugging and diagnosis should avoid returning an error as much as possible. @endrationale"
+ALIASES += DOC_DESC_V1X_PRINT_RUNTIME_INFO="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED when Argobots is not initialized.\n \DOC_V20 This routine prints the information and returns \c ABT_SUCCESS when Argobots is not initialized. @rationale The information routines are primarily for debugging and diagnosis, so they should avoid returning an error. @endrationale"
 
-ALIASES += DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized and the queried information cannot be retrieved when Argobots is not initialized. @rationale Retrieving static configurations before initializing Argobots is helpful to check if the loaded Argobots implements necessary features. @endrationale"
+ALIASES += DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 This routine sets \c val and returns \c ABT_SUCCESS even when Argobots is not initialized if the queried information can be retrieved without Argobots initialization. @rationale Retrieving static configurations before initializing Argobots is helpful to check if the Argobots library is configured to enable necessary features. @endrationale"
 
-ALIASES += DOC_DESC_V1X_RETURN_UNINITIALIZED="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 The results are undefined if Argobots is not initialized. @rationale From Argobots 2.0, all the Argobots routines that are not explicitly noted do not check if Argobots is initialized.  This omission can reduce the branches that are mostly unnecessary. @endrationale"
+ALIASES += DOC_DESC_V1X_RETURN_UNINITIALIZED="\DOC_V1X This routine returns \c ABT_ERR_UNINITIALIZED if Argobots is not initialized.\n \DOC_V20 The results of this routine are undefined if Argobots is not initialized. @rationale From Argobots 2.0, Argobots routines do not check if Argobots is initialized unless otherwise noted.  This omission can reduce the branches that are unnecessary in most cases. @endrationale"
 
-ALIASES += DOC_DESC_V1X_SCHED_GET_POOLS_IDX{4}="\DOC_V1X If the summation of \1 and \2 is larger than the number of pools associated with \3, this routine returns \c ABT_ERR_SCHED.\n \DOC_V20 This routine does not update elements of \4 if corresponding pool elements specified by \1 and \2 are out of range. @rationale The restriction is unnecessary and thus this behavior is deprecated. @endrationale"
+ALIASES += DOC_DESC_V1X_SCHED_GET_POOLS_IDX{4}="\DOC_V1X If the summation of \1 and \2 is larger than the number of pools associated with \3, this routine returns \c ABT_ERR_SCHED.\n \DOC_V20 This routine does not update elements of \4 if corresponding pool elements specified by \1 and \2 are out of range. @rationale The original behavior is unnecessarily restrictive.  Argobots 2.0 removes this check. @endrationale"
 
 ALIASES += DOC_DESC_V1X_SET_MIGRATABLE{2}="\DOC_V1X If \1 is the primary ULT or the work unit associated with the main scheduler, this routine has no effect and returns \c ABT_SUCCESS.\n \DOC_V20 If \1 is the primary ULT or the work unit associated with the main scheduler, this routine returns \2. @rationale The original behavior is error-prone since this routine does nothing but returns \c ABT_SUCCESS. @endrationale"
 
@@ -2168,7 +2166,7 @@ ALIASES += DOC_NOTE_DEFAULT_THREAD_ATTRIBUTE="To see the details of the default 
 
 ALIASES += DOC_NOTE_EFFECT_ABT_FINALIZE="\c ABT_finalize() frees the primary execution stream, its main scheduler, and pools associated with the main scheduler."
 
-ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant for debugging and diagnosis and can be changed because of an update of the internal implementation of Argobots.  A program that relies on the output of this routine is non-conforming."
+ALIASES += DOC_NOTE_INFO_PRINT="The information written by this routine is meant for debugging and diagnosis, so the contents and the format of the printed information can be changed because of an update of the internal implementation of Argobots.  A program that relies on the output of this routine is non-conforming."
 
 ALIASES += DOC_NOTE_NO_PADDING{2}="This routine does not pad \1 until a total \2 elements have been written to \1.  The remaining elements of \1 that are not written by this routine are unmodified."
 
@@ -2176,7 +2174,9 @@ ALIASES += DOC_NOTE_POOL_SIZE="To see the details of the size of a pool, please 
 
 ALIASES += DOC_NOTE_POOL_TOTAL_SIZE="To see the details of the total size of a pool, please check \c ABT_pool_get_total_size()."
 
-ALIASES += DOC_NOTE_TIMING_REQUEST="The timing of the request fulfillment is undefined, so a program that relies on when the request is fulfilled is non-conforming."
+ALIASES += DOC_NOTE_REPLACEMENT{1}="This routine will be replaced by \1 in the future."
+
+ALIASES += DOC_NOTE_TIMING_REQUEST="The timing of the request fulfillment is undefined, so a program that relies on the timing of the request fulfillment is non-conforming."
 
 #---------------------------------------------------------------------------
 # Undefined behavior
@@ -2230,7 +2230,7 @@ ALIASES += DOC_UNDEFINED_UNINIT="If Argobots is not initialized, the results are
 
 ALIASES += DOC_UNDEFINED_WAITER{1}="If there is a waiter blocked on \1, the results are undefined.\n"
 
-ALIASES += DOC_UNDEFINED_WORK_UNIT_BLOCKED{1}="If \1 is blocked on by \2, the results are undefined.\n"
+ALIASES += DOC_UNDEFINED_WORK_UNIT_BLOCKED{2}="If \1 is blocked on by a caller of \2, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_WORK_UNIT_IN_POOL{1}="If \1 is in a pool, the results are undefined.\n"
 
@@ -2248,7 +2248,7 @@ ALIASES += DOC_UNDEFINED_WORK_UNIT_TERMINATED{1}="If \1 is terminated, the resul
 
 ALIASES += DOC_UNDEFINED_WORK_UNIT_UNSUSPENDED{1}="If \1 is not suspended, the results are undefined.\n"
 
-ALIASES += DOC_UNDEFINED_XSTREAM_BLOCKED{2}="If \1 is blocked on by \2, the results are undefined.\n"
+ALIASES += DOC_UNDEFINED_XSTREAM_BLOCKED{2}="If \1 is blocked on by a caller of \2, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_XSTREAM_NOT_RUNNING{1}="If \1 is not running, the results are undefined.\n"
 

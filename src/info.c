@@ -22,7 +22,7 @@ static void info_trigger_print_all_thread_stacks(
  * \c ABT_info_query_config() returns the configuration information associated
  * with the query kind \c query_kind through \c val.
  *
- * The retrieved information is selected by \c query_kind.
+ * The retrieved information is selected via \c query_kind.
  *
  * - \c ABT_INFO_QUERY_KIND_ENABLED_DEBUG
  *
@@ -88,31 +88,32 @@ static void info_trigger_print_all_thread_stacks(
  *
  *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
  *   to \c ABT_TRUE if Argobots is configured to enable the thread/task
- *   migration cancellation feature.  Otherwise, \c val is set to \c ABT_FALSE.
+ *   migration feature.  Otherwise, \c val is set to \c ABT_FALSE.
  *
  * - \c ABT_INFO_QUERY_KIND_ENABLED_STACKABLE_SCHED
  *
  *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
  *   to \c ABT_TRUE if Argobots is configured to enable the stackable scheduler
- *   feature is supported.  Otherwise, \c val is set to \c ABT_FALSE.
+ *   feature.  Otherwise, \c val is set to \c ABT_FALSE.
  *
  * - \c ABT_INFO_QUERY_KIND_ENABLED_EXTERNAL_THREAD
  *
  *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
  *   to \c ABT_TRUE if Argobots is configured to enable the external thread
- *   feature is supported.  Otherwise, \c val is set to \c ABT_FALSE.
+ *   feature.  Otherwise, \c val is set to \c ABT_FALSE.
  *
  * - \c ABT_INFO_QUERY_KIND_ENABLED_SCHED_SLEEP
  *
  *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
- *   to \c ABT_TRUE if Argobots is configured to enable the sleep feature of
+ *   to \c ABT_TRUE if Argobots is configured to enable the sleep feature for
  *   predefined schedulers.  Otherwise, \c val is set to \c ABT_FALSE.
  *
  * - \c ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG
  *
  *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
  *   to \c ABT_TRUE if Argobots is configured to print all the configuration
- *   settings in \c ABT_init().  Otherwise, \c val is set to \c ABT_FALSE.
+ *   settings in the top-level \c ABT_init().  Otherwise, \c val is set to
+ *   \c ABT_FALSE.
  *
  * - \c ABT_INFO_QUERY_KIND_ENABLED_AFFINITY
  *
@@ -123,8 +124,7 @@ static void info_trigger_print_all_thread_stacks(
  * - \c ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS
  *
  *   \c val must be a pointer to a variable of type \c unsigned \c int.  \c val
- *   is set to the maximum number of execution streams that can be created by
- *   Argobots.
+ *   is set to the maximum number of execution streams in Argobots.
  *
  * - \c ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE
  *
@@ -413,7 +413,7 @@ int ABT_info_print_config(FILE *fp)
 
 /**
  * @ingroup INFO
- * @brief   Print the information of execution streams.
+ * @brief   Print the information of all execution streams.
  *
  * \c ABT_info_print_all_xstreams() writes the information of all execution
  * streams to the output stream \c fp.
@@ -685,8 +685,8 @@ int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
  * @brief   Print the information of a work unit.
  *
  * \c ABT_info_print_task() writes the information of the work unit \c task to
- * the output stream \c fp.  This routine is deprecated because this routine is
- * the same as \c ABT_info_print_thread().
+ * the output stream \c fp.  This routine is deprecated because its
+ * functionality is the same as that of \c ABT_info_print_thread().
  *
  * @note
  * \DOC_NOTE_INFO_PRINT
@@ -730,8 +730,8 @@ int ABT_info_print_task(FILE *fp, ABT_task task)
  * @ingroup INFO
  * @brief   Print stack of a work unit.
  *
- * \c ABT_info_print_thread_stack() prints the stack of the work unit \c thread
- * to the output stream \c fp.
+ * \c ABT_info_print_thread_stack() prints the information of the stack of the
+ * work unit \c thread to the output stream \c fp.
  *
  * @note
  * \DOC_NOTE_INFO_PRINT
@@ -788,9 +788,9 @@ int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
  * @ingroup INFO
  * @brief   Print stacks of all work units in a pool.
  *
- * \c ABT_info_print_thread_stacks_in_pool() prints stacks of all work units in
- * the pool \c pool to the output stream \c fp.  \c pool must support
- * \c p_print_all() to check all work units in the pool.
+ * \c ABT_info_print_thread_stacks_in_pool() prints the information of stacks of
+ * all work units in the pool \c pool to the output stream \c fp.  \c pool must
+ * support \c p_print_all().
  *
  * @note
  * \DOC_NOTE_INFO_PRINT
@@ -833,24 +833,29 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
  * @brief   Print stacks of work units in pools associated with all the main
  *          schedulers.
  *
- * \c ABT_info_trigger_print_all_thread_stacks() tries to print stacks of all
- * threads stored in pools associated with all the main schedulers to the output
- * stream \c fp.  This routine itself does not print stacks; it immediately
- * returns after updating a flag.  Stacks are printed when all execution streams
- * stop in \c ABT_xstream_check_events().
+ * \c ABT_info_trigger_print_all_thread_stacks() tries to print the information
+ * of stacks of all work units stored in pools associated with all the main
+ * schedulers to the output stream \c fp.  This routine itself does not print
+ * the information; this routine immediately returns after updating a flag.
+ * The stack information is printed when all execution streams stop at
+ * \c ABT_xstream_check_events().
  *
- * If some execution streams do not stop within a certain time period specified
- * by \c timeout in seconds where \c timeout is not negative, one of the
- * execution streams that stop at \c ABT_xstream_check_events() starts to print
- * the stack information.  In this case, this routine might not work correctly
- * and at worst crashes a program.  This routine does not work at all if no
- * execution stream executes \c ABT_xstream_check_events().
+ * If \c timeout is negative, the stack information is printed only after all
+ * the execution streams stop at \c ABT_xstream_check_events().  If \c timeout
+ * is nonnegative, one of the execution streams that stop at
+ * \c ABT_xstream_check_events() starts to print the stack information even if
+ * some of the execution streams do not stop at \c ABT_xstream_check_events()
+ * within a certain time period specified by \c timeout in seconds.  In this
+ * case, this routine might not work correctly and at worst crashes a program.
+ * The stack information is never printed if no execution stream executes
+ * \c ABT_xstream_check_events().
  *
  * The callback function \c cb_func() is called after completing printing stacks
- * unless \c cb_func is \c NULL.  The first argument is set to \c ABT_TRUE if
- * not all the execution streams stop within \c timeout.  Otherwise,
- * \c ABT_FALSE is passed.  The second argument is the user-defined data \c arg
- * passed to this routine.  The caller of \c cb_func() is undefined, so a
+ * unless it is registered.  The first argument of \c cb_func() is set to
+ * \c ABT_TRUE if \c timeout is nonnegative and not all the execution streams
+ * stop within \c timeout.  Otherwise, the first argument is set to
+ * \c ABT_FALSE.  The second argument of \c cb_func() is the user-defined data
+ * \c arg passed to this routine.  The caller of \c cb_func() is undefined, so a
  * program that relies on the caller of \c cb_func() is non-conforming.  Neither
  * signal-safety nor thread-safety is required for \c cb_func().
  *

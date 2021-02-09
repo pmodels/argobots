@@ -45,13 +45,13 @@ ABT_sched_config_var ABT_sched_basic_freq = { .idx = -4,
  * \c ABT_sched_config_var and a value for this variable.  The array must end
  * with a single value \c ABT_sched_config_var_end.
  *
- * The current Argobots supports the following hints:
+ * Currently, Argobots supports the following hints:
  *
  * - \c ABT_sched_basic_freq:
  *
  *   The frequency of event checks of the predefined scheduler.  A smaller value
- *   indicates a more frequent check.  If this is not specified, the default
- *   value is used for scheduler creation.
+ *   indicates more frequent check.  If this is not specified, the default value
+ *   is used for scheduler creation.
  *
  * - \c ABT_sched_config_automatic:
  *
@@ -80,7 +80,7 @@ ABT_sched_config_var ABT_sched_basic_freq = { .idx = -4,
  * @endcode
  *
  * If the array contains multiple tuples that have the same \c idx of
- * \c ABT_sched_config_var, the value associated with \c idx is corrupted.
+ * \c ABT_sched_config_var, \c idx is mapped to a corrupted value.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
@@ -172,10 +172,10 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
  * \c idx = \a i does not exist, the \a i th argument is not updated.
  *
  * @note
- * For example, this routine can be called as follows to get a value is
- * corresponding to \c ABT_sched_config_var where its \c idx is 1.
+ * For example, this routine can be called as follows to get a value that is
+ * corresponding to \c idx = \a 1.
  * @code{.c}
- * ABT_sched_config_var var = { 1, ABT_SCHED_CONFIG_INT };
+ * // ABT_sched_config_var var = { 1, ABT_SCHED_CONFIG_INT };
  * int val;
  * ABT_sched_config_read(&config, 2, NULL, &val);
  * @endcode

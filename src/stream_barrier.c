@@ -15,8 +15,8 @@
  *
  * \c ABT_xstream_barrier_create() creates a new execution-stream barrier and
  * returns its handle through \c newbarrier.  \c num_waiters specifies the
- * number of waiters that must call \c ABT_xstream_barrier_create() before any
- * of the waiters successfully return from the call.  \c num_waiters must be
+ * number of waiters that must call \c ABT_xstream_barrier_wait() before any of
+ * the waiters successfully return from the call.  \c num_waiters must be
  * greater than zero.
  *
  * \c newbarrier must be freed by \c ABT_xstream_barrier_free() after its use.

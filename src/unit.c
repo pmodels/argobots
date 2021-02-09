@@ -14,9 +14,9 @@
  * @brief   Set the associated pool for a work unit.
  *
  * \c ABT_unit_set_associated_pool() changes the associated pool of the target
- * work unit \c unit to \c pool.  This routine must be called after \c unit is
- * popped from its original associated pool (i.e., \c unit must not be inside
- * any pool).
+ * work unit \c unit to the pool \c pool.  This routine must be called
+ * after \c unit is popped from its original associated pool (i.e., \c unit must
+ * not be inside any pool).
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH

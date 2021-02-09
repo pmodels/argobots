@@ -17,36 +17,36 @@ ABTU_ret_err static inline int tool_query(ABTI_tool_context *p_tctx,
 
 /**
  * @ingroup TOOL
- * @brief   Register a callback function for work unit events.
+ * @brief   Register a callback function for work-unit events.
  *
- * \c ABT_tool_register_thread_callback() sets the callback function
- * \c cb_func() for work unit events.  The events are enabled if
- * \c event_mask have their corresponding bits.  The other events are disabled.
- * Users can stop the event callback by setting \c cb_func to \c NULL.
+ * \c ABT_tool_register_thread_callback() registers the callback function
+ * \c cb_func() for work-unit events.  The events are enabled if \c event_mask
+ * have the corresponding bits.  The other events are disabled.  The routine
+ * unregisters the callback function if \c cb_func is \c NULL.
  *
  * \c cb_func() is called with the following arguments:
  *
  * - The first argument: a work unit that triggers the event
- * - The second argument: a handle of the underlying execution stream
+ * - The second argument: an underlying execution stream
  * - The third argument: an event code (see \c ABT_TOOL_EVENT_THREAD)
  * - The fourth argument: a tool context for \c ABT_tool_query_thread()
- * - The fifth argument: \c user_arg passed to this routine.
+ * - The fifth argument: \c user_arg passed to this routine
  *
- * If the event occurs on an external thread, \c ABT_XSTREAM_NULL is passed as
- * the second argument.  The returned tool context is valid only before the
- * callback function finishes.
+ * If an event occurs on an external thread, \c ABT_XSTREAM_NULL is passed as
+ * the second argument.  The returned tool context is valid only in the callback
+ * function.
  *
  * An object referenced by the returned handle (e.g., a work unit handle) may be
- * in an intermediate state, so users are discouraged to read any internal state
- * of such an object (e.g., by \c ABT_thread_get_state()) in \c cb_func().
+ * in an intermediate state, so the user should not read any internal state of
+ * such an object (e.g., by \c ABT_thread_get_state()) in \c cb_func().
  * Instead, the user should use \c ABT_tool_query_thread().  The caller of
  * \c cb_func() might be neither a work unit that triggers the event nor a work
  * unit that is running on the same execution stream.  A program that relies on
  * the caller of \c cb_func() is non-conforming.
  *
- * This routine can be called while other work unit events are happening.  This
- * routine atomically sets \c cb_func(), \c event_mask, and \c user_arg at the
- * same time.
+ * This routine can be called while other work-unit events are being triggered.
+ * This routine atomically registers \c cb_func(), \c event_mask, and
+ * \c user_arg at the same time.
  *
  * @note
  * Invoking an event in \c cb_func() may cause an infinite invocation of
@@ -57,10 +57,10 @@ ABTU_ret_err static inline int tool_query(ABTI_tool_context *p_tctx,
  *
  * @note
  * Even after \c ABT_tool_register_thread_callback() returns, another event call
- * might be still in the previous \c cb_func() and using the previous
- * \c user_arg.  Argobots does not provide a method to guarantee that the
- * previous \c cb_func and \c user_arg get unused.  Hence, the user needs to
- * carefully maintain consistency before and after
+ * might not have finished.  If so, the previous \c cb_func() might be using the
+ * previous \c user_arg.  Argobots does not provide a method to guarantee that
+ * the previous \c cb_func() and \c user_arg get unused.  Hence, the user needs
+ * to carefully maintain consistency before and after
  * \c ABT_tool_register_thread_callback().
  *
  * @contexts
@@ -101,51 +101,61 @@ int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
 
 /**
  * @ingroup TOOL
- * @brief   Query information associated with a work unit event.
+ * @brief   Query information associated with a work-unit event.
  *
  * \c ABT_tool_query_thread() returns information associated with the tool
  * context \c context through \c val.  Because \c context is valid only in the
  * callback function, this function must be called in the callback function.
  *
- * When \c query_kind is \c ABT_TOOL_QUERY_KIND_POOL, this routine sets \c val
- * to \c ABT_pool of a pool to which a work unit is or will be pushed.  The
- * query is valid when \c event is \c THREAD_CREATE, \c THREAD_REVIVE,
- * \c THREAD_YIELD, \c THREAD_RESUME.
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_POOL, \c val must be a pointer
+ * to a variable of type \c ABT_pool.  This routine sets \c val to a handle of
+ * a pool to which a work unit is or will be pushed.  This query is valid when
+ * \c event is \c THREAD_CREATE, \c THREAD_REVIVE, \c THREAD_YIELD,
+ * or \c THREAD_RESUME.
  *
- * When \c query_kind is \c ABT_TOOL_QUERY_KIND_STACK_DEPTH, this routine sets
- * \c val to the current depth of stackable work units as an \c int value while
- * the level of the work unit associated with the main scheduler is zero.  For
- * example, if the current thread is running directly on the main scheduler, the
- * depth is \a 1.  The query is valid when \c event is \c THREAD_RUN (the depth
- * after the work unit runs), \c THREAD_FINISH (the depth before the work unit
- * finishes), \c THREAD_YIELD (the depth before the work unit yields), and
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_STACK_DEPTH, \c val must be a
+ * pointer to a variable of type \c int.  This routine sets \c val to the
+ * current depth of stacked work units while the level of the work unit
+ * associated with the main scheduler is zero.  For example, if the current
+ * work unit is running directly on the main scheduler, the depth is \a 1.  This
+ * query is valid when \c event is \c THREAD_RUN (the depth after the work unit
+ * runs), \c THREAD_FINISH (the depth before the work unit finishes),
+ * \c THREAD_YIELD (the depth before the work unit yields), or
  * \c THREAD_SUSPEND (the depth before the work unit suspends).
  *
- * When \c query_kind is \c ABT_TOOL_QUERY_KIND_CALLER_TYPE, this routine sets
- * \c val to \c ABT_exec_entity_type of an entity that incurs this event.  The
- * query is valid for all events.
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_CALLER_TYPE, \c val must be a
+ * pointer to a variable of type \c ABT_exec_entity_type.  This routine sets
+ * \c val to a type of an entity that incurs this event.  This query is valid
+ * for all events.
  *
- * When \c query_kind is \c ABT_TOOL_QUERY_KIND_CALLER_HANDLE, this routine sets
- * \c val to a handle of an entity that incurs this event.  Specifically, this
- * routine sets \c val to a work unit handle (\c ABT_thread) if the caller type
- * is \c ABT_EXEC_ENTITY_TYPE_THREAD.  If the caller is an external thread, this
- * routine sets \c val to \c NULL.  The query is valid for all events except for
- * \c THREAD_CANCEL.  Note that the caller is a previous work unit running on
- * the same execution stream when \c event is \c THRAED_RUN.
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_CALLER_HANDLE, \c val must be a
+ * pointer to a variable of a handle type of an entity that incurs this event.
+ * This routine sets \c val to a handle of an entity that incurs this event.
+ * Specifically, this routine sets \c val to a work unit handle (\c ABT_thread)
+ * if the caller type is \c ABT_EXEC_ENTITY_TYPE_THREAD.  If the caller is an
+ * external thread, this routine sets \c val to \c NULL.  The query is valid for
+ * all events except for \c THREAD_CANCEL.  Note that the caller is the previous
+ * work unit running on the same execution stream when \c event is
+ * \c THRAED_RUN.
  *
- * When \c query_kind is \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_TYPE, this routine
- * sets \c val to \c ABT_sync_event_type of an synchronization object that
- * incurs this event.  The synchronization object is returned when \c query_kind
- * is \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE.  This query is valid for
- * \c THREAD_YIELD and \c THREAD_SUSPEND.
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_TYPE, \c val must be
+ * a pointer to a variable of type \c ABT_sync_event_type.  This routine sets
+ * \c val to a type of the synchronization object that incurs this event.  This
+ * query is valid when \c event is \c THREAD_YIELD or \c THREAD_SUSPEND.
+ *
+ * When \c query_kind is \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE, \c val must
+ * be a pointer to a variable of a handle type of the synchronization object
+ * that incurs this event.  This routine sets \c val to a handle of the
+ * synchronization object that incurs this event.  This query is valid when
+ * \c event is \c THREAD_YIELD or \c THREAD_SUSPEND.
  *
  * Synchronization events, \c ABT_sync_event_type, and synchronization objects
  * are mapped as follows:
  *
  *  - \c ABT_SYNC_EVENT_TYPE_USER:
  *
- *    The user's explicit call (e.g., \c ABT_thread_yield()).  The
- *    synchronization object is none, so \c NULL is set to \c val if
+ *    A user's explicit call (e.g., \c ABT_thread_yield()).  The synchronization
+ *    object is none, so \c NULL is set to \c val if
  *    \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE is passed.
  *
  *  - \c ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN:
@@ -192,18 +202,16 @@ int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
  *
  *  - \c ABT_SYNC_EVENT_TYPE_OTHER:
  *
- *    Unclassified synchronization (e.g., \c ABT_xstream_exit())  The
- *    synchronization object is none, so \c NULL is set to \c val if
+ *    Other synchronization (e.g., \c ABT_xstream_exit()).  The synchronization
+ *    object is none, so \c NULL is set to \c val if
  *    \c ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE is passed.
  *
  * An object referenced by the returned handle (e.g., the work unit handle) may
- * be in an intermediate state, so users are recommended not to read any
- * internal state of such an object (e.g., by \c ABT_task_get_state()) in
- * \c cb_func().
+ * be in an intermediate state, so the user should not to read any internal
+ * state of such an object (e.g., by \c ABT_thread_get_state()) in \c cb_func().
  *
  * @contexts
- * \DOC_CONTEXT_TOOL_CALLBACK{the tool callback function}
- * \DOC_CONTEXT_NOCTXSWITCH
+ * \DOC_CONTEXT_TOOL_CALLBACK \DOC_CONTEXT_NOCTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS

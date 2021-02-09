@@ -13,6 +13,7 @@
 /**
  * @ingroup RWLOCK
  * @brief   Create a new readers-writer lock.
+ *
  * \c ABT_rwlock_create() creates a new readers-writer lock and returns its
  * handle through \c newrwlock.
  *
@@ -103,8 +104,8 @@ int ABT_rwlock_free(ABT_rwlock *rwlock)
  *
  * \c ABT_rwlock_rdlock() locks the readers-writer lock \c rwlock as a reader.
  * If this routine successfully returns, the caller acquires \c rwlock.  If
- * \c rwlock has been locked by a writer, the caller will be blocked on
- * \c rwlock until \c rwlock becomes available.
+ * \c rwlock has been locked by a writer, the caller is blocked on \c rwlock
+ * until \c rwlock becomes available.
  *
  * \c rwlock may be acquired by multiple readers.
  *
@@ -114,7 +115,7 @@ int ABT_rwlock_free(ABT_rwlock *rwlock)
  * \c ABT_rwlock_rdlock()) to make  \c rwlock available to a writer.
  *
  * @changev20
- * \DOC_DESC_V1X_NOTASK{\c rwlock}
+ * \DOC_DESC_V1X_NOTASK{\c ABT_ERR_RWLOCK}
  * @endchangev20
  *
  * @contexts
@@ -169,13 +170,13 @@ int ABT_rwlock_rdlock(ABT_rwlock rwlock)
  *
  * \c ABT_rwlock_wrlock() locks the readers-writer lock \c rwlock as a writer.
  * If this routine successfully returns, the caller acquires \c rwlock.  If
- * \c rwlock has been locked by either a reader or a writer, the caller will be
- * blocked on \c rwlock until \c rwlock becomes available.
+ * \c rwlock has been locked by either a reader or another writer, the caller
+ * is blocked on \c rwlock until \c rwlock becomes available.
  *
- * \c rwlock may be acquired by a single writer.
+ * \c rwlock may be acquired by only a single writer.
  *
  * @changev20
- * \DOC_DESC_V1X_NOTASK{\c rwlock}
+ * \DOC_DESC_V1X_NOTASK{\c ABT_ERR_RWLOCK}
  * @endchangev20
  *
  * @contexts
@@ -230,6 +231,9 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
  * @brief   Unlock a readers-writer lock.
  *
  * \c ABT_rwlock_unlock() unlocks the readers-writer lock \c rwlock.
+ *
+ * @note
+ * Both readers and a writer can call this routine to unlock \c rwlock.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{a waiter is waiting on

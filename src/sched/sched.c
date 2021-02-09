@@ -30,10 +30,6 @@ static inline uint64_t sched_get_new_id(void);
  * \c def must define all non-optional functions.  See \c #ABT_sched_def for
  * details.
  *
- * @note
- * Specifically, any explicit or implicit yielding operation in scheduling
- * functions except for \c run() causes undefined behavior.
- *
  * \c newsched is associated with the array of pools \c pools, which has
  * \c num_pools \c ABT_pool handles.  If the \a i th element of \c pools is
  * \c ABT_POOL_NULL, the default FIFO pool with the default pool configuration
@@ -53,12 +49,11 @@ static inline uint64_t sched_get_new_id(void);
  * @note
  * \DOC_NOTE_DEFAULT_SCHED_CONFIG
  *
- * \c def, \c config, and the contents of \c pools are copied in this routine,
- * so the user can free \c def, \c config, and \c pools after this routine
- * returns.
+ * This routine copies \c def, \c config, and the contents of \c pools, so the
+ * user can free \c def, \c config, and \c pools after this routine returns.
  *
  * \DOC_DESC_SCHED_AUTOMATIC{\c newsched} By default \c newsched created by this
- * routine is not automatically freed unless \c config enables it.
+ * routine is not automatically freed.
  *
  * @note
  * \DOC_NOTE_EFFECT_ABT_FINALIZE
@@ -141,7 +136,7 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
  * unexpected behavior caused by automatically created pools.
  *
  * \c newsched can be configured via \c config.  If the user passes
- * \c ABT_CONFIG_NULL for \c config, the default configuration is used.
+ * \c ABT_CONFIG_NULL as \c config, the default configuration is used.
  *
  * @note
  * \DOC_NOTE_DEFAULT_SCHED_CONFIG
@@ -428,8 +423,8 @@ int ABT_sched_exit(ABT_sched sched)
  * \c ABT_sched_has_to_stop() checks if the scheduler \c sched needs to stop
  * with respect to the finish request and returns its value through \c stop.  If
  * \c sched needs to stop, \c stop is set to \c ABT_TRUE.  Otherwise, \c stop is
- * set to \c ABT_FALSE.  If \c sched is not running, \c stop is either set to an
- * undefined value or not updated.
+ * set to \c ABT_FALSE.  If \c sched is not running, \c stop is set to an
+ * undefined value.
  *
  * If \c sched is created by \c ABT_sched_create(), it is the user's
  * responsibility to take proper measures to stop \c sched when \c stop is set

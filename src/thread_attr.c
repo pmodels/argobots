@@ -18,11 +18,11 @@ static void thread_attr_set_stack(ABTI_global *p_global,
  * @ingroup ULT_ATTR
  * @brief   Create a new ULT attribute.
  *
- * \c ABT_thread_attr_create() creates a ULT attribute with default attribute
- * values and returns its handle through \c newattr.
+ * \c ABT_thread_attr_create() creates a ULT attribute with the default
+ * attribute parameters and returns its handle through \c newattr.
  *
  * The default parameters are as follows:
- * - Using a memory pool for stack allocation.
+ * - Using a memory pool for stack allocation if a memory pool is enabled.
  * - Default stack size, which can be set via \c ABT_THREAD_STACKSIZE.
  * - Migratable.
  * - Invoking no callback function on migration.
@@ -169,8 +169,8 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
  * @brief   Get stack attributes from a ULT attribute.
  *
  * \c ABT_thread_attr_get_stack() retrieves the stack address and the stack size
- * (in bytes) from the ULT attribute \c attr to \c stackaddr and \c stacksize,
- * respectively.
+ * (in bytes) from the ULT attribute \c attr and returns values through
+ * \c stackaddr and \c stacksize, respectively.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
@@ -204,10 +204,10 @@ int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
  * @ingroup ULT_ATTR
  * @brief   Set stack size in a ULT attribute.
  *
- * \c ABT_thread_attr_set_stacksize() sets the stack size \c stacksize
- * (in bytes) in the ULT attribute \c attr.  If the stack memory has been
- * already set by \c ABT_thread_attr_set_stack(), this routine updates the stack
- * size while keeping the stack memory in \c attr.
+ * \c ABT_thread_attr_set_stacksize() sets the stack size \c stacksize (in
+ * bytes) in the ULT attribute \c attr.  If the stack memory has already been
+ * set by \c ABT_thread_attr_set_stack(), this routine updates the stack size
+ * while keeping the stack memory in \c attr.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
@@ -240,8 +240,8 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
  * @ingroup ULT_ATTR
  * @brief   Get the stack size from a ULT attribute.
  *
- * \c ABT_thread_attr_get_stacksize() returns the stack size (in bytes) through
- * \c stacksize from the ULT attribute \c attr.
+ * \c ABT_thread_attr_get_stacksize() retrieves the stack size (in bytes) from
+ * the ULT attribute \c attr and returns it through \c stacksize.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
@@ -276,12 +276,12 @@ int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
  * \c NULL, this routine unsets the callback function in \c attr.  Otherwise,
  * \c cb_func and \c cb_arg are set in \c attr.
  *
- * If the callback function is set, a callback function \c cb_func() will be
- * called every time on the migration of the associated work unit.  The first
- * argument of \c cb_arg() is the handle of a migrated work unit.  The second
+ * If the callback function is registered to a work unit, \c cb_func() will be
+ * called every time when the corresponding work unit is migrated.  The first
+ * argument of \c cb_func() is the handle of a migrated work unit.  The second
  * argument is \c cb_arg passed to this routine.  The caller of the callback
- * function is undefined, so a program that relies on the caller is
- * non-conforming.
+ * function is undefined, so a program that relies on the caller of \c cb_func()
+ * is non-conforming.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH

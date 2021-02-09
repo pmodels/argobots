@@ -161,11 +161,11 @@ int ABT_mutex_free(ABT_mutex *mutex)
  *
  * \c ABT_mutex_lock() locks the mutex \c mutex.  If this routine successfully
  * returns, the caller acquires \c mutex.  If \c mutex has already been locked,
- * the caller will be blocked on \c mutex until \c mutex becomes available.
+ * the caller is blocked on \c mutex until \c mutex becomes available.
  *
  * If \c mutex is recursive, the same caller can acquire multiple levels of
- * ownership over \c mutex.  \c mutex will remain locked until \c mutex is
- * unlocked as many times as the level of ownership.
+ * ownership over \c mutex.  \c mutex remains locked until \c mutex is unlocked
+ * as many times as the level of ownership.
  *
  * @contexts
  * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c mutex is locked and
@@ -225,7 +225,7 @@ int ABT_mutex_lock_low(ABT_mutex mutex)
  * @ingroup MUTEX
  * @brief   Lock a mutex with high priority.
  *
- * \c ABT_mutex_lock_low() locks the mutex \c mutex with high priority while
+ * \c ABT_mutex_lock_high() locks the mutex \c mutex with high priority while
  * \c ABT_mutex_lock() and \c ABT_mutex_lock_low() do with lower priority.  That
  * is, waiters that call the high-priority mutex lock functions might be
  * prioritized over the same \c mutex.  Except for priority, the semantics of
@@ -264,8 +264,8 @@ int ABT_mutex_lock_high(ABT_mutex mutex)
  * to take a lock, \c ABT_ERR_MUTEX_LOCKED is returned.
  *
  * If \c mutex is recursive, the same caller can acquire multiple levels of
- * ownership over \c mutex.  \c mutex will remain locked until \c mutex is
- * unlocked as many times as the level of ownership.
+ * ownership over \c mutex.  \c mutex remains locked until \c mutex is unlocked
+ * as many times as the level of ownership.
  *
  * This trylock operation is atomically strong, so lock acquisition by this
  * routine never fails if \c mutex is not locked.
@@ -293,23 +293,23 @@ int ABT_mutex_trylock(ABT_mutex mutex)
 
 /**
  * @ingroup MUTEX
- * @brief   Lock a mutex in a busy-wait loop.
+ * @brief   Lock a mutex in a busy-wait form.
  *
- * \c ABT_mutex_spinlock() locks the mutex \c mutex in a blocking form.  If this
- * routine successfully returns, the caller acquires \c mutex.  If \c mutex has
- * already been locked, the caller will be blocked on \c mutex until \c mutex
+ * \c ABT_mutex_spinlock() locks the mutex \c mutex in a busy-wait form.  If
+ * this routine successfully returns, the caller acquires \c mutex.  If \c mutex
+ * has already been locked, the caller is blocked on \c mutex until \c mutex
  * becomes available.
  *
  * If \c mutex is recursive, the same caller can acquire multiple levels of
- * ownership over \c mutex.  \c mutex will remain locked until \c mutex is
- * unlocked as many times as the level of ownership.
+ * ownership over \c mutex.  \c mutex remain locked until \c mutex is unlocked
+ * as many times as the level of ownership.
  *
  * @note
  * \c ABT_mutex_spinlock() might show a slightly better performance than
  * \c ABT_mutex_lock() if \c mutex is uncontended.  This routine, however,
- * blocks the underlying execution stream when \c mutex is locked even if the
- * caller is a ULT.  This blocking behavior is deadlock-prone, so the user must
- * be cautious when using this routine.
+ * blocks the underlying execution stream when \c mutex has already been locked
+ * even if the caller is a ULT.  This busy-wait behavior is deadlock-prone, so
+ * the user should carefully use this routine.
  *
  * @contexts
  * \DOC_CONTEXT_ANY \DOC_CONTEXT_NOCTXSWITCH
@@ -458,8 +458,8 @@ int ABT_mutex_unlock_de(ABT_mutex mutex)
  * \c ABT_mutex_equal() compares two mutex handles \c mutex1 and \c mutex2 for
  * equality and returns the result through \c result.
  *
- * This function is deprecated since its behavior is the same as comparing
- * values of \c mutex1 and \c mutex2.
+ * This routine is deprecated since its behavior is the same as comparing values
+ * of \c mutex1 and \c mutex2.
  * @code{.c}
  * *result = (mutex1 == mutex2) ? ABT_TRUE : ABT_FALSE;
  * @endcode
@@ -491,10 +491,9 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
  * @brief   Get attributes of a mutex.
  *
  * \c ABT_mutex_get_attr() returns a newly created attribute object that is
- * copied from the attributes of the mutex \c mutex through \c attr.  Attribute
- * values of \c attr may be different from those used on the creation of
- * \c mutex.  Since this routine allocates a mutex attribute object, it is the
- * user's responsibility to free \c attr after its use.
+ * copied from the attributes of the mutex \c mutex through \c attr.  Since this
+ * routine allocates a mutex attribute object, it is the user's responsibility
+ * to free \c attr after its use.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH

@@ -5,8 +5,8 @@
 
 #include "abti.h"
 
-/** @defgroup KEY Work-Unit Local Storage
- * This group is for work-unit specific data, which can be described as
+/** @defgroup KEY Work-Unit-Specific Data
+ * This group is for work-unit-specific data, which can be described as
  * work-unit local storage (which is similar to "thread-local storage" or TLS).
  */
 
@@ -26,7 +26,7 @@ static ABTD_atomic_uint32 g_key_id =
  * existing work units.  Upon work-unit creation, the value \c NULL will be
  * associated with all the defined keys in the new work unit.
  *
- * An optional destructor function \c destructor() may be associated with
+ * An optional destructor function \c destructor() may be registered to
  * \c newkey.  When a work unit is freed, if a key has a non-\c NULL destructor
  * and the work unit has a non-\c NULL value associated with that key, the value
  * of the key is set to \c NULL, and then \c destructor() is called with the
@@ -43,8 +43,8 @@ static ABTD_atomic_uint32 g_key_id =
  * is not called by the associated work-unit, so a program that relies on a
  * caller of \c destructor() is non-conforming.
  *
- * \c destructor() is called even if the associated key has been freed by
- * \c ABT_key_free().
+ * \c destructor() is called even if the associated key has already been freed
+ * by \c ABT_key_free().
  *
  * The created key must be freed by \c ABT_key_free() after its use.
  *
@@ -81,14 +81,15 @@ int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
  * @brief   Free a work-unit-specific data key.
  *
  * \c ABT_key_free() deallocates the resource used for the work-unit-specific
- * data key \c key and sets \c key to \c ABT_KEY_NULL.  It is the user's
- * responsibility to free memory for values associated with the deleted key.
+ * data key \c key and sets \c key to \c ABT_KEY_NULL.
+ *
+ * It is the user's responsibility to free memory for values associated with the
+ * deleted key.
  *
  * The user is allowed to delete a key before terminating all work units that
  * have non-\c NULL values associated with \c key.  The user cannot refer to a
- * value via the deleted key, but the destructor of the deleted key will be
- * called when a work unit that has a non-\c NULL value associated with that key
- * is freed.
+ * value via the deleted key, but the destructor of the deleted key is called
+ * when a work unit is freed.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
@@ -119,17 +120,17 @@ int ABT_key_free(ABT_key *key)
 
 /**
  * @ingroup KEY
- * @brief   Associate a value with a work-unit-specific key in the calling work
- *          unit.
+ * @brief   Associate a value with a work-unit-specific data key in the calling
+ *          work unit.
  *
- * \c ABT_key_set() associates a value \c value of the work-unit-specific data
- * key \c key in the calling work unit. Different work units may bind different
+ * \c ABT_key_set() associates a value \c value with the work-unit-specific data
+ * key \c key in the calling work unit.  Different work units may bind different
  * values to the same key.
  *
  * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
  *
  * @note
- * \DOC_DESC_REPLACEMENT{\c ABT_self_set_specific()}
+ * \DOC_NOTE_REPLACEMENT{\c ABT_self_set_specific()}
  *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
@@ -173,17 +174,18 @@ int ABT_key_set(ABT_key key, void *value)
 
 /**
  * @ingroup KEY
- * @brief   Get a value associated with a key in the calling work unit.
+ * @brief   Get a value associated with a work-unit-specific data key in the
+ *          calling work unit.
  *
  * \c ABT_key_get() returns the value in the caller associated with the
  * work-unit-specific data key \c key in the calling work unit through \c value.
- * If the caller has never set a value for the key, this routine sets \c value
+ * If the caller has never set a value for \c key, this routine sets \c value
  * to \c NULL.
  *
  * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
  *
  * @note
- * \DOC_DESC_REPLACEMENT{\c ABT_self_get_specific()}
+ * \DOC_NOTE_REPLACEMENT{\c ABT_self_get_specific()}
  *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED

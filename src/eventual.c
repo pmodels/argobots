@@ -15,11 +15,11 @@
  *
  * \c ABT_eventual_create() creates a new eventual and returns its handle
  * through \c neweventual.  \c neweventual is set to unready.  If \c nbytes is
- * greater than zero, \c neweventual has a memory buffer of \c nbytes bytes for
- * \c neweventual.  This memory buffer of \c neweventual can be set by
- * \c ABT_eventual_set() and read by \c ABT_eventual_wait() and
- * \c ABT_eventual_test().  If \c nbytes is zero, \c neweventual is used without
- * passing the data from a setter to waiters.
+ * greater than zero, this routine allocates a memory buffer of \c nbytes bytes
+ * for \c neweventual.  This memory buffer can be set by \c ABT_eventual_set()
+ * and read by \c ABT_eventual_wait() or \c ABT_eventual_test().  If \c nbytes
+ * is zero, the user cannot pass data from a setter to waiters through
+ * \c neweventual.
  *
  * \c neweventual must be freed by \c ABT_eventual_free() after its use.
  *
@@ -335,8 +335,10 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
  * @ingroup EVENTUAL
  * @brief   Reset a readiness of an eventual.
  *
- * \c ABT_eventual_reset() makes the eventual \c eventual unready.  This routine
- * makes \c eventual unready irrespective of its readiness.
+ * \c ABT_eventual_reset() makes the eventual \c eventual unready.
+ *
+ * @note
+ * This routine makes \c eventual unready irrespective of its readiness.
  *
  * \DOC_DESC_ATOMICITY_EVENTUAL_READINESS
  *
