@@ -588,6 +588,9 @@ int ABT_xstream_cancel(ABT_xstream xstream)
  * \c ABT_xstream_self() returns the handle of the execution stream that is
  * running the calling work unit through \c xstream.
  *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_get_xstream()}
+ *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
  *
@@ -630,6 +633,9 @@ int ABT_xstream_self(ABT_xstream *xstream)
  *
  * \c ABT_xstream_self_rank() returns the rank of the execution stream that is
  * running the calling work unit through \c rank.
+ *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_get_xstream_rank()}
  *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED

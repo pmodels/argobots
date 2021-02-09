@@ -1884,12 +1884,22 @@ int ABT_task_get_arg(ABT_task task, void **arg) ABT_API_PUBLIC;
 #define ABT_task_get_specific     ABT_thread_get_specific
 
 /* Self */
+int ABT_self_get_xstream(ABT_xstream *xstream) ABT_API_PUBLIC;
+int ABT_self_get_xstream_rank(int *rank) ABT_API_PUBLIC;
+int ABT_self_get_thread(ABT_thread *thread) ABT_API_PUBLIC;
+int ABT_self_get_thread_id(ABT_unit_id *id) ABT_API_PUBLIC;
+int ABT_self_set_specific(ABT_key key, void *value) ABT_API_PUBLIC;
+int ABT_self_get_specific(ABT_key key, void **value) ABT_API_PUBLIC;
+#define ABT_self_get_task       ABT_self_get_thread
+#define ABT_self_get_task_id    ABT_self_get_thread_id
 int ABT_self_get_type(ABT_unit_type *type) ABT_API_PUBLIC;
 int ABT_self_is_primary(ABT_bool *is_primary) ABT_API_PUBLIC;
 int ABT_self_on_primary_xstream(ABT_bool *on_primary) ABT_API_PUBLIC;
 int ABT_self_is_unnamed(ABT_bool *is_unnamed) ABT_API_PUBLIC;
 int ABT_self_get_last_pool_id(int *pool_id) ABT_API_PUBLIC;
+int ABT_self_yield(void) ABT_API_PUBLIC;
 int ABT_self_suspend(void) ABT_API_PUBLIC;
+int ABT_self_exit(void) ABT_API_PUBLIC;
 int ABT_self_set_arg(void *arg) ABT_API_PUBLIC;
 int ABT_self_get_arg(void **arg) ABT_API_PUBLIC;
 

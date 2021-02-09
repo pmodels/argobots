@@ -213,6 +213,9 @@ int ABT_task_cancel(ABT_task task)
  * \c ABT_task_self() returns the handle of the calling work unit through
  * \c task.
  *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_get_thread()}
+ *
  * @changev20
  * \DOC_DESC_V1X_NOYIELDABLE{\c ABT_ERR_INV_TASK}
  *
@@ -260,6 +263,9 @@ int ABT_task_self(ABT_task *task)
  * @brief   Get ID of the calling work unit.
  *
  * \c ABT_task_self_id() returns the ID of the calling work unit through \c id.
+ *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_get_thread_id()}
  *
  * @changev20
  * \DOC_DESC_V1X_NOYIELDABLE{\c ABT_ERR_INV_TASK}

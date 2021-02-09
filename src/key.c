@@ -128,6 +128,9 @@ int ABT_key_free(ABT_key *key)
  *
  * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
  *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_set_specific()}
+ *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
  * @endchangev20
@@ -178,6 +181,9 @@ int ABT_key_set(ABT_key key, void *value)
  * to \c NULL.
  *
  * \DOC_DESC_ATOMICITY_WORK_UNIT_KEY
+ *
+ * @note
+ * \DOC_DESC_REPLACEMENT{\c ABT_self_get_specific()}
  *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED

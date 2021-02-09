@@ -22,54 +22,75 @@ static void tls_destructor(void *value)
     free(value);
 }
 
-static void task_tls_test(void *arg)
+typedef int (*set_specific_func_t)(ABT_key, void *);
+typedef int (*get_specific_func_t)(ABT_key, void **);
+
+static void task_tls_test_core(int my_id, set_specific_func_t set_specific_f,
+                               get_specific_func_t get_specific_f, int is_last)
 {
-    int my_id = (int)(intptr_t)arg;
     int i, ret;
     void *check;
     void *value[NUM_TLS];
 
-    ATS_printf(1, "[T%d] start\n", my_id);
-
     /* If we haven't set a value for a key, we should get NULL for the key. */
     for (i = 0; i < NUM_TLS; i++) {
-        ret = ABT_key_get(tls[i], &check);
-        ATS_ERROR(ret, "ABT_key_get");
+        ret = get_specific_f(tls[i], &check);
+        ATS_ERROR(ret, "get_specific_f");
         assert(check == NULL);
     }
 
     for (i = 0; i < NUM_TLS; i++) {
         value[i] = malloc(16);
         ATS_printf(1, "[T%d] malloc(%p)\n", my_id, value[i]);
-        ret = ABT_key_set(tls[i], value[i]);
-        ATS_ERROR(ret, "ABT_key_set");
+        ret = set_specific_f(tls[i], value[i]);
+        ATS_ERROR(ret, "set_specific_f");
     }
 
     for (i = 0; i < NUM_TLS; i++) {
-        ret = ABT_key_get(tls[i], &check);
-        ATS_ERROR(ret, "ABT_key_get");
+        ret = get_specific_f(tls[i], &check);
+        ATS_ERROR(ret, "get_specific_f");
         assert(value[i] == check);
     }
     ATS_printf(1, "[T%d] passed #1\n", my_id);
 
     for (i = 0; i < NUM_TLS; i++) {
-        ret = ABT_key_get(tls[i], &check);
-        ATS_ERROR(ret, "ABT_key_get");
+        ret = get_specific_f(tls[i], &check);
+        ATS_ERROR(ret, "get_specific_f");
         assert(value[i] == check);
     }
     ATS_printf(1, "[T%d] passed #2\n", my_id);
 
-    for (i = 2; i < NUM_TLS; i++) {
+    for (i = (is_last ? 2 : 0); i < NUM_TLS; i++) {
         ATS_printf(1, "[T%d] free(%p)\n", my_id, value[i]);
         free(value[i]);
-        ret = ABT_key_set(tls[i], NULL);
-        ATS_ERROR(ret, "ABT_key_set");
+        ret = set_specific_f(tls[i], NULL);
+        ATS_ERROR(ret, "set_specific_f");
 
-        ret = ABT_key_get(tls[i], &check);
-        ATS_ERROR(ret, "ABT_key_get");
+        ret = get_specific_f(tls[i], &check);
+        ATS_ERROR(ret, "get_specific_f");
         assert(check == NULL);
     }
     ATS_printf(1, "[T%d] passed #3\n", my_id);
+}
+
+static void task_tls_test(void *arg)
+{
+    int my_id = (int)(intptr_t)arg;
+
+    ATS_printf(1, "[T%d] start\n", my_id);
+
+    set_specific_func_t set_specific_fs[2] = { ABT_key_set,
+                                               ABT_self_set_specific };
+    get_specific_func_t get_specific_fs[2] = { ABT_key_get,
+                                               ABT_self_get_specific };
+    int set_i, get_i;
+    for (set_i = 0; set_i < 2; set_i++) {
+        for (get_i = 0; get_i < 2; get_i++) {
+            int is_last = (set_i == 1 && get_i == 1);
+            task_tls_test_core(my_id, set_specific_fs[set_i],
+                               get_specific_fs[get_i], is_last);
+        }
+    }
 
     ATS_printf(1, "[T%d] end\n", my_id);
 }

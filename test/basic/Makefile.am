@@ -17,7 +17,9 @@ TESTS = \
 	thread_attr \
 	thread_attr2 \
 	thread_yield \
+	thread_yield2 \
 	thread_yield_to \
+	thread_exit \
 	thread_self_suspend_resume \
 	thread_get_last_xstream \
 	thread_migrate \
@@ -61,6 +63,7 @@ TESTS = \
 	eventual_create \
 	eventual_test \
 	barrier \
+	self_rank_id \
 	self_type \
 	ext_thread \
 	ext_thread2 \
@@ -97,7 +100,9 @@ thread_revive_SOURCES = thread_revive.c
 thread_attr_SOURCES = thread_attr.c
 thread_attr2_SOURCES = thread_attr2.c
 thread_yield_SOURCES = thread_yield.c
+thread_yield2_SOURCES = thread_yield2.c
 thread_yield_to_SOURCES = thread_yield_to.c
+thread_exit_SOURCES = thread_exit.c
 thread_self_suspend_resume_SOURCES = thread_self_suspend_resume.c
 thread_get_last_xstream_SOURCES = thread_get_last_xstream.c
 thread_migrate_SOURCES = thread_migrate.c
@@ -141,6 +146,7 @@ future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 eventual_test_SOURCES = eventual_test.c
 barrier_SOURCES = barrier.c
+self_rank_id_SOURCES = self_rank_id.c
 self_type_SOURCES = self_type.c
 ext_thread_SOURCES = ext_thread.c
 ext_thread2_SOURCES = ext_thread2.c
@@ -165,7 +171,9 @@ testing:
 	./thread_attr
 	./thread_attr2
 	./thread_yield
+	./thread_yield2
 	./thread_yield_to
+	./thread_exit
 	./thread_self_suspend_resume
 	./thread_get_last_xstream
 	./thread_migrate
@@ -209,6 +217,7 @@ testing:
 	./eventual_create
 	./eventual_test
 	./barrier
+	./self_rank_id
 	./self_type
 	./ext_thread
 	./ext_thread2

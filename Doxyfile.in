@@ -1870,6 +1870,8 @@ ALIASES += DOC_DESC_ATOMICITY_XSTREAM_REQUEST="Requests for execution streams ar
 
 ALIASES += DOC_DESC_ATOMICITY_XSTREAM_STATE="Management of states of execution streams is performed atomically."
 
+ALIASES += DOC_DESC_REPLACEMENT{1}="This routine will be replaced by \1 in the future."
+
 ALIASES += DOC_DESC_SCHED_AUTOMATIC{1}="If \1 is not configured to be automatically freed, it is the user's responsibility to free \1 after its use unless \c newsched is associated with the main scheduler of the primary execution stream.  If \1 is configured to be automatically freed, \1 is automatically freed when a work unit associated with \1 is freed.  If the user never associates \1 with a work unit (e.g., by \c ABT_pool_add_sched() or \c ABT_xstream_set_main_sched()), it is the user's responsibility to free \1."
 
 ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on the clock resolution by the system."
