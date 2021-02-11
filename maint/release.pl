@@ -189,6 +189,9 @@ chomp $date;
 system(qq(perl -p -i -e 's/\\[ABT_RELEASE_DATE_m4\\],\\[unreleased development copy\\]/[ABT_RELEASE_DATE_m4],[$date]/g' ./maint/version.m4));
 print("done\n");
 
+# Add version information to README.md
+system(qq(perl -p -i -e 's/^# Argobots\n/# Argobots ${version}\n/g' README.md));
+
 # Create configure
 print("===> Creating configure in the main codebase... ");
 chdir($expdir);
