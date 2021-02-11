@@ -1,135 +1,129 @@
-			Argobots Release %VERSION%
+# Argobots
 
-Argobots is a lightweight, low-level threading and tasking framework.  This
-release is an experimental version of Argobots that contains features related to
-user-level threads, tasklets, and some schedulers.
+Argobots is a lightweight, low-level threading and tasking framework.
 
-This README file should contain enough information to get you started with
-Argobots.  More information about Argobots can be found at
-http://www.argobots.org.
+README.md should contain enough information to get you started with Argobots.
 
+1. [Getting Started](#1-getting-started)
+2. [Testing Argobots](#2-testing-argobots)
+3. [Reporting Problems](#3-reporting-problems)
+4. [Alternate Configure Options](#4-alternate-configure-options)
+5. [Compiler Flags](#5-compiler-flags)
+6. [Developer Builds](#6-developer-builds)
 
-1. Getting Started
-2. Testing Argobots
-3. Reporting Problems
-4. Alternate Configure Options
-5. Compiler Flags
-6. Developer Builds
-
+- More information about Argobots can be found at https://www.argobots.org
+- Complete Argobots API can be found at https://www.argobots.org/doxygen/latest/
 
 -------------------------------------------------------------------------------
 
-1. Getting Started
-==================
+## 1. Getting Started
 
 The following instructions take you through a sequence of steps to get the
-default configuration of Argobots up and running.
+default configuration of Argobots up and running.  For compilation, Argobots
+needs a C compiler (gcc is sufficient).
 
-(a) You will need the following prerequisites.
+Also, you need to know what shell you are using since different shell has
+different command syntax.  Command `echo $SHELL` prints out the current shell
+used by your terminal program.
 
-    - REQUIRED: This tar file argobots-%VERSION%.tar.gz
+### (a) Preparation
 
-    - REQUIRED: A C compiler (gcc is sufficient)
+(a.1) *If you downloaded a release tarball of Argobots*, unpack the tar file and
+go to the top level directory:
 
-  Also, you need to know what shell you are using since different shell has
-  different command syntax.  Command "echo $SHELL" prints out the current shell
-  used by your terminal program.
+```sh
+    tar xzf argobots.tar.gz
+    cd argobots
 
-(b) Unpack the tar file and go to the top level directory:
+    ## If your `tar` doesn't accept the `z` option, use the following instead
+    # gunzip argobots.tar.gz
+    # tar xf argobots.tar
+    # cd argobots
+```
 
-    tar xzf argobots-%VERSION%.tar.gz
-    cd argobots-%VERSION%
+(a.2) *If you cloned Argobots from the GitHub page*, go to the top level
+directory and create `configure`:
 
-  If your tar doesn't accept the z option, use
+```sh
+    cd argobots
+    ./autogen.sh
+```
 
-    gunzip argobots-%VERSION%.tar.gz
-    tar xf argobots-%VERSION%.tar
-    cd argobots-%VERSION%
+### (b) Choose an installation directory
 
-(c) Choose an installation directory, say /home/USERNAME/argobots-install,
-which is assumed to be non-existent or empty.
+The installation directory should be non-existent or empty.
+The following assumes `/home/USERNAME/argobots-install`
 
-(d) Configure Argobots specifying the installation directory:
+### (c) Configure Argobots specifying the installation directory
 
-    for csh and tcsh:
+```sh
+    ./configure --prefix=/home/USERNAME/argobots-install 2>&1 | tee c.txt
 
-      ./configure --prefix=/home/USERNAME/argobots-install |& tee c.txt
+    ## If you are using csh or tcsh:
+    # ./configure --prefix=/home/USERNAME/argobots-install |& tee c.txt
+```
 
-    for bash and sh:
+If a failure occurs, the configure command will display the error.  Most errors
+are straight-forward to follow.
 
-      ./configure --prefix=/home/USERNAME/argobots-install 2>&1 | tee c.txt
+### (d) Build Argobots:
 
-  Bourne-like shells, sh and bash, accept "2>&1 |".  Csh-like shell, csh and
-  tcsh, accept "|&".  If a failure occurs, the configure command will display
-  the error.  Most errors are straight-forward to follow.
+```sh
+    make 2>&1 | tee m.txt
 
-(e) Build Argobots:
+    ## If you are using csh or tcsh:
+    # make |& tee m.txt
+```
 
-    for csh and tcsh:
+This step should succeed if there were no problems with the preceding step.
+Check file `m.txt`.  If there were problems, do a `make clean` and then run
+make again with `V=1`.
 
-      make |& tee m.txt
+```sh
+    make V=1 2>&1 | tee m.txt
 
-    for bash and sh:
+    ## If you are using csh or tcsh:
+    # make V=1 |& tee m.txt
+```
 
-      make 2>&1 | tee m.txt
+If it does not work, go to step 3 below, for reporting the issue to the Argobots
+developers and other users.
 
-  This step should succeed if there were no problems with the preceding step.
-  Check file m.txt.  If there were problems, do a "make clean" and then run
-  make again with V=1.
+### (e) Install Argobots:
 
-    make V=1 |& tee m.txt       (for csh and tcsh)
+```sh
+    make install 2>&1 | tee mi.txt
 
-    OR
+    ## If you are using csh or tcsh:
+    # make install |& tee mi.txt
+```
 
-    make V=1 2>&1 | tee m.txt   (for bash and sh)
+This step collects all required files in the `bin` subdirectory of the directory
+specified by the prefix argument to configure.
 
-  Then go to step 3 below, for reporting the issue to the Argobots developers
-  and other users.
 
-(f) Install Argobots:
-
-    for csh and tcsh:
-
-      make install |& tee mi.txt
-
-    for bash and sh:
-
-      make install 2>&1 | tee mi.txt
-
-  This step collects all required executables and scripts in the bin
-  subdirectory of the directory specified by the prefix argument to configure.
-
--------------------------------------------------------------------------------
-
-2. Testing Argobots
-===================
+## 2. Testing Argobots
 
 To test Argobots, we package the Argobots test suite in the Argobots
-distribution.  You can run the test suite in the test directory using:
+distribution.  You can run the test suite in the `test` directory using:
 
-     make check
-
-     OR
-
-     make testing
+```sh
+    make check
+```
 
 The distribution also includes some Argobots examples.  You can run them in the
-examples directory using:
+`examples` directory using:
 
-     make check
-
-     OR
-
-     make testing
+```sh
+    make check
+```
 
 If you run into any problems on running the test suite or examples, please
 follow step 3 below for reporting them to the Argobots developers and other
 users.
 
--------------------------------------------------------------------------------
 
-3. Reporting Problems
-=====================
+## 3. Reporting Problems
 
 If you have problems with the installation or usage of Argobots, please follow
 these steps:
@@ -151,12 +145,12 @@ Your email should contain the following files.  ONCE AGAIN, PLEASE COMPRESS
 BEFORE SENDING, AS THE FILES CAN BE LARGE.  Note that, depending on which step
 the build failed, some of the files might not exist.
 
-    argobots-%VERSION%/c.txt (generated in step 1(d) above)
-    argobots-%VERSION%/m.txt (generated in step 1(e) above)
-    argobots-%VERSION%/mi.txt (generated in step 1(f) above)
-    argobots-%VERSION%/config.log (generated in step 1(d) above)
-
-    DID WE MENTION? DO NOT FORGET TO COMPRESS THESE FILES!
+```
+    argobots/c.txt      (generated in step 1(c) above)
+    argobots/m.txt      (generated in step 1(d) above)
+    argobots/mi.txt     (generated in step 1(e) above)
+    argobots/config.log (generated in step 1(c) above)
+```
 
 Finally, please include the actual error you are seeing when running the
 application.  If possible, please try to reproduce the error with a smaller
@@ -167,22 +161,20 @@ github issues page (https://github.com/pmodels/argobots/issues).  Even if you
 believe you have found a bug, we recommend you sending an email to
 discuss@argobots.org first.
 
--------------------------------------------------------------------------------
 
-4. Alternate Configure Options
-==============================
+## 4. Alternate Configure Options
 
 Argobots has a number of other features.  If you are exploring Argobots as part
 of a development project, you might want to tweak the Argobots build with the
 following configure options.  A complete list of configuration options can be
 found using:
 
+```sh
     ./configure --help
+```
 
--------------------------------------------------------------------------------
 
-5. Compiler Flags
-=================
+## 5. Compiler Flags
 
 By default, Argobots automatically adds certain compiler optimizations to
 CFLAGS.  The currently used optimization level is -O2.
@@ -190,30 +182,28 @@ CFLAGS.  The currently used optimization level is -O2.
 This optimization level can be changed with the --enable-fast option passed to
 configure.  For example, to build Argobots with -O3, one can simply do:
 
+```sh
     ./configure --enable-fast=O3
+```
 
-Or to disable all compiler optimizations, one can do:
-
-    ./configure --disable-fast
-
-For more details of --enable-fast, see the output of "./configure --help".
+For more details of `--enable-fast`, see the output of `./configure --help`.
 
 For performance testing, we recommend the following flags:
 
-    ./configure --enable-fast=O3,ndebug --enable-tls-model=initial-exec \
-                --enable-affinity --disable-checks
-
-    OR
-
+```sh
     ./configure --enable-perf-opt --enable-affinity --disable-checks
+```
 
--------------------------------------------------------------------------------
+For debugging, we recommend the following flags:
 
-6. Developer Builds
-===================
+```sh
+    ./configure --enable-fast=O0 --enable-debug=most
+```
+
+
+## 6. Developer Builds
 
 For Argobots developers who want to directly work on the primary version control
 system, there are a few additional steps involved (people using the release
 tarballs do not have to follow these steps).  Details about these steps can be
 found here: https://github.com/pmodels/argobots/wiki/Getting-and-Building
-
