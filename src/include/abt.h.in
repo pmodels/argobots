@@ -33,7 +33,7 @@ extern "C" {
  *
  * \code{.unparsed}
  * ABT_VERSION = [MAJ].[MIN].[REV][EXT][EXT_NUMBER]
- * Example: 1.0.7rc1 has
+ * Example: ABT_VERSION = 1.0.7rc1 represents
  *          MAJ = 1
  *          MIN = 0
  *          REV = 7
@@ -62,8 +62,8 @@ extern "C" {
  * \endcode
  *
  * \c ABT_NUMVERSION has 1 digit for MAJ, 2 digits for MIN, 2 digits for REV, 1
- * digit for EXT, and 2 digits for EXT_NUMBER, so 1.0.7rc1 is converted to the
- * numeric version 10007201.
+ * digit for EXT, and 2 digits for EXT_NUMBER.  For example, 1.0.7rc1 is
+ * converted to the numeric version 10007201.
  */
 #define ABT_NUMVERSION @ABT_NUMVERSION@
 
@@ -87,7 +87,7 @@ extern "C" {
  * @ingroup ERROR_CODE
  * @brief   Error code: the routine returns successfully.
  *
- * \c ABT_SUCCESS is guaranteed to have the value of zero.
+ * \c ABT_SUCCESS is guaranteed to be 0.
  */
 #define ABT_SUCCESS                 0
 /**
@@ -99,8 +99,7 @@ extern "C" {
  * @ingroup ERROR_CODE
  * @brief   Error code: Memory allocation failure.
  *
- * \c ABT_ERR_MEM is returned if memory allocation functions such as \c malloc()
- * or \c mmap() fail.
+ * \c ABT_ERR_MEM is returned if memory allocation fails.
  */
 #define ABT_ERR_MEM                 2
 /**
@@ -110,17 +109,17 @@ extern "C" {
 #define ABT_ERR_OTHER               3
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: invalid executions stream.
+ * @brief   Error code: invalid execution stream.
  */
 #define ABT_ERR_INV_XSTREAM         4
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: invalid executions stream rank.
+ * @brief   Error code: invalid execution stream rank.
  */
 #define ABT_ERR_INV_XSTREAM_RANK    5
 /**
  * @ingroup ERROR_CODE
- * @brief   Error code: invalid executions stream barrier.
+ * @brief   Error code: invalid execution stream barrier.
  */
 #define ABT_ERR_INV_XSTREAM_BARRIER 6
 /**
@@ -386,9 +385,10 @@ extern "C" {
  *
  * \c ABT_ERR_SYS represents a general error that happens in libraries used by
  * Argobots.  For example, this error is returned when system calls such as
- * \c futex() and \c open() or functions provided by standard libraries such as
+ * \c futex() and \c open() or functions provided by external libraries such as
  * \c pthread_create() and \c unw_init_local() fail.  Note that \c ABT_ERR_MEM
- * is returned if the error is caused by memory allocation.
+ * is returned if a memory allocation function such as \c malloc() or \c mmap()
+ * fails.
  */
 #define ABT_ERR_SYS                54
 /**
@@ -458,9 +458,9 @@ enum ABT_sched_state {
  * @ingroup SCHED
  * @brief   Predefined scheduler type.
  *
- * Relying on a specific scheduling order is not recommended since its
- * implementation can be changed.  Users can create their own scheduler by using
- * \c ABT_sched_create().
+ * Relying on a specific scheduling order is not recommended since the
+ * implementation of predefined schedulers can be changed.  Users can create
+ * their own scheduler by using \c ABT_sched_create().
  */
 enum ABT_sched_predef {
     /** Default scheduler.  \c ABT_SCHED_BASIC is used. */
@@ -571,7 +571,7 @@ enum ABT_info_query_kind {
     ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO,
     /** Whether Argobots prints a debug message or not */
     ABT_INFO_QUERY_KIND_ENABLED_LOG,
-    /** Whether Argobots is configured to be Valgrind friendly */
+    /** Whether Argobots is configured to be Valgrind friendly or not */
     ABT_INFO_QUERY_KIND_ENABLED_VALGRIND,
     /** Whether an error is checked or not */
     ABT_INFO_QUERY_KIND_ENABLED_CHECK_ERROR,
@@ -592,9 +592,10 @@ enum ABT_info_query_kind {
     ABT_INFO_QUERY_KIND_ENABLED_STACKABLE_SCHED,
     /** Whether the external thread feature is supported or not */
     ABT_INFO_QUERY_KIND_ENABLED_EXTERNAL_THREAD,
-    /** Whether a predefined scheduler sleeps or not */
+    /** Whether a predefined scheduler sleeps when idle or not */
     ABT_INFO_QUERY_KIND_ENABLED_SCHED_SLEEP,
-    /** Whether the Argobots configuration is printed on ABT_init() or not */
+    /** Whether the Argobots configuration is printed in the top-level
+     *  ABT_init() or not */
     ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG,
     /** Whether the affinity setting is supported or not */
     ABT_INFO_QUERY_KIND_ENABLED_AFFINITY,
@@ -627,13 +628,13 @@ enum ABT_info_query_kind {
 enum ABT_tool_query_kind {
     /** Query a pool to which a work unit is or will be pushed. */
     ABT_TOOL_QUERY_KIND_POOL,
-    /** Query a current depth of stackable work units. */
+    /** Query a current depth of stacked work units. */
     ABT_TOOL_QUERY_KIND_STACK_DEPTH,
-    /** Query a type of caller that incurs an event. */
+    /** Query a type of the caller that incurs an event. */
     ABT_TOOL_QUERY_KIND_CALLER_TYPE,
     /** Query a handle to the caller that incurs an event. */
     ABT_TOOL_QUERY_KIND_CALLER_HANDLE,
-    /** Query a type of synchronization object that incurs an event. */
+    /** Query a type of the synchronization object that incurs an event. */
     ABT_TOOL_QUERY_KIND_SYNC_OBJECT_TYPE,
     /** Query a handle of the synchronization object that incurs an event. */
     ABT_TOOL_QUERY_KIND_SYNC_OBJECT_HANDLE,
@@ -661,7 +662,7 @@ enum ABT_sync_event_type {
     ABT_SYNC_EVENT_TYPE_USER,
     /** Other synchronization events. */
     ABT_SYNC_EVENT_TYPE_OTHER,
-    /** Joining an executions stream. */
+    /** Joining an execution stream. */
     ABT_SYNC_EVENT_TYPE_XSTREAM_JOIN,
     /** Joining a work unit. */
     ABT_SYNC_EVENT_TYPE_THREAD_JOIN,
@@ -736,7 +737,7 @@ enum ABT_sync_event_type {
 #define ABT_TOOL_EVENT_THREAD_RESUME  (1 << 9)
 /**
  * @ingroup TOOL
- * @brief   Work-unit-event mask: all events above.
+ * @brief   Work-unit-event mask: all events.
  */
 #define ABT_TOOL_EVENT_THREAD_ALL     ((uint64_t)((1 << 12) - 1))
 
@@ -791,7 +792,7 @@ typedef struct ABT_xstream_opaque *         ABT_xstream;
 typedef enum ABT_xstream_state              ABT_xstream_state;
 /**
  * @ingroup ES_BARRIER
- * @brief   Execution stream barrier handle type.
+ * @brief   Execution-stream barrier handle type.
  *
  * A NULL handle of this type is \c ABT_XSTREAM_BARRIER_NULL.
  */
@@ -823,7 +824,7 @@ typedef enum ABT_sched_predef               ABT_sched_predef;
  * \DOC_V20 This type is removed since no Argobots routine uses this.
  * @endchangev20
  */
-typedef enum ABT_sched_state                ABT_sched_state ABT_DEPRECATED;
+typedef enum ABT_sched_state                ABT_sched_state;
 /**
  * @ingroup SCHED
  * @brief   Scheduler's work unit type.
@@ -1091,7 +1092,7 @@ typedef struct {
  * @ingroup MUTEX
  * @brief   Initialize \c ABT_mutex_memory.
  *
- * \c ABT_MUTEX_INITIALIZER() statically initializes \c ABT_mutex_memory.  The
+ * \c ABT_MUTEX_INITIALIZER statically initializes \c ABT_mutex_memory.  The
  * created mutex is not recursive.
 
  * The following shows how to use \c ABT_MUTEX_INITIALIZER.
@@ -1106,12 +1107,7 @@ typedef struct {
  * }
  * @endcode
  *
- * \c ABT_mutex obtained by \c ABT_MUTEX_MEMORY_GET_HANDLE() may not be freed by
- * \c ABT_mutex_free().  The lifetime of \c ABT_mutex obtained by
- * \c ABT_MUTEX_MEMORY_GET_HANDLE() is the same as that of \c ABT_mutex_memory.
- *
- * \c ABT_mutex_memory associated with the mutex that is in use may not be
- * initialized.
+ * \c ABT_mutex_memory that is in use may not be initialized again.
  */
 #define ABT_MUTEX_INITIALIZER                                                  \
     { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
@@ -1138,8 +1134,7 @@ typedef struct {
  * }
  * @endcode
  *
- * \c ABT_mutex_memory associated with the mutex that is in use may not be
- * initialized.
+ * \c ABT_mutex_memory that is in use may not be initialized again.
  */
 #define ABT_RECURSIVE_MUTEX_INITIALIZER                                        \
     { { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
@@ -1180,7 +1175,7 @@ typedef struct {
  * @ingroup COND
  * @brief   Initialize \c ABT_cond_memory.
  *
- * \c ABT_COND_INITIALIZER() statically initializes \c ABT_cond_memory.
+ * \c ABT_COND_INITIALIZER statically initializes \c ABT_cond_memory.
 
  * The following example shows how to use \c ABT_COND_INITIALIZER.
  * @code{.c}
@@ -1201,12 +1196,7 @@ typedef struct {
  * }
  * @endcode
  *
- * \c ABT_cond obtained by \c ABT_COND_MEMORY_GET_HANDLE() may not be freed by
- * \c ABT_cond_free().  The lifetime of \c ABT_cond obtained by
- * \c ABT_COND_MEMORY_GET_HANDLE() is the same as that of \c ABT_cond_memory.
- *
- * \c ABT_cond_memory associated with a condition variable that is in use may
- * not be initialized.
+ * \c ABT_cond_memory that is in use may not be initialized again.
  */
 #define ABT_COND_INITIALIZER                                                   \
     { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
@@ -1267,9 +1257,9 @@ extern ABT_sched_config_var ABT_sched_config_var_end ABT_API_PUBLIC;
  * @var     ABT_sched_basic_freq
  * @brief   Predefined ABT_sched_config_var to configure the frequency for
  *          checking events of the basic scheduler.
+ * @hideinitializer
  *
  * Its type is int.  The user may not change its variables.
- * @hideinitializer
  */
 extern ABT_sched_config_var ABT_sched_basic_freq ABT_API_PUBLIC;
 /**
@@ -1287,12 +1277,12 @@ extern ABT_sched_config_var ABT_sched_config_access ABT_API_PUBLIC;
  * @var     ABT_sched_config_automatic
  * @brief   Predefined ABT_sched_config_var to configure whether the scheduler
  *          is freed automatically or not.
+ * @hideinitializer
  *
  * Its type is int.  If the value is non-zero, the scheduler is freed
  * automatically after its associated objects are released.  If the value is
  * zero, the scheduler is configured to be not freed automatically by the
  * Argobots runtime.  The user may not change its variables.
- * @hideinitializer
  */
 extern ABT_sched_config_var ABT_sched_config_automatic ABT_API_PUBLIC;
 
@@ -1436,9 +1426,9 @@ typedef struct {
      * @brief Access type.
      *
      * This value is used to determine a value returned by
-     * \c ABT_pool_get_access().  The Argobots assumes all pools can be accessed
-     * by any ULT, tasklet, or external thread.  It is the user's responsibility
-     * to manage the access to pools.
+     * \c ABT_pool_get_access().  Argobots assumes all pools can be accessed by
+     * any ULTs, tasklets, and external threads.  It is the user's
+     * responsibility to manage the access to pools.
      *
      * @changev11
      * \DOC_DESC_V10_POOL_NOACCESS
@@ -1538,8 +1528,9 @@ typedef struct {
      *
      * \c u_free() frees the work unit \c unit that is created by
      * \c u_create_from_thread().  Its associated entity (i.e., \c ABT_thread)
-     * is freed by the Argobots runtime.  \c unit is neither pointing to
-     * \c ABT_UNIT_NULL nor \c NULL.  The user may modify a value of \c unit.
+     * is freed by the Argobots runtime.  Neither \c NULL nor a pointer pointing
+     * to \c ABT_UNIT_NULL is passed as \c unit to this function.  \c u_free()
+     * may modify the value pointed to be \c unit.
      *
      * \c u_free() is not optional, so the user must implement this function.
      *
@@ -1572,7 +1563,8 @@ typedef struct {
      * Specifically, the current Argobots treats a pool whose size is zero as an
      * empty pool.
      *
-     * \c u_free() is not optional, so the user must implement this function.
+     * \c p_get_size() is not optional, so the user must implement this
+     * function.
      *
      * The caller of \c p_get_size() is undefined, so a program that relies on
      * the caller of \c p_get_size() is non-conforming.
@@ -1583,8 +1575,8 @@ typedef struct {
      * @brief Function that pushes a work unit to a pool.
      *
      * \c p_push() pushes the work unit \c unit to the pool \c pool.  \c unit
-     * must be stored in \c pool and can be popped by its pop functions (e.g.,
-     * \c p_pop()) later.
+     * must be stored in \c pool and able to be popped by its pop functions
+     * (e.g., \c p_pop()) later.
      *
      * \c p_push() is not optional, so the user must implement this function.
      *
@@ -1644,8 +1636,8 @@ typedef struct {
      * on the caller of \c p_pop_timedwait() is non-conforming.
      *
      * @changev20
-     * \DOC_V20 \c p_pop_timedwait() is deprecated.  The user should use
-     * \c p_pop_wait() instead.
+     * \DOC_V20 \c p_pop_timedwait() is deprecated and replaced by
+     * \c p_pop_wait().
      * @endchangev20
      */
     ABT_pool_pop_timedwait_fn p_pop_timedwait;
@@ -1679,12 +1671,13 @@ typedef struct {
     /**
      * @fn    int (*p_print_all)(ABT_pool pool, void *arg,
      *                           void (*print_f)(void *arg, ABT_unit unit))
-     * @brief Function that applies a function to all work units in a pool.
+     * @brief Function that applies a user-given function to all work units in a
+     *        pool.
      *
      * \c p_print_all() applies \c print_f to all work units in the pool
      * \c pool.  \c print_f() is called with the user-given argument \c arg and
-     * the work unit.  The caller guarantees that \c print_f() does not modify
-     * the state of \c pool and work units in \c pool.
+     * the work unit handle.  The caller guarantees that \c print_f() does not
+     * modify the states of \c pool and work units in \c pool.
      *
      * \c p_print_all() is optional, so the user may set \c p_print_all to
      * \c NULL.

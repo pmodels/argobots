@@ -17,6 +17,7 @@ my $append_commit_id;
 my $root = cwd();
 my $with_autoconf = "";
 my $with_automake = "";
+my $enable_doxygen = 0;
 my $git_repo = "";
 
 my $logfile = "release.log";
@@ -32,6 +33,7 @@ sub usage
     print "\t--append-commit-id   append git commit description (optional)\n";
     print "\t--with-autoconf      autoconf directory (optional)\n";
     print "\t--with-automake      automake directory (optional)\n";
+    print "\t--enable-doxygen     enable doxygen (optional)\n";
 
     print "\n";
 
@@ -120,6 +122,7 @@ GetOptions(
     "append-commit-id!" => \$append_commit_id,
     "with-autoconf=s" => \$with_autoconf,
     "with-automake=s" => \$with_automake,
+    "enable-doxygen!" => \$enable_doxygen,
     "help"     => \&usage
 ) or die "unable to parse options, stopped";
 
@@ -135,6 +138,14 @@ check_package("git");
 check_package("latex");
 check_package("autoconf");
 check_package("automake");
+if ($enable_doxygen) {
+    check_package("doxygen");
+    my $official_doxygen_ver = "1.8.17";
+    my $doxygen_ver = `doxygen --version | head -n 1 | grep "$official_doxygen_ver"`;
+    if ($doxygen_ver eq "") {
+        die "ERROR: Doxygen ${official_doxygen_ver} is not installed. Consider setting --enable-doxygen. Stopped";
+    }
+}
 print("\n");
 
 
@@ -189,6 +200,9 @@ chomp $date;
 system(qq(perl -p -i -e 's/\\[ABT_RELEASE_DATE_m4\\],\\[unreleased development copy\\]/[ABT_RELEASE_DATE_m4],[$date]/g' ./maint/version.m4));
 print("done\n");
 
+# Add version information to README.md
+system(qq(perl -p -i -e 's/^# Argobots\n/# Argobots ${version}\n/g' README.md));
+
 # Create configure
 print("===> Creating configure in the main codebase... ");
 chdir($expdir);
@@ -210,17 +224,19 @@ run_cmd("find . -name .github | xargs rm -rf");
 run_cmd("find . -name .tmp | xargs rm -rf");
 print("done\n");
 
-# TODO: Get docs
-#print("===> Creating secondary codebase for the docs... ");
-#run_cmd("mkdir ${expdir}-build");
-#chdir("${expdir}-build");
-#run_cmd("${expdir}/configure");
-#run_cmd("(make doxygen)");
-#print("done\n");
-#
-#print("===> Copying docs over... ");
-#run_cmd("cp -a doc/doxygen/html ${expdir}/");
-#print("done\n");
+if ($enable_doxygen) {
+    # Create doxygen files
+    print("===> Creating secondary codebase for the docs... ${expdir}-build ");
+    run_cmd("mkdir ${expdir}-build");
+    chdir("${expdir}-build");
+    run_cmd("${expdir}/configure");
+    run_cmd("(make doxygen)");
+    print("done\n");
+
+    print("===> Copying docs over... cp -a doc/doxygen/html ${expdir}/ ");
+    run_cmd("cp -a doc/doxygen ${expdir}/doc");
+    print("done\n");
+};
 
 # Create the main tarball
 print("===> Creating the final argobots tarball... ");

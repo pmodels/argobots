@@ -23,8 +23,8 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
  * routine returns an error returned by \c p_init() if \c p_init() does not
  * return \c ABT_SUCCESS.
  *
- * The user can pass \c ABT_POOL_CONFIG_NULL as \c config.  The configuration is
- * passed as the parameter of the initialization function of the pool.
+ * \c config is passed as the second argument of the initialization function of
+ * the pool.
  *
  * \c def must define all the non-optional functions.  See \c #ABT_pool_def for
  * details.
@@ -266,7 +266,7 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
  * - If \c pool is created by \c ABT_pool_create_basic():
  *
  *   This routine sets \c size to the sum of the number of work units including
- *   in \c pool and the number of blocking work units associated with \c pool.
+ *   works units in \c pool and suspended work units associated with \c pool.
  *
  * @changev11
  * \DOC_DESC_V10_ACCESS_VIOLATION
@@ -355,8 +355,8 @@ int ABT_pool_get_size(ABT_pool pool, size_t *size)
  *
  *   This routine tries to pop a work unit from \c pool.  If this routine
  *   successfully pops a work unit, this routine sets \c p_unit to the obtained
- *   handle of \c ABT_unit.  Otherwise, this routine sets \c ABT_UNIT_NULL to
- *   \c p_unit.
+ *   handle of \c ABT_unit.  Otherwise, this routine sets \c p_unit to
+ *   \c ABT_UNIT_NULL.
  *
  * @changev11
  * \DOC_DESC_V10_ACCESS_VIOLATION
@@ -416,8 +416,8 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
  *
  * @note
  * In most cases, \c ABT_pool_pop() is more efficient.  \c ABT_pool_pop_wait()
- * would be useful in cases where the user wants to make execution streams sleep
- * when \c pool is empty.
+ * would be useful in cases where the user wants to sleep execution streams when
+ * \c pool is empty.
  *
  * @changev20
  * \DOC_DESC_V1X_P_POP_WAIT
@@ -462,7 +462,7 @@ int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
  * - If \c pool is created by \c ABT_pool_create():
  *
  *   This routine sets \c p_unit to a value returned by \c p_pop_timedwait()
- *   called with \c pool as its first argument and \c abstime_sec as the second
+ *   called with \c pool as its first argument and \c abstime_secs as the second
  *   argument.
  *
  * - If \c pool is created by \c ABT_pool_create_basic():
@@ -472,14 +472,12 @@ int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
  *   routine is blocked on \c pool until the current time exceeds
  *   \c abstime_secs.  If this routine successfully pops a work unit, this
  *   routine sets \c p_unit to the obtained handle of \c ABT_unit.  Otherwise,
- *   this routine sets \c ABT_UNIT_NULL to \c p_unit.
+ *   this routine sets \c p_unit to \c ABT_UNIT_NULL.
  *
  * @note
  * \c abstime_secs can be calculated by adding an offset time to a value
- * returned by \c ABT_get_wtime().
- *
- * This routine is deprecated.  The user should use \c ABT_pool_pop_wait()
- * instead.
+ * returned by \c ABT_get_wtime().\n
+ * \DOC_NOTE_REPLACEMENT{\c ABT_pool_pop_wait()}.
  *
  * @changev11
  * \DOC_DESC_V10_ACCESS_VIOLATION
@@ -708,10 +706,10 @@ int ABT_pool_set_data(ABT_pool pool, void *data)
  * @ingroup POOL
  * @brief   Retrieve user data from a pool
  *
- * \c ABT_pool_set_data() returns user data in the pool \c pool through \c data.
+ * \c ABT_pool_get_data() returns user data in the pool \c pool through \c data.
  *
  * @note
- * The specific data of the newly created pool is \c NULL.
+ * The user data of the newly created pool is \c NULL.
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH

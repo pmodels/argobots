@@ -24,14 +24,15 @@
  * \c ABT_future_set() for a future that has no compartment.\n
  * \c cb_func() is never called if \c num_compartments is zero.
  *
- * If \c cb_func is not \c NULL, a callback function \c cb_func() will be called
- * just before all the compartments are set by \c ABT_future_set().  The caller
- * of \c cb_func() is undefined, so a program that relies on the caller of
- * \c cb_func() is non-conforming.  Calling any routine for a future in
- * \c cb_func() that is associated with the future causes undefined behavior.
- * The argument \c arg of \c cb_func() is a properly aligned array each of
- * which element stores \c value passed to \c ABT_future_set().  The contents of
- * \c arg are read-only and may not be accessed after \c cb_func() finishes.
+ * If \c cb_func is not \c NULL, the callback function \c cb_func() is
+ * registered to \c future.  \c cb_func() will be called before all the
+ * compartments are set by \c ABT_future_set().  The caller of \c cb_func() is
+ * undefined, so a program that relies on the caller of \c cb_func() is
+ * non-conforming.  The state of the future that invokes \c cb_func() is
+ * undefined in \c cb_func().  The argument \c arg of \c cb_func() is a properly
+ * aligned array each of which element stores \c value passed to
+ * \c ABT_future_set().  The contents of \c arg are read-only and may not be
+ * accessed after \c cb_func() finishes.
  *
  * \c newfuture must be freed by \c ABT_future_free() after its use.
  *
@@ -135,8 +136,8 @@ int ABT_future_free(ABT_future *future)
  *
  * The caller of \c ABT_future_wait() waits on the future \c future.  If
  * \c future is ready, this routine returns immediately.  If \c future is not
- * ready, the caller of this routine suspends and will be resumed once \c future
- * gets ready.
+ * ready, the caller of this routine suspends.  The caller will be resumed once
+ * \c future gets ready.
  *
  * \DOC_DESC_ATOMICITY_FUTURE_READINESS
  *
@@ -232,8 +233,9 @@ int ABT_future_test(ABT_future future, ABT_bool *is_ready)
  *
  * \c ABT_future_set() sets a value \c value to one of the unset compartments of
  * the future \c future.  If all the compartments of \c future are set, this
- * routine triggers a callback function of \c future if it is not \c NULL, makes
- * \c future ready, and wakes up all waiters that are blocked on \c future.
+ * routine makes \c future ready and wakes up all waiters that are blocked on
+ * \c future.  If the callback function is set to \c future, the callback
+ * function is triggered before \c future is set to ready.
  *
  * \DOC_DESC_ATOMICITY_FUTURE_READINESS
  *
@@ -292,9 +294,11 @@ int ABT_future_set(ABT_future future, void *value)
  * @brief   Reset readiness of a future.
  *
  * \c ABT_future_reset() resets the readiness of the future \c future.
- * \c future gets ready if \c ABT_future_set() for \c future succeeds as many
- * times as the number of compartments of the future.  This routine makes
- * \c future unready irrespective of its readiness.
+ * A future reset by this routine will get ready if \c ABT_future_set() succeeds
+ * as many times as the number of its compartments.
+ *
+ * @note
+ * This routine makes \c future unready irrespective of its readiness.
  *
  * \DOC_DESC_ATOMICITY_FUTURE_READINESS
  *

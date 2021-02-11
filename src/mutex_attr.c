@@ -6,8 +6,8 @@
 #include "abti.h"
 
 /** @defgroup MUTEX_ATTR Mutex Attributes
- * Mutex attributes are used to specify mutex behavior that is different from
- * the default.
+ * This group is for Mutex Attributes.  Mutex attributes are used to specify
+ * mutex behavior that is different from the default.
  */
 
 /**

@@ -230,7 +230,7 @@ int ABT_xstream_create_basic(ABT_sched_predef predef, int num_pools,
  * \c newxstream is freed.
  *
  * This routine allocates the rank \c rank for \c newxstream.  \c rank must be
- * non-negative value and unique among all the execution streams.
+ * non-negative and not used by another execution stream.
  *
  * \DOC_DESC_ATOMICITY_RANK
  *
@@ -317,7 +317,7 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
  * \DOC_DESC_ATOMICITY_XSTREAM_STATE
  *
  * \c xstream may not be an execution stream that has been freed by
- * \c ABT_xstream_free().  An execution stream that is blocked on by
+ * \c ABT_xstream_free().  An execution stream that is blocked on by a caller of
  * \c ABT_xstream_free() may not be revived.
  *
  * @contexts
@@ -402,7 +402,7 @@ int ABT_xstream_revive(ABT_xstream xstream)
  * @undefined
  * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NULL_PTR{\c xstream}
- * \DOC_UNDEFINED_XSTREAM_BLOCKED{\c xstream, \c ABT_xstream_join() and
+ * \DOC_UNDEFINED_XSTREAM_BLOCKED{\c xstream, \c ABT_xstream_join() or
  *                                            \c ABT_xstream_free()}
  * \DOC_UNDEFINED_THREAD_UNSAFE_FREE{\c xstream}
  *
@@ -466,7 +466,7 @@ int ABT_xstream_free(ABT_xstream *xstream)
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
- * \DOC_UNDEFINED_XSTREAM_BLOCKED{\c xstream, \c ABT_xstream_join() and
+ * \DOC_UNDEFINED_XSTREAM_BLOCKED{\c xstream, \c ABT_xstream_join() or
  *                                            \c ABT_xstream_free()}
  * \DOC_UNDEFINED_THREAD_UNSAFE{\c xstream}
  *
@@ -495,19 +495,20 @@ int ABT_xstream_join(ABT_xstream xstream)
  *
  * \DOC_DESC_ATOMICITY_XSTREAM_REQUEST
  *
+ * @note
+ * \DOC_NOTE_TIMING_REQUEST
+ *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
  * @endchangev20
- *
- * @note
- * \DOC_NOTE_TIMING_REQUEST
  *
  * @contexts
  * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
  *
  * @errors
- * \DOC_ERROR_INV_XSTREAM_EXT
  * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_PRIMARY_ULT{the caller}
+ * \DOC_ERROR_INV_XSTREAM_EXT
  * \DOC_ERROR_INV_XSTREAM_PRIMARY{an execution stream that is running the
  *                                calling ULT}
  * \DOC_V1X \DOC_ERROR_UNINITIALIZED
@@ -525,7 +526,7 @@ int ABT_xstream_exit(void)
     ABTI_SETUP_GLOBAL(NULL);
 #endif
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
-    /* Check if the target is the primary executions stream. */
+    /* Check if the target is the primary execution stream. */
     ABTI_CHECK_TRUE(p_local_xstream->type != ABTI_XSTREAM_TYPE_PRIMARY,
                     ABT_ERR_INV_XSTREAM);
 
@@ -589,7 +590,7 @@ int ABT_xstream_cancel(ABT_xstream xstream)
  * running the calling work unit through \c xstream.
  *
  * @note
- * \DOC_DESC_REPLACEMENT{\c ABT_self_get_xstream()}
+ * \DOC_NOTE_REPLACEMENT{\c ABT_self_get_xstream()}
  *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
@@ -606,7 +607,6 @@ int ABT_xstream_cancel(ABT_xstream xstream)
  * \DOC_V1X \DOC_ERROR_UNINITIALIZED
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NULL_PTR{\c xstream}
  * \DOC_V20 \DOC_UNDEFINED_UNINIT
  *
@@ -635,7 +635,7 @@ int ABT_xstream_self(ABT_xstream *xstream)
  * running the calling work unit through \c rank.
  *
  * @note
- * \DOC_DESC_REPLACEMENT{\c ABT_self_get_xstream_rank()}
+ * \DOC_NOTE_REPLACEMENT{\c ABT_self_get_xstream_rank()}
  *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
@@ -650,7 +650,6 @@ int ABT_xstream_self(ABT_xstream *xstream)
  * \DOC_V1X \DOC_ERROR_UNINITIALIZED
  *
  * @undefined
- * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_NULL_PTR{\c rank}
  * \DOC_V20 \DOC_UNDEFINED_UNINIT
  *
@@ -677,11 +676,11 @@ int ABT_xstream_self_rank(int *rank)
  * the execution stream \c xstream.  The original rank of \c xstream is
  * deallocated.
  *
- * \c rank must be non-negative and unique among all the execution streams.
+ * \c rank must be non-negative and not used by another execution stream.
  *
  * \DOC_DESC_ATOMICITY_RANK
  *
- * The primary execution stream cannot change its rank.
+ * The rank of the primary execution stream may not be changed.
  *
  * @note
  * If the affinity setting is enabled, this routine updates the CPU binding of
@@ -790,7 +789,7 @@ int ABT_xstream_get_rank(ABT_xstream xstream, int *rank)
  * \DOC_NOTE_DEFAULT_SCHED_CONFIG
  *
  * @changev11
- * \DOC_DESC_V10_CRUDE_SCHED_SIZE_CHECK{\c xstream, \c ABT_ERR_XSTREAM}
+ * \DOC_DESC_V10_INCOMPLETE_SCHED_SIZE_CHECK{\c xstream, \c ABT_ERR_XSTREAM}
  *
  * \DOC_DESC_V10_ACCESS_VIOLATION
  * @endchangev11
@@ -1172,7 +1171,7 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *is_primary)
  * @ingroup ES
  * @brief   Execute a work unit.
  *
- * \c ABT_xstream_run_unit() runs a work unit \c unit associated with the pool
+ * \c ABT_xstream_run_unit() runs the work unit \c unit associated with the pool
  * \c pool as a child ULT on the calling ULT, which becomes a parent ULT.  The
  * calling ULT will be resumed when \c unit finishes or yields.
  *
@@ -1215,14 +1214,11 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
  * @brief   Process events associated with a scheduler
  *
  * \c ABT_xstream_check_events() processes events associated with the scheduler
- * \c sched.  The calling work unit must be associated with the scheduler
- * \c sched.
+ * \c sched.  The calling work unit must be associated with \c sched.
  *
- * This routine must be called by a scheduler periodically.
- *
- * @note
- * For example, a user-defined scheduler should call this routine every hundred
- * iterations of its scheduling loop.
+ * This routine must be called by a scheduler periodically.  For example, a
+ * user-defined scheduler should call this routine every N iterations of its
+ * scheduling loop.
  *
  * @changev20
  * \DOC_DESC_V1X_RETURN_UNINITIALIZED
@@ -1310,7 +1306,7 @@ int ABT_xstream_set_cpubind(ABT_xstream xstream, int cpuid)
  *
  * \c ABT_xstream_get_cpubind() returns the CPU ID of a CPU to which the
  * execution stream \c xstream is bound through \c cpuid.  If \c xstream is
- * bound to more than one CPU, one of the CPU IDs is set to \c cpuid.
+ * bound to more than one CPU, \c cpuid is set to one of the CPU IDs.
  *
  * @note
  * \DOC_NOTE_CPUID
