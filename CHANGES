@@ -1,4 +1,31 @@
 ===============================================================================
+                               Changes in 1.1b1
+===============================================================================
+
+- Improved the API specification
+- Added a static initializer for ABT_mutex and ABT_cond
+- Fixed changes that break the ABI compatibility with Argobots 1.0.1
+- Supported Autoconf 2.70
+- Fixed several bugs
+
+===============================================================================
+                               Changes in 1.1a1
+===============================================================================
+
+- Added a tool interface to support a profiler (see ABTX_prof)
+- Improved work-unit-local storage support
+- Enhanced memory management of ULT stacks and descriptors
+- Added support for XLC, PGI, Solaris, and ARM HPC compilers
+- Improved support for affinity settings via an environmental variable
+- Fixed several bugs
+
+===============================================================================
+                               Changes in 1.0.1
+===============================================================================
+
+- Fixed the ABI string for the Argobots 1.0.x series.
+
+===============================================================================
                                Changes in 1.0
 ===============================================================================
 
