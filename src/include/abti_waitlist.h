@@ -96,63 +96,74 @@ static inline ABT_bool ABTI_waitlist_wait_timedout_and_unlock(
     p_waitlist->p_tail = &thread;
 
     /* Waiting here. */
-    ABTD_spinlock_release(p_lock);
-    while (ABTD_atomic_acquire_load_int(&thread.state) !=
-           ABT_THREAD_STATE_READY) {
-        double cur_time = ABTI_get_wtime();
-        if (cur_time >= target_time) {
-            /* Timeout.  Remove this thread if not signaled even after taking
-             * a lock. */
-            ABTD_spinlock_acquire(p_lock);
-            ABT_bool is_timedout =
-                (ABTD_atomic_acquire_load_int(&thread.state) !=
-                 ABT_THREAD_STATE_READY)
-                    ? ABT_TRUE
-                    : ABT_FALSE;
-            if (is_timedout) {
-                /* This thread is still in the list. */
-                if (p_waitlist->p_head == &thread) {
-                    /* thread is a head. */
-                    /* Note that thread->p_prev cannot be used to check whether
-                     * thread is a head or not because signal and broadcast do
-                     * not modify thread->p_prev. */
-                    p_waitlist->p_head = thread.p_next;
-                    if (!thread.p_next) {
-                        /* This thread is p_tail */
-                        ABTI_ASSERT(p_waitlist->p_tail == &thread);
-                        p_waitlist->p_tail = NULL;
-                    }
-                } else {
-                    /* thread is not a head and thus p_prev exists. */
-                    ABTI_ASSERT(thread.p_prev);
-                    thread.p_prev->p_next = thread.p_next;
-                    if (thread.p_next && thread.type == ABTI_THREAD_TYPE_EXT) {
-                        /* Only an external thread (created by this function)
-                         * checks p_prev.  Note that an external thread is
-                         * dummy, so updating p_prev is allowed. */
-                        thread.p_next->p_prev = thread.p_prev;
-                    } else {
-                        /* This thread is p_tail */
-                        ABTI_ASSERT(p_waitlist->p_tail == &thread);
-                        p_waitlist->p_tail = thread.p_prev;
-                    }
-                }
-                /* We do not need to modify thread->p_prev and p_next since this
-                 * dummy thread is no longer used. */
+    if (p_ythread) {
+        /* When an underlying entity is yieldable. */
+        ABTD_spinlock_release(p_lock);
+        while (ABTD_atomic_acquire_load_int(&thread.state) !=
+               ABT_THREAD_STATE_READY) {
+            double cur_time = ABTI_get_wtime();
+            if (cur_time >= target_time) {
+                ABTD_spinlock_acquire(p_lock);
+                goto timeout;
             }
-            ABTD_spinlock_release(p_lock);
-            return is_timedout;
-        }
-        if (p_ythread) {
             ABTI_ythread_yield(&p_local_xstream, p_ythread, sync_event_type,
                                p_sync);
             *pp_local = ABTI_xstream_get_local(p_local_xstream);
-        } else {
-            ABTD_atomic_pause();
+        }
+    } else {
+        /* When an underlying entity is non-yieldable. */
+        ABTD_spinlock_release(p_lock);
+        while (ABTD_atomic_acquire_load_int(&thread.state) !=
+               ABT_THREAD_STATE_READY) {
+            double cur_time = ABTI_get_wtime();
+            if (cur_time >= target_time) {
+                ABTD_spinlock_acquire(p_lock);
+                goto timeout;
+            }
         }
     }
     /* Singled */
     return ABT_FALSE;
+timeout:
+    /* Timeout.  Remove this thread if not signaled even after taking a lock. */
+    ABTI_ASSERT(ABTD_spinlock_is_locked(p_lock) == ABT_TRUE);
+    ABT_bool is_timedout =
+        (ABTD_atomic_relaxed_load_int(&thread.state) != ABT_THREAD_STATE_READY)
+            ? ABT_TRUE
+            : ABT_FALSE;
+    if (is_timedout) {
+        /* This thread is still in the list. */
+        if (p_waitlist->p_head == &thread) {
+            /* thread is a head. */
+            /* Note that thread->p_prev cannot be used to check whether
+             * thread is a head or not because signal and broadcast do
+             * not modify thread->p_prev. */
+            p_waitlist->p_head = thread.p_next;
+            if (!thread.p_next) {
+                /* This thread is p_tail */
+                ABTI_ASSERT(p_waitlist->p_tail == &thread);
+                p_waitlist->p_tail = NULL;
+            }
+        } else {
+            /* thread is not a head and thus p_prev exists. */
+            ABTI_ASSERT(thread.p_prev);
+            thread.p_prev->p_next = thread.p_next;
+            if (thread.p_next && thread.type == ABTI_THREAD_TYPE_EXT) {
+                /* Only a dummy external thread created by this function
+                 * checks p_prev.  Note that a real external thread is
+                 * also dummy, so updating p_prev is allowed. */
+                thread.p_next->p_prev = thread.p_prev;
+            } else {
+                /* This thread is p_tail */
+                ABTI_ASSERT(p_waitlist->p_tail == &thread);
+                p_waitlist->p_tail = thread.p_prev;
+            }
+        }
+        /* We do not need to modify thread->p_prev and p_next since this
+         * dummy thread is no longer used. */
+    }
+    ABTD_spinlock_release(p_lock);
+    return is_timedout;
 }
 
 static inline void ABTI_waitlist_signal(ABTI_local *p_local,
