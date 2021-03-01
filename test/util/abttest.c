@@ -64,6 +64,26 @@ void ATS_init(int argc, char **argv, int num_xstreams)
     if (envval && atoi(envval) == 0) {
         g_tool_enabled = 0;
     }
+    /* If affinity is enabled, unset the affinity of the primary execution
+     * stream since pthreads created on the primary execution stream inherits
+     * its parent's affinity on Linux, causing a several oversubscription by
+     * default. */
+    ABT_bool affinity_enabled;
+    ret = ABT_info_query_config(ABT_INFO_QUERY_KIND_ENABLED_AFFINITY,
+                                &affinity_enabled);
+    ATS_ERROR(ret, "ABT_info_query_config");
+    if (affinity_enabled) {
+        int *cpuids = (int *)malloc(sizeof(int) * 16);
+        int i;
+        for (i = 0; i < 16; i++)
+            cpuids[i] = i;
+        ABT_xstream self_xstream;
+        ret = ABT_self_get_xstream(&self_xstream);
+        ATS_ERROR(ret, "ABT_self_get_xstream");
+        ret = ABT_xstream_set_affinity(self_xstream, 16, cpuids);
+        ATS_ERROR(ret, "ABT_xstream_set_affinity");
+        free(cpuids);
+    }
 
     if (g_tool_enabled) {
         /* Let's debug the tool interface as well. */
