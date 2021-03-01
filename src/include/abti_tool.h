@@ -56,7 +56,7 @@ ABTI_tool_event_thread_update_callback(ABTI_global *p_global,
                                        uint64_t event_mask, void *user_arg)
 {
     /* The spinlock is needed to avoid data race between two writers. */
-    ABTI_spinlock_acquire(&p_global->tool_writer_lock);
+    ABTD_spinlock_acquire(&p_global->tool_writer_lock);
 
     /*
      * This atomic writing process is needed to avoid data race between a reader
@@ -90,7 +90,7 @@ ABTI_tool_event_thread_update_callback(ABTI_global *p_global,
     ABTD_atomic_release_store_uint64(&p_global->tool_thread_event_mask_tagged,
                                      new_mask);
 
-    ABTI_spinlock_release(&p_global->tool_writer_lock);
+    ABTD_spinlock_release(&p_global->tool_writer_lock);
 }
 
 #endif /* !ABT_CONFIG_DISABLE_TOOL_INTERFACE */

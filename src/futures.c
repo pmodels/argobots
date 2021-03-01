@@ -67,7 +67,7 @@ int ABT_future_create(uint32_t num_compartments, void (*cb_func)(void **arg),
 
     abt_errno = ABTU_malloc(sizeof(ABTI_future), (void **)&p_future);
     ABTI_CHECK_ERROR(abt_errno);
-    ABTI_spinlock_clear(&p_future->lock);
+    ABTD_spinlock_clear(&p_future->lock);
     ABTD_atomic_relaxed_store_size(&p_future->counter, 0);
     p_future->num_compartments = arg_num_compartments;
     if (arg_num_compartments > 0) {
@@ -121,7 +121,7 @@ int ABT_future_free(ABT_future *future)
     /* The lock needs to be acquired to safely free the future structure.
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
-    ABTI_spinlock_acquire(&p_future->lock);
+    ABTD_spinlock_acquire(&p_future->lock);
 
     ABTU_free(p_future->array);
     ABTU_free(p_future);
@@ -178,7 +178,7 @@ int ABT_future_wait(ABT_future future)
     }
 #endif
 
-    ABTI_spinlock_acquire(&p_future->lock);
+    ABTD_spinlock_acquire(&p_future->lock);
     if (ABTD_atomic_relaxed_load_size(&p_future->counter) <
         p_future->num_compartments) {
         ABTI_waitlist_wait_and_unlock(&p_local, &p_future->waitlist,
@@ -186,7 +186,7 @@ int ABT_future_wait(ABT_future future)
                                       ABT_SYNC_EVENT_TYPE_FUTURE,
                                       (void *)p_future);
     } else {
-        ABTI_spinlock_release(&p_future->lock);
+        ABTD_spinlock_release(&p_future->lock);
     }
     return ABT_SUCCESS;
 }
@@ -261,14 +261,14 @@ int ABT_future_set(ABT_future future, void *value)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-    ABTI_spinlock_acquire(&p_future->lock);
+    ABTD_spinlock_acquire(&p_future->lock);
 
     size_t counter = ABTD_atomic_relaxed_load_size(&p_future->counter);
     size_t num_compartments = p_future->num_compartments;
 #ifndef ABT_CONFIG_DISABLE_ERROR_CHECK
     /* If num_compartments is 0, this routine always returns ABT_ERR_FUTURE */
     if (counter >= num_compartments) {
-        ABTI_spinlock_release(&p_future->lock);
+        ABTD_spinlock_release(&p_future->lock);
         ABTI_HANDLE_ERROR(ABT_ERR_FUTURE);
     }
 #endif
@@ -285,7 +285,7 @@ int ABT_future_set(ABT_future future, void *value)
         ABTI_waitlist_broadcast(p_local, &p_future->waitlist);
     }
 
-    ABTI_spinlock_release(&p_future->lock);
+    ABTD_spinlock_release(&p_future->lock);
     return ABT_SUCCESS;
 }
 
@@ -325,8 +325,8 @@ int ABT_future_reset(ABT_future future)
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
-    ABTI_spinlock_acquire(&p_future->lock);
+    ABTD_spinlock_acquire(&p_future->lock);
     ABTD_atomic_release_store_size(&p_future->counter, 0);
-    ABTI_spinlock_release(&p_future->lock);
+    ABTD_spinlock_release(&p_future->lock);
     return ABT_SUCCESS;
 }

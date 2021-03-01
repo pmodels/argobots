@@ -21,7 +21,7 @@ typedef __attribute__((aligned(ABT_CONFIG_STATIC_CACHELINE_SIZE))) struct {
 #if ABTD_ATOMIC_SUPPORT_TAGGED_PTR
     ABTD_atomic_tagged_ptr p_top;
 #else
-    ABTI_spinlock lock;
+    ABTD_spinlock lock;
     ABTD_atomic_ptr p_top;
 #endif
 } ABTI_sync_lifo;
@@ -32,7 +32,7 @@ static inline void ABTI_sync_lifo_init(ABTI_sync_lifo *p_lifo)
 #if ABTD_ATOMIC_SUPPORT_TAGGED_PTR
     ABTD_atomic_release_store_non_atomic_tagged_ptr(&p_lifo->p_top, NULL, 0);
 #else
-    ABTI_spinlock_clear(&p_lifo->lock);
+    ABTD_spinlock_clear(&p_lifo->lock);
     ABTD_atomic_relaxed_store_ptr(&p_lifo->p_top, NULL);
 #endif
 }
@@ -107,9 +107,9 @@ static inline void ABTI_sync_lifo_push(ABTI_sync_lifo *p_lifo,
         }
     }
 #else
-    ABTI_spinlock_acquire(&p_lifo->lock);
+    ABTD_spinlock_acquire(&p_lifo->lock);
     ABTI_sync_lifo_push_unsafe(p_lifo, p_elem);
-    ABTI_spinlock_release(&p_lifo->lock);
+    ABTD_spinlock_release(&p_lifo->lock);
 #endif
 }
 
@@ -135,9 +135,9 @@ static inline ABTI_sync_lifo_element *ABTI_sync_lifo_pop(ABTI_sync_lifo *p_lifo)
     }
 #else
     ABTI_sync_lifo_element *p_ret;
-    ABTI_spinlock_acquire(&p_lifo->lock);
+    ABTD_spinlock_acquire(&p_lifo->lock);
     p_ret = ABTI_sync_lifo_pop_unsafe(p_lifo);
-    ABTI_spinlock_release(&p_lifo->lock);
+    ABTD_spinlock_release(&p_lifo->lock);
     return p_ret;
 #endif
 }

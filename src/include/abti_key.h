@@ -109,7 +109,7 @@ ABTU_ret_err static inline int ABTI_ktable_create(ABTI_global *p_global,
         p_ktable->extra_mem_size = 0;
     }
     p_ktable->size = key_table_size;
-    ABTI_spinlock_clear(&p_ktable->lock);
+    ABTD_spinlock_clear(&p_ktable->lock);
     memset(p_ktable->p_elems, 0, sizeof(ABTD_atomic_ptr) * key_table_size);
     *pp_ktable = p_ktable;
     return ABT_SUCCESS;
@@ -188,13 +188,13 @@ ABTI_ktable_set_impl(ABTI_local *p_local, ABTI_ktable *p_ktable,
 
     /* The table does not have the same key */
     if (is_safe)
-        ABTI_spinlock_acquire(&p_ktable->lock);
+        ABTD_spinlock_acquire(&p_ktable->lock);
     /* The linked list might have been extended. */
     p_elem = (ABTI_ktelem *)ABTD_atomic_acquire_load_ptr(pp_elem);
     while (p_elem) {
         if (p_elem->key_id == key_id) {
             if (is_safe)
-                ABTI_spinlock_release(&p_ktable->lock);
+                ABTD_spinlock_release(&p_ktable->lock);
             p_elem->value = value;
             return ABT_SUCCESS;
         }
@@ -209,7 +209,7 @@ ABTI_ktable_set_impl(ABTI_local *p_local, ABTI_ktable *p_ktable,
                                            (void **)&p_elem);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
         if (is_safe)
-            ABTI_spinlock_release(&p_ktable->lock);
+            ABTD_spinlock_release(&p_ktable->lock);
         return abt_errno;
     }
     p_elem->f_destructor = p_key->f_destructor;
@@ -218,7 +218,7 @@ ABTI_ktable_set_impl(ABTI_local *p_local, ABTI_ktable *p_ktable,
     ABTD_atomic_relaxed_store_ptr(&p_elem->p_next, NULL);
     ABTD_atomic_release_store_ptr(pp_elem, p_elem);
     if (is_safe)
-        ABTI_spinlock_release(&p_ktable->lock);
+        ABTD_spinlock_release(&p_ktable->lock);
     return ABT_SUCCESS;
 }
 

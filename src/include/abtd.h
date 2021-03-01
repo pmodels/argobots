@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include "abtd_atomic.h"
 #include "abtd_context.h"
+#include "abtd_spinlock.h"
 
 /* Data Types */
 typedef enum {

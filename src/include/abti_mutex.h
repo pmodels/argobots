@@ -38,9 +38,9 @@ static inline ABT_mutex ABTI_mutex_get_handle(ABTI_mutex *p_mutex)
 
 static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 {
-    ABTI_spinlock_clear(&p_mutex->lock);
+    ABTD_spinlock_clear(&p_mutex->lock);
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
-    ABTI_spinlock_clear(&p_mutex->waiter_lock);
+    ABTD_spinlock_clear(&p_mutex->waiter_lock);
     ABTI_waitlist_init(&p_mutex->waitlist);
 #endif
     p_mutex->attrs = ABTI_MUTEX_ATTR_NONE;
@@ -51,7 +51,7 @@ static inline void ABTI_mutex_init(ABTI_mutex *p_mutex)
 static inline void ABTI_mutex_fini(ABTI_mutex *p_mutex)
 {
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
-    ABTI_spinlock_acquire(&p_mutex->waiter_lock);
+    ABTD_spinlock_acquire(&p_mutex->waiter_lock);
 #endif
 }
 
@@ -59,13 +59,13 @@ static inline void ABTI_mutex_lock_no_recursion(ABTI_local **pp_local,
                                                 ABTI_mutex *p_mutex)
 {
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
-    while (ABTI_spinlock_try_acquire(&p_mutex->lock)) {
+    while (ABTD_spinlock_try_acquire(&p_mutex->lock)) {
         /* Failed to take a lock, so let's add it to the waiter list. */
-        ABTI_spinlock_acquire(&p_mutex->waiter_lock);
+        ABTD_spinlock_acquire(&p_mutex->waiter_lock);
         /* Maybe the mutex lock has been already released.  Check it. */
-        if (!ABTI_spinlock_try_acquire(&p_mutex->lock)) {
+        if (!ABTD_spinlock_try_acquire(&p_mutex->lock)) {
             /* Lock has been taken. */
-            ABTI_spinlock_release(&p_mutex->waiter_lock);
+            ABTD_spinlock_release(&p_mutex->waiter_lock);
             break;
         }
         /* Wait on waitlist. */
@@ -83,14 +83,14 @@ static inline void ABTI_mutex_lock_no_recursion(ABTI_local **pp_local,
         p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
 
     if (p_ythread) {
-        while (ABTI_spinlock_try_acquire(&p_mutex->lock)) {
+        while (ABTD_spinlock_try_acquire(&p_mutex->lock)) {
             ABTI_ythread_yield(&p_local_xstream, p_ythread,
                                ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             *pp_local = ABTI_xstream_get_local(p_local_xstream);
         }
     } else {
         /* Use spinlock. */
-        ABTI_spinlock_acquire(&p_mutex->lock);
+        ABTD_spinlock_acquire(&p_mutex->lock);
     }
 #endif
 }
@@ -115,7 +115,7 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
 
 static inline int ABTI_mutex_trylock_no_recursion(ABTI_mutex *p_mutex)
 {
-    return ABTI_spinlock_try_acquire(&p_mutex->lock) ? ABT_ERR_MUTEX_LOCKED
+    return ABTD_spinlock_try_acquire(&p_mutex->lock) ? ABT_ERR_MUTEX_LOCKED
                                                      : ABT_SUCCESS;
 }
 
@@ -143,7 +143,7 @@ static inline int ABTI_mutex_trylock(ABTI_local *p_local, ABTI_mutex *p_mutex)
 
 static inline void ABTI_mutex_spinlock_no_recursion(ABTI_mutex *p_mutex)
 {
-    ABTI_spinlock_acquire(&p_mutex->lock);
+    ABTD_spinlock_acquire(&p_mutex->lock);
 }
 
 static inline void ABTI_mutex_spinlock(ABTI_local *p_local, ABTI_mutex *p_mutex)
@@ -168,13 +168,13 @@ static inline void ABTI_mutex_unlock_no_recursion(ABTI_local *p_local,
                                                   ABTI_mutex *p_mutex)
 {
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
-    ABTI_spinlock_acquire(&p_mutex->waiter_lock);
-    ABTI_spinlock_release(&p_mutex->lock);
+    ABTD_spinlock_acquire(&p_mutex->waiter_lock);
+    ABTD_spinlock_release(&p_mutex->lock);
     /* Operations of waitlist must be done while taking waiter_lock. */
     ABTI_waitlist_broadcast(p_local, &p_mutex->waitlist);
-    ABTI_spinlock_release(&p_mutex->waiter_lock);
+    ABTD_spinlock_release(&p_mutex->waiter_lock);
 #else
-    ABTI_spinlock_release(&p_mutex->lock);
+    ABTD_spinlock_release(&p_mutex->lock);
 #endif
 }
 

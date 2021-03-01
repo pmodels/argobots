@@ -1518,7 +1518,7 @@ int ABT_thread_migrate(ABT_thread thread)
     /* Copy the target execution streams. */
     int i, num_xstreams, abt_errno;
     ABTI_xstream **xstreams;
-    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+    ABTD_spinlock_acquire(&p_global->xstream_list_lock);
     num_xstreams = p_global->num_xstreams;
     abt_errno =
         ABTU_malloc(sizeof(ABTI_xstream *) * num_xstreams, (void **)&xstreams);
@@ -1530,7 +1530,7 @@ int ABT_thread_migrate(ABT_thread thread)
             p_xstream = p_xstream->p_next;
         }
     }
-    ABTI_spinlock_release(&p_global->xstream_list_lock);
+    ABTD_spinlock_release(&p_global->xstream_list_lock);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Choose the destination xstream.  The user needs to maintain all the pools

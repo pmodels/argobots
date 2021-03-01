@@ -2149,7 +2149,7 @@ static void xstream_remove_xstream_list(ABTI_global *p_global,
 static ABT_bool xstream_set_new_rank(ABTI_global *p_global,
                                      ABTI_xstream *p_newxstream, int rank)
 {
-    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+    ABTD_spinlock_acquire(&p_global->xstream_list_lock);
 
     if (rank == -1) {
         /* Find an unused rank from 0. */
@@ -2169,7 +2169,7 @@ static ABT_bool xstream_set_new_rank(ABTI_global *p_global,
         ABTI_xstream *p_xstream = p_global->p_xstream_head;
         while (p_xstream) {
             if (p_xstream->rank == rank) {
-                ABTI_spinlock_release(&p_global->xstream_list_lock);
+                ABTD_spinlock_release(&p_global->xstream_list_lock);
                 return ABT_FALSE;
             } else if (p_xstream->rank > rank) {
                 break;
@@ -2183,7 +2183,7 @@ static ABT_bool xstream_set_new_rank(ABTI_global *p_global,
     xstream_update_max_xstreams(p_global, rank);
     p_global->num_xstreams++;
 
-    ABTI_spinlock_release(&p_global->xstream_list_lock);
+    ABTD_spinlock_release(&p_global->xstream_list_lock);
     return ABT_TRUE;
 }
 
@@ -2196,13 +2196,13 @@ static ABT_bool xstream_change_rank(ABTI_global *p_global,
         return ABT_TRUE;
     }
 
-    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+    ABTD_spinlock_acquire(&p_global->xstream_list_lock);
 
     ABTI_xstream *p_next = p_global->p_xstream_head;
     /* Check if a certain rank is available. */
     while (p_next) {
         if (p_next->rank == rank) {
-            ABTI_spinlock_release(&p_global->xstream_list_lock);
+            ABTD_spinlock_release(&p_global->xstream_list_lock);
             return ABT_FALSE;
         } else if (p_next->rank > rank) {
             break;
@@ -2216,17 +2216,17 @@ static ABT_bool xstream_change_rank(ABTI_global *p_global,
     xstream_add_xstream_list(p_global, p_xstream);
     xstream_update_max_xstreams(p_global, rank);
 
-    ABTI_spinlock_release(&p_global->xstream_list_lock);
+    ABTD_spinlock_release(&p_global->xstream_list_lock);
     return ABT_TRUE;
 }
 
 static void xstream_return_rank(ABTI_global *p_global, ABTI_xstream *p_xstream)
 {
     /* Remove this xstream from the global ES list */
-    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+    ABTD_spinlock_acquire(&p_global->xstream_list_lock);
 
     xstream_remove_xstream_list(p_global, p_xstream);
     p_global->num_xstreams--;
 
-    ABTI_spinlock_release(&p_global->xstream_list_lock);
+    ABTD_spinlock_release(&p_global->xstream_list_lock);
 }

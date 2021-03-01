@@ -58,7 +58,7 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
     abt_errno = ABTU_malloc(sizeof(ABTI_barrier), (void **)&p_newbarrier);
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_spinlock_clear(&p_newbarrier->lock);
+    ABTD_spinlock_clear(&p_newbarrier->lock);
     p_newbarrier->num_waiters = arg_num_waiters;
     p_newbarrier->counter = 0;
     ABTI_waitlist_init(&p_newbarrier->waitlist);
@@ -145,7 +145,7 @@ int ABT_barrier_free(ABT_barrier *barrier)
     /* The lock needs to be acquired to safely free the barrier structure.
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
-    ABTI_spinlock_acquire(&p_barrier->lock);
+    ABTD_spinlock_acquire(&p_barrier->lock);
 
     /* p_barrier->counter must be checked after taking a lock. */
     ABTI_ASSERT(p_barrier->counter == 0);
@@ -202,7 +202,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
     }
 #endif
 
-    ABTI_spinlock_acquire(&p_barrier->lock);
+    ABTD_spinlock_acquire(&p_barrier->lock);
 
     ABTI_ASSERT(p_barrier->counter < p_barrier->num_waiters);
     p_barrier->counter++;
@@ -217,7 +217,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
         ABTI_waitlist_broadcast(p_local, &p_barrier->waitlist);
         /* Reset counter */
         p_barrier->counter = 0;
-        ABTI_spinlock_release(&p_barrier->lock);
+        ABTD_spinlock_release(&p_barrier->lock);
     }
     return ABT_SUCCESS;
 }

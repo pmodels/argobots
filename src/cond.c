@@ -239,13 +239,13 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     thread.type = ABTI_THREAD_TYPE_EXT;
     ABTD_atomic_relaxed_store_int(&thread.state, ABT_THREAD_STATE_BLOCKED);
 
-    ABTI_spinlock_acquire(&p_cond->lock);
+    ABTD_spinlock_acquire(&p_cond->lock);
 
     if (p_cond->p_waiter_mutex == NULL) {
         p_cond->p_waiter_mutex = p_mutex;
     } else {
         if (p_cond->p_waiter_mutex != p_mutex) {
-            ABTI_spinlock_release(&p_cond->lock);
+            ABTD_spinlock_release(&p_cond->lock);
             ABTI_HANDLE_ERROR(ABT_ERR_INV_MUTEX);
         }
     }
@@ -288,9 +288,9 @@ int ABT_cond_signal(ABT_cond cond)
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 
-    ABTI_spinlock_acquire(&p_cond->lock);
+    ABTD_spinlock_acquire(&p_cond->lock);
     ABTI_waitlist_signal(p_local, &p_cond->waitlist);
-    ABTI_spinlock_release(&p_cond->lock);
+    ABTD_spinlock_release(&p_cond->lock);
 
     return ABT_SUCCESS;
 }

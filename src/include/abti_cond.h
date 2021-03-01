@@ -12,7 +12,7 @@
 
 static inline void ABTI_cond_init(ABTI_cond *p_cond)
 {
-    ABTI_spinlock_clear(&p_cond->lock);
+    ABTD_spinlock_clear(&p_cond->lock);
     p_cond->p_waiter_mutex = NULL;
     ABTI_waitlist_init(&p_cond->waitlist);
 }
@@ -22,7 +22,7 @@ static inline void ABTI_cond_fini(ABTI_cond *p_cond)
     /* The lock needs to be acquired to safely free the condition structure.
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
-    ABTI_spinlock_acquire(&p_cond->lock);
+    ABTD_spinlock_acquire(&p_cond->lock);
 }
 
 static inline ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond)
@@ -58,13 +58,13 @@ static inline ABT_cond ABTI_cond_get_handle(ABTI_cond *p_cond)
 ABTU_ret_err static inline int
 ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 {
-    ABTI_spinlock_acquire(&p_cond->lock);
+    ABTD_spinlock_acquire(&p_cond->lock);
 
     if (p_cond->p_waiter_mutex == NULL) {
         p_cond->p_waiter_mutex = p_mutex;
     } else {
         if (p_cond->p_waiter_mutex != p_mutex) {
-            ABTI_spinlock_release(&p_cond->lock);
+            ABTD_spinlock_release(&p_cond->lock);
             return ABT_ERR_INV_MUTEX;
         }
     }
@@ -80,10 +80,10 @@ ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 
 static inline void ABTI_cond_broadcast(ABTI_local *p_local, ABTI_cond *p_cond)
 {
-    ABTI_spinlock_acquire(&p_cond->lock);
+    ABTD_spinlock_acquire(&p_cond->lock);
     /* Wake up all waiting ULTs */
     ABTI_waitlist_broadcast(p_local, &p_cond->waitlist);
-    ABTI_spinlock_release(&p_cond->lock);
+    ABTD_spinlock_release(&p_cond->lock);
 }
 
 #endif /* ABTI_COND_H_INCLUDED */

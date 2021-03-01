@@ -16,10 +16,10 @@ static inline void ABTI_waitlist_init(ABTI_waitlist *p_waitlist)
 
 static inline void
 ABTI_waitlist_wait_and_unlock(ABTI_local **pp_local, ABTI_waitlist *p_waitlist,
-                              ABTI_spinlock *p_lock, ABT_bool blocking,
+                              ABTD_spinlock *p_lock, ABT_bool blocking,
                               ABT_sync_event_type sync_event_type, void *p_sync)
 {
-    ABTI_ASSERT(ABTI_spinlock_is_locked(p_lock) == ABT_TRUE);
+    ABTI_ASSERT(ABTD_spinlock_is_locked(p_lock) == ABT_TRUE);
     ABTI_ythread *p_ythread = NULL;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
     if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
@@ -41,7 +41,7 @@ ABTI_waitlist_wait_and_unlock(ABTI_local **pp_local, ABTI_waitlist *p_waitlist,
         p_waitlist->p_tail = &thread;
 
         /* Non-yieldable thread is waiting here. */
-        ABTI_spinlock_release(p_lock);
+        ABTD_spinlock_release(p_lock);
         while (ABTD_atomic_acquire_load_int(&thread.state) !=
                ABT_THREAD_STATE_READY)
             ;
@@ -57,7 +57,7 @@ ABTI_waitlist_wait_and_unlock(ABTI_local **pp_local, ABTI_waitlist *p_waitlist,
 
         /* Suspend the current ULT */
         ABTI_ythread_set_blocked(p_ythread);
-        ABTI_spinlock_release(p_lock);
+        ABTD_spinlock_release(p_lock);
         ABTI_ythread_suspend(&p_local_xstream, p_ythread,
                              ABT_SYNC_EVENT_TYPE_EVENTUAL, p_sync);
         /* Resumed. */
@@ -67,11 +67,11 @@ ABTI_waitlist_wait_and_unlock(ABTI_local **pp_local, ABTI_waitlist *p_waitlist,
 
 /* Return ABT_TRUE if timed out. */
 static inline ABT_bool ABTI_waitlist_wait_timedout_and_unlock(
-    ABTI_local **pp_local, ABTI_waitlist *p_waitlist, ABTI_spinlock *p_lock,
+    ABTI_local **pp_local, ABTI_waitlist *p_waitlist, ABTD_spinlock *p_lock,
     ABT_bool blocking, double target_time, ABT_sync_event_type sync_event_type,
     void *p_sync)
 {
-    ABTI_ASSERT(ABTI_spinlock_is_locked(p_lock) == ABT_TRUE);
+    ABTI_ASSERT(ABTD_spinlock_is_locked(p_lock) == ABT_TRUE);
     ABTI_ythread *p_ythread = NULL;
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
     if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream)
@@ -97,14 +97,14 @@ static inline ABT_bool ABTI_waitlist_wait_timedout_and_unlock(
     p_waitlist->p_tail = &thread;
 
     /* Waiting here. */
-    ABTI_spinlock_release(p_lock);
+    ABTD_spinlock_release(p_lock);
     while (ABTD_atomic_acquire_load_int(&thread.state) !=
            ABT_THREAD_STATE_READY) {
         double cur_time = ABTI_get_wtime();
         if (cur_time >= target_time) {
             /* Timeout.  Remove this thread if not signaled even after taking
              * a lock. */
-            ABTI_spinlock_acquire(p_lock);
+            ABTD_spinlock_acquire(p_lock);
             ABT_bool is_timedout =
                 (ABTD_atomic_acquire_load_int(&thread.state) !=
                  ABT_THREAD_STATE_READY)
@@ -141,7 +141,7 @@ static inline ABT_bool ABTI_waitlist_wait_timedout_and_unlock(
                 /* We do not need to modify thread->p_prev and p_next since this
                  * dummy thread is no longer used. */
             }
-            ABTI_spinlock_release(p_lock);
+            ABTD_spinlock_release(p_lock);
             return is_timedout;
         }
         if (p_ythread && !blocking) {
