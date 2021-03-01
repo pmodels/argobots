@@ -51,6 +51,10 @@ ABTU_ret_err int ABTD_xstream_context_create(void *(*f_xstream)(void *),
 {
     p_ctx->thread_f = f_xstream;
     p_ctx->p_arg = p_arg;
+    /* Coverity thinks p_ctx->state must be updated with a lock since it is
+     * updated with a lock in the other places.  This assumption is wrong.  The
+     * following suppresses a false positive. */
+    /* coverity[missing_lock] */
     p_ctx->state = ABTD_XSTREAM_CONTEXT_STATE_RUNNING;
     pthread_mutex_init(&p_ctx->state_lock, NULL);
     pthread_cond_init(&p_ctx->state_cond, NULL);
