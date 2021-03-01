@@ -67,6 +67,12 @@ TESTS = \
 	self_type \
 	ext_thread \
 	ext_thread2 \
+	ext_thread_barrier \
+	ext_thread_cond \
+	ext_thread_eventual \
+	ext_thread_future \
+	ext_thread_mutex \
+	ext_thread_rwlock \
 	timer \
 	info_print \
 	info_print_stack \
@@ -76,7 +82,9 @@ TESTS = \
 
 XFAIL_TESTS =
 if ABT_CONFIG_DISABLE_EXT_THREAD
-XFAIL_TESTS += self_type ext_thread ext_thread2
+XFAIL_TESTS += self_type ext_thread ext_thread2 ext_thread_barrier \
+               ext_thread_cond ext_thread_eventual ext_thread_future \
+               ext_thread_mutex ext_thread_rwlock
 endif
 if ABT_CONFIG_DISABLE_ERROR_CHECK
 XFAIL_TESTS += self_type
@@ -150,6 +158,12 @@ self_rank_id_SOURCES = self_rank_id.c
 self_type_SOURCES = self_type.c
 ext_thread_SOURCES = ext_thread.c
 ext_thread2_SOURCES = ext_thread2.c
+ext_thread_barrier_SOURCES = ext_thread_barrier.c
+ext_thread_cond_SOURCES = ext_thread_cond.c
+ext_thread_eventual_SOURCES = ext_thread_eventual.c
+ext_thread_future_SOURCES = ext_thread_future.c
+ext_thread_mutex_SOURCES = ext_thread_mutex.c
+ext_thread_rwlock_SOURCES = ext_thread_rwlock.c
 timer_SOURCES = timer.c
 info_print_SOURCES = info_print.c
 info_print_stack_SOURCES = info_print_stack.c
@@ -221,6 +235,12 @@ testing:
 	./self_type
 	./ext_thread
 	./ext_thread2
+	./ext_thread_barrier
+	./ext_thread_cond
+	./ext_thread_eventual
+	./ext_thread_future
+	./ext_thread_mutex
+	./ext_thread_rwlock
 	./timer
 	./info_print
 	./info_print_stack

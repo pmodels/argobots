@@ -126,6 +126,30 @@ int ATS_get_arg_val(ATS_arg arg);
  */
 void ATS_print_line(FILE *fp, char c, int len);
 
+typedef enum ATS_timer_kind {
+    ATS_TIMER_KIND_SIGRTMIN = 0,
+    ATS_TIMER_KIND_SIGRTMIN_RESTART = 1,
+    ATS_TIMER_KIND_SIGUSR1 = 2,
+    ATS_TIMER_KIND_SIGUSR1_RESTART = 3,
+    ATS_TIMER_KIND_LAST_ = 4,
+} ATS_timer_kind;
+
+/*
+ * Create a timer for signal.
+ *
+ * This routines creates a POSIX timer and lets it send a signal to this
+ * program.  Signal will fail system calls and cause spurious wakeup of futex
+ * and pthread_cond_t, which can break Argobots.  This timer intentionally
+ * increases such a weird system call failure and checks if Argobots works well
+ * under such a circumstance.
+ */
+void ATS_create_timer(ATS_timer_kind kind);
+
+/*
+ * Destroy a timer for signal.
+ */
+void ATS_destroy_timer(void);
+
 #define ATS_ERROR_IF(cond) ATS_error_if(cond, #cond, __FILE__, __LINE__)
 #define ATS_ERROR(e, m) ATS_error(e, m, __FILE__, __LINE__)
 #define ATS_UNUSED(a) (void)(a)
