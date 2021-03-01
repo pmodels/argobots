@@ -254,8 +254,7 @@ int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
     ABTI_mutex_unlock(p_local, p_mutex);
     ABT_bool is_timedout =
         ABTI_waitlist_wait_timedout_and_unlock(&p_local, &p_cond->waitlist,
-                                               &p_cond->lock, ABT_FALSE,
-                                               tar_time,
+                                               &p_cond->lock, tar_time,
                                                ABT_SYNC_EVENT_TYPE_COND,
                                                (void *)p_cond);
     /* Lock the mutex again */

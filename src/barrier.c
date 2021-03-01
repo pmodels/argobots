@@ -210,7 +210,7 @@ int ABT_barrier_wait(ABT_barrier barrier)
     /* If we do not have all the waiters yet */
     if (p_barrier->counter < p_barrier->num_waiters) {
         ABTI_waitlist_wait_and_unlock(&p_local, &p_barrier->waitlist,
-                                      &p_barrier->lock, ABT_FALSE,
+                                      &p_barrier->lock,
                                       ABT_SYNC_EVENT_TYPE_BARRIER,
                                       (void *)p_barrier);
     } else {

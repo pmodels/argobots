@@ -71,8 +71,7 @@ ABTI_cond_wait(ABTI_local **pp_local, ABTI_cond *p_cond, ABTI_mutex *p_mutex)
 
     ABTI_mutex_unlock(*pp_local, p_mutex);
     ABTI_waitlist_wait_and_unlock(pp_local, &p_cond->waitlist, &p_cond->lock,
-                                  ABT_FALSE, ABT_SYNC_EVENT_TYPE_COND,
-                                  (void *)p_cond);
+                                  ABT_SYNC_EVENT_TYPE_COND, (void *)p_cond);
     /* Lock the mutex again */
     ABTI_mutex_lock(pp_local, p_mutex);
     return ABT_SUCCESS;

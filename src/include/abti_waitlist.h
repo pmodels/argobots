@@ -16,7 +16,7 @@ static inline void ABTI_waitlist_init(ABTI_waitlist *p_waitlist)
 
 static inline void
 ABTI_waitlist_wait_and_unlock(ABTI_local **pp_local, ABTI_waitlist *p_waitlist,
-                              ABTD_spinlock *p_lock, ABT_bool blocking,
+                              ABTD_spinlock *p_lock,
                               ABT_sync_event_type sync_event_type, void *p_sync)
 {
     ABTI_ASSERT(ABTD_spinlock_is_locked(p_lock) == ABT_TRUE);
@@ -25,8 +25,8 @@ ABTI_waitlist_wait_and_unlock(ABTI_local **pp_local, ABTI_waitlist *p_waitlist,
     if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
         p_ythread = ABTI_thread_get_ythread_or_null(p_local_xstream->p_thread);
     }
-    if (!p_ythread || blocking) {
-        /* External thread, non-yieldable thread, or asked to block */
+    if (!p_ythread) {
+        /* External thread or non-yieldable thread. */
         ABTI_thread thread;
         thread.type = ABTI_THREAD_TYPE_EXT;
         /* use state for synchronization */
@@ -68,8 +68,7 @@ ABTI_waitlist_wait_and_unlock(ABTI_local **pp_local, ABTI_waitlist *p_waitlist,
 /* Return ABT_TRUE if timed out. */
 static inline ABT_bool ABTI_waitlist_wait_timedout_and_unlock(
     ABTI_local **pp_local, ABTI_waitlist *p_waitlist, ABTD_spinlock *p_lock,
-    ABT_bool blocking, double target_time, ABT_sync_event_type sync_event_type,
-    void *p_sync)
+    double target_time, ABT_sync_event_type sync_event_type, void *p_sync)
 {
     ABTI_ASSERT(ABTD_spinlock_is_locked(p_lock) == ABT_TRUE);
     ABTI_ythread *p_ythread = NULL;
@@ -144,7 +143,7 @@ static inline ABT_bool ABTI_waitlist_wait_timedout_and_unlock(
             ABTD_spinlock_release(p_lock);
             return is_timedout;
         }
-        if (p_ythread && !blocking) {
+        if (p_ythread) {
             ABTI_ythread_yield(&p_local_xstream, p_ythread, sync_event_type,
                                p_sync);
             *pp_local = ABTI_xstream_get_local(p_local_xstream);

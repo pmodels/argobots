@@ -182,7 +182,7 @@ int ABT_future_wait(ABT_future future)
     if (ABTD_atomic_relaxed_load_size(&p_future->counter) <
         p_future->num_compartments) {
         ABTI_waitlist_wait_and_unlock(&p_local, &p_future->waitlist,
-                                      &p_future->lock, ABT_FALSE,
+                                      &p_future->lock,
                                       ABT_SYNC_EVENT_TYPE_FUTURE,
                                       (void *)p_future);
     } else {

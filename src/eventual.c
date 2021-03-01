@@ -179,7 +179,7 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     ABTD_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready == ABT_FALSE) {
         ABTI_waitlist_wait_and_unlock(&p_local, &p_eventual->waitlist,
-                                      &p_eventual->lock, ABT_FALSE,
+                                      &p_eventual->lock,
                                       ABT_SYNC_EVENT_TYPE_EVENTUAL,
                                       (void *)p_eventual);
     } else {

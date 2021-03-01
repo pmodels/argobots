@@ -70,7 +70,7 @@ static inline void ABTI_mutex_lock_no_recursion(ABTI_local **pp_local,
         }
         /* Wait on waitlist. */
         ABTI_waitlist_wait_and_unlock(pp_local, &p_mutex->waitlist,
-                                      &p_mutex->waiter_lock, ABT_FALSE,
+                                      &p_mutex->waiter_lock,
                                       ABT_SYNC_EVENT_TYPE_MUTEX,
                                       (void *)p_mutex);
     }
