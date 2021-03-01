@@ -11,6 +11,7 @@
 #include "abtd_atomic.h"
 #include "abtd_context.h"
 #include "abtd_spinlock.h"
+#include "abtd_futex.h"
 
 /* Data Types */
 typedef enum {
