@@ -207,6 +207,14 @@ AC_ARG_ENABLE([stack-overflow-check],
         none|no
 ],,[enable_stack_overflow_check=no])
 
+# --enable-wait-policy
+AC_ARG_ENABLE([wait-policy],
+[  --enable-wait-policy@<:@=OPTS@:>@ set a wait policy of blocking operations
+        default|auto - choose the best policy, which is currently "passive".
+        active       - spin-wait on blocking.  It uses more CPU resources.
+        passive      - suspend CPU cores on blocking.  It increases latency.
+],,[enable_wait_policy=auto])
+
 # --disable-simple-mutex
 AC_ARG_ENABLE([simple-mutex],
     AS_HELP_STRING([--disable-simple-mutex], [use an experimental mutex implementation]),,
@@ -747,6 +755,38 @@ if test "$CC" != "xlc" -a "$CC" != "pgcc" -a "x$have_atomic_builtin" = "xyes" ; 
 fi
 
 
+# check if futex is available.  Note that futex() is basically Linux-specific.
+AC_COMPILE_IFELSE(
+[AC_LANG_PROGRAM([
+ #include <unistd.h>
+ #include <linux/futex.h>
+ #include <syscall.h>
+ #include <assert.h>
+],[
+ // Maybe we should not include <futex.h> since it seems that it has some
+ // compatibility issues (see LLVM OpenMP).  We should use a constant value
+ // for futex_op if we found some compilation issues here.
+ int ret, futex_val = 0;
+ // The following does not sleep since futex_val is not 1.
+ ret = syscall(SYS_futex, &futex_val, FUTEX_WAIT_PRIVATE, 1, 0, 0, 0);
+ assert(ret == 0);
+ // The following does not wake up any since no thread is sleeping.
+ ret = syscall(SYS_futex, &futex_val, FUTEX_WAKE_PRIVATE, 1, 0, 0, 0);
+ // The return value is 0 since no thread was waken up.
+ assert(ret == 0);
+])],
+[have_linux_futex=yes],
+[have_linux_futex=no]
+)
+AS_IF([test "x$have_linux_futex" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_USE_LINUX_FUTEX, 1,
+                 [Define to use Linux-type futex])])
+
+# --enable-wait-policy
+AS_IF([test "x$enable_wait_policy" = "xactive"],
+      [AC_DEFINE(ABT_CONFIG_ACTIVE_WAIT_POLICY, 1,
+                 [Define to enable the active wait policy])])
+
 # --disable-simple-mutex
 AS_IF([test "x$enable_simple_mutex" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SIMPLE_MUTEX, 1,
@@ -834,6 +874,16 @@ AC_CHECK_LIB(pthread, pthread_join)
 
 # check pthread_barrier
 AC_CHECK_FUNCS(pthread_barrier_init)
+
+# check -lrt library
+AC_CHECK_LIB(rt, timer_create)
+if test "$ac_cv_lib_rt" = "yes" ; then
+    # -lrt is used for testing
+    abttest_timer_library="-lrt"
+else
+    abttest_timer_library=""
+fi
+AC_SUBST(abttest_timer_library)
 
 # check timer functions
 AC_CHECK_FUNCS(clock_gettime mach_absolute_time gettimeofday)

@@ -176,6 +176,12 @@ static void info_trigger_print_all_thread_stacks(
  *   if Argobots is configured to use a stack canary to check stack overflow.
  *   Otherwise, \c val is set to 0.
  *
+ * - \c ABT_INFO_QUERY_KIND_WAIT_POLICY
+ *
+ *   \c val must be a pointer to a variable of type \c int.  \c val is set to 0
+ *   if the wait policy of Argobots is passive.  \c val is set to 1 if the wait
+ *   policy of Argobots is active.
+ *
  * @changev20
  * \DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE
  * @endchangev20
@@ -357,6 +363,13 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             *((int *)val) = 0;
 #endif
             break;
+        case ABT_INFO_QUERY_KIND_WAIT_POLICY:
+#if ABT_CONFIG_ACTIVE_WAIT_POLICY
+            *((int *)val) = 1;
+#else
+            *((int *)val) = 0;
+#endif
+            break;
         default:
             ABTI_HANDLE_ERROR(ABT_ERR_INV_QUERY_KIND);
             break;
@@ -455,7 +468,7 @@ int ABT_info_print_all_xstreams(FILE *fp)
     }
 #endif
 
-    ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+    ABTD_spinlock_acquire(&p_global->xstream_list_lock);
 
     fprintf(fp, "# of created ESs: %d\n", p_global->num_xstreams);
 
@@ -465,7 +478,7 @@ int ABT_info_print_all_xstreams(FILE *fp)
         p_xstream = p_xstream->p_next;
     }
 
-    ABTI_spinlock_release(&p_global->xstream_list_lock);
+    ABTD_spinlock_release(&p_global->xstream_list_lock);
 
     fflush(fp);
     return ABT_SUCCESS;
@@ -937,7 +950,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
 
         /* xstreams_lock is acquired to avoid dynamic ES creation while
          * printing data. */
-        ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+        ABTD_spinlock_acquire(&p_global->xstream_list_lock);
         while (1) {
             if (ABTD_atomic_acquire_load_int(&print_stack_barrier) >=
                 p_global->num_xstreams) {
@@ -948,9 +961,9 @@ void ABTI_info_check_print_all_thread_stacks(void)
                 force_print = ABT_TRUE;
                 break;
             }
-            ABTI_spinlock_release(&p_global->xstream_list_lock);
+            ABTD_spinlock_release(&p_global->xstream_list_lock);
             ABTD_atomic_pause();
-            ABTI_spinlock_acquire(&p_global->xstream_list_lock);
+            ABTD_spinlock_acquire(&p_global->xstream_list_lock);
         }
         /* All the available ESs are (supposed to be) stopped. We *assume* that
          * no ES is calling and will call Argobots functions except this
@@ -968,7 +981,7 @@ void ABTI_info_check_print_all_thread_stacks(void)
         }
         fflush(print_stack_fp);
         /* Release the lock that protects ES data. */
-        ABTI_spinlock_release(&p_global->xstream_list_lock);
+        ABTD_spinlock_release(&p_global->xstream_list_lock);
         if (print_cb_func)
             print_cb_func(force_print, print_arg);
         /* Update print_stack_flag to 3. */
@@ -1061,6 +1074,13 @@ void ABTI_info_print_config(ABTI_global *p_global, FILE *fp)
                 "yes"
 #else
                 "no"
+#endif
+                "\n");
+    fprintf(fp, " - wait policy: "
+#ifdef ABT_CONFIG_ACTIVE_WAIT_POLICY
+                "active"
+#else
+                "passive"
 #endif
                 "\n");
     fprintf(fp, " - context-switch: "

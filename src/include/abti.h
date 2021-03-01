@@ -148,16 +148,15 @@ typedef struct ABTI_thread_id_opaque *ABTI_thread_id;
 /* Architecture-Dependent Definitions */
 #include "abtd.h"
 
-/* Spinlock */
-typedef struct ABTI_spinlock ABTI_spinlock;
-#include "abti_spinlock.h"
-
 /* Basic data structure and memory pool. */
 #include "abti_sync_lifo.h"
 #include "abti_mem_pool.h"
 
 /* Definitions */
 struct ABTI_waitlist {
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+    ABTD_futex_multiple futex;
+#endif
     ABTI_thread *p_head;
     ABTI_thread *p_tail;
 };
@@ -170,11 +169,11 @@ struct ABTI_mutex {
     int attrs;               /* attributes copied from ABTI_mutex_attr.  Check
                               * ABT_(RECURSIVE_)MUTEX_INITIALIZER to see how
                               * this variable can be  initialized. */
-    ABTI_spinlock lock;      /* lock */
+    ABTD_spinlock lock;      /* lock */
     int nesting_cnt;         /* nesting count (if recursive) */
     ABTI_thread_id owner_id; /* owner's ID (if recursive) */
 #ifndef ABT_CONFIG_USE_SIMPLE_MUTEX
-    ABTI_spinlock waiter_lock; /* lock */
+    ABTD_spinlock waiter_lock; /* lock */
     ABTI_waitlist waitlist;    /* waiting list */
 #endif
 };
@@ -183,7 +182,7 @@ struct ABTI_global {
     int max_xstreams;             /* Largest rank used in Argobots. */
     int num_xstreams;             /* Current # of ESs */
     ABTI_xstream *p_xstream_head; /* List of ESs (head). The list is sorted. */
-    ABTI_spinlock
+    ABTD_spinlock
         xstream_list_lock; /* Spinlock protecting ES list. Any read and
                             * write to this list requires a lock.*/
 
@@ -214,9 +213,9 @@ struct ABTI_global {
                                                * store ABTI_task. */
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     /* They are used for external threads. */
-    ABTI_spinlock mem_pool_stack_lock;
+    ABTD_spinlock mem_pool_stack_lock;
     ABTI_mem_pool_local_pool mem_pool_stack_ext;
-    ABTI_spinlock mem_pool_desc_lock;
+    ABTD_spinlock mem_pool_desc_lock;
     ABTI_mem_pool_local_pool mem_pool_desc_ext;
 #endif
 #endif
@@ -224,7 +223,7 @@ struct ABTI_global {
     ABT_bool print_config; /* Whether to print config on ABT_init */
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
-    ABTI_spinlock tool_writer_lock;
+    ABTD_spinlock tool_writer_lock;
 
     ABT_tool_thread_callback_fn tool_thread_cb_f;
     void *tool_thread_user_arg;
@@ -403,7 +402,7 @@ struct ABTI_ktelem {
 
 struct ABTI_ktable {
     int size;           /* size of the table */
-    ABTI_spinlock lock; /* Protects any new entry creation. */
+    ABTD_spinlock lock; /* Protects any new entry creation. */
     void *p_used_mem;
     void *p_extra_mem;
     size_t extra_mem_size;
@@ -411,7 +410,7 @@ struct ABTI_ktable {
 };
 
 struct ABTI_cond {
-    ABTI_spinlock lock;
+    ABTD_spinlock lock;
     ABTI_mutex *p_waiter_mutex;
     ABTI_waitlist waitlist;
 };
@@ -424,7 +423,7 @@ struct ABTI_rwlock {
 };
 
 struct ABTI_eventual {
-    ABTI_spinlock lock;
+    ABTD_spinlock lock;
     ABT_bool ready;
     void *value;
     size_t nbytes;
@@ -432,7 +431,7 @@ struct ABTI_eventual {
 };
 
 struct ABTI_future {
-    ABTI_spinlock lock;
+    ABTD_spinlock lock;
     ABTD_atomic_size counter;
     size_t num_compartments;
     void **array;
@@ -443,7 +442,7 @@ struct ABTI_future {
 struct ABTI_barrier {
     size_t num_waiters;
     volatile size_t counter;
-    ABTI_spinlock lock;
+    ABTD_spinlock lock;
     ABTI_waitlist waitlist;
 };
 
@@ -452,7 +451,7 @@ struct ABTI_xstream_barrier {
 #ifdef HAVE_PTHREAD_BARRIER_INIT
     ABTD_xstream_barrier bar;
 #else
-    ABTI_spinlock lock;
+    ABTD_spinlock lock;
     uint32_t counter;
     ABTD_atomic_uint64 tag;
 #endif

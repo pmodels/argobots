@@ -23,8 +23,8 @@ typedef struct ABTI_valgrind_id_list_t {
 } ABTI_valgrind_id_list;
 
 /* The list is protected by a global lock. */
-static ABTI_spinlock g_valgrind_id_list_lock =
-    ABTI_SPINLOCK_STATIC_INITIALIZER();
+static ABTD_spinlock g_valgrind_id_list_lock =
+    ABTD_SPINLOCK_STATIC_INITIALIZER();
 static int g_num_malloc_failures = 0;
 static ABTI_valgrind_id_list *gp_valgrind_id_list_head = NULL;
 static ABTI_valgrind_id_list *gp_valgrind_id_list_tail = NULL;
@@ -39,7 +39,7 @@ void ABTI_valgrind_register_stack(const void *p_stack, size_t size)
     const void *p_start = (char *)(p_stack);
     const void *p_end = (char *)(p_stack) + size;
 
-    ABTI_spinlock_acquire(&g_valgrind_id_list_lock);
+    ABTD_spinlock_acquire(&g_valgrind_id_list_lock);
     ABTI_valgrind_id_list *p_valgrind_id_list =
         (ABTI_valgrind_id_list *)malloc(sizeof(ABTI_valgrind_id_list));
     if (p_valgrind_id_list) {
@@ -61,7 +61,7 @@ void ABTI_valgrind_register_stack(const void *p_stack, size_t size)
          * cannot deregister this stack region. */
         g_num_malloc_failures++;
     }
-    ABTI_spinlock_release(&g_valgrind_id_list_lock);
+    ABTD_spinlock_release(&g_valgrind_id_list_lock);
 }
 
 void ABTI_valgrind_unregister_stack(const void *p_stack)
@@ -69,7 +69,7 @@ void ABTI_valgrind_unregister_stack(const void *p_stack)
     if (p_stack == 0)
         return;
 
-    ABTI_spinlock_acquire(&g_valgrind_id_list_lock);
+    ABTD_spinlock_acquire(&g_valgrind_id_list_lock);
     if (gp_valgrind_id_list_head->p_stack == p_stack) {
         VALGRIND_STACK_DEREGISTER(gp_valgrind_id_list_head->valgrind_id);
         ABTI_valgrind_id_list *p_next = gp_valgrind_id_list_head->p_next;
@@ -104,7 +104,7 @@ void ABTI_valgrind_unregister_stack(const void *p_stack)
             g_num_malloc_failures--;
         }
     }
-    ABTI_spinlock_release(&g_valgrind_id_list_lock);
+    ABTD_spinlock_release(&g_valgrind_id_list_lock);
 }
 
 #endif

@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <signal.h>
 #include "abt.h"
 #include "abttest.h"
 
@@ -62,6 +63,26 @@ void ATS_init(int argc, char **argv, int num_xstreams)
     envval = getenv("ATS_ENABLE_TOOL");
     if (envval && atoi(envval) == 0) {
         g_tool_enabled = 0;
+    }
+    /* If affinity is enabled, unset the affinity of the primary execution
+     * stream since pthreads created on the primary execution stream inherits
+     * its parent's affinity on Linux, causing a several oversubscription by
+     * default. */
+    ABT_bool affinity_enabled;
+    ret = ABT_info_query_config(ABT_INFO_QUERY_KIND_ENABLED_AFFINITY,
+                                &affinity_enabled);
+    ATS_ERROR(ret, "ABT_info_query_config");
+    if (affinity_enabled) {
+        int *cpuids = (int *)malloc(sizeof(int) * 16);
+        int i;
+        for (i = 0; i < 16; i++)
+            cpuids[i] = i;
+        ABT_xstream self_xstream;
+        ret = ABT_self_get_xstream(&self_xstream);
+        ATS_ERROR(ret, "ABT_self_get_xstream");
+        ret = ABT_xstream_set_affinity(self_xstream, 16, cpuids);
+        ATS_ERROR(ret, "ABT_xstream_set_affinity");
+        free(cpuids);
     }
 
     if (g_tool_enabled) {
@@ -215,6 +236,79 @@ void ATS_print_line(FILE *fp, char c, int len)
     fprintf(fp, "\n");
     fflush(fp);
 }
+
+#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 199309L
+
+static timer_t g_timerid;
+static void timer_handler(int sig, siginfo_t *si, void *uc)
+{
+    /* Do nothing. */
+}
+
+void ATS_create_timer(ATS_timer_kind kind)
+{
+    /* If the signal interval is too small, the program hangs on some systems.
+     * Let's choose a reasonably small value ... for example, 10ms. */
+    const int nsec = 100000;
+    int target_signo = 0;
+    if (kind == ATS_TIMER_KIND_SIGRTMIN ||
+        kind == ATS_TIMER_KIND_SIGRTMIN_RESTART) {
+        target_signo = SIGRTMIN;
+    } else {
+        target_signo = SIGUSR1;
+    }
+
+    /* Set a signal handler. */
+    struct sigaction sa;
+
+    sa.sa_flags = SA_SIGINFO;
+    if (kind == ATS_TIMER_KIND_SIGRTMIN_RESTART ||
+        kind == ATS_TIMER_KIND_SIGUSR1_RESTART)
+        sa.sa_flags |= SA_RESTART;
+    sa.sa_sigaction = timer_handler;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(target_signo, &sa, NULL) == -1) {
+        exit(1);
+    }
+
+    /* Create and start a timer. */
+    struct sigevent sev;
+    struct itimerspec its;
+    sev.sigev_notify = SIGEV_SIGNAL; /* SIGEV_THREAD_ID is not */
+    sev.sigev_signo = target_signo;
+    sev.sigev_value.sival_ptr = &g_timerid;
+    if (timer_create(CLOCK_REALTIME, &sev, &g_timerid) == -1) {
+        exit(1);
+    }
+    its.it_value.tv_sec = 0;
+    its.it_value.tv_nsec = nsec;
+    its.it_interval.tv_sec = 0;
+    its.it_interval.tv_nsec = nsec;
+    if (timer_settime(g_timerid, 0, &its, NULL) == -1) {
+        exit(1);
+    }
+}
+
+void ATS_destroy_timer(void)
+{
+    /* Destroy a timer. */
+    timer_delete(g_timerid);
+}
+
+#else
+
+/* Some systems (e.g., macOS) do not have timer_create(). */
+void ATS_create_timer(ATS_timer_kind kind)
+{
+    ;
+}
+
+void ATS_destroy_timer(void)
+{
+    ;
+}
+
+#endif
 
 typedef enum {
     ATS_TOOL_UNIT_STATE_UNINIT = 0,

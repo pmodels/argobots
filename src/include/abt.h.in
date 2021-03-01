@@ -619,6 +619,8 @@ enum ABT_info_query_kind {
     ABT_INFO_QUERY_KIND_ENABLED_STACK_UNWIND,
     /** Whether the stack overflow check is enabled or not */
     ABT_INFO_QUERY_KIND_ENABLED_STACK_OVERFLOW_CHECK,
+    /** Wait policy */
+    ABT_INFO_QUERY_KIND_WAIT_POLICY,
 };
 
 /**

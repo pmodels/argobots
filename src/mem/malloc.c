@@ -73,10 +73,10 @@ void ABTI_mem_init(ABTI_global *p_global)
                                    num_requested_types,
                                    p_global->mem_page_size);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-    ABTI_spinlock_clear(&p_global->mem_pool_stack_lock);
+    ABTD_spinlock_clear(&p_global->mem_pool_stack_lock);
     ABTI_mem_pool_init_local_pool(&p_global->mem_pool_stack_ext,
                                   &p_global->mem_pool_stack);
-    ABTI_spinlock_clear(&p_global->mem_pool_desc_lock);
+    ABTD_spinlock_clear(&p_global->mem_pool_desc_lock);
     ABTI_mem_pool_init_local_pool(&p_global->mem_pool_desc_ext,
                                   &p_global->mem_pool_desc);
 #endif

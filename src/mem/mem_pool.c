@@ -30,7 +30,7 @@ mem_pool_return_partial_bucket(ABTI_mem_pool_global_pool *p_global_pool,
     int i;
     const int num_headers_per_bucket = p_global_pool->num_headers_per_bucket;
     /* Return headers in the last bucket to partial_bucket. */
-    ABTI_spinlock_acquire(&p_global_pool->partial_bucket_lock);
+    ABTD_spinlock_acquire(&p_global_pool->partial_bucket_lock);
     if (!p_global_pool->partial_bucket) {
         p_global_pool->partial_bucket = bucket;
     } else {
@@ -71,7 +71,7 @@ mem_pool_return_partial_bucket(ABTI_mem_pool_global_pool *p_global_pool,
             p_global_pool->partial_bucket = new_partial_bucket;
         }
     }
-    ABTI_spinlock_release(&p_global_pool->partial_bucket_lock);
+    ABTD_spinlock_release(&p_global_pool->partial_bucket_lock);
 }
 
 void ABTI_mem_pool_init_global_pool(
@@ -98,7 +98,7 @@ void ABTI_mem_pool_init_global_pool(
     ABTI_sync_lifo_init(&p_global_pool->mem_page_lifo);
     ABTD_atomic_relaxed_store_ptr(&p_global_pool->p_mem_page_empty, NULL);
     ABTI_sync_lifo_init(&p_global_pool->bucket_lifo);
-    ABTI_spinlock_clear(&p_global_pool->partial_bucket_lock);
+    ABTD_spinlock_clear(&p_global_pool->partial_bucket_lock);
     p_global_pool->partial_bucket = NULL;
 }
 

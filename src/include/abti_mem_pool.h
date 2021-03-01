@@ -69,7 +69,7 @@ typedef struct ABTI_mem_pool_global_pool {
         /* List of the remaining headers that are not enough to create one
          * complete bucket. This is protected by a spinlock. The number of
          * headers is stored in partial_bucket.bucket_info.num_headers. */
-        ABTI_spinlock partial_bucket_lock;
+        ABTD_spinlock partial_bucket_lock;
     ABTI_mem_pool_header *partial_bucket;
 } ABTI_mem_pool_global_pool;
 

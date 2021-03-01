@@ -20,7 +20,7 @@ ABTI_global *gp_ABTI_global = NULL;
 /* To indicate how many times ABT_init is called. */
 static uint32_t g_ABTI_num_inits = 0;
 /* A global lock protecting the initialization/finalization process */
-static ABTI_spinlock g_ABTI_init_lock = ABTI_SPINLOCK_STATIC_INITIALIZER();
+static ABTD_spinlock g_ABTI_init_lock = ABTD_SPINLOCK_STATIC_INITIALIZER();
 /* A flag whether Argobots has been initialized or not */
 static ABTD_atomic_uint32 g_ABTI_initialized =
     ABTD_ATOMIC_UINT32_STATIC_INITIALIZER(0);
@@ -76,10 +76,10 @@ int ABT_init(int argc, char **argv)
     ABTI_UNUSED(argc);
     ABTI_UNUSED(argv);
     /* Take a global lock protecting the initialization/finalization process. */
-    ABTI_spinlock_acquire(&g_ABTI_init_lock);
+    ABTD_spinlock_acquire(&g_ABTI_init_lock);
     int abt_errno = init_library();
     /* Unlock a global lock */
-    ABTI_spinlock_release(&g_ABTI_init_lock);
+    ABTD_spinlock_release(&g_ABTI_init_lock);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
@@ -130,10 +130,10 @@ int ABT_init(int argc, char **argv)
 int ABT_finalize(void)
 {
     /* Take a global lock protecting the initialization/finalization process. */
-    ABTI_spinlock_acquire(&g_ABTI_init_lock);
+    ABTD_spinlock_acquire(&g_ABTI_init_lock);
     int abt_errno = finailze_library();
     /* Unlock a global lock */
-    ABTI_spinlock_release(&g_ABTI_init_lock);
+    ABTD_spinlock_release(&g_ABTI_init_lock);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
@@ -196,7 +196,7 @@ ABTU_ret_err static int init_library(void)
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     /* Initialize the tool interface */
-    ABTI_spinlock_clear(&p_global->tool_writer_lock);
+    ABTD_spinlock_clear(&p_global->tool_writer_lock);
     p_global->tool_thread_cb_f = NULL;
     p_global->tool_thread_user_arg = NULL;
     ABTD_atomic_relaxed_store_uint64(&p_global->tool_thread_event_mask_tagged,
@@ -208,7 +208,7 @@ ABTU_ret_err static int init_library(void)
     p_global->num_xstreams = 0;
 
     /* Initialize a spinlock */
-    ABTI_spinlock_clear(&p_global->xstream_list_lock);
+    ABTD_spinlock_clear(&p_global->xstream_list_lock);
 
     /* Create the primary ES */
     ABTI_xstream *p_local_xstream;

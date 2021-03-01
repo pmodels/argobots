@@ -116,9 +116,9 @@ static inline void ABTI_mem_free_nythread(ABTI_global *p_global,
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (p_local_xstream == NULL) {
             /* Return a stack to the global pool. */
-            ABTI_spinlock_acquire(&p_global->mem_pool_desc_lock);
+            ABTD_spinlock_acquire(&p_global->mem_pool_desc_lock);
             ABTI_mem_pool_free(&p_global->mem_pool_desc_ext, p_thread);
-            ABTI_spinlock_release(&p_global->mem_pool_desc_lock);
+            ABTD_spinlock_release(&p_global->mem_pool_desc_lock);
             return;
         }
 #endif
@@ -292,9 +292,9 @@ static inline void ABTI_mem_free_thread(ABTI_global *p_global,
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
         if (p_local_xstream == NULL) {
             /* Return a stack to the global pool. */
-            ABTI_spinlock_acquire(&p_global->mem_pool_stack_lock);
+            ABTD_spinlock_acquire(&p_global->mem_pool_stack_lock);
             ABTI_mem_pool_free(&p_global->mem_pool_stack_ext, p_ythread);
-            ABTI_spinlock_release(&p_global->mem_pool_stack_lock);
+            ABTD_spinlock_release(&p_global->mem_pool_stack_lock);
             return;
         }
 #endif
@@ -368,9 +368,9 @@ static inline void ABTI_mem_free_desc(ABTI_global *p_global,
         return;
     } else if (!p_local_xstream) {
         /* Return a stack and a descriptor to their global pools. */
-        ABTI_spinlock_acquire(&p_global->mem_pool_desc_lock);
+        ABTD_spinlock_acquire(&p_global->mem_pool_desc_lock);
         ABTI_mem_pool_free(&p_global->mem_pool_desc_ext, p_desc);
-        ABTI_spinlock_release(&p_global->mem_pool_desc_lock);
+        ABTD_spinlock_release(&p_global->mem_pool_desc_lock);
         return;
     }
 #endif

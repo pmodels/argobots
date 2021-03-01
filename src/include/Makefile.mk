@@ -11,6 +11,8 @@ noinst_HEADERS = \
 	include/abtd_atomic.h \
 	include/abtd_context.h \
 	include/abtd_fcontext.h \
+	include/abtd_futex.h \
+	include/abtd_spinlock.h \
 	include/abtd_ucontext.h \
 	include/abtd_ythread.h \
 	include/abti.h \
@@ -32,7 +34,6 @@ noinst_HEADERS = \
 	include/abti_pool.h \
 	include/abti_sched.h \
 	include/abti_self.h \
-	include/abti_spinlock.h \
 	include/abti_stream.h \
 	include/abti_stream_barrier.h \
 	include/abti_sync_lifo.h \

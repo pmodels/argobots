@@ -64,7 +64,7 @@ int ABT_xstream_barrier_create(uint32_t num_waiters,
         ABTI_HANDLE_ERROR(abt_errno);
     }
 #else
-    ABTI_spinlock_clear(&p_newbarrier->lock);
+    ABTD_spinlock_clear(&p_newbarrier->lock);
     p_newbarrier->counter = 0;
     ABTD_atomic_relaxed_store_uint64(&p_newbarrier->tag, 0);
 #endif
@@ -149,7 +149,7 @@ int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier)
         /* The following implementation is a simple sense-reversal barrier
          * implementation while it uses uint64_t instead of boolean to prevent
          * a sense variable from wrapping around. */
-        ABTI_spinlock_acquire(&p_barrier->lock);
+        ABTD_spinlock_acquire(&p_barrier->lock);
         p_barrier->counter++;
         if (p_barrier->counter == p_barrier->num_waiters) {
             /* Wake up the other waiters. */
@@ -159,11 +159,11 @@ int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier)
             uint64_t cur_tag = ABTD_atomic_relaxed_load_uint64(&p_barrier->tag);
             uint64_t new_tag = (cur_tag + 1) & (UINT64_MAX >> 1);
             ABTD_atomic_release_store_uint64(&p_barrier->tag, new_tag);
-            ABTI_spinlock_release(&p_barrier->lock);
+            ABTD_spinlock_release(&p_barrier->lock);
         } else {
             /* Wait until the tag is updated by the last waiter */
             uint64_t cur_tag = ABTD_atomic_relaxed_load_uint64(&p_barrier->tag);
-            ABTI_spinlock_release(&p_barrier->lock);
+            ABTD_spinlock_release(&p_barrier->lock);
             while (cur_tag == ABTD_atomic_acquire_load_uint64(&p_barrier->tag))
                 ABTD_atomic_pause();
         }

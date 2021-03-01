@@ -49,7 +49,7 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     abt_errno = ABTU_malloc(sizeof(ABTI_eventual), (void **)&p_eventual);
     ABTI_CHECK_ERROR(abt_errno);
 
-    ABTI_spinlock_clear(&p_eventual->lock);
+    ABTD_spinlock_clear(&p_eventual->lock);
     p_eventual->ready = ABT_FALSE;
     p_eventual->nbytes = arg_nbytes;
     if (arg_nbytes == 0) {
@@ -101,7 +101,7 @@ int ABT_eventual_free(ABT_eventual *eventual)
     /* The lock needs to be acquired to safely free the eventual structure.
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
-    ABTI_spinlock_acquire(&p_eventual->lock);
+    ABTD_spinlock_acquire(&p_eventual->lock);
 
     if (p_eventual->value)
         ABTU_free(p_eventual->value);
@@ -176,14 +176,14 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     }
 #endif
 
-    ABTI_spinlock_acquire(&p_eventual->lock);
+    ABTD_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready == ABT_FALSE) {
         ABTI_waitlist_wait_and_unlock(&p_local, &p_eventual->waitlist,
-                                      &p_eventual->lock, ABT_FALSE,
+                                      &p_eventual->lock,
                                       ABT_SYNC_EVENT_TYPE_EVENTUAL,
                                       (void *)p_eventual);
     } else {
-        ABTI_spinlock_release(&p_eventual->lock);
+        ABTD_spinlock_release(&p_eventual->lock);
     }
     /* This value is updated outside the critical section, but it is okay since
      * the "pointer" to the memory buffer is constant and there is no way to
@@ -239,13 +239,13 @@ int ABT_eventual_test(ABT_eventual eventual, void **value, ABT_bool *is_ready)
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
     ABT_bool flag = ABT_FALSE;
 
-    ABTI_spinlock_acquire(&p_eventual->lock);
+    ABTD_spinlock_acquire(&p_eventual->lock);
     if (p_eventual->ready != ABT_FALSE) {
         if (value)
             *value = p_eventual->value;
         flag = ABT_TRUE;
     }
-    ABTI_spinlock_release(&p_eventual->lock);
+    ABTD_spinlock_release(&p_eventual->lock);
 
     *is_ready = flag;
     return ABT_SUCCESS;
@@ -312,7 +312,7 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
     ABTI_CHECK_TRUE(arg_nbytes <= p_eventual->nbytes, ABT_ERR_INV_ARG);
 #endif
 
-    ABTI_spinlock_acquire(&p_eventual->lock);
+    ABTD_spinlock_acquire(&p_eventual->lock);
 
     ABT_bool ready = p_eventual->ready;
     if (ready == ABT_FALSE) {
@@ -321,9 +321,9 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
         p_eventual->ready = ABT_TRUE;
         /* Wake up all waiting ULTs */
         ABTI_waitlist_broadcast(p_local, &p_eventual->waitlist);
-        ABTI_spinlock_release(&p_eventual->lock);
+        ABTD_spinlock_release(&p_eventual->lock);
     } else {
-        ABTI_spinlock_release(&p_eventual->lock);
+        ABTD_spinlock_release(&p_eventual->lock);
         /* It has been ready.  Error. */
         ABTI_HANDLE_ERROR(ABT_ERR_EVENTUAL);
     }
@@ -361,8 +361,8 @@ int ABT_eventual_reset(ABT_eventual eventual)
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
-    ABTI_spinlock_acquire(&p_eventual->lock);
+    ABTD_spinlock_acquire(&p_eventual->lock);
     p_eventual->ready = ABT_FALSE;
-    ABTI_spinlock_release(&p_eventual->lock);
+    ABTD_spinlock_release(&p_eventual->lock);
     return ABT_SUCCESS;
 }
