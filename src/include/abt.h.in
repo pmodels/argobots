@@ -432,12 +432,12 @@ enum ABT_thread_state {
  * @endchangev20
  */
 enum ABT_task_state {
+    /** Corresponding to \c ABT_THREAD_STATE_TERMINATED. */
+    ABT_TASK_STATE_TERMINATED,
     /** Corresponding to \c ABT_THREAD_STATE_READY. */
     ABT_TASK_STATE_READY,
     /** Corresponding to \c ABT_THREAD_STATE_RUNNING. */
     ABT_TASK_STATE_RUNNING,
-    /** Corresponding to \c ABT_THREAD_STATE_TERMINATED. */
-    ABT_TASK_STATE_TERMINATED
 };
 
 /**
