@@ -256,11 +256,16 @@ static const char *get_abt_env(const char *env_suffix)
     const char *prefixes[] = { "ABT_", "ABT_ENV_" };
     uint32_t i;
     for (i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); i++) {
-        strcpy(buffer, prefixes[i]);
-        strcpy(buffer + strlen(prefixes[i]), env_suffix);
-        const char *env = getenv(buffer);
-        if (env)
-            return env;
+        int prefix_size = strlen(prefixes[i]);
+        int env_suffix_size = strlen(env_suffix);
+        if (prefix_size + env_suffix_size + 1 <= (int)sizeof(buffer)) {
+            memcpy(buffer, prefixes[i], prefix_size);
+            memcpy(buffer + prefix_size, env_suffix, env_suffix_size);
+            buffer[prefix_size + env_suffix_size] = '\0';
+            const char *env = getenv(buffer);
+            if (env)
+                return env;
+        }
     }
     return NULL;
 }
