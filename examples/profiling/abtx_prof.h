@@ -1784,7 +1784,8 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
             continue;
         }
         /* Succeeded. */
-    } while (0);
+        break;
+    } while (1);
 
     /* Reduce thread information. */
     ABTXI_prof_wu_time wu_times[ABTXI_PROF_WU_TIME_END_];
