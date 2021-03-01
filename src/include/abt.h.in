@@ -1238,10 +1238,10 @@ typedef enum {
  * @brief   A struct that sets and gets a scheduler configuration.
  */
 typedef struct {
-    /** An index of the configuration variable.  It must be non-negative. */
-    int idx;
     /** Type of the configuration variable. */
     ABT_sched_config_type type;
+    /** An index of the configuration variable.  It must be non-negative. */
+    int idx;
 } ABT_sched_config_var;
 
 /**
