@@ -66,6 +66,7 @@ basic/ext_thread_barrier
 basic/ext_thread_cond
 basic/ext_thread_eventual
 basic/ext_thread_future
+basic/ext_thread_join
 basic/ext_thread_mutex
 basic/ext_thread_rwlock
 basic/timer
