@@ -2735,6 +2735,37 @@ static void thread_join_busywait(ABTI_thread *p_thread)
     ABTI_tool_event_thread_join(NULL, p_thread, NULL);
 }
 
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+static void thread_join_futexwait(ABTI_thread *p_thread)
+{
+    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+    if (p_ythread) {
+        /* tell that this thread will join */
+        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_ythread->thread.request,
+                                                   ABTI_THREAD_REQ_JOIN);
+        if (!(req & ABTI_THREAD_REQ_JOIN)) {
+            ABTD_futex_single futex;
+            ABTD_futex_single_init(&futex);
+            ABTI_ythread dummy_ythread;
+            dummy_ythread.thread.type = ABTI_THREAD_TYPE_EXT;
+            /* Just arbitrarily choose p_arg to store futex. */
+            dummy_ythread.thread.p_arg = &futex;
+            ABTD_atomic_release_store_ythread_context_ptr(&p_ythread->ctx
+                                                               .p_link,
+                                                          &dummy_ythread.ctx);
+            ABTD_futex_suspend(&futex);
+            /* Resumed. */
+        } else {
+            /* If request already has ABTI_THREAD_REQ_JOIN, p_ythread is
+             * terminating.  We can't suspend in this case. */
+        }
+    }
+    /* No matter whether this thread has been resumed or not, we need to busy-
+     * wait to make sure that the thread's state gets terminated. */
+    thread_join_busywait(p_thread);
+}
+#endif
+
 static void thread_join_yield_thread(ABTI_xstream **pp_local_xstream,
                                      ABTI_ythread *p_self,
                                      ABTI_thread *p_thread)
@@ -2764,7 +2795,11 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
 
     ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(*pp_local);
     if (ABTI_IS_EXT_THREAD_ENABLED && !p_local_xstream) {
+#ifdef ABT_CONFIG_ACTIVE_WAIT_POLICY
         thread_join_busywait(p_thread);
+#else
+        thread_join_futexwait(p_thread);
+#endif
         return;
     }
 
@@ -2772,7 +2807,11 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
 
     ABTI_ythread *p_self = ABTI_thread_get_ythread_or_null(p_self_thread);
     if (!p_self) {
+#ifdef ABT_CONFIG_ACTIVE_WAIT_POLICY
         thread_join_busywait(p_thread);
+#else
+        thread_join_futexwait(p_thread);
+#endif
         return;
     }
 

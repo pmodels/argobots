@@ -269,10 +269,22 @@ static inline ABTI_ythread *ABTI_ythread_context_switch_to_child_internal(
             }
             /* Now p_link != NULL. */
             ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(p_link);
-            /* The scheduler may not use a bypass mechanism, so just makes
-             * p_joiner ready. */
-            ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
-                                   p_joiner);
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+            if (p_joiner->thread.type == ABTI_THREAD_TYPE_EXT) {
+                /* p_joiner is a non-yieldable thread (i.e., external thread).
+                 * Wake up the waiter via the futex.  Note that p_arg is used to
+                 * store futex (see thread_join_futexwait()). */
+                ABTD_futex_single *p_futex =
+                    (ABTD_futex_single *)p_joiner->thread.p_arg;
+                ABTD_futex_resume(p_futex);
+            } else
+#endif
+            {
+                /* The scheduler may not use a bypass mechanism, so just makes
+                 * p_joiner ready. */
+                ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
+                                       p_joiner);
+            }
             /* We don't need to use the atomic OR operation here because
              * the ULT will be terminated regardless of other requests. */
             ABTD_atomic_release_store_uint32(&p_prev->thread.request,

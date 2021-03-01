@@ -59,8 +59,19 @@ static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
     }
     /* Now p_link != NULL. */
     ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(p_link);
-    if (p_ythread->thread.p_last_xstream == p_joiner->thread.p_last_xstream &&
-        !(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED)) {
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+    if (p_joiner->thread.type == ABTI_THREAD_TYPE_EXT) {
+        /* p_joiner is a non-yieldable thread (i.e., external thread). Wake up
+         * the waiter via the futex.  Note that p_arg is used to store futex
+         * (see thread_join_futexwait()). */
+        ABTD_futex_single *p_futex =
+            (ABTD_futex_single *)p_joiner->thread.p_arg;
+        ABTD_futex_resume(p_futex);
+    } else
+#endif
+        if (p_ythread->thread.p_last_xstream ==
+                p_joiner->thread.p_last_xstream &&
+            !(p_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED)) {
         /* Only when the current ULT is on the same ES as p_joiner's,
          * we can jump to the joiner ULT. */
         ABTD_atomic_release_store_int(&p_ythread->thread.state,
