@@ -148,7 +148,8 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
         }
         if (abt_errno != ABT_SUCCESS) {
             sched_config_free(p_config);
-            ABTI_HANDLE_ERROR(ABT_ERR_SCHED_CONFIG);
+            va_end(varg_list);
+            ABTI_HANDLE_ERROR(abt_errno);
         }
     }
     va_end(varg_list);
