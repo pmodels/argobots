@@ -1735,8 +1735,8 @@ static void ABTXI_prof_print_xstream_info(ABTXI_prof_global *p_global,
                                 sizeof(ABTXI_prof_xstream_info *) *
                                     len_external_threads);
                 }
-                external_threads[len_external_threads] = p_xstream_info_head;
-                len_external_threads++;
+                external_threads[num_external_threads] = p_xstream_info_head;
+                num_external_threads++;
             }
             p_xstream_info_head = p_xstream_info_head->p_next;
         }
