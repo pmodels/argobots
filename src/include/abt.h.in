@@ -1860,7 +1860,6 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                     void *arg, ABT_task *newtask) ABT_API_PUBLIC;
 int ABT_task_revive(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *task) ABT_API_PUBLIC;
-int ABT_task_free(ABT_task *task) ABT_API_PUBLIC;
 int ABT_task_join(ABT_task task) ABT_API_PUBLIC;
 int ABT_task_cancel(ABT_task task) ABT_API_PUBLIC;
 int ABT_task_self(ABT_task *task) ABT_API_PUBLIC;
