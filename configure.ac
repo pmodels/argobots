@@ -207,6 +207,14 @@ AC_ARG_ENABLE([stack-overflow-check],
         none|no
 ],,[enable_stack_overflow_check=no])
 
+# --enable-wait-policy
+AC_ARG_ENABLE([wait-policy],
+[  --enable-wait-policy@<:@=OPTS@:>@ set a wait policy of blocking operations
+        default|auto - choose the best policy, which is currently "passive".
+        active       - spin-wait on blocking.  It uses more CPU resources.
+        passive      - suspend CPU cores on blocking.  It increases latency.
+],,[enable_wait_policy=auto])
+
 # --disable-simple-mutex
 AC_ARG_ENABLE([simple-mutex],
     AS_HELP_STRING([--disable-simple-mutex], [use an experimental mutex implementation]),,
@@ -774,6 +782,10 @@ AS_IF([test "x$have_linux_futex" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_LINUX_FUTEX, 1,
                  [Define to use Linux-type futex])])
 
+# --enable-wait-policy
+AS_IF([test "x$enable_wait_policy" = "xactive"],
+      [AC_DEFINE(ABT_CONFIG_ACTIVE_WAIT_POLICY, 1,
+                 [Define to enable the active wait policy])])
 
 # --disable-simple-mutex
 AS_IF([test "x$enable_simple_mutex" = "xyes"],

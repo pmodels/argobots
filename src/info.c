@@ -176,6 +176,12 @@ static void info_trigger_print_all_thread_stacks(
  *   if Argobots is configured to use a stack canary to check stack overflow.
  *   Otherwise, \c val is set to 0.
  *
+ * - \c ABT_INFO_QUERY_KIND_WAIT_POLICY
+ *
+ *   \c val must be a pointer to a variable of type \c int.  \c val is set to 0
+ *   if the wait policy of Argobots is passive.  \c val is set to 1 if the wait
+ *   policy of Argobots is active.
+ *
  * @changev20
  * \DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE
  * @endchangev20
@@ -352,6 +358,13 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_STACK_OVERFLOW_CHECK:
 #if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+            *((int *)val) = 1;
+#else
+            *((int *)val) = 0;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_WAIT_POLICY:
+#if ABT_CONFIG_ACTIVE_WAIT_POLICY
             *((int *)val) = 1;
 #else
             *((int *)val) = 0;
@@ -1061,6 +1074,13 @@ void ABTI_info_print_config(ABTI_global *p_global, FILE *fp)
                 "yes"
 #else
                 "no"
+#endif
+                "\n");
+    fprintf(fp, " - wait policy: "
+#ifdef ABT_CONFIG_ACTIVE_WAIT_POLICY
+                "active"
+#else
+                "passive"
 #endif
                 "\n");
     fprintf(fp, " - context-switch: "
