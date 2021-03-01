@@ -154,6 +154,9 @@ typedef struct ABTI_thread_id_opaque *ABTI_thread_id;
 
 /* Definitions */
 struct ABTI_waitlist {
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+    ABTD_futex_multiple futex;
+#endif
     ABTI_thread *p_head;
     ABTI_thread *p_tail;
 };

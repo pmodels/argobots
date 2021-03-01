@@ -10,6 +10,9 @@
 
 static inline void ABTI_waitlist_init(ABTI_waitlist *p_waitlist)
 {
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+    ABTD_futex_multiple_init(&p_waitlist->futex);
+#endif
     p_waitlist->p_head = NULL;
     p_waitlist->p_tail = NULL;
 }
@@ -41,10 +44,31 @@ ABTI_waitlist_wait_and_unlock(ABTI_local **pp_local, ABTI_waitlist *p_waitlist,
         p_waitlist->p_tail = &thread;
 
         /* Non-yieldable thread is waiting here. */
+#ifdef ABT_CONFIG_ACTIVE_WAIT_POLICY
         ABTD_spinlock_release(p_lock);
         while (ABTD_atomic_acquire_load_int(&thread.state) !=
                ABT_THREAD_STATE_READY)
             ;
+#else
+        while (1) {
+            /* While taking a lock check if this thread is not ready. This is
+             * necessary to sleep while ready; otherwise deadlock. */
+            if (ABTD_atomic_relaxed_load_int(&thread.state) ==
+                ABT_THREAD_STATE_READY) {
+                ABTD_spinlock_release(p_lock);
+                break;
+            }
+            ABTD_futex_wait_and_unlock(&p_waitlist->futex, p_lock);
+
+            /* Quick check. */
+            if (ABTD_atomic_acquire_load_int(&thread.state) ==
+                ABT_THREAD_STATE_READY)
+                break;
+
+            /* Take a lock again. */
+            ABTD_spinlock_acquire(p_lock);
+        }
+#endif
     } else {
         /* Add p_thread to the list. */
         p_ythread->thread.p_next = NULL;
@@ -112,6 +136,7 @@ static inline ABT_bool ABTI_waitlist_wait_timedout_and_unlock(
         }
     } else {
         /* When an underlying entity is non-yieldable. */
+#ifdef ABT_CONFIG_ACTIVE_WAIT_POLICY
         ABTD_spinlock_release(p_lock);
         while (ABTD_atomic_acquire_load_int(&thread.state) !=
                ABT_THREAD_STATE_READY) {
@@ -121,6 +146,29 @@ static inline ABT_bool ABTI_waitlist_wait_timedout_and_unlock(
                 goto timeout;
             }
         }
+#else
+        while (1) {
+            double cur_time = ABTI_get_wtime();
+            if (cur_time >= target_time) {
+                goto timeout;
+            }
+            /* While taking a lock check if this thread is not ready. This is
+             * necessary to sleep while ready; otherwise deadlock. */
+            if (ABTD_atomic_relaxed_load_int(&thread.state) ==
+                ABT_THREAD_STATE_READY) {
+                ABTD_spinlock_release(p_lock);
+                break;
+            }
+            ABTD_futex_timedwait_and_unlock(&p_waitlist->futex, p_lock,
+                                            target_time - cur_time);
+            /* Quick check. */
+            if (ABTD_atomic_acquire_load_int(&thread.state) ==
+                ABT_THREAD_STATE_READY)
+                break;
+            /* Take a lock again. */
+            ABTD_spinlock_acquire(p_lock);
+        }
+#endif
     }
     /* Singled */
     return ABT_FALSE;
@@ -181,6 +229,12 @@ static inline void ABTI_waitlist_signal(ABTI_local *p_local,
             /* When p_thread is an external thread or a tasklet */
             ABTD_atomic_release_store_int(&p_thread->state,
                                           ABT_THREAD_STATE_READY);
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+            /* There's no way to selectively wake up threads.  Let's just
+             * wake up all the threads.  They will sleep again since their
+             * states are not marked as READY. */
+            ABTD_futex_broadcast(&p_waitlist->futex);
+#endif
         }
         /* After updating p_thread->state, p_thread can be updated and
          * freed. */
@@ -195,6 +249,7 @@ static inline void ABTI_waitlist_broadcast(ABTI_local *p_local,
 {
     ABTI_thread *p_thread = p_waitlist->p_head;
     if (p_thread) {
+        ABT_bool wakeup_nonyieldable = ABT_FALSE;
         do {
             ABTI_thread *p_next = p_thread->p_next;
             p_thread->p_next = NULL;
@@ -204,6 +259,7 @@ static inline void ABTI_waitlist_broadcast(ABTI_local *p_local,
                 ABTI_ythread_set_ready(p_local, p_ythread);
             } else {
                 /* When p_thread is an external thread or a tasklet */
+                wakeup_nonyieldable = ABT_TRUE;
                 ABTD_atomic_release_store_int(&p_thread->state,
                                               ABT_THREAD_STATE_READY);
             }
@@ -213,6 +269,14 @@ static inline void ABTI_waitlist_broadcast(ABTI_local *p_local,
         } while (p_thread);
         p_waitlist->p_head = NULL;
         p_waitlist->p_tail = NULL;
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+        if (wakeup_nonyieldable) {
+            ABTD_futex_broadcast(&p_waitlist->futex);
+        }
+#else
+        /* Do nothing. */
+        (void)wakeup_nonyieldable;
+#endif
     }
 }
 
