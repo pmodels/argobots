@@ -5,6 +5,9 @@
 
 #include "abti.h"
 
+/* If the value is too big, the input should be wrong. */
+#define MAX_NUM_ELEMS (1024 * 1024)
+
 static ABTD_affinity_id_list *id_list_create(void)
 {
     ABTD_affinity_id_list *p_id_list;
@@ -185,6 +188,8 @@ static ABTD_affinity_id_list *parse_es_id_list(const char *affinity_str,
                         goto FAILED;
                 }
             }
+            if (num >= MAX_NUM_ELEMS)
+                goto FAILED;
             /* Add ids based on <id-interval> */
             id_list_add(p_id_list, id, num, stride);
             /* After <id-interval>, we expect either "," (in <id-list>) or "}"
@@ -231,6 +236,8 @@ static ABTD_affinity_list *parse_list(const char *affinity_str)
                     goto FAILED;
             }
         }
+        if (num >= MAX_NUM_ELEMS)
+            goto FAILED;
         /* Add <es-id-list> based on <interval> */
         list_add(p_list, p_id_list, num, stride);
         p_id_list = NULL;
