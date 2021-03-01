@@ -875,6 +875,16 @@ AC_CHECK_LIB(pthread, pthread_join)
 # check pthread_barrier
 AC_CHECK_FUNCS(pthread_barrier_init)
 
+# check -lrt library
+AC_CHECK_LIB(rt, timer_create)
+if test "$ac_cv_lib_rt" = "yes" ; then
+    # -lrt is used for testing
+    abttest_timer_library="-lrt"
+else
+    abttest_timer_library=""
+fi
+AC_SUBST(abttest_timer_library)
+
 # check timer functions
 AC_CHECK_FUNCS(clock_gettime mach_absolute_time gettimeofday)
 if test "$ac_cv_func_clock_gettime" = "yes" ; then

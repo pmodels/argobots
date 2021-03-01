@@ -32,6 +32,24 @@ void ABTD_futex_timedwait_and_unlock(ABTD_futex_multiple *p_futex,
  * must be called when a lock (p_lock above) is taken. */
 void ABTD_futex_broadcast(ABTD_futex_multiple *p_futex);
 
+/* ABTD_futex_single supports a suspend-resume pattern.  ABTD_futex_single
+ * allows only a single waiter. */
+typedef struct ABTD_futex_single ABTD_futex_single;
+
+/* Initialize ABTD_futex_single. */
+static inline void ABTD_futex_single_init(ABTD_futex_single *p_futex);
+
+/* This routine suspends the underlying Pthread.  Only one thread can suspend
+ * on a single p_futex.  This suspended thread must be woken up by
+ * ABTD_futex_resume().  Spurious wakeup does not happen.
+ *
+ * p_futex must be new; it may not have been used after initialization. */
+void ABTD_futex_suspend(ABTD_futex_single *p_futex);
+
+/* This routine wakes up a Pthread suspended by ABTD_futex_suspend().  This
+ * routine blocks if no Pthread is waiting on p_futex. */
+void ABTD_futex_resume(ABTD_futex_single *p_futex);
+
 #ifdef ABT_CONFIG_USE_LINUX_FUTEX
 
 struct ABTD_futex_multiple {
@@ -39,6 +57,15 @@ struct ABTD_futex_multiple {
 };
 
 static inline void ABTD_futex_multiple_init(ABTD_futex_multiple *p_futex)
+{
+    ABTD_atomic_relaxed_store_int(&p_futex->val, 0);
+}
+
+struct ABTD_futex_single {
+    ABTD_atomic_int val;
+};
+
+static inline void ABTD_futex_single_init(ABTD_futex_single *p_futex)
 {
     ABTD_atomic_relaxed_store_int(&p_futex->val, 0);
 }
@@ -52,6 +79,15 @@ struct ABTD_futex_multiple {
 static inline void ABTD_futex_multiple_init(ABTD_futex_multiple *p_futex)
 {
     p_futex->p_next = NULL;
+}
+
+struct ABTD_futex_single {
+    ABTD_atomic_ptr p_sync_obj;
+};
+
+static inline void ABTD_futex_single_init(ABTD_futex_single *p_futex)
+{
+    ABTD_atomic_relaxed_store_ptr(&p_futex->p_sync_obj, NULL);
 }
 
 #endif /* !ABT_CONFIG_USE_LINUX_FUTEX */

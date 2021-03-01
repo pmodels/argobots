@@ -47,6 +47,24 @@ void ABTD_futex_broadcast(ABTD_futex_multiple *p_futex)
             NULL, 0);
 }
 
+void ABTD_futex_suspend(ABTD_futex_single *p_futex)
+{
+    /* Wake-up signal is 1. */
+    while (ABTD_atomic_acquire_load_int(&p_futex->val) == 0) {
+        syscall(SYS_futex, &p_futex->val.val, FUTEX_WAIT_PRIVATE, 0, NULL, NULL,
+                0);
+    }
+    /* Resumed by ABTD_futex_resume() */
+}
+
+void ABTD_futex_resume(ABTD_futex_single *p_futex)
+{
+    ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_futex->val) == 0);
+    /* Write 1 and wake the waiter up. */
+    ABTD_atomic_release_store_int(&p_futex->val, 1);
+    syscall(SYS_futex, &p_futex->val.val, FUTEX_WAKE_PRIVATE, 1, NULL, NULL, 0);
+}
+
 #else /* ABT_CONFIG_USE_LINUX_FUTEX */
 
 /* Use Pthreads. */
@@ -160,6 +178,54 @@ void ABTD_futex_broadcast(ABTD_futex_multiple *p_futex)
         p_cur = p_next;
     }
     p_futex->p_next = NULL;
+}
+
+void ABTD_futex_suspend(ABTD_futex_single *p_futex)
+{
+    if (ABTD_atomic_acquire_load_ptr(&p_futex->p_sync_obj) != NULL) {
+        /* Always resumed (invalid_ptr has be written).  No need to wait. */
+        return;
+    }
+    pthread_sync sync_obj = PTHREAD_SYNC_STATIC_INITIALIZER;
+    pthread_mutex_lock(&sync_obj.mutex);
+    /* Use strong since either suspend or resume must succeed if those two are
+     * executed concurrently. */
+    if (ABTD_atomic_bool_cas_strong_ptr(&p_futex->p_sync_obj, NULL,
+                                        (void *)&sync_obj)) {
+        /* This thread needs to wait on this.  The outer loop is needed to avoid
+         * spurious wakeup. */
+        while (ABTD_atomic_relaxed_load_int(&sync_obj.val) == 0)
+            pthread_cond_wait(&sync_obj.cond, &sync_obj.mutex);
+    } else {
+        /* It seems that this futex has already been resumed. */
+    }
+    pthread_mutex_unlock(&sync_obj.mutex);
+    /* Resumed by ABTD_futex_resume().  sync_obj is automatically freed. */
+}
+
+void ABTD_futex_resume(ABTD_futex_single *p_futex)
+{
+    pthread_sync *p_sync_obj =
+        (pthread_sync *)ABTD_atomic_acquire_load_ptr(&p_futex->p_sync_obj);
+    if (!p_sync_obj) {
+        /* Try to use CAS to notify a waiter that this is "resumed" */
+        void *invalid_ptr = (void *)((intptr_t)1);
+        void *ret_val = ABTD_atomic_val_cas_strong_ptr(&p_futex->p_sync_obj,
+                                                       NULL, invalid_ptr);
+        if (ret_val == NULL) {
+            /* CAS succeeded.  Resumed.  This thread should not touch this
+             * sync_obj. */
+            return;
+        }
+        /* p_next has been updated by the waiter.  Let's wake him up. */
+        p_sync_obj = (pthread_sync *)ret_val;
+    }
+    pthread_mutex_lock(&p_sync_obj->mutex);
+    /* After setting value 1 and unlock the mutex, sync_obj will be freed
+     * immediately. */
+    ABTD_atomic_relaxed_store_int(&p_sync_obj->val, 1);
+    pthread_cond_signal(&p_sync_obj->cond);
+    pthread_mutex_unlock(&p_sync_obj->mutex);
 }
 
 #endif /* !ABT_CONFIG_USE_LINUX_FUTEX */
