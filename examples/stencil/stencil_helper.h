@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <stdarg.h>
 
@@ -103,15 +104,27 @@ static int read_args(int argc, char **argv, int *p_num_blocksX,
     return 0;
 }
 
+static inline uint32_t xorshift_rand32(uint32_t *p_seed)
+{
+    /* George Marsaglia, "Xorshift RNGs", Journal of Statistical Software,
+     * Articles, 2003 */
+    uint32_t seed = *p_seed;
+    seed ^= seed << 13;
+    seed ^= seed >> 17;
+    seed ^= seed << 5;
+    *p_seed = seed;
+    return seed;
+}
+
 static void init_values(double *values1, double *values2, int num_blocksX,
                         int num_blocksY, int blocksize)
 {
     int x, y;
-    const double coeff = 1.0 / RAND_MAX;
-    srand(WIDTH * HEIGHT);
+    const double coeff = 1.0 / 1024.0;
+    uint32_t seed = WIDTH * HEIGHT;
     for (y = 0; y < HEIGHT; y++) {
         for (x = 0; x < WIDTH; x++) {
-            values1[x + y * WIDTH] = rand() * coeff;
+            values1[x + y * WIDTH] = (xorshift_rand32(&seed) % 1024) * coeff;
             /* The boundary of values2 must be initialized to the same as
              * values1. */
             values2[x + y * WIDTH] = values1[x + y * WIDTH];
