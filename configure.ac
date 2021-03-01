@@ -747,6 +747,34 @@ if test "$CC" != "xlc" -a "$CC" != "pgcc" -a "x$have_atomic_builtin" = "xyes" ; 
 fi
 
 
+# check if futex is available.  Note that futex() is basically Linux-specific.
+AC_COMPILE_IFELSE(
+[AC_LANG_PROGRAM([
+ #include <unistd.h>
+ #include <linux/futex.h>
+ #include <syscall.h>
+ #include <assert.h>
+],[
+ // Maybe we should not include <futex.h> since it seems that it has some
+ // compatibility issues (see LLVM OpenMP).  We should use a constant value
+ // for futex_op if we found some compilation issues here.
+ int ret, futex_val = 0;
+ // The following does not sleep since futex_val is not 1.
+ ret = syscall(SYS_futex, &futex_val, FUTEX_WAIT_PRIVATE, 1, 0, 0, 0);
+ assert(ret == 0);
+ // The following does not wake up any since no thread is sleeping.
+ ret = syscall(SYS_futex, &futex_val, FUTEX_WAKE_PRIVATE, 1, 0, 0, 0);
+ // The return value is 0 since no thread was waken up.
+ assert(ret == 0);
+])],
+[have_linux_futex=yes],
+[have_linux_futex=no]
+)
+AS_IF([test "x$have_linux_futex" = "xyes"],
+      [AC_DEFINE(ABT_CONFIG_USE_LINUX_FUTEX, 1,
+                 [Define to use Linux-type futex])])
+
+
 # --disable-simple-mutex
 AS_IF([test "x$enable_simple_mutex" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SIMPLE_MUTEX, 1,
