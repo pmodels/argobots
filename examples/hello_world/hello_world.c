@@ -52,6 +52,10 @@ int main(int argc, char **argv)
                 return -1;
         }
     }
+    if (num_xstreams <= 0)
+        num_xstreams = 1;
+    if (num_threads <= 0)
+        num_threads = 1;
 
     /* Allocate memory. */
     ABT_xstream *xstreams =

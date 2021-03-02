@@ -132,11 +132,13 @@ ABTI_mem_pool_alloc(ABTI_mem_pool_local_pool *p_local_pool, void **p_mem)
                                               &p_local_pool->buckets[i]);
                 if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
                     /* Return buckets that have been already taken. */
+#if ABT_MEM_POOL_NUM_TAKE_BUCKETS > 1
                     size_t j;
                     for (j = 0; j < i; j++) {
                         ABTI_mem_pool_return_bucket(p_local_pool->p_global_pool,
                                                     p_local_pool->buckets[j]);
                     }
+#endif
                     return abt_errno;
                 }
             }

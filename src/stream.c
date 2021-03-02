@@ -92,18 +92,17 @@ int ABT_xstream_create(ABT_sched sched, ABT_xstream *newxstream)
     *newxstream = ABT_XSTREAM_NULL;
 #endif
     int abt_errno;
-    ABTI_sched *p_sched;
     ABTI_xstream *p_newxstream;
 
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
 
-    if (sched == ABT_SCHED_NULL) {
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    if (!p_sched) {
         abt_errno =
             ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, NULL, &p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
-        p_sched = ABTI_sched_get_ptr(sched);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
         ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED,
                         ABT_ERR_INV_SCHED);
@@ -269,7 +268,6 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
     *newxstream = ABT_XSTREAM_NULL;
 #endif
     int abt_errno;
-    ABTI_sched *p_sched;
     ABTI_xstream *p_newxstream;
 
     ABTI_global *p_global;
@@ -277,12 +275,12 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
 
     ABTI_CHECK_TRUE(rank >= 0, ABT_ERR_INV_XSTREAM_RANK);
 
-    if (sched == ABT_SCHED_NULL) {
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    if (!p_sched) {
         abt_errno =
             ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, NULL, &p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
-        p_sched = ABTI_sched_get_ptr(sched);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
         ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED,
                         ABT_ERR_INV_SCHED);
@@ -859,13 +857,12 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
                     ABT_ERR_INV_XSTREAM);
 #endif
 
-    ABTI_sched *p_sched;
-    if (sched == ABT_SCHED_NULL) {
+    ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
+    if (!p_sched) {
         int abt_errno =
             ABTI_sched_create_basic(ABT_SCHED_DEFAULT, 0, NULL, NULL, &p_sched);
         ABTI_CHECK_ERROR(abt_errno);
     } else {
-        p_sched = ABTI_sched_get_ptr(sched);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
         ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED,
                         ABT_ERR_INV_SCHED);

@@ -148,7 +148,8 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
         }
         if (abt_errno != ABT_SUCCESS) {
             sched_config_free(p_config);
-            ABTI_HANDLE_ERROR(ABT_ERR_SCHED_CONFIG);
+            va_end(varg_list);
+            ABTI_HANDLE_ERROR(abt_errno);
         }
     }
     va_end(varg_list);
@@ -311,7 +312,8 @@ ABTU_ret_err static int sched_config_add(ABTI_sched_config *p_config, int idx,
                 ABTI_CHECK_ERROR(abt_errno);
                 p_new_element->idx = idx;
                 p_new_element->type = type;
-                memcpy(p_element->val, p_val, sched_config_type_size(type));
+                memcpy(p_new_element->val, p_val, sched_config_type_size(type));
+                p_element->p_next = p_new_element;
                 break;
             } else {
                 p_element = p_element->p_next;

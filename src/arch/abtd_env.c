@@ -242,7 +242,7 @@ static uint32_t roundup_pow2_uint32(uint32_t val)
     if (val == 0)
         return 0;
     uint32_t i;
-    for (i = 0; i < sizeof(uint32_t) * 8; i++) {
+    for (i = 0; i < sizeof(uint32_t) * 8 - 1; i++) {
         if ((val - 1) >> i == 0)
             break;
     }
@@ -256,11 +256,16 @@ static const char *get_abt_env(const char *env_suffix)
     const char *prefixes[] = { "ABT_", "ABT_ENV_" };
     uint32_t i;
     for (i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); i++) {
-        strcpy(buffer, prefixes[i]);
-        strcpy(buffer + strlen(prefixes[i]), env_suffix);
-        const char *env = getenv(buffer);
-        if (env)
-            return env;
+        int prefix_size = strlen(prefixes[i]);
+        int env_suffix_size = strlen(env_suffix);
+        if (prefix_size + env_suffix_size + 1 <= (int)sizeof(buffer)) {
+            memcpy(buffer, prefixes[i], prefix_size);
+            memcpy(buffer + prefix_size, env_suffix, env_suffix_size);
+            buffer[prefix_size + env_suffix_size] = '\0';
+            const char *env = getenv(buffer);
+            if (env)
+                return env;
+        }
     }
     return NULL;
 }

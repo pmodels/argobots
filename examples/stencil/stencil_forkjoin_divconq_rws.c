@@ -45,6 +45,7 @@ typedef struct {
     int blockX_to;
     int blockY_to;
     ABT_pool *pools;
+    ABT_thread thread;
 } thread_arg_t;
 
 void thread(void *arg)
@@ -72,9 +73,8 @@ void thread(void *arg)
         }
     } else {
         /* Divide the region and create child threads (maximum four). */
-        ABT_thread threads[4];
         thread_arg_t thread_args[4];
-        int xdiv, ydiv;
+        int i, xdiv, ydiv;
         for (ydiv = 0; ydiv < 2; ydiv++) {
             for (xdiv = 0; xdiv < 2; xdiv++) {
                 int index = xdiv + ydiv * 2;
@@ -109,22 +109,17 @@ void thread(void *arg)
                     int rank;
                     ABT_xstream_self_rank(&rank);
                     ABT_thread_create(pools[rank], thread, &thread_args[index],
-                                      ABT_THREAD_ATTR_NULL, &threads[index]);
+                                      ABT_THREAD_ATTR_NULL,
+                                      &thread_args[index].thread);
+                } else {
+                    thread_args[index].thread = ABT_THREAD_NULL;
                 }
             }
         }
         /* Join child threads. */
-        for (ydiv = 0; ydiv < 2; ydiv++) {
-            for (xdiv = 0; xdiv < 2; xdiv++) {
-                int index = xdiv + ydiv * 2;
-                if (thread_args[index].blockX_to -
-                            thread_args[index].blockX_from !=
-                        0 &&
-                    thread_args[index].blockY_to -
-                            thread_args[index].blockY_from !=
-                        0) {
-                    ABT_thread_free(&threads[index]);
-                }
+        for (i = 0; i < 4; i++) {
+            if (thread_args[i].thread != ABT_THREAD_NULL) {
+                ABT_thread_free(&thread_args[i].thread);
             }
         }
     }
