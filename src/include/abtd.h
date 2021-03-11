@@ -19,6 +19,7 @@ typedef enum {
     ABTD_XSTREAM_CONTEXT_STATE_WAITING,
     ABTD_XSTREAM_CONTEXT_STATE_REQ_JOIN,
     ABTD_XSTREAM_CONTEXT_STATE_REQ_TERMINATE,
+    ABTD_XSTREAM_CONTEXT_STATE_UNINIT,
 } ABTD_xstream_context_state;
 typedef struct ABTD_xstream_context {
     pthread_t native_thread;
