@@ -103,8 +103,9 @@ void ABTI_mem_pool_init_global_pool(
     uint32_t num_lp_type_requests, size_t alignment_hint);
 void ABTI_mem_pool_destroy_global_pool(
     ABTI_mem_pool_global_pool *p_global_pool);
-void ABTI_mem_pool_init_local_pool(ABTI_mem_pool_local_pool *p_local_pool,
-                                   ABTI_mem_pool_global_pool *p_global_pool);
+ABTU_ret_err int
+ABTI_mem_pool_init_local_pool(ABTI_mem_pool_local_pool *p_local_pool,
+                              ABTI_mem_pool_global_pool *p_global_pool);
 void ABTI_mem_pool_destroy_local_pool(ABTI_mem_pool_local_pool *p_local_pool);
 int ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool,
                               ABTI_mem_pool_header **p_bucket);
