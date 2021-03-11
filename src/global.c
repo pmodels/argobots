@@ -75,9 +75,19 @@ int ABT_init(int argc, char **argv)
 {
     ABTI_UNUSED(argc);
     ABTI_UNUSED(argv);
+
+    int abt_errno;
     /* Take a global lock protecting the initialization/finalization process. */
     ABTD_spinlock_acquire(&g_ABTI_init_lock);
-    int abt_errno = init_library();
+    /* If Argobots has already been initialized, just return */
+    if (g_ABTI_num_inits > 0) {
+        g_ABTI_num_inits++;
+        abt_errno = ABT_SUCCESS;
+    } else {
+        abt_errno = init_library();
+        if (abt_errno == ABT_SUCCESS)
+            g_ABTI_num_inits++;
+    }
     /* Unlock a global lock */
     ABTD_spinlock_release(&g_ABTI_init_lock);
     ABTI_CHECK_ERROR(abt_errno);
@@ -172,13 +182,11 @@ int ABT_initialized(void)
 
 ABTU_ret_err static int init_library(void)
 {
-    int abt_errno;
-    /* If Argobots has already been initialized, just return */
-    if (g_ABTI_num_inits++ > 0) {
-        return ABT_SUCCESS;
-    }
+    int abt_errno, init_stage = 0;
 
     ABTI_global *p_global;
+    ABTI_xstream *p_local_xstream;
+
     abt_errno = ABTU_malloc(sizeof(ABTI_global), (void **)&p_global);
     ABTI_CHECK_ERROR(abt_errno);
     ABTI_global_set_global(p_global);
@@ -187,7 +195,10 @@ ABTU_ret_err static int init_library(void)
     ABTD_env_init(p_global);
 
     /* Initialize memory pool */
-    ABTI_mem_init(p_global);
+    abt_errno = ABTI_mem_init(p_global);
+    if (abt_errno != ABT_SUCCESS)
+        goto FAILED;
+    init_stage = 1;
 
     /* Initialize IDs */
     ABTI_thread_reset_id();
@@ -211,9 +222,10 @@ ABTU_ret_err static int init_library(void)
     ABTD_spinlock_clear(&p_global->xstream_list_lock);
 
     /* Create the primary ES */
-    ABTI_xstream *p_local_xstream;
     abt_errno = ABTI_xstream_create_primary(p_global, &p_local_xstream);
-    ABTI_CHECK_ERROR(abt_errno);
+    if (abt_errno != ABT_SUCCESS)
+        goto FAILED;
+    init_stage = 2;
 
     /* Init the ES local data */
     ABTI_local_set_xstream(p_local_xstream);
@@ -224,11 +236,14 @@ ABTU_ret_err static int init_library(void)
         ABTI_ythread_create_primary(p_global,
                                     ABTI_xstream_get_local(p_local_xstream),
                                     p_local_xstream, &p_primary_ythread);
+    if (abt_errno != ABT_SUCCESS)
+        goto FAILED;
+    init_stage = 3;
+
     /* Set as if p_local_xstream is currently running the primary ULT. */
     ABTD_atomic_relaxed_store_int(&p_primary_ythread->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
     p_primary_ythread->thread.p_last_xstream = p_local_xstream;
-    ABTI_CHECK_ERROR(abt_errno);
     p_global->p_primary_ythread = p_primary_ythread;
     p_local_xstream->p_thread = &p_primary_ythread->thread;
 
@@ -241,6 +256,19 @@ ABTU_ret_err static int init_library(void)
     }
     ABTD_atomic_release_store_uint32(&g_ABTI_initialized, 1);
     return ABT_SUCCESS;
+FAILED:
+    if (init_stage >= 2) {
+        ABTI_xstream_free(p_global, ABTI_xstream_get_local(p_local_xstream),
+                          p_local_xstream, ABT_TRUE);
+        ABTI_local_set_xstream(NULL);
+    }
+    if (init_stage >= 1) {
+        ABTI_mem_finalize(p_global);
+    }
+    ABTD_affinity_finalize(p_global);
+    ABTU_free(p_global);
+    ABTI_global_set_global(NULL);
+    ABTI_HANDLE_ERROR(abt_errno);
 }
 
 ABTU_ret_err static int finailze_library(void)
@@ -308,9 +336,7 @@ ABTU_ret_err static int finailze_library(void)
     ABTI_mem_finalize(p_global);
 
     /* Restore the affinity */
-    if (p_global->set_affinity == ABT_TRUE) {
-        ABTD_affinity_finalize(p_global);
-    }
+    ABTD_affinity_finalize(p_global);
 
     /* Free the ABTI_global structure */
     ABTU_free(p_global);
