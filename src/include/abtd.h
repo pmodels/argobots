@@ -73,7 +73,7 @@ typedef struct ABTD_affinity_id_list {
     uint32_t num;
     int *ids; /* id here can be negative. */
 } ABTD_affinity_id_list;
-typedef struct ABTD_affinity_parser_list {
+typedef struct ABTD_affinity_list {
     uint32_t num;
     ABTD_affinity_id_list **p_id_lists;
 } ABTD_affinity_list;
