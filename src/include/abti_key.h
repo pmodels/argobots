@@ -236,7 +236,10 @@ ABTU_ret_err static inline int ABTI_ktable_set(ABTI_global *p_global,
                                               ABTI_KTABLE_LOCKED)) {
                 /* The lock was acquired, so let's allocate this table. */
                 abt_errno = ABTI_ktable_create(p_global, p_local, &p_ktable);
-                ABTI_CHECK_ERROR(abt_errno);
+                if (abt_errno != ABT_SUCCESS) {
+                    ABTD_atomic_release_store_ptr(pp_ktable, NULL);
+                    ABTI_HANDLE_ERROR(abt_errno);
+                }
 
                 /* Write down the value.  The lock is released here. */
                 ABTD_atomic_release_store_ptr(pp_ktable, p_ktable);
