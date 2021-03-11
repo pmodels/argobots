@@ -78,7 +78,9 @@ typedef struct ABTD_affinity_list {
     ABTD_affinity_id_list **p_id_lists;
     void *p_mem_head; /* List to free all the allocated memory easily */
 } ABTD_affinity_list;
-ABTD_affinity_list *ABTD_affinity_list_create(const char *affinity_str);
+ABTU_ret_err int
+ABTD_affinity_list_create(const char *affinity_str,
+                          ABTD_affinity_list **pp_affinity_list);
 void ABTD_affinity_list_free(ABTD_affinity_list *p_list);
 
 #include "abtd_stream.h"

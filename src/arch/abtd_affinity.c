@@ -310,10 +310,12 @@ void ABTD_affinity_init(ABTI_global *p_global, const char *affinity_str)
     if (ret != ABT_SUCCESS || g_affinity.initial_cpuset.num_cpuids == 0)
         goto FAILED;
     p_global->set_affinity = ABT_TRUE;
-    p_list = ABTD_affinity_list_create(affinity_str);
-    if (p_list->num == 0) {
-        ABTD_affinity_list_free(p_list);
-        p_list = NULL;
+    ret = ABTD_affinity_list_create(affinity_str, &p_list);
+    if (ret == ABT_SUCCESS) {
+        if (p_list->num == 0) {
+            ABTD_affinity_list_free(p_list);
+            p_list = NULL;
+        }
     }
     if (p_list) {
         /* Create cpusets based on the affinity list.*/
