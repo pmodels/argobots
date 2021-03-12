@@ -36,7 +36,7 @@ _make_fcontext:
     /* on context-function entry: (ESP -0x4) % 8 == 0 */
     leal  -0x20(%eax), %eax
 
-    /* thrid arg of make_fcontext() == address of context-function */
+    /* third arg of make_fcontext() == address of context-function */
     movl  0xc(%esp), %edx
     movl  %edx, 0x18(%eax)
 

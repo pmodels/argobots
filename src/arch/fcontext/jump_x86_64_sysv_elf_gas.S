@@ -143,7 +143,7 @@ peek_fcontext:
     movq   %rsp, %r12
     /* restore RSP (pointing to context-data) from RDI */
     movq   %rdi, %rsp
-    /* RSP is already 16-byte aligned, so we can call a peek funciton here
+    /* RSP is already 16-byte aligned, so we can call a peek function here
      * rsi(rdx) => second_arg(third_arg) */
     movq   %rdx, %rdi
     callq *%rsi

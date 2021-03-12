@@ -272,7 +272,7 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc(
     /* Copy members of p_attr. */
     p_ythread->stacksize = p_attr->stacksize;
     p_ythread->p_stack = p_attr->p_stack;
-    /* Note that the valgrind registration is ignored iff p_stack is NULL. */
+    /* Note that the valgrind registration is ignored if p_stack is NULL. */
     ABTI_mem_register_stack(p_ythread->p_stack, p_ythread->stacksize);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
