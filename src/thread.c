@@ -2717,6 +2717,10 @@ static void thread_key_destructor_stackable_sched(void *p_value)
         p_sched->p_ythread = NULL;
         ABTI_sched_free(p_global, ABTI_local_get_local_uninlined(), p_sched,
                         ABT_FALSE);
+    } else {
+        /* If it is not automatic, p_ythread must be set to NULL to avoid double
+         * free corruption. */
+        p_sched->p_ythread = NULL;
     }
 }
 

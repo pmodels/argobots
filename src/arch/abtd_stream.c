@@ -56,27 +56,57 @@ ABTU_ret_err int ABTD_xstream_context_create(void *(*f_xstream)(void *),
      * following suppresses a false positive. */
     /* coverity[missing_lock] */
     p_ctx->state = ABTD_XSTREAM_CONTEXT_STATE_RUNNING;
-    pthread_mutex_init(&p_ctx->state_lock, NULL);
-    pthread_cond_init(&p_ctx->state_cond, NULL);
-    int ret = pthread_create(&p_ctx->native_thread, NULL,
-                             xstream_context_thread_func, p_ctx);
-    ABTI_CHECK_TRUE(ret == 0, ABT_ERR_SYS);
+    int ret, init_stage = 0;
+    ret = pthread_mutex_init(&p_ctx->state_lock, NULL);
+    if (ret != 0)
+        goto FAILED;
+    init_stage = 1;
+
+    ret = pthread_cond_init(&p_ctx->state_cond, NULL);
+    if (ret != 0)
+        goto FAILED;
+    init_stage = 2;
+
+    ret = pthread_create(&p_ctx->native_thread, NULL,
+                         xstream_context_thread_func, p_ctx);
+    if (ret != 0)
+        goto FAILED;
+    init_stage = 3;
+
     return ABT_SUCCESS;
+FAILED:
+    if (init_stage >= 2) {
+        ret = pthread_cond_destroy(&p_ctx->state_cond);
+        ABTI_ASSERT(ret == 0);
+    }
+    if (init_stage >= 1) {
+        ret = pthread_mutex_destroy(&p_ctx->state_lock);
+        ABTI_ASSERT(ret == 0);
+    }
+    p_ctx->state = ABTD_XSTREAM_CONTEXT_STATE_UNINIT;
+    ABTI_HANDLE_ERROR(ABT_ERR_SYS);
 }
 
 void ABTD_xstream_context_free(ABTD_xstream_context *p_ctx)
 {
     /* Request termination */
-    pthread_mutex_lock(&p_ctx->state_lock);
-    ABTI_ASSERT(p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_WAITING);
-    p_ctx->state = ABTD_XSTREAM_CONTEXT_STATE_REQ_TERMINATE;
-    pthread_cond_signal(&p_ctx->state_cond);
-    pthread_mutex_unlock(&p_ctx->state_lock);
-    /* Join the target thread. */
-    int ret = pthread_join(p_ctx->native_thread, NULL);
-    ABTI_ASSERT(ret == 0);
-    pthread_cond_destroy(&p_ctx->state_cond);
-    pthread_mutex_destroy(&p_ctx->state_lock);
+    if (p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_UNINIT) {
+        /* Do nothing. */
+    } else {
+        pthread_mutex_lock(&p_ctx->state_lock);
+        ABTI_ASSERT(p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_WAITING);
+        p_ctx->state = ABTD_XSTREAM_CONTEXT_STATE_REQ_TERMINATE;
+        pthread_cond_signal(&p_ctx->state_cond);
+        pthread_mutex_unlock(&p_ctx->state_lock);
+        /* Join the target thread. */
+        int ret;
+        ret = pthread_join(p_ctx->native_thread, NULL);
+        ABTI_ASSERT(ret == 0);
+        ret = pthread_cond_destroy(&p_ctx->state_cond);
+        ABTI_ASSERT(ret == 0);
+        ret = pthread_mutex_destroy(&p_ctx->state_lock);
+        ABTI_ASSERT(ret == 0);
+    }
 }
 
 void ABTD_xstream_context_join(ABTD_xstream_context *p_ctx)
@@ -125,6 +155,8 @@ void ABTD_xstream_context_print(ABTD_xstream_context *p_ctx, FILE *p_os,
             state = "REQ_JOIN";
         } else if (p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_REQ_TERMINATE) {
             state = "REQ_TERMINATE";
+        } else if (p_ctx->state == ABTD_XSTREAM_CONTEXT_STATE_UNINIT) {
+            state = "UNINIT";
         } else {
             state = "UNKNOWN";
         }

@@ -50,8 +50,10 @@ static inline void ABTI_sched_discard_and_free(ABTI_global *p_global,
         ABTI_sched_free(p_global, p_local, p_sched, force_free);
     } else {
         /* Threads should be discarded here. */
-        ABTI_thread_free(p_global, p_local, &p_sched->p_ythread->thread);
-        p_sched->p_ythread = NULL;
+        if (p_sched->p_ythread) {
+            ABTI_thread_free(p_global, p_local, &p_sched->p_ythread->thread);
+            p_sched->p_ythread = NULL;
+        }
     }
 }
 

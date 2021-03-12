@@ -62,15 +62,24 @@ ABTU_ret_err int ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
 static int pool_init(ABT_pool pool, ABT_pool_config config)
 {
     ABTI_UNUSED(config);
-    int abt_errno = ABT_SUCCESS;
+    int ret, abt_errno = ABT_SUCCESS;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
 
     data_t *p_data;
     abt_errno = ABTU_malloc(sizeof(data_t), (void **)&p_data);
     ABTI_CHECK_ERROR(abt_errno);
 
-    pthread_mutex_init(&p_data->mutex, NULL);
-    pthread_cond_init(&p_data->cond, NULL);
+    ret = pthread_mutex_init(&p_data->mutex, NULL);
+    if (ret != 0) {
+        ABTU_free(p_data);
+        return ABT_ERR_SYS;
+    }
+    ret = pthread_cond_init(&p_data->cond, NULL);
+    if (ret != 0) {
+        pthread_mutex_destroy(&p_data->mutex);
+        ABTU_free(p_data);
+        return ABT_ERR_SYS;
+    }
 
     p_data->num_threads = 0;
     p_data->p_head = NULL;

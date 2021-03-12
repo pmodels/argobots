@@ -22,8 +22,9 @@ enum {
     ABTI_MEM_LP_THP
 };
 
-void ABTI_mem_init(ABTI_global *p_global);
-void ABTI_mem_init_local(ABTI_global *p_global, ABTI_xstream *p_local_xstream);
+ABTU_ret_err int ABTI_mem_init(ABTI_global *p_global);
+ABTU_ret_err int ABTI_mem_init_local(ABTI_global *p_global,
+                                     ABTI_xstream *p_local_xstream);
 void ABTI_mem_finalize(ABTI_global *p_global);
 void ABTI_mem_finalize_local(ABTI_xstream *p_local_xstream);
 int ABTI_mem_check_lp_alloc(ABTI_global *p_global, int lp_alloc);

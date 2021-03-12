@@ -844,6 +844,12 @@ void ABTI_sched_free(ABTI_global *p_global, ABTI_local *p_local,
     size_t p;
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        if (!p_pool) {
+            /* p_pool can be set to NULL when that p_pool must be preserved,
+             * for example, when this function is called because
+             * ABT_xstream_create_basic() fails. */
+            continue;
+        }
         int32_t num_scheds = ABTI_pool_release(p_pool);
         if ((p_pool->automatic == ABT_TRUE && num_scheds == 0) || force_free) {
             ABTI_pool_free(p_pool);

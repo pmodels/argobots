@@ -13,7 +13,7 @@
  * global data.  When ABTI_finalize is called, all memory objects that we have
  * allocated are returned to the higher-level memory allocator. */
 
-void ABTI_mem_init(ABTI_global *p_global)
+ABTU_ret_err int ABTI_mem_init(ABTI_global *p_global)
 {
     int num_requested_types = 0;
     ABTU_MEM_LARGEPAGE_TYPE requested_types[3];
@@ -73,21 +73,42 @@ void ABTI_mem_init(ABTI_global *p_global)
                                    num_requested_types,
                                    p_global->mem_page_size);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
+    int abt_errno;
     ABTD_spinlock_clear(&p_global->mem_pool_stack_lock);
-    ABTI_mem_pool_init_local_pool(&p_global->mem_pool_stack_ext,
-                                  &p_global->mem_pool_stack);
+    abt_errno = ABTI_mem_pool_init_local_pool(&p_global->mem_pool_stack_ext,
+                                              &p_global->mem_pool_stack);
+    if (abt_errno != ABT_SUCCESS) {
+        ABTI_mem_pool_destroy_global_pool(&p_global->mem_pool_stack);
+        ABTI_mem_pool_destroy_global_pool(&p_global->mem_pool_desc);
+        ABTI_HANDLE_ERROR(abt_errno);
+    }
     ABTD_spinlock_clear(&p_global->mem_pool_desc_lock);
-    ABTI_mem_pool_init_local_pool(&p_global->mem_pool_desc_ext,
-                                  &p_global->mem_pool_desc);
+    abt_errno = ABTI_mem_pool_init_local_pool(&p_global->mem_pool_desc_ext,
+                                              &p_global->mem_pool_desc);
+    if (abt_errno != ABT_SUCCESS) {
+        ABTI_mem_pool_destroy_local_pool(&p_global->mem_pool_stack_ext);
+        ABTI_mem_pool_destroy_global_pool(&p_global->mem_pool_stack);
+        ABTI_mem_pool_destroy_global_pool(&p_global->mem_pool_desc);
+        ABTI_HANDLE_ERROR(abt_errno);
+    }
 #endif
+    return ABT_SUCCESS;
 }
 
-void ABTI_mem_init_local(ABTI_global *p_global, ABTI_xstream *p_local_xstream)
+ABTU_ret_err int ABTI_mem_init_local(ABTI_global *p_global,
+                                     ABTI_xstream *p_local_xstream)
 {
-    ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_stack,
-                                  &p_global->mem_pool_stack);
-    ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_desc,
-                                  &p_global->mem_pool_desc);
+    int abt_errno;
+    abt_errno = ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_stack,
+                                              &p_global->mem_pool_stack);
+    ABTI_CHECK_ERROR(abt_errno);
+    abt_errno = ABTI_mem_pool_init_local_pool(&p_local_xstream->mem_pool_desc,
+                                              &p_global->mem_pool_desc);
+    if (abt_errno != ABT_SUCCESS) {
+        ABTI_mem_pool_destroy_local_pool(&p_local_xstream->mem_pool_stack);
+        ABTI_HANDLE_ERROR(abt_errno);
+    }
+    return ABT_SUCCESS;
 }
 
 void ABTI_mem_finalize(ABTI_global *p_global)
@@ -157,12 +178,15 @@ int ABTI_mem_check_lp_alloc(ABTI_global *p_global, int lp_alloc)
 
 #else /* !ABT_CONFIG_USE_MEM_POOL */
 
-void ABTI_mem_init(ABTI_global *p_global)
+ABTU_ret_err int ABTI_mem_init(ABTI_global *p_global)
 {
+    return ABT_SUCCESS;
 }
 
-void ABTI_mem_init_local(ABTI_global *p_global, ABTI_xstream *p_local_xstream)
+ABTU_ret_err int ABTI_mem_init_local(ABTI_global *p_global,
+                                     ABTI_xstream *p_local_xstream)
 {
+    return ABT_SUCCESS;
 }
 
 void ABTI_mem_finalize(ABTI_global *p_global)

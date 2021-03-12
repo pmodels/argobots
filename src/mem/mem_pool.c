@@ -125,8 +125,9 @@ void ABTI_mem_pool_destroy_global_pool(ABTI_mem_pool_global_pool *p_global_pool)
     ABTI_sync_lifo_destroy(&p_global_pool->mem_page_lifo);
 }
 
-void ABTI_mem_pool_init_local_pool(ABTI_mem_pool_local_pool *p_local_pool,
-                                   ABTI_mem_pool_global_pool *p_global_pool)
+ABTU_ret_err int
+ABTI_mem_pool_init_local_pool(ABTI_mem_pool_local_pool *p_local_pool,
+                              ABTI_mem_pool_global_pool *p_global_pool)
 {
     p_local_pool->p_global_pool = p_global_pool;
     p_local_pool->num_headers_per_bucket =
@@ -135,8 +136,9 @@ void ABTI_mem_pool_init_local_pool(ABTI_mem_pool_local_pool *p_local_pool,
      * Let's take one bucket. */
     int abt_errno =
         ABTI_mem_pool_take_bucket(p_global_pool, &p_local_pool->buckets[0]);
-    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+    ABTI_CHECK_ERROR(abt_errno);
     p_local_pool->bucket_index = 0;
+    return ABT_SUCCESS;
 }
 
 void ABTI_mem_pool_destroy_local_pool(ABTI_mem_pool_local_pool *p_local_pool)

@@ -1,0 +1,16 @@
+librtrace*
+affinity
+barrier
+cond
+eventual
+future
+init_finalize
+key
+mutex
+pool
+rwlock
+sched
+thread
+timer
+xstream
+xstream_barrier

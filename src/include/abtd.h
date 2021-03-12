@@ -19,6 +19,7 @@ typedef enum {
     ABTD_XSTREAM_CONTEXT_STATE_WAITING,
     ABTD_XSTREAM_CONTEXT_STATE_REQ_JOIN,
     ABTD_XSTREAM_CONTEXT_STATE_REQ_TERMINATE,
+    ABTD_XSTREAM_CONTEXT_STATE_UNINIT,
 } ABTD_xstream_context_state;
 typedef struct ABTD_xstream_context {
     pthread_t native_thread;
@@ -73,11 +74,14 @@ typedef struct ABTD_affinity_id_list {
     uint32_t num;
     int *ids; /* id here can be negative. */
 } ABTD_affinity_id_list;
-typedef struct ABTD_affinity_parser_list {
+typedef struct ABTD_affinity_list {
     uint32_t num;
     ABTD_affinity_id_list **p_id_lists;
+    void *p_mem_head; /* List to free all the allocated memory easily */
 } ABTD_affinity_list;
-ABTD_affinity_list *ABTD_affinity_list_create(const char *affinity_str);
+ABTU_ret_err int
+ABTD_affinity_list_create(const char *affinity_str,
+                          ABTD_affinity_list **pp_affinity_list);
 void ABTD_affinity_list_free(ABTD_affinity_list *p_list);
 
 #include "abtd_stream.h"

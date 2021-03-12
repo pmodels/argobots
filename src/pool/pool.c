@@ -803,7 +803,10 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
 #endif
     int abt_errno =
         ABTI_ythread_create_sched(p_global, p_local, p_pool, p_sched);
-    ABTI_CHECK_ERROR(abt_errno);
+    if (abt_errno != ABT_SUCCESS) {
+        p_sched->used = ABTI_SCHED_NOT_USED;
+        ABTI_HANDLE_ERROR(abt_errno);
+    }
     return ABT_SUCCESS;
 }
 

@@ -299,25 +299,19 @@ void ABTD_affinity_init(ABTI_global *p_global, const char *affinity_str)
     g_affinity.cpusets = NULL;
     g_affinity.initial_cpuset.cpuids = NULL;
     pthread_t self_native_thread = pthread_self();
+    ABTD_affinity_list *p_list = NULL;
+
     uint32_t i;
     int ret;
     ret = get_num_cores(self_native_thread, &p_global->num_cores);
-    if (ret != ABT_SUCCESS || p_global->num_cores == 0) {
-        p_global->set_affinity = ABT_FALSE;
-        return;
-    }
+    if (ret != ABT_SUCCESS || p_global->num_cores == 0)
+        goto FAILED;
     ret = create_cpuset(self_native_thread, &g_affinity.initial_cpuset);
-    if (ret != ABT_SUCCESS) {
-        p_global->set_affinity = ABT_FALSE;
-        return;
-    } else if (g_affinity.initial_cpuset.num_cpuids == 0) {
-        ABTD_affinity_cpuset_destroy(&g_affinity.initial_cpuset);
-        p_global->set_affinity = ABT_FALSE;
-        return;
-    }
+    if (ret != ABT_SUCCESS || g_affinity.initial_cpuset.num_cpuids == 0)
+        goto FAILED;
     p_global->set_affinity = ABT_TRUE;
-    ABTD_affinity_list *p_list = ABTD_affinity_list_create(affinity_str);
-    if (p_list) {
+    ret = ABTD_affinity_list_create(affinity_str, &p_list);
+    if (ret == ABT_SUCCESS) {
         if (p_list->num == 0) {
             ABTD_affinity_list_free(p_list);
             p_list = NULL;
@@ -325,21 +319,18 @@ void ABTD_affinity_init(ABTI_global *p_global, const char *affinity_str)
     }
     if (p_list) {
         /* Create cpusets based on the affinity list.*/
-        g_affinity.num_cpusets = p_list->num;
-        ret = ABTU_calloc(g_affinity.num_cpusets, sizeof(ABTD_affinity_cpuset),
+        ret = ABTU_calloc(p_list->num, sizeof(ABTD_affinity_cpuset),
                           (void **)&g_affinity.cpusets);
-        ABTI_ASSERT(ret == ABT_SUCCESS);
+        if (ret != ABT_SUCCESS)
+            goto FAILED;
+        g_affinity.num_cpusets = p_list->num;
         for (i = 0; i < p_list->num; i++) {
             const ABTD_affinity_id_list *p_id_list = p_list->p_id_lists[i];
             uint32_t j, num_cpuids = 0, len_cpuids = 8;
             ret = ABTU_malloc(sizeof(int) * len_cpuids,
                               (void **)&g_affinity.cpusets[i].cpuids);
-            ABTI_ASSERT(ret == ABT_SUCCESS);
-            if (ABTI_IS_ERROR_CHECK_ENABLED && ret != ABT_SUCCESS) {
-                ABTD_affinity_list_free(p_list);
-                p_global->set_affinity = ABT_FALSE;
-                return;
-            }
+            if (ret != ABT_SUCCESS)
+                goto FAILED;
             for (j = 0; j < p_id_list->num; j++) {
                 int cpuid_i = int_rem(p_id_list->ids[j],
                                       g_affinity.initial_cpuset.num_cpuids);
@@ -359,7 +350,8 @@ void ABTD_affinity_init(ABTI_global *p_global, const char *affinity_str)
                                            sizeof(int) * len_cpuids * 2,
                                            (void **)&g_affinity.cpusets[i]
                                                .cpuids);
-                        ABTI_ASSERT(ret == ABT_SUCCESS);
+                        if (ret != ABT_SUCCESS)
+                            goto FAILED;
                         len_cpuids *= 2;
                     }
                     g_affinity.cpusets[i].cpuids[num_cpuids] = cpuid;
@@ -367,29 +359,46 @@ void ABTD_affinity_init(ABTI_global *p_global, const char *affinity_str)
                 }
             }
             /* Adjust the size of cpuids. */
-            if (num_cpuids != len_cpuids)
+            if (num_cpuids != len_cpuids) {
                 ret = ABTU_realloc(sizeof(int) * len_cpuids,
                                    sizeof(int) * num_cpuids,
                                    (void **)&g_affinity.cpusets[i].cpuids);
-            ABTI_ASSERT(ret == ABT_SUCCESS);
+                if (ret != ABT_SUCCESS)
+                    goto FAILED;
+            }
             g_affinity.cpusets[i].num_cpuids = num_cpuids;
         }
         ABTD_affinity_list_free(p_list);
     } else {
         /* Create default cpusets. */
-        g_affinity.num_cpusets = g_affinity.initial_cpuset.num_cpuids;
-        ret = ABTU_calloc(g_affinity.num_cpusets, sizeof(ABTD_affinity_cpuset),
+        ret = ABTU_calloc(g_affinity.initial_cpuset.num_cpuids,
+                          sizeof(ABTD_affinity_cpuset),
                           (void **)&g_affinity.cpusets);
-        ABTI_ASSERT(ret == ABT_SUCCESS);
+        if (ret != ABT_SUCCESS)
+            goto FAILED;
+        g_affinity.num_cpusets = g_affinity.initial_cpuset.num_cpuids;
         for (i = 0; i < g_affinity.num_cpusets; i++) {
             g_affinity.cpusets[i].num_cpuids = 1;
             ret = ABTU_malloc(sizeof(int) * g_affinity.cpusets[i].num_cpuids,
                               (void **)&g_affinity.cpusets[i].cpuids);
-            ABTI_ASSERT(ret == ABT_SUCCESS);
+            if (ret != ABT_SUCCESS)
+                goto FAILED;
             g_affinity.cpusets[i].cpuids[0] =
                 g_affinity.initial_cpuset.cpuids[i];
         }
     }
+    return;
+FAILED:
+    if (p_list)
+        ABTD_affinity_list_free(p_list);
+    ABTD_affinity_cpuset_destroy(&g_affinity.initial_cpuset);
+    for (i = 0; i < g_affinity.num_cpusets; i++)
+        ABTD_affinity_cpuset_destroy(&g_affinity.cpusets[i]);
+    g_affinity.num_cpusets = 0;
+    ABTU_free(g_affinity.cpusets);
+    g_affinity.cpusets = NULL;
+    p_global->set_affinity = ABT_FALSE;
+    return;
 }
 
 void ABTD_affinity_finalize(ABTI_global *p_global)
@@ -403,16 +412,17 @@ void ABTD_affinity_finalize(ABTI_global *p_global)
          * possibly the CPU affinity policy has been changed while running
          * a user program.  Let's ignore this error. */
         (void)abt_errno;
+
+        /* Free g_affinity. */
+        ABTD_affinity_cpuset_destroy(&g_affinity.initial_cpuset);
+        uint32_t i;
+        for (i = 0; i < g_affinity.num_cpusets; i++) {
+            ABTD_affinity_cpuset_destroy(&g_affinity.cpusets[i]);
+        }
+        ABTU_free(g_affinity.cpusets);
+        g_affinity.cpusets = NULL;
+        g_affinity.num_cpusets = 0;
     }
-    /* Free g_afinity. */
-    ABTD_affinity_cpuset_destroy(&g_affinity.initial_cpuset);
-    uint32_t i;
-    for (i = 0; i < g_affinity.num_cpusets; i++) {
-        ABTD_affinity_cpuset_destroy(&g_affinity.cpusets[i]);
-    }
-    ABTU_free(g_affinity.cpusets);
-    g_affinity.cpusets = NULL;
-    g_affinity.num_cpusets = 0;
 }
 
 ABTU_ret_err int ABTD_affinity_cpuset_read(ABTD_xstream_context *p_ctx,
