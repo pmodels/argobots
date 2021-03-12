@@ -106,7 +106,12 @@ void ABTD_futex_wait_and_unlock(ABTD_futex_multiple *p_futex,
 
     /* Since now val is 1, there's no possibility that the signaler is still
      * touching this sync_obj.  sync_obj can be safely released by exiting this
-     * function. */
+     * function.  Note that it seems that Linux does not need such for
+     * statically allocated pthread_mutex_t and pthread_cond_t, FreeBSD
+     * dynamically allocates memory and thus leaks memory if we do not destroy
+     * those objects.  Let's choose a safer option. */
+    pthread_cond_destroy(&sync_obj.cond);
+    pthread_mutex_destroy(&sync_obj.mutex);
 }
 
 void ABTD_futex_timedwait_and_unlock(ABTD_futex_multiple *p_futex,
@@ -161,6 +166,9 @@ void ABTD_futex_timedwait_and_unlock(ABTD_futex_multiple *p_futex,
         }
         ABTD_spinlock_release(p_lock);
     }
+    /* Free sync_obj. */
+    pthread_cond_destroy(&sync_obj.cond);
+    pthread_mutex_destroy(&sync_obj.mutex);
 }
 
 void ABTD_futex_broadcast(ABTD_futex_multiple *p_futex)
@@ -200,7 +208,9 @@ void ABTD_futex_suspend(ABTD_futex_single *p_futex)
         /* It seems that this futex has already been resumed. */
     }
     pthread_mutex_unlock(&sync_obj.mutex);
-    /* Resumed by ABTD_futex_resume().  sync_obj is automatically freed. */
+    /* Resumed by ABTD_futex_resume().  Free sync_obj. */
+    pthread_cond_destroy(&sync_obj.cond);
+    pthread_mutex_destroy(&sync_obj.mutex);
 }
 
 void ABTD_futex_resume(ABTD_futex_single *p_futex)
