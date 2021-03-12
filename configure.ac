@@ -875,6 +875,67 @@ AC_CHECK_LIB(pthread, pthread_join)
 # check pthread_barrier
 AC_CHECK_FUNCS(pthread_barrier_init)
 
+# check dlvsym
+ABT_RT_CFLAGS=""
+ABT_RT_LDFLAGS=""
+AC_CHECK_LIB(dl, dlvsym)
+if test x"$ac_cv_lib_dl_dlvsym" = x"yes"; then
+    # dl can be used for testing.
+    # check objdump since it is needed
+    if test x"$(which objdump || true)" != x; then
+        # objdump exists.  Dump GLIBC versions.
+        AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([
+            #include <stdio.h>
+            #include <stdlib.h>
+            #include <sys/mman.h>
+            #include <pthread.h>
+            #include <stdint.h>
+            #include <unistd.h>
+        ],[[
+            typedef void *(*fty)(void *);
+            volatile fty fs[] = {
+                (fty)malloc, (fty)calloc, (fty)realloc, (fty)posix_memalign,
+                (fty)free, (fty)mmap, (fty)munmap, (fty)pthread_create,
+                (fty)pthread_join, (fty)pthread_mutex_init,
+                (fty)pthread_mutex_destroy, (fty)pthread_cond_init,
+                (fty)pthread_cond_destroy,
+            #if defined(_POSIX_BARRIERS) && _POSIX_BARRIERS > 0
+                (fty)pthread_barrier_init, (fty)pthread_barrier_destroy
+            #endif
+            };
+            int i;
+            for (i = 0; i < (int)(sizeof(fs)/ sizeof(fs[0])); i++) {
+                pthread_t pth;
+                volatile int r1 = pthread_create(&pth, 0, fs[i], 0);
+                volatile int r2 = pthread_join(pth, 0);
+                (void)r1; (void)r2;
+            }
+        ]])],[
+            dump="$(objdump -t conftest$EXEEXT 2>/dev/null || true)"
+
+            ABT_RT_CFLAGS="-DABT_RT_USE_DLVSYM=1"
+            for target_func in malloc calloc realloc posix_memalign free \
+                        mmap munmap pthread_create pthread_join \
+                        pthread_mutex_init pthread_mutex_destroy \
+                        pthread_cond_init pthread_cond_destroy \
+                        pthread_barrier_init pthread_barrier_destroy;
+            do
+                ABT_RT_VER="$(echo ${dump} | grep -E -o "${target_func}@@.*" \
+                           | sed -e s/${target_func}@@//g \
+                           | cut -d' ' -f1 \
+                           | sed -e 's/[^a-Z0-9._-]//g' \
+                           || true)"
+                ABT_RT_MACRO_NAME="ABT_RT_$(echo ${target_func} | tr a-z A-Z)_VER"
+                ABT_RT_CFLAGS="${ABT_RT_CFLAGS} -D${ABT_RT_MACRO_NAME}=${ABT_RT_VER}"
+            done
+        ],[])
+    fi
+    ABT_RT_LDFLAGS="-ldl"
+fi
+AC_SUBST(ABT_RT_LDFLAGS)
+AC_SUBST(ABT_RT_CFLAGS)
+
 # check -lrt library
 AC_CHECK_LIB(rt, timer_create)
 if test "$ac_cv_lib_rt" = "yes" ; then
@@ -1016,6 +1077,7 @@ AC_CONFIG_FILES([Makefile
                  test/Makefile
                  test/basic/Makefile
                  test/benchmark/Makefile
+                 test/leakcheck/Makefile
                  test/util/Makefile
                  examples/Makefile
                  examples/fibonacci/Makefile
