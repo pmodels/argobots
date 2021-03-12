@@ -17,7 +17,7 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
     ABTI_local *p_local = ABTI_local_get_local_uninlined();
 
     const char *prefix_fmt = NULL, *prefix = NULL;
-    char *newfmt;
+    char static_buffer[256], *newfmt;
     uint64_t tid;
     int rank;
     size_t newfmt_len;
@@ -49,15 +49,23 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
         /* Both tid and rank are less than 42 characters in total. */
         const int len_tid_rank = 50;
         newfmt_len = 6 + len_tid_rank + strlen(format);
-        int abt_errno = ABTU_malloc(newfmt_len + 1, (void **)&newfmt);
-        if (abt_errno != ABT_SUCCESS)
-            return;
+        if (sizeof(static_buffer) >= newfmt_len + 1) {
+            newfmt = static_buffer;
+        } else {
+            int abt_errno = ABTU_malloc(newfmt_len + 1, (void **)&newfmt);
+            if (abt_errno != ABT_SUCCESS)
+                return;
+        }
         sprintf(newfmt, prefix_fmt, tid, rank, format);
     } else {
         newfmt_len = strlen(prefix) + strlen(format);
-        int abt_errno = ABTU_malloc(newfmt_len + 1, (void **)&newfmt);
-        if (abt_errno != ABT_SUCCESS)
-            return;
+        if (sizeof(static_buffer) >= newfmt_len + 1) {
+            newfmt = static_buffer;
+        } else {
+            int abt_errno = ABTU_malloc(newfmt_len + 1, (void **)&newfmt);
+            if (abt_errno != ABT_SUCCESS)
+                return;
+        }
         sprintf(newfmt, prefix_fmt, prefix, format);
     }
 
@@ -72,8 +80,9 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
      * function works correct (i.e., without any SEGV) but a tester does not
      * need an actual log since the output can be extremely large. */
 #endif
-
-    ABTU_free(newfmt);
+    if (newfmt != static_buffer) {
+        ABTU_free(newfmt);
+    }
 }
 
 void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit)
