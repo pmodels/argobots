@@ -1020,8 +1020,74 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 #define FLAGS_HP    (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB)
 #define PAGESIZE    (2 * 1024 * 1024)
 ],[void *ptr = mmap(NULL, PAGESIZE, PROTS, FLAGS_HP, 0, 0);])],
-[AC_DEFINE(HAVE_MAP_HUGETLB, 1, [Define if MAP_HUGETLB is supported])],,)
+[[have_map_hugetlb=yes]
+ AC_DEFINE(HAVE_MAP_HUGETLB, 1, [Define if MAP_HUGETLB is supported])],,)
 fi
+
+use_huge_page=no
+huge_page_size=0
+if test x"$have_map_hugetlb" = x"yes"; then
+    # check the huge page size.
+    if test -f "/proc/meminfo"; then
+        meminfoline="$(cat /proc/meminfo | grep Hugepagesize)"
+        huge_page_num="$(echo $meminfoline | sed -e 's/[[^0-9]]//g' || true)"
+        if test x"$huge_page_num" != x; then
+            # Units (usually kB)
+            if test "x$(echo $meminfoline | grep -i ' B' || true)" != x; then
+                huge_page_size="$huge_page_num"
+            elif test "x$(echo $meminfoline | grep -i ' kB' || true)" != x; then
+                huge_page_size="$(($huge_page_num * 1024))"
+            elif test "x$(echo $meminfoline | grep -i ' mB' || true)" != x; then
+                huge_page_size="$(($huge_page_num * 1024 * 1024))"
+            else
+                huge_page_size="0"
+            fi
+        fi
+        if test x"$huge_page_size" != x"0"; then
+            AC_RUN_IFELSE([AC_LANG_PROGRAM([
+                #include <sys/types.h>
+                #include <sys/mman.h>
+                #include <assert.h>
+                #ifndef MAP_ANONYMOUS
+                #define MAP_ANONYMOUS   MAP_ANON
+                #endif
+            ],[
+                char *page = (char *)mmap(0, ${huge_page_size},
+                    (PROT_READ | PROT_WRITE),
+                    (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB), 0, 0);
+                assert(page != MAP_FAILED);
+                *page = 0;
+                int ret = munmap(page, ${huge_page_size});
+                assert(ret == 0); /* This munmap() fails if huge_page_size is wrong. */
+            ])],[use_huge_page=yes])
+        fi
+        if test x"$use_huge_page" != x"yes" -a x"$huge_page_size" != x"2097152"; then
+            # Maybe 2 megabytes (= 2097152)
+            AC_RUN_IFELSE([AC_LANG_PROGRAM([
+                #include <sys/types.h>
+                #include <sys/mman.h>
+                #include <assert.h>
+                #ifndef MAP_ANONYMOUS
+                #define MAP_ANONYMOUS   MAP_ANON
+                #endif
+            ],[
+                char *page = (char *)mmap(0, 2097152,
+                    (PROT_READ | PROT_WRITE),
+                    (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB), 0, 0);
+                assert(page != MAP_FAILED);
+                *page = 0;
+                int ret = munmap(page, 2097152);
+                assert(ret == 0); /* This munmap() fails if huge_page_size is wrong. */
+            ])],[use_huge_page=yes
+                 huge_page_size=2097152],[])
+        fi
+    fi
+fi
+
+AC_DEFINE_UNQUOTED([ABT_CONFIG_SYS_HUGE_PAGE_SIZE], [$huge_page_size],
+               [Define the default system huge page size detected at configure time])
+AS_IF([test x"$use_huge_page" = x"yes"],
+    [AC_DEFINE(ABT_CONFIG_USE_HUGE_PAGE_DEFAULT, 1, [Define if huge page is usable.])])
 
 # check for the availability of int128 CAS. It is hard to get availability of
 # instructions (and compiler support), so we rely on AC_RUN_IFELSE().
