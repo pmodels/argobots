@@ -28,6 +28,9 @@
 #define ABTD_ENV_SIZE_MAX ((int)(SIZE_MAX / 2))
 
 static uint32_t roundup_pow2_uint32(uint32_t val);
+#ifdef ABT_CONFIG_USE_MEM_POOL
+static size_t roundup_pow2_size(size_t val);
+#endif
 static const char *get_abt_env(const char *env_suffix);
 static ABT_bool is_false(const char *str, ABT_bool include0);
 static ABT_bool is_true(const char *str, ABT_bool include1);
@@ -135,11 +138,11 @@ void ABTD_env_init(ABTI_global *p_global)
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
     /* ABT_MEM_PAGE_SIZE, ABT_ENV_MEM_PAGE_SIZE
-     * Page size for memory allocation */
-    p_global->mem_page_size =
+     * Page size for memory allocation.  It must be 2^N. */
+    p_global->mem_page_size = roundup_pow2_size(
         ABTU_roundup_size(load_env_size("MEM_PAGE_SIZE", ABTD_MEM_PAGE_SIZE,
                                         4096, ABTD_ENV_SIZE_MAX),
-                          ABT_CONFIG_STATIC_CACHELINE_SIZE);
+                          ABT_CONFIG_STATIC_CACHELINE_SIZE));
 
     /* ABT_MEM_STACK_PAGE_SIZE, ABT_ENV_MEM_STACK_PAGE_SIZE
      * Stack page size for memory allocation */
@@ -263,6 +266,20 @@ static uint32_t roundup_pow2_uint32(uint32_t val)
     }
     return ((uint32_t)1) << i;
 }
+
+#ifdef ABT_CONFIG_USE_MEM_POOL
+static size_t roundup_pow2_size(size_t val)
+{
+    if (val == 0)
+        return 0;
+    size_t i;
+    for (i = 0; i < sizeof(size_t) * 8 - 1; i++) {
+        if ((val - 1) >> i == 0)
+            break;
+    }
+    return ((size_t)1) << i;
+}
+#endif
 
 static const char *get_abt_env(const char *env_suffix)
 {
