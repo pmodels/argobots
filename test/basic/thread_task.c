@@ -63,7 +63,7 @@ void thread_func(void *arg)
     ret = ABT_thread_get_state(my_handle, &my_state);
     ATS_ERROR(ret, "ABT_thread_get_state");
     if (my_state != ABT_THREAD_STATE_RUNNING) {
-        fprintf(stderr, "ERROR: not in the RUNNUNG state\n");
+        fprintf(stderr, "ERROR: not in the RUNNING state\n");
         exit(-1);
     }
 
@@ -118,7 +118,7 @@ void task_func1(void *arg)
     ret = ABT_task_get_state(my_handle, &my_state);
     ATS_ERROR(ret, "ABT_task_get_state");
     if (my_state != ABT_TASK_STATE_RUNNING) {
-        fprintf(stderr, "ERROR: not in the RUNNUNG state\n");
+        fprintf(stderr, "ERROR: not in the RUNNING state\n");
         exit(-1);
     }
 

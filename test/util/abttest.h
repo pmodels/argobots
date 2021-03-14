@@ -45,7 +45,7 @@ void ATS_init(int argc, char **argv, int num_xstreams);
  *
  * ATS_finalize() internally invokes ABT_finalize(). Therefore, the test
  * code does not need to call ABT_finalize().
- * If err is not zero, or errors have been catched by ATS_error(), this
+ * If err is not zero, or errors have been caught by ATS_error(), this
  * routine returns EXIT_FAILURE. Otherwise, it returns EXIT_SUCCESS;
  *
  * @param[in] err  user error code
@@ -73,7 +73,7 @@ void ATS_printf(int level, const char *format, ...);
  *
  * ATS_error() checks the error code and outputs the string of error code
  * if the error code is not ABT_SUCCESS. Currently, if the error code is not
- * ABT_SUCCESS, this routine calles exit() to terminate the test code.
+ * ABT_SUCCESS, this routine calls exit() to terminate the test code.
  *
  * @param[in] err   error code
  * @param[in] msg   user message
