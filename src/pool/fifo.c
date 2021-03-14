@@ -43,6 +43,28 @@ static inline data_t *pool_get_data_ptr(void *p_data)
     return (data_t *)p_data;
 }
 
+ABTU_ret_err static inline int spinlock_acquire_if_not_empty(data_t *p_data)
+{
+    if (ABTD_atomic_acquire_load_int(&p_data->is_empty)) {
+        /* The pool is empty.  Lock is not taken. */
+        return 1;
+    }
+    while (ABTD_spinlock_try_acquire(&p_data->mutex)) {
+        /* Lock acquisition failed.  Check the size. */
+        while (1) {
+            if (ABTD_atomic_acquire_load_int(&p_data->is_empty)) {
+                /* The pool becomes empty.  Lock is not taken. */
+                return 1;
+            } else if (!ABTD_spinlock_is_locked(&p_data->mutex)) {
+                /* Lock seems released.  Let's try to take a lock again. */
+                break;
+            }
+        }
+    }
+    /* Lock is acquired. */
+    return 0;
+}
+
 /* Obtain the FIFO pool definition according to the access type */
 ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
                                         ABTI_pool_def *p_def)
@@ -198,9 +220,8 @@ static ABT_unit pool_pop_wait(ABT_pool pool, double time_secs)
     double time_start = 0.0;
 
     while (1) {
-        if (ABTD_atomic_acquire_load_int(&p_data->is_empty) == 0) {
+        if (spinlock_acquire_if_not_empty(p_data) == 0) {
             ABT_unit h_unit = ABT_UNIT_NULL;
-            ABTD_spinlock_acquire(&p_data->mutex);
             if (p_data->num_threads > 0) {
                 p_thread = p_data->p_head;
                 if (p_data->num_threads == 1) {
@@ -246,9 +267,8 @@ static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
     ABTI_thread *p_thread = NULL;
 
     while (1) {
-        if (ABTD_atomic_acquire_load_int(&p_data->is_empty) == 0) {
+        if (spinlock_acquire_if_not_empty(p_data) == 0) {
             ABT_unit h_unit = ABT_UNIT_NULL;
-            ABTD_spinlock_acquire(&p_data->mutex);
             if (p_data->num_threads > 0) {
                 p_thread = p_data->p_head;
                 if (p_data->num_threads == 1) {
@@ -288,9 +308,8 @@ static ABT_unit pool_pop_shared(ABT_pool pool)
     data_t *p_data = pool_get_data_ptr(p_pool->data);
     ABTI_thread *p_thread = NULL;
 
-    if (ABTD_atomic_acquire_load_int(&p_data->is_empty) == 0) {
+    if (spinlock_acquire_if_not_empty(p_data) == 0) {
         ABT_unit h_unit = ABT_UNIT_NULL;
-        ABTD_spinlock_acquire(&p_data->mutex);
         if (p_data->num_threads > 0) {
             p_thread = p_data->p_head;
             if (p_data->num_threads == 1) {
