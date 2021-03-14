@@ -28,6 +28,9 @@
 #define ABTD_ENV_SIZE_MAX ((int)(SIZE_MAX / 2))
 
 static uint32_t roundup_pow2_uint32(uint32_t val);
+#ifdef ABT_CONFIG_USE_MEM_POOL
+static size_t roundup_pow2_size(size_t val);
+#endif
 static const char *get_abt_env(const char *env_suffix);
 static ABT_bool is_false(const char *str, ABT_bool include0);
 static ABT_bool is_true(const char *str, ABT_bool include1);
@@ -126,17 +129,20 @@ void ABTD_env_init(ABTI_global *p_global)
 
     /* ABT_HUGE_PAGE_SIZE, ABT_ENV_HUGE_PAGE_SIZE
      * Huge page size */
+    size_t default_huge_page_size = (ABT_CONFIG_SYS_HUGE_PAGE_SIZE != 0)
+                                        ? ABT_CONFIG_SYS_HUGE_PAGE_SIZE
+                                        : ABTD_HUGE_PAGE_SIZE;
     p_global->huge_page_size =
-        load_env_size("HUGE_PAGE_SIZE", ABTD_HUGE_PAGE_SIZE, 4096,
+        load_env_size("HUGE_PAGE_SIZE", default_huge_page_size, 4096,
                       ABTD_ENV_SIZE_MAX);
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
     /* ABT_MEM_PAGE_SIZE, ABT_ENV_MEM_PAGE_SIZE
-     * Page size for memory allocation */
-    p_global->mem_page_size =
+     * Page size for memory allocation.  It must be 2^N. */
+    p_global->mem_page_size = roundup_pow2_size(
         ABTU_roundup_size(load_env_size("MEM_PAGE_SIZE", ABTD_MEM_PAGE_SIZE,
                                         4096, ABTD_ENV_SIZE_MAX),
-                          ABT_CONFIG_STATIC_CACHELINE_SIZE);
+                          ABT_CONFIG_STATIC_CACHELINE_SIZE));
 
     /* ABT_MEM_STACK_PAGE_SIZE, ABT_ENV_MEM_STACK_PAGE_SIZE
      * Stack page size for memory allocation */
@@ -177,27 +183,39 @@ void ABTD_env_init(ABTI_global *p_global)
      * How to allocate large pages.  The default is to use mmap() for huge
      * pages and then to fall back to allocate regular pages using mmap() when
      * huge pages are run out of. */
-    env = get_abt_env("MEM_LP_ALLOC");
+    int lp_alloc;
 #if defined(HAVE_MAP_ANONYMOUS) || defined(HAVE_MAP_ANON)
-#if defined(__x86_64__)
-    int lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
-#else
     /*
-     * If hugepage is used, mmap() needs a correct size of hugepage; otherwise,
-     * error happens on munmap().  However, the default size is for typical
-     * x86/64 machines, not for other architectures, so the error happens when
-     * the hugepage size is different.  To run Argobots with default settings
-     * on these architectures, we disable hugepage allocation by default on
-     * non-x86/64 architectures; on such a machine, hugepage settings should
-     * be explicitly enabled via an environmental variable.
-     *
-     * TODO: fix this issue by detecting and setting a correct hugepage size.
+     * To use hugepage, mmap() needs a correct size of hugepage; otherwise,
+     * an error happens on "munmap()" (not mmap()).
      */
-    int lp_alloc = ABTI_MEM_LP_MALLOC;
-#endif
+    if (get_abt_env("HUGE_PAGE_SIZE")) {
+        /* If the explicitly user explicitly sets the huge page size via the
+         * environmental variable, we respect that value.  It is the user's
+         * responsibility to set a correct huge page size. */
+        lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
+    } else {
+        /* Let's use huge page when both of the following conditions are met:
+         * 1. Huge page is actually usable (ABT_CONFIG_USE_HUGE_PAGE_DEFAULT).
+         * 2. The huge page size is not too large (e.g., some systems use 512 MB
+         *    huge page, which is too big for the default setting). */
+#ifdef ABT_CONFIG_USE_HUGE_PAGE_DEFAULT
+        if (4096 <= ABT_CONFIG_SYS_HUGE_PAGE_SIZE &&
+            ABT_CONFIG_SYS_HUGE_PAGE_SIZE <= 8 * 1024 * 1024) {
+            lp_alloc = ABTI_MEM_LP_MMAP_HP_RP;
+        } else {
+            lp_alloc = ABTI_MEM_LP_MMAP_RP;
+        }
 #else
-    int lp_alloc = ABTI_MEM_LP_MALLOC;
+        /* Huge page allocation failed at configuration time.  Don't use it.*/
+        lp_alloc = ABTI_MEM_LP_MMAP_RP;
 #endif
+    }
+#else
+    /* We cannot use mmap().  Let's use a normal malloc(). */
+    lp_alloc = ABTI_MEM_LP_MALLOC;
+#endif
+    env = get_abt_env("MEM_LP_ALLOC");
     if (env != NULL) {
         if (strcasecmp(env, "malloc") == 0) {
             lp_alloc = ABTI_MEM_LP_MALLOC;
@@ -248,6 +266,20 @@ static uint32_t roundup_pow2_uint32(uint32_t val)
     }
     return ((uint32_t)1) << i;
 }
+
+#ifdef ABT_CONFIG_USE_MEM_POOL
+static size_t roundup_pow2_size(size_t val)
+{
+    if (val == 0)
+        return 0;
+    size_t i;
+    for (i = 0; i < sizeof(size_t) * 8 - 1; i++) {
+        if ((val - 1) >> i == 0)
+            break;
+    }
+    return ((size_t)1) << i;
+}
+#endif
 
 static const char *get_abt_env(const char *env_suffix)
 {
