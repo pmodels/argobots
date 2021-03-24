@@ -159,7 +159,7 @@ static void pool_push_shared(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
 
     ABTD_spinlock_acquire(&p_data->mutex);
     if (p_data->num_threads == 0) {
@@ -188,7 +188,7 @@ static void pool_push_private(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
 
     if (p_data->num_threads == 0) {
         p_thread->p_prev = p_thread;
@@ -240,7 +240,7 @@ static ABT_unit pool_pop_wait(ABT_pool pool, double time_secs)
                 p_thread->p_next = NULL;
                 ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
 
-                h_unit = (ABT_unit)p_thread;
+                h_unit = ABTI_unit_get_builtin_unit(p_thread);
             }
             ABTD_spinlock_release(&p_data->mutex);
             if (h_unit != ABT_UNIT_NULL)
@@ -287,7 +287,7 @@ static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
                 p_thread->p_next = NULL;
                 ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
 
-                h_unit = (ABT_unit)p_thread;
+                h_unit = ABTI_unit_get_builtin_unit(p_thread);
             }
             ABTD_spinlock_release(&p_data->mutex);
             if (h_unit != ABT_UNIT_NULL)
@@ -328,7 +328,7 @@ static ABT_unit pool_pop_shared(ABT_pool pool)
             p_thread->p_next = NULL;
             ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
 
-            h_unit = (ABT_unit)p_thread;
+            h_unit = ABTI_unit_get_builtin_unit(p_thread);
         }
         ABTD_spinlock_release(&p_data->mutex);
         return h_unit;
@@ -362,7 +362,7 @@ static ABT_unit pool_pop_private(ABT_pool pool)
         p_thread->p_next = NULL;
         ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
 
-        h_unit = (ABT_unit)p_thread;
+        h_unit = ABTI_unit_get_builtin_unit(p_thread);
     }
     return h_unit;
 }
@@ -371,7 +371,7 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
 
     ABTI_CHECK_TRUE(p_data->num_threads != 0, ABT_ERR_POOL);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) == 1,
@@ -407,7 +407,7 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
 
     ABTI_CHECK_TRUE(p_data->num_threads != 0, ABT_ERR_POOL);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) == 1,
@@ -452,7 +452,7 @@ static int pool_print_all(ABT_pool pool, void *arg,
     ABTI_thread *p_thread = p_data->p_head;
     while (num_threads--) {
         ABTI_ASSERT(p_thread);
-        ABT_unit unit = (ABT_unit)p_thread;
+        ABT_unit unit = ABTI_unit_get_builtin_unit(p_thread);
         print_fn(arg, unit);
         p_thread = p_thread->p_next;
     }
@@ -468,13 +468,13 @@ static int pool_print_all(ABT_pool pool, void *arg,
 
 static ABT_thread unit_get_thread(ABT_unit unit)
 {
-    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
     return ABTI_thread_get_handle(p_thread);
 }
 
 static ABT_bool unit_is_in_pool(ABT_unit unit)
 {
-    ABTI_thread *p_thread = (ABTI_thread *)unit;
+    ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
     return ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) ? ABT_TRUE
                                                                : ABT_FALSE;
 }
@@ -486,7 +486,7 @@ static ABT_unit unit_create_from_thread(ABT_thread thread)
     p_thread->p_next = NULL;
     ABTD_atomic_relaxed_store_int(&p_thread->is_in_pool, 0);
 
-    return (ABT_unit)p_thread;
+    return ABTI_unit_get_builtin_unit(p_thread);
 }
 
 static void unit_free(ABT_unit *unit)
