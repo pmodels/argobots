@@ -262,7 +262,6 @@ static int pool_remove_shared(ABT_pool pool, ABT_unit unit);
 static int pool_remove_private(ABT_pool pool, ABT_unit unit);
 
 typedef struct example_unit unit_t;
-static ABT_thread unit_get_thread(ABT_unit unit);
 static ABT_bool unit_is_in_pool(ABT_unit unit);
 static ABT_unit unit_create_from_thread(ABT_thread thread);
 static void unit_free(ABT_unit *unit);
@@ -306,9 +305,9 @@ static int example_pool_get_def(ABT_pool_access access, ABT_pool_def *p_def)
     p_def->p_init = pool_init;
     p_def->p_free = pool_free;
     p_def->p_get_size = pool_get_size;
-    p_def->u_get_type = NULL; /* Unused. */
-    p_def->u_get_thread = unit_get_thread;
-    p_def->u_get_task = NULL; /* Unused. */
+    p_def->u_get_type = NULL;   /* Unused. */
+    p_def->u_get_thread = NULL; /* Unused. */
+    p_def->u_get_task = NULL;   /* Unused. */
     p_def->u_is_in_pool = unit_is_in_pool;
     p_def->u_create_from_thread = unit_create_from_thread;
     p_def->u_create_from_task = NULL; /* Unused. */
@@ -565,14 +564,6 @@ static int pool_remove_private(ABT_pool pool, ABT_unit unit)
 }
 
 /* Unit functions */
-
-static ABT_thread unit_get_thread(ABT_unit unit)
-{
-    ABT_thread h_thread;
-    unit_t *p_unit = (unit_t *)unit;
-    h_thread = p_unit->thread;
-    return h_thread;
-}
 
 static ABT_bool unit_is_in_pool(ABT_unit unit)
 {
