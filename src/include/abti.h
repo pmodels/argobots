@@ -54,6 +54,9 @@
 
 #define ABTI_INDENT 4
 
+#define ABTI_UNIT_HASH_TABLE_SIZE_EXP 8 /* N -> 2^N table entries */
+#define ABTI_UNIT_HASH_TABLE_SIZE ((size_t)(1 << ABTI_UNIT_HASH_TABLE_SIZE_EXP))
+
 #define ABTI_SCHED_CONFIG_HTABLE_SIZE 8
 #define ABTI_SCHED_CONFIG_UNUSED_INDEX INT_MIN
 
@@ -143,6 +146,9 @@ typedef struct ABTI_native_thread_id_opaque *ABTI_native_thread_id;
 /* ID associated with thread (i.e., ULTs, tasklets, and external threads) */
 struct ABTI_thread_id_opaque;
 typedef struct ABTI_thread_id_opaque *ABTI_thread_id;
+/* Unit-to-thread hash table. */
+typedef struct ABTI_atomic_unit_to_thread ABTI_atomic_unit_to_thread;
+typedef struct ABTI_unit_to_thread_entry ABTI_unit_to_thread_entry;
 
 /* Architecture-Dependent Definitions */
 #include "abtd.h"
@@ -175,6 +181,15 @@ struct ABTI_mutex {
     ABTD_spinlock waiter_lock; /* lock */
     ABTI_waitlist waitlist;    /* waiting list */
 #endif
+};
+
+struct ABTI_atomic_unit_to_thread {
+    ABTD_atomic_ptr val;
+};
+
+struct ABTI_unit_to_thread_entry {
+    ABTI_atomic_unit_to_thread list;
+    ABTD_spinlock lock; /* Protecting any list update. */
 };
 
 struct ABTI_global {
@@ -228,6 +243,11 @@ struct ABTI_global {
     void *tool_thread_user_arg;
     ABTD_atomic_uint64 tool_thread_event_mask_tagged;
 #endif
+
+    ABTI_unit_to_thread_entry
+        unit_to_thread_entires[ABTI_UNIT_HASH_TABLE_SIZE]; /* Hash table that
+                                                              maps ABT_unit to
+                                                              ABTI_thread  */
 };
 
 struct ABTI_local; /* Empty. */
@@ -538,6 +558,11 @@ void ABTI_pool_reset_id(void);
 
 /* Work Unit */
 void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
+void ABTI_unit_init_hash_table(ABTI_global *p_global);
+void ABTI_unit_finalize_hash_table(ABTI_global *p_global);
+ABTU_ret_err int ABTI_unit_map_thread(ABTI_global *p_global, ABT_unit unit,
+                                      ABTI_thread *p_thread);
+void ABTI_unit_unmap_thread(ABTI_global *p_global, ABT_unit unit);
 
 /* Threads */
 ABTU_ret_err int ABTI_thread_get_mig_data(ABTI_global *p_global,
