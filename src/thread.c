@@ -2053,6 +2053,37 @@ int ABT_thread_get_arg(ABT_thread thread, void **arg)
 
 /**
  * @ingroup ULT
+ * @brief   Retrieve a work-unit function of a work unit.
+ *
+ * \c ABT_thread_get_thread_func() returns the work-unit function of the work
+ * unit \c thread through \c thread_func.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread_func}
+ *
+ * @param[in]  thread       work unit handle
+ * @param[out] thread_func  work-unit function
+ * @return Error code
+ */
+int ABT_thread_get_thread_func(ABT_thread thread, void (**thread_func)(void *))
+{
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    *thread_func = p_thread->f_thread;
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Set a value with a work-unit-specific data key in a work unit.
  *
  * \c ABT_thread_set_specific() associates the value \c value with the

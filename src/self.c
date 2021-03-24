@@ -679,6 +679,36 @@ int ABT_self_get_arg(void **arg)
 
 /**
  * @ingroup SELF
+ * @brief   Retrieve a work-unit function of the calling work unit
+ *
+ * \c ABT_self_get_thread_func() returns the work-unit function of the calling
+ * work unit through \c thread_func.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread_func}
+ *
+ * @param[out] thread_func  the caller's function
+ * @return Error code
+ */
+int ABT_self_get_thread_func(void (**thread_func)(void *))
+{
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+
+    *thread_func = p_local_xstream->p_thread->f_thread;
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Check if the calling work unit is unnamed
  *
  * \c ABT_self_is_unnamed() checks if the calling work unit is unnamed and
