@@ -1194,9 +1194,9 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *is_primary)
  * @ingroup ES
  * @brief   Execute a work unit.
  *
- * \c ABT_xstream_run_unit() runs the work unit \c unit associated with the pool
- * \c pool as a child ULT on the calling ULT, which becomes a parent ULT.  The
- * calling ULT will be resumed when \c unit finishes or yields.
+ * \c ABT_xstream_run_unit() associates the work unit \c unit with the pool
+ * \c pool and runs \c unit as a child ULT on the calling ULT, which becomes a
+ * parent ULT.  The calling ULT will be resumed when \c unit finishes or yields.
  *
  * @contexts
  * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
@@ -1207,11 +1207,12 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *is_primary)
  * \DOC_ERROR_INV_THREAD_NY
  * \DOC_ERROR_INV_UNIT_HANDLE{\c unit}
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_WORK_UNIT_NOT_READY{\c unit}
- * \DOC_UNDEFINED_WORK_UNIT_NOT_ASSOCIATED{\c unit, \c pool}
  *
  * @param[in] unit  unit handle
  * @param[in] pool  pool handle

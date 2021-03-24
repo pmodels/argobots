@@ -41,6 +41,7 @@ ABTU_ret_err static int task_create(ABTI_global *p_global, ABTI_local *p_local,
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
  * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -104,6 +105,7 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
  * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT

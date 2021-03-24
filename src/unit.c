@@ -19,12 +19,16 @@ unit_get_thread_from_user_defined_unit(ABTI_global *p_global, ABT_unit unit);
 
 /**
  * @ingroup UNIT
- * @brief   Set the associated pool for a work unit.
+ * @brief   No operation.
  *
- * \c ABT_unit_set_associated_pool() changes the associated pool of the target
- * work unit \c unit to the pool \c pool.  This routine must be called
- * after \c unit is popped from its original associated pool (i.e., \c unit must
- * not be inside any pool).
+ * \c ABT_unit_set_associated_pool() does nothing.  This routine was originally
+ * provided for setting the associated pool for a work unit, but Argobots 1.1
+ * manages this mapping when \c ABT_pool_push() or \c ABT_xstream_run_unit() is
+ * called.  This routine is for the backward compatibility.
+ *
+ * @changev11
+ * \DOC_DESC_V10_UNIT_POOL_MAPPING
+ * @endchangev11
  *
  * @contexts
  * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
@@ -36,8 +40,6 @@ unit_get_thread_from_user_defined_unit(ABTI_global *p_global, ABT_unit unit);
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
- * \DOC_UNDEFINED_WORK_UNIT_IN_POOL{\c unit}
- * \DOC_UNDEFINED_THREAD_UNSAFE{\c unit}
  *
  * @param[in] unit  work unit handle
  * @param[in] pool  pool handle

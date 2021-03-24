@@ -546,10 +546,11 @@ int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
  * \DOC_ERROR_INV_UNIT_HANDLE{\c unit}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
- * \DOC_UNDEFINED_WORK_UNIT_NOT_ASSOCIATED{\c unit, \c pool}
  *
  * @param[in] pool  pool handle
  * @param[in] unit  unit handle

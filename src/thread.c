@@ -72,6 +72,7 @@ static ABTI_key g_thread_mig_data_key =
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
  * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -151,6 +152,7 @@ int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_XSTREAM_HANDLE{\c xstream}
  * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -336,6 +338,7 @@ int ABT_thread_create_many(int num_threads, ABT_pool *pool_list,
  * \DOC_ERROR_INV_THREAD_PTR{\c thread}
  * \DOC_ERROR_INV_THREAD_NOT_TERMINATED{\c thread}
  * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -953,6 +956,8 @@ int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
