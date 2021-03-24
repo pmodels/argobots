@@ -25,10 +25,10 @@ static inline void xstream_schedule_task(ABTI_global *p_global,
                                          ABTI_thread *p_task);
 static void xstream_init_main_sched(ABTI_xstream *p_xstream,
                                     ABTI_sched *p_sched);
-static void xstream_update_main_sched(ABTI_global *p_global,
-                                      ABTI_xstream **pp_local_xstream,
-                                      ABTI_xstream *p_xstream,
-                                      ABTI_sched *p_sched);
+ABTU_ret_err static int
+xstream_update_main_sched(ABTI_global *p_global,
+                          ABTI_xstream **pp_local_xstream,
+                          ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 static void *xstream_launch_root_ythread(void *p_xstream);
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
 ABTU_ret_err static int xstream_migrate_thread(ABTI_global *p_global,
@@ -343,6 +343,7 @@ int ABT_xstream_create_with_rank(ABT_sched sched, int rank,
  */
 int ABT_xstream_revive(ABT_xstream xstream)
 {
+    ABTI_global *p_global = ABTI_global_get_global();
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
@@ -362,10 +363,14 @@ int ABT_xstream_revive(ABT_xstream xstream)
                                     ? ABTI_local_get_xstream(p_local)->p_thread
                                     : NULL);
 
-    ABTI_thread_revive(p_local, p_xstream->p_root_pool,
-                       p_main_sched_ythread->thread.f_thread,
-                       p_main_sched_ythread->thread.p_arg,
-                       &p_main_sched_ythread->thread);
+    int abt_errno =
+        ABTI_thread_revive(p_global, p_local, p_xstream->p_root_pool,
+                           p_main_sched_ythread->thread.f_thread,
+                           p_main_sched_ythread->thread.p_arg,
+                           &p_main_sched_ythread->thread);
+    /* ABTI_thread_revive() never fails since it does not update an associated
+     * pool.*/
+    assert(abt_errno == ABT_SUCCESS);
 
     ABTD_atomic_relaxed_store_int(&p_xstream->state, ABT_XSTREAM_STATE_RUNNING);
     ABTD_xstream_context_revive(&p_xstream->ctx);
@@ -875,7 +880,15 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
 #endif
     }
 
-    xstream_update_main_sched(p_global, &p_local_xstream, p_xstream, p_sched);
+    int abt_errno = xstream_update_main_sched(p_global, &p_local_xstream,
+                                              p_xstream, p_sched);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        if (!ABTI_sched_get_ptr(sched)) {
+            ABTI_sched_free(p_global, ABTI_local_get_local_uninlined(), p_sched,
+                            ABT_FALSE);
+        }
+        ABTI_HANDLE_ERROR(abt_errno);
+    }
     return ABT_SUCCESS;
 }
 
@@ -940,6 +953,7 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
                                      ABT_sched_predef predef, int num_pools,
                                      ABT_pool *pools)
 {
+    int abt_errno;
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
 
@@ -950,11 +964,17 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
     ABTI_CHECK_NULL_XSTREAM_PTR(p_xstream);
 
     ABTI_sched *p_sched;
-    int abt_errno =
+    abt_errno =
         ABTI_sched_create_basic(predef, num_pools, pools, NULL, &p_sched);
     ABTI_CHECK_ERROR(abt_errno);
 
-    xstream_update_main_sched(p_global, &p_local_xstream, p_xstream, p_sched);
+    abt_errno = xstream_update_main_sched(p_global, &p_local_xstream, p_xstream,
+                                          p_sched);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTI_sched_free(p_global, ABTI_local_get_local_uninlined(), p_sched,
+                        ABT_FALSE);
+        ABTI_HANDLE_ERROR(abt_errno);
+    }
     return ABT_SUCCESS;
 }
 
@@ -1174,9 +1194,9 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *is_primary)
  * @ingroup ES
  * @brief   Execute a work unit.
  *
- * \c ABT_xstream_run_unit() runs the work unit \c unit associated with the pool
- * \c pool as a child ULT on the calling ULT, which becomes a parent ULT.  The
- * calling ULT will be resumed when \c unit finishes or yields.
+ * \c ABT_xstream_run_unit() associates the work unit \c unit with the pool
+ * \c pool and runs \c unit as a child ULT on the calling ULT, which becomes a
+ * parent ULT.  The calling ULT will be resumed when \c unit finishes or yields.
  *
  * @contexts
  * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
@@ -1187,11 +1207,12 @@ int ABT_xstream_is_primary(ABT_xstream xstream, ABT_bool *is_primary)
  * \DOC_ERROR_INV_THREAD_NY
  * \DOC_ERROR_INV_UNIT_HANDLE{\c unit}
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
  * \DOC_UNDEFINED_WORK_UNIT_NOT_READY{\c unit}
- * \DOC_UNDEFINED_WORK_UNIT_NOT_ASSOCIATED{\c unit, \c pool}
  *
  * @param[in] unit  unit handle
  * @param[in] pool  pool handle
@@ -1208,7 +1229,11 @@ int ABT_xstream_run_unit(ABT_unit unit, ABT_pool pool)
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, NULL);
 
-    ABTI_xstream_run_unit(p_global, &p_local_xstream, unit, p_pool);
+    ABTI_thread *p_thread;
+    int abt_errno =
+        ABTI_unit_set_associated_pool(p_global, unit, p_pool, &p_thread);
+    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_xstream_run_thread(p_global, &p_local_xstream, p_thread);
     return ABT_SUCCESS;
 }
 
@@ -1521,13 +1546,10 @@ void ABTI_xstream_start_primary(ABTI_global *p_global,
     (*pp_local_xstream)->p_thread = &p_ythread->thread;
 }
 
-void ABTI_xstream_run_unit(ABTI_global *p_global,
-                           ABTI_xstream **pp_local_xstream, ABT_unit unit,
-                           ABTI_pool *p_pool)
+void ABTI_xstream_run_thread(ABTI_global *p_global,
+                             ABTI_xstream **pp_local_xstream,
+                             ABTI_thread *p_thread)
 {
-    ABT_thread thread = p_pool->u_get_thread(unit);
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-
     if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
         /* Execute a ULT */
@@ -1912,8 +1934,7 @@ static inline void xstream_schedule_ythread(ABTI_global *p_global,
                   ABTI_thread_get_id(&p_ythread->thread),
                   p_local_xstream->rank);
         ABTI_thread_unset_request(&p_ythread->thread, ABTI_THREAD_REQ_ORPHAN);
-        p_ythread->thread.p_pool->u_free(&p_ythread->thread.unit);
-        p_ythread->thread.p_pool = NULL;
+        ABTI_thread_unset_associated_pool(p_global, &p_ythread->thread);
     } else {
         ABTI_ASSERT(0);
         ABTU_unreachable();
@@ -1981,6 +2002,13 @@ ABTU_ret_err static int xstream_migrate_thread(ABTI_global *p_global,
         ABTI_thread_get_mig_data(p_global, p_local, p_thread, &p_mig_data);
     ABTI_CHECK_ERROR(abt_errno);
 
+    /* Extracting an argument embedded in a migration request. */
+    p_pool = ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
+
+    /* Change the associated pool */
+    abt_errno = ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
+
     /* callback function */
     if (p_mig_data->f_migration_cb) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
@@ -1994,12 +2022,8 @@ ABTU_ret_err static int xstream_migrate_thread(ABTI_global *p_global,
     ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&p_thread->request) &
                 ABTI_THREAD_REQ_MIGRATE);
 
-    /* Extracting argument in migration request. */
-    p_pool = ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
+    /* Unset the migration request. */
     ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
-
-    /* Change the associated pool */
-    p_thread->p_pool = p_pool;
 
     /* Add the unit to the scheduler's pool */
     ABTI_pool_push(p_pool, p_thread->unit);
@@ -2017,29 +2041,32 @@ static void xstream_init_main_sched(ABTI_xstream *p_xstream,
     p_xstream->p_main_sched = p_sched;
 }
 
-static void xstream_update_main_sched(ABTI_global *p_global,
-                                      ABTI_xstream **pp_local_xstream,
-                                      ABTI_xstream *p_xstream,
-                                      ABTI_sched *p_sched)
+static int xstream_update_main_sched(ABTI_global *p_global,
+                                     ABTI_xstream **pp_local_xstream,
+                                     ABTI_xstream *p_xstream,
+                                     ABTI_sched *p_sched)
 {
-    /* Set the scheduler as a main scheduler */
-    p_sched->used = ABTI_SCHED_MAIN;
-
     ABTI_sched *p_main_sched = p_xstream->p_main_sched;
     if (p_main_sched == NULL) {
+        /* Set the scheduler as a main scheduler */
+        p_sched->used = ABTI_SCHED_MAIN;
         /* Set the scheduler */
         p_xstream->p_main_sched = p_sched;
-        return;
+        return ABT_SUCCESS;
     } else if (*pp_local_xstream != p_xstream) {
         /* Changing the scheduler of another execution stream. */
         ABTI_ASSERT(p_xstream->ctx.state == ABTD_XSTREAM_CONTEXT_STATE_WAITING);
-        /* Use the original scheduler's thread. */
-        p_main_sched->p_ythread->thread.p_pool->u_free(
-            &p_main_sched->p_ythread->thread.unit);
+        /* Use the original scheduler's thread.  Unit creation might fail, so it
+         * should be done first. */
         ABTI_pool *p_tar_pool = ABTI_pool_get_ptr(p_sched->pools[0]);
-        ABT_thread h_thread = ABTI_ythread_get_handle(p_main_sched->p_ythread);
-        p_main_sched->p_ythread->thread.unit =
-            p_tar_pool->u_create_from_thread(h_thread);
+        int abt_errno =
+            ABTI_thread_set_associated_pool(p_global,
+                                            &p_main_sched->p_ythread->thread,
+                                            p_tar_pool);
+        ABTI_CHECK_ERROR(abt_errno);
+
+        /* Set the scheduler as a main scheduler */
+        p_sched->used = ABTI_SCHED_MAIN;
         p_sched->p_ythread = p_main_sched->p_ythread;
         p_main_sched->p_ythread = NULL;
         /* p_main_sched is no longer used. */
@@ -2050,7 +2077,7 @@ static void xstream_update_main_sched(ABTI_global *p_global,
                             p_xstream->p_main_sched, ABT_FALSE);
         }
         p_xstream->p_main_sched = p_sched;
-        return;
+        return ABT_SUCCESS;
     } else {
         /* If the ES has a main scheduler, we have to free it */
         ABTI_thread *p_thread = (*pp_local_xstream)->p_thread;
@@ -2065,14 +2092,17 @@ static void xstream_update_main_sched(ABTI_global *p_global,
             if (p_ythread->thread.p_pool ==
                 ABTI_pool_get_ptr(p_main_sched->pools[p])) {
                 /* Associate the work unit to the first pool of new scheduler */
-                p_ythread->thread.p_pool->u_free(&p_ythread->thread.unit);
-                ABT_thread h_thread = ABTI_ythread_get_handle(p_ythread);
-                p_ythread->thread.unit =
-                    p_tar_pool->u_create_from_thread(h_thread);
-                p_ythread->thread.p_pool = p_tar_pool;
+                int abt_errno =
+                    ABTI_thread_set_associated_pool(p_global,
+                                                    &p_ythread->thread,
+                                                    p_tar_pool);
+                ABTI_CHECK_ERROR(abt_errno);
                 break;
             }
         }
+
+        /* Set the scheduler as a main scheduler */
+        p_sched->used = ABTI_SCHED_MAIN;
 
         /* Finish the current main scheduler */
         ABTI_sched_set_request(p_main_sched, ABTI_SCHED_REQ_FINISH);
@@ -2098,6 +2128,7 @@ static void xstream_update_main_sched(ABTI_global *p_global,
         ABTI_sched_discard_and_free(p_global,
                                     ABTI_xstream_get_local(*pp_local_xstream),
                                     p_main_sched, ABT_FALSE);
+        return ABT_SUCCESS;
     }
 }
 

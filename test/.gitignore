@@ -38,6 +38,7 @@ basic/sched_set_main
 basic/sched_stack
 basic/sched_config
 basic/sched_user_ws
+basic/pool_custom
 basic/sync_no_contention
 basic/main_sched
 basic/mutex

@@ -13,11 +13,6 @@
 
 #define POOL_KIND_USER ((ABT_pool_kind)999)
 
-ABT_thread unit_get_thread(ABT_unit unit)
-{
-    return (ABT_thread)unit;
-}
-
 ABT_unit unit_create_from_thread(ABT_thread thread)
 {
     return (ABT_unit)thread;
@@ -97,7 +92,7 @@ ABT_pool create_pool(int automatic, int must_succeed)
     ABT_pool_def pool_def;
     pool_def.access = ABT_POOL_ACCESS_MPMC;
     pool_def.u_get_type = NULL;
-    pool_def.u_get_thread = unit_get_thread;
+    pool_def.u_get_thread = NULL;
     pool_def.u_get_task = NULL;
     pool_def.u_is_in_pool = NULL;
     pool_def.u_create_from_thread = unit_create_from_thread;
@@ -153,6 +148,7 @@ void program(ABT_pool_kind kind, int automatic, int type, int must_succeed)
     /* Checking ABT_init() should be done by other tests. */
     ret = ABT_init(0, 0);
     assert(ret == ABT_SUCCESS);
+    rtrace_set_enabled(1);
 
     ABT_pool pool;
     if (kind == POOL_KIND_USER) {

@@ -108,7 +108,8 @@ static void sched_run(ABT_sched sched)
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
         unit = ABTI_pool_pop(p_pool);
         if (unit != ABT_UNIT_NULL) {
-            ABTI_xstream_run_unit(p_global, &p_local_xstream, unit, p_pool);
+            ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+            ABTI_xstream_run_thread(p_global, &p_local_xstream, p_thread);
             CNT_INC(run_cnt);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
@@ -119,8 +120,8 @@ static void sched_run(ABT_sched sched)
             unit = ABTI_pool_pop(p_pool);
             LOG_DEBUG_POOL_POP(p_pool, unit);
             if (unit != ABT_UNIT_NULL) {
-                ABTI_unit_set_associated_pool(unit, p_pool);
-                ABTI_xstream_run_unit(p_global, &p_local_xstream, unit, p_pool);
+                ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+                ABTI_xstream_run_thread(p_global, &p_local_xstream, p_thread);
                 CNT_INC(run_cnt);
             }
         }

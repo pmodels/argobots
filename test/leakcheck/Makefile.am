@@ -17,6 +17,7 @@ TESTS = \
 	sched \
 	thread \
 	timer \
+	unit \
 	xstream \
 	xstream_barrier
 

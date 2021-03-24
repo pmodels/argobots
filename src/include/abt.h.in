@@ -1441,39 +1441,18 @@ typedef struct {
      * @brief Unused function
      *
      * This function is not used.
-     *
-     * @changev11
-     * \DOC_DESC_V10_POOL_NOTASK
-     * @endchangev11
      */
     ABT_unit_get_type_fn           u_get_type;
     /**
-     * @fn    ABT_thread (*u_get_thread)(ABT_unit unit)
-     * @brief Function that extracts an \c ABT_thread handle from an \c ABT_unit
-     *        handle.
+     * @brief Unused function.
      *
-     * \c u_get_thread() returns a work unit handle from \c unit.  \c unit is
-     * not \c ABT_UNIT_NULL.
-     *
-     * \c u_get_thread() is not optional, so the user must implement this
-     * function.
-     *
-     * The caller of \c u_get_thread() is undefined, so a program that relies on
-     * the caller of \c u_get_thread() is non-conforming.
-     *
-     * @changev11
-     * \DOC_DESC_V10_POOL_NOTASK
-     * @endchangev11
+     * This function is not used.
      */
     ABT_unit_get_thread_fn         u_get_thread;
     /**
      * @brief Unused function.
      *
      * This function is not used.
-     *
-     * @changev11
-     * \DOC_DESC_V10_POOL_NOTASK
-     * @endchangev11
      */
     ABT_unit_get_task_fn           u_get_task;
     /**
@@ -1501,7 +1480,17 @@ typedef struct {
      *
      * \c u_create_from_thread() creates a user-defined \c ABT_unit handle that
      * is associated with the work-unit \c thread and returns.  \c thread is
-     * neither \c ABT_THREAD_NULL nor \c ABT_TASK_NULL.
+     * neither \c ABT_THREAD_NULL nor \c ABT_TASK_NULL.  The returned value must
+     * point to a 4-byte aligned memory address that is unique in the system.
+     * For example, a pointer that points to a sufficiently large memory block
+     * allocated by \c malloc() or \c mmap() satisfies this requirement.  This
+     * function may return \c ABT_UNIT_NULL if creation fails.
+     *
+     * @note
+     * Specifically, the Argobots implementation assumes that 1. the first 2
+     * least significant bits are zero and 2. all ABT_unit values are unique.
+     * Both requirements are satisfied if \c ABT_unit points to a 4-byte aligned
+     * memory block.
      *
      * \c u_create_from_thread() is not optional, so the user must implement
      * this function.
@@ -1532,7 +1521,7 @@ typedef struct {
      * \c u_create_from_thread().  Its associated entity (i.e., \c ABT_thread)
      * is freed by the Argobots runtime.  Neither \c NULL nor a pointer pointing
      * to \c ABT_UNIT_NULL is passed as \c unit to this function.  \c u_free()
-     * may modify the value pointed to be \c unit.
+     * may modify the value pointed to by \c unit.
      *
      * \c u_free() is not optional, so the user must implement this function.
      *

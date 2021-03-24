@@ -1902,6 +1902,8 @@ ALIASES += DOC_DESC_V10_CRUDE_TERMINATION_CHECK{2}="\DOC_V10 \2 is returned if t
 
 ALIASES += DOC_DESC_V10_REJECT_MUTEX_ATTR_NULL{1}="\DOC_V10 This routine returns \c ABT_ERR_INV_MUTEX_ATTR if \1 is \c ABT_MUTEX_ATTR_NULL.\n \DOC_V11 This routine uses the default mutex attributes if \1 is \c ABT_MUTEX_ATTR_NULL. @rationale Most of the Argobots routines use the default attributes when a NULL handle is passed as a configuration or an attribute.  This routine should follow this behavior. @endrationale"
 
+ALIASES += DOC_DESC_V10_UNIT_POOL_MAPPING="\DOC_V10 The user must explicitly call this routine to change the associated pool of \c ABT_unit.\n \DOC_V11 The Argobots runtime automatically changes the associated pool of \c ABT_unit if needed.  This routine is therefore unnecessary. @rationale The unit-pool association management is hard for the user who does not know the internal implementation of Argobots.  This change not only eases programming with Argobots but also addresses some issues without breaking the backward compatibility.  See https://github.com/pmodels/argobots/issues/317 for details. @endrationale"
+
 ALIASES += DOC_DESC_V1X_ERROR_CODE_CHANGE{3}="\DOC_V1X \1 is returned if \3.\n \DOC_V20 \2 is returned if \3. @rationale Argobots 2.0 changes the error code for consistent behavior with other Argobots routines. @endrationale"
 
 ALIASES += DOC_DESC_V1X_NOEXT{1}="\DOC_V1X If an external thread calls this routine, \1 is returned.\n \DOC_V20 An external thread may call this routine. @rationale Argobots 2.0 allows an external thread where possible unless it is semantically inappropriate. @endrationale"
@@ -2106,6 +2108,8 @@ ALIASES += DOC_ERROR_RESOURCE="\c ABT_ERR_MEM is returned if memory allocation f
 
 ALIASES += DOC_ERROR_RESOURCE_CONDITIONAL{1}="\c ABT_ERR_MEM is returned if memory allocation fails.  This error is returned only when \1.\n \c ABT_ERR_SYS is returned if an error related to system calls and standard libraries occurs.   This error is returned only when \1.\n"
 
+ALIASES += DOC_ERROR_RESOURCE_UNIT_CREATE="\c ABT_ERR_UNIT is returned if \c u_create_from_thread() fails.\n"
+
 ALIASES += DOC_ERROR_SCHED_GET_POOLS_IDX{3}="\c ABT_ERR_SCHED is returned if the summation of \1 and \2 is larger than the number of pools associated with \3."
 
 ALIASES += DOC_ERROR_SCHED_USED_CONDITIONAL{3}="\2 is returned if \3 and \1 is being used.\n"
@@ -2233,8 +2237,6 @@ ALIASES += DOC_UNDEFINED_WAITER{1}="If there is a waiter blocked on \1, the resu
 ALIASES += DOC_UNDEFINED_WORK_UNIT_BLOCKED{2}="If \1 is blocked on by a caller of \2, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_WORK_UNIT_IN_POOL{1}="If \1 is in a pool, the results are undefined.\n"
-
-ALIASES += DOC_UNDEFINED_WORK_UNIT_NOT_ASSOCIATED{2}="If \1 is not associated with \2, the results are undefined.\n"
 
 ALIASES += DOC_UNDEFINED_WORK_UNIT_NOT_IN_POOL{2}="If \2 is not in \1, the results are undefined.\n"
 

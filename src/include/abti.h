@@ -54,6 +54,9 @@
 
 #define ABTI_INDENT 4
 
+#define ABTI_UNIT_HASH_TABLE_SIZE_EXP 8 /* N -> 2^N table entries */
+#define ABTI_UNIT_HASH_TABLE_SIZE ((size_t)(1 << ABTI_UNIT_HASH_TABLE_SIZE_EXP))
+
 #define ABTI_SCHED_CONFIG_HTABLE_SIZE 8
 #define ABTI_SCHED_CONFIG_UNUSED_INDEX INT_MIN
 
@@ -143,6 +146,9 @@ typedef struct ABTI_native_thread_id_opaque *ABTI_native_thread_id;
 /* ID associated with thread (i.e., ULTs, tasklets, and external threads) */
 struct ABTI_thread_id_opaque;
 typedef struct ABTI_thread_id_opaque *ABTI_thread_id;
+/* Unit-to-thread hash table. */
+typedef struct ABTI_atomic_unit_to_thread ABTI_atomic_unit_to_thread;
+typedef struct ABTI_unit_to_thread_entry ABTI_unit_to_thread_entry;
 
 /* Architecture-Dependent Definitions */
 #include "abtd.h"
@@ -175,6 +181,15 @@ struct ABTI_mutex {
     ABTD_spinlock waiter_lock; /* lock */
     ABTI_waitlist waitlist;    /* waiting list */
 #endif
+};
+
+struct ABTI_atomic_unit_to_thread {
+    ABTD_atomic_ptr val;
+};
+
+struct ABTI_unit_to_thread_entry {
+    ABTI_atomic_unit_to_thread list;
+    ABTD_spinlock lock; /* Protecting any list update. */
 };
 
 struct ABTI_global {
@@ -228,6 +243,11 @@ struct ABTI_global {
     void *tool_thread_user_arg;
     ABTD_atomic_uint64 tool_thread_event_mask_tagged;
 #endif
+
+    ABTI_unit_to_thread_entry
+        unit_to_thread_entires[ABTI_UNIT_HASH_TABLE_SIZE]; /* Hash table that
+                                                              maps ABT_unit to
+                                                              ABTI_thread  */
 };
 
 struct ABTI_local; /* Empty. */
@@ -303,6 +323,7 @@ struct ABTI_sched_config {
 struct ABTI_pool {
     ABT_pool_access access; /* Access mode */
     ABT_bool automatic;     /* To know if automatic data free */
+    ABT_bool is_builtin;    /* Built-in pool. */
     /* NOTE: int32_t to check if still positive */
     ABTD_atomic_int32 num_scheds;  /* Number of associated schedulers */
     ABTD_atomic_int32 num_blocked; /* Number of blocked ULTs */
@@ -310,7 +331,6 @@ struct ABTI_pool {
     uint64_t id;                   /* ID */
 
     /* Functions to manage units */
-    ABT_unit_get_thread_fn u_get_thread;
     ABT_unit_is_in_pool_fn u_is_in_pool;
     ABT_unit_create_from_thread_fn u_create_from_thread;
     ABT_unit_free_fn u_free;
@@ -489,9 +509,9 @@ void ABTI_xstream_start_primary(ABTI_global *p_global,
 void ABTI_xstream_free(ABTI_global *p_global, ABTI_local *p_local,
                        ABTI_xstream *p_xstream, ABT_bool force_free);
 void ABTI_xstream_schedule(void *p_arg);
-void ABTI_xstream_run_unit(ABTI_global *p_global,
-                           ABTI_xstream **pp_local_xstream, ABT_unit unit,
-                           ABTI_pool *p_pool);
+void ABTI_xstream_run_thread(ABTI_global *p_global,
+                             ABTI_xstream **pp_local_xstream,
+                             ABTI_thread *p_thread);
 void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub);
@@ -537,16 +557,22 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
 
 /* Work Unit */
-void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
-
+void ABTI_unit_init_hash_table(ABTI_global *p_global);
+void ABTI_unit_finalize_hash_table(ABTI_global *p_global);
+ABTU_ret_err int ABTI_unit_map_thread(ABTI_global *p_global, ABT_unit unit,
+                                      ABTI_thread *p_thread);
+void ABTI_unit_unmap_thread(ABTI_global *p_global, ABT_unit unit);
+ABTI_thread *ABTI_unit_get_thread_from_user_defined_unit(ABTI_global *p_global,
+                                                         ABT_unit unit);
 /* Threads */
 ABTU_ret_err int ABTI_thread_get_mig_data(ABTI_global *p_global,
                                           ABTI_local *p_local,
                                           ABTI_thread *p_thread,
                                           ABTI_thread_mig_data **pp_mig_data);
-void ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
-                        void (*thread_func)(void *), void *arg,
-                        ABTI_thread *p_thread);
+ABTU_ret_err int ABTI_thread_revive(ABTI_global *p_global, ABTI_local *p_local,
+                                    ABTI_pool *p_pool,
+                                    void (*thread_func)(void *), void *arg,
+                                    ABTI_thread *p_thread);
 void ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread);
 void ABTI_thread_free(ABTI_global *p_global, ABTI_local *p_local,
                       ABTI_thread *p_thread);
@@ -608,6 +634,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_config.h"
 #include "abti_stream.h"
 #include "abti_thread.h"
+#include "abti_unit.h"
 #include "abti_tool.h"
 #include "abti_ythread.h"
 #include "abti_thread_attr.h"

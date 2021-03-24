@@ -38,6 +38,7 @@ noinst_HEADERS = \
 	include/abti_stream_barrier.h \
 	include/abti_sync_lifo.h \
 	include/abti_timer.h \
+	include/abti_unit.h \
 	include/abti_thread.h \
 	include/abti_thread_attr.h \
 	include/abti_waitlist.h \

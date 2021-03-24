@@ -213,6 +213,8 @@ ABTU_ret_err static int init_library(void)
     ABTD_atomic_relaxed_store_uint64(&p_global->tool_thread_event_mask_tagged,
                                      0);
 #endif
+    /* Initialize a unit-to-thread hash table. */
+    ABTI_unit_init_hash_table(p_global);
 
     /* Initialize the ES list */
     p_global->p_xstream_head = NULL;
@@ -337,6 +339,9 @@ ABTU_ret_err static int finailze_library(void)
 
     /* Restore the affinity */
     ABTD_affinity_finalize(p_global);
+
+    /* Free a unit-to-thread hash table. */
+    ABTI_unit_finalize_hash_table(p_global);
 
     /* Free the ABTI_global structure */
     ABTU_free(p_global);
