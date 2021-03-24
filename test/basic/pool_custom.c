@@ -25,12 +25,9 @@ void thread_func(void *arg)
     for (i = 0; i < 10; i++) {
         if (i % 3 == 0) {
             ABT_pool target_pool = (ABT_pool)arg;
-            ABT_thread thread;
-            ret = ABT_self_get_thread(&thread);
-            ATS_ERROR(ret, "ABT_self_get_thread");
             /* Let's change the associated pool sometimes. */
-            ret = ABT_thread_set_associated_pool(thread, target_pool);
-            ATS_ERROR(ret, "ABT_thread_set_associated_pool");
+            ret = ABT_self_set_associated_pool(target_pool);
+            ATS_ERROR(ret, "ABT_self_set_associated_pool");
         }
         ret = ABT_thread_yield();
         ATS_ERROR(ret, "ABT_thread_yield");
@@ -227,12 +224,8 @@ int main(int argc, char *argv[])
 
     /* Move this thread to the main pool.  This is needed since the following
      * user-defined pool_free() checks whether the pool is empty or not. */
-    ABT_thread self_thread;
-    ret = ABT_self_get_thread(&self_thread);
-    ATS_ERROR(ret, "ABT_thread_self");
-    /* Let's change the associated pool sometimes. */
-    ret = ABT_thread_set_associated_pool(self_thread, pools[0]);
-    ATS_ERROR(ret, "ABT_thread_set_associated_pool");
+    ret = ABT_self_set_associated_pool(pools[0]);
+    ATS_ERROR(ret, "ABT_self_set_associated_pool");
 
     /* Free schedulers of the secondary execution streams (since the scheduler
      * created by ABT_sched_create() are not automatically freed). */

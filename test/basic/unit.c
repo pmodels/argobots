@@ -42,12 +42,9 @@ void thread_func(void *arg)
         if (i % 3 == 0) {
             check_self_unit_mapping();
             ABT_pool target_pool = (ABT_pool)arg;
-            ABT_thread thread;
-            ret = ABT_self_get_thread(&thread);
-            ATS_ERROR(ret, "ABT_thread_self");
             /* Let's change the associated pool sometimes. */
-            ret = ABT_thread_set_associated_pool(thread, target_pool);
-            ATS_ERROR(ret, "ABT_thread_set_associated_pool");
+            ret = ABT_self_set_associated_pool(target_pool);
+            ATS_ERROR(ret, "ABT_self_set_associated_pool");
         }
         check_self_unit_mapping();
         ret = ABT_thread_yield();

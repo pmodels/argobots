@@ -126,6 +126,11 @@ void thread_func(void *arg)
     ret = ABT_thread_set_associated_pool(thread, (ABT_pool)arg);
     /* ABT_thread_set_associated_pool() might fail. */
     (void)ret;
+
+    ret = ABT_self_set_associated_pool((ABT_pool)arg);
+    /* ABT_self_set_associated_pool() might fail, too. */
+    (void)ret;
+
     ret = ABT_thread_yield();
     assert(ret == ABT_SUCCESS);
 }

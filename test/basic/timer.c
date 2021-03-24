@@ -24,7 +24,6 @@ void thread_create(void *arg)
 {
     int i, ret;
     size_t my_id = (size_t)arg;
-    ABT_thread my_thread;
     ABT_pool my_pool;
     ABT_timer my_timer;
     double t_start = 0.0;
@@ -33,10 +32,8 @@ void thread_create(void *arg)
     ret = ABT_timer_dup(timer, &my_timer);
     ATS_ERROR(ret, "ABT_timer_dup");
 
-    ret = ABT_thread_self(&my_thread);
-    ATS_ERROR(ret, "ABT_thread_self");
-    ret = ABT_thread_get_last_pool(my_thread, &my_pool);
-    ATS_ERROR(ret, "ABT_thread_get_last_pool");
+    ret = ABT_self_get_last_pool(&my_pool);
+    ATS_ERROR(ret, "ABT_self_get_last_pool");
 
     ABT_timer_stop_and_read(my_timer, &t_start);
 

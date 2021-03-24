@@ -23,13 +23,10 @@ void thread_create(void *arg)
 {
     int i, ret;
     size_t my_id = (size_t)arg;
-    ABT_thread my_thread;
     ABT_pool my_pool;
 
-    ret = ABT_thread_self(&my_thread);
-    ATS_ERROR(ret, "ABT_thread_self");
-    ret = ABT_thread_get_last_pool(my_thread, &my_pool);
-    ATS_ERROR(ret, "ABT_thread_get_last_pool");
+    ret = ABT_self_get_last_pool(&my_pool);
+    ATS_ERROR(ret, "ABT_self_get_last_pool");
 
     /* Create threads */
     for (i = 0; i < num_threads; i++) {
