@@ -1914,12 +1914,6 @@ static inline void xstream_schedule_ythread(ABTI_global *p_global,
         ABTI_thread_unset_request(&p_ythread->thread, ABTI_THREAD_REQ_ORPHAN);
         p_ythread->thread.p_pool->u_free(&p_ythread->thread.unit);
         p_ythread->thread.p_pool = NULL;
-    } else if (request & ABTI_THREAD_REQ_NOPUSH) {
-        /* The ULT is not pushed back to the pool */
-        LOG_DEBUG("[U%" PRIu64 ":E%d] not pushed\n",
-                  ABTI_thread_get_id(&p_ythread->thread),
-                  p_local_xstream->rank);
-        ABTI_thread_unset_request(&p_ythread->thread, ABTI_THREAD_REQ_NOPUSH);
     } else {
         ABTI_ASSERT(0);
         ABTU_unreachable();
@@ -2086,17 +2080,15 @@ static void xstream_update_main_sched(ABTI_global *p_global,
         /* If the ES is secondary, we should take the associated ULT of the
          * current main scheduler and keep it in the new scheduler. */
         p_sched->p_ythread = p_main_sched->p_ythread;
-        /* The current ULT is pushed to the new scheduler's pool so that when
-         * the new scheduler starts (see below), it can be scheduled by the new
-         * scheduler. When the current ULT resumes its execution, it will free
-         * the current main scheduler (see below). */
-        ABTI_pool_push(p_tar_pool, p_ythread->thread.unit);
 
         /* Set the scheduler */
         p_xstream->p_main_sched = p_sched;
 
-        /* Switch to the current main scheduler */
-        ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_NOPUSH);
+        /* Switch to the current main scheduler.  The current ULT is pushed to
+         * the new scheduler's pool so that when the new scheduler starts, this
+         * ULT can be scheduled by the new scheduler.  When the current ULT
+         * resumes its execution, it will free the current main scheduler
+         * (see below). */
         ABTI_ythread_context_switch_to_parent(pp_local_xstream, p_ythread,
                                               ABT_SYNC_EVENT_TYPE_OTHER, NULL);
 
