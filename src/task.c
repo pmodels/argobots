@@ -5,7 +5,8 @@
 
 #include "abti.h"
 
-ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
+ABTU_ret_err static int task_create(ABTI_global *p_global, ABTI_local *p_local,
+                                    ABTI_pool *p_pool,
                                     void (*task_func)(void *), void *arg,
                                     ABTI_sched *p_sched, int refcount,
                                     ABTI_thread **pp_newtask);
@@ -59,14 +60,15 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
     if (newtask)
         *newtask = ABT_TASK_NULL;
 #endif
+    ABTI_global *p_global = ABTI_global_get_global();
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newtask;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     int refcount = (newtask != NULL) ? 1 : 0;
-    int abt_errno = task_create(p_local, p_pool, task_func, arg, NULL, refcount,
-                                &p_newtask);
+    int abt_errno = task_create(p_global, p_local, p_pool, task_func, arg, NULL,
+                                refcount, &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -121,6 +123,7 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
     if (newtask)
         *newtask = ABT_TASK_NULL;
 #endif
+    ABTI_global *p_global = ABTI_global_get_global();
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_newtask;
 
@@ -130,8 +133,8 @@ int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
     /* TODO: need to consider the access type of target pool */
     ABTI_pool *p_pool = ABTI_xstream_get_main_pool(p_xstream);
     int refcount = (newtask != NULL) ? 1 : 0;
-    int abt_errno = task_create(p_local, p_pool, task_func, arg, NULL, refcount,
-                                &p_newtask);
+    int abt_errno = task_create(p_global, p_local, p_pool, task_func, arg, NULL,
+                                refcount, &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
 
     /* Return value */
@@ -549,17 +552,22 @@ int ABT_task_get_specific(ABT_task task, ABT_key key, void **value);
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
+ABTU_ret_err static int task_create(ABTI_global *p_global, ABTI_local *p_local,
+                                    ABTI_pool *p_pool,
                                     void (*task_func)(void *), void *arg,
                                     ABTI_sched *p_sched, int refcount,
                                     ABTI_thread **pp_newtask)
 {
     ABTI_thread *p_newtask;
-    ABT_task h_newtask;
 
     /* Allocate a task object */
     int abt_errno = ABTI_mem_alloc_nythread(p_local, &p_newtask);
     ABTI_CHECK_ERROR(abt_errno);
+    abt_errno = ABTI_thread_init_pool(p_global, p_newtask, p_pool);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTI_mem_free_nythread(p_global, p_local, p_newtask);
+        ABTI_HANDLE_ERROR(abt_errno);
+    }
 
     p_newtask->p_last_xstream = NULL;
     p_newtask->p_parent = NULL;
@@ -567,12 +575,10 @@ ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     ABTD_atomic_relaxed_store_uint32(&p_newtask->request, 0);
     p_newtask->f_thread = task_func;
     p_newtask->p_arg = arg;
-    p_newtask->p_pool = p_pool;
     ABTD_atomic_relaxed_store_ptr(&p_newtask->p_keytable, NULL);
     p_newtask->id = ABTI_TASK_INIT_ID;
 
     /* Create a wrapper work unit */
-    h_newtask = ABTI_thread_get_handle(p_newtask);
     ABTI_thread_type thread_type =
         refcount ? (ABTI_THREAD_TYPE_THREAD | ABTI_THREAD_TYPE_NAMED)
                  : ABTI_THREAD_TYPE_THREAD;
@@ -580,7 +586,6 @@ ABTU_ret_err static int task_create(ABTI_local *p_local, ABTI_pool *p_pool,
     thread_type |= ABTI_THREAD_TYPE_MIGRATABLE;
 #endif
     p_newtask->type |= thread_type;
-    p_newtask->unit = p_pool->u_create_from_thread(h_newtask);
 
     ABTI_tool_event_thread_create(p_local, p_newtask,
                                   ABTI_local_get_xstream_or_null(p_local)

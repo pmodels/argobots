@@ -6,7 +6,8 @@
 #include "abti.h"
 
 ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
-                                    ABT_bool automatic, ABTI_pool **pp_newpool);
+                                    ABT_bool automatic, ABT_bool is_builtin,
+                                    ABTI_pool **pp_newpool);
 
 /** @defgroup POOL Pool
  * This group is for Pool.
@@ -99,7 +100,8 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     internal_def.p_print_all = def->p_print_all;
 
     ABTI_pool *p_newpool;
-    int abt_errno = pool_create(&internal_def, config, ABT_FALSE, &p_newpool);
+    int abt_errno =
+        pool_create(&internal_def, config, ABT_FALSE, ABT_FALSE, &p_newpool);
     ABTI_CHECK_ERROR(abt_errno);
 
     *newpool = ABTI_pool_get_handle(p_newpool);
@@ -556,13 +558,19 @@ int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
  */
 int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 {
+    ABTI_global *p_global = ABTI_global_get_global();
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
     ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_INV_UNIT);
 
-    /* Save the producer ES information in the pool */
-    ABTI_pool_push(p_pool, unit);
+    ABTI_thread *p_thread;
+    int abt_errno =
+        ABTI_unit_set_associated_pool(p_global, unit, p_pool, &p_thread);
+    ABTI_CHECK_ERROR(abt_errno);
+    /* ABTI_unit_set_associated_pool() might change unit, so "unit" must be read
+     * again from p_thread. */
+    ABTI_pool_push(p_pool, p_thread->unit);
     return ABT_SUCCESS;
 }
 
@@ -612,6 +620,8 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
     ABTI_CHECK_TRUE(p_pool->p_remove, ABT_ERR_POOL);
 
+    /* unit must be in this pool, so we do not need to reset its associated
+     * pool. */
     int abt_errno = ABTI_pool_remove(p_pool, unit);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
@@ -871,7 +881,8 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
     }
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = pool_create(&def, ABT_POOL_CONFIG_NULL, automatic, pp_newpool);
+    abt_errno = pool_create(&def, ABT_POOL_CONFIG_NULL, automatic, ABT_TRUE,
+                            pp_newpool);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
@@ -946,7 +957,8 @@ void ABTI_pool_reset_id(void)
 
 static inline uint64_t pool_get_new_id(void);
 ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
-                                    ABT_bool automatic, ABTI_pool **pp_newpool)
+                                    ABT_bool automatic, ABT_bool is_builtin,
+                                    ABTI_pool **pp_newpool)
 {
     int abt_errno;
     ABTI_pool *p_pool;
@@ -955,6 +967,7 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
 
     p_pool->access = def->access;
     p_pool->automatic = automatic;
+    p_pool->is_builtin = is_builtin;
     ABTD_atomic_release_store_int32(&p_pool->num_scheds, 0);
     ABTD_atomic_release_store_int32(&p_pool->num_blocked, 0);
     p_pool->data = NULL;

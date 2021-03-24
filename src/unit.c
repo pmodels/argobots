@@ -10,6 +10,8 @@ static void unit_finalize_hash_table(ABTI_global *p_global);
 ABTU_ret_err static inline int
 unit_map_thread(ABTI_global *p_global, ABT_unit unit, ABTI_thread *p_thread);
 static inline void unit_unmap_thread(ABTI_global *p_global, ABT_unit unit);
+static inline ABTI_thread *
+unit_get_thread_from_user_defined_unit(ABTI_global *p_global, ABT_unit unit);
 
 /** @defgroup UNIT  Work Unit
  * This group is for work units.
@@ -46,21 +48,12 @@ int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
     ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_INV_UNIT);
-
-    ABTI_unit_set_associated_pool(unit, p_pool);
     return ABT_SUCCESS;
 }
 
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
-
-void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool)
-{
-    ABT_thread thread = p_pool->u_get_thread(unit);
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    p_thread->p_pool = p_pool;
-}
 
 void ABTI_unit_init_hash_table(ABTI_global *p_global)
 {
@@ -81,6 +74,12 @@ ABTU_ret_err int ABTI_unit_map_thread(ABTI_global *p_global, ABT_unit unit,
 void ABTI_unit_unmap_thread(ABTI_global *p_global, ABT_unit unit)
 {
     unit_unmap_thread(p_global, unit);
+}
+
+ABTI_thread *ABTI_unit_get_thread_from_user_defined_unit(ABTI_global *p_global,
+                                                         ABT_unit unit)
+{
+    return unit_get_thread_from_user_defined_unit(p_global, unit);
 }
 
 /*****************************************************************************/
@@ -240,4 +239,25 @@ static inline void unit_unmap_thread(ABTI_global *p_global, ABT_unit unit)
         ABTI_ASSERT(p_cur); /* unmap() must succeed. */
     }
     ABTD_spinlock_release(&p_entry->lock);
+}
+
+static inline ABTI_thread *
+unit_get_thread_from_user_defined_unit(ABTI_global *p_global, ABT_unit unit)
+{
+    ABTI_ASSERT(!ABTI_unit_is_builtin(unit));
+    /* Find an element. */
+    size_t hash_index = unit_get_hash_index(unit);
+    ABTI_unit_to_thread_entry *p_entry =
+        &p_global->unit_to_thread_entires[hash_index];
+    /* The first element must be accessed in a release-acquire manner.  The new
+     * element is release-stored to the head, so acquire-load can always get a
+     * valid linked-list chain. */
+    unit_to_thread *p_cur = atomic_acquire_load_unit_to_thread(&p_entry->list);
+    while (1) {
+        ABTI_ASSERT(p_cur); /* get() must succeed. */
+        if (atomic_relaxed_load_unit(&p_cur->unit) == unit) {
+            return p_cur->p_thread;
+        }
+        p_cur = p_cur->p_next;
+    }
 }

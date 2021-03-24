@@ -1166,7 +1166,6 @@ void ABTI_info_print_config(ABTI_global *p_global, FILE *fp)
 
 struct info_print_unit_arg_t {
     FILE *fp;
-    ABT_pool pool;
 };
 
 struct info_pool_set_t {
@@ -1182,10 +1181,8 @@ static void info_print_unit(void *arg, ABT_unit unit)
     struct info_print_unit_arg_t *p_arg;
     p_arg = (struct info_print_unit_arg_t *)arg;
     FILE *fp = p_arg->fp;
-    ABT_pool pool = p_arg->pool;
-    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-    ABT_thread thread = p_pool->u_get_thread(unit);
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_thread *p_thread =
+        ABTI_unit_get_thread(ABTI_global_get_global(), unit);
 
     if (!p_thread) {
         fprintf(fp, "=== unknown (%p) ===\n", (void *)unit);
@@ -1218,7 +1215,6 @@ ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
     fprintf(fp, "== pool (%p) ==\n", (void *)p_pool);
     struct info_print_unit_arg_t arg;
     arg.fp = fp;
-    arg.pool = pool;
     p_pool->p_print_all(pool, &arg, info_print_unit);
     fflush(fp);
     return ABT_SUCCESS;

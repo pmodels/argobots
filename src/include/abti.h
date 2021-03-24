@@ -323,6 +323,7 @@ struct ABTI_sched_config {
 struct ABTI_pool {
     ABT_pool_access access; /* Access mode */
     ABT_bool automatic;     /* To know if automatic data free */
+    ABT_bool is_builtin;    /* Built-in pool. */
     /* NOTE: int32_t to check if still positive */
     ABTD_atomic_int32 num_scheds;  /* Number of associated schedulers */
     ABTD_atomic_int32 num_blocked; /* Number of blocked ULTs */
@@ -509,9 +510,9 @@ void ABTI_xstream_start_primary(ABTI_global *p_global,
 void ABTI_xstream_free(ABTI_global *p_global, ABTI_local *p_local,
                        ABTI_xstream *p_xstream, ABT_bool force_free);
 void ABTI_xstream_schedule(void *p_arg);
-void ABTI_xstream_run_unit(ABTI_global *p_global,
-                           ABTI_xstream **pp_local_xstream, ABT_unit unit,
-                           ABTI_pool *p_pool);
+void ABTI_xstream_run_thread(ABTI_global *p_global,
+                             ABTI_xstream **pp_local_xstream,
+                             ABTI_thread *p_thread);
 void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub);
@@ -557,21 +558,23 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
 
 /* Work Unit */
-void ABTI_unit_set_associated_pool(ABT_unit unit, ABTI_pool *p_pool);
 void ABTI_unit_init_hash_table(ABTI_global *p_global);
 void ABTI_unit_finalize_hash_table(ABTI_global *p_global);
 ABTU_ret_err int ABTI_unit_map_thread(ABTI_global *p_global, ABT_unit unit,
                                       ABTI_thread *p_thread);
 void ABTI_unit_unmap_thread(ABTI_global *p_global, ABT_unit unit);
+ABTI_thread *ABTI_unit_get_thread_from_user_defined_unit(ABTI_global *p_global,
+                                                         ABT_unit unit);
 
 /* Threads */
 ABTU_ret_err int ABTI_thread_get_mig_data(ABTI_global *p_global,
                                           ABTI_local *p_local,
                                           ABTI_thread *p_thread,
                                           ABTI_thread_mig_data **pp_mig_data);
-void ABTI_thread_revive(ABTI_local *p_local, ABTI_pool *p_pool,
-                        void (*thread_func)(void *), void *arg,
-                        ABTI_thread *p_thread);
+ABTU_ret_err int ABTI_thread_revive(ABTI_global *p_global, ABTI_local *p_local,
+                                    ABTI_pool *p_pool,
+                                    void (*thread_func)(void *), void *arg,
+                                    ABTI_thread *p_thread);
 void ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread);
 void ABTI_thread_free(ABTI_global *p_global, ABTI_local *p_local,
                       ABTI_thread *p_thread);
