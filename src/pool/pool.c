@@ -81,7 +81,6 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     ABTI_pool_def internal_def;
 
     internal_def.access = def->access;
-    internal_def.u_get_thread = def->u_get_thread;
     internal_def.u_is_in_pool = def->u_is_in_pool;
     internal_def.u_create_from_thread = def->u_create_from_thread;
     internal_def.u_free = def->u_free;
@@ -973,7 +972,6 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
     p_pool->data = NULL;
 
     /* Set up the pool functions from def */
-    p_pool->u_get_thread = def->u_get_thread;
     p_pool->u_is_in_pool = def->u_is_in_pool;
     p_pool->u_create_from_thread = def->u_create_from_thread;
     p_pool->u_free = def->u_free;

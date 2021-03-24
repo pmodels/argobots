@@ -17,7 +17,6 @@ static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs);
 static int pool_remove(ABT_pool pool, ABT_unit unit);
 static int pool_print_all(ABT_pool pool, void *arg,
                           void (*print_fn)(void *, ABT_unit));
-static ABT_thread unit_get_thread(ABT_unit unit);
 static ABT_bool unit_is_in_pool(ABT_unit unit);
 static ABT_unit unit_create_from_thread(ABT_thread thread);
 static void unit_free(ABT_unit *unit);
@@ -50,7 +49,6 @@ ABTU_ret_err int ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
     p_def->p_pop_timedwait = pool_pop_timedwait;
     p_def->p_remove = pool_remove;
     p_def->p_print_all = pool_print_all;
-    p_def->u_get_thread = unit_get_thread;
     p_def->u_is_in_pool = unit_is_in_pool;
     p_def->u_create_from_thread = unit_create_from_thread;
     p_def->u_free = unit_free;
@@ -346,12 +344,6 @@ static int pool_print_all(ABT_pool pool, void *arg,
 
 /* Unit functions */
 
-static ABT_thread unit_get_thread(ABT_unit unit)
-{
-    ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
-    return ABTI_thread_get_handle(p_thread);
-}
-
 static ABT_bool unit_is_in_pool(ABT_unit unit)
 {
     ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
@@ -361,15 +353,14 @@ static ABT_bool unit_is_in_pool(ABT_unit unit)
 
 static ABT_unit unit_create_from_thread(ABT_thread thread)
 {
-    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
-    p_thread->p_prev = NULL;
-    p_thread->p_next = NULL;
-    ABTD_atomic_relaxed_store_int(&p_thread->is_in_pool, 0);
-
-    return ABTI_unit_get_builtin_unit(p_thread);
+    /* Call ABTI_unit_init_builtin() instead. */
+    ABTI_ASSERT(0);
+    return ABT_UNIT_NULL;
 }
 
 static void unit_free(ABT_unit *unit)
 {
-    *unit = ABT_UNIT_NULL;
+    /* A built-in unit does not need to be freed.  This function may not be
+     * called. */
+    ABTI_ASSERT(0);
 }

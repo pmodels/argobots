@@ -331,7 +331,6 @@ struct ABTI_pool {
     uint64_t id;                   /* ID */
 
     /* Functions to manage units */
-    ABT_unit_get_thread_fn u_get_thread;
     ABT_unit_is_in_pool_fn u_is_in_pool;
     ABT_unit_create_from_thread_fn u_create_from_thread;
     ABT_unit_free_fn u_free;
@@ -565,7 +564,6 @@ ABTU_ret_err int ABTI_unit_map_thread(ABTI_global *p_global, ABT_unit unit,
 void ABTI_unit_unmap_thread(ABTI_global *p_global, ABT_unit unit);
 ABTI_thread *ABTI_unit_get_thread_from_user_defined_unit(ABTI_global *p_global,
                                                          ABT_unit unit);
-
 /* Threads */
 ABTU_ret_err int ABTI_thread_get_mig_data(ABTI_global *p_global,
                                           ABTI_local *p_local,
