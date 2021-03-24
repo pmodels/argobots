@@ -414,6 +414,37 @@ int ABT_self_on_primary_xstream(ABT_bool *on_primary)
 
 /**
  * @ingroup SELF
+ * @brief   Get the last pool of the calling work unit.
+ *
+ * \c ABT_self_get_last_pool() returns the last pool associated with the calling
+ * work unit through \c pool.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c pool}
+ *
+ * @param[out] pool  pool handle
+ * @return  Error code
+ */
+int ABT_self_get_last_pool(ABT_pool *pool)
+{
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    ABTI_thread *p_self = p_local_xstream->p_thread;
+    ABTI_ASSERT(p_self->p_pool);
+    *pool = ABTI_pool_get_handle(p_self->p_pool);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Get ID of the last pool of the calling work unit.
  *
  * \c ABT_self_get_last_pool_id() returns the last pool's ID of the calling work
@@ -456,6 +487,45 @@ int ABT_self_get_last_pool_id(int *pool_id)
     ABTI_ASSERT(p_self->p_pool);
     *pool_id = p_self->p_pool->id;
 #endif
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
+ * @brief   Set an associated pool for the calling work unit.
+ *
+ * \c ABT_self_set_associated_pool() changes the associated pool of the work
+ * unit \c thread to the pool \c pool.  This routine does not yield the calling
+ * work unit.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ *
+ * @param[in] pool  pool handle
+ * @return  Error code
+ */
+int ABT_self_set_associated_pool(ABT_pool pool)
+{
+    ABTI_global *p_global = ABTI_global_get_global();
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_thread *p_self = p_local_xstream->p_thread;
+
+    int abt_errno = ABTI_thread_set_associated_pool(p_global, p_self, p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
 
