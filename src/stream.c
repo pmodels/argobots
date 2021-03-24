@@ -1914,12 +1914,6 @@ static inline void xstream_schedule_ythread(ABTI_global *p_global,
         ABTI_thread_unset_request(&p_ythread->thread, ABTI_THREAD_REQ_ORPHAN);
         p_ythread->thread.p_pool->u_free(&p_ythread->thread.unit);
         p_ythread->thread.p_pool = NULL;
-    } else if (request & ABTI_THREAD_REQ_NOPUSH) {
-        /* The ULT is not pushed back to the pool */
-        LOG_DEBUG("[U%" PRIu64 ":E%d] not pushed\n",
-                  ABTI_thread_get_id(&p_ythread->thread),
-                  p_local_xstream->rank);
-        ABTI_thread_unset_request(&p_ythread->thread, ABTI_THREAD_REQ_NOPUSH);
     } else {
         ABTI_ASSERT(0);
         ABTU_unreachable();
