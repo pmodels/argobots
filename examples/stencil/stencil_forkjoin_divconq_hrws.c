@@ -82,7 +82,6 @@ void sched_run(ABT_sched sched)
                 ABT_pool_pop(pools[victim], &unit);
             }
             if (unit != ABT_UNIT_NULL) {
-                ABT_unit_set_associated_pool(unit, pools[0]);
                 ABT_xstream_run_unit(unit, pools[0]);
                 goto EVENT_CHECK;
             }
@@ -93,7 +92,6 @@ void sched_run(ABT_sched sched)
                 ABT_pool_pop(pools[victim], &unit);
             }
             if (unit != ABT_UNIT_NULL) {
-                ABT_unit_set_associated_pool(unit, pools[0]);
                 ABT_xstream_run_unit(unit, pools[0]);
             }
         }
