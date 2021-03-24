@@ -461,6 +461,36 @@ int ABT_self_get_last_pool_id(int *pool_id)
 
 /**
  * @ingroup SELF
+ * @brief   Get a unit handle of the calling work unit.
+ *
+ * \c ABT_self_get_unit() returns the \c ABT_unit handle associated with the
+ * calling work unit through \c unit.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_NOEXT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c unit}
+ *
+ * @param[out] unit  work unit handle
+ * @return  Error code
+ */
+int ABT_self_get_unit(ABT_unit *unit)
+{
+    /* We don't allow an external thread to call this routine. */
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    *unit = p_local_xstream->p_thread->unit;
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Yield the calling ULT to its parent ULT
  *
  * \c ABT_self_yield() yields the calling ULT and pushes the calling ULT to its
