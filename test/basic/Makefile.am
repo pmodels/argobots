@@ -80,6 +80,7 @@ TESTS = \
 	info_print_stack \
 	info_stackdump \
 	info_stackdump2 \
+	unit \
 	error
 
 XFAIL_TESTS =
@@ -173,6 +174,7 @@ info_print_SOURCES = info_print.c
 info_print_stack_SOURCES = info_print_stack.c
 info_stackdump_SOURCES = info_stackdump.c
 info_stackdump2_SOURCES = info_stackdump2.c
+unit_SOURCES = unit.c
 error_SOURCES = error.c
 
 testing:
@@ -252,4 +254,5 @@ testing:
 	./info_print_stack
 	./info_stackdump
 	./info_stackdump2
+	./unit
 	./error
