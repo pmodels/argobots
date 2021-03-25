@@ -221,9 +221,6 @@ void ATS_read_args(int argc, char **argv)
 
 int ATS_get_arg_val(ATS_arg arg)
 {
-    if (arg < ATS_ARG_N_ES || (int)arg >= NUM_ARG_KINDS) {
-        return 0;
-    }
     return g_arg_val[arg];
 }
 
