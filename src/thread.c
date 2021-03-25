@@ -484,6 +484,8 @@ int ABT_thread_free_many(int num_threads, ABT_thread *thread_list)
 
     for (i = 0; i < num_threads; i++) {
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread_list[i]);
+        if (!p_thread)
+            continue;
         /* TODO: check input */
         thread_join(&p_local, p_thread);
         ABTI_thread_free(p_global, p_local, p_thread);
@@ -582,8 +584,11 @@ int ABT_thread_join_many(int num_threads, ABT_thread *thread_list)
     ABTI_local *p_local = ABTI_local_get_local();
     int i;
     for (i = 0; i < num_threads; i++) {
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(thread_list[i]);
+        if (!p_thread)
+            continue;
         /* TODO: check input */
-        thread_join(&p_local, ABTI_thread_get_ptr(thread_list[i]));
+        thread_join(&p_local, p_thread);
     }
     return ABT_SUCCESS;
 }
