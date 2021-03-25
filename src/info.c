@@ -372,7 +372,6 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             break;
         default:
             ABTI_HANDLE_ERROR(ABT_ERR_INV_QUERY_KIND);
-            break;
     }
     return ABT_SUCCESS;
 }
