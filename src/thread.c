@@ -484,6 +484,7 @@ int ABT_thread_free_many(int num_threads, ABT_thread *thread_list)
 
     for (i = 0; i < num_threads; i++) {
         ABTI_thread *p_thread = ABTI_thread_get_ptr(thread_list[i]);
+        thread_list[i] = ABT_THREAD_NULL;
         if (!p_thread)
             continue;
         /* TODO: check input */
