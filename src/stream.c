@@ -2101,33 +2101,34 @@ static int xstream_update_main_sched(ABTI_global *p_global,
             }
         }
 
-        /* Set the scheduler as a main scheduler */
-        p_sched->used = ABTI_SCHED_MAIN;
-
-        /* Finish the current main scheduler */
-        ABTI_sched_set_request(p_main_sched, ABTI_SCHED_REQ_FINISH);
-
-        /* If the ES is secondary, we should take the associated ULT of the
-         * current main scheduler and keep it in the new scheduler. */
-        p_sched->p_ythread = p_main_sched->p_ythread;
-
-        /* Set the scheduler */
-        p_xstream->p_main_sched = p_sched;
+        if (p_main_sched->p_replace_sched) {
+            /* We need to overwrite the scheduler.  Free the existing one. */
+            ABTI_ythread *p_waiter = p_main_sched->p_replace_waiter;
+            ABTI_sched_discard_and_free(p_global,
+                                        ABTI_xstream_get_local(
+                                            *pp_local_xstream),
+                                        p_main_sched->p_replace_sched,
+                                        ABT_FALSE);
+            p_main_sched->p_replace_sched = NULL;
+            p_main_sched->p_replace_waiter = NULL;
+            /* Resume the waiter.  This waiter sees that the scheduler finished
+             * immediately and was replaced by this new scheduler. */
+            ABTI_ythread_set_ready(ABTI_xstream_get_local(*pp_local_xstream),
+                                   p_waiter);
+        }
+        ABTI_ythread_set_blocked(p_ythread);
+        /* Set the replace scheduler */
+        p_main_sched->p_replace_sched = p_sched;
+        p_main_sched->p_replace_waiter = p_ythread;
+        /* Ask the current main scheduler to replace its scheduler */
+        ABTI_sched_set_request(p_main_sched, ABTI_SCHED_REQ_REPLACE);
 
         /* Switch to the current main scheduler.  The current ULT is pushed to
          * the new scheduler's pool so that when the new scheduler starts, this
-         * ULT can be scheduled by the new scheduler.  When the current ULT
-         * resumes its execution, it will free the current main scheduler
-         * (see below). */
-        ABTI_ythread_context_switch_to_parent(pp_local_xstream, p_ythread,
-                                              ABT_SYNC_EVENT_TYPE_OTHER, NULL);
-
-        /* Now, we free the current main scheduler. p_main_sched->p_ythread must
-         * be NULL to avoid freeing it in ABTI_sched_discard_and_free(). */
-        p_main_sched->p_ythread = NULL;
-        ABTI_sched_discard_and_free(p_global,
-                                    ABTI_xstream_get_local(*pp_local_xstream),
-                                    p_main_sched, ABT_FALSE);
+         * ULT can be scheduled by the new scheduler.  The existing main
+         * scheduler will be freed by ABTI_SCHED_REQ_RELEASE. */
+        ABTI_ythread_suspend(pp_local_xstream, p_ythread,
+                             ABT_SYNC_EVENT_TYPE_OTHER, NULL);
         return ABT_SUCCESS;
     }
 }

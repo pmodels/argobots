@@ -3009,12 +3009,34 @@ static void thread_main_sched_func(void *arg)
 
         LOG_DEBUG("[S%" PRIu64 "] start\n", p_sched->id);
         p_sched->run(ABTI_sched_get_handle(p_sched));
-        /* From here the main scheduler can have been already replaced. */
-        /* The main scheduler must be executed on the same execution stream. */
-        ABTI_ASSERT(p_local == ABTI_local_get_local_uninlined());
         LOG_DEBUG("[S%" PRIu64 "] end\n", p_sched->id);
+        /* The main scheduler's thread must be executed on the same execution
+         * stream. */
+        ABTI_ASSERT(p_local == ABTI_local_get_local_uninlined());
 
-        p_sched = p_local_xstream->p_main_sched;
+        /* We free the current main scheduler and replace it if requested. */
+        if (ABTD_atomic_relaxed_load_uint32(&p_sched->request) &
+            ABTI_SCHED_REQ_REPLACE) {
+            ABTI_ythread *p_waiter = p_sched->p_replace_waiter;
+            ABTI_sched *p_new_sched = p_sched->p_replace_sched;
+            /* Set this scheduler as a main scheduler */
+            p_new_sched->used = ABTI_SCHED_MAIN;
+            /* Take the ULT of the current main scheduler and use it for the new
+             * scheduler. */
+            p_new_sched->p_ythread = p_sched->p_ythread;
+            p_local_xstream->p_main_sched = p_new_sched;
+            /* Now, we free the current main scheduler. p_sched->p_ythread must
+             * be NULL to avoid freeing it in ABTI_sched_discard_and_free(). */
+            p_sched->p_ythread = NULL;
+            ABTI_sched_discard_and_free(ABTI_global_get_global(), p_local,
+                                        p_sched, ABT_FALSE);
+            /* We do not need to unset ABTI_SCHED_REQ_REPLACE since that p_sched
+             * has already been replaced. */
+            p_sched = p_new_sched;
+            /* Resume the waiter. */
+            ABTI_ythread_set_ready(p_local, p_waiter);
+        }
+        ABTI_ASSERT(p_sched == p_local_xstream->p_main_sched);
         uint32_t request = ABTD_atomic_acquire_load_uint32(
             &p_sched->p_ythread->thread.request);
 
