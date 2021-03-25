@@ -112,16 +112,22 @@ static inline size_t ABTU_roundup_size(size_t val, size_t multiple)
 #define ABTU_unlikely(cond) (cond)
 #endif
 
-#ifdef HAVE___BUILTIN_UNREACHABLE
-#define ABTU_unreachable() __builtin_unreachable()
-#else
-#define ABTU_unreachable()
-#endif
-
 #ifdef HAVE_FUNC_ATTRIBUTE_NORETURN
 #define ABTU_noreturn __attribute__((noreturn))
 #else
 #define ABTU_noreturn
+#endif
+
+#ifdef HAVE___BUILTIN_UNREACHABLE
+#define ABTU_unreachable() __builtin_unreachable()
+#else
+/* abort is better than entering an unknown area.  First assert(0), which shows
+ * something if assert() is enabled.  If assert() is disabled, let's abort(). */
+static inline ABTU_noreturn void ABTU_unreachable(void)
+{
+    assert(0);
+    abort();
+}
 #endif
 
 #ifdef ABT_CONFIG_HAVE_ALIGNOF_GCC

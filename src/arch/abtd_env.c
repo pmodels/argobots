@@ -23,9 +23,9 @@
 /* To avoid potential overflow, we intentionally use a smaller value than the
  * real limit. */
 #define ABTD_ENV_INT_MAX ((int)(INT_MAX / 2))
-#define ABTD_ENV_UINT32_MAX ((int)(UINT32_MAX / 2))
-#define ABTD_ENV_UINT64_MAX ((int)(UINT64_MAX / 2))
-#define ABTD_ENV_SIZE_MAX ((int)(SIZE_MAX / 2))
+#define ABTD_ENV_UINT32_MAX ((uint32_t)(UINT32_MAX / 2))
+#define ABTD_ENV_UINT64_MAX ((uint64_t)(UINT64_MAX / 2))
+#define ABTD_ENV_SIZE_MAX ((size_t)(SIZE_MAX / 2))
 
 static uint32_t roundup_pow2_uint32(uint32_t val);
 #ifdef ABT_CONFIG_USE_MEM_POOL

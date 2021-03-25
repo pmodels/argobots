@@ -221,9 +221,6 @@ void ATS_read_args(int argc, char **argv)
 
 int ATS_get_arg_val(ATS_arg arg)
 {
-    if (arg < ATS_ARG_N_ES || (int)arg >= NUM_ARG_KINDS) {
-        return 0;
-    }
     return g_arg_val[arg];
 }
 
@@ -344,14 +341,15 @@ static inline size_t ABT_tool_unit_entry_table_index(const void *unit)
         uint32_t val2 = val ^ (val >> 16);
         return (val2 ^ (val2 >> 8)) &
                (ATS_TOOL_UNIT_ENTRY_TABLE_NUM_ENTIRES - 1);
-    } else if (sizeof(void *) == 8) {
+    } else {
+        /* We support only 32-bit or 64-bit pointer sizes. */
+        assert(sizeof(void *) == 8);
         uint64_t val = (uint64_t)(uintptr_t)unit;
         uint64_t val2 = val ^ (val >> 32);
         uint64_t val3 = val2 ^ (val2 >> 16);
         return (val3 ^ (val3 >> 8)) &
                (ATS_TOOL_UNIT_ENTRY_TABLE_NUM_ENTIRES - 1);
     }
-    return 0;
 }
 
 static ATS_tool_unit_entry *ATS_tool_get_unit_entry(const void *unit)
