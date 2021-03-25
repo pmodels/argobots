@@ -10,6 +10,7 @@ TESTS = \
 	xstream_affinity \
 	xstream_barrier \
 	xstream_rank \
+	xstream_set_main_sched \
 	thread_create \
 	thread_create2 \
 	thread_create_on_xstream \
@@ -105,6 +106,7 @@ xstream_revive_SOURCES = xstream_revive.c
 xstream_affinity_SOURCES = xstream_affinity.c
 xstream_barrier_SOURCES = xstream_barrier.c
 xstream_rank_SOURCES = xstream_rank.c
+xstream_set_main_sched_SOURCES = xstream_set_main_sched.c
 thread_create_SOURCES = thread_create.c
 thread_create2_SOURCES = thread_create2.c
 thread_create_on_xstream_SOURCES = thread_create_on_xstream.c
@@ -186,6 +188,7 @@ testing:
 	./xstream_affinity
 	./xstream_barrier
 	./xstream_rank
+	./xstream_set_main_sched
 	./thread_create
 	./thread_create2
 	./thread_create_on_xstream
