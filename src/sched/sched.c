@@ -878,7 +878,7 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
 
     if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0) {
         if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
-            ABTI_SCHED_REQ_FINISH) {
+            (ABTI_SCHED_REQ_FINISH | ABTI_SCHED_REQ_REPLACE)) {
             /* Check join request */
             if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0)
                 return ABT_TRUE;
@@ -1104,6 +1104,8 @@ ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
     p_sched->used = ABTI_SCHED_NOT_USED;
     p_sched->automatic = automatic;
     p_sched->kind = sched_get_kind(def);
+    p_sched->p_replace_sched = NULL;
+    p_sched->p_replace_waiter = NULL;
     ABTD_atomic_relaxed_store_uint32(&p_sched->request, 0);
     p_sched->pools = pool_list;
     p_sched->num_pools = num_pools;

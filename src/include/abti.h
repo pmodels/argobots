@@ -37,6 +37,7 @@
 
 #define ABTI_SCHED_REQ_FINISH (1 << 0)
 #define ABTI_SCHED_REQ_EXIT (1 << 1)
+#define ABTI_SCHED_REQ_REPLACE (1 << 2)
 
 #define ABTI_THREAD_REQ_JOIN (1 << 0)
 #define ABTI_THREAD_REQ_TERMINATE (1 << 1)
@@ -286,15 +287,18 @@ struct ABTI_xstream {
 };
 
 struct ABTI_sched {
-    ABTI_sched_used used;       /* To know if it is used and how */
-    ABT_bool automatic;         /* To know if automatic data free */
-    ABTI_sched_kind kind;       /* Kind of the scheduler  */
-    ABT_sched_type type;        /* Can yield or not (ULT or task) */
-    ABTD_atomic_uint32 request; /* Request */
-    ABT_pool *pools;            /* Thread pools */
-    size_t num_pools;           /* Number of thread pools */
-    ABTI_ythread *p_ythread;    /* Associated ULT */
-    void *data;                 /* Data for a specific scheduler */
+    ABTI_sched_used used;           /* To know if it is used and how */
+    ABT_bool automatic;             /* To know if automatic data free */
+    ABTI_sched_kind kind;           /* Kind of the scheduler  */
+    ABT_sched_type type;            /* Can yield or not (ULT or task) */
+    ABTI_sched *p_replace_sched;    /* Main scheduler that should replace this.
+                                     * ABTI_SCHED_REQ_REPLACE should be set. */
+    ABTI_ythread *p_replace_waiter; /* Thread waiting for replacement. */
+    ABTD_atomic_uint32 request;     /* Request */
+    ABT_pool *pools;                /* Thread pools */
+    size_t num_pools;               /* Number of thread pools */
+    ABTI_ythread *p_ythread;        /* Associated ULT */
+    void *data;                     /* Data for a specific scheduler */
 
     /* Scheduler functions */
     ABT_sched_init_fn init;
