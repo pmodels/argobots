@@ -53,6 +53,37 @@ int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool)
     return ABT_SUCCESS;
 }
 
+/**
+ * @ingroup UNIT
+ * @brief   Get a thread handle of the target work unit.
+ *
+ * \c ABT_unit_get_thread() returns the \c ABT_thread handle associated with the
+ * work unit \c unit through \c thread.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_UNIT_HANDLE{\c unit}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ *
+ * @param[in]  unit    work unit handle
+ * @param[out] thread  work unit handle
+ * @return Error code
+ */
+int ABT_unit_get_thread(ABT_unit unit, ABT_thread *thread)
+{
+    ABTI_global *p_global = ABTI_global_get_global();
+    ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_INV_UNIT);
+    ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+    *thread = ABTI_thread_get_handle(p_thread);
+    return ABT_SUCCESS;
+}
+
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/

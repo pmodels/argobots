@@ -937,6 +937,36 @@ int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
 
 /**
  * @ingroup ULT
+ * @brief   Get a unit handle of the target work unit.
+ *
+ * \c ABT_thread_get_unit() returns the \c ABT_unit handle associated with the
+ * work unit \c thread through \c unit.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c unit}
+ *
+ * @param[in]  thread  work unit handle
+ * @param[out] unit    work unit handle
+ * @return Error code
+ */
+int ABT_thread_get_unit(ABT_thread thread, ABT_unit *unit)
+{
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    *unit = p_thread->unit;
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Set an associated pool for the target work unit.
  *
  * \c ABT_thread_set_associated_pool() changes the associated pool of the work
@@ -2018,6 +2048,37 @@ int ABT_thread_get_arg(ABT_thread thread, void **arg)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
     *arg = p_thread->p_arg;
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Retrieve a work-unit function of a work unit.
+ *
+ * \c ABT_thread_get_thread_func() returns the work-unit function of the work
+ * unit \c thread through \c thread_func.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread_func}
+ *
+ * @param[in]  thread       work unit handle
+ * @param[out] thread_func  work-unit function
+ * @return Error code
+ */
+int ABT_thread_get_thread_func(ABT_thread thread, void (**thread_func)(void *))
+{
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+
+    *thread_func = p_thread->f_thread;
     return ABT_SUCCESS;
 }
 

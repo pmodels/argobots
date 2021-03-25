@@ -12,56 +12,44 @@
 #include "abttest.h"
 
 void create_sched_def(ABT_sched_def *p_def);
-void create_pool1_def(ABT_pool_def *p_def);
-void create_pool2_def(ABT_pool_def *p_def);
+void create_pool_def(ABT_pool_def *p_def);
 
 #define DEFAULT_NUM_XSTREAMS 2
 #define DEFAULT_NUM_THREADS 100
-#define NUM_POOLS 4
+#define NUM_POOLS 2
+
+void check_self_unit_mapping(void)
+{
+    int ret;
+    ABT_thread self_thread1, self_thread2;
+    ABT_unit self_unit1, self_unit2;
+    ret = ABT_self_get_thread(&self_thread1);
+    ATS_ERROR(ret, "ABT_self_get_thread");
+    ret = ABT_self_get_unit(&self_unit1);
+    ATS_ERROR(ret, "ABT_self_get_unit");
+    ret = ABT_thread_get_unit(self_thread1, &self_unit2);
+    ATS_ERROR(ret, "ABT_thread_get_unit");
+    ret = ABT_unit_get_thread(self_unit1, &self_thread2);
+    ATS_ERROR(ret, "ABT_unit_get_thread");
+    assert(self_unit1 == self_unit2);
+    assert(self_thread1 == self_thread2);
+}
 
 void thread_func(void *arg)
 {
     int ret, i;
     for (i = 0; i < 10; i++) {
         if (i % 3 == 0) {
+            check_self_unit_mapping();
             ABT_pool target_pool = (ABT_pool)arg;
             /* Let's change the associated pool sometimes. */
             ret = ABT_self_set_associated_pool(target_pool);
             ATS_ERROR(ret, "ABT_self_set_associated_pool");
         }
+        check_self_unit_mapping();
         ret = ABT_thread_yield();
         ATS_ERROR(ret, "ABT_thread_yield");
     }
-}
-
-ABT_pool create_pool(int pool_type)
-{
-    ABT_pool newpool = ABT_POOL_NULL;
-    if (pool_type == 0) {
-        /* Built-in FIFO pool. */
-        int ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC,
-                                        ABT_FALSE, &newpool);
-        ATS_ERROR(ret, "ABT_pool_create_basic");
-    } else if (pool_type == 1) {
-        /* Built-in FIFOWAIT pool. */
-        int ret =
-            ABT_pool_create_basic(ABT_POOL_FIFO_WAIT, ABT_POOL_ACCESS_MPMC,
-                                  ABT_FALSE, &newpool);
-        ATS_ERROR(ret, "ABT_pool_create_basic");
-    } else if (pool_type == 2) {
-        /* User-defined basic pool 1. */
-        ABT_pool_def pool_def;
-        create_pool1_def(&pool_def);
-        int ret = ABT_pool_create(&pool_def, ABT_POOL_CONFIG_NULL, &newpool);
-        ATS_ERROR(ret, "ABT_pool_create");
-    } else if (pool_type == 3) {
-        /* User-defined basic pool 2. */
-        ABT_pool_def pool_def;
-        create_pool2_def(&pool_def);
-        int ret = ABT_pool_create(&pool_def, ABT_POOL_CONFIG_NULL, &newpool);
-        ATS_ERROR(ret, "ABT_pool_create");
-    }
-    return newpool;
 }
 
 int sched_init(ABT_sched sched, ABT_sched_config config)
@@ -71,6 +59,7 @@ int sched_init(ABT_sched sched, ABT_sched_config config)
 
 void sched_run(ABT_sched sched)
 {
+    check_self_unit_mapping();
     int ret;
     ABT_pool pools[NUM_POOLS];
     ret = ABT_sched_get_pools(sched, NUM_POOLS, 0, pools);
@@ -155,9 +144,15 @@ int main(int argc, char *argv[])
     ATS_init(argc, argv, num_xstreams);
 
     /* Create pools. */
-    for (i = 0; i < NUM_POOLS; i++) {
-        pools[i] = create_pool(i);
-    }
+    /* pools[0]: the built-in FIFO pool. */
+    ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_FALSE,
+                                &pools[0]);
+    ATS_ERROR(ret, "ABT_pool_create_basic");
+    /* pools[1]: user-defined basic pool. */
+    ABT_pool_def pool_def;
+    create_pool_def(&pool_def);
+    ret = ABT_pool_create(&pool_def, ABT_POOL_CONFIG_NULL, &pools[1]);
+    ATS_ERROR(ret, "ABT_pool_create");
 
     /* Create schedulers. */
     for (i = 0; i < num_xstreams; i++) {
@@ -169,11 +164,16 @@ int main(int argc, char *argv[])
         ret = ABT_xstream_create(scheds[i], &xstreams[i]);
         ATS_ERROR(ret, "ABT_xstream_create");
     }
+
+    check_self_unit_mapping();
+
     /* Update the main scheduler of the primary execution stream. */
     ret = ABT_xstream_self(&xstreams[0]);
     ATS_ERROR(ret, "ABT_xstream_self");
     ret = ABT_xstream_set_main_sched(xstreams[0], scheds[0]);
     ATS_ERROR(ret, "ABT_xstream_set_main_sched");
+
+    check_self_unit_mapping();
 
     ABT_thread *threads =
         (ABT_thread *)malloc(sizeof(ABT_thread) * num_threads);
@@ -205,6 +205,8 @@ int main(int argc, char *argv[])
 
     free(threads);
 
+    check_self_unit_mapping();
+
     /* Join and free secondary execution streams. */
     for (i = 1; i < num_xstreams; i++) {
         while (1) {
@@ -222,10 +224,7 @@ int main(int argc, char *argv[])
         ATS_ERROR(ret, "ABT_xstream_free");
     }
 
-    /* Move this thread to the main pool.  This is needed since the following
-     * user-defined pool_free() checks whether the pool is empty or not. */
-    ret = ABT_self_set_associated_pool(pools[0]);
-    ATS_ERROR(ret, "ABT_self_set_associated_pool");
+    check_self_unit_mapping();
 
     /* Free schedulers of the secondary execution streams (since the scheduler
      * created by ABT_sched_create() are not automatically freed). */
@@ -233,6 +232,9 @@ int main(int argc, char *argv[])
         ret = ABT_sched_free(&scheds[i]);
         ATS_ERROR(ret, "ABT_sched_free");
     }
+
+    check_self_unit_mapping();
+
     /* The scheduler of the primary execution stream will be freed by
      * ABT_finalize().  Pools are associated with the scheduler of the primary
      * execution stream, so they will be freed by ABT_finallize(), too. */
@@ -251,212 +253,106 @@ int main(int argc, char *argv[])
 /******************************************************************************/
 
 typedef struct unit_t {
-    int dummy[64]; /* If a built-in pool accesses this, SEGV should happen. */
-    int pool_type;
     ABT_thread thread;
     struct unit_t *p_prev, *p_next;
 } unit_t;
 
-typedef struct queue_t {
+typedef struct pool_t {
     unit_t list;
     int size;
-    int num_units;
     pthread_mutex_t lock;
-} queue_t;
+} pool_t;
 
-static inline void queue_push(queue_t *p_queue, unit_t *p_unit)
+ABT_unit pool_unit_create_from_thread(ABT_thread thread)
 {
-    pthread_mutex_lock(&p_queue->lock);
-    p_unit->p_next = &p_queue->list;
-    p_unit->p_prev = p_queue->list.p_prev;
-    p_queue->list.p_prev->p_next = p_unit;
-    p_queue->list.p_prev = p_unit;
-    p_queue->size++;
-    pthread_mutex_unlock(&p_queue->lock);
-}
-
-static inline unit_t *queue_pop(queue_t *p_queue)
-{
-    pthread_mutex_lock(&p_queue->lock);
-    if (p_queue->size == 0) {
-        pthread_mutex_unlock(&p_queue->lock);
-        /* Empty. */
-        return NULL;
-    } else {
-        p_queue->size--;
-        unit_t *p_ret = p_queue->list.p_next;
-        p_queue->list.p_next = p_ret->p_next;
-        p_queue->list.p_next->p_prev = &p_queue->list;
-        pthread_mutex_unlock(&p_queue->lock);
-        return p_ret;
-    }
-}
-
-static inline unit_t *create_unit(queue_t *p_queue, ABT_thread thread,
-                                  int pool_type)
-{
-    int i;
     unit_t *p_unit = (unit_t *)malloc(sizeof(unit_t));
-    for (i = 0; i < 64; i++) {
-        p_unit->dummy[i] = (int)0xbaadc0de; /* Canary. */
-    }
     p_unit->thread = thread;
-    p_unit->pool_type = pool_type;
-
-    pthread_mutex_lock(&p_queue->lock);
-    p_queue->num_units++;
-    pthread_mutex_unlock(&p_queue->lock);
-    return p_unit;
+    return (ABT_unit)p_unit;
 }
 
-static inline void free_unit(queue_t *p_queue, unit_t *p_unit)
+void pool_unit_free(ABT_unit *p_unit)
 {
-    int i;
-    for (i = 0; i < 64; i++) {
-        assert(p_unit->dummy[i] == (int)0xbaadc0de);
+    free(*p_unit);
+}
+
+int pool_init(ABT_pool pool, ABT_pool_config config)
+{
+    pool_t *p_pool = (pool_t *)malloc(sizeof(pool_t));
+    p_pool->list.p_prev = &p_pool->list;
+    p_pool->list.p_next = &p_pool->list;
+    p_pool->size = 0;
+    pthread_mutex_init(&p_pool->lock, NULL);
+    int ret = ABT_pool_set_data(pool, (void *)p_pool);
+    ATS_ERROR(ret, "ABT_pool_set_data");
+    return ABT_SUCCESS;
+}
+
+size_t pool_get_size(ABT_pool pool)
+{
+    pool_t *p_pool;
+    int ret = ABT_pool_get_data(pool, (void **)&p_pool);
+    ATS_ERROR(ret, "ABT_pool_get_data");
+    return p_pool->size;
+}
+
+void pool_push(ABT_pool pool, ABT_unit unit)
+{
+    pool_t *p_pool;
+    int ret = ABT_pool_get_data(pool, (void **)&p_pool);
+    ATS_ERROR(ret, "ABT_pool_get_data");
+
+    unit_t *p_unit = (unit_t *)unit;
+    pthread_mutex_lock(&p_pool->lock);
+    p_unit->p_next = &p_pool->list;
+    p_unit->p_prev = p_pool->list.p_prev;
+    p_pool->list.p_prev->p_next = p_unit;
+    p_pool->list.p_prev = p_unit;
+    p_pool->size++;
+    pthread_mutex_unlock(&p_pool->lock);
+}
+
+ABT_unit pool_pop(ABT_pool pool)
+{
+    pool_t *p_pool;
+    int ret = ABT_pool_get_data(pool, (void **)&p_pool);
+    ATS_ERROR(ret, "ABT_pool_get_data");
+
+    pthread_mutex_lock(&p_pool->lock);
+    if (p_pool->size == 0) {
+        pthread_mutex_unlock(&p_pool->lock);
+        /* Empty. */
+        return ABT_UNIT_NULL;
+    } else {
+        p_pool->size--;
+        unit_t *p_ret = p_pool->list.p_next;
+        p_pool->list.p_next = p_ret->p_next;
+        p_pool->list.p_next->p_prev = &p_pool->list;
+        pthread_mutex_unlock(&p_pool->lock);
+        return (ABT_unit)p_ret;
     }
-    free(p_unit);
-    pthread_mutex_lock(&p_queue->lock);
-    p_queue->num_units--;
-    assert(p_queue->num_units >= 0);
-    pthread_mutex_unlock(&p_queue->lock);
 }
 
-/******************************************************************************/
-/* Pool 1 */
-/******************************************************************************/
-
-queue_t pool1_queue;
-
-ABT_unit pool1_unit_create_from_thread(ABT_thread thread)
+int pool_free(ABT_pool pool)
 {
-    return (ABT_unit)create_unit(&pool1_queue, thread, 1);
-}
+    pool_t *p_pool;
+    int ret = ABT_pool_get_data(pool, (void **)&p_pool);
+    ATS_ERROR(ret, "ABT_pool_get_data");
 
-void pool1_unit_free(ABT_unit *p_unit)
-{
-    free_unit(&pool1_queue, (unit_t *)(*p_unit));
-}
-
-int pool1_init(ABT_pool pool, ABT_pool_config config)
-{
-    pool1_queue.list.p_prev = &pool1_queue.list;
-    pool1_queue.list.p_next = &pool1_queue.list;
-    pool1_queue.size = 0;
-    pool1_queue.num_units = 0;
-    pthread_mutex_init(&pool1_queue.lock, NULL);
+    pthread_mutex_destroy(&p_pool->lock);
+    free(p_pool);
     return ABT_SUCCESS;
 }
 
-size_t pool1_get_size(ABT_pool pool)
-{
-    return pool1_queue.size;
-}
-
-void pool1_push(ABT_pool pool, ABT_unit unit)
-{
-    unit_t *p_unit = (unit_t *)unit;
-    assert(p_unit->pool_type == 1);
-    queue_push(&pool1_queue, p_unit);
-}
-
-ABT_unit pool1_pop(ABT_pool pool)
-{
-    unit_t *p_unit = queue_pop(&pool1_queue);
-    return p_unit ? ((ABT_unit)p_unit) : ABT_UNIT_NULL;
-}
-
-int pool1_free(ABT_pool pool)
-{
-    assert(pool1_queue.size == 0);
-    assert(pool1_queue.num_units == 0);
-    pthread_mutex_destroy(&pool1_queue.lock);
-    return ABT_SUCCESS;
-}
-
-void create_pool1_def(ABT_pool_def *p_def)
+void create_pool_def(ABT_pool_def *p_def)
 {
     p_def->access = ABT_POOL_ACCESS_MPMC;
-    p_def->u_create_from_thread = pool1_unit_create_from_thread;
-    p_def->u_free = pool1_unit_free;
-    p_def->p_init = pool1_init;
-    p_def->p_get_size = pool1_get_size;
-    p_def->p_push = pool1_push;
-    p_def->p_pop = pool1_pop;
-    p_def->p_free = pool1_free;
-
-    /* Optional. */
-    p_def->u_is_in_pool = NULL;
-#ifdef ABT_ENABLE_VER_20_API
-    p_def->p_pop_wait = NULL;
-#endif
-    p_def->p_pop_timedwait = NULL;
-    p_def->p_remove = NULL;
-    p_def->p_print_all = NULL;
-}
-
-/******************************************************************************/
-/* Pool 2 */
-/******************************************************************************/
-
-queue_t pool2_queue;
-
-ABT_unit pool2_unit_create_from_thread(ABT_thread thread)
-{
-    return (ABT_unit)create_unit(&pool2_queue, thread, 2);
-}
-
-void pool2_unit_free(ABT_unit *p_unit)
-{
-    free_unit(&pool2_queue, (unit_t *)(*p_unit));
-}
-
-int pool2_init(ABT_pool pool, ABT_pool_config config)
-{
-    pool2_queue.list.p_prev = &pool2_queue.list;
-    pool2_queue.list.p_next = &pool2_queue.list;
-    pool2_queue.size = 0;
-    pool2_queue.num_units = 0;
-    pthread_mutex_init(&pool2_queue.lock, NULL);
-    return ABT_SUCCESS;
-}
-
-size_t pool2_get_size(ABT_pool pool)
-{
-    return pool2_queue.size;
-}
-
-void pool2_push(ABT_pool pool, ABT_unit unit)
-{
-    unit_t *p_unit = (unit_t *)unit;
-    assert(p_unit->pool_type == 2);
-    queue_push(&pool2_queue, p_unit);
-}
-
-ABT_unit pool2_pop(ABT_pool pool)
-{
-    unit_t *p_unit = queue_pop(&pool2_queue);
-    return p_unit ? ((ABT_unit)p_unit) : ABT_UNIT_NULL;
-}
-
-int pool2_free(ABT_pool pool)
-{
-    assert(pool2_queue.size == 0);
-    assert(pool2_queue.num_units == 0);
-    pthread_mutex_destroy(&pool2_queue.lock);
-    return ABT_SUCCESS;
-}
-
-void create_pool2_def(ABT_pool_def *p_def)
-{
-    p_def->access = ABT_POOL_ACCESS_MPMC;
-    p_def->u_create_from_thread = pool2_unit_create_from_thread;
-    p_def->u_free = pool2_unit_free;
-    p_def->p_init = pool2_init;
-    p_def->p_get_size = pool2_get_size;
-    p_def->p_push = pool2_push;
-    p_def->p_pop = pool2_pop;
-    p_def->p_free = pool2_free;
+    p_def->u_create_from_thread = pool_unit_create_from_thread;
+    p_def->u_free = pool_unit_free;
+    p_def->p_init = pool_init;
+    p_def->p_get_size = pool_get_size;
+    p_def->p_push = pool_push;
+    p_def->p_pop = pool_pop;
+    p_def->p_free = pool_free;
 
     /* Optional. */
     p_def->u_is_in_pool = NULL;

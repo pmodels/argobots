@@ -99,14 +99,11 @@ static void task_create(void *arg)
 {
     int i, ret;
     int my_id = (int)(intptr_t)arg;
-    ABT_thread my_thread;
     ABT_pool my_pool;
     ABT_task *tasks;
 
-    ret = ABT_thread_self(&my_thread);
-    ATS_ERROR(ret, "ABT_thread_self");
-    ret = ABT_thread_get_last_pool(my_thread, &my_pool);
-    ATS_ERROR(ret, "ABT_thread_get_last_pool");
+    ret = ABT_self_get_last_pool(&my_pool);
+    ATS_ERROR(ret, "ABT_self_get_last_pool");
 
     /* Create tasklets */
     tasks = (ABT_task *)malloc(num_tasks * sizeof(ABT_task));

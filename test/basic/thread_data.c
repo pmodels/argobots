@@ -104,14 +104,11 @@ static void thread_create(void *arg)
 {
     int i, ret;
     int my_id = (int)(intptr_t)arg;
-    ABT_thread my_thread;
     ABT_pool my_pool;
     ABT_thread *threads;
 
-    ret = ABT_thread_self(&my_thread);
-    ATS_ERROR(ret, "ABT_thread_self");
-    ret = ABT_thread_get_last_pool(my_thread, &my_pool);
-    ATS_ERROR(ret, "ABT_thread_get_last_pool");
+    ret = ABT_self_get_last_pool(&my_pool);
+    ATS_ERROR(ret, "ABT_self_get_last_pool");
 
     /* Create ULTs */
     threads = (ABT_thread *)malloc(num_threads * sizeof(ABT_thread));

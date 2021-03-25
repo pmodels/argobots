@@ -1779,6 +1779,7 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched) ABT_API_PUBLIC;
 int ABT_pool_get_id(ABT_pool pool, int *id) ABT_API_PUBLIC;
 
 /* Work Unit */
+int ABT_unit_get_thread(ABT_unit unit, ABT_thread *thread) ABT_API_PUBLIC;
 int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool) ABT_API_PUBLIC;
 
 /* User-level Thread (ULT) */
@@ -1805,6 +1806,7 @@ int ABT_thread_get_last_xstream(ABT_thread thread, ABT_xstream *xstream) ABT_API
 int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state) ABT_API_PUBLIC;
 int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool) ABT_API_PUBLIC;
 int ABT_thread_get_last_pool_id(ABT_thread thread, int *id) ABT_API_PUBLIC;
+int ABT_thread_get_unit(ABT_thread thread, ABT_unit *unit) ABT_API_PUBLIC;
 int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool) ABT_API_PUBLIC;
 int ABT_thread_yield_to(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_thread_yield(void) ABT_API_PUBLIC;
@@ -1825,6 +1827,7 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize) ABT_API_PUBLI
 int ABT_thread_get_id(ABT_thread thread, ABT_unit_id *thread_id) ABT_API_PUBLIC;
 int ABT_thread_set_arg(ABT_thread thread, void *arg) ABT_API_PUBLIC;
 int ABT_thread_get_arg(ABT_thread thread, void **arg) ABT_API_PUBLIC;
+int ABT_thread_get_thread_func(ABT_thread thread, void (**thread_func)(void *)) ABT_API_PUBLIC;
 int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value) ABT_API_PUBLIC;
 int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value) ABT_API_PUBLIC;
 int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr) ABT_API_PUBLIC;
@@ -1880,12 +1883,16 @@ int ABT_self_get_type(ABT_unit_type *type) ABT_API_PUBLIC;
 int ABT_self_is_primary(ABT_bool *is_primary) ABT_API_PUBLIC;
 int ABT_self_on_primary_xstream(ABT_bool *on_primary) ABT_API_PUBLIC;
 int ABT_self_is_unnamed(ABT_bool *is_unnamed) ABT_API_PUBLIC;
+int ABT_self_get_last_pool(ABT_pool *pool) ABT_API_PUBLIC;
 int ABT_self_get_last_pool_id(int *pool_id) ABT_API_PUBLIC;
+int ABT_self_set_associated_pool(ABT_pool pool) ABT_API_PUBLIC;
+int ABT_self_get_unit(ABT_unit *unit) ABT_API_PUBLIC;
 int ABT_self_yield(void) ABT_API_PUBLIC;
 int ABT_self_suspend(void) ABT_API_PUBLIC;
 int ABT_self_exit(void) ABT_API_PUBLIC;
 int ABT_self_set_arg(void *arg) ABT_API_PUBLIC;
 int ABT_self_get_arg(void **arg) ABT_API_PUBLIC;
+int ABT_self_get_thread_func(void (**thread_func)(void *)) ABT_API_PUBLIC;
 
 /* ULT-specific data */
 int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey) ABT_API_PUBLIC;
