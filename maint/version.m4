@@ -3,7 +3,7 @@
 # See COPYRIGHT in top-level directory.
 #
 
-m4_define([ABT_VERSION_m4],[1.1rc2])dnl
+m4_define([ABT_VERSION_m4],[1.1])dnl
 m4_define([ABT_RELEASE_DATE_m4],[unreleased development copy])dnl
 
 # For libtool ABI versioning rules see:
@@ -21,6 +21,6 @@ m4_define([ABT_RELEASE_DATE_m4],[unreleased development copy])dnl
 #     4. If any interfaces have been removed since the last public
 #     release, then set age to 0.
 
-m4_define([libabt_so_version_m4],[0:0:0])dnl
+m4_define([libabt_so_version_m4],[2:0:1])dnl
 
 [#] end of __file__

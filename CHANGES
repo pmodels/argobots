@@ -1,37 +1,18 @@
 ===============================================================================
-                               Changes in 1.1rc2
-===============================================================================
-
-- Added a few utility functions
-- Fixed bugs related to a user-defined pool and a mechanism of scheduler change
-
-===============================================================================
-                               Changes in 1.1rc1
-===============================================================================
-
-- Used futex when external threads use Argobots synchronization operations
-- Optimized pool operations when pools are empty
-- Fixed several bugs
-
-===============================================================================
-                               Changes in 1.1b1
-===============================================================================
-
-- Improved the API specification
-- Added a static initializer for ABT_mutex and ABT_cond
-- Fixed changes that break the ABI compatibility with Argobots 1.0.1
-- Supported Autoconf 2.70
-- Fixed several bugs
-
-===============================================================================
-                               Changes in 1.1a1
+                               Changes in 1.1
 ===============================================================================
 
 - Added a tool interface to support a profiler (see ABTX_prof)
+- Supported the stack unwinding feature
+- Implemented static initializers for ABT_mutex and ABT_cond
 - Improved work-unit-local storage support
-- Enhanced memory management of ULT stacks and descriptors
-- Added support for XLC, PGI, Solaris, and ARM HPC compilers
+- Added several utility functions
 - Improved support for affinity settings via an environmental variable
+- Enhanced memory management of ULT stacks and descriptors
+- Used futex when external threads call Argobots synchronization operations
+- Revised the API specification
+- Added support for XLC, PGI, Solaris, and ARM HPC compilers
+- Supported Autoconf 2.70
 - Fixed several bugs
 
 ===============================================================================
