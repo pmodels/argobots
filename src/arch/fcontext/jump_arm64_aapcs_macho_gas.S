@@ -54,7 +54,7 @@ _jump_fcontext:
     ; prepare stack for GP + FPU
     sub  sp, sp, #0xb0
 
-#if (defined(__VFP_FP__) && !defined(__SOFTFP__)) && ABTD_FCONTEXT_PRESERVE_FPU
+#if ABTD_FCONTEXT_PRESERVE_FPU
     ; save d8 - d15
     stp  d8,  d9,  [sp, #0x00]
     stp  d10, d11, [sp, #0x10]
@@ -81,7 +81,7 @@ _jump_fcontext:
     ; restore RSP (pointing to context-data) from A2 (x1)
     mov  sp, x1
 
-#if (defined(__VFP_FP__) && !defined(__SOFTFP__)) && ABTD_FCONTEXT_PRESERVE_FPU
+#if ABTD_FCONTEXT_PRESERVE_FPU
     ; load d8 - d15
     ldp  d8,  d9,  [sp, #0x00]
     ldp  d10, d11, [sp, #0x10]
