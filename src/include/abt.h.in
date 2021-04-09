@@ -1081,8 +1081,8 @@ typedef enum ABT_sync_event_type            ABT_sync_event_type;
  *
  * \c ABT_mutex_memory is a struct to statically allocate and initialize
  * \c ABT_mutex.  \c ABT_mutex_memory can be statically initialized by
- * \c ABT_MUTEX_MEMORY_INITIALIZER and \c ABT_RECURSIVE_MUTEX_INITIALIZER and
- * can be converted to \c ABT_mutex by \c ABT_MUTEX_MEMORY_GET_HANDLE().
+ * \c ABT_MUTEX_INITIALIZER and \c ABT_RECURSIVE_MUTEX_INITIALIZER and can be
+ * converted to \c ABT_mutex by \c ABT_MUTEX_MEMORY_GET_HANDLE().
  *
  * \c dummy may not be accessed by a user.
  */
@@ -1164,7 +1164,7 @@ typedef struct {
  *
  * \c ABT_cond_memory is a struct to statically allocate and initialize
  * \c ABT_cond.  \c ABT_cond_memory can be statically initialized by
- * \c ABT_COND_MEMORY_INITIALIZER and converted to \c ABT_cond by
+ * \c ABT_COND_INITIALIZER and converted to \c ABT_cond by
  * \c ABT_COND_MEMORY_GET_HANDLE().
  *
  * \c dummy may not be accessed by a user.
