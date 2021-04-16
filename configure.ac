@@ -202,8 +202,10 @@ AC_ARG_ENABLE([tool],
 # --enable-stack-overflow-check
 AC_ARG_ENABLE([stack-overflow-check],
 [  --enable-stack-overflow-check@<:@=OPT@:>@ enable a stack overflow check
-        canary|canary-8     - use an 8-byte stack canary.
-        canary-XX           - use an XX-byte stack canary.
+        canary|canary-8 - use an 8-byte stack canary.
+        canary-XX       - use an XX-byte stack canary.
+        mprotect        - use mprotect.  Ignore the failure of mprotect().
+        mprotect-strict - use mprotect.  Assert if mprotect() fails.
         none|no
 ],,[enable_stack_overflow_check=no])
 
@@ -711,6 +713,12 @@ case "$enable_stack_overflow_check" in
         else
             AC_MSG_WARN([Unknown value $enable_stack_overflow_check for --enable-stack-overflow-check])
         fi
+    ;;
+    mprotect)
+        stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_MPROTECT"
+    ;;
+    mprotect-strict)
+        stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_MPROTECT_STRICT"
     ;;
     none|no)
         stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_NONE"
