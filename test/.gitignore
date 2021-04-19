@@ -72,6 +72,7 @@ basic/ext_thread_future
 basic/ext_thread_join
 basic/ext_thread_mutex
 basic/ext_thread_rwlock
+basic/stack_guard
 basic/timer
 basic/info_print
 basic/info_print_stack
