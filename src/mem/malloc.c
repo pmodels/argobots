@@ -50,6 +50,20 @@ ABTU_ret_err int ABTI_mem_init(ABTI_global *p_global)
     size_t stacksize =
         ABTU_roundup_size(thread_stacksize + sizeof(ABTI_ythread),
                           ABT_CONFIG_STATIC_CACHELINE_SIZE);
+    ABTI_mem_pool_global_pool_mprotect_config mprotect_config;
+    if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
+        p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
+        mprotect_config.enabled = ABT_TRUE;
+        mprotect_config.check_error =
+            (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT)
+                ? ABT_TRUE
+                : ABT_FALSE;
+        mprotect_config.offset = 0;
+        mprotect_config.page_size = p_global->sys_page_size;
+        mprotect_config.alignment = p_global->sys_page_size;
+    } else {
+        mprotect_config.enabled = ABT_FALSE;
+    }
     if ((stacksize & (2 * ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0) {
         /* Avoid a multiple of 2 * cacheline size to avoid cache bank conflict.
          */
@@ -60,8 +74,8 @@ ABTU_ret_err int ABTI_mem_init(ABTI_global *p_global)
                                        ABT_MEM_POOL_MAX_LOCAL_BUCKETS,
                                    stacksize, thread_stacksize,
                                    p_global->mem_sp_size, requested_types,
-                                   num_requested_types,
-                                   p_global->mem_page_size);
+                                   num_requested_types, p_global->mem_page_size,
+                                   &mprotect_config);
     /* The last four bytes will be used to store a mempool flag */
     ABTI_STATIC_ASSERT((ABTI_MEM_POOL_DESC_ELEM_SIZE &
                         (ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0);
@@ -70,8 +84,8 @@ ABTU_ret_err int ABTI_mem_init(ABTI_global *p_global)
                                        ABT_MEM_POOL_MAX_LOCAL_BUCKETS,
                                    ABTI_MEM_POOL_DESC_ELEM_SIZE, 0,
                                    p_global->mem_page_size, requested_types,
-                                   num_requested_types,
-                                   p_global->mem_page_size);
+                                   num_requested_types, p_global->mem_page_size,
+                                   NULL);
 #ifndef ABT_CONFIG_DISABLE_EXT_THREAD
     int abt_errno;
     ABTD_spinlock_clear(&p_global->mem_pool_stack_lock);

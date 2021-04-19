@@ -23,6 +23,18 @@ mem_pool_lifo_elem_to_header(ABTI_sync_lifo_element *lifo_elem)
                                           lifo_elem)));
 }
 
+static ABTU_ret_err int protect_memory(void *addr, size_t size,
+                                       size_t page_size, ABT_bool protect,
+                                       ABT_bool adjust_size)
+{
+    /* Align addr. */
+    void *mprotect_addr = ABTU_roundup_ptr(addr, page_size);
+    if (adjust_size) {
+        size -= ((uintptr_t)mprotect_addr) - ((uintptr_t)addr);
+    }
+    return ABTU_mprotect(mprotect_addr, size, protect);
+}
+
 static void
 mem_pool_return_partial_bucket(ABTI_mem_pool_global_pool *p_global_pool,
                                ABTI_mem_pool_header *bucket)
@@ -78,13 +90,20 @@ void ABTI_mem_pool_init_global_pool(
     ABTI_mem_pool_global_pool *p_global_pool, size_t num_headers_per_bucket,
     size_t header_size, size_t header_offset, size_t page_size,
     const ABTU_MEM_LARGEPAGE_TYPE *lp_type_requests,
-    uint32_t num_lp_type_requests, size_t alignment_hint)
+    uint32_t num_lp_type_requests, size_t alignment_hint,
+    ABTI_mem_pool_global_pool_mprotect_config *p_mprotect_config)
 {
     p_global_pool->num_headers_per_bucket = num_headers_per_bucket;
     ABTI_ASSERT(header_offset + sizeof(ABTI_mem_pool_header) <= header_size);
     p_global_pool->header_size = header_size;
     p_global_pool->header_offset = header_offset;
     p_global_pool->page_size = page_size;
+    if (p_mprotect_config) {
+        memcpy(&p_global_pool->mprotect_config, p_mprotect_config,
+               sizeof(ABTI_mem_pool_global_pool_mprotect_config));
+    } else {
+        p_global_pool->mprotect_config.enabled = ABT_FALSE;
+    }
 
     /* Note that lp_type_requests is a constant-sized array */
     ABTI_ASSERT(num_lp_type_requests <=
@@ -93,6 +112,24 @@ void ABTI_mem_pool_init_global_pool(
     p_global_pool->num_lp_type_requests = num_lp_type_requests;
     memcpy(p_global_pool->lp_type_requests, lp_type_requests,
            sizeof(ABTU_MEM_LARGEPAGE_TYPE) * num_lp_type_requests);
+    /* If mprotect_config is set, we should not use a large page. */
+    if (p_global_pool->mprotect_config.enabled) {
+        uint32_t i, idx = 0;
+        for (i = 0; i < num_lp_type_requests; i++) {
+            if (p_global_pool->lp_type_requests[i] !=
+                ABTU_MEM_LARGEPAGE_MMAP_HUGEPAGE) {
+                p_global_pool->lp_type_requests[idx++] =
+                    p_global_pool->lp_type_requests[i];
+            }
+        }
+        if (idx == 0) {
+            /* Use a fallback allocation type. */
+            p_global_pool->lp_type_requests[0] = ABTU_MEM_LARGEPAGE_MALLOC;
+            p_global_pool->num_lp_type_requests = 1;
+        } else {
+            p_global_pool->num_lp_type_requests = idx;
+        }
+    }
     p_global_pool->alignment_hint = alignment_hint;
 
     ABTI_sync_lifo_init(&p_global_pool->mem_page_lifo);
@@ -112,12 +149,32 @@ void ABTI_mem_pool_destroy_global_pool(ABTI_mem_pool_global_pool *p_global_pool)
     while ((p_page_lifo_elem =
                 ABTI_sync_lifo_pop_unsafe(&p_global_pool->mem_page_lifo))) {
         p_page = mem_pool_lifo_elem_to_page(p_page_lifo_elem);
+        if (p_global_pool->mprotect_config.enabled) {
+            /* Undo mprotect() */
+            int abt_errno =
+                protect_memory(p_page->mem, p_page->page_size,
+                               p_global_pool->mprotect_config.alignment,
+                               ABT_FALSE, ABT_TRUE);
+            /* This should not fail since the allocated region is not newly
+             * split by this operation. */
+            ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+        }
         ABTU_free_largepage(p_page->mem, p_page->page_size, p_page->lp_type);
     }
     p_page = (ABTI_mem_pool_page *)ABTD_atomic_relaxed_load_ptr(
         &p_global_pool->p_mem_page_empty);
     while (p_page) {
         ABTI_mem_pool_page *p_next = p_page->p_next_empty_page;
+        if (p_global_pool->mprotect_config.enabled) {
+            /* Undo mprotect() */
+            int abt_errno =
+                protect_memory(p_page->mem, p_page->page_size,
+                               p_global_pool->mprotect_config.alignment,
+                               ABT_FALSE, ABT_TRUE);
+            /* This should not fail since the allocated region is not newly
+             * split by this operation. */
+            ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+        }
         ABTU_free_largepage(p_page->mem, p_page->page_size, p_page->lp_type);
         p_page = p_next;
     }
@@ -259,11 +316,49 @@ ABTI_mem_pool_take_bucket(ABTI_mem_pool_global_pool *p_global_pool,
                 (ABTI_mem_pool_header *)(((char *)p_mem_extra) + header_offset);
             p_local_tail->p_next = p_head;
             ABTI_mem_pool_header *p_prev = p_local_tail;
-            for (i = 1; i < num_provided; i++) {
-                ABTI_mem_pool_header *p_cur =
-                    (ABTI_mem_pool_header *)(((char *)p_prev) + header_size);
-                p_cur->p_next = p_prev;
-                p_prev = p_cur;
+            if (!p_global_pool->mprotect_config.enabled) {
+                /* Fast path. */
+                for (i = 1; i < num_provided; i++) {
+                    ABTI_mem_pool_header *p_cur =
+                        (ABTI_mem_pool_header *)(((char *)p_prev) +
+                                                 header_size);
+                    p_cur->p_next = p_prev;
+                    p_prev = p_cur;
+                }
+            } else {
+                /* Slow path.  Use mprotect(). */
+                const ABT_bool check_error =
+                    p_global_pool->mprotect_config.check_error;
+                const size_t protect_offset =
+                    p_global_pool->mprotect_config.offset;
+                const size_t protect_page_size =
+                    p_global_pool->mprotect_config.page_size;
+                const size_t protect_alignment =
+                    p_global_pool->mprotect_config.alignment;
+                int abt_errno;
+                abt_errno =
+                    protect_memory((void *)(((char *)p_prev) - header_offset +
+                                            protect_offset),
+                                   protect_page_size, protect_alignment,
+                                   ABT_TRUE, ABT_FALSE);
+                if (check_error) {
+                    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+                }
+                for (i = 1; i < num_provided; i++) {
+                    ABTI_mem_pool_header *p_cur =
+                        (ABTI_mem_pool_header *)(((char *)p_prev) +
+                                                 header_size);
+                    p_cur->p_next = p_prev;
+                    p_prev = p_cur;
+                    abt_errno =
+                        protect_memory((void *)(((char *)p_prev) -
+                                                header_offset + protect_offset),
+                                       protect_page_size, protect_alignment,
+                                       ABT_TRUE, ABT_FALSE);
+                    if (check_error) {
+                        ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+                    }
+                }
             }
             p_head = p_prev;
             num_headers += num_provided;

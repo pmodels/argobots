@@ -32,6 +32,15 @@ typedef struct ABTI_mem_pool_page {
     size_t mem_extra_size;
 } ABTI_mem_pool_page;
 
+typedef struct ABTI_mem_pool_global_pool_mprotect_config {
+    ABT_bool enabled;     /* Use page protection or not. */
+    ABT_bool check_error; /* Check error. */
+    size_t offset;        /* Page protection offset. */
+    size_t page_size;     /* Protection page size. */
+    size_t alignment; /* Alignment of protected page.  It should be a multiple
+                         of the system page size. */
+} ABTI_mem_pool_global_pool_mprotect_config;
+
 /*
  * To efficiently take/return multiple headers per bucket, headers are linked as
  * follows in the global pool (bucket_lifo).
@@ -47,7 +56,8 @@ typedef struct ABTI_mem_pool_page {
  *   .
  */
 typedef struct ABTI_mem_pool_global_pool {
-    size_t header_size;    /* Size of header */
+    size_t header_size;    /* Size of header.  This size includes a protected
+                            * page. */
     size_t page_size;      /* Size of page (mem of ABTI_mem_pool_page) */
     size_t alignment_hint; /* Alignment hint for page */
     size_t header_offset;  /* Offset of ABTI_mem_pool_header from the top
@@ -59,6 +69,7 @@ typedef struct ABTI_mem_pool_global_pool {
                                */
     ABTU_MEM_LARGEPAGE_TYPE
     lp_type_requests[4]; /* Requests for large page allocation */
+    ABTI_mem_pool_global_pool_mprotect_config mprotect_config;
     ABTU_align_member_var(ABT_CONFIG_STATIC_CACHELINE_SIZE)
         ABTI_sync_lifo bucket_lifo; /* LIFO of available buckets. */
     ABTU_align_member_var(ABT_CONFIG_STATIC_CACHELINE_SIZE)
@@ -100,7 +111,8 @@ void ABTI_mem_pool_init_global_pool(
     ABTI_mem_pool_global_pool *p_global_pool, size_t num_headers_per_bucket,
     size_t header_size, size_t header_offset, size_t page_size,
     const ABTU_MEM_LARGEPAGE_TYPE *lp_type_requests,
-    uint32_t num_lp_type_requests, size_t alignment_hint);
+    uint32_t num_lp_type_requests, size_t alignment_hint,
+    ABTI_mem_pool_global_pool_mprotect_config *p_mprotect_config);
 void ABTI_mem_pool_destroy_global_pool(
     ABTI_mem_pool_global_pool *p_global_pool);
 ABTU_ret_err int
