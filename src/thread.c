@@ -2599,19 +2599,22 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
             ABTI_CHECK_ERROR(abt_errno);
 #else
             abt_errno =
-                ABTI_mem_alloc_ythread_malloc_desc_stack(p_attr, &p_newthread);
+                ABTI_mem_alloc_ythread_malloc_desc_stack(p_global, p_attr,
+                                                         &p_newthread);
 #endif
             ABTI_CHECK_ERROR(abt_errno);
         } else if (attr_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
             abt_errno =
-                ABTI_mem_alloc_ythread_malloc_desc_stack(p_attr, &p_newthread);
+                ABTI_mem_alloc_ythread_malloc_desc_stack(p_global, p_attr,
+                                                         &p_newthread);
             ABTI_CHECK_ERROR(abt_errno);
         } else {
             ABTI_ASSERT(attr_type & (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC |
                                      ABTI_THREAD_TYPE_MEM_MALLOC_DESC));
             /* Let's try to use mempool first since it performs better. */
-            abt_errno = ABTI_mem_alloc_ythread_mempool_desc(p_local, p_attr,
-                                                            &p_newthread);
+            abt_errno =
+                ABTI_mem_alloc_ythread_mempool_desc(p_global, p_local, p_attr,
+                                                    &p_newthread);
             ABTI_CHECK_ERROR(abt_errno);
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
