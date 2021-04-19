@@ -205,7 +205,9 @@ AC_ARG_ENABLE([stack-overflow-check],
         canary|canary-8 - use an 8-byte stack canary.
         canary-XX       - use an XX-byte stack canary.
         mprotect        - use mprotect.  Ignore the failure of mprotect().
+                          Alternatively, users can set ABT_STACK_OVERFLOW_CHECK=mprotect
         mprotect-strict - use mprotect.  Assert if mprotect() fails.
+                          Alternatively, users can set ABT_STACK_OVERFLOW_CHECK=mprotect_strict
         none|no
 ],,[enable_stack_overflow_check=no])
 

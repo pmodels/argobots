@@ -89,6 +89,29 @@ void ABTD_env_init(ABTI_global *p_global)
         load_env_uint32("KEY_TABLE_SIZE", ABTD_KEY_TABLE_DEFAULT_SIZE, 1,
                         ABTD_ENV_UINT32_MAX));
 
+    /* ABT_STACK_OVERFLOW_CHECK, ABT_ENV_STACK_OVERFLOW_CHECK */
+    env = get_abt_env("STACK_OVERFLOW_CHECK");
+    if (env) {
+        if (strcasecmp(env, "mprotect_strict") == 0) {
+            p_global->stack_guard_kind = ABTI_STACK_GUARD_MPROTECT_STRICT;
+        } else if (strcasecmp(env, "mprotect") == 0) {
+            p_global->stack_guard_kind = ABTI_STACK_GUARD_MPROTECT;
+        } else {
+            /* Otherwise, disable mprotect-based stack guard. */
+            p_global->stack_guard_kind = ABTI_STACK_GUARD_NONE;
+        }
+    } else {
+        /* Set the default mode. */
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_MPROTECT
+        p_global->stack_guard_kind = ABTI_STACK_GUARD_MPROTECT;
+#elif ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_MPROTECT_STRICT
+        p_global->stack_guard_kind = ABTI_STACK_GUARD_MPROTECT_STRICT;
+#else
+        /* Stack canary is compile-time setting. */
+        p_global->stack_guard_kind = ABTI_STACK_GUARD_NONE;
+#endif
+    }
+
     /* ABT_THREAD_STACKSIZE, ABT_ENV_THREAD_STACKSIZE
      * Default stack size for ULT */
     p_global->thread_stacksize =
@@ -135,6 +158,15 @@ void ABTD_env_init(ABTI_global *p_global)
     p_global->huge_page_size =
         load_env_size("HUGE_PAGE_SIZE", default_huge_page_size, 4096,
                       ABTD_ENV_SIZE_MAX);
+
+    /* ABT_SYS_PAGE_SIZE, ABT_ENV_SYS_PAGE_SIZE
+     * System page size.  It must be 2^N. */
+    size_t sys_page_size = ABTD_SYS_PAGE_SIZE;
+#if HAVE_GETPAGESIZE
+    sys_page_size = getpagesize();
+#endif
+    p_global->sys_page_size = roundup_pow2_size(
+        load_env_size("SYS_PAGE_SIZE", sys_page_size, 64, ABTD_ENV_SIZE_MAX));
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
     /* ABT_MEM_PAGE_SIZE, ABT_ENV_MEM_PAGE_SIZE

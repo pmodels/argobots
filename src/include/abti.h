@@ -80,6 +80,12 @@ enum ABTI_sched_used {
     ABTI_SCHED_IN_POOL
 };
 
+enum ABTI_stack_guard {
+    ABTI_STACK_GUARD_NONE = 0,
+    ABTI_STACK_GUARD_MPROTECT,
+    ABTI_STACK_GUARD_MPROTECT_STRICT,
+};
+
 #define ABTI_THREAD_TYPE_EXT ((ABTI_thread_type)0)
 #define ABTI_THREAD_TYPE_THREAD ((ABTI_thread_type)(0x1 << 0))
 #define ABTI_THREAD_TYPE_ROOT ((ABTI_thread_type)(0x1 << 1))
@@ -152,6 +158,7 @@ typedef struct ABTI_thread_id_opaque *ABTI_thread_id;
 /* Unit-to-thread hash table. */
 typedef struct ABTI_atomic_unit_to_thread ABTI_atomic_unit_to_thread;
 typedef struct ABTI_unit_to_thread_entry ABTI_unit_to_thread_entry;
+typedef enum ABTI_stack_guard ABTI_stack_guard;
 
 /* Architecture-Dependent Definitions */
 #include "abtd.h"
@@ -236,6 +243,7 @@ struct ABTI_global {
     ABTI_mem_pool_local_pool mem_pool_desc_ext;
 #endif
 #endif
+    ABTI_stack_guard stack_guard_kind; /* Stack guard type. */
 
     ABT_bool print_config; /* Whether to print config on ABT_init */
 
