@@ -174,7 +174,10 @@ static void info_trigger_print_all_thread_stacks(
  *
  *   \c val must be a pointer to a variable of type \c int.  \c val is set to 1
  *   if Argobots is configured to use a stack canary to check stack overflow.
- *   Otherwise, \c val is set to 0.
+ *   \c val is set to 2 if Argobots is configured to use an mprotect-based stack
+ *   guard but ignore an error of \c mprotect().  \c val is set to 3 if Argobots
+ *   is configured to use an mprotect-based stack guard and assert an error of
+ *   \c mprotect().  Otherwise, \c val is set to 0.
  *
  * - \c ABT_INFO_QUERY_KIND_WAIT_POLICY
  *
@@ -356,13 +359,22 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             *((ABT_bool *)val) = ABT_FALSE;
 #endif
             break;
-        case ABT_INFO_QUERY_KIND_ENABLED_STACK_OVERFLOW_CHECK:
+        case ABT_INFO_QUERY_KIND_ENABLED_STACK_OVERFLOW_CHECK: {
+            ABTI_global *p_global;
+            ABTI_SETUP_GLOBAL(&p_global);
+            if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT) {
+                *((int *)val) = 2;
+            } else if (p_global->stack_guard_kind ==
+                       ABTI_STACK_GUARD_MPROTECT_STRICT) {
+                *((int *)val) = 3;
+            } else {
 #if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
-            *((int *)val) = 1;
+                *((int *)val) = 1;
 #else
-            *((int *)val) = 0;
+                *((int *)val) = 0;
 #endif
-            break;
+            }
+        } break;
         case ABT_INFO_QUERY_KIND_WAIT_POLICY:
 #if ABT_CONFIG_ACTIVE_WAIT_POLICY
             *((int *)val) = 1;
