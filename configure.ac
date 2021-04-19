@@ -888,6 +888,9 @@ AC_CHECK_FUNCS(pthread_barrier_init)
 # check mprotect
 AC_CHECK_FUNCS(mprotect)
 
+# check getpagesize
+AC_CHECK_FUNCS(getpagesize)
+
 # check dlvsym
 ABT_RT_CFLAGS=""
 ABT_RT_LDFLAGS=""

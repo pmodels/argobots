@@ -13,6 +13,7 @@
 #define ABTD_SCHED_EVENT_FREQ 50
 #define ABTD_SCHED_SLEEP_NSEC 100
 
+#define ABTD_SYS_PAGE_SIZE 4096
 #define ABTD_HUGE_PAGE_SIZE (2 * 1024 * 1024)
 #define ABTD_MEM_PAGE_SIZE (2 * 1024 * 1024)
 #define ABTD_MEM_STACK_PAGE_SIZE (8 * 1024 * 1024)
@@ -28,9 +29,7 @@
 #define ABTD_ENV_SIZE_MAX ((size_t)(SIZE_MAX / 2))
 
 static uint32_t roundup_pow2_uint32(uint32_t val);
-#ifdef ABT_CONFIG_USE_MEM_POOL
 static size_t roundup_pow2_size(size_t val);
-#endif
 static const char *get_abt_env(const char *env_suffix);
 static ABT_bool is_false(const char *str, ABT_bool include0);
 static ABT_bool is_true(const char *str, ABT_bool include1);
@@ -112,6 +111,15 @@ void ABTD_env_init(ABTI_global *p_global)
 #endif
     }
 
+    /* ABT_SYS_PAGE_SIZE, ABT_ENV_SYS_PAGE_SIZE
+     * System page size.  It must be 2^N. */
+    size_t sys_page_size = ABTD_SYS_PAGE_SIZE;
+#if HAVE_GETPAGESIZE
+    sys_page_size = getpagesize();
+#endif
+    p_global->sys_page_size = roundup_pow2_size(
+        load_env_size("SYS_PAGE_SIZE", sys_page_size, 64, ABTD_ENV_SIZE_MAX));
+
     /* ABT_THREAD_STACKSIZE, ABT_ENV_THREAD_STACKSIZE
      * Default stack size for ULT */
     p_global->thread_stacksize =
@@ -158,15 +166,6 @@ void ABTD_env_init(ABTI_global *p_global)
     p_global->huge_page_size =
         load_env_size("HUGE_PAGE_SIZE", default_huge_page_size, 4096,
                       ABTD_ENV_SIZE_MAX);
-
-    /* ABT_SYS_PAGE_SIZE, ABT_ENV_SYS_PAGE_SIZE
-     * System page size.  It must be 2^N. */
-    size_t sys_page_size = ABTD_SYS_PAGE_SIZE;
-#if HAVE_GETPAGESIZE
-    sys_page_size = getpagesize();
-#endif
-    p_global->sys_page_size = roundup_pow2_size(
-        load_env_size("SYS_PAGE_SIZE", sys_page_size, 64, ABTD_ENV_SIZE_MAX));
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
     /* ABT_MEM_PAGE_SIZE, ABT_ENV_MEM_PAGE_SIZE
@@ -299,7 +298,6 @@ static uint32_t roundup_pow2_uint32(uint32_t val)
     return ((uint32_t)1) << i;
 }
 
-#ifdef ABT_CONFIG_USE_MEM_POOL
 static size_t roundup_pow2_size(size_t val)
 {
     if (val == 0)
@@ -311,7 +309,6 @@ static size_t roundup_pow2_size(size_t val)
     }
     return ((size_t)1) << i;
 }
-#endif
 
 static const char *get_abt_env(const char *env_suffix)
 {
