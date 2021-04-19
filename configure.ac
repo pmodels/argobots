@@ -885,6 +885,9 @@ AC_CHECK_LIB(pthread, pthread_join)
 # check pthread_barrier
 AC_CHECK_FUNCS(pthread_barrier_init)
 
+# check mprotect
+AC_CHECK_FUNCS(mprotect)
+
 # check dlvsym
 ABT_RT_CFLAGS=""
 ABT_RT_LDFLAGS=""

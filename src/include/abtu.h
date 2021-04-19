@@ -311,6 +311,11 @@ ABTU_alloc_largepage(size_t size, size_t alignment_hint,
                      void **p_ptr);
 void ABTU_free_largepage(void *ptr, size_t size, ABTU_MEM_LARGEPAGE_TYPE type);
 
+/* An error is ignored even if mprotect call fails.
+ * PROT_NONE is set if protect == ABT_TRUE.
+ * (PROT_READ | PROT_WRITE) is permitted if if protect == ABT_FALSE. */
+ABTU_ret_err int ABTU_mprotect(void *addr, size_t size, ABT_bool protect);
+
 /* String-to-integer functions. */
 ABTU_ret_err int ABTU_atoi(const char *str, int *p_val, ABT_bool *p_overflow);
 ABTU_ret_err int ABTU_atoui32(const char *str, uint32_t *p_val,
