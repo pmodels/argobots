@@ -122,17 +122,31 @@ void ABTD_env_init(ABTI_global *p_global)
 
     /* ABT_THREAD_STACKSIZE, ABT_ENV_THREAD_STACKSIZE
      * Default stack size for ULT */
+    size_t default_thread_stacksize = ABTD_THREAD_DEFAULT_STACKSIZE;
+    if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
+        p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
+        /* Maximum 2 pages are used for mprotect(), so let's increase the
+         * default stack size. */
+        default_thread_stacksize += p_global->sys_page_size * 2;
+    }
     p_global->thread_stacksize =
         ABTU_roundup_size(load_env_size("THREAD_STACKSIZE",
-                                        ABTD_THREAD_DEFAULT_STACKSIZE, 512,
+                                        default_thread_stacksize, 512,
                                         ABTD_ENV_SIZE_MAX),
                           ABT_CONFIG_STATIC_CACHELINE_SIZE);
 
     /* ABT_SCHED_STACKSIZE, ABT_ENV_SCHED_STACKSIZE
      * Default stack size for scheduler */
+    size_t default_sched_stacksize = ABTD_SCHED_DEFAULT_STACKSIZE;
+    if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
+        p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
+        /* Maximum 2 pages are used for mprotect(), so let's increase the
+         * default stack size. */
+        default_sched_stacksize += p_global->sys_page_size * 2;
+    }
     p_global->sched_stacksize =
         ABTU_roundup_size(load_env_size("SCHED_STACKSIZE",
-                                        ABTD_SCHED_DEFAULT_STACKSIZE, 512,
+                                        default_sched_stacksize, 512,
                                         ABTD_ENV_SIZE_MAX),
                           ABT_CONFIG_STATIC_CACHELINE_SIZE);
 
