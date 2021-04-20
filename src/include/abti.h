@@ -66,6 +66,8 @@
 
 #define ABTI_STACK_CHECK_TYPE_NONE 0
 #define ABTI_STACK_CHECK_TYPE_CANARY 1
+#define ABTI_STACK_CHECK_TYPE_MPROTECT 2
+#define ABTI_STACK_CHECK_TYPE_MPROTECT_STRICT 3
 
 enum ABTI_xstream_type {
     ABTI_XSTREAM_TYPE_PRIMARY,
@@ -76,6 +78,12 @@ enum ABTI_sched_used {
     ABTI_SCHED_NOT_USED,
     ABTI_SCHED_MAIN,
     ABTI_SCHED_IN_POOL
+};
+
+enum ABTI_stack_guard {
+    ABTI_STACK_GUARD_NONE = 0,
+    ABTI_STACK_GUARD_MPROTECT,
+    ABTI_STACK_GUARD_MPROTECT_STRICT,
 };
 
 #define ABTI_THREAD_TYPE_EXT ((ABTI_thread_type)0)
@@ -150,6 +158,7 @@ typedef struct ABTI_thread_id_opaque *ABTI_thread_id;
 /* Unit-to-thread hash table. */
 typedef struct ABTI_atomic_unit_to_thread ABTI_atomic_unit_to_thread;
 typedef struct ABTI_unit_to_thread_entry ABTI_unit_to_thread_entry;
+typedef enum ABTI_stack_guard ABTI_stack_guard;
 
 /* Architecture-Dependent Definitions */
 #include "abtd.h"
@@ -215,6 +224,7 @@ struct ABTI_global {
     uint32_t
         mutex_max_handovers;    /* Default max. # of local handovers (unused) */
     uint32_t mutex_max_wakeups; /* Default max. # of wakeups (unused) */
+    size_t sys_page_size;       /* System page size (typically, 4KB) */
     size_t huge_page_size;      /* Huge page size */
 #ifdef ABT_CONFIG_USE_MEM_POOL
     size_t mem_page_size;    /* Page size for memory allocation */
@@ -234,6 +244,7 @@ struct ABTI_global {
     ABTI_mem_pool_local_pool mem_pool_desc_ext;
 #endif
 #endif
+    ABTI_stack_guard stack_guard_kind; /* Stack guard type. */
 
     ABT_bool print_config; /* Whether to print config on ABT_init */
 

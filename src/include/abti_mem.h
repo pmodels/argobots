@@ -32,34 +32,95 @@ int ABTI_mem_check_lp_alloc(ABTI_global *p_global, int lp_alloc);
 #define ABTI_STACK_CANARY_VALUE ((uint64_t)0xbaadc0debaadc0de)
 
 /* Inline functions */
-static inline void ABTI_mem_register_stack(void *p_stack, size_t stacksize)
-{
 #if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+static inline void ABTI_mem_write_stack_canary(void *p_stack)
+{
     /* Write down stack canary. */
-    if (p_stack) {
-        uint64_t i;
-        for (i = 0;
-             i < ABTU_roundup_uint64(ABT_CONFIG_STACK_CHECK_CANARY_SIZE, 8);
-             i += sizeof(uint64_t)) {
-            ((uint64_t *)p_stack)[i] = ABTI_STACK_CANARY_VALUE;
-        }
+    uint64_t i;
+    for (i = 0; i < ABTU_roundup_uint64(ABT_CONFIG_STACK_CHECK_CANARY_SIZE, 8);
+         i += sizeof(uint64_t)) {
+        ((uint64_t *)p_stack)[i] = ABTI_STACK_CANARY_VALUE;
     }
+}
+
+static inline void ABTI_mem_check_stack_canary(void *p_stack)
+{
+    uint64_t i;
+    for (i = 0; i < ABTU_roundup_uint64(ABT_CONFIG_STACK_CHECK_CANARY_SIZE, 8);
+         i += sizeof(uint64_t)) {
+        ABTI_ASSERT(((uint64_t *)p_stack)[i] == ABTI_STACK_CANARY_VALUE);
+    }
+}
 #endif
+
+static inline void ABTI_mem_register_stack(const ABTI_global *p_global,
+                                           void *p_stack, size_t stacksize,
+                                           ABT_bool mprotect_if_needed)
+{
+    if (mprotect_if_needed) {
+        if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
+            p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
+            if (p_stack) {
+                int abt_errno =
+                    ABTU_mprotect(ABTU_roundup_ptr(p_stack,
+                                                   p_global->sys_page_size),
+                                  p_global->sys_page_size, ABT_TRUE);
+                if (p_global->stack_guard_kind ==
+                    ABTI_STACK_GUARD_MPROTECT_STRICT) {
+                    ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+                }
+            }
+        } else {
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+            if (p_stack) {
+                ABTI_mem_write_stack_canary(p_stack);
+            }
+#endif
+        }
+    } else {
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+        if (!(p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
+              p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) &&
+            p_stack) {
+            ABTI_mem_write_stack_canary(p_stack);
+        }
+#endif
+    }
     ABTI_VALGRIND_REGISTER_STACK(p_stack, stacksize);
 }
 
-static inline void ABTI_mem_unregister_stack(void *p_stack)
+static inline void ABTI_mem_unregister_stack(const ABTI_global *p_global,
+                                             void *p_stack,
+                                             ABT_bool mprotect_if_needed)
 {
+    if (mprotect_if_needed) {
+        if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
+            p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
+            if (p_stack) {
+                int abt_errno =
+                    ABTU_mprotect(ABTU_roundup_ptr(p_stack,
+                                                   p_global->sys_page_size),
+                                  p_global->sys_page_size, ABT_FALSE);
+                /* This should not fail since otherwise we cannot free this
+                 * memory. */
+                ABTI_ASSERT(abt_errno == ABT_SUCCESS);
+            }
+        } else {
 #if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
-    if (p_stack) {
-        uint64_t i;
-        for (i = 0;
-             i < ABTU_roundup_uint64(ABT_CONFIG_STACK_CHECK_CANARY_SIZE, 8);
-             i += sizeof(uint64_t)) {
-            ABTI_ASSERT(((uint64_t *)p_stack)[i] == ABTI_STACK_CANARY_VALUE);
-        }
-    }
+            if (p_stack) {
+                ABTI_mem_check_stack_canary(p_stack);
+            }
 #endif
+        }
+    } else {
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+        if (!(p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
+              p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) &&
+            p_stack) {
+            ABTI_mem_check_stack_canary(p_stack);
+        }
+#endif
+    }
     ABTI_VALGRIND_UNREGISTER_STACK(p_stack);
 }
 
@@ -179,24 +240,26 @@ ABTI_mem_alloc_ythread_default(ABTI_global *p_global, ABTI_local *p_local,
                                                           &p_stack);
         ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
+        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_TRUE);
     } else {
 #ifdef ABT_CONFIG_USE_MEM_POOL
         int abt_errno = ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
             &p_local_xstream->mem_pool_stack, stacksize, &p_ythread, &p_stack);
         ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
+        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_FALSE);
 #else
         int abt_errno =
             ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
                                                           &p_stack);
         ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
+        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_TRUE);
 #endif
     }
     /* Initialize members of ABTI_thread_attr. */
     p_ythread->p_stack = p_stack;
     p_ythread->stacksize = stacksize;
-    ABTI_mem_register_stack(p_ythread->p_stack, p_ythread->stacksize);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
@@ -217,24 +280,24 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack(
                                                           &p_stack);
         ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
+        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_TRUE);
     } else {
         int abt_errno = ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
             &p_local_xstream->mem_pool_stack, stacksize, &p_ythread, &p_stack);
         ABTI_CHECK_ERROR(abt_errno);
         p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
+        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_FALSE);
     }
     /* Copy members of p_attr. */
     p_ythread->p_stack = p_stack;
     p_ythread->stacksize = stacksize;
-    ABTI_mem_register_stack(p_ythread->p_stack, p_ythread->stacksize);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
 #endif
 
-ABTU_ret_err static inline int
-ABTI_mem_alloc_ythread_malloc_desc_stack(ABTI_thread_attr *p_attr,
-                                         ABTI_ythread **pp_ythread)
+ABTU_ret_err static inline int ABTI_mem_alloc_ythread_malloc_desc_stack(
+    ABTI_global *p_global, ABTI_thread_attr *p_attr, ABTI_ythread **pp_ythread)
 {
     size_t stacksize = p_attr->stacksize;
     ABTI_ythread *p_ythread;
@@ -248,13 +311,15 @@ ABTI_mem_alloc_ythread_malloc_desc_stack(ABTI_thread_attr *p_attr,
     p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
     p_ythread->stacksize = stacksize;
     p_ythread->p_stack = p_stack;
-    ABTI_mem_register_stack(p_ythread->p_stack, p_ythread->stacksize);
+    ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_TRUE);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
 
-ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc(
-    ABTI_local *p_local, ABTI_thread_attr *p_attr, ABTI_ythread **pp_ythread)
+ABTU_ret_err static inline int
+ABTI_mem_alloc_ythread_mempool_desc(ABTI_global *p_global, ABTI_local *p_local,
+                                    ABTI_thread_attr *p_attr,
+                                    ABTI_ythread **pp_ythread)
 {
     ABTI_ythread *p_ythread;
     if (sizeof(ABTI_ythread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE) {
@@ -272,8 +337,8 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc(
     /* Copy members of p_attr. */
     p_ythread->stacksize = p_attr->stacksize;
     p_ythread->p_stack = p_attr->p_stack;
-    /* Note that the valgrind registration is ignored if p_stack is NULL. */
-    ABTI_mem_register_stack(p_ythread->p_stack, p_ythread->stacksize);
+    ABTI_mem_register_stack(p_global, p_ythread->p_stack, p_ythread->stacksize,
+                            ABT_TRUE);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
@@ -286,7 +351,7 @@ static inline void ABTI_mem_free_thread(ABTI_global *p_global,
 #ifdef ABT_CONFIG_USE_MEM_POOL
     if (p_thread->type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-        ABTI_mem_unregister_stack(p_ythread->p_stack);
+        ABTI_mem_unregister_stack(p_global, p_ythread->p_stack, ABT_FALSE);
 
         ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
         /* Came from a memory pool. */
@@ -306,18 +371,18 @@ static inline void ABTI_mem_free_thread(ABTI_global *p_global,
         /* Non-yieldable thread or yieldable thread without stack. */
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread)
-            ABTI_mem_unregister_stack(p_ythread->p_stack);
+            ABTI_mem_unregister_stack(p_global, p_ythread->p_stack, ABT_TRUE);
         ABTI_mem_free_nythread(p_global, p_local, p_thread);
     } else if (p_thread->type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-        ABTI_mem_unregister_stack(p_ythread->p_stack);
+        ABTI_mem_unregister_stack(p_global, p_ythread->p_stack, ABT_TRUE);
         ABTU_free(p_ythread->p_stack);
     } else {
         ABTI_ASSERT(p_thread->type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC);
         ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread)
-            ABTI_mem_unregister_stack(p_ythread->p_stack);
+            ABTI_mem_unregister_stack(p_global, p_ythread->p_stack, ABT_TRUE);
         ABTU_free(p_thread);
     }
 }

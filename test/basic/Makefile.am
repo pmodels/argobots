@@ -77,6 +77,7 @@ TESTS = \
 	ext_thread_join \
 	ext_thread_mutex \
 	ext_thread_rwlock \
+	stack_guard \
 	timer \
 	info_print \
 	info_print_stack \
@@ -173,6 +174,7 @@ ext_thread_future_SOURCES = ext_thread_future.c
 ext_thread_join_SOURCES = ext_thread_join.c
 ext_thread_mutex_SOURCES = ext_thread_mutex.c
 ext_thread_rwlock_SOURCES = ext_thread_rwlock.c
+stack_guard_SOURCES = stack_guard.c
 timer_SOURCES = timer.c
 info_print_SOURCES = info_print.c
 info_print_stack_SOURCES = info_print_stack.c
@@ -255,6 +257,7 @@ testing:
 	./ext_thread_join
 	./ext_thread_mutex
 	./ext_thread_rwlock
+	./stack_guard
 	./timer
 	./info_print
 	./info_print_stack

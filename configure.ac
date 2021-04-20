@@ -202,8 +202,12 @@ AC_ARG_ENABLE([tool],
 # --enable-stack-overflow-check
 AC_ARG_ENABLE([stack-overflow-check],
 [  --enable-stack-overflow-check@<:@=OPT@:>@ enable a stack overflow check
-        canary|canary-8     - use an 8-byte stack canary.
-        canary-XX           - use an XX-byte stack canary.
+        canary|canary-8 - use an 8-byte stack canary.
+        canary-XX       - use an XX-byte stack canary.
+        mprotect        - use mprotect.  Ignore the failure of mprotect().
+                          Alternatively, users can set ABT_STACK_OVERFLOW_CHECK=mprotect
+        mprotect-strict - use mprotect.  Assert if mprotect() fails.
+                          Alternatively, users can set ABT_STACK_OVERFLOW_CHECK=mprotect_strict
         none|no
 ],,[enable_stack_overflow_check=no])
 
@@ -712,6 +716,12 @@ case "$enable_stack_overflow_check" in
             AC_MSG_WARN([Unknown value $enable_stack_overflow_check for --enable-stack-overflow-check])
         fi
     ;;
+    mprotect)
+        stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_MPROTECT"
+    ;;
+    mprotect-strict)
+        stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_MPROTECT_STRICT"
+    ;;
     none|no)
         stack_overflow_check_type="ABTI_STACK_CHECK_TYPE_NONE"
     ;;
@@ -874,6 +884,12 @@ AC_CHECK_LIB(pthread, pthread_join)
 
 # check pthread_barrier
 AC_CHECK_FUNCS(pthread_barrier_init)
+
+# check mprotect
+AC_CHECK_FUNCS(mprotect)
+
+# check getpagesize
+AC_CHECK_FUNCS(getpagesize)
 
 # check dlvsym
 ABT_RT_CFLAGS=""

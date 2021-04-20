@@ -102,6 +102,17 @@ static inline size_t ABTU_roundup_size(size_t val, size_t multiple)
     }
 }
 
+static inline void *ABTU_roundup_ptr(void *ptr, size_t multiple)
+{
+    if ((multiple & (multiple - 1)) == 0) {
+        /* If multiple is a power of two. */
+        return (void *)((((uintptr_t)ptr) + multiple - 1) & (~(multiple - 1)));
+    } else {
+        return (void *)(((((uintptr_t)ptr) + multiple - 1) / multiple) *
+                        multiple);
+    }
+}
+
 /* Utility feature */
 
 #ifdef HAVE___BUILTIN_EXPECT
@@ -310,6 +321,11 @@ ABTU_alloc_largepage(size_t size, size_t alignment_hint,
                      int num_requested_types, ABTU_MEM_LARGEPAGE_TYPE *p_actual,
                      void **p_ptr);
 void ABTU_free_largepage(void *ptr, size_t size, ABTU_MEM_LARGEPAGE_TYPE type);
+
+/* An error is ignored even if mprotect call fails.
+ * PROT_NONE is set if protect == ABT_TRUE.
+ * (PROT_READ | PROT_WRITE) is permitted if if protect == ABT_FALSE. */
+ABTU_ret_err int ABTU_mprotect(void *addr, size_t size, ABT_bool protect);
 
 /* String-to-integer functions. */
 ABTU_ret_err int ABTU_atoi(const char *str, int *p_val, ABT_bool *p_overflow);

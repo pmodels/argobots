@@ -5,4 +5,5 @@
 
 abt_sources += \
 	util/atoi.c \
-	util/largepage.c
+	util/largepage.c \
+	util/mprotect.c
