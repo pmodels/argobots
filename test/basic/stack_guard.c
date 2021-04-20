@@ -16,12 +16,12 @@
 #include "abttest.h"
 
 #define DUMMY_SIZE ((int)(1024 / sizeof(double)))
-#define SYS_PAGE_SIZE 4096
 
 int g_mprotect_signal = 0;
 volatile int g_sig_err = 0;
 volatile int g_is_segv = 0;
 volatile char *gp_stack = NULL;
+size_t g_sys_page_size = 0;
 
 void segv_handler(int sig, siginfo_t *si, void *unused)
 {
@@ -49,7 +49,8 @@ void *helper_func(void *arg)
     while (ATS_atomic_load(&g_mprotect_signal) == 0)
         ;
     /* Call mprotect() to temporarily allow an access. */
-    int ret = mprotect((void *)gp_stack, SYS_PAGE_SIZE, PROT_READ | PROT_WRITE);
+    int ret =
+        mprotect((void *)gp_stack, g_sys_page_size, PROT_READ | PROT_WRITE);
     assert(ret == 0);
     /* Tell the signal handler that mprotect has finished. */
     ATS_atomic_store(&g_mprotect_signal, 0);
@@ -79,13 +80,13 @@ void thread_func(void *arg)
      * thread_func().  Let's assume that the protected page is within a few
      * pages from the bottom of the stack.
      * gp_stack should be aligned with the page size. */
-    gp_stack =
-        (char *)(((((uintptr_t)p_stack) + SYS_PAGE_SIZE - 1) / SYS_PAGE_SIZE) *
-                     SYS_PAGE_SIZE +
-                 SYS_PAGE_SIZE * 2);
+    gp_stack = (char *)(((((uintptr_t)p_stack) + g_sys_page_size - 1) /
+                         g_sys_page_size) *
+                            g_sys_page_size +
+                        g_sys_page_size * 2);
     while (1) {
         /* Using this stack variable to see if we can observe SEGV. */
-        gp_stack -= SYS_PAGE_SIZE;
+        gp_stack -= g_sys_page_size;
         assert(((char *)p_stack) <= gp_stack);
         volatile char val = gp_stack[0];
         /* Though we use "volatile", we'd like to put a compiler barrier just in
@@ -101,7 +102,7 @@ void thread_func(void *arg)
             /* Succeeded!  Undo the mprotect setting.  Originally it should be
              * read-protected. */
             g_is_segv = 0;
-            ret = mprotect((void *)gp_stack, SYS_PAGE_SIZE, PROT_READ);
+            ret = mprotect((void *)gp_stack, g_sys_page_size, PROT_READ);
             assert(ret == 0);
             return;
         }
@@ -112,6 +113,12 @@ void thread_func(void *arg)
 int main(int argc, char *argv[])
 {
     int ret, i;
+    /* Get the system page size. */
+    g_sys_page_size = getpagesize();
+    if (g_sys_page_size > 16 * 1024 * 1024) {
+        /* The system page size is too large.  Let's skip this test. */
+        return 77;
+    }
     /* Catch SEGV. */
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
@@ -125,9 +132,13 @@ int main(int argc, char *argv[])
     putenv("ABT_STACK_OVERFLOW_CHECK=mprotect_strict");
     /* Initialize */
     ATS_read_args(argc, argv);
-    size_t stacksizes[] = { 1024 * 64,      1024 * 64 + 64,  1024 * 64 + 128,
-                            1024 * 64 - 64, 1024 * 64 - 128, 1024 * 1024,
-                            4 * 1024 * 1024 };
+    size_t stacksizes[] = { g_sys_page_size * 2 + 1024 * 64,
+                            g_sys_page_size * 2 + 1024 * 64 + 64,
+                            g_sys_page_size * 2 + 1024 * 64 + 128,
+                            g_sys_page_size * 2 + 1024 * 64 - 64,
+                            g_sys_page_size * 2 + 1024 * 64 - 128,
+                            g_sys_page_size * 2 + 1024 * 1024,
+                            g_sys_page_size * 2 + 4 * 1024 * 1024 };
 
     int stack_i, num_stacksizes = sizeof(stacksizes) / sizeof(stacksizes[0]);
     for (stack_i = 0; stack_i < num_stacksizes; stack_i++) {
