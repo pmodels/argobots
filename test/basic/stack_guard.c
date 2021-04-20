@@ -27,8 +27,10 @@ void segv_handler(int sig, siginfo_t *si, void *unused)
 {
     if (sig != SIGSEGV) {
         g_sig_err = 1; /* We cannot call assert(). */
+        signal(sig, SIG_DFL);
     } else if (si->si_addr != gp_stack) {
         g_sig_err = 2;
+        signal(SIGSEGV, SIG_DFL);
     } else {
         /* Since POSIX does not mark mprotect() as async-signal safe, we need to
          * ask another thread to call mprotect() instead of this thread even if
