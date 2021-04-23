@@ -33,7 +33,7 @@
 static void *mmap_regular(size_t size)
 {
 #if ABTU_LP_USE_MMAP
-    void *p_page = mmap(NULL, size, ABTU_LP_PROTS, ABTU_LP_FLAGS_RP, 0, 0);
+    void *p_page = mmap(NULL, size, ABTU_LP_PROTS, ABTU_LP_FLAGS_RP, -1, 0);
     return p_page != MAP_FAILED ? p_page : NULL;
 #else
     return NULL;
@@ -43,7 +43,7 @@ static void *mmap_regular(size_t size)
 static void *mmap_hugepage(size_t size)
 {
 #if ABTU_LP_USE_MMAP && ABTU_LP_USE_MMAP_HUGEPAGE
-    void *p_page = mmap(NULL, size, ABTU_LP_PROTS, ABTU_LP_FLAGS_HP, 0, 0);
+    void *p_page = mmap(NULL, size, ABTU_LP_PROTS, ABTU_LP_FLAGS_HP, -1, 0);
     return p_page != MAP_FAILED ? p_page : NULL;
 #else
     return NULL;
