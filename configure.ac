@@ -253,8 +253,11 @@ AC_ARG_WITH([libunwind],
 
 # --enable-stack-unwind
 AC_ARG_ENABLE([stack-unwind],
-    AS_HELP_STRING([--enable-stack-unwind],
-                   [enable stack unwinding, which is disabled by default.]))
+[  --enable-stack-unwind@<:@=OPTS@:>@ enable stack unwinding, which is disabled by default.
+        yes|verbose  - enable stack unwinding.  Dump the raw stack information too
+        unwind-only  - enable stack unwinding.  Do not dump the raw stack information
+        no|none      - disable stack unwinding
+],,[enable_stack_unwind=no])
 
 # --with-papi
 AC_ARG_WITH([papi],
@@ -843,7 +846,7 @@ if test "x$with_hugetlbfs" != "x"; then
 fi
 
 # --enable-stack-unwind
-if test "x$enable_stack_unwind" = "xyes"; then
+if test "x$enable_stack_unwind" = "xyes" -o "x$enable_stack_unwind" = "xverbose" -o "x$enable_stack_unwind" = "xunwind-only"; then
     # --with-libunwind
     if test "x$with_libunwind" != "x"; then
         PAC_PREPEND_FLAG([-I${with_libunwind}/include], [CFLAGS])
@@ -854,6 +857,9 @@ if test "x$enable_stack_unwind" = "xyes"; then
     if test x"$ac_cv_header_libunwind_h" = x"yes" -a x"$ac_cv_lib_unwind_unw_backtrace" = x"yes" ; then
         AC_DEFINE(ABT_CONFIG_ENABLE_STACK_UNWIND, 1, [Define to use the stack unwinding feature.])
         PAC_PREPEND_FLAG([-lunwind], [LDFLAGS])
+        AS_IF([test "x$enable_stack_unwind" = "xunwind-only"],
+              [AC_DEFINE(ABT_CONFIG_DISABLE_STACK_UNWIND_DUMP_RAW_STACK, 1,
+                         [Define to disable the raw stack dump by default.])])
     else
         AC_MSG_ERROR([libunwind is not found.  Either remove --enable-stack-unwind or \
 set --with-libunwind=LIBUNWIND_PREFIX_PATH.])

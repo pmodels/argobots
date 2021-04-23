@@ -214,6 +214,7 @@ struct ABTI_global {
     ABT_bool set_affinity;     /* Whether CPU affinity is used */
     ABT_bool use_logging;      /* Whether logging is used */
     ABT_bool use_debug;        /* Whether debug output is used */
+    ABT_bool print_raw_stack;  /* Print raw stack or not. */
     uint32_t key_table_size;   /* Default key table size */
     size_t thread_stacksize;   /* Default stack size for ULT (in bytes) */
     size_t sched_stacksize;    /* Default stack size for sched (in bytes) */
@@ -623,7 +624,8 @@ void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
                           ABTI_ythread *p_ythread,
                           ABT_sync_event_type sync_event_type, void *p_sync);
 void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread);
-void ABTI_ythread_print_stack(ABTI_ythread *p_ythread, FILE *p_os);
+void ABTI_ythread_print_stack(ABTI_global *p_global, ABTI_ythread *p_ythread,
+                              FILE *p_os);
 
 /* Thread attributes */
 void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent);

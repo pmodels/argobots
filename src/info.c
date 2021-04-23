@@ -5,7 +5,8 @@
 
 #include "abti.h"
 
-ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
+ABTU_ret_err static int info_print_thread_stacks_in_pool(ABTI_global *p_global,
+                                                         FILE *fp,
                                                          ABTI_pool *p_pool);
 static void info_trigger_print_all_thread_stacks(
     FILE *fp, double timeout, void (*cb_func)(ABT_bool, void *), void *arg);
@@ -796,10 +797,15 @@ int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
         fprintf(fp, "no stack\n");
         fflush(0);
     } else {
-        ABTI_ythread *p_ythread;
         if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
-            p_ythread = ABTI_thread_get_ythread(p_thread);
-            ABTI_ythread_print_stack(p_ythread, fp);
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (!p_global) {
+                fprintf(fp, "Argobots is not initialized.\n");
+                fflush(0);
+            } else {
+                ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
+                ABTI_ythread_print_stack(p_global, p_ythread, fp);
+            }
         } else {
             fprintf(fp, "no stack\n");
             fflush(0);
@@ -847,8 +853,14 @@ int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
     /* Argobots 1.x requires a NULL-handle check. */
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 #endif
-    int abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
-    ABTI_CHECK_ERROR(abt_errno);
+    ABTI_global *p_global = ABTI_global_get_global_or_null();
+    if (!p_global) {
+        fprintf(fp, "Argobots is not initialized.\n");
+        fflush(0);
+    } else {
+        int abt_errno = info_print_thread_stacks_in_pool(p_global, fp, p_pool);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
     return ABT_SUCCESS;
 }
 
@@ -1176,6 +1188,7 @@ void ABTI_info_print_config(ABTI_global *p_global, FILE *fp)
 /*****************************************************************************/
 
 struct info_print_unit_arg_t {
+    ABTI_global *p_global;
     FILE *fp;
 };
 
@@ -1205,13 +1218,14 @@ static void info_print_unit(void *arg, ABT_unit unit)
                 "id        : %" PRIu64 "\n"
                 "ctx       : %p\n",
                 (uint64_t)thread_id, (void *)&p_ythread->ctx);
-        ABTI_ythread_print_stack(p_ythread, fp);
+        ABTI_ythread_print_stack(p_arg->p_global, p_ythread, fp);
     } else {
         fprintf(fp, "=== tasklet (%p) ===\n", (void *)unit);
     }
 }
 
-ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
+ABTU_ret_err static int info_print_thread_stacks_in_pool(ABTI_global *p_global,
+                                                         FILE *fp,
                                                          ABTI_pool *p_pool)
 {
     if (p_pool == NULL) {
@@ -1225,6 +1239,7 @@ ABTU_ret_err static int info_print_thread_stacks_in_pool(FILE *fp,
 
     fprintf(fp, "== pool (%p) ==\n", (void *)p_pool);
     struct info_print_unit_arg_t arg;
+    arg.p_global = p_global;
     arg.fp = fp;
     p_pool->p_print_all(pool, &arg, info_print_unit);
     fflush(fp);
@@ -1325,7 +1340,7 @@ ABTU_ret_err static int print_all_thread_stacks(ABTI_global *p_global, FILE *fp)
     for (i = 0; i < pool_set.num; i++) {
         ABT_pool pool = pool_set.pools[i];
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-        abt_errno = info_print_thread_stacks_in_pool(fp, p_pool);
+        abt_errno = info_print_thread_stacks_in_pool(p_global, fp, p_pool);
         if (abt_errno != ABT_SUCCESS)
             fprintf(fp, "  Failed to print (errno = %d).\n", abt_errno);
     }
