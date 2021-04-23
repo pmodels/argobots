@@ -97,7 +97,8 @@ void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
     ABTI_pool_dec_num_blocked(p_pool);
 }
 
-ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
+ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
+                                                       ABTI_ythread *p_ythread,
                                                        FILE *p_os)
 {
     ABTD_ythread_print_context(p_ythread, p_os, 0);
@@ -130,43 +131,46 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_ythread *p_ythread,
         return;
     }
 
-    char buffer[32];
-    const size_t value_width = 8;
-    const int num_bytes = sizeof(buffer);
+    if (p_global->print_raw_stack) {
+        char buffer[32];
+        const size_t value_width = 8;
+        const int num_bytes = sizeof(buffer);
 
-    for (i = 0; i < stacksize; i += num_bytes) {
-        if (stacksize >= i + num_bytes) {
-            memcpy(buffer, &((uint8_t *)p_stack)[i], num_bytes);
-        } else {
-            memset(buffer, 0, num_bytes);
-            memcpy(buffer, &((uint8_t *)p_stack)[i], stacksize - i);
-        }
-        /* Print the stack address */
+        for (i = 0; i < stacksize; i += num_bytes) {
+            if (stacksize >= i + num_bytes) {
+                memcpy(buffer, &((uint8_t *)p_stack)[i], num_bytes);
+            } else {
+                memset(buffer, 0, num_bytes);
+                memcpy(buffer, &((uint8_t *)p_stack)[i], stacksize - i);
+            }
+            /* Print the stack address */
 #if SIZEOF_VOID_P == 8
-        fprintf(p_os, "%016" PRIxPTR ":",
-                (uintptr_t)(&((uint8_t *)p_stack)[i]));
+            fprintf(p_os, "%016" PRIxPTR ":",
+                    (uintptr_t)(&((uint8_t *)p_stack)[i]));
 #elif SIZEOF_VOID_P == 4
-        fprintf(p_os, "%08" PRIxPTR ":", (uintptr_t)(&((uint8_t *)p_stack)[i]));
+            fprintf(p_os, "%08" PRIxPTR ":",
+                    (uintptr_t)(&((uint8_t *)p_stack)[i]));
 #else
 #error "unknown pointer size"
 #endif
-        /* Print the raw stack data */
-        for (j = 0; j < num_bytes / value_width; j++) {
-            if (value_width == 8) {
-                uint64_t val = ((uint64_t *)buffer)[j];
-                fprintf(p_os, " %016" PRIx64, val);
-            } else if (value_width == 4) {
-                uint32_t val = ((uint32_t *)buffer)[j];
-                fprintf(p_os, " %08" PRIx32, val);
-            } else if (value_width == 2) {
-                uint16_t val = ((uint16_t *)buffer)[j];
-                fprintf(p_os, " %04" PRIx16, val);
-            } else {
-                uint8_t val = ((uint8_t *)buffer)[j];
-                fprintf(p_os, " %02" PRIx8, val);
+            /* Print the raw stack data */
+            for (j = 0; j < num_bytes / value_width; j++) {
+                if (value_width == 8) {
+                    uint64_t val = ((uint64_t *)buffer)[j];
+                    fprintf(p_os, " %016" PRIx64, val);
+                } else if (value_width == 4) {
+                    uint32_t val = ((uint32_t *)buffer)[j];
+                    fprintf(p_os, " %08" PRIx32, val);
+                } else if (value_width == 2) {
+                    uint16_t val = ((uint16_t *)buffer)[j];
+                    fprintf(p_os, " %04" PRIx16, val);
+                } else {
+                    uint8_t val = ((uint8_t *)buffer)[j];
+                    fprintf(p_os, " %02" PRIx8, val);
+                }
+                if (j == (num_bytes / value_width) - 1)
+                    fprintf(p_os, "\n");
             }
-            if (j == (num_bytes / value_width) - 1)
-                fprintf(p_os, "\n");
         }
     }
     fflush(p_os);
