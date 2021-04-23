@@ -172,6 +172,13 @@ void ABTD_env_init(ABTI_global *p_global)
     p_global->mutex_max_wakeups =
         load_env_uint32("MUTEX_MAX_WAKEUPS", 1, 1, ABTD_ENV_UINT32_MAX);
 
+    /* ABT_PRINT_RAW_STACK, ABT_ENV_PRINT_RAW_STACK */
+    ABT_bool default_print_raw_stack = ABT_TRUE;
+#ifdef ABT_CONFIG_DISABLE_STACK_UNWIND_DUMP_RAW_STACK
+    default_print_raw_stack = ABT_FALSE;
+#endif
+    p_global->print_raw_stack =
+        load_env_bool("PRINT_RAW_STACK", default_print_raw_stack);
     /* ABT_HUGE_PAGE_SIZE, ABT_ENV_HUGE_PAGE_SIZE
      * Huge page size */
     size_t default_huge_page_size = (ABT_CONFIG_SYS_HUGE_PAGE_SIZE != 0)
