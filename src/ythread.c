@@ -118,6 +118,8 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
             struct unwind_stack_t arg;
             arg.fp = p_os;
             ABTI_ythread_context_peek(p_ythread, ythread_unwind_stack, &arg);
+        } else {
+            fprintf(p_os, "failed to unwind a stack.\n");
         }
     }
 #endif
