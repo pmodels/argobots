@@ -96,11 +96,12 @@ AC_ARG_ENABLE([debug],
 [  --enable-debug@<:@=OPTS@:>@   control the level of debugging. "OPTS" is a list of
                           comma separated names below. Default is "yes".
         yes   - add compiler flags, -g -Wall
-        log   - enable debug event logging
-        all   - all of the above choices
-        most  - same as "all" but not print logs by default
-                (set ABT_ENV_USE_LOG to 1 for logging)
         err   - print abt_errno information on standard error
+        log   - print debug event logging
+                (set ABT_USE_LOG to 0 to disable logging)
+        all   - all of the above choices (equal to "yes,err,log")
+        most  - same as "all" but not print logs by default
+                (set ABT_USE_LOG to 1 to enable logging)
         none  - no debugging, i.e., --disable-debug
 ],,[enable_debug=none])
 
@@ -346,12 +347,10 @@ for option in $enable_debug ; do
             # log will be discarded.
             debug_log=yes
             debug_log_print=discard
-            debug_err=yes
         ;;
         log)
             debug_log=yes
             debug_log_print=yes
-            debug_err=yes
         ;;
         all-discard)
             debug_flags=yes
