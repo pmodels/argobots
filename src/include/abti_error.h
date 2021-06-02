@@ -16,6 +16,13 @@
         }                                                                      \
     } while (0)
 
+#define ABTI_UB_ASSERT(cond)                                                   \
+    do {                                                                       \
+        if (ABTI_IS_UB_ASSERT_ENABLED) {                                       \
+            ABTI_ASSERT(cond);                                                 \
+        }                                                                      \
+    } while (0)
+
 #define ABTI_STATIC_ASSERT(cond)                                               \
     do {                                                                       \
         ((void)sizeof(char[2 * !!(cond)-1]));                                  \

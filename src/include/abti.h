@@ -28,6 +28,12 @@
 #define ABTI_IS_EXT_THREAD_ENABLED 1
 #endif
 
+#ifdef ABT_CONFIG_DISABLE_UB_ASSERT
+#define ABTI_IS_UB_ASSERT_ENABLED 0
+#else
+#define ABTI_IS_UB_ASSERT_ENABLED 1
+#endif
+
 #include "abtu.h"
 #include "abti_error.h"
 #include "abti_valgrind.h"
