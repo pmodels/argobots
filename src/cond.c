@@ -93,7 +93,7 @@ int ABT_cond_free(ABT_cond *cond)
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* This check will be removed in Argobots 2.0 */
-    ABTI_CHECK_TRUE(!ABTI_waitlist_is_empty(&p_cond->waitlist), ABT_ERR_COND);
+    ABTI_CHECK_TRUE(ABTI_waitlist_is_empty(&p_cond->waitlist), ABT_ERR_COND);
 #endif
 
     ABTI_cond_fini(p_cond);
