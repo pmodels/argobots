@@ -38,6 +38,9 @@
  */
 int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newattr);
+
     ABTI_mutex_attr *p_newattr;
 
     int abt_errno = ABTU_malloc(sizeof(ABTI_mutex_attr), (void **)&p_newattr);
@@ -75,6 +78,9 @@ int ABT_mutex_attr_create(ABT_mutex_attr *newattr)
  */
 int ABT_mutex_attr_free(ABT_mutex_attr *attr)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(attr);
+
     ABT_mutex_attr h_attr = *attr;
     ABTI_mutex_attr *p_attr = ABTI_mutex_attr_get_ptr(h_attr);
     ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p_attr);
@@ -113,6 +119,9 @@ int ABT_mutex_attr_free(ABT_mutex_attr *attr)
  */
 int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT_BOOL(recursive);
+
     ABTI_mutex_attr *p_attr = ABTI_mutex_attr_get_ptr(attr);
     ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p_attr);
 
@@ -152,6 +161,9 @@ int ABT_mutex_attr_set_recursive(ABT_mutex_attr attr, ABT_bool recursive)
  */
 int ABT_mutex_attr_get_recursive(ABT_mutex_attr attr, ABT_bool *recursive)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(recursive);
+
     ABTI_mutex_attr *p_attr = ABTI_mutex_attr_get_ptr(attr);
     ABTI_CHECK_NULL_MUTEX_ATTR_PTR(p_attr);
 

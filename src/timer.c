@@ -59,6 +59,8 @@ double ABT_get_wtime(void)
  */
 int ABT_timer_create(ABT_timer *newtimer)
 {
+    ABTI_UB_ASSERT(newtimer);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *newtimer = ABT_TIMER_NULL;
 #endif
@@ -101,6 +103,8 @@ int ABT_timer_create(ABT_timer *newtimer)
  */
 int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer)
 {
+    ABTI_UB_ASSERT(newtimer);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *newtimer = ABT_TIMER_NULL;
 #endif
@@ -139,6 +143,8 @@ int ABT_timer_dup(ABT_timer timer, ABT_timer *newtimer)
  */
 int ABT_timer_free(ABT_timer *timer)
 {
+    ABTI_UB_ASSERT(timer);
+
     ABTI_timer *p_timer = ABTI_timer_get_ptr(*timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
@@ -236,6 +242,8 @@ int ABT_timer_stop(ABT_timer timer)
  */
 int ABT_timer_read(ABT_timer timer, double *secs)
 {
+    ABTI_UB_ASSERT(secs);
+
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
@@ -274,6 +282,8 @@ int ABT_timer_read(ABT_timer timer, double *secs)
  */
 int ABT_timer_stop_and_read(ABT_timer timer, double *secs)
 {
+    ABTI_UB_ASSERT(secs);
+
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
@@ -313,6 +323,8 @@ int ABT_timer_stop_and_read(ABT_timer timer, double *secs)
  */
 int ABT_timer_stop_and_add(ABT_timer timer, double *secs)
 {
+    ABTI_UB_ASSERT(secs);
+
     ABTI_timer *p_timer = ABTI_timer_get_ptr(timer);
     ABTI_CHECK_NULL_TIMER_PTR(p_timer);
 
@@ -354,6 +366,8 @@ int ABT_timer_stop_and_add(ABT_timer timer, double *secs)
  */
 int ABT_timer_get_overhead(double *overhead)
 {
+    ABTI_UB_ASSERT(overhead);
+
     int abt_errno;
     ABT_timer h_timer;
     int i;

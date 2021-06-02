@@ -83,6 +83,8 @@ ABTU_ret_err static inline int tool_query(ABTI_tool_context *p_tctx,
 int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
                                       uint64_t event_mask, void *user_arg)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
@@ -233,6 +235,9 @@ int ABT_tool_register_thread_callback(ABT_tool_thread_callback_fn cb_func,
 int ABT_tool_query_thread(ABT_tool_context context, uint64_t event,
                           ABT_tool_query_kind query_kind, void *val)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(val);
+
 #ifdef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else

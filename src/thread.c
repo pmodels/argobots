@@ -88,6 +88,9 @@ static ABTI_key g_thread_mig_data_key =
 int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
                       ABT_thread_attr attr, ABT_thread *newthread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread_func);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newthread to NULL on error. */
     if (newthread)
@@ -169,6 +172,9 @@ int ABT_thread_create_on_xstream(ABT_xstream xstream,
                                  void (*thread_func)(void *), void *arg,
                                  ABT_thread_attr attr, ABT_thread *newthread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread_func);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newthread to NULL on error. */
     if (newthread)
@@ -356,6 +362,10 @@ int ABT_thread_create_many(int num_threads, ABT_pool *pool_list,
 int ABT_thread_revive(ABT_pool pool, void (*thread_func)(void *), void *arg,
                       ABT_thread *thread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread_func);
+    ABTI_UB_ASSERT(thread);
+
     ABTI_global *p_global = ABTI_global_get_global();
     ABTI_local *p_local = ABTI_local_get_local();
 
@@ -417,6 +427,9 @@ int ABT_thread_revive(ABT_pool pool, void (*thread_func)(void *), void *arg,
  */
 int ABT_thread_free(ABT_thread *thread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread);
+
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
     ABTI_local *p_local = ABTI_local_get_local();
@@ -535,6 +548,8 @@ int ABT_thread_free_many(int num_threads, ABT_thread *thread_list)
  */
 int ABT_thread_join(ABT_thread thread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -628,6 +643,8 @@ int ABT_thread_exit(void)
     ABTI_ythread *p_ythread;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_SETUP_GLOBAL(NULL);
+#else
+    ABTI_UB_ASSERT(ABTI_initialized());
 #endif
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
     ABTI_CHECK_TRUE(!(p_ythread->thread.type & ABTI_THREAD_TYPE_PRIMARY),
@@ -671,6 +688,8 @@ int ABT_thread_exit(void)
  */
 int ABT_thread_cancel(ABT_thread thread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
 #ifdef ABT_CONFIG_DISABLE_THREAD_CANCEL
     ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
@@ -722,6 +741,8 @@ int ABT_thread_cancel(ABT_thread thread)
  */
 int ABT_thread_self(ABT_thread *thread)
 {
+    ABTI_UB_ASSERT(thread);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *thread = ABT_THREAD_NULL;
     ABTI_SETUP_GLOBAL(NULL);
@@ -729,6 +750,7 @@ int ABT_thread_self(ABT_thread *thread)
     ABTI_SETUP_LOCAL_YTHREAD(NULL, &p_self);
     *thread = ABTI_thread_get_handle(&p_self->thread);
 #else
+    ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     *thread = ABTI_thread_get_handle(p_local_xstream->p_thread);
@@ -771,12 +793,15 @@ int ABT_thread_self(ABT_thread *thread)
  */
 int ABT_thread_self_id(ABT_unit_id *id)
 {
+    ABTI_UB_ASSERT(id);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_SETUP_GLOBAL(NULL);
     ABTI_ythread *p_self;
     ABTI_SETUP_LOCAL_YTHREAD(NULL, &p_self);
     *id = ABTI_thread_get_id(&p_self->thread);
 #else
+    ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     *id = ABTI_thread_get_id(p_local_xstream->p_thread);
@@ -814,6 +839,9 @@ int ABT_thread_self_id(ABT_unit_id *id)
  */
 int ABT_thread_get_last_xstream(ABT_thread thread, ABT_xstream *xstream)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(xstream);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -855,6 +883,9 @@ int ABT_thread_get_last_xstream(ABT_thread thread, ABT_xstream *xstream)
  */
 int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(state);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -895,6 +926,9 @@ int ABT_thread_get_state(ABT_thread thread, ABT_thread_state *state)
  */
 int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(pool);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -935,6 +969,9 @@ int ABT_thread_get_last_pool(ABT_thread thread, ABT_pool *pool)
  */
 int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(id);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     *id = (int)p_thread->p_pool->id;
@@ -965,6 +1002,9 @@ int ABT_thread_get_last_pool_id(ABT_thread thread, int *id)
  */
 int ABT_thread_get_unit(ABT_thread thread, ABT_unit *unit)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(unit);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     *unit = p_thread->unit;
@@ -1006,6 +1046,8 @@ int ABT_thread_get_unit(ABT_thread thread, ABT_unit *unit)
  */
 int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
@@ -1064,6 +1106,8 @@ int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
  */
 int ABT_thread_yield_to(ABT_thread thread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_cur_ythread;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
@@ -1178,6 +1222,8 @@ int ABT_thread_yield_to(ABT_thread thread)
  */
 int ABT_thread_yield(void)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_ythread;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
@@ -1230,6 +1276,8 @@ int ABT_thread_yield(void)
  */
 int ABT_thread_resume(ABT_thread thread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
 
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
@@ -1242,6 +1290,9 @@ int ABT_thread_resume(ABT_thread thread)
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
                         ABT_THREAD_STATE_BLOCKED,
                     ABT_ERR_THREAD);
+#else
+    ABTI_UB_ASSERT(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
+                   ABT_THREAD_STATE_BLOCKED);
 #endif
 
     ABTI_ythread_set_ready(p_local, p_ythread);
@@ -1301,6 +1352,8 @@ int ABT_thread_resume(ABT_thread thread)
  */
 int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
@@ -1387,6 +1440,8 @@ int ABT_thread_migrate_to_xstream(ABT_thread thread, ABT_xstream xstream)
  */
 int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
@@ -1470,6 +1525,8 @@ int ABT_thread_migrate_to_sched(ABT_thread thread, ABT_sched sched)
  */
 int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
@@ -1547,6 +1604,8 @@ int ABT_thread_migrate_to_pool(ABT_thread thread, ABT_pool pool)
  */
 int ABT_thread_migrate(ABT_thread thread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     /* TODO: fix the bug(s) */
     ABTI_global *p_global;
@@ -1661,6 +1720,8 @@ int ABT_thread_set_callback(ABT_thread thread,
                             void (*cb_func)(ABT_thread thread, void *cb_arg),
                             void *cb_arg)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
@@ -1721,6 +1782,9 @@ int ABT_thread_set_callback(ABT_thread thread,
  */
 int ABT_thread_set_migratable(ABT_thread thread, ABT_bool migratable)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT_BOOL(migratable);
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -1778,6 +1842,9 @@ int ABT_thread_set_migratable(ABT_thread thread, ABT_bool migratable)
  */
 int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *is_migratable)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(is_migratable);
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
@@ -1812,7 +1879,7 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *is_migratable)
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
- * \DOC_UNDEFINED_NULL_PTR{\c flag}
+ * \DOC_UNDEFINED_NULL_PTR{\c is_primary}
  *
  * @param[in]  thread      work unit handle
  * @param[out] is_primary  result (\c ABT_TRUE: primary ULT, \c ABT_FALSE: not)
@@ -1820,6 +1887,9 @@ int ABT_thread_is_migratable(ABT_thread thread, ABT_bool *is_migratable)
  */
 int ABT_thread_is_primary(ABT_thread thread, ABT_bool *is_primary)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(is_primary);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -1858,6 +1928,9 @@ int ABT_thread_is_primary(ABT_thread thread, ABT_bool *is_primary)
  */
 int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *is_unnamed)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(is_unnamed);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -1905,6 +1978,8 @@ int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *is_unnamed)
  */
 int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
 {
+    ABTI_UB_ASSERT(result);
+
     ABTI_thread *p_thread1 = ABTI_thread_get_ptr(thread1);
     ABTI_thread *p_thread2 = ABTI_thread_get_ptr(thread2);
     *result = (p_thread1 == p_thread2) ? ABT_TRUE : ABT_FALSE;
@@ -1941,6 +2016,9 @@ int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
  */
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(stacksize);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
@@ -1980,6 +2058,9 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
  */
 int ABT_thread_get_id(ABT_thread thread, ABT_unit_id *thread_id)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread_id);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -2015,6 +2096,8 @@ int ABT_thread_get_id(ABT_thread thread, ABT_unit_id *thread_id)
  */
 int ABT_thread_set_arg(ABT_thread thread, void *arg)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -2050,6 +2133,9 @@ int ABT_thread_set_arg(ABT_thread thread, void *arg)
  */
 int ABT_thread_get_arg(ABT_thread thread, void **arg)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(arg);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -2081,6 +2167,9 @@ int ABT_thread_get_arg(ABT_thread thread, void **arg)
  */
 int ABT_thread_get_thread_func(ABT_thread thread, void (**thread_func)(void *))
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread_func);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -2116,6 +2205,8 @@ int ABT_thread_get_thread_func(ABT_thread thread, void (**thread_func)(void *))
  */
 int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
 
@@ -2165,6 +2256,9 @@ int ABT_thread_set_specific(ABT_thread thread, ABT_key key, void *value)
  */
 int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(value);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 
@@ -2210,6 +2304,9 @@ int ABT_thread_get_specific(ABT_thread thread, ABT_key key, void **value)
  */
 int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(attr);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
 

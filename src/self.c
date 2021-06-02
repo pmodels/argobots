@@ -32,6 +32,9 @@
  */
 int ABT_self_get_xstream(ABT_xstream *xstream)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(xstream);
+
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 
@@ -64,6 +67,9 @@ int ABT_self_get_xstream(ABT_xstream *xstream)
  */
 int ABT_self_get_xstream_rank(int *rank)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(rank);
+
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     /* Return value */
@@ -94,6 +100,9 @@ int ABT_self_get_xstream_rank(int *rank)
  */
 int ABT_self_get_thread(ABT_thread *thread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread);
+
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     *thread = ABTI_thread_get_handle(p_local_xstream->p_thread);
@@ -123,6 +132,9 @@ int ABT_self_get_thread(ABT_thread *thread)
  */
 int ABT_self_get_thread_id(ABT_unit_id *id)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(id);
+
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     *id = ABTI_thread_get_id(p_local_xstream->p_thread);
@@ -178,6 +190,8 @@ int ABT_self_get_task_id(ABT_unit_id *id);
  */
 int ABT_self_set_specific(ABT_key key, void *value)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_key *p_key = ABTI_key_get_ptr(key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
@@ -225,6 +239,9 @@ int ABT_self_set_specific(ABT_key key, void *value)
  */
 int ABT_self_get_specific(ABT_key key, void **value)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(value);
+
     ABTI_key *p_key = ABTI_key_get_ptr(key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
@@ -273,6 +290,8 @@ int ABT_self_get_specific(ABT_key key, void **value)
  */
 int ABT_self_get_type(ABT_unit_type *type)
 {
+    ABTI_UB_ASSERT(type);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* By default, type is ABT_UNIT_TYPE_EXT in Argobots 1.x */
     *type = ABT_UNIT_TYPE_EXT;
@@ -281,6 +300,7 @@ int ABT_self_get_type(ABT_unit_type *type)
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     *type = ABTI_thread_type_get_type(p_local_xstream->p_thread->type);
 #else
+    ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_xstream *p_local_xstream =
         ABTI_local_get_xstream_or_null(ABTI_local_get_local());
     if (p_local_xstream) {
@@ -330,6 +350,8 @@ int ABT_self_get_type(ABT_unit_type *type)
  */
 int ABT_self_is_primary(ABT_bool *is_primary)
 {
+    ABTI_UB_ASSERT(is_primary);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *is_primary = ABT_FALSE;
     ABTI_SETUP_GLOBAL(NULL);
@@ -339,6 +361,7 @@ int ABT_self_is_primary(ABT_bool *is_primary)
                       ? ABT_TRUE
                       : ABT_FALSE;
 #else
+    ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_xstream *p_local_xstream =
         ABTI_local_get_xstream_or_null(ABTI_local_get_local());
     if (p_local_xstream) {
@@ -390,6 +413,8 @@ int ABT_self_is_primary(ABT_bool *is_primary)
  */
 int ABT_self_on_primary_xstream(ABT_bool *on_primary)
 {
+    ABTI_UB_ASSERT(on_primary);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *on_primary = ABT_FALSE;
     ABTI_SETUP_GLOBAL(NULL);
@@ -399,6 +424,7 @@ int ABT_self_on_primary_xstream(ABT_bool *on_primary)
                       ? ABT_TRUE
                       : ABT_FALSE;
 #else
+    ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_xstream *p_local_xstream =
         ABTI_local_get_xstream_or_null(ABTI_local_get_local());
     if (p_local_xstream) {
@@ -435,6 +461,9 @@ int ABT_self_on_primary_xstream(ABT_bool *on_primary)
  */
 int ABT_self_get_last_pool(ABT_pool *pool)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(pool);
+
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     ABTI_thread *p_self = p_local_xstream->p_thread;
@@ -473,6 +502,8 @@ int ABT_self_get_last_pool(ABT_pool *pool)
  */
 int ABT_self_get_last_pool_id(int *pool_id)
 {
+    ABTI_UB_ASSERT(pool_id);
+
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *pool_id = -1;
@@ -482,6 +513,7 @@ int ABT_self_get_last_pool_id(int *pool_id)
     ABTI_ASSERT(p_self->p_pool);
     *pool_id = p_self->p_pool->id;
 #else
+    ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
     ABTI_thread *p_self = p_local_xstream->p_thread;
     ABTI_ASSERT(p_self->p_pool);
@@ -517,6 +549,8 @@ int ABT_self_get_last_pool_id(int *pool_id)
  */
 int ABT_self_set_associated_pool(ABT_pool pool)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_global *p_global = ABTI_global_get_global();
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
@@ -552,6 +586,9 @@ int ABT_self_set_associated_pool(ABT_pool pool)
  */
 int ABT_self_get_unit(ABT_unit *unit)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(unit);
+
     /* We don't allow an external thread to call this routine. */
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
@@ -582,6 +619,8 @@ int ABT_self_get_unit(ABT_unit *unit)
  */
 int ABT_self_yield(void)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_ythread;
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
@@ -622,6 +661,8 @@ int ABT_self_yield(void)
  */
 int ABT_self_suspend(void)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_self;
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_self);
@@ -654,6 +695,8 @@ int ABT_self_suspend(void)
  */
 int ABT_self_exit(void)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_ythread;
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
@@ -698,6 +741,8 @@ int ABT_self_set_arg(void *arg)
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_SETUP_GLOBAL(NULL);
+#else
+    ABTI_UB_ASSERT(ABTI_initialized());
 #endif
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 
@@ -736,10 +781,14 @@ int ABT_self_set_arg(void *arg)
  */
 int ABT_self_get_arg(void **arg)
 {
+    ABTI_UB_ASSERT(arg);
+
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *arg = NULL;
     ABTI_SETUP_GLOBAL(NULL);
+#else
+    ABTI_UB_ASSERT(ABTI_initialized());
 #endif
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 
@@ -770,6 +819,9 @@ int ABT_self_get_arg(void **arg)
  */
 int ABT_self_get_thread_func(void (**thread_func)(void *))
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread_func);
+
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 
@@ -802,6 +854,9 @@ int ABT_self_get_thread_func(void (**thread_func)(void *))
  */
 int ABT_self_is_unnamed(ABT_bool *is_unnamed)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(is_unnamed);
+
     ABTI_xstream *p_local_xstream;
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 

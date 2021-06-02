@@ -23,6 +23,7 @@ static inline void ABTI_cond_fini(ABTI_cond *p_cond)
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
     ABTD_spinlock_acquire(&p_cond->lock);
+    ABTI_UB_ASSERT(ABTI_waitlist_is_empty(&p_cond->waitlist));
 }
 
 static inline ABTI_cond *ABTI_cond_get_ptr(ABT_cond cond)

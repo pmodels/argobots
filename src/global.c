@@ -140,6 +140,8 @@ int ABT_init(int argc, char **argv)
  */
 int ABT_finalize(void)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     /* Take a global lock protecting the initialization/finalization process. */
     ABTD_spinlock_acquire(&g_ABTI_init_lock);
     int abt_errno = finailze_library();

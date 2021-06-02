@@ -46,6 +46,9 @@
  */
 int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newbarrier);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newbarrier to NULL on error. */
     *newbarrier = ABT_BARRIER_NULL;
@@ -98,9 +101,11 @@ int ABT_barrier_create(uint32_t num_waiters, ABT_barrier *newbarrier)
  */
 int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
-    ABTI_ASSERT(p_barrier->counter == 0);
+    ABTI_UB_ASSERT(p_barrier->counter == 0);
     ABTI_CHECK_TRUE(num_waiters != 0, ABT_ERR_INV_ARG);
     size_t arg_num_waiters = num_waiters;
 
@@ -138,6 +143,9 @@ int ABT_barrier_reinit(ABT_barrier barrier, uint32_t num_waiters)
  */
 int ABT_barrier_free(ABT_barrier *barrier)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(barrier);
+
     ABT_barrier h_barrier = *barrier;
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(h_barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
@@ -148,7 +156,7 @@ int ABT_barrier_free(ABT_barrier *barrier)
     ABTD_spinlock_acquire(&p_barrier->lock);
 
     /* p_barrier->counter must be checked after taking a lock. */
-    ABTI_ASSERT(p_barrier->counter == 0);
+    ABTI_UB_ASSERT(p_barrier->counter == 0);
 
     ABTU_free(p_barrier);
 
@@ -188,6 +196,8 @@ int ABT_barrier_free(ABT_barrier *barrier)
  */
 int ABT_barrier_wait(ABT_barrier barrier)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
@@ -247,6 +257,9 @@ int ABT_barrier_wait(ABT_barrier barrier)
  */
 int ABT_barrier_get_num_waiters(ABT_barrier barrier, uint32_t *num_waiters)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(num_waiters);
+
     ABTI_barrier *p_barrier = ABTI_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_BARRIER_PTR(p_barrier);
 

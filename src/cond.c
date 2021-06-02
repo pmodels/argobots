@@ -41,6 +41,9 @@ static inline double convert_timespec_to_sec(const struct timespec *p_ts);
  */
 int ABT_cond_create(ABT_cond *newcond)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newcond);
+
     /* Check if the size of ABT_cond_memory is okay. */
     ABTI_STATIC_ASSERT(sizeof(ABTI_cond) <= sizeof(ABT_cond_memory));
 
@@ -88,12 +91,17 @@ int ABT_cond_create(ABT_cond *newcond)
  */
 int ABT_cond_free(ABT_cond *cond)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(cond);
+
     ABT_cond h_cond = *cond;
     ABTI_cond *p_cond = ABTI_cond_get_ptr(h_cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* This check will be removed in Argobots 2.0 */
     ABTI_CHECK_TRUE(ABTI_waitlist_is_empty(&p_cond->waitlist), ABT_ERR_COND);
+#else
+    ABTI_UB_ASSERT(ABTI_waitlist_is_empty(&p_cond->waitlist));
 #endif
 
     ABTI_cond_fini(p_cond);
@@ -165,6 +173,16 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 
+    /* Check if a given mutex is valid. */
+    /* p_mutex must be locked. */
+    ABTI_UB_ASSERT(ABTI_mutex_is_locked(p_mutex));
+    /* If p_mutex is recursive, the caller of this function must be an owner. */
+    ABTI_UB_ASSERT(!((p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) &&
+                     p_mutex->owner_id != ABTI_self_get_thread_id(p_local)));
+    /* If p_mutex is recursive, p_mutex must not be locked more than once. */
+    ABTI_UB_ASSERT(!((p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) &&
+                     p_mutex->nesting_cnt > 1));
+
     int abt_errno = ABTI_cond_wait(&p_local, p_cond, p_mutex);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
@@ -227,11 +245,23 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
 int ABT_cond_timedwait(ABT_cond cond, ABT_mutex mutex,
                        const struct timespec *abstime)
 {
+    ABTI_UB_ASSERT(abstime);
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_cond *p_cond = ABTI_cond_get_ptr(cond);
     ABTI_CHECK_NULL_COND_PTR(p_cond);
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+
+    /* Check if a given mutex is valid. */
+    /* p_mutex must be locked. */
+    ABTI_UB_ASSERT(ABTI_mutex_is_locked(p_mutex));
+    /* If p_mutex is recursive, the caller of this function must be an owner. */
+    ABTI_UB_ASSERT(!((p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) &&
+                     p_mutex->owner_id != ABTI_self_get_thread_id(p_local)));
+    /* If p_mutex is recursive, p_mutex must not be locked more than once. */
+    ABTI_UB_ASSERT(!((p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) &&
+                     p_mutex->nesting_cnt > 1));
 
     double tar_time = convert_timespec_to_sec(abstime);
 

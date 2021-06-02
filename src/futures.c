@@ -61,6 +61,9 @@
 int ABT_future_create(uint32_t num_compartments, void (*cb_func)(void **arg),
                       ABT_future *newfuture)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newfuture);
+
     int abt_errno;
     ABTI_future *p_future;
     size_t arg_num_compartments = num_compartments;
@@ -115,6 +118,9 @@ int ABT_future_create(uint32_t num_compartments, void (*cb_func)(void **arg),
  */
 int ABT_future_free(ABT_future *future)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(future);
+
     ABTI_future *p_future = ABTI_future_get_ptr(*future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -122,6 +128,7 @@ int ABT_future_free(ABT_future *future)
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
     ABTD_spinlock_acquire(&p_future->lock);
+    ABTI_UB_ASSERT(ABTI_waitlist_is_empty(&p_future->waitlist));
 
     ABTU_free(p_future->array);
     ABTU_free(p_future);
@@ -164,6 +171,8 @@ int ABT_future_free(ABT_future *future)
  */
 int ABT_future_wait(ABT_future future)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
@@ -219,6 +228,9 @@ int ABT_future_wait(ABT_future future)
  */
 int ABT_future_test(ABT_future future, ABT_bool *is_ready)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(is_ready);
+
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
@@ -257,6 +269,8 @@ int ABT_future_test(ABT_future future, ABT_bool *is_ready)
  */
 int ABT_future_set(ABT_future future, void *value)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
@@ -322,10 +336,13 @@ int ABT_future_set(ABT_future future, void *value)
  */
 int ABT_future_reset(ABT_future future)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_future *p_future = ABTI_future_get_ptr(future);
     ABTI_CHECK_NULL_FUTURE_PTR(p_future);
 
     ABTD_spinlock_acquire(&p_future->lock);
+    ABTI_UB_ASSERT(ABTI_waitlist_is_empty(&p_future->waitlist));
     ABTD_atomic_release_store_size(&p_future->counter, 0);
     ABTD_spinlock_release(&p_future->lock);
     return ABT_SUCCESS;
