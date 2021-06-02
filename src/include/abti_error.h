@@ -16,6 +16,22 @@
         }                                                                      \
     } while (0)
 
+#define ABTI_UB_ASSERT(cond)                                                   \
+    do {                                                                       \
+        if (ABTI_IS_UB_ASSERT_ENABLED) {                                       \
+            ABTI_ASSERT(cond);                                                 \
+        }                                                                      \
+    } while (0)
+
+#define ABTI_UB_ASSERT_BOOL(bool_val)                                          \
+    do {                                                                       \
+        if (ABTI_IS_UB_ASSERT_ENABLED) {                                       \
+            ABT_bool bool_val_tmp = (bool_val);                                \
+            ABTI_ASSERT(bool_val_tmp == ABT_TRUE ||                            \
+                        bool_val_tmp == ABT_FALSE);                            \
+        }                                                                      \
+    } while (0)
+
 #define ABTI_STATIC_ASSERT(cond)                                               \
     do {                                                                       \
         ((void)sizeof(char[2 * !!(cond)-1]));                                  \

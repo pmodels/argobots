@@ -65,6 +65,9 @@ static ABTD_atomic_uint32 g_key_id =
  */
 int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newkey);
+
     ABTI_key *p_newkey;
     int abt_errno = ABTU_malloc(sizeof(ABTI_key), (void **)&p_newkey);
     ABTI_CHECK_ERROR(abt_errno);
@@ -108,6 +111,9 @@ int ABT_key_create(void (*destructor)(void *value), ABT_key *newkey)
  */
 int ABT_key_free(ABT_key *key)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(key);
+
     ABT_key h_key = *key;
     ABTI_key *p_key = ABTI_key_get_ptr(h_key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
@@ -155,6 +161,10 @@ int ABT_key_free(ABT_key *key)
  */
 int ABT_key_set(ABT_key key, void *value)
 {
+#ifdef ABT_CONFIG_ENABLE_VER_20_API
+    ABTI_UB_ASSERT(ABTI_initialized());
+#endif
+
     ABTI_key *p_key = ABTI_key_get_ptr(key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 
@@ -210,6 +220,11 @@ int ABT_key_set(ABT_key key, void *value)
  */
 int ABT_key_get(ABT_key key, void **value)
 {
+    ABTI_UB_ASSERT(value);
+#ifdef ABT_CONFIG_ENABLE_VER_20_API
+    ABTI_UB_ASSERT(ABTI_initialized());
+#endif
+
     ABTI_key *p_key = ABTI_key_get_ptr(key);
     ABTI_CHECK_NULL_KEY_PTR(p_key);
 

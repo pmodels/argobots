@@ -209,6 +209,8 @@ static void info_trigger_print_all_thread_stacks(
  */
 int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 {
+    ABTI_UB_ASSERT(val);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x always requires an init check. */
     ABTI_SETUP_GLOBAL(NULL);
@@ -420,6 +422,8 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
  */
 int ABT_info_print_config(FILE *fp)
 {
+    ABTI_UB_ASSERT(fp);
+
     ABTI_global *p_global;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x always requires an init check. */
@@ -467,6 +471,8 @@ int ABT_info_print_config(FILE *fp)
  */
 int ABT_info_print_all_xstreams(FILE *fp)
 {
+    ABTI_UB_ASSERT(fp);
+
     ABTI_global *p_global;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x always requires an init check. */
@@ -528,6 +534,8 @@ int ABT_info_print_all_xstreams(FILE *fp)
  */
 int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
 {
+    ABTI_UB_ASSERT(fp);
+
     ABTI_xstream *p_xstream = ABTI_xstream_get_ptr(xstream);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x requires a NULL-handle check. */
@@ -569,6 +577,8 @@ int ABT_info_print_xstream(FILE *fp, ABT_xstream xstream)
  */
 int ABT_info_print_sched(FILE *fp, ABT_sched sched)
 {
+    ABTI_UB_ASSERT(fp);
+
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x requires a NULL-handle check. */
@@ -610,6 +620,8 @@ int ABT_info_print_sched(FILE *fp, ABT_sched sched)
  */
 int ABT_info_print_pool(FILE *fp, ABT_pool pool)
 {
+    ABTI_UB_ASSERT(fp);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x requires a NULL-handle check. */
@@ -655,6 +667,8 @@ int ABT_info_print_pool(FILE *fp, ABT_pool pool)
  */
 int ABT_info_print_thread(FILE *fp, ABT_thread thread)
 {
+    ABTI_UB_ASSERT(fp);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x requires a NULL-handle check. */
@@ -696,6 +710,8 @@ int ABT_info_print_thread(FILE *fp, ABT_thread thread)
  */
 int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
 {
+    ABTI_UB_ASSERT(fp);
+
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x requires a NULL-handle check. */
@@ -742,6 +758,8 @@ int ABT_info_print_thread_attr(FILE *fp, ABT_thread_attr attr)
  */
 int ABT_info_print_task(FILE *fp, ABT_task task)
 {
+    ABTI_UB_ASSERT(fp);
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(task);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x requires a NULL-handle check. */
@@ -788,6 +806,11 @@ int ABT_info_print_task(FILE *fp, ABT_task task)
  */
 int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
 {
+    ABTI_UB_ASSERT(fp);
+    /* We can check if thread is running or not in ABTI_UB_ASSERT(), but as this
+     * info function is basically used for debugging, printing a corrupted stack
+     * or even crashing a program would be fine. */
+
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x requires a NULL-handle check. */
@@ -848,6 +871,8 @@ int ABT_info_print_thread_stack(FILE *fp, ABT_thread thread)
  */
 int ABT_info_print_thread_stacks_in_pool(FILE *fp, ABT_pool pool)
 {
+    ABTI_UB_ASSERT(fp);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x requires a NULL-handle check. */
@@ -932,6 +957,7 @@ int ABT_info_trigger_print_all_thread_stacks(FILE *fp, double timeout,
                                              void (*cb_func)(ABT_bool, void *),
                                              void *arg)
 {
+    /* assert() is not signal safe, so we cannot validate variables. */
     info_trigger_print_all_thread_stacks(fp, timeout, cb_func, arg);
     return ABT_SUCCESS;
 }

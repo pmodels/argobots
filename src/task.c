@@ -56,6 +56,9 @@ ABTU_ret_err static int task_create(ABTI_global *p_global, ABTI_local *p_local,
 int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
                     ABT_task *newtask)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(task_func);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newtask to NULL on error. */
     if (newtask)
@@ -120,6 +123,9 @@ int ABT_task_create(ABT_pool pool, void (*task_func)(void *), void *arg,
 int ABT_task_create_on_xstream(ABT_xstream xstream, void (*task_func)(void *),
                                void *arg, ABT_task *newtask)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(task_func);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newtask to NULL on error. */
     if (newtask)
@@ -260,6 +266,8 @@ int ABT_task_cancel(ABT_task task)
  */
 int ABT_task_self(ABT_task *task)
 {
+    ABTI_UB_ASSERT(task);
+
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *task = ABT_TASK_NULL;
@@ -269,6 +277,7 @@ int ABT_task_self(ABT_task *task)
                       ABTI_THREAD_TYPE_YIELDABLE),
                     ABT_ERR_INV_TASK);
 #else
+    ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 #endif
     *task = ABTI_thread_get_handle(p_local_xstream->p_thread);
@@ -309,6 +318,8 @@ int ABT_task_self(ABT_task *task)
  */
 int ABT_task_self_id(ABT_unit_id *id)
 {
+    ABTI_UB_ASSERT(id);
+
     ABTI_xstream *p_local_xstream;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_SETUP_GLOBAL(NULL);
@@ -317,6 +328,7 @@ int ABT_task_self_id(ABT_unit_id *id)
                       ABTI_THREAD_TYPE_YIELDABLE),
                     ABT_ERR_INV_TASK);
 #else
+    ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
 #endif
     *id = ABTI_thread_get_id(p_local_xstream->p_thread);
@@ -372,6 +384,9 @@ int ABT_task_get_xstream(ABT_task task, ABT_xstream *xstream)
  */
 int ABT_task_get_state(ABT_task task, ABT_task_state *state)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(state);
+
     ABT_thread_state thread_state;
     int abt_errno = ABT_thread_get_state(task, &thread_state);
     ABTI_CHECK_TRUE(abt_errno != ABT_ERR_INV_THREAD, ABT_ERR_INV_TASK);

@@ -91,10 +91,17 @@ static inline uint64_t sched_get_new_id(void);
 int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
                      ABT_sched_config config, ABT_sched *newsched)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(def);
+    ABTI_UB_ASSERT(def->run);
+    ABTI_UB_ASSERT(pools || num_pools == 0);
+
     ABTI_sched *p_sched;
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *newsched = ABT_SCHED_NULL;
     ABTI_CHECK_TRUE(newsched != NULL, ABT_ERR_SCHED);
+#else
+    ABTI_UB_ASSERT(newsched);
 #endif
     ABTI_CHECK_TRUE(num_pools >= 0, ABT_ERR_INV_ARG);
 
@@ -175,9 +182,13 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                            ABT_pool *pools, ABT_sched_config config,
                            ABT_sched *newsched)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *newsched = ABT_SCHED_NULL;
     ABTI_CHECK_TRUE(newsched != NULL, ABT_ERR_SCHED);
+#else
+    ABTI_UB_ASSERT(newsched);
 #endif
     ABTI_CHECK_TRUE(num_pools >= 0, ABT_ERR_INV_ARG);
 
@@ -233,6 +244,9 @@ int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
  */
 int ABT_sched_free(ABT_sched *sched)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(sched);
+
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
     ABTI_local *p_local = ABTI_local_get_local();
@@ -240,6 +254,8 @@ int ABT_sched_free(ABT_sched *sched)
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED, ABT_ERR_SCHED);
+#else
+    ABTI_UB_ASSERT(p_sched->used == ABTI_SCHED_NOT_USED);
 #endif
 
     /* Free the scheduler */
@@ -274,6 +290,9 @@ int ABT_sched_free(ABT_sched *sched)
  */
 int ABT_sched_get_num_pools(ABT_sched sched, int *num_pools)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(num_pools);
+
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
@@ -320,6 +339,9 @@ int ABT_sched_get_num_pools(ABT_sched sched, int *num_pools)
 int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
                         ABT_pool *pools)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(pools || max_pools > 0);
+
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
     ABTI_CHECK_TRUE(max_pools >= 0, ABT_ERR_INV_ARG);
@@ -372,6 +394,8 @@ int ABT_sched_get_pools(ABT_sched sched, int max_pools, int idx,
  */
 int ABT_sched_finish(ABT_sched sched)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
@@ -409,6 +433,8 @@ int ABT_sched_finish(ABT_sched sched)
  */
 int ABT_sched_exit(ABT_sched sched)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
@@ -455,6 +481,9 @@ int ABT_sched_exit(ABT_sched sched)
  */
 int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(stop);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *stop = ABT_FALSE;
 #endif
@@ -493,6 +522,8 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
  */
 int ABT_sched_set_data(ABT_sched sched, void *data)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
@@ -525,6 +556,9 @@ int ABT_sched_set_data(ABT_sched sched, void *data)
  */
 int ABT_sched_get_data(ABT_sched sched, void **data)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(data);
+
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 
@@ -567,6 +601,9 @@ int ABT_sched_get_data(ABT_sched sched, void **data)
  */
 int ABT_sched_get_size(ABT_sched sched, size_t *size)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(size);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *size = 0;
 #endif
@@ -615,6 +652,9 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
  */
 int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(size);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *size = 0;
 #endif

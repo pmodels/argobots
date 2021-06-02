@@ -41,6 +41,9 @@
  */
 int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(neweventual);
+
     int abt_errno;
     ABTI_eventual *p_eventual;
     ABTI_CHECK_TRUE(nbytes >= 0, ABT_ERR_INV_ARG);
@@ -95,6 +98,9 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
  */
 int ABT_eventual_free(ABT_eventual *eventual)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(eventual);
+
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(*eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
@@ -102,6 +108,7 @@ int ABT_eventual_free(ABT_eventual *eventual)
      * However, we do not have to unlock it because the entire structure is
      * freed here. */
     ABTD_spinlock_acquire(&p_eventual->lock);
+    ABTI_UB_ASSERT(ABTI_waitlist_is_empty(&p_eventual->waitlist));
 
     if (p_eventual->value)
         ABTU_free(p_eventual->value);
@@ -162,6 +169,8 @@ int ABT_eventual_free(ABT_eventual *eventual)
  */
 int ABT_eventual_wait(ABT_eventual eventual, void **value)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
@@ -235,6 +244,9 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
  */
 int ABT_eventual_test(ABT_eventual eventual, void **value, ABT_bool *is_ready)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(is_ready);
+
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
     ABT_bool flag = ABT_FALSE;
@@ -299,6 +311,9 @@ int ABT_eventual_test(ABT_eventual eventual, void **value, ABT_bool *is_ready)
  */
 int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(value || nbytes <= 0);
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
@@ -358,10 +373,13 @@ int ABT_eventual_set(ABT_eventual eventual, void *value, int nbytes)
  */
 int ABT_eventual_reset(ABT_eventual eventual)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
     ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
 
     ABTD_spinlock_acquire(&p_eventual->lock);
+    ABTI_UB_ASSERT(ABTI_waitlist_is_empty(&p_eventual->waitlist));
     p_eventual->ready = ABT_FALSE;
     ABTD_spinlock_release(&p_eventual->lock);
     return ABT_SUCCESS;

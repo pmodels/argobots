@@ -113,6 +113,11 @@ static inline void ABTI_mutex_lock(ABTI_local **pp_local, ABTI_mutex *p_mutex)
     }
 }
 
+static inline ABT_bool ABTI_mutex_is_locked(ABTI_mutex *p_mutex)
+{
+    return ABTD_spinlock_is_locked(&p_mutex->lock);
+}
+
 static inline int ABTI_mutex_trylock_no_recursion(ABTI_mutex *p_mutex)
 {
     return ABTD_spinlock_try_acquire(&p_mutex->lock) ? ABT_ERR_MUTEX_LOCKED

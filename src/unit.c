@@ -47,6 +47,8 @@ unit_get_thread_from_user_defined_unit(ABTI_global *p_global, ABT_unit unit);
  */
 int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
     ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_INV_UNIT);
@@ -77,6 +79,9 @@ int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool)
  */
 int ABT_unit_get_thread(ABT_unit unit, ABT_thread *thread)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread);
+
     ABTI_global *p_global = ABTI_global_get_global();
     ABTI_CHECK_TRUE(unit != ABT_UNIT_NULL, ABT_ERR_INV_UNIT);
     ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);

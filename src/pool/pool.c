@@ -73,6 +73,15 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
                     ABT_pool *newpool)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newpool);
+    ABTI_UB_ASSERT(def);
+    ABTI_UB_ASSERT(def->u_create_from_thread);
+    ABTI_UB_ASSERT(def->u_free);
+    ABTI_UB_ASSERT(def->p_get_size);
+    ABTI_UB_ASSERT(def->p_push);
+    ABTI_UB_ASSERT(def->p_pop);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newpool to NULL on error. */
     *newpool = ABT_POOL_NULL;
@@ -167,6 +176,10 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
 int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                           ABT_bool automatic, ABT_pool *newpool)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT_BOOL(automatic);
+    ABTI_UB_ASSERT(newpool);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newpool to NULL on error. */
     *newpool = ABT_POOL_NULL;
@@ -210,9 +223,13 @@ int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
  */
 int ABT_pool_free(ABT_pool *pool)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(pool);
+
     ABT_pool h_pool = *pool;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(h_pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_UB_ASSERT(p_pool->p_get_size(h_pool) == 0);
 
     ABTI_pool_free(p_pool);
 
@@ -244,6 +261,9 @@ int ABT_pool_free(ABT_pool *pool)
  */
 int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(access);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
@@ -290,6 +310,9 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
  */
 int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(size);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
@@ -333,6 +356,9 @@ int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
  */
 int ABT_pool_get_size(ABT_pool pool, size_t *size)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(size);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
@@ -387,6 +413,9 @@ int ABT_pool_get_size(ABT_pool pool, size_t *size)
  */
 int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(p_unit);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
@@ -445,6 +474,9 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
  */
 int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(p_unit);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
     ABTI_CHECK_TRUE(p_pool->p_pop_wait, ABT_ERR_POOL);
@@ -509,6 +541,9 @@ int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
  */
 int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(p_unit);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
     ABTI_CHECK_TRUE(p_pool->p_pop_timedwait, ABT_ERR_POOL);
@@ -558,6 +593,8 @@ int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
  */
 int ABT_pool_push(ABT_pool pool, ABT_unit unit)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_global *p_global = ABTI_global_get_global();
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
@@ -616,6 +653,8 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
  */
 int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
     ABTI_CHECK_TRUE(p_pool->p_remove, ABT_ERR_POOL);
@@ -673,6 +712,9 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
 int ABT_pool_print_all(ABT_pool pool, void *arg,
                        void (*print_fn)(void *, ABT_unit))
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(print_fn);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
     ABTI_CHECK_TRUE(p_pool->p_print_all, ABT_ERR_POOL);
@@ -705,6 +747,8 @@ int ABT_pool_print_all(ABT_pool pool, void *arg,
  */
 int ABT_pool_set_data(ABT_pool pool, void *data)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
@@ -738,6 +782,9 @@ int ABT_pool_set_data(ABT_pool pool, void *data)
  */
 int ABT_pool_get_data(ABT_pool pool, void **data)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(data);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
@@ -790,6 +837,8 @@ int ABT_pool_get_data(ABT_pool pool, void **data)
  */
 int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
 
     ABTI_global *p_global;
@@ -804,6 +853,8 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
     /* Mark the scheduler as it is used in pool */
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_CHECK_TRUE(p_sched->used == ABTI_SCHED_NOT_USED, ABT_ERR_INV_SCHED);
+#else
+    ABTI_UB_ASSERT(p_sched->used == ABTI_SCHED_NOT_USED);
 #endif
     p_sched->used = ABTI_SCHED_IN_POOL;
 
@@ -843,6 +894,9 @@ int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched)
  */
 int ABT_pool_get_id(ABT_pool pool, int *id)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(id);
+
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 

@@ -44,6 +44,9 @@
 int ABT_xstream_barrier_create(uint32_t num_waiters,
                                ABT_xstream_barrier *newbarrier)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newbarrier);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newbarrier to NULL on error. */
     *newbarrier = ABT_XSTREAM_BARRIER_NULL;
@@ -100,6 +103,9 @@ int ABT_xstream_barrier_create(uint32_t num_waiters,
  */
 int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(barrier);
+
     ABT_xstream_barrier h_barrier = *barrier;
     ABTI_xstream_barrier *p_barrier = ABTI_xstream_barrier_get_ptr(h_barrier);
     ABTI_CHECK_NULL_XSTREAM_BARRIER_PTR(p_barrier);
@@ -139,6 +145,8 @@ int ABT_xstream_barrier_free(ABT_xstream_barrier *barrier)
  */
 int ABT_xstream_barrier_wait(ABT_xstream_barrier barrier)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_xstream_barrier *p_barrier = ABTI_xstream_barrier_get_ptr(barrier);
     ABTI_CHECK_NULL_XSTREAM_BARRIER_PTR(p_barrier);
 

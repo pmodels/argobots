@@ -28,6 +28,12 @@
 #define ABTI_IS_EXT_THREAD_ENABLED 1
 #endif
 
+#ifdef ABT_CONFIG_DISABLE_UB_ASSERT
+#define ABTI_IS_UB_ASSERT_ENABLED 0
+#else
+#define ABTI_IS_UB_ASSERT_ENABLED 1
+#endif
+
 #include "abtu.h"
 #include "abti_error.h"
 #include "abti_valgrind.h"
@@ -514,6 +520,9 @@ extern ABTI_local_func gp_ABTI_local_func;
 
 /* ES Local Data */
 extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
+
+/* Global information */
+ABT_bool ABTI_initialized(void);
 
 /* Execution Stream (ES) */
 ABTU_ret_err int ABTI_xstream_create_primary(ABTI_global *p_global,

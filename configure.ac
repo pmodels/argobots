@@ -95,14 +95,15 @@ AC_ARG_ENABLE([affinity],
 AC_ARG_ENABLE([debug],
 [  --enable-debug@<:@=OPTS@:>@   control the level of debugging. "OPTS" is a list of
                           comma separated names below. Default is "yes".
-        yes   - add compiler flags, -g -Wall
-        err   - print abt_errno information on standard error
-        log   - print debug event logging
-                (set ABT_USE_LOG to 0 to disable logging)
-        all   - all of the above choices (equal to "yes,err,log")
-        most  - same as "all" but not print logs by default
-                (set ABT_USE_LOG to 1 to enable logging)
-        none  - no debugging, i.e., --disable-debug
+        yes       - add compiler flags, -g -Wall
+        err       - print abt_errno information on standard error
+        log       - print debug event logging
+                    (set ABT_USE_LOG to 0 to disable logging)
+        ub_assert - assert if the runtime detects possible undefined behavior
+        all       - all of the above choices (equal to "yes,err,log,ub_assert")
+        most      - same as "all" but not print logs by default
+                    (set ABT_USE_LOG to 1 to enable logging)
+        none      - no debugging, i.e., --disable-debug
 ],,[enable_debug=none])
 
 # --enable-fast
@@ -336,6 +337,7 @@ debug_flags=no
 debug_log=no
 debug_log_print=no
 debug_err=no
+debug_ub_assert=no
 for option in $enable_debug ; do
     case "$option" in
         yes)
@@ -352,23 +354,29 @@ for option in $enable_debug ; do
             debug_log=yes
             debug_log_print=yes
         ;;
+        ub_assert)
+            debug_ub_assert=yes
+        ;;
         all-discard)
             debug_flags=yes
             debug_log=yes
             debug_log_print=discard
             debug_err=yes
+            debug_ub_assert=yes
         ;;
         all)
             debug_flags=yes
             debug_log=yes
             debug_log_print=yes
             debug_err=yes
+            debug_ub_assert=yes
         ;;
         most)
             debug_flags=yes
             debug_log=yes
             debug_log_print=no
             debug_err=yes
+            debug_ub_assert=yes
         ;;
         err)
             debug_err=yes
@@ -377,6 +385,7 @@ for option in $enable_debug ; do
             debug_err=no
             debug_flags=no
             debug_log=no
+            debug_ub_assert=no
         ;;
         *)
             IFS=$save_IFS
@@ -406,6 +415,9 @@ AS_IF([test "x$debug_log_print" = "xdiscard"],
 AS_IF([test "x$debug_err" = "xyes"],
     [AC_DEFINE(ABT_CONFIG_PRINT_ABT_ERRNO, 1,
         [Define to enable printing abt_errno upon abt call error])])
+AS_IF([test "x$debug_ub_assert" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_UB_ASSERT, 1,
+        [Define to disable undefined-behavior assertion])])
 
 
 # --enable-fast: compiler optimization flags

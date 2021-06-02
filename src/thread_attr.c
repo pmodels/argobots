@@ -49,6 +49,9 @@ static void thread_attr_set_stack(ABTI_global *p_global,
  */
 int ABT_thread_attr_create(ABT_thread_attr *newattr)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newattr);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newattr to NULL on error. */
     *newattr = ABT_THREAD_ATTR_NULL;
@@ -91,6 +94,9 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
  */
 int ABT_thread_attr_free(ABT_thread_attr *attr)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(attr);
+
     ABT_thread_attr h_attr = *attr;
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(h_attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
@@ -152,6 +158,8 @@ int ABT_thread_attr_free(ABT_thread_attr *attr)
 int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
                               size_t stacksize)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
 
@@ -192,6 +200,10 @@ int ABT_thread_attr_set_stack(ABT_thread_attr attr, void *stackaddr,
 int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
                               size_t *stacksize)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(stackaddr);
+    ABTI_UB_ASSERT(stacksize);
+
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
@@ -226,6 +238,8 @@ int ABT_thread_attr_get_stack(ABT_thread_attr attr, void **stackaddr,
  */
 int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_global *p_global;
     ABTI_SETUP_GLOBAL(&p_global);
 
@@ -260,6 +274,9 @@ int ABT_thread_attr_set_stacksize(ABT_thread_attr attr, size_t stacksize)
  */
 int ABT_thread_attr_get_stacksize(ABT_thread_attr attr, size_t *stacksize)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(stacksize);
+
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
 
@@ -306,6 +323,8 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
                                                  void *cb_arg),
                                  void *cb_arg)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);
@@ -348,6 +367,9 @@ int ABT_thread_attr_set_callback(ABT_thread_attr attr,
  */
 int ABT_thread_attr_set_migratable(ABT_thread_attr attr, ABT_bool is_migratable)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT_BOOL(is_migratable);
+
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABTI_thread_attr *p_attr = ABTI_thread_attr_get_ptr(attr);
     ABTI_CHECK_NULL_THREAD_ATTR_PTR(p_attr);

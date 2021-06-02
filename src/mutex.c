@@ -38,6 +38,9 @@
  */
 int ABT_mutex_create(ABT_mutex *newmutex)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newmutex);
+
     /* Check if the size of ABT_mutex_memory is okay. */
     ABTI_STATIC_ASSERT(sizeof(ABTI_mutex) <= sizeof(ABT_mutex_memory));
 
@@ -97,6 +100,9 @@ int ABT_mutex_create(ABT_mutex *newmutex)
  */
 int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newmutex);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newmutex to NULL on error. */
     *newmutex = ABT_MUTEX_NULL;
@@ -144,10 +150,12 @@ int ABT_mutex_create_with_attr(ABT_mutex_attr attr, ABT_mutex *newmutex)
  */
 int ABT_mutex_free(ABT_mutex *mutex)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(mutex);
+
     ABT_mutex h_mutex = *mutex;
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(h_mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
-
     ABTU_free(p_mutex);
 
     /* Return value */
@@ -359,6 +367,14 @@ int ABT_mutex_unlock(ABT_mutex mutex)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+
+    /* Check if a given mutex is legal. */
+    /* p_mutex must be locked. */
+    ABTI_UB_ASSERT(ABTI_mutex_is_locked(p_mutex));
+    /* If p_mutex is recursive, the caller of this function must be an owner. */
+    ABTI_UB_ASSERT(!((p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) &&
+                     p_mutex->owner_id != ABTI_self_get_thread_id(p_local)));
+
     ABTI_mutex_unlock(p_local, p_mutex);
     return ABT_SUCCESS;
 }
@@ -403,6 +419,14 @@ int ABT_mutex_unlock_se(ABT_mutex mutex)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+
+    /* Check if a given mutex is legal. */
+    /* p_mutex must be locked. */
+    ABTI_UB_ASSERT(ABTI_mutex_is_locked(p_mutex));
+    /* If p_mutex is recursive, the caller of this function must be an owner. */
+    ABTI_UB_ASSERT(!((p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) &&
+                     p_mutex->owner_id != ABTI_self_get_thread_id(p_local)));
+
     ABTI_mutex_unlock(p_local, p_mutex);
     return ABT_SUCCESS;
 }
@@ -447,6 +471,14 @@ int ABT_mutex_unlock_de(ABT_mutex mutex)
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
+
+    /* Check if a given mutex is legal. */
+    /* p_mutex must be locked. */
+    ABTI_UB_ASSERT(ABTI_mutex_is_locked(p_mutex));
+    /* If p_mutex is recursive, the caller of this function must be an owner. */
+    ABTI_UB_ASSERT(!((p_mutex->attrs & ABTI_MUTEX_ATTR_RECURSIVE) &&
+                     p_mutex->owner_id != ABTI_self_get_thread_id(p_local)));
+
     ABTI_mutex_unlock(p_local, p_mutex);
     return ABT_SUCCESS;
 }
@@ -480,6 +512,8 @@ int ABT_mutex_unlock_de(ABT_mutex mutex)
  */
 int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
 {
+    ABTI_UB_ASSERT(result);
+
     ABTI_mutex *p_mutex1 = ABTI_mutex_get_ptr(mutex1);
     ABTI_mutex *p_mutex2 = ABTI_mutex_get_ptr(mutex2);
     *result = (p_mutex1 == p_mutex2) ? ABT_TRUE : ABT_FALSE;
@@ -513,6 +547,9 @@ int ABT_mutex_equal(ABT_mutex mutex1, ABT_mutex mutex2, ABT_bool *result)
  */
 int ABT_mutex_get_attr(ABT_mutex mutex, ABT_mutex_attr *attr)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(attr);
+
     ABTI_mutex *p_mutex = ABTI_mutex_get_ptr(mutex);
     ABTI_CHECK_NULL_MUTEX_PTR(p_mutex);
 

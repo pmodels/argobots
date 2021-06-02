@@ -39,6 +39,9 @@
  */
 int ABT_rwlock_create(ABT_rwlock *newrwlock)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(newrwlock);
+
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newrwlock to NULL on error. */
     *newrwlock = ABT_RWLOCK_NULL;
@@ -86,6 +89,9 @@ int ABT_rwlock_create(ABT_rwlock *newrwlock)
  */
 int ABT_rwlock_free(ABT_rwlock *rwlock)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(rwlock);
+
     ABT_rwlock h_rwlock = *rwlock;
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(h_rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
@@ -137,6 +143,8 @@ int ABT_rwlock_free(ABT_rwlock *rwlock)
  */
 int ABT_rwlock_rdlock(ABT_rwlock rwlock)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
@@ -198,6 +206,8 @@ int ABT_rwlock_rdlock(ABT_rwlock rwlock)
  */
 int ABT_rwlock_wrlock(ABT_rwlock rwlock)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
@@ -252,6 +262,8 @@ int ABT_rwlock_wrlock(ABT_rwlock rwlock)
  */
 int ABT_rwlock_unlock(ABT_rwlock rwlock)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_local *p_local = ABTI_local_get_local();
     ABTI_rwlock *p_rwlock = ABTI_rwlock_get_ptr(rwlock);
     ABTI_CHECK_NULL_RWLOCK_PTR(p_rwlock);
@@ -260,6 +272,7 @@ int ABT_rwlock_unlock(ABT_rwlock rwlock)
     if (p_rwlock->write_flag) {
         p_rwlock->write_flag = 0;
     } else {
+        ABTI_UB_ASSERT(p_rwlock->reader_count > 0);
         p_rwlock->reader_count--;
     }
     ABTI_cond_broadcast(p_local, &p_rwlock->cond);
