@@ -515,6 +515,9 @@ extern ABTI_local_func gp_ABTI_local_func;
 /* ES Local Data */
 extern ABTD_XSTREAM_LOCAL ABTI_local *lp_ABTI_local;
 
+/* Global information */
+ABT_bool ABTI_initialized(void);
+
 /* Execution Stream (ES) */
 ABTU_ret_err int ABTI_xstream_create_primary(ABTI_global *p_global,
                                              ABTI_xstream **pp_xstream);

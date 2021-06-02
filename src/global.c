@@ -8,6 +8,7 @@
 /* Must be in a critical section. */
 ABTU_ret_err static int init_library(void);
 ABTU_ret_err static int finailze_library(void);
+static inline ABT_bool is_initialized_library(void);
 
 /** @defgroup ENV Init & Finalize
  * This group is for initialization and finalization of the Argobots
@@ -169,11 +170,21 @@ int ABT_finalize(void)
  */
 int ABT_initialized(void)
 {
-    if (ABTD_atomic_acquire_load_uint32(&g_ABTI_initialized) == 0) {
-        return ABT_ERR_UNINITIALIZED;
-    } else {
+    if (is_initialized_library()) {
         return ABT_SUCCESS;
+    } else {
+        return ABT_ERR_UNINITIALIZED;
     }
+}
+
+/*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
+
+/* This function must be async-signal-safe. */
+ABT_bool ABTI_initialized(void)
+{
+    return is_initialized_library();
 }
 
 /*****************************************************************************/
@@ -348,4 +359,12 @@ ABTU_ret_err static int finailze_library(void)
     ABTI_global_set_global(NULL);
     ABTD_atomic_release_store_uint32(&g_ABTI_initialized, 0);
     return ABT_SUCCESS;
+}
+
+/* This function must be async-signal-safe. */
+static inline ABT_bool is_initialized_library(void)
+{
+    return (ABTD_atomic_acquire_load_uint32(&g_ABTI_initialized) != 0)
+               ? ABT_TRUE
+               : ABT_FALSE;
 }
