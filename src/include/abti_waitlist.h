@@ -282,7 +282,7 @@ static inline void ABTI_waitlist_broadcast(ABTI_local *p_local,
 
 static inline ABT_bool ABTI_waitlist_is_empty(ABTI_waitlist *p_waitlist)
 {
-    return p_waitlist->p_head ? ABT_TRUE : ABT_FALSE;
+    return p_waitlist->p_head ? ABT_FALSE : ABT_TRUE;
 }
 
 #endif /* ABTI_WAITLIST_H_INCLUDED */
