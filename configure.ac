@@ -282,22 +282,18 @@ AC_CANONICAL_HOST
 fctx_arch_bin=""
 AS_CASE([$host_cpu],
     [i?86],   [AS_CASE([$host_os],
-              [linux*],  [fctx_arch_bin="i386_sysv_elf_gas"],
-              [darwin*], [fctx_arch_bin="i386_sysv_macho_gas"],
+              [linux*],   [fctx_arch_bin="i386_sysv_elf_gas"],
               [freebsd*], [fctx_arch_bin="i386_sysv_elf_gas"])],
     [x86_64], [AS_CASE([$host_os],
-              [linux*],  [fctx_arch_bin="x86_64_sysv_elf_gas"],
-              [darwin*], [fctx_arch_bin="x86_64_sysv_macho_gas"],
+              [linux*],   [fctx_arch_bin="x86_64_sysv_elf_gas"],
+              [darwin*],  [fctx_arch_bin="x86_64_sysv_macho_gas"],
               [freebsd*], [fctx_arch_bin="x86_64_sysv_elf_gas"])],
-    [p*pc32], [AS_CASE([$host_os],
-              [linux*],  [fctx_arch_bin="ppc32_sysv_elf_gas"],
-              [darwin*], [fctx_arch_bin="ppc32_sysv_macho_gas"])],
     [p*pc64*], [AS_CASE([$host_os],
-              [linux*],  [fctx_arch_bin="ppc64_sysv_elf_gas"],
-              [darwin*], [fctx_arch_bin="ppc64_sysv_macho_gas"])],
+              [linux*],   [fctx_arch_bin="ppc64_sysv_elf_gas"],
+              [freebsd*], [fctx_arch_bin="ppc64_sysv_elf_gas"])],
     [aarch64],[AS_CASE([$host_os],
-              [linux*],  [fctx_arch_bin="arm64_aapcs_elf_gas"],
-              [darwin*], [fctx_arch_bin="arm64_aapcs_macho_gas"])])
+              [linux*],   [fctx_arch_bin="arm64_aapcs_elf_gas"],
+              [darwin*],  [fctx_arch_bin="arm64_aapcs_macho_gas"])])
 AC_SUBST([fctx_arch_bin])
 AM_SUBST_NOTMAKE([fctx_arch_bin])
 # check the pointer size
