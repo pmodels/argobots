@@ -31,16 +31,18 @@
  *                                                                                      *
  ****************************************************************************************/
 
+#include "abt_config.h"
+
 .text
-.globl make_fcontext
-.type make_fcontext,@function
-.align 16
-make_fcontext:
+.globl _make_fcontext
+.align 8
+_make_fcontext:
     /* first arg of make_fcontext() == top of context-stack */
     movq  %rdi, %rax
 
     /* shift address in RAX to lower 16 byte boundary */
-    andq  $-16, %rax
+    movabs  $-16,           %r8
+    andq    %r8,            %rax
 
     /* reserve space for context-data on context-stack */
     /* size for fc_mxcsr .. RIP + return-address for context-function */
@@ -67,13 +69,98 @@ finish:
     /* exit code is zero */
     xorq  %rdi, %rdi
     /* exit application */
-    call  _exit@PLT
+    call  __exit
     hlt
-.size make_fcontext,.-make_fcontext
 
-/* Mark that we don't need executable stack. */
-#ifndef __SUNPRO_C
-.section .note.GNU-stack,"",%progbits
-#else
-/* Solaris assembler does not recognize it.  Let's ignore so far. */
+
+.text
+.globl _jump_fcontext
+.align 8
+_jump_fcontext:
+    pushq  %rbp  /* save RBP */
+    pushq  %rbx  /* save RBX */
+    pushq  %r15  /* save R15 */
+    pushq  %r14  /* save R14 */
+    pushq  %r13  /* save R13 */
+    pushq  %r12  /* save R12 */
+
+    /* prepare stack for FPU */
+    leaq  -0x8(%rsp), %rsp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* save MMX control- and status-word */
+    stmxcsr  (%rsp)
+    /* save x87 control-word */
+    fnstcw   0x4(%rsp)
 #endif
+
+    /* store RSP (pointing to context-data) in RDI */
+    movq  %rsp, (%rdi)
+
+    /* restore RSP (pointing to context-data) from RSI */
+    movq  %rsi, %rsp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* restore MMX control- and status-word */
+    ldmxcsr  (%rsp)
+    /* restore x87 control-word */
+    fldcw  0x4(%rsp)
+#endif
+
+    /* prepare stack for FPU */
+    leaq  0x8(%rsp), %rsp
+
+    popq  %r12  /* restrore R12 */
+    popq  %r13  /* restrore R13 */
+    popq  %r14  /* restrore R14 */
+    popq  %r15  /* restrore R15 */
+    popq  %rbx  /* restrore RBX */
+    popq  %rbp  /* restrore RBP */
+
+    /* restore return-address */
+    popq  %r8
+
+    /* use third arg as return-value after jump */
+    /* movq  %rdx, %rax */
+    /* use third arg as first arg in context function */
+    movq  %rdx, %rdi
+
+    /* indirect jump to context */
+    jmp  *%r8
+
+
+.text
+.globl _take_fcontext
+.align 8
+_take_fcontext:
+    /* restore RSP (pointing to context-data) from RSI */
+    movq  %rsi, %rsp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* restore MMX control- and status-word */
+    ldmxcsr  (%rsp)
+    /* restore x87 control-word */
+    fldcw  0x4(%rsp)
+#endif
+
+    /* prepare stack for FPU */
+    leaq  0x8(%rsp), %rsp
+
+    popq  %r12  /* restrore R12 */
+    popq  %r13  /* restrore R13 */
+    popq  %r14  /* restrore R14 */
+    popq  %r15  /* restrore R15 */
+    popq  %rbx  /* restrore RBX */
+    popq  %rbp  /* restrore RBP */
+
+    /* restore return-address */
+    popq  %r8
+
+    /* use third arg as return-value after jump */
+    /* movq  %rdx, %rax */
+    /* use third arg as first arg in context function */
+    movq  %rdx, %rdi
+
+    /* indirect jump to context */
+    jmp  *%r8
+
