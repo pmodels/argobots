@@ -1181,11 +1181,9 @@ int ABT_thread_yield_to(ABT_thread thread)
     /* Switch the context */
     ABTD_atomic_release_store_int(&p_tar_ythread->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread *p_prev =
-        ABTI_ythread_context_switch_to_sibling(&p_local_xstream, p_cur_ythread,
-                                               p_tar_ythread);
-    ABTI_tool_event_thread_run(p_local_xstream, &p_cur_ythread->thread,
-                               &p_prev->thread, p_cur_ythread->thread.p_parent);
+    ABTI_ythread_switch_to_sibling(&p_local_xstream, p_cur_ythread,
+                                   p_tar_ythread, ABT_SYNC_EVENT_TYPE_USER,
+                                   NULL);
     return ABT_SUCCESS;
 }
 
@@ -2370,12 +2368,9 @@ ABTU_ret_err int ABTI_thread_revive(ABTI_global *p_global, ABTI_local *p_local,
     p_thread->p_parent = NULL;
 
     ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-
     if (p_ythread) {
         /* Create a ULT context */
-        void *p_stack = ABTD_ythread_context_get_stack(&p_ythread->ctx);
-        size_t stacksize = ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
-        ABTD_ythread_context_create(NULL, stacksize, p_stack, &p_ythread->ctx);
+        ABTD_ythread_context_reinit(&p_ythread->ctx);
     }
 
     /* Invoke a thread revive event. */
@@ -2744,26 +2739,6 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
 #endif
     }
 
-    if (thread_type & (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_ROOT)) {
-        if (ABTD_ythread_context_get_stack(&p_newthread->ctx) == NULL) {
-            /* We don't need to initialize the context if a thread will run on
-             * OS-level threads. Invalidate the context here. */
-            ABTD_ythread_context_invalidate(&p_newthread->ctx);
-        } else {
-            /* Create the context. */
-            size_t stack_size =
-                ABTD_ythread_context_get_stacksize(&p_newthread->ctx);
-            void *p_stack = ABTD_ythread_context_get_stack(&p_newthread->ctx);
-            ABTD_ythread_context_create(NULL, stack_size, p_stack,
-                                        &p_newthread->ctx);
-        }
-    } else {
-        size_t stack_size =
-            ABTD_ythread_context_get_stacksize(&p_newthread->ctx);
-        void *p_stack = ABTD_ythread_context_get_stack(&p_newthread->ctx);
-        ABTD_ythread_context_create(NULL, stack_size, p_stack,
-                                    &p_newthread->ctx);
-    }
     p_newthread->thread.f_thread = thread_func;
     p_newthread->thread.p_arg = arg;
 
@@ -3096,8 +3071,8 @@ static void thread_root_func(void *arg)
 
     if (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         /* Let us jump back to the primary thread (then finalize Argobots) */
-        ABTD_ythread_finish_context(&p_root_ythread->ctx,
-                                    &p_global->p_primary_ythread->ctx);
+        ABTI_ythread_jump_to_primary(p_local_xstream, p_root_ythread,
+                                     p_global->p_primary_ythread);
     }
 }
 

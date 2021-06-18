@@ -132,128 +132,265 @@
 
 #include "abt_config.h"
 
-
-.globl make_fcontext
+/*
+fcontext_t *switch_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+*/
+.globl switch_fcontext
 #if _CALL_ELF == 2
     .text
     .align 2
-make_fcontext:
-    addis   %r2, %r12, .TOC.-make_fcontext@ha
-    addi    %r2, %r2, .TOC.-make_fcontext@l
-    .localentry make_fcontext, . - make_fcontext
+switch_fcontext:
+        addis   %r2, %r12, .TOC.-switch_fcontext@ha
+        addi    %r2, %r2, .TOC.-switch_fcontext@l
+        .localentry switch_fcontext, . - switch_fcontext
 #else
     .section ".opd","aw"
     .align 3
-make_fcontext:
+switch_fcontext:
 # ifdef _CALL_LINUX
-    .quad   .L.make_fcontext,.TOC.@tocbase,0
-    .type   make_fcontext,@function
-    .text
-    .align 2
-.L.make_fcontext:
+        .quad   .L.switch_fcontext,.TOC.@tocbase,0
+        .type   switch_fcontext,@function
+        .text
+        .align 2
+.L.switch_fcontext:
 # else
-    .hidden .make_fcontext
-    .globl  .make_fcontext
-    .quad   .make_fcontext,.TOC.@tocbase,0
-    .size   make_fcontext,24
-    .type   .make_fcontext,@function
-    .text
-    .align 2
-.make_fcontext:
+        .hidden .switch_fcontext
+        .globl  .switch_fcontext
+        .quad   .switch_fcontext,.TOC.@tocbase,0
+        .size   switch_fcontext,24
+        .type   .switch_fcontext,@function
+        .text
+        .align 2
+.switch_fcontext:
 # endif
 #endif
-    # save return address into R6
-    mflr  %r6
-
-    # first arg of make_fcontext() == top address of context-stack
-    # shift address in R3 to lower 16 byte boundary
-    clrrdi  %r3, %r3, 4
-
-    # reserve space for context-data on context-stack
-    # including 64 byte of linkage + parameter area (R1 % 16 == 0)
-    subi  %r3, %r3, 592
-
-    # third arg of make_fcontext() == address of context-function
-    # entry point (ELFv2) or descriptor (ELFv1)
-#if _CALL_ELF == 2
-    # save address of context-function entry point
-    std  %r5, 520(%r3)
-#else
-    # save address of context-function entry point
-    ld   %r4, 0(%r5)
-    std  %r4, 520(%r3)
-    # save TOC of context-function
-    ld   %r4, 8(%r5)
-    std  %r4, 496(%r3)
+    /* reserve space on stack */
+    subi  %r1, %r1, 528
+    /* save R14 - R31 */
+    std  %r14, 352(%r1)
+    std  %r15, 360(%r1)
+    std  %r16, 368(%r1)
+    std  %r17, 376(%r1)
+    std  %r18, 384(%r1)
+    std  %r19, 392(%r1)
+    std  %r20, 400(%r1)
+    std  %r21, 408(%r1)
+    std  %r22, 416(%r1)
+    std  %r23, 424(%r1)
+    std  %r24, 432(%r1)
+    std  %r25, 440(%r1)
+    std  %r26, 448(%r1)
+    std  %r27, 456(%r1)
+    std  %r28, 464(%r1)
+    std  %r29, 472(%r1)
+    std  %r30, 480(%r1)
+    std  %r31, 488(%r1)
+#if _CALL_ELF != 2
+    /* save TOC */
+    std  %r2,  496(%r1)  # save TOC
 #endif
+
+    /* save CR */
+    mfcr  %r0
+    std  %r0, 504(%r1)
+    /* save LR */
+    mflr  %r0
+    std  %r0, 512(%r1)
+    /* save LR as PC */
+    std  %r0, 520(%r1)
 
 #if ABTD_FCONTEXT_PRESERVE_FPU
+    /* save F14 - F32 */
+    stfd  %f14, 0(%r1)
+    stfd  %f15, 8(%r1)
+    stfd  %f16, 16(%r1)
+    stfd  %f17, 24(%r1)
+    stfd  %f18, 32(%r1)
+    stfd  %f19, 40(%r1)
+    stfd  %f20, 48(%r1)
+    stfd  %f21, 56(%r1)
+    stfd  %f22, 64(%r1)
+    stfd  %f23, 72(%r1)
+    stfd  %f24, 80(%r1)
+    stfd  %f25, 88(%r1)
+    stfd  %f26, 96(%r1)
+    stfd  %f27, 104(%r1)
+    stfd  %f28, 112(%r1)
+    stfd  %f29, 120(%r1)
+    stfd  %f30, 128(%r1)
+    stfd  %f31, 136(%r1)
 #ifdef __VSX__
-    # VSCR can be loaded only to Vn.  To store VSCR as it is a vector, it must
-    # be written before saving FPSCR.
-    mfvscr %v19           # load VSCR
+    /* VSCR can be loaded only to Vn.  To store VSCR as it is a vector, */
+    /* it must be written before saving FPSCR. */
+    /* load VSCR. */
+    mfvscr %v19
     li    %r10, 144
-    stvx  %v19, %r10, %r3 # save VSCR.  Only the last 32 bits are used
+    /* save VSCR.  Only the last 32 bits are used */
+    stvx  %v19, %r10, %r1
 #endif
-    mffs  %f0  # load FPSCR
-    stfd  %f0, 144(%r3)  # save FPSCR
+    /* load FPSCR */
+    mffs  %f0
+    /* save FPSCR */
+    stfd  %f0, 144(%r1)
+#ifdef __VSX__
+    /* OpenPOWER saves V20 - V31 (vector units) */
+    /* Note stvx cannot take an immediate value as an offset. */
+    li    %r14, 160
+    stvx  %v20, %r14, %r1
+    li    %r15, 176
+    stvx  %v21, %r15, %r1
+    li    %r16, 192
+    stvx  %v22, %r16, %r1
+    li    %r17, 208
+    stvx  %v23, %r17, %r1
+    li    %r18, 224
+    stvx  %v24, %r18, %r1
+    li    %r19, 240
+    stvx  %v25, %r19, %r1
+    li    %r20, 256
+    stvx  %v26, %r20, %r1
+    li    %r21, 272
+    stvx  %v27, %r21, %r1
+    li    %r22, 288
+    stvx  %v28, %r22, %r1
+    li    %r23, 304
+    stvx  %v29, %r23, %r1
+    li    %r24, 320
+    stvx  %v30, %r24, %r1
+    li    %r25, 336
+    stvx  %v31, %r25, %r1
+#endif
 #endif
 
-    # load LR
-    mflr  %r0
-    # jump to label 1
-    bl  1f
-1:
-    # load LR into R4
-    mflr  %r4
-    # compute abs address of label finish
-    addi  %r4, %r4, finish - 1b
-    # restore LR
+    /* store RSP (pointing to context-data) in p_old_ctx (R4) */
+    std  %r1, 0(%r4)
+
+    /* restore RSP (pointing to context-data) from p_new_ctx (R3) */
+    ld   %r1, 0(%r3)
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* restore F14 - F31 */
+    lfd  %f14, 0(%r1)
+    lfd  %f15, 8(%r1)
+    lfd  %f16, 16(%r1)
+    lfd  %f17, 24(%r1)
+    lfd  %f18, 32(%r1)
+    lfd  %f19, 40(%r1)
+    lfd  %f20, 48(%r1)
+    lfd  %f21, 56(%r1)
+    lfd  %f22, 64(%r1)
+    lfd  %f23, 72(%r1)
+    lfd  %f24, 80(%r1)
+    lfd  %f25, 88(%r1)
+    lfd  %f26, 96(%r1)
+    lfd  %f27, 104(%r1)
+    lfd  %f28, 112(%r1)
+    lfd  %f29, 120(%r1)
+    lfd  %f30, 128(%r1)
+    lfd  %f31, 136(%r1)
+    /* restore FPSCR */
+    lfd  %f0,  144(%r1)
+    mtfsf  0xff, %f0
+#ifdef __VSX__
+    li    %r10, 144
+    /* Restore VSCR.  Only the last 32 bits are used */
+    lvx   %v19, %r10, %r1
+    mtvscr %v19
+    /* restore V20 - V21 */
+    li    %r14, 160
+    lvx  %v20, %r14, %r1
+    li    %r15, 176
+    lvx  %v21, %r15, %r1
+    li    %r16, 192
+    lvx  %v22, %r16, %r1
+    li    %r17, 208
+    lvx  %v23, %r17, %r1
+    li    %r18, 224
+    lvx  %v24, %r18, %r1
+    li    %r19, 240
+    lvx  %v25, %r19, %r1
+    li    %r20, 256
+    lvx  %v26, %r20, %r1
+    li    %r21, 272
+    lvx  %v27, %r21, %r1
+    li    %r22, 288
+    lvx  %v28, %r22, %r1
+    li    %r23, 304
+    lvx  %v29, %r23, %r1
+    li    %r24, 320
+    lvx  %v30, %r24, %r1
+    li    %r25, 336
+    lvx  %v31, %r25, %r1
+#endif
+#endif
+    /* restore R14 - R31 */
+    ld  %r14, 352(%r1)
+    ld  %r15, 360(%r1)
+    ld  %r16, 368(%r1)
+    ld  %r17, 376(%r1)
+    ld  %r18, 384(%r1)
+    ld  %r19, 392(%r1)
+    ld  %r20, 400(%r1)
+    ld  %r21, 408(%r1)
+    ld  %r22, 416(%r1)
+    ld  %r23, 424(%r1)
+    ld  %r24, 432(%r1)
+    ld  %r25, 440(%r1)
+    ld  %r26, 448(%r1)
+    ld  %r27, 456(%r1)
+    ld  %r28, 464(%r1)
+    ld  %r29, 472(%r1)
+    ld  %r30, 480(%r1)
+    ld  %r31, 488(%r1)
+#if _CALL_ELF != 2
+    /* restore TOC */
+    ld  %r2,  496(%r1)
+#endif
+
+    /* restore CR */
+    ld  %r0, 504(%r1)
+    mtcr  %r0
+    /* restore LR */
+    ld  %r0, 512(%r1)
     mtlr  %r0
-    # save address of finish as return-address for context-function
-    # will be entered after context-function returns
-    std  %r4, 512(%r3)
 
-    # restore return address from R6
-    mtlr  %r6
+    /* load PC */
+    ld  %r12, 520(%r1)
+    /* restore CTR */
+    mtctr  %r12
 
-    blr  # return pointer to context-data
+    /* adjust stack */
+    addi  %r1, %r1, 528
 
-finish:
-    # save return address into R0
-    mflr  %r0
-    # save return address on stack, set up stack frame
-    std  %r0, 8(%r1)
-    # allocate stack space, R1 % 16 == 0
-    stdu  %r1, -32(%r1)
+    /* use p_old_ctx (R4) as a return value (R3) after jump */
+    mr  %r3, %r4
 
-    # exit code is zero
-    li  %r3, 0
-    # exit application
-    bl  _exit
-    nop
+    /* jump to context */
+    bctr
 #if _CALL_ELF == 2
-    .size make_fcontext, .-make_fcontext
+    .size switch_fcontext, .-switch_fcontext
 #else
 # ifdef _CALL_LINUX
-    .size .make_fcontext, .-.L.make_fcontext
+    .size .switch_fcontext, .-.L.switch_fcontext
 # else
-    .size .make_fcontext, .-.make_fcontext
+    .size .switch_fcontext, .-.switch_fcontext
 # endif
 #endif
 
-
+/*
+void jump_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+*/
 .globl jump_fcontext
 #if _CALL_ELF == 2
-	.text
-	.align 2
+    .text
+    .align 2
 jump_fcontext:
         addis   %r2, %r12, .TOC.-jump_fcontext@ha
         addi    %r2, %r2, .TOC.-jump_fcontext@l
         .localentry jump_fcontext, . - jump_fcontext
 #else
-	.section ".opd","aw"
-	.align 3
+    .section ".opd","aw"
+    .align 3
 jump_fcontext:
 # ifdef _CALL_LINUX
         .quad   .L.jump_fcontext,.TOC.@tocbase,0
@@ -272,344 +409,424 @@ jump_fcontext:
 .jump_fcontext:
 # endif
 #endif
-    # reserve space on stack
-    subi  %r1, %r1, 528
-
-    std  %r14, 352(%r1)  # save R14
-    std  %r15, 360(%r1)  # save R15
-    std  %r16, 368(%r1)  # save R16
-    std  %r17, 376(%r1)  # save R17
-    std  %r18, 384(%r1)  # save R18
-    std  %r19, 392(%r1)  # save R19
-    std  %r20, 400(%r1)  # save R20
-    std  %r21, 408(%r1)  # save R21
-    std  %r22, 416(%r1)  # save R22
-    std  %r23, 424(%r1)  # save R23
-    std  %r24, 432(%r1)  # save R24
-    std  %r25, 440(%r1)  # save R25
-    std  %r26, 448(%r1)  # save R26
-    std  %r27, 456(%r1)  # save R27
-    std  %r28, 464(%r1)  # save R28
-    std  %r29, 472(%r1)  # save R29
-    std  %r30, 480(%r1)  # save R30
-    std  %r31, 488(%r1)  # save R31
-#if _CALL_ELF != 2
-    std  %r2,  496(%r1)  # save TOC
-#endif
-
-    # save CR
-    mfcr  %r0
-    std  %r0, 504(%r1)
-    # save LR
-    mflr  %r0
-    std  %r0, 512(%r1)
-    # save LR as PC
-    std  %r0, 520(%r1)
+    /* restore RSP (pointing to context-data) from p_new_ctx (R3) */
+    ld  %r1, 0(%r3)
 
 #if ABTD_FCONTEXT_PRESERVE_FPU
-    stfd  %f14, 0(%r1)  # save F14
-    stfd  %f15, 8(%r1)  # save F15
-    stfd  %f16, 16(%r1)  # save F16
-    stfd  %f17, 24(%r1)  # save F17
-    stfd  %f18, 32(%r1)  # save F18
-    stfd  %f19, 40(%r1)  # save F19
-    stfd  %f20, 48(%r1)  # save F20
-    stfd  %f21, 56(%r1)  # save F21
-    stfd  %f22, 64(%r1)  # save F22
-    stfd  %f23, 72(%r1)  # save F23
-    stfd  %f24, 80(%r1)  # save F24
-    stfd  %f25, 88(%r1)  # save F25
-    stfd  %f26, 96(%r1)  # save F26
-    stfd  %f27, 104(%r1)  # save F27
-    stfd  %f28, 112(%r1)  # save F28
-    stfd  %f29, 120(%r1)  # save F29
-    stfd  %f30, 128(%r1)  # save F30
-    stfd  %f31, 136(%r1)  # save F31
-#ifdef __VSX__
-    # VSCR can be loaded only to Vn.  To store VSCR as it is a vector, it must
-    # be written before saving FPSCR.
-    mfvscr %v19           # load VSCR
-    li    %r10, 144
-    stvx  %v19, %r10, %r1 # save VSCR.  Only the last 32 bits are used
-#endif
-    mffs  %f0  # load FPSCR
-    stfd  %f0, 144(%r1)  # save FPSCR
-#ifdef __VSX__
-    # OpenPOWER saves V20-V31 (vector units)
-    # note stvx cannot take an immediate value as an offset.
-    li    %r14, 160
-    stvx  %v20, %r14, %r1  # save V20
-    li    %r15, 176
-    stvx  %v21, %r15, %r1  # save V21
-    li    %r16, 192
-    stvx  %v22, %r16, %r1  # save V22
-    li    %r17, 208
-    stvx  %v23, %r17, %r1  # save V23
-    li    %r18, 224
-    stvx  %v24, %r18, %r1  # save V24
-    li    %r19, 240
-    stvx  %v25, %r19, %r1  # save V25
-    li    %r20, 256
-    stvx  %v26, %r20, %r1  # save V26
-    li    %r21, 272
-    stvx  %v27, %r21, %r1  # save V27
-    li    %r22, 288
-    stvx  %v28, %r22, %r1  # save V28
-    li    %r23, 304
-    stvx  %v29, %r23, %r1  # save V29
-    li    %r24, 320
-    stvx  %v30, %r24, %r1  # save V30
-    li    %r25, 336
-    stvx  %v31, %r25, %r1  # save V31
-#endif
-#endif
-
-    # store RSP (pointing to context-data) in R3
-    std  %r1, 0(%r3)
-
-    # restore RSP (pointing to context-data) from R4
-    mr  %r1, %r4
-
-#if ABTD_FCONTEXT_PRESERVE_FPU
-    lfd  %f14, 0(%r1)  # restore F14
-    lfd  %f15, 8(%r1)  # restore F15
-    lfd  %f16, 16(%r1)  # restore F16
-    lfd  %f17, 24(%r1)  # restore F17
-    lfd  %f18, 32(%r1)  # restore F18
-    lfd  %f19, 40(%r1)  # restore F19
-    lfd  %f20, 48(%r1)  # restore F20
-    lfd  %f21, 56(%r1)  # restore F21
-    lfd  %f22, 64(%r1)  # restore F22
-    lfd  %f23, 72(%r1)  # restore F23
-    lfd  %f24, 80(%r1)  # restore F24
-    lfd  %f25, 88(%r1)  # restore F25
-    lfd  %f26, 96(%r1)  # restore F26
-    lfd  %f27, 104(%r1)  # restore F27
-    lfd  %f28, 112(%r1)  # restore F28
-    lfd  %f29, 120(%r1)  # restore F29
-    lfd  %f30, 128(%r1)  # restore F30
-    lfd  %f31, 136(%r1)  # restore F31
-    lfd  %f0,  144(%r1)  # load FPSCR
-    mtfsf  0xff, %f0  # restore FPSCR
+    /* restore F14 - F31 */
+    lfd  %f14, 0(%r1)
+    lfd  %f15, 8(%r1)
+    lfd  %f16, 16(%r1)
+    lfd  %f17, 24(%r1)
+    lfd  %f18, 32(%r1)
+    lfd  %f19, 40(%r1)
+    lfd  %f20, 48(%r1)
+    lfd  %f21, 56(%r1)
+    lfd  %f22, 64(%r1)
+    lfd  %f23, 72(%r1)
+    lfd  %f24, 80(%r1)
+    lfd  %f25, 88(%r1)
+    lfd  %f26, 96(%r1)
+    lfd  %f27, 104(%r1)
+    lfd  %f28, 112(%r1)
+    lfd  %f29, 120(%r1)
+    lfd  %f30, 128(%r1)
+    lfd  %f31, 136(%r1)
+    /* restore FPSCR */
+    lfd  %f0,  144(%r1)
+    mtfsf  0xff, %f0
 #ifdef __VSX__
     li    %r10, 144
-    lvx   %v19, %r10, %r1 # load VSCR
-    mtvscr %v19           # restore VSCR.  Only the last 32 bits are used
+    /* Restore VSCR.  Only the last 32 bits are used */
+    lvx   %v19, %r10, %r1
+    mtvscr %v19
+    /* restore V20 - V21 */
     li    %r14, 160
-    lvx  %v20, %r14, %r1  # restore V20
+    lvx  %v20, %r14, %r1
     li    %r15, 176
-    lvx  %v21, %r15, %r1  # restore V21
+    lvx  %v21, %r15, %r1
     li    %r16, 192
-    lvx  %v22, %r16, %r1  # restore V22
+    lvx  %v22, %r16, %r1
     li    %r17, 208
-    lvx  %v23, %r17, %r1  # restore V23
+    lvx  %v23, %r17, %r1
     li    %r18, 224
-    lvx  %v24, %r18, %r1  # restore V24
+    lvx  %v24, %r18, %r1
     li    %r19, 240
-    lvx  %v25, %r19, %r1  # restore V25
+    lvx  %v25, %r19, %r1
     li    %r20, 256
-    lvx  %v26, %r20, %r1  # restore V26
+    lvx  %v26, %r20, %r1
     li    %r21, 272
-    lvx  %v27, %r21, %r1  # restore V27
+    lvx  %v27, %r21, %r1
     li    %r22, 288
-    lvx  %v28, %r22, %r1  # restore V28
+    lvx  %v28, %r22, %r1
     li    %r23, 304
-    lvx  %v29, %r23, %r1  # restore V29
+    lvx  %v29, %r23, %r1
     li    %r24, 320
-    lvx  %v30, %r24, %r1  # restore V30
+    lvx  %v30, %r24, %r1
     li    %r25, 336
-    lvx  %v31, %r25, %r1  # restore V31
+    lvx  %v31, %r25, %r1
 #endif
 #endif
-
-    ld  %r14, 352(%r1)  # restore R14
-    ld  %r15, 360(%r1)  # restore R15
-    ld  %r16, 368(%r1)  # restore R16
-    ld  %r17, 376(%r1)  # restore R17
-    ld  %r18, 384(%r1)  # restore R18
-    ld  %r19, 392(%r1)  # restore R19
-    ld  %r20, 400(%r1)  # restore R20
-    ld  %r21, 408(%r1)  # restore R21
-    ld  %r22, 416(%r1)  # restore R22
-    ld  %r23, 424(%r1)  # restore R23
-    ld  %r24, 432(%r1)  # restore R24
-    ld  %r25, 440(%r1)  # restore R25
-    ld  %r26, 448(%r1)  # restore R26
-    ld  %r27, 456(%r1)  # restore R27
-    ld  %r28, 464(%r1)  # restore R28
-    ld  %r29, 472(%r1)  # restore R29
-    ld  %r30, 480(%r1)  # restore R30
-    ld  %r31, 488(%r1)  # restore R31
+    /* restore R14 - R31 */
+    ld  %r14, 352(%r1)
+    ld  %r15, 360(%r1)
+    ld  %r16, 368(%r1)
+    ld  %r17, 376(%r1)
+    ld  %r18, 384(%r1)
+    ld  %r19, 392(%r1)
+    ld  %r20, 400(%r1)
+    ld  %r21, 408(%r1)
+    ld  %r22, 416(%r1)
+    ld  %r23, 424(%r1)
+    ld  %r24, 432(%r1)
+    ld  %r25, 440(%r1)
+    ld  %r26, 448(%r1)
+    ld  %r27, 456(%r1)
+    ld  %r28, 464(%r1)
+    ld  %r29, 472(%r1)
+    ld  %r30, 480(%r1)
+    ld  %r31, 488(%r1)
 #if _CALL_ELF != 2
-    ld  %r2,  496(%r1)  # restore TOC
+    /* restore TOC */
+    ld  %r2,  496(%r1)
 #endif
 
-    # restore CR
+    /* restore CR */
     ld  %r0, 504(%r1)
     mtcr  %r0
-    # restore LR
+    /* restore LR */
     ld  %r0, 512(%r1)
     mtlr  %r0
 
-    # load PC
+    /* load PC */
     ld  %r12, 520(%r1)
-    # restore CTR
+    /* restore CTR */
     mtctr  %r12
 
-    # adjust stack
+    /* adjust stack */
     addi  %r1, %r1, 528
 
-    # use third arg as return value after jump
-    # use third arg as first arg in context function
-    mr  %r3, %r5
+    /* use p_old_ctx (R4) as a return value (R3) after jump */
+    mr  %r3, %r4
 
-    # jump to context
+    /* jump to context */
     bctr
 #if _CALL_ELF == 2
-	.size jump_fcontext, .-jump_fcontext
+    .size jump_fcontext, .-jump_fcontext
 #else
 # ifdef _CALL_LINUX
-	.size .jump_fcontext, .-.L.jump_fcontext
+    .size .jump_fcontext, .-.L.jump_fcontext
 # else
-	.size .jump_fcontext, .-.jump_fcontext
+    .size .jump_fcontext, .-.jump_fcontext
 # endif
 #endif
 
 
-.globl take_fcontext
+/*
+fcontext_t *init_and_switch_fcontext(fcontext_t *p_new_ctx,
+                                     void (*f_thread)(fcontext_t *),
+                                     void *p_stacktop, fcontext_t *p_old_ctx);
+*/
+.globl init_and_switch_fcontext
 #if _CALL_ELF == 2
     .text
     .align 2
-take_fcontext:
-        addis   %r2, %r12, .TOC.-take_fcontext@ha
-        addi    %r2, %r2, .TOC.-take_fcontext@l
-        .localentry take_fcontext, . - take_fcontext
+init_and_switch_fcontext:
+        addis   %r2, %r12, .TOC.-init_and_switch_fcontext@ha
+        addi    %r2, %r2, .TOC.-init_and_switch_fcontext@l
+        .localentry init_and_switch_fcontext, . - init_and_switch_fcontext
 #else
     .section ".opd","aw"
     .align 3
-take_fcontext:
+init_and_switch_fcontext:
 # ifdef _CALL_LINUX
-        .quad   .L.take_fcontext,.TOC.@tocbase,0
-        .type   take_fcontext,@function
+        .quad   .L.init_and_switch_fcontext,.TOC.@tocbase,0
+        .type   init_and_switch_fcontext,@function
         .text
         .align 2
-.L.take_fcontext:
+.L.init_and_switch_fcontext:
 # else
-        .hidden .take_fcontext
-        .globl  .take_fcontext
-        .quad   .take_fcontext,.TOC.@tocbase,0
-        .size   take_fcontext,24
-        .type   .take_fcontext,@function
+        .hidden .init_and_switch_fcontext
+        .globl  .init_and_switch_fcontext
+        .quad   .init_and_switch_fcontext,.TOC.@tocbase,0
+        .size   init_and_switch_fcontext,24
+        .type   .init_and_switch_fcontext,@function
         .text
         .align 2
-.take_fcontext:
+.init_and_switch_fcontext:
 # endif
 #endif
-    # restore RSP (pointing to context-data) from R4
-    mr  %r1, %r4
+    /* shift address in p_stacktop (R5) to lower 16 byte boundary */
+    clrrdi  %r5, %r5, 4
+
+    /* save TOC in the target stack (p_stacktop, R5) */
+    /* TOC must be saved when an external function is called. */
+    std  %r2, -24(%r5)
+
+    /* reserve space on stack */
+    subi  %r1, %r1, 528
+    /* save R14 - R31 */
+    std  %r14, 352(%r1)
+    std  %r15, 360(%r1)
+    std  %r16, 368(%r1)
+    std  %r17, 376(%r1)
+    std  %r18, 384(%r1)
+    std  %r19, 392(%r1)
+    std  %r20, 400(%r1)
+    std  %r21, 408(%r1)
+    std  %r22, 416(%r1)
+    std  %r23, 424(%r1)
+    std  %r24, 432(%r1)
+    std  %r25, 440(%r1)
+    std  %r26, 448(%r1)
+    std  %r27, 456(%r1)
+    std  %r28, 464(%r1)
+    std  %r29, 472(%r1)
+    std  %r30, 480(%r1)
+    std  %r31, 488(%r1)
+#if _CALL_ELF != 2
+    /* save TOC */
+    std  %r2,  496(%r1)  # save TOC
+#endif
+
+    /* save CR */
+    mfcr  %r0
+    std  %r0, 504(%r1)
+    /* save LR */
+    mflr  %r0
+    std  %r0, 512(%r1)
+    /* save LR as PC */
+    std  %r0, 520(%r1)
 
 #if ABTD_FCONTEXT_PRESERVE_FPU
-    lfd  %f14, 0(%r1)  # restore F14
-    lfd  %f15, 8(%r1)  # restore F15
-    lfd  %f16, 16(%r1)  # restore F16
-    lfd  %f17, 24(%r1)  # restore F17
-    lfd  %f18, 32(%r1)  # restore F18
-    lfd  %f19, 40(%r1)  # restore F19
-    lfd  %f20, 48(%r1)  # restore F20
-    lfd  %f21, 56(%r1)  # restore F21
-    lfd  %f22, 64(%r1)  # restore F22
-    lfd  %f23, 72(%r1)  # restore F23
-    lfd  %f24, 80(%r1)  # restore F24
-    lfd  %f25, 88(%r1)  # restore F25
-    lfd  %f26, 96(%r1)  # restore F26
-    lfd  %f27, 104(%r1)  # restore F27
-    lfd  %f28, 112(%r1)  # restore F28
-    lfd  %f29, 120(%r1)  # restore F29
-    lfd  %f30, 128(%r1)  # restore F30
-    lfd  %f31, 136(%r1)  # restore F31
-    lfd  %f0,  144(%r1)  # load FPSCR
-    mtfsf  0xff, %f0  # restore FPSCR
+    /* save F14 - F32 */
+    stfd  %f14, 0(%r1)
+    stfd  %f15, 8(%r1)
+    stfd  %f16, 16(%r1)
+    stfd  %f17, 24(%r1)
+    stfd  %f18, 32(%r1)
+    stfd  %f19, 40(%r1)
+    stfd  %f20, 48(%r1)
+    stfd  %f21, 56(%r1)
+    stfd  %f22, 64(%r1)
+    stfd  %f23, 72(%r1)
+    stfd  %f24, 80(%r1)
+    stfd  %f25, 88(%r1)
+    stfd  %f26, 96(%r1)
+    stfd  %f27, 104(%r1)
+    stfd  %f28, 112(%r1)
+    stfd  %f29, 120(%r1)
+    stfd  %f30, 128(%r1)
+    stfd  %f31, 136(%r1)
 #ifdef __VSX__
+    /* VSCR can be loaded only to Vn.  To store VSCR as it is a vector, */
+    /* it must be written before saving FPSCR. */
+    /* load VSCR. */
+    mfvscr %v19
     li    %r10, 144
-    lvx   %v19, %r10, %r1 # load VSCR
-    mtvscr %v19           # restore VSCR.  Only the last 32 bits are used
+    /* save VSCR.  Only the last 32 bits are used */
+    stvx  %v19, %r10, %r1
+#endif
+    /* load FPSCR */
+    mffs  %f0
+    /* save FPSCR */
+    stfd  %f0, 144(%r1)
+#ifdef __VSX__
+    /* OpenPOWER saves V20 - V31 (vector units) */
+    /* Note stvx cannot take an immediate value as an offset. */
     li    %r14, 160
-    lvx  %v20, %r14, %r1  # restore V20
+    stvx  %v20, %r14, %r1
     li    %r15, 176
-    lvx  %v21, %r15, %r1  # restore V21
+    stvx  %v21, %r15, %r1
     li    %r16, 192
-    lvx  %v22, %r16, %r1  # restore V22
+    stvx  %v22, %r16, %r1
     li    %r17, 208
-    lvx  %v23, %r17, %r1  # restore V23
+    stvx  %v23, %r17, %r1
     li    %r18, 224
-    lvx  %v24, %r18, %r1  # restore V24
+    stvx  %v24, %r18, %r1
     li    %r19, 240
-    lvx  %v25, %r19, %r1  # restore V25
+    stvx  %v25, %r19, %r1
     li    %r20, 256
-    lvx  %v26, %r20, %r1  # restore V26
+    stvx  %v26, %r20, %r1
     li    %r21, 272
-    lvx  %v27, %r21, %r1  # restore V27
+    stvx  %v27, %r21, %r1
     li    %r22, 288
-    lvx  %v28, %r22, %r1  # restore V28
+    stvx  %v28, %r22, %r1
     li    %r23, 304
-    lvx  %v29, %r23, %r1  # restore V29
+    stvx  %v29, %r23, %r1
     li    %r24, 320
-    lvx  %v30, %r24, %r1  # restore V30
+    stvx  %v30, %r24, %r1
     li    %r25, 336
-    lvx  %v31, %r25, %r1  # restore V31
+    stvx  %v31, %r25, %r1
 #endif
 #endif
 
-    ld  %r14, 352(%r1)  # restore R14
-    ld  %r15, 360(%r1)  # restore R15
-    ld  %r16, 368(%r1)  # restore R16
-    ld  %r17, 376(%r1)  # restore R17
-    ld  %r18, 384(%r1)  # restore R18
-    ld  %r19, 392(%r1)  # restore R19
-    ld  %r20, 400(%r1)  # restore R20
-    ld  %r21, 408(%r1)  # restore R21
-    ld  %r22, 416(%r1)  # restore R22
-    ld  %r23, 424(%r1)  # restore R23
-    ld  %r24, 432(%r1)  # restore R24
-    ld  %r25, 440(%r1)  # restore R25
-    ld  %r26, 448(%r1)  # restore R26
-    ld  %r27, 456(%r1)  # restore R27
-    ld  %r28, 464(%r1)  # restore R28
-    ld  %r29, 472(%r1)  # restore R29
-    ld  %r30, 480(%r1)  # restore R30
-    ld  %r31, 488(%r1)  # restore R31
-#if _CALL_ELF != 2
-    ld  %r2,  496(%r1)  # restore TOC
-#endif
+    /* store RSP (pointing to context-data) in p_old_ctx (R6) */
+    std  %r1, 0(%r6)
 
-    # restore CR
-    ld  %r0, 504(%r1)
-    mtcr  %r0
-    # restore LR
-    ld  %r0, 512(%r1)
-    mtlr  %r0
+    /* set RSP (pointing to context-data) from p_stacktop (R5) */
+    /* R5 must be 16-byte aligned. */
+    subi  %r1, %r5, 48
 
-    # load PC
-    ld  %r12, 520(%r1)
-    # restore CTR
-    mtctr  %r12
-
-    # adjust stack
-    addi  %r1, %r1, 528
-
-    # use third arg as return value after jump
-    # use third arg as first arg in context function
-    mr  %r3, %r5
-
-    # jump to context
-    bctr
+    /* set f_thread (R4) to CTR. */
+    /* f_thread can be a global entry point, so R12 must be set as well */
+    mr    %r12, %r4
+    mtctr %r12
+    /* call CTR (=f_thread) */
+    /* note: p_new_ctx (R3) has been already set (as the first argument). */
+    /* note: TOC has been saved at the very beginning of the function */
+    bctrl
+    /* unreachable. */
 #if _CALL_ELF == 2
-    .size take_fcontext, .-take_fcontext
+    .size init_and_switch_fcontext, .-init_and_switch_fcontext
 #else
 # ifdef _CALL_LINUX
-    .size .take_fcontext, .-.L.take_fcontext
+    .size .init_and_switch_fcontext, .-.L.init_and_switch_fcontext
 # else
-    .size .take_fcontext, .-.take_fcontext
+    .size .init_and_switch_fcontext, .-.init_and_switch_fcontext
+# endif
+#endif
+
+
+/*
+void init_and_jump_fcontext(fcontext_t *p_new_ctx,
+                            void (*f_thread)(fcontext_t *),
+                            void *p_stacktop);
+*/
+.globl init_and_jump_fcontext
+#if _CALL_ELF == 2
+    .text
+    .align 2
+init_and_jump_fcontext:
+        addis   %r2, %r12, .TOC.-init_and_jump_fcontext@ha
+        addi    %r2, %r2, .TOC.-init_and_jump_fcontext@l
+        .localentry init_and_jump_fcontext, . - init_and_jump_fcontext
+#else
+    .section ".opd","aw"
+    .align 3
+init_and_jump_fcontext:
+# ifdef _CALL_LINUX
+        .quad   .L.init_and_jump_fcontext,.TOC.@tocbase,0
+        .type   init_and_jump_fcontext,@function
+        .text
+        .align 2
+.L.init_and_jump_fcontext:
+# else
+        .hidden .init_and_jump_fcontext
+        .globl  .init_and_jump_fcontext
+        .quad   .init_and_jump_fcontext,.TOC.@tocbase,0
+        .size   init_and_jump_fcontext,24
+        .type   .init_and_jump_fcontext,@function
+        .text
+        .align 2
+.init_and_jump_fcontext:
+# endif
+#endif
+    /* shift address in p_stacktop (R5) to lower 16 byte boundary */
+    clrrdi  %r5, %r5, 4
+
+    /* save TOC in the target stack (p_stacktop, R5) */
+    /* TOC must be saved when an external function is called. */
+    std  %r2, -24(%r5)
+
+    /* set RSP (pointing to context-data) from p_stacktop (R5) */
+    /* R5 must be 16-byte aligned. */
+    subi  %r1, %r5, 48
+
+    /* set f_thread (R4) to CTR. */
+    /* f_thread can be a global entry point, so R12 must be set as well */
+    mr    %r12, %r4
+    mtctr %r12
+    /* call CTR (=f_thread) */
+    /* note: p_new_ctx (R3) has been already set (as the first argument). */
+    /* note: TOC has been saved at the very beginning of the function */
+    bctrl
+    /* unreachable. */
+#if _CALL_ELF == 2
+    .size init_and_jump_fcontext, .-init_and_jump_fcontext
+#else
+# ifdef _CALL_LINUX
+    .size .init_and_jump_fcontext, .-.L.init_and_jump_fcontext
+# else
+    .size .init_and_jump_fcontext, .-.init_and_jump_fcontext
+# endif
+#endif
+
+
+/*
+void peek_fcontext(void *arg, void (*f_peek)(void *), fcontext_t *p_target_ctx);
+*/
+.globl peek_fcontext
+#if _CALL_ELF == 2
+    .text
+    .align 2
+peek_fcontext:
+        addis   %r2, %r12, .TOC.-peek_fcontext@ha
+        addi    %r2, %r2, .TOC.-peek_fcontext@l
+        .localentry peek_fcontext, . - peek_fcontext
+#else
+    .section ".opd","aw"
+    .align 3
+peek_fcontext:
+# ifdef _CALL_LINUX
+        .quad   .L.peek_fcontext,.TOC.@tocbase,0
+        .type   peek_fcontext,@function
+        .text
+        .align 2
+.L.peek_fcontext:
+# else
+        .hidden .peek_fcontext
+        .globl  .peek_fcontext
+        .quad   .peek_fcontext,.TOC.@tocbase,0
+        .size   peek_fcontext,24
+        .type   .peek_fcontext,@function
+        .text
+        .align 2
+.peek_fcontext:
+# endif
+#endif
+    /* get the target stack pointer from p_target_ctx (R5) and set it to R6 */
+    /* the stack pointer must be 16-byte aligned. */
+    ld   %r6, 0(%r5)
+    /* save LR in the target stack (R6) */
+    mflr %r0
+    std  %r0, -16(%r6)
+    /* save RSP in the target stack (R6) */
+    std  %r1, -8(%r6)
+    /* save TOC in the target stack (R6) */
+    /* TOC must be saved when an external function is called. */
+    std  %r2, -24(%r6)
+
+    /* set RSP (pointing to context-data) from p_target_ctx (R6) */
+    mr    %r1, %r6
+    stdu  %r1, -48(%r1)
+
+    /* set f_peek (R4) to CTR. */
+    /* f_peek) can be a global entry point, so R12 must be set as well */
+    mr    %r12, %r4
+    mtctr %r12
+    /* call CTR (=f_peek) */
+    /* note: arg (R3) has been already set as the first argument. */
+    /* note: TOC has been saved at the very beginning of the function */
+    bctrl
+
+    /* restore LR from the stack */
+    /* because it might call an external function, set R12 as well */
+    ld    %r12, 32(%r1)
+    mtlr  %r12
+    /* restore TOC from the stack */
+    ld    %r2, 24(%r1)
+    /* restore RSP from the stack */
+    ld    %r1, 40(%r1)
+    /* return */
+    blr
+#if _CALL_ELF == 2
+    .size peek_fcontext, .-peek_fcontext
+#else
+# ifdef _CALL_LINUX
+    .size .peek_fcontext, .-.L.peek_fcontext
+# else
+    .size .peek_fcontext, .-.peek_fcontext
 # endif
 #endif
 

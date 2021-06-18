@@ -14,7 +14,6 @@ noinst_HEADERS = \
 	include/abtd_futex.h \
 	include/abtd_spinlock.h \
 	include/abtd_ucontext.h \
-	include/abtd_ythread.h \
 	include/abti.h \
 	include/abti_barrier.h \
 	include/abti_cond.h \

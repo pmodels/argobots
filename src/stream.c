@@ -1759,6 +1759,7 @@ static void *xstream_launch_root_ythread(void *p_xstream)
     /* Set the root thread as the current thread */
     ABTI_ythread *p_root_ythread = p_local_xstream->p_root_ythread;
     p_local_xstream->p_thread = &p_local_xstream->p_root_ythread->thread;
+    p_root_ythread->thread.p_last_xstream = p_local_xstream;
     p_root_ythread->thread.f_thread(p_root_ythread->thread.p_arg);
 
     LOG_DEBUG("[E%d] end\n", p_local_xstream->rank);
@@ -1952,8 +1953,8 @@ static inline void xstream_schedule_ythread(ABTI_global *p_global,
     /* Since the argument is pp_local_xstream, p_local_xstream->p_thread must be
      * yieldable. */
     ABTI_ythread *p_self = ABTI_thread_get_ythread(p_local_xstream->p_thread);
-    p_ythread = ABTI_ythread_context_switch_to_child(pp_local_xstream, p_self,
-                                                     p_ythread);
+    p_ythread =
+        ABTI_ythread_switch_to_child(pp_local_xstream, p_self, p_ythread);
     /* The previous ULT (p_ythread) may not be the same as one to which the
      * context has been switched. */
     /* The scheduler continues from here. */

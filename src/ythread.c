@@ -7,10 +7,6 @@
 
 #ifdef ABT_CONFIG_ENABLE_STACK_UNWIND
 
-#ifndef ABT_CONFIG_ENABLE_PEEK_CONTEXT
-#error "ABT_CONFIG_ENABLE_PEEK_CONTEXT must be enabled"
-#endif
-
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 struct unwind_stack_t {
@@ -53,8 +49,8 @@ void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
     /* Switch to the scheduler, i.e., suspend p_ythread  */
     LOG_DEBUG("[U%" PRIu64 ":E%d] suspended\n",
               ABTI_thread_get_id(&p_ythread->thread), p_local_xstream->rank);
-    ABTI_ythread_context_switch_to_parent(pp_local_xstream, p_ythread,
-                                          sync_event_type, p_sync);
+    ABTI_ythread_switch_to_parent(pp_local_xstream, p_ythread, sync_event_type,
+                                  p_sync);
 
     /* The suspended ULT resumes its execution from here. */
     LOG_DEBUG("[U%" PRIu64 ":E%d] resumed\n",
@@ -118,7 +114,12 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
             state == ABT_THREAD_STATE_BLOCKED) {
             struct unwind_stack_t arg;
             arg.fp = p_os;
-            ABTI_ythread_context_peek(p_ythread, ythread_unwind_stack, &arg);
+            ABT_bool succeeded =
+                ABTI_ythread_context_peek(p_ythread, ythread_unwind_stack,
+                                          &arg);
+            if (!succeeded) {
+                fprintf(p_os, "not executed yet.\n");
+            }
         } else {
             fprintf(p_os, "failed to unwind a stack.\n");
         }

@@ -8,22 +8,13 @@
 static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
                                      ABTI_ythread *p_ythread);
 
-void ABTD_ythread_func_wrapper(void *p_arg)
+void ABTD_ythread_func_wrapper(ABTD_ythread_context *p_arg)
 {
-    ABTD_ythread_context *p_ctx = (ABTD_ythread_context *)p_arg;
+    ABTD_ythread_context *p_ctx = p_arg;
     ABTI_ythread *p_ythread = ABTI_ythread_context_get_ythread(p_ctx);
-    ABTI_xstream *p_local_xstream = p_ythread->thread.p_last_xstream;
-    ABTI_tool_event_thread_run(p_local_xstream, &p_ythread->thread,
-                               p_local_xstream->p_thread,
-                               p_ythread->thread.p_parent);
-    p_local_xstream->p_thread = &p_ythread->thread;
-
     p_ythread->thread.f_thread(p_ythread->thread.p_arg);
 
-    /* This ABTI_local_get_xstream() is controversial since it is called after
-     * the context-switchable function (i.e., thread_func()).  We assume that
-     * the compiler does not load TLS offset etc before thread_func(). */
-    p_local_xstream = ABTI_local_get_xstream(ABTI_local_get_local());
+    ABTI_xstream *p_local_xstream = p_ythread->thread.p_last_xstream;
     ythread_terminate(p_local_xstream, p_ythread);
 }
 
@@ -46,7 +37,7 @@ static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
         if (!(req & ABTI_THREAD_REQ_JOIN)) {
             /* This case means there is no join request.  Let's go back to the
              * parent ULT */
-            ABTI_ythread_finish_context_to_parent(p_local_xstream, p_ythread);
+            ABTI_ythread_jump_to_parent(p_local_xstream, p_ythread);
             ABTU_unreachable();
         } else {
             /* This case means there has been a join request and the joiner has
@@ -82,8 +73,7 @@ static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
         /* Note that a parent ULT cannot be a joiner. */
         ABTI_tool_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream),
                                        p_joiner, &p_ythread->thread);
-        ABTI_ythread_finish_context_to_sibling(p_local_xstream, p_ythread,
-                                               p_joiner);
+        ABTI_ythread_jump_to_sibling(p_local_xstream, p_ythread, p_joiner);
         ABTU_unreachable();
     } else {
         /* If the current ULT's associated ES is different from p_joiner's, we
@@ -99,7 +89,7 @@ static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
     ABTD_atomic_release_store_uint32(&p_ythread->thread.request,
                                      ABTI_THREAD_REQ_TERMINATE);
     /* The waiter has been resumed.  Let's switch to the parent. */
-    ABTI_ythread_finish_context_to_parent(p_local_xstream, p_ythread);
+    ABTI_ythread_jump_to_parent(p_local_xstream, p_ythread);
     ABTU_unreachable();
 }
 
@@ -141,8 +131,8 @@ void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
 void ABTD_ythread_print_context(ABTI_ythread *p_ythread, FILE *p_os, int indent)
 {
     ABTD_ythread_context *p_ctx = &p_ythread->ctx;
-    fprintf(p_os, "%*sp_ctx    : %p\n", indent, "", p_ctx->p_ctx);
-    fprintf(p_os, "%*sp_link   : %p\n", indent, "",
+    fprintf(p_os, "%*sp_ctx     : %p\n", indent, "", (void *)p_ctx);
+    fprintf(p_os, "%*sp_link    : %p\n", indent, "",
             (void *)ABTD_atomic_acquire_load_ythread_context_ptr(
                 &p_ctx->p_link));
     fflush(p_os);

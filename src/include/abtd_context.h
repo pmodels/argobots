@@ -15,11 +15,6 @@
 #include <ucontext.h>
 #endif
 
-#ifdef ABT_CONFIG_ENABLE_STACK_UNWIND
-/* Peek context is needed only for stack unwinding. */
-#define ABT_CONFIG_ENABLE_PEEK_CONTEXT
-#endif
-
 typedef struct ABTD_ythread_context ABTD_ythread_context;
 
 typedef struct ABTD_ythread_context_atomic_ptr {
@@ -52,23 +47,7 @@ static inline void ABTD_atomic_release_store_ythread_context_ptr(
     ABTD_atomic_release_store_ptr(&ptr->val, (void *)p_ctx);
 }
 
-struct ABTD_ythread_context;
-
-static void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
-                                      void *p_stack, size_t stacksize);
-static void ABTD_ythread_context_make(ABTD_ythread_context *p_ctx, void *sp,
-                                      size_t size, void (*thread_func)(void *));
-static void ABTD_ythread_context_jump(ABTD_ythread_context *p_old,
-                                      ABTD_ythread_context *p_new, void *arg);
-ABTU_noreturn static void ABTD_ythread_context_take(ABTD_ythread_context *p_old,
-                                                    ABTD_ythread_context *p_new,
-                                                    void *arg);
-#ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
-static inline void ABTD_ythread_context_peek(ABTD_ythread_context *p_ctx,
-                                             void (*peek_func)(void *),
-                                             void *arg);
-#endif
-
+void ABTD_ythread_func_wrapper(ABTD_ythread_context *p_arg);
 void ABTD_ythread_print_context(ABTI_ythread *p_ythread, FILE *p_os,
                                 int indent);
 

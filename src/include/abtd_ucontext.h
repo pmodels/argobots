@@ -9,21 +9,18 @@
 struct ABTD_ythread_context {
     void *p_ctx;                            /* actual context of fcontext, or a
                                              * pointer to uctx */
+    ABTD_ythread_context *p_prev;           /* Previous context */
     ABTD_ythread_context_atomic_ptr p_link; /* pointer to scheduler context */
-    ucontext_t uctx;               /* ucontext entity pointed by p_ctx */
-    void (*f_uctx_thread)(void *); /* root function called by ucontext */
-    void *p_uctx_arg;              /* argument for root function */
-    size_t stacksize;              /* stack size */
-    void *p_stacktop;              /* top of stack */
-#ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
+    ucontext_t uctx;                        /* ucontext pointed by p_ctx */
+    void *p_stack;                          /* Stack pointer. */
+    size_t stacksize;                       /* Stack size. */
+    /* Peek functions. */
     void (*peek_func)(void *);
     void *peek_arg;
     ucontext_t *p_peek_uctx;
     ABT_bool is_peeked;
-#endif
 };
 
-#ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
 static inline void ABTDI_ucontext_check_peeked(ABTD_ythread_context *p_self)
 {
     /* Check if this thread is called only for peeked */
@@ -35,7 +32,6 @@ static inline void ABTDI_ucontext_check_peeked(ABTD_ythread_context *p_self)
         ABTI_ASSERT(ret == 0); /* Fatal. */
     }
 }
-#endif
 
 static void ABTD_ucontext_wrapper(int arg1, int arg2)
 {
@@ -49,28 +45,29 @@ static void ABTD_ucontext_wrapper(int arg1, int arg2)
 #error "Unknown pointer size."
 #endif
 
-#ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
     ABTDI_ucontext_check_peeked(p_self);
-#endif
-
-    p_self->f_uctx_thread(p_self->p_uctx_arg);
-    /* ABTD_ythread_context_jump or take must be called at the end of
-     * f_uctx_thread, */
-    ABTI_ASSERT(0);
+    ABTD_ythread_func_wrapper(p_self);
     ABTU_unreachable();
 }
 
 static inline void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
                                              void *p_stack, size_t stacksize)
 {
+    p_ctx->p_ctx = NULL;
+    p_ctx->p_stack = p_stack;
     p_ctx->stacksize = stacksize;
-    p_ctx->p_stacktop = (void *)(((char *)p_stack) + stacksize);
+    ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
+}
+
+static inline void ABTD_ythread_context_reinit(ABTD_ythread_context *p_ctx)
+{
+    p_ctx->p_ctx = NULL;
+    ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
 }
 
 static inline void *ABTD_ythread_context_get_stack(ABTD_ythread_context *p_ctx)
 {
-    void *p_stack = (void *)(((char *)p_ctx->p_stacktop) - p_ctx->stacksize);
-    return p_stack;
+    return p_ctx->p_stack;
 }
 
 static inline size_t
@@ -79,19 +76,15 @@ ABTD_ythread_context_get_stacksize(ABTD_ythread_context *p_ctx)
     return p_ctx->stacksize;
 }
 
-static inline void ABTD_ythread_context_make(ABTD_ythread_context *p_ctx,
-                                             void *sp, size_t size,
-                                             void (*thread_func)(void *))
+static inline void ABTDI_ythread_context_make(ABTD_ythread_context *p_ctx)
 {
     int ret = getcontext(&p_ctx->uctx);
     ABTI_ASSERT(ret == 0); /* getcontext() should not return an error. */
     p_ctx->p_ctx = &p_ctx->uctx;
-
     /* uc_link is not used. */
     p_ctx->uctx.uc_link = NULL;
-    p_ctx->uctx.uc_stack.ss_sp = (void *)(((char *)sp) - size);
-    p_ctx->uctx.uc_stack.ss_size = size;
-    p_ctx->f_uctx_thread = thread_func;
+    p_ctx->uctx.uc_stack.ss_sp = p_ctx->p_stack;
+    p_ctx->uctx.uc_stack.ss_size = p_ctx->stacksize;
 
 #if SIZEOF_VOID_P == 8
     int arg_upper = (int)(((uintptr_t)p_ctx) >> 32);
@@ -104,50 +97,57 @@ static inline void ABTD_ythread_context_make(ABTD_ythread_context *p_ctx,
 #else
 #error "Unknown pointer size."
 #endif
-#ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
     p_ctx->is_peeked = ABT_FALSE;
-#endif
 }
 
-static inline void ABTD_ythread_context_jump(ABTD_ythread_context *p_old,
-                                             ABTD_ythread_context *p_new,
-                                             void *arg)
+static inline ABTD_ythread_context *
+ABTD_ythread_context_switch(ABTD_ythread_context *p_old,
+                            ABTD_ythread_context *p_new)
 {
-#ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
+    if (p_new->p_ctx == NULL) {
+        /* First time. */
+        ABTDI_ythread_context_make(p_new);
+    }
     p_old->is_peeked = ABT_FALSE;
-#endif
-    p_new->p_uctx_arg = arg;
+    p_old->p_ctx = &p_old->uctx;
+    p_new->p_prev = p_old;
     int ret = swapcontext(&p_old->uctx, &p_new->uctx);
     /* Fatal.  This out-of-stack error is not recoverable. */
     ABTI_ASSERT(ret == 0);
-#ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
     ABTDI_ucontext_check_peeked(p_old);
-#endif
+    return p_old->p_prev;
 }
 
 ABTU_noreturn static inline void
-ABTD_ythread_context_take(ABTD_ythread_context *p_old,
-                          ABTD_ythread_context *p_new, void *arg)
+ABTD_ythread_context_jump(ABTD_ythread_context *p_old,
+                          ABTD_ythread_context *p_new)
 {
-    p_new->p_uctx_arg = arg;
+    if (p_new->p_ctx == NULL) {
+        /* First time. */
+        ABTDI_ythread_context_make(p_new);
+    }
+    p_new->p_prev = p_old;
     int ret = setcontext(&p_new->uctx);
     ABTI_ASSERT(ret == 0); /* setcontext() should not return an error. */
     ABTU_unreachable();
 }
 
-#ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
-static inline void ABTD_ythread_context_peek(ABTD_ythread_context *p_ctx,
-                                             void (*peek_func)(void *),
-                                             void *arg)
+static inline ABT_bool ABTD_ythread_context_peek(ABTD_ythread_context *p_ctx,
+                                                 void (*peek_func)(void *),
+                                                 void *arg)
 {
-    ucontext_t self_uctx;
-    p_ctx->peek_arg = arg;
-    p_ctx->peek_func = peek_func;
-    p_ctx->p_peek_uctx = &self_uctx;
-    p_ctx->is_peeked = ABT_TRUE;
-    int ret = swapcontext(&self_uctx, &p_ctx->uctx);
-    ABTI_ASSERT(ret == 0);
+    if (p_ctx->p_ctx) {
+        ucontext_t self_uctx;
+        p_ctx->peek_arg = arg;
+        p_ctx->peek_func = peek_func;
+        p_ctx->p_peek_uctx = &self_uctx;
+        p_ctx->is_peeked = ABT_TRUE;
+        int ret = swapcontext(&self_uctx, &p_ctx->uctx);
+        ABTI_ASSERT(ret == 0);
+        return ABT_TRUE;
+    } else {
+        return ABT_FALSE;
+    }
 }
-#endif
 
 #endif /* ABTD_UCONTEXT_H_INCLUDED */

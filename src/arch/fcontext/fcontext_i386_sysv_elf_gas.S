@@ -19,68 +19,14 @@
 
 #include "abt_config.h"
 
+/*
+fcontext_t *switch_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+*/
 .text
-.globl make_fcontext
+.globl switch_fcontext
 .align 2
-.type make_fcontext,@function
-make_fcontext:
-    /* first arg of make_fcontext() == top of context-stack */
-    movl  0x4(%esp), %eax
-
-    /* reserve space for first argument of context-function
-       rax might already point to a 16byte border */
-    leal  -0x8(%eax), %eax
-
-    /* shift address in EAX to lower 16 byte boundary */
-    andl  $-16, %eax
-
-    /* reserve space for context-data on context-stack */
-    /* size for fc_mxcsr .. EIP + return-address for context-function */
-    /* on context-function entry: (ESP -0x4) % 8 == 0 */
-    leal  -0x20(%eax), %eax
-
-    /* third arg of make_fcontext() == address of context-function */
-    movl  0xc(%esp), %edx
-    movl  %edx, 0x18(%eax)
-
-    /* save MMX control- and status-word */
-    stmxcsr  (%eax)
-    /* save x87 control-word */
-    fnstcw  0x4(%eax)
-
-    /* compute abs address of label finish */
-    call  1f
-    /* address of label 1 */
-1:  popl  %ecx
-    /* compute abs address of label finish */
-    addl  $finish-1b, %ecx
-    /* save address of finish as return-address for context-function */
-    /* will be entered after context-function returns */
-    movl  %ecx, 0x1c(%eax)
-
-    ret /* return pointer to context-data */
-
-finish:
-    call  2f
-    /* address of label 2 */
-2:  popl  %ebx
-    /* compute address of GOT and store it in EBX */
-    addl  $_GLOBAL_OFFSET_TABLE_+[.-2b], %ebx
-
-    /* exit code is zero */
-    xorl  %eax, %eax
-    movl  %eax, (%esp)
-    /* exit application */
-    call  _exit@PLT
-    hlt
-.size make_fcontext,.-make_fcontext
-
-
-.text
-.globl jump_fcontext
-.align 2
-.type jump_fcontext,@function
-jump_fcontext:
+.type switch_fcontext,@function
+switch_fcontext:
     pushl  %ebp  /* save EBP */
     pushl  %ebx  /* save EBX */
     pushl  %esi  /* save ESI */
@@ -96,20 +42,17 @@ jump_fcontext:
     fnstcw  0x4(%esp)
 #endif
 
-    /* first arg of jump_fcontext() == context jumping from */
-    movl  0x1c(%esp), %eax
+    /* load p_old_ctx (the second arg) to EAX */
+    movl  0x20(%esp), %eax
 
-    /* store ESP (pointing to context-data) in EAX */
+    /* store ESP in p_old_ctx (EAX) */
     movl  %esp, (%eax)
 
-    /* second arg of jump_fcontext() == context jumping to */
-    movl  0x20(%esp), %edx
+    /* load p_new_ctx (the first arg) to EDX */
+    movl  0x1c(%esp), %edx
 
-    /* third arg of jump_fcontext() == value to be returned after jump */
-    movl  0x24(%esp), %eax
-
-    /* restore ESP (pointing to context-data) from EDX */
-    movl  %edx, %esp
+    /* restore ESP (pointing to context-data) from p_new_ctx (EDX) */
+    movl  (%edx), %esp
 
 #if ABTD_FCONTEXT_PRESERVE_FPU
     /* restore MMX control- and status-word */
@@ -129,58 +72,173 @@ jump_fcontext:
     /* restore return-address */
     popl  %edx
 
-    /* use value in EAX (originally third arg) as
-     * 1. return value after jump or
-     * 2. first arg in context function. */
-    movl  %eax, 0x4(%esp)
+    /* set p_old_ctx (EAX) as the return value. */
+    /* indirect jump to context */
+    jmp  *%edx
+.size switch_fcontext,.-switch_fcontext
 
+/*
+void jump_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+*/
+.text
+.globl jump_fcontext
+.align 2
+.type jump_fcontext,@function
+jump_fcontext:
+    /* load p_new_ctx (the first arg) to EDX */
+    movl  0x4(%esp), %edx
+
+    /* load p_old_ctx (the second arg) to EAX */
+    movl  0x8(%esp), %eax
+
+    /* restore ESP (pointing to context-data) from p_new_ctx (EDX) */
+    movl  (%edx), %esp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* restore MMX control- and status-word */
+    ldmxcsr  (%esp)
+    /* restore x87 control-word */
+    fldcw  0x4(%esp)
+#endif
+
+    /* prepare stack for FPU */
+    leal  0x8(%esp), %esp
+
+    popl  %edi  /* restore EDI */
+    popl  %esi  /* restore ESI */
+    popl  %ebx  /* restore EBX */
+    popl  %ebp  /* restore EBP */
+
+    /* restore return-address */
+    popl  %edx
+
+    /* set p_old_ctx (EAX) as the return value. */
     /* indirect jump to context */
     jmp  *%edx
 .size jump_fcontext,.-jump_fcontext
 
-
+/*
+fcontext_t *init_and_switch_fcontext(fcontext_t *p_new_ctx,
+                                     void (*f_thread)(fcontext_t *),
+                                     void *p_stacktop, fcontext_t *p_old_ctx);
+*/
 .text
-.globl take_fcontext
+.globl init_and_switch_fcontext
 .align 2
-.type take_fcontext,@function
-take_fcontext:
-    /* first arg is ignored. */
-
-    /* second arg of take_fcontext() == context jumping to */
-    movl  0x8(%esp), %edx
-
-    /* third arg of take_fcontext() == value to be returned after jump */
-    movl  0xc(%esp), %eax
-
-    /* restore ESP (pointing to context-data) from EDX */
-    movl  %edx, %esp
-
-#if ABTD_FCONTEXT_PRESERVE_FPU
-    /* restore MMX control- and status-word */
-    ldmxcsr  (%esp)
-    /* restore x87 control-word */
-    fldcw  0x4(%esp)
-#endif
+.type init_and_switch_fcontext,@function
+init_and_switch_fcontext:
+    pushl  %ebp  /* save EBP */
+    pushl  %ebx  /* save EBX */
+    pushl  %esi  /* save ESI */
+    pushl  %edi  /* save EDI */
 
     /* prepare stack for FPU */
-    leal  0x8(%esp), %esp
+    leal  -0x8(%esp), %esp
 
-    popl  %edi  /* restore EDI */
-    popl  %esi  /* restore ESI */
-    popl  %ebx  /* restore EBX */
-    popl  %ebp  /* restore EBP */
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* save MMX control- and status-word */
+    stmxcsr  (%esp)
+    /* save x87 control-word */
+    fnstcw  0x4(%esp)
+#endif
 
-    /* restore return-address */
-    popl  %edx
+    /* load p_old_ctx (the fourth arg) to EDX */
+    movl  0x28(%esp), %edx
 
-    /* use value in EAX (originally third arg) as
-     * 1. return value after jump or
-     * 2. first arg in context function. */
+    /* store ESP in p_old_ctx (EDX) */
+    movl  %esp, (%edx)
+
+    /* load p_new_ctx (the first arg) to EAX */
+    movl  0x1c(%esp), %eax
+
+    /* set f_thread (the second arg) to EDX */
+    movl  0x20(%esp), %edx
+
+    /* set p_stacktop (the third arg) to ESP */
+    movl  0x24(%esp), %esp
+
+    /* shift address in ESP to lower 16 byte boundary */
+    andl  $-16, %esp
+
+    /* for 16-byte function stack alignment, subtract 4 bytes */
+    leal -0x4(%esp), %esp
+
+    /* set p_new_ctx (EAX) as the first argument. */
     movl  %eax, 0x4(%esp)
 
     /* indirect jump to context */
     jmp  *%edx
-.size take_fcontext,.-take_fcontext
+.size init_and_switch_fcontext,.-init_and_switch_fcontext
+
+/*
+fcontext_t *init_and_jump_fcontext(fcontext_t *p_new_ctx,
+                                   void (*f_thread)(fcontext_t *),
+                                   void *p_stacktop);
+*/
+.text
+.globl init_and_jump_fcontext
+.align 2
+.type init_and_jump_fcontext,@function
+init_and_jump_fcontext:
+    /* load p_new_ctx (the first arg) to EAX */
+    movl  0x4(%esp), %eax
+
+    /* set f_thread (the second arg) to EDX */
+    movl  0x8(%esp), %edx
+
+    /* set p_stacktop (the third arg) to ESP */
+    movl  0xc(%esp), %esp
+
+    /* shift address in ESP to lower 16 byte boundary */
+    andl  $-16, %esp
+
+    /* for 16-byte function stack alignment, subtract 4 bytes */
+    leal -0x4(%esp), %esp
+
+    /* set p_new_ctx (EAX) as the first argument. */
+    movl  %eax, 0x4(%esp)
+
+    /* indirect jump to context */
+    jmp  *%edx
+.size init_and_jump_fcontext,.-init_and_jump_fcontext
+
+/*
+void peek_fcontext(void *arg, void (*f_peek)(void *), fcontext_t *p_target_ctx);
+*/
+.text
+.globl peek_fcontext
+.align 2
+.type peek_fcontext,@function
+peek_fcontext:
+    /* load arg (the first arg) to EAX */
+    movl  0x4(%esp), %eax
+
+    /* load f_peek (the second arg) to ECX */
+    movl  0x8(%esp), %ecx
+
+    /* load p_target_ctx (the third arg) to EDX */
+    movl  0xc(%esp), %edx
+
+    /* temporarily move ESP to ESI (callee-saved) */
+    pushl  %esi
+    movl   %esp, %esi
+
+    /* restore ESP from p_target_ctx (EDX) */
+    movl   (%edx), %esp
+
+    /* set p_new_ctx (EAX) as the first argument */
+    pushl %eax
+
+    /* ESP is 16-byte aligned, so we can call f_peek (ECX) here. */
+    call *%ecx
+
+    /* restore callee-saved registers. */
+    movl   %esi, %esp
+    popl   %esi
+
+    /* return */
+    ret
+.size peek_fcontext,.-peek_fcontext
 
 
 /* Mark that we don't need executable stack.  */
