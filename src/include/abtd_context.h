@@ -61,12 +61,6 @@ static void ABTD_ythread_context_jump(ABTD_ythread_context *p_old,
 ABTU_noreturn static void ABTD_ythread_context_take(ABTD_ythread_context *p_old,
                                                     ABTD_ythread_context *p_new,
                                                     void *arg);
-#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-static void ABTD_ythread_context_init_and_call(ABTD_ythread_context *p_ctx,
-                                               void *sp,
-                                               void (*thread_func)(void *),
-                                               void *arg);
-#endif
 #ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
 static inline void ABTD_ythread_context_peek(ABTD_ythread_context *p_ctx,
                                              void (*peek_func)(void *),

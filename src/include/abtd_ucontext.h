@@ -129,8 +129,4 @@ static inline void ABTD_ythread_context_peek(ABTD_ythread_context *p_ctx,
 }
 #endif
 
-#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-#error "ABTD_ythread_context_make_and_call is not implemented."
-#endif
-
 #endif /* ABTD_UCONTEXT_H_INCLUDED */

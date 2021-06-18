@@ -2748,23 +2748,17 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
              * OS-level threads. Invalidate the context here. */
             ABTD_ythread_context_invalidate(&p_newthread->ctx);
         } else {
-            /* Create the context.  This thread is special, so dynamic promotion
-             * is not supported. */
+            /* Create the context. */
             size_t stack_size = p_newthread->stacksize;
             void *p_stack = p_newthread->p_stack;
             ABTD_ythread_context_create(NULL, stack_size, p_stack,
                                         &p_newthread->ctx);
         }
     } else {
-#if ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION
         size_t stack_size = p_newthread->stacksize;
         void *p_stack = p_newthread->p_stack;
         ABTD_ythread_context_create(NULL, stack_size, p_stack,
                                     &p_newthread->ctx);
-#else
-        /* The context is not fully created now. */
-        ABTD_ythread_context_init(NULL, &p_newthread->ctx);
-#endif
     }
     p_newthread->thread.f_thread = thread_func;
     p_newthread->thread.p_arg = arg;

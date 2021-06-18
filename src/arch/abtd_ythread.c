@@ -103,20 +103,6 @@ static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
     ABTU_unreachable();
 }
 
-#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-void ABTD_ythread_terminate_no_arg()
-{
-    ABTI_local *p_local = ABTI_local_get_local();
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
-    /* This function is called by `return` in
-     * ABTD_ythread_context_make_and_call, so it cannot take the argument. We
-     * get the thread descriptor from TLS. */
-    ABTI_thread *p_thread = p_local_xstream->p_thread;
-    ABTI_ASSERT(p_thread->type & ABTI_THREAD_TYPE_YIELDABLE);
-    ythread_terminate(p_local_xstream, ABTI_thread_get_ythread(p_thread));
-}
-#endif
-
 void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
 {
     /* When we cancel a ULT, if other ULT is blocked to join the canceled ULT,

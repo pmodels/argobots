@@ -349,11 +349,7 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         case ABT_INFO_QUERY_KIND_DYNAMIC_PROMOTION:
-#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
-            *((ABT_bool *)val) = ABT_TRUE;
-#else
             *((ABT_bool *)val) = ABT_FALSE;
-#endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_STACK_UNWIND:
 #ifdef ABT_CONFIG_ENABLE_STACK_UNWIND
@@ -1135,17 +1131,9 @@ void ABTI_info_print_config(ABTI_global *p_global, FILE *fp)
     fprintf(fp, " - context-switch: "
 #ifdef ABT_CONFIG_USE_FCONTEXT
                 "fcontext"
-#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION &&             \
-    defined(ABTD_FCONTEXT_PRESERVE_FPU)
-                " (dynamic-promotion)"
-#elif ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION &&           \
-    !defined(ABTD_FCONTEXT_PRESERVE_FPU)
-                " (dynamic-promotion, no FPU save)"
-#elif ABT_CONFIG_THREAD_TYPE != ABT_THREAD_TYPE_DYNAMIC_PROMOTION &&           \
-    !defined(ABTD_FCONTEXT_PRESERVE_FPU)
+#ifndef ABTD_FCONTEXT_PRESERVE_FPU
                 " (no FPU save)"
-#endif /* ABT_CONFIG_THREAD_TYPE, ABTD_FCONTEXT_PRESERVE_FPU */
-
+#endif
 #else  /* ABT_CONFIG_USE_FCONTEXT */
                 "ucontext"
 #endif /* !ABT_CONFIG_USE_FCONTEXT */
