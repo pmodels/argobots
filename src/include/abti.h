@@ -421,8 +421,6 @@ struct ABTI_thread_mig_data {
 struct ABTI_ythread {
     ABTI_thread thread;       /* Common thread definition */
     ABTD_ythread_context ctx; /* Context */
-    void *p_stack;            /* Stack address */
-    size_t stacksize;         /* Stack size (in bytes) */
 };
 
 struct ABTI_key {

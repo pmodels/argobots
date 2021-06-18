@@ -105,7 +105,8 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
     fprintf(p_os,
             "stack     : %p\n"
             "stacksize : %" PRIu64 "\n",
-            p_ythread->p_stack, (uint64_t)p_ythread->stacksize);
+            ABTD_ythread_context_get_stack(&p_ythread->ctx),
+            (uint64_t)ABTD_ythread_context_get_stacksize(&p_ythread->ctx));
 
 #ifdef ABT_CONFIG_ENABLE_STACK_UNWIND
     {
@@ -124,8 +125,9 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
     }
 #endif
 
-    void *p_stack = p_ythread->p_stack;
-    size_t i, j, stacksize = p_ythread->stacksize;
+    void *p_stack = ABTD_ythread_context_get_stack(&p_ythread->ctx);
+    size_t i, j,
+        stacksize = ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
     if (stacksize == 0 || p_stack == NULL) {
         /* Some threads do not have p_stack (e.g., the main thread) */
         fprintf(p_os, "no stack\n");

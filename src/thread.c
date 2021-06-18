@@ -2023,7 +2023,7 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
     ABTI_CHECK_NULL_THREAD_PTR(p_thread);
     ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
     if (p_ythread) {
-        *stacksize = p_ythread->stacksize;
+        *stacksize = ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
     } else {
         *stacksize = 0;
     }
@@ -2317,8 +2317,9 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
 #endif
 
     if (p_ythread) {
-        thread_attr.p_stack = p_ythread->p_stack;
-        thread_attr.stacksize = p_ythread->stacksize;
+        thread_attr.p_stack = ABTD_ythread_context_get_stack(&p_ythread->ctx);
+        thread_attr.stacksize =
+            ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
     } else {
         thread_attr.p_stack = NULL;
         thread_attr.stacksize = 0;
@@ -2372,9 +2373,9 @@ ABTU_ret_err int ABTI_thread_revive(ABTI_global *p_global, ABTI_local *p_local,
 
     if (p_ythread) {
         /* Create a ULT context */
-        size_t stacksize = p_ythread->stacksize;
-        ABTD_ythread_context_create(NULL, stacksize, p_ythread->p_stack,
-                                    &p_ythread->ctx);
+        void *p_stack = ABTD_ythread_context_get_stack(&p_ythread->ctx);
+        size_t stacksize = ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
+        ABTD_ythread_context_create(NULL, stacksize, p_stack, &p_ythread->ctx);
     }
 
     /* Invoke a thread revive event. */
@@ -2639,8 +2640,9 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
             fprintf(p_os,
                     "%*sstack      : %p\n"
                     "%*sstacksize  : %zu\n",
-                    indent, "", p_ythread->p_stack, indent, "",
-                    p_ythread->stacksize);
+                    indent, "", ABTD_ythread_context_get_stack(&p_ythread->ctx),
+                    indent, "",
+                    ABTD_ythread_context_get_stacksize(&p_ythread->ctx));
         }
     }
     fflush(p_os);
@@ -2743,20 +2745,22 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
     }
 
     if (thread_type & (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_ROOT)) {
-        if (p_newthread->p_stack == NULL) {
+        if (ABTD_ythread_context_get_stack(&p_newthread->ctx) == NULL) {
             /* We don't need to initialize the context if a thread will run on
              * OS-level threads. Invalidate the context here. */
             ABTD_ythread_context_invalidate(&p_newthread->ctx);
         } else {
             /* Create the context. */
-            size_t stack_size = p_newthread->stacksize;
-            void *p_stack = p_newthread->p_stack;
+            size_t stack_size =
+                ABTD_ythread_context_get_stacksize(&p_newthread->ctx);
+            void *p_stack = ABTD_ythread_context_get_stack(&p_newthread->ctx);
             ABTD_ythread_context_create(NULL, stack_size, p_stack,
                                         &p_newthread->ctx);
         }
     } else {
-        size_t stack_size = p_newthread->stacksize;
-        void *p_stack = p_newthread->p_stack;
+        size_t stack_size =
+            ABTD_ythread_context_get_stacksize(&p_newthread->ctx);
+        void *p_stack = ABTD_ythread_context_get_stack(&p_newthread->ctx);
         ABTD_ythread_context_create(NULL, stack_size, p_stack,
                                     &p_newthread->ctx);
     }

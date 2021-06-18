@@ -54,6 +54,8 @@ static inline void ABTD_atomic_release_store_ythread_context_ptr(
 
 struct ABTD_ythread_context;
 
+static void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
+                                      void *p_stack, size_t stacksize);
 static void ABTD_ythread_context_make(ABTD_ythread_context *p_ctx, void *sp,
                                       size_t size, void (*thread_func)(void *));
 static void ABTD_ythread_context_jump(ABTD_ythread_context *p_old,

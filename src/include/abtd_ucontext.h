@@ -13,6 +13,8 @@ struct ABTD_ythread_context {
     ucontext_t uctx;               /* ucontext entity pointed by p_ctx */
     void (*f_uctx_thread)(void *); /* root function called by ucontext */
     void *p_uctx_arg;              /* argument for root function */
+    size_t stacksize;              /* stack size */
+    void *p_stacktop;              /* top of stack */
 #ifdef ABT_CONFIG_ENABLE_PEEK_CONTEXT
     void (*peek_func)(void *);
     void *peek_arg;
@@ -56,6 +58,25 @@ static void ABTD_ucontext_wrapper(int arg1, int arg2)
      * f_uctx_thread, */
     ABTI_ASSERT(0);
     ABTU_unreachable();
+}
+
+static inline void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
+                                             void *p_stack, size_t stacksize)
+{
+    p_ctx->stacksize = stacksize;
+    p_ctx->p_stacktop = (void *)(((char *)p_stack) + stacksize);
+}
+
+static inline void *ABTD_ythread_context_get_stack(ABTD_ythread_context *p_ctx)
+{
+    void *p_stack = (void *)(((char *)p_ctx->p_stacktop) - p_ctx->stacksize);
+    return p_stack;
+}
+
+static inline size_t
+ABTD_ythread_context_get_stacksize(ABTD_ythread_context *p_ctx)
+{
+    return p_ctx->stacksize;
 }
 
 static inline void ABTD_ythread_context_make(ABTD_ythread_context *p_ctx,

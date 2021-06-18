@@ -30,6 +30,8 @@ struct ABTD_ythread_context {
     void *p_ctx;                            /* actual context of fcontext, or a
                                              * pointer to uctx */
     ABTD_ythread_context_atomic_ptr p_link; /* pointer to scheduler context */
+    size_t stacksize;                       /* stack size */
+    void *p_stacktop;                       /* top of stack */
 #if defined(ABT_CONFIG_ENABLE_PEEK_CONTEXT) &&                                 \
     !defined(ABTD_CONTEXT_SUPPORT_PEEK_FCONTEXT)
     void (*thread_func)(void *);
@@ -61,6 +63,25 @@ static inline void ABTDI_fcontext_wrapper(void *arg)
     p_self->thread_func(p_self->arg);
 }
 #endif
+
+static inline void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
+                                             void *p_stack, size_t stacksize)
+{
+    p_ctx->stacksize = stacksize;
+    p_ctx->p_stacktop = (void *)(((char *)p_stack) + stacksize);
+}
+
+static inline void *ABTD_ythread_context_get_stack(ABTD_ythread_context *p_ctx)
+{
+    void *p_stack = (void *)(((char *)p_ctx->p_stacktop) - p_ctx->stacksize);
+    return p_stack;
+}
+
+static inline size_t
+ABTD_ythread_context_get_stacksize(ABTD_ythread_context *p_ctx)
+{
+    return p_ctx->stacksize;
+}
 
 static inline void ABTD_ythread_context_make(ABTD_ythread_context *p_ctx,
                                              void *sp, size_t size,
