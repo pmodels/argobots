@@ -190,12 +190,6 @@ AC_ARG_ENABLE([feature],
 AC_ARG_ENABLE([sched-sleep],
     AS_HELP_STRING([--enable-sched-sleep], [enable scheduler sleep]))
 
-# --enable-dynamic-promotion
-AC_ARG_ENABLE([dynamic-promotion],
-    AS_HELP_STRING([--enable-dynamic-promotion],
-                   [use the dynamic promotion threading technique that performs
-                    better if a ULT does not yield.]))
-
 # --enable-tool
 AC_ARG_ENABLE([tool],
     AS_HELP_STRING([--enable-tool],
@@ -688,20 +682,6 @@ AM_CONDITIONAL([ABT_CONFIG_DISABLE_EXT_THREAD],
 AS_IF([test "x$enable_sched_sleep" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SCHED_SLEEP, 1,
                  [Define to make the scheduler sleep when its pools are empty])])
-
-# --enable-dynamic-promotion
-case "x$fctx_arch_bin" in
-    xx86_64_sysv_elf_gas|xarm64_aapcs_elf_gas|xppc64_sysv_elf_gas)
-        support_dynamic_promotion="yes"
-    ;;
-    *)
-        support_dynamic_promotion="no"
-    ;;
-esac
-AS_IF([test "x$enable_dynamic_promotion" = "xyes" -a "x$enable_fcontext" != "xno" -a "x$support_dynamic_promotion" = "xyes"],
-      [AC_DEFINE(ABT_CONFIG_THREAD_TYPE, ABT_THREAD_TYPE_DYNAMIC_PROMOTION,
-                 [Define to use the dynamic promotion technique for ULT])],
-      [AC_DEFINE(ABT_CONFIG_THREAD_TYPE, ABT_THREAD_TYPE_FULLY_FLEDGED)])
 
 # --enable-tool
 AS_IF([test "x$enable_tool" != "xyes"],

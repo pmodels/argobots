@@ -67,9 +67,6 @@
 #define ABTI_SCHED_CONFIG_HTABLE_SIZE 8
 #define ABTI_SCHED_CONFIG_UNUSED_INDEX INT_MIN
 
-#define ABT_THREAD_TYPE_FULLY_FLEDGED 0
-#define ABT_THREAD_TYPE_DYNAMIC_PROMOTION 1
-
 #define ABTI_STACK_CHECK_TYPE_NONE 0
 #define ABTI_STACK_CHECK_TYPE_CANARY 1
 #define ABTI_STACK_CHECK_TYPE_MPROTECT 2
@@ -424,8 +421,6 @@ struct ABTI_thread_mig_data {
 struct ABTI_ythread {
     ABTI_thread thread;       /* Common thread definition */
     ABTD_ythread_context ctx; /* Context */
-    void *p_stack;            /* Stack address */
-    size_t stacksize;         /* Stack size (in bytes) */
 };
 
 struct ABTI_key {

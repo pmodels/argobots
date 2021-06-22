@@ -54,23 +54,26 @@
 #include "abt_config.h"
 
 .cpu    generic+fp+simd
+
+/*
+fcontext_t *switch_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+*/
 .text
 .align  2
-.global jump_fcontext
-.type   jump_fcontext, %function
-jump_fcontext:
-    # prepare stack for GP + FPU
+.global switch_fcontext
+.type   switch_fcontext, %function
+switch_fcontext:
+    /* prepare stack for GP + FPU */
     sub  sp, sp, #0xb0
 
 #if ABTD_FCONTEXT_PRESERVE_FPU
-    # save d8 - d15
+    /* save d8 - d15 */
     stp  d8,  d9,  [sp, #0x00]
     stp  d10, d11, [sp, #0x10]
     stp  d12, d13, [sp, #0x20]
     stp  d14, d15, [sp, #0x30]
 #endif
-
-    # save x19-x30
+    /* save x19 - x30 */
     stp  x19, x20, [sp, #0x40]
     stp  x21, x22, [sp, #0x50]
     stp  x23, x24, [sp, #0x60]
@@ -78,26 +81,27 @@ jump_fcontext:
     stp  x27, x28, [sp, #0x80]
     stp  x29, x30, [sp, #0x90]
 
-    # save LR as PC
+    /* save LR as PC */
     str  x30, [sp, #0xa0]
 
-    # store RSP (pointing to context-data) in first argument (x0).
-    # STR cannot have sp as a target register
+    /* store SP (pointing to context-data) in p_old_ctx (x1). */
+    /* STR cannot have sp as a target register */
     mov  x4, sp
-    str  x4, [x0]
+    str  x4, [x1]
 
-    # restore RSP (pointing to context-data) from A2 (x1)
-    mov  sp, x1
+    /* restore SP (pointing to context-data) from p_new_ctx (x0) */
+    /* LDR cannot have sp as a target register */
+    ldr  x3, [x0]
+    mov  sp, x3
 
 #if ABTD_FCONTEXT_PRESERVE_FPU
-    # load d8 - d15
+    /* load d8 - d15 */
     ldp  d8,  d9,  [sp, #0x00]
     ldp  d10, d11, [sp, #0x10]
     ldp  d12, d13, [sp, #0x20]
     ldp  d14, d15, [sp, #0x30]
 #endif
-
-    # load x19-x30
+    /* load x19 - x30 */
     ldp  x19, x20, [sp, #0x40]
     ldp  x21, x22, [sp, #0x50]
     ldp  x23, x24, [sp, #0x60]
@@ -105,42 +109,79 @@ jump_fcontext:
     ldp  x27, x28, [sp, #0x80]
     ldp  x29, x30, [sp, #0x90]
 
-    # use third arg as return value after jump
-    # and as first arg in context function
-    mov  x0, x2
+    /* set a return value (x0) to p_old_ctx (x1) */
+    mov  x0, x1
 
-    # load pc
+    /* load pc */
     ldr  x4, [sp, #0xa0]
 
-    # restore stack from GP + FPU
+    /* restore stack from GP + FPU */
     add  sp, sp, #0xb0
 
     ret x4
+.size   switch_fcontext,.-switch_fcontext
+
+/*
+void jump_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+*/
+.text
+.align  2
+.global jump_fcontext
+.type   jump_fcontext, %function
+jump_fcontext:
+    /* restore SP (pointing to context-data) from p_new_ctx (x0) */
+    /* LDR cannot have sp as a target register */
+    ldr  x3, [x0]
+    mov  sp, x3
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* load d8 - d15 */
+    ldp  d8,  d9,  [sp, #0x00]
+    ldp  d10, d11, [sp, #0x10]
+    ldp  d12, d13, [sp, #0x20]
+    ldp  d14, d15, [sp, #0x30]
+#endif
+    /* load x19 - x30 */
+    ldp  x19, x20, [sp, #0x40]
+    ldp  x21, x22, [sp, #0x50]
+    ldp  x23, x24, [sp, #0x60]
+    ldp  x25, x26, [sp, #0x70]
+    ldp  x27, x28, [sp, #0x80]
+    ldp  x29, x30, [sp, #0x90]
+
+    /* set a return value (x0) to p_old_ctx (x1) */
+    mov  x0, x1
+
+    /* load pc */
+    ldr  x4, [sp, #0xa0]
+
+    /* restore stack from GP + FPU */
+    add  sp, sp, #0xb0
+
+    ret  x4
 .size   jump_fcontext,.-jump_fcontext
 
-#if ABT_CONFIG_THREAD_TYPE == ABT_THREAD_TYPE_DYNAMIC_PROMOTION
+/*
+fcontext_t *init_and_switch_fcontext(fcontext_t *p_new_ctx,
+                                     void (*f_thread)(fcontext_t *),
+                                     void *p_stacktop, fcontext_t *p_old_ctx);
+*/
 .text
-.globl init_and_call_fcontext
-.type init_and_call_fcontext,@function
-.align 16
-init_and_call_fcontext:
-    # save the current rsp to [sp - 0x08]
-    mov x4, sp
-    stp x30, x4, [x2, -0x10]
-
-    # save callee-saved registers
-    # prepare stack for GP + FPU
+.align  2
+.global init_and_switch_fcontext
+.type   init_and_switch_fcontext, %function
+init_and_switch_fcontext:
+    /* prepare stack for GP + FPU */
     sub  sp, sp, #0xb0
 
 #if ABTD_FCONTEXT_PRESERVE_FPU
-    # save d8 - d15
+    /* save d8 - d15 */
     stp  d8,  d9,  [sp, #0x00]
     stp  d10, d11, [sp, #0x10]
     stp  d12, d13, [sp, #0x20]
     stp  d14, d15, [sp, #0x30]
 #endif
-
-    # save x19-x30
+    /* save x19 - x30 */
     stp  x19, x20, [sp, #0x40]
     stp  x21, x22, [sp, #0x50]
     stp  x23, x24, [sp, #0x60]
@@ -148,33 +189,80 @@ init_and_call_fcontext:
     stp  x27, x28, [sp, #0x80]
     stp  x29, x30, [sp, #0x90]
 
-    # save LR as PC
+    /* save LR as PC */
     str  x30, [sp, #0xa0]
 
-    # store sp in x3 (= fctx)
-    mov x4, sp
-    str x4, [x3]
+    /* store SP (pointing to context-data) in p_old_ctx (x3). */
+    /* STR cannot have sp as a target register */
+    mov  x4, sp
+    str  x4, [x3]
 
-    # assign x2 (=p_stack) to sp
-    sub sp, x2, #0x10
+    /* shift address in p_stacktop (x2) to lower 16 byte boundary */
+    and  x2, x2, ~0xF
+    /* restore SP (pointing to context-data) from p_stacktop (x2) */
+    sub  sp, x2, #0x10
 
-    # call x1 (= f_thread). x0 (= p_arg) has been already set
-    # sp is 16-byte aligned (ABI specification)
-    blr x1
+    /* call f_thread (x1). p_new_ctx (x0) has been already set */
+    /* sp is 16-byte aligned (the ABI spec requires it) */
+    blr  x1
+.size   init_and_switch_fcontext,.-init_and_switch_fcontext
 
-    # restore original LR and sp
-    ldp x30, x3, [sp]
-    mov sp, x3
+/*
+fcontext_t *init_and_jump_fcontext(fcontext_t *p_new_ctx,
+                                   void (*f_thread)(fcontext_t *),
+                                   void *p_stacktop);
+*/
+.text
+.align  2
+.global init_and_jump_fcontext
+.type   init_and_jump_fcontext, %function
+init_and_jump_fcontext:
+    /* shift address in p_stacktop (x2) to lower 16 byte boundary */
+    and  x2, x2, ~0xF
+    /* restore SP (pointing to context-data) from p_stacktop (x2) */
+    sub  sp, x2, #0x10
 
-    # - when the thread did not yield, sp is the original one, so ret jumps to
-    #   the original control flow.
-    # - any suspension updates sp to (p_stack - 0x10). so that ret calls
-    #   (p_stack - 0x8), which is a set to a terminator function
-    # sp is 16-byte aligned (ABI specification)
+    /* call f_thread (x1). p_new_ctx (x0) has been already set */
+    /* sp is 16-byte aligned (the ABI spec requires it) */
+    blr  x1
+.size   init_and_jump_fcontext,.-init_and_jump_fcontext
+
+/*
+void peek_fcontext(void *arg, void (*f_peek)(void *), fcontext_t *p_target_ctx);
+*/
+.text
+.global peek_fcontext
+.type peek_fcontext,@function
+.align 16
+peek_fcontext:
+    sub  sp, sp, #0x20
+    /* save a frame pointer and LR */
+    stp  x29, x30, [sp, #0x10]
+
+    /* save SP to x20 (callee-saved register) */
+    str  x20, [sp]
+    mov  x20, sp
+
+    /* restore SP (pointing to context-data) from p_target_ctx (x2) */
+    /* LDR cannot have sp as a target register */
+    ldr  x3, [x2]
+    mov  sp, x3
+
+    /* call f_peek (x1). arg (x0) has been already set */
+    /* sp is 16-byte aligned (the ABI spec requires it) */
+    blr  x1
+
+    /* restore original x20 and sp */
+    mov  sp, x20
+    ldr  x20, [sp]
+
+    /* restore a frame pointer and LR */
+    ldp  x29, x30, [sp, #0x10]
+
+    /* return */
+    add  sp, sp, #0x20
     ret
-.size init_and_call_fcontext,.-init_and_call_fcontext
-#endif
+.size peek_fcontext,.-peek_fcontext
 
-# Mark that we don't need executable stack.
+/* mark that we don't need executable stack. */
 .section .note.GNU-stack,"",%progbits
-
