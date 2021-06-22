@@ -56,12 +56,16 @@ static inline void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
     p_ctx->p_ctx = NULL;
     p_ctx->p_stack = p_stack;
     p_ctx->stacksize = stacksize;
+    int ret = getcontext(&p_ctx->uctx);
+    ABTI_ASSERT(ret == 0); /* getcontext() should not return an error. */
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
 }
 
 static inline void ABTD_ythread_context_reinit(ABTD_ythread_context *p_ctx)
 {
     p_ctx->p_ctx = NULL;
+    int ret = getcontext(&p_ctx->uctx);
+    ABTI_ASSERT(ret == 0); /* getcontext() should not return an error. */
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
 }
 
@@ -78,8 +82,6 @@ ABTD_ythread_context_get_stacksize(ABTD_ythread_context *p_ctx)
 
 static inline void ABTDI_ythread_context_make(ABTD_ythread_context *p_ctx)
 {
-    int ret = getcontext(&p_ctx->uctx);
-    ABTI_ASSERT(ret == 0); /* getcontext() should not return an error. */
     p_ctx->p_ctx = &p_ctx->uctx;
     /* uc_link is not used. */
     p_ctx->uctx.uc_link = NULL;
