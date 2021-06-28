@@ -9,7 +9,7 @@
 
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 
-void ABTI_log_debug(FILE *fh, const char *format, ...)
+void ABTI_log_debug(const char *format, ...)
 {
     ABTI_global *p_global = ABTI_global_get_global_or_null();
     if (!p_global || p_global->use_logging == ABT_FALSE)
@@ -72,9 +72,9 @@ void ABTI_log_debug(FILE *fh, const char *format, ...)
 #ifndef ABT_CONFIG_USE_DEBUG_LOG_DISCARD
     va_list list;
     va_start(list, format);
-    vfprintf(fh, newfmt, list);
+    vfprintf(stderr, newfmt, list);
     va_end(list);
-    fflush(fh);
+    fflush(stderr);
 #else
     /* Discard the log message.  This option is used to check if the logging
      * function works correct (i.e., without any SEGV) but a tester does not
