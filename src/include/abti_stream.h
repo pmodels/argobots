@@ -49,8 +49,6 @@ static inline void ABTI_xstream_terminate_thread(ABTI_global *p_global,
                                                  ABTI_local *p_local,
                                                  ABTI_thread *p_thread)
 {
-    LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n", ABTI_thread_get_id(p_thread),
-              p_thread->p_last_xstream->rank);
     if (!(p_thread->type & ABTI_THREAD_TYPE_NAMED)) {
         ABTD_atomic_release_store_int(&p_thread->state,
                                       ABT_THREAD_STATE_TERMINATED);

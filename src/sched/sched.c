@@ -902,7 +902,6 @@ void ABTI_sched_free(ABTI_global *p_global, ABTI_local *p_local,
         ABTI_thread_free(p_global, p_local, &p_sched->p_ythread->thread);
     }
 
-    LOG_DEBUG("[S%" PRIu64 "] freed\n", p_sched->id);
     p_sched->data = NULL;
 
     ABTU_free(p_sched);
@@ -1161,7 +1160,6 @@ ABTU_ret_err static int sched_create(ABT_sched_def *def, int num_pools,
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
     p_sched->id = sched_get_new_id();
 #endif
-    LOG_DEBUG("[S%" PRIu64 "] created\n", p_sched->id);
 
     /* Return value */
     ABT_sched newsched = ABTI_sched_get_handle(p_sched);

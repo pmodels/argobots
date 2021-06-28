@@ -31,10 +31,6 @@ void ABTI_ythread_set_blocked(ABTI_ythread *p_ythread)
     /* Increase the number of blocked ULTs */
     ABTI_pool *p_pool = p_ythread->thread.p_pool;
     ABTI_pool_inc_num_blocked(p_pool);
-
-    LOG_DEBUG("[U%" PRIu64 ":E%d] blocked\n",
-              ABTI_thread_get_id(&p_ythread->thread),
-              p_ythread->thread.p_last_xstream->rank);
 }
 
 /* NOTE: This routine should be called after ABTI_ythread_set_blocked. */
@@ -47,15 +43,9 @@ void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
     ABTI_ASSERT(p_ythread->thread.p_last_xstream == p_local_xstream);
 
     /* Switch to the scheduler, i.e., suspend p_ythread  */
-    LOG_DEBUG("[U%" PRIu64 ":E%d] suspended\n",
-              ABTI_thread_get_id(&p_ythread->thread), p_local_xstream->rank);
     ABTI_ythread_switch_to_parent(pp_local_xstream, p_ythread, sync_event_type,
                                   p_sync);
-
     /* The suspended ULT resumes its execution from here. */
-    LOG_DEBUG("[U%" PRIu64 ":E%d] resumed\n",
-              ABTI_thread_get_id(&p_ythread->thread),
-              p_ythread->thread.p_last_xstream->rank);
 }
 
 void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
@@ -70,10 +60,6 @@ void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
     while (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
            ABTI_THREAD_REQ_BLOCK)
         ABTD_atomic_pause();
-
-    LOG_DEBUG("[U%" PRIu64 ":E%d] set ready\n",
-              ABTI_thread_get_id(&p_ythread->thread),
-              p_ythread->thread.p_last_xstream->rank);
 
     ABTI_event_ythread_resume(p_local, p_ythread,
                               ABTI_local_get_xstream_or_null(p_local)

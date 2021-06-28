@@ -609,7 +609,6 @@ ABTU_ret_err static int task_create(ABTI_global *p_global, ABTI_local *p_local,
                                  ? ABTI_local_get_xstream(p_local)->p_thread
                                  : NULL,
                              p_pool);
-    LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_thread_get_id(p_newtask));
 
     /* Add this task to the scheduler's pool */
     ABTI_pool_push(p_pool, p_newtask->unit);

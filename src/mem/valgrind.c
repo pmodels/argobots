@@ -54,8 +54,6 @@ void ABTI_valgrind_register_stack(const void *p_stack, size_t size)
             gp_valgrind_id_list_tail->p_next = p_valgrind_id_list;
             gp_valgrind_id_list_tail = p_valgrind_id_list;
         }
-        LOG_DEBUG("valgrind : register stack %p (id = %d)\n", p_stack,
-                  (int)valgrind_id);
     } else {
         /* When malloc() fails, VALGRIND_STACK_REGISTER is not performed, so we
          * cannot deregister this stack region. */
@@ -84,8 +82,6 @@ void ABTI_valgrind_unregister_stack(const void *p_stack)
         ABT_bool deregister_flag = ABT_FALSE;
         while (p_current) {
             if (p_current->p_stack == p_stack) {
-                LOG_DEBUG("valgrind : deregister stack %p (id = %d)\n", p_stack,
-                          (int)p_current->valgrind_id);
                 VALGRIND_STACK_DEREGISTER(p_current->valgrind_id);
                 p_prev->p_next = p_current->p_next;
                 if (!p_prev->p_next)

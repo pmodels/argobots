@@ -195,22 +195,13 @@ static inline void ABTI_ythread_yield(ABTI_xstream **pp_local_xstream,
                                       ABT_sync_event_type sync_event_type,
                                       void *p_sync)
 {
-    LOG_DEBUG("[U%" PRIu64 ":E%d] yield\n",
-              ABTI_thread_get_id(&p_ythread->thread),
-              p_ythread->thread.p_last_xstream->rank);
-
     /* Change the state of current running thread */
     ABTD_atomic_release_store_int(&p_ythread->thread.state,
                                   ABT_THREAD_STATE_READY);
-
     /* Switch to the top scheduler */
     ABTI_ythread_switch_to_parent(pp_local_xstream, p_ythread, sync_event_type,
                                   p_sync);
-
     /* Back to the original thread */
-    LOG_DEBUG("[U%" PRIu64 ":E%d] resume after yield\n",
-              ABTI_thread_get_id(&p_ythread->thread),
-              p_ythread->thread.p_last_xstream->rank);
 }
 
 #endif /* ABTI_YTHREAD_H_INCLUDED */

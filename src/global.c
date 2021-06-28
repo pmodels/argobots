@@ -316,8 +316,8 @@ ABTU_ret_err static int finailze_library(void)
 
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
     /* Turns off the tool interface */
-    ABTI_event_thread_update_callback(p_global, NULL,
-                                      ABT_TOOL_EVENT_THREAD_NONE, NULL);
+    ABTI_tool_event_thread_update_callback(p_global, NULL,
+                                           ABT_TOOL_EVENT_THREAD_NONE, NULL);
 #endif
 
     /* Set the orphan request for the primary ULT */
