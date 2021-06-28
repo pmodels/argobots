@@ -67,12 +67,9 @@ static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
          * we can jump to the joiner ULT. */
         ABTD_atomic_release_store_int(&p_ythread->thread.state,
                                       ABT_THREAD_STATE_TERMINATED);
-        LOG_DEBUG("[U%" PRIu64 ":E%d] terminated\n",
-                  ABTI_thread_get_id(&p_ythread->thread),
-                  p_ythread->thread.p_last_xstream->rank);
         /* Note that a parent ULT cannot be a joiner. */
-        ABTI_tool_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream),
-                                       p_joiner, &p_ythread->thread);
+        ABTI_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream),
+                                  p_joiner, &p_ythread->thread);
         ABTI_ythread_jump_to_sibling(p_local_xstream, p_ythread, p_joiner);
         ABTU_unreachable();
     } else {
@@ -125,7 +122,7 @@ void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
                                    p_joiner);
         }
     }
-    ABTI_tool_event_thread_cancel(p_local_xstream, &p_ythread->thread);
+    ABTI_event_thread_cancel(p_local_xstream, &p_ythread->thread);
 }
 
 void ABTD_ythread_print_context(ABTI_ythread *p_ythread, FILE *p_os, int indent)

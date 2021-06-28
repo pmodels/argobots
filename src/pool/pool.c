@@ -943,7 +943,6 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
 
 void ABTI_pool_free(ABTI_pool *p_pool)
 {
-    LOG_DEBUG("[P%" PRIu64 "] freed\n", p_pool->id);
     ABT_pool h_pool = ABTI_pool_get_handle(p_pool);
     if (p_pool->p_free) {
         p_pool->p_free(h_pool);
@@ -1040,7 +1039,6 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
     p_pool->p_free = def->p_free;
     p_pool->p_print_all = def->p_print_all;
     p_pool->id = pool_get_new_id();
-    LOG_DEBUG("[P%" PRIu64 "] created\n", p_pool->id);
 
     /* Configure the pool */
     if (p_pool->p_init) {

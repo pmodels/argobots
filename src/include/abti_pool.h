@@ -53,6 +53,7 @@ static inline void ABTI_pool_dec_num_blocked(ABTI_pool *p_pool)
 static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 {
     /* Push unit into pool */
+    LOG_DEBUG_POOL_PUSH(p_pool, unit);
     p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
 }
 
