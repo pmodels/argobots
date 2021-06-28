@@ -120,12 +120,12 @@ void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit)
     ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
     char unit_type = (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) ? 'U' : 'T';
     if (p_thread->p_last_xstream) {
-        LOG_DEBUG("[%c%" PRIu64 ":E%d] pushed to P%" PRIu64 "\n", unit_type,
-                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
-                  p_pool->id);
+        ABTI_log_debug("[%c%" PRIu64 ":E%d] pushed to P%" PRIu64 "\n",
+                       unit_type, ABTI_thread_get_id(p_thread),
+                       p_thread->p_last_xstream->rank, p_pool->id);
     } else {
-        LOG_DEBUG("[%c%" PRIu64 "] pushed to P%" PRIu64 "\n", unit_type,
-                  ABTI_thread_get_id(p_thread), p_pool->id);
+        ABTI_log_debug("[%c%" PRIu64 "] pushed to P%" PRIu64 "\n", unit_type,
+                       ABTI_thread_get_id(p_thread), p_pool->id);
     }
 }
 
@@ -140,12 +140,12 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
     ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
     char unit_type = (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) ? 'U' : 'T';
     if (p_thread->p_last_xstream) {
-        LOG_DEBUG("[%c%" PRIu64 ":E%d] removed from P%" PRIu64 "\n", unit_type,
-                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
-                  p_pool->id);
+        ABTI_log_debug("[%c%" PRIu64 ":E%d] removed from P%" PRIu64 "\n",
+                       unit_type, ABTI_thread_get_id(p_thread),
+                       p_thread->p_last_xstream->rank, p_pool->id);
     } else {
-        LOG_DEBUG("[%c%" PRIu64 "] removed from P%" PRIu64 "\n", unit_type,
-                  ABTI_thread_get_id(p_thread), p_pool->id);
+        ABTI_log_debug("[%c%" PRIu64 "] removed from P%" PRIu64 "\n", unit_type,
+                       ABTI_thread_get_id(p_thread), p_pool->id);
     }
 }
 
@@ -160,12 +160,12 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
     ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
     char unit_type = (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) ? 'U' : 'T';
     if (p_thread->p_last_xstream) {
-        LOG_DEBUG("[%c%" PRIu64 ":E%d] popped from P%" PRIu64 "\n", unit_type,
-                  ABTI_thread_get_id(p_thread), p_thread->p_last_xstream->rank,
-                  p_pool->id);
+        ABTI_log_debug("[%c%" PRIu64 ":E%d] popped from P%" PRIu64 "\n",
+                       unit_type, ABTI_thread_get_id(p_thread),
+                       p_thread->p_last_xstream->rank, p_pool->id);
     } else {
-        LOG_DEBUG("[%c%" PRIu64 "] popped from P%" PRIu64 "\n", unit_type,
-                  ABTI_thread_get_id(p_thread), p_pool->id);
+        ABTI_log_debug("[%c%" PRIu64 "] popped from P%" PRIu64 "\n", unit_type,
+                       ABTI_thread_get_id(p_thread), p_pool->id);
     }
 }
 
