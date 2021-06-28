@@ -11,6 +11,7 @@
 #ifdef ABT_CONFIG_USE_DEBUG_LOG
 
 void ABTI_log_debug(const char *format, ...);
+void ABTI_log_debug_thread(const char *msg, ABTI_thread *p_thread);
 void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit);
 void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit);
 void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit);

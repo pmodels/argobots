@@ -85,6 +85,30 @@ void ABTI_log_debug(const char *format, ...)
     }
 }
 
+void ABTI_log_debug_thread(const char *msg, ABTI_thread *p_thread)
+{
+    if (!p_thread) {
+        /* Unknown thread. */
+        ABTI_log_debug("%s [unknown ULT]\n", msg);
+    } else if (p_thread->type & ABTI_THREAD_TYPE_ROOT) {
+        /* This should not appear in a log. */
+    } else if (p_thread->type & ABTI_THREAD_TYPE_PRIMARY) {
+        /* Primary ULT. */
+        ABTI_log_debug("%s U%" PRIu64 " (primary)\n", msg,
+                       ABTI_thread_get_id(p_thread));
+    } else if (p_thread->type & ABTI_THREAD_TYPE_MAIN_SCHED) {
+        /* Main scheduler ULT. */
+        ABTI_log_debug("%s U%" PRIu64 " (main sched)\n", msg,
+                       ABTI_thread_get_id(p_thread));
+    } else if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
+        /* Normal yieldable ULT. */
+        ABTI_log_debug("%s U%" PRIu64 "\n", msg, ABTI_thread_get_id(p_thread));
+    } else {
+        /* Not yieldable. */
+        ABTI_log_debug("%s T%" PRIu64 "\n", msg, ABTI_thread_get_id(p_thread));
+    }
+}
+
 void ABTI_log_pool_push(ABTI_pool *p_pool, ABT_unit unit)
 {
     ABTI_global *p_global = ABTI_global_get_global_or_null();
