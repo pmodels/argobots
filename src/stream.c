@@ -374,10 +374,10 @@ int ABT_xstream_revive(ABT_xstream xstream)
                     ABT_ERR_INV_XSTREAM);
 
     ABTD_atomic_relaxed_store_uint32(&p_main_sched->request, 0);
-    ABTI_tool_event_thread_join(p_local, &p_main_sched_ythread->thread,
-                                ABTI_local_get_xstream_or_null(p_local)
-                                    ? ABTI_local_get_xstream(p_local)->p_thread
-                                    : NULL);
+    ABTI_event_thread_join(p_local, &p_main_sched_ythread->thread,
+                           ABTI_local_get_xstream_or_null(p_local)
+                               ? ABTI_local_get_xstream(p_local)->p_thread
+                               : NULL);
 
     int abt_errno =
         ABTI_thread_revive(p_global, p_local, p_xstream->p_root_pool,
@@ -1670,11 +1670,10 @@ void ABTI_xstream_free(ABTI_global *p_global, ABTI_local *p_local,
     ABTI_sched *p_cursched = p_xstream->p_main_sched;
     if (p_cursched != NULL) {
         /* Join a scheduler thread. */
-        ABTI_tool_event_thread_join(p_local, &p_cursched->p_ythread->thread,
-                                    ABTI_local_get_xstream_or_null(p_local)
-                                        ? ABTI_local_get_xstream(p_local)
-                                              ->p_thread
-                                        : NULL);
+        ABTI_event_thread_join(p_local, &p_cursched->p_ythread->thread,
+                               ABTI_local_get_xstream_or_null(p_local)
+                                   ? ABTI_local_get_xstream(p_local)->p_thread
+                                   : NULL);
         ABTI_sched_discard_and_free(p_global, p_local, p_cursched, force_free);
         /* The main scheduler thread is also freed. */
     }
@@ -2028,7 +2027,7 @@ static inline void xstream_schedule_task(ABTI_global *p_global,
 #ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
     if (ABTD_atomic_acquire_load_uint32(&p_task->request) &
         ABTI_THREAD_REQ_CANCEL) {
-        ABTI_tool_event_thread_cancel(p_local_xstream, p_task);
+        ABTI_event_thread_cancel(p_local_xstream, p_task);
         ABTI_xstream_terminate_thread(p_global,
                                       ABTI_xstream_get_local(p_local_xstream),
                                       p_task);
@@ -2051,12 +2050,12 @@ static inline void xstream_schedule_task(ABTI_global *p_global,
     p_task->p_parent = p_sched_thread;
 
     /* Execute the task function */
-    ABTI_tool_event_thread_run(p_local_xstream, p_task, p_sched_thread,
-                               p_sched_thread);
+    ABTI_event_thread_run(p_local_xstream, p_task, p_sched_thread,
+                          p_sched_thread);
     LOG_DEBUG("[T%" PRIu64 ":E%d] running\n", ABTI_thread_get_id(p_task),
               p_local_xstream->rank);
     p_task->f_thread(p_task->p_arg);
-    ABTI_tool_event_thread_finish(p_local_xstream, p_task, p_sched_thread);
+    ABTI_event_thread_finish(p_local_xstream, p_task, p_sched_thread);
     LOG_DEBUG("[T%" PRIu64 ":E%d] stopped\n", ABTI_thread_get_id(p_task),
               p_local_xstream->rank);
 

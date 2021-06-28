@@ -657,6 +657,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_thread.h"
 #include "abti_unit.h"
 #include "abti_tool.h"
+#include "abti_event.h"
 #include "abti_ythread.h"
 #include "abti_thread_attr.h"
 #include "abti_waitlist.h"

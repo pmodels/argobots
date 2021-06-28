@@ -1168,9 +1168,9 @@ int ABT_thread_yield_to(ABT_thread thread)
                                   ABT_THREAD_STATE_READY);
 
     /* This operation is corresponding to yield */
-    ABTI_tool_event_ythread_yield(p_local_xstream, p_cur_ythread,
-                                  p_cur_ythread->thread.p_parent,
-                                  ABT_SYNC_EVENT_TYPE_USER, NULL);
+    ABTI_event_ythread_yield(p_local_xstream, p_cur_ythread,
+                             p_cur_ythread->thread.p_parent,
+                             ABT_SYNC_EVENT_TYPE_USER, NULL);
 
     /* Add the current thread to the pool again. */
     ABTI_pool_push(p_cur_ythread->thread.p_pool, p_cur_ythread->thread.unit);
@@ -2374,12 +2374,11 @@ ABTU_ret_err int ABTI_thread_revive(ABTI_global *p_global, ABTI_local *p_local,
     }
 
     /* Invoke a thread revive event. */
-    ABTI_tool_event_thread_revive(p_local, p_thread,
-                                  ABTI_local_get_xstream_or_null(p_local)
-                                      ? ABTI_local_get_xstream(p_local)
-                                            ->p_thread
-                                      : NULL,
-                                  p_pool);
+    ABTI_event_thread_revive(p_local, p_thread,
+                             ABTI_local_get_xstream_or_null(p_local)
+                                 ? ABTI_local_get_xstream(p_local)->p_thread
+                                 : NULL,
+                             p_pool);
 
     LOG_DEBUG("[U%" PRIu64 "] revived\n", ABTI_thread_get_id(p_thread));
 
@@ -2787,24 +2786,22 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
             return abt_errno;
         }
         /* Invoke a thread creation event. */
-        ABTI_tool_event_thread_create(p_local, &p_newthread->thread,
-                                      ABTI_local_get_xstream_or_null(p_local)
-                                          ? ABTI_local_get_xstream(p_local)
-                                                ->p_thread
-                                          : NULL,
-                                      p_pool);
+        ABTI_event_thread_create(p_local, &p_newthread->thread,
+                                 ABTI_local_get_xstream_or_null(p_local)
+                                     ? ABTI_local_get_xstream(p_local)->p_thread
+                                     : NULL,
+                                 p_pool);
         /* Add this thread to the pool */
         ABTI_pool_push(p_pool, p_newthread->thread.unit);
     } else {
         p_newthread->thread.p_pool = p_pool;
         p_newthread->thread.unit = ABT_UNIT_NULL;
         /* Invoke a thread creation event. */
-        ABTI_tool_event_thread_create(p_local, &p_newthread->thread,
-                                      ABTI_local_get_xstream_or_null(p_local)
-                                          ? ABTI_local_get_xstream(p_local)
-                                                ->p_thread
-                                          : NULL,
-                                      NULL);
+        ABTI_event_thread_create(p_local, &p_newthread->thread,
+                                 ABTI_local_get_xstream_or_null(p_local)
+                                     ? ABTI_local_get_xstream(p_local)->p_thread
+                                     : NULL,
+                                 NULL);
     }
 
     /* Return value */
@@ -2840,10 +2837,10 @@ static inline void thread_free(ABTI_global *p_global, ABTI_local *p_local,
                                ABTI_thread *p_thread, ABT_bool free_unit)
 {
     /* Invoke a thread freeing event. */
-    ABTI_tool_event_thread_free(p_local, p_thread,
-                                ABTI_local_get_xstream_or_null(p_local)
-                                    ? ABTI_local_get_xstream(p_local)->p_thread
-                                    : NULL);
+    ABTI_event_thread_free(p_local, p_thread,
+                           ABTI_local_get_xstream_or_null(p_local)
+                               ? ABTI_local_get_xstream(p_local)->p_thread
+                               : NULL);
 
     /* Free the unit */
     if (free_unit) {
@@ -2892,7 +2889,7 @@ static void thread_join_busywait(ABTI_thread *p_thread)
            ABT_THREAD_STATE_TERMINATED) {
         ABTD_atomic_pause();
     }
-    ABTI_tool_event_thread_join(NULL, p_thread, NULL);
+    ABTI_event_thread_join(NULL, p_thread, NULL);
 }
 
 #ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
@@ -2935,19 +2932,18 @@ static void thread_join_yield_thread(ABTI_xstream **pp_local_xstream,
         ABTI_ythread_yield(pp_local_xstream, p_self,
                            ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_thread);
     }
-    ABTI_tool_event_thread_join(ABTI_xstream_get_local(*pp_local_xstream),
-                                p_thread, &p_self->thread);
+    ABTI_event_thread_join(ABTI_xstream_get_local(*pp_local_xstream), p_thread,
+                           &p_self->thread);
 }
 
 static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
 {
     if (ABTD_atomic_acquire_load_int(&p_thread->state) ==
         ABT_THREAD_STATE_TERMINATED) {
-        ABTI_tool_event_thread_join(*pp_local, p_thread,
-                                    ABTI_local_get_xstream_or_null(*pp_local)
-                                        ? ABTI_local_get_xstream(*pp_local)
-                                              ->p_thread
-                                        : NULL);
+        ABTI_event_thread_join(*pp_local, p_thread,
+                               ABTI_local_get_xstream_or_null(*pp_local)
+                                   ? ABTI_local_get_xstream(*pp_local)->p_thread
+                                   : NULL);
         return;
     }
     /* The primary ULT cannot be joined. */
@@ -3027,7 +3023,7 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
         LOG_DEBUG("[U%" PRIu64 ":E%d] resume after join\n",
                   ABTI_thread_get_id(&p_self->thread),
                   p_self->thread.p_last_xstream->rank);
-        ABTI_tool_event_thread_join(*pp_local, p_thread, &p_self->thread);
+        ABTI_event_thread_join(*pp_local, p_thread, &p_self->thread);
     } else {
         /* Use a yield-based method. */
         thread_join_yield_thread(&p_local_xstream, p_self, &p_ythread->thread);

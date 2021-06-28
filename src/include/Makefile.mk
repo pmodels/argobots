@@ -19,6 +19,7 @@ noinst_HEADERS = \
 	include/abti_cond.h \
 	include/abti_config.h \
 	include/abti_error.h \
+	include/abti_event.h \
 	include/abti_eventual.h \
 	include/abti_future.h \
 	include/abti_global.h \

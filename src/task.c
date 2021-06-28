@@ -604,12 +604,11 @@ ABTU_ret_err static int task_create(ABTI_global *p_global, ABTI_local *p_local,
 #endif
     p_newtask->type |= thread_type;
 
-    ABTI_tool_event_thread_create(p_local, p_newtask,
-                                  ABTI_local_get_xstream_or_null(p_local)
-                                      ? ABTI_local_get_xstream(p_local)
-                                            ->p_thread
-                                      : NULL,
-                                  p_pool);
+    ABTI_event_thread_create(p_local, p_newtask,
+                             ABTI_local_get_xstream_or_null(p_local)
+                                 ? ABTI_local_get_xstream(p_local)->p_thread
+                                 : NULL,
+                             p_pool);
     LOG_DEBUG("[T%" PRIu64 "] created\n", ABTI_thread_get_id(p_newtask));
 
     /* Add this task to the scheduler's pool */

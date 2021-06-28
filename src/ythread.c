@@ -75,11 +75,10 @@ void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
               ABTI_thread_get_id(&p_ythread->thread),
               p_ythread->thread.p_last_xstream->rank);
 
-    ABTI_tool_event_ythread_resume(p_local, p_ythread,
-                                   ABTI_local_get_xstream_or_null(p_local)
-                                       ? ABTI_local_get_xstream(p_local)
-                                             ->p_thread
-                                       : NULL);
+    ABTI_event_ythread_resume(p_local, p_ythread,
+                              ABTI_local_get_xstream_or_null(p_local)
+                                  ? ABTI_local_get_xstream(p_local)->p_thread
+                                  : NULL);
     /* p_ythread->thread.p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
      * num_blocked consistent. Otherwise, other threads might pop p_ythread
      * that has been pushed in ABTI_POOL_ADD_THREAD and change
