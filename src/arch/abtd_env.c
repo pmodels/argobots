@@ -8,7 +8,6 @@
 #include <strings.h>
 
 #define ABTD_KEY_TABLE_DEFAULT_SIZE 4
-#define ABTD_THREAD_DEFAULT_STACKSIZE 16384
 #define ABTD_SCHED_DEFAULT_STACKSIZE (4 * 1024 * 1024)
 #define ABTD_SCHED_EVENT_FREQ 50
 #define ABTD_SCHED_SLEEP_NSEC 100
@@ -122,7 +121,7 @@ void ABTD_env_init(ABTI_global *p_global)
 
     /* ABT_THREAD_STACKSIZE, ABT_ENV_THREAD_STACKSIZE
      * Default stack size for ULT */
-    size_t default_thread_stacksize = ABTD_THREAD_DEFAULT_STACKSIZE;
+    size_t default_thread_stacksize = ABT_CONFIG_DEFAULT_THREAD_STACKSIZE;
     if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
         p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
         /* Maximum 2 pages are used for mprotect(), so let's increase the
