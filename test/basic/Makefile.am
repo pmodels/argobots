@@ -81,6 +81,7 @@ TESTS = \
 	timer \
 	info_print \
 	info_print_stack \
+	info_query \
 	info_stackdump \
 	info_stackdump2 \
 	unit \
@@ -178,6 +179,7 @@ stack_guard_SOURCES = stack_guard.c
 timer_SOURCES = timer.c
 info_print_SOURCES = info_print.c
 info_print_stack_SOURCES = info_print_stack.c
+info_query_SOURCES = info_query.c
 info_stackdump_SOURCES = info_stackdump.c
 info_stackdump2_SOURCES = info_stackdump2.c
 unit_SOURCES = unit.c
@@ -261,6 +263,7 @@ testing:
 	./timer
 	./info_print
 	./info_print_stack
+	./info_query
 	./info_stackdump
 	./info_stackdump2
 	./unit

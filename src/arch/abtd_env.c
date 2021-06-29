@@ -8,7 +8,6 @@
 #include <strings.h>
 
 #define ABTD_KEY_TABLE_DEFAULT_SIZE 4
-#define ABTD_THREAD_DEFAULT_STACKSIZE 16384
 #define ABTD_SCHED_DEFAULT_STACKSIZE (4 * 1024 * 1024)
 #define ABTD_SCHED_EVENT_FREQ 50
 #define ABTD_SCHED_SLEEP_NSEC 100
@@ -60,107 +59,36 @@ void ABTD_env_init(ABTI_global *p_global)
         ABTD_affinity_init(p_global, env);
     }
 
-#ifdef ABT_CONFIG_USE_DEBUG_LOG_PRINT
-    /* If the debug log printing is set in configure, logging is turned on by
-     * default. */
-    const ABT_bool default_use_logging = ABT_TRUE;
-    const ABT_bool default_use_debug = ABT_TRUE;
-#else
-    /* Otherwise, logging is not turned on by default. */
-    const ABT_bool default_use_logging = ABT_FALSE;
-    const ABT_bool default_use_debug = ABT_FALSE;
-#endif
-    /* ABT_USE_LOG, ABT_ENV_USE_LOG */
-    p_global->use_logging = load_env_bool("USE_LOG", default_use_logging);
-
-    /* ABT_USE_DEBUG, ABT_ENV_USE_DEBUG */
-    p_global->use_debug = load_env_bool("USE_DEBUG", default_use_debug);
-
-    /* ABT_MAX_NUM_XSTREAMS, ABT_ENV_MAX_NUM_XSTREAMS
-     * Maximum size of the internal ES array */
-    p_global->max_xstreams =
-        load_env_int("MAX_NUM_XSTREAMS", p_global->num_cores, 1,
-                     ABTD_ENV_INT_MAX);
-
-    /* ABT_KEY_TABLE_SIZE, ABT_ENV_KEY_TABLE_SIZE
-     * Default key table size */
-    p_global->key_table_size = roundup_pow2_uint32(
-        load_env_uint32("KEY_TABLE_SIZE", ABTD_KEY_TABLE_DEFAULT_SIZE, 1,
-                        ABTD_ENV_UINT32_MAX));
-
-    /* ABT_STACK_OVERFLOW_CHECK, ABT_ENV_STACK_OVERFLOW_CHECK */
-    env = get_abt_env("STACK_OVERFLOW_CHECK");
-    if (env) {
-        if (strcasecmp(env, "mprotect_strict") == 0) {
+    /* Log setting */
+    p_global->use_logging = ABTD_env_get_use_logging();
+    /* Debug setting (unused) */
+    p_global->use_debug = ABTD_env_get_use_debug();
+    /* Maximum size of the internal ES array */
+    p_global->max_xstreams = ABTD_env_get_max_xstreams();
+    /* Default key table size */
+    p_global->key_table_size = ABTD_env_key_table_size();
+    /* mprotect-based stack guard setting */
+    ABT_bool is_strict;
+    if (ABTD_env_get_stack_guard_mprotect(&is_strict)) {
+        if (is_strict) {
             p_global->stack_guard_kind = ABTI_STACK_GUARD_MPROTECT_STRICT;
-        } else if (strcasecmp(env, "mprotect") == 0) {
-            p_global->stack_guard_kind = ABTI_STACK_GUARD_MPROTECT;
         } else {
-            /* Otherwise, disable mprotect-based stack guard. */
-            p_global->stack_guard_kind = ABTI_STACK_GUARD_NONE;
+            p_global->stack_guard_kind = ABTI_STACK_GUARD_MPROTECT;
         }
     } else {
-        /* Set the default mode. */
-#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_MPROTECT
-        p_global->stack_guard_kind = ABTI_STACK_GUARD_MPROTECT;
-#elif ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_MPROTECT_STRICT
-        p_global->stack_guard_kind = ABTI_STACK_GUARD_MPROTECT_STRICT;
-#else
         /* Stack canary is compile-time setting. */
         p_global->stack_guard_kind = ABTI_STACK_GUARD_NONE;
-#endif
     }
-
-    /* ABT_SYS_PAGE_SIZE, ABT_ENV_SYS_PAGE_SIZE
-     * System page size.  It must be 2^N. */
-    size_t sys_page_size = ABTD_SYS_PAGE_SIZE;
-#if HAVE_GETPAGESIZE
-    sys_page_size = getpagesize();
-#endif
-    p_global->sys_page_size = roundup_pow2_size(
-        load_env_size("SYS_PAGE_SIZE", sys_page_size, 64, ABTD_ENV_SIZE_MAX));
-
-    /* ABT_THREAD_STACKSIZE, ABT_ENV_THREAD_STACKSIZE
-     * Default stack size for ULT */
-    size_t default_thread_stacksize = ABTD_THREAD_DEFAULT_STACKSIZE;
-    if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
-        p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
-        /* Maximum 2 pages are used for mprotect(), so let's increase the
-         * default stack size. */
-        default_thread_stacksize += p_global->sys_page_size * 2;
-    }
-    p_global->thread_stacksize =
-        ABTU_roundup_size(load_env_size("THREAD_STACKSIZE",
-                                        default_thread_stacksize, 512,
-                                        ABTD_ENV_SIZE_MAX),
-                          ABT_CONFIG_STATIC_CACHELINE_SIZE);
-
-    /* ABT_SCHED_STACKSIZE, ABT_ENV_SCHED_STACKSIZE
-     * Default stack size for scheduler */
-    size_t default_sched_stacksize = ABTD_SCHED_DEFAULT_STACKSIZE;
-    if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
-        p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
-        /* Maximum 2 pages are used for mprotect(), so let's increase the
-         * default stack size. */
-        default_sched_stacksize += p_global->sys_page_size * 2;
-    }
-    p_global->sched_stacksize =
-        ABTU_roundup_size(load_env_size("SCHED_STACKSIZE",
-                                        default_sched_stacksize, 512,
-                                        ABTD_ENV_SIZE_MAX),
-                          ABT_CONFIG_STATIC_CACHELINE_SIZE);
-
-    /* ABT_SCHED_EVENT_FREQ, ABT_ENV_SCHED_EVENT_FREQ
-     * Default frequency for event checking by the scheduler */
-    p_global->sched_event_freq =
-        load_env_uint32("SCHED_EVENT_FREQ", ABTD_SCHED_EVENT_FREQ, 1,
-                        ABTD_ENV_UINT32_MAX);
-
-    /* ABT_SCHED_SLEEP_NSEC, ABT_ENV_SCHED_SLEEP_NSEC
-     * Default nanoseconds for scheduler sleep */
-    p_global->sched_sleep_nsec =
-        load_env_uint64("SCHED_SLEEP_NSEC", ABTD_SCHED_SLEEP_NSEC, 0,
-                        ABTD_ENV_UINT64_MAX);
+    /* System page size. */
+    p_global->sys_page_size = ABTD_env_get_sys_pagesize();
+    /* Default stack size for ULT */
+    p_global->thread_stacksize = ABTD_env_get_thread_stacksize();
+    /* Default stack size for scheduler */
+    p_global->sched_stacksize = ABTD_env_get_sched_stacksize();
+    /* Default frequency for event checking by the scheduler */
+    p_global->sched_event_freq = ABTD_env_get_sched_event_freq();
+    /* Default nanoseconds for scheduler sleep */
+    p_global->sched_sleep_nsec = ABTD_env_get_sched_sleep_nsec();
 
     /* ABT_MUTEX_MAX_HANDOVERS, ABT_ENV_MUTEX_MAX_HANDOVERS
      * Default maximum number of mutex handover */
@@ -292,12 +220,150 @@ void ABTD_env_init(ABTI_global *p_global)
     }
 #endif
 
-    /* ABT_PRINT_CONFIG, ABT_ENV_PRINT_CONFIG
-     * Whether to print the configuration on ABT_init() */
-    p_global->print_config = load_env_bool("PRINT_CONFIG", ABT_FALSE);
+    /* Whether to print the configuration on ABT_init() */
+    p_global->print_config = ABTD_env_get_print_config();
 
     /* Init timer */
     ABTD_time_init();
+}
+
+ABT_bool ABTD_env_get_use_debug(void)
+{
+#ifdef ABT_CONFIG_USE_DEBUG_LOG_PRINT
+    const ABT_bool default_use_debug = ABT_TRUE;
+#else
+    const ABT_bool default_use_debug = ABT_FALSE;
+#endif
+    /* ABT_USE_DEBUG, ABT_ENV_USE_DEBUG */
+    return load_env_bool("USE_DEBUG", default_use_debug);
+}
+
+ABT_bool ABTD_env_get_use_logging(void)
+{
+#ifdef ABT_CONFIG_USE_DEBUG_LOG_PRINT
+    /* If the debug log printing is set in configure, logging is turned on by
+     * default. */
+    const ABT_bool default_use_logging = ABT_TRUE;
+#else
+    /* Otherwise, logging is not turned on by default. */
+    const ABT_bool default_use_logging = ABT_FALSE;
+#endif
+    /* ABT_USE_LOG, ABT_ENV_USE_LOG */
+    return load_env_bool("USE_LOG", default_use_logging);
+}
+
+ABT_bool ABTD_env_get_print_config(void)
+{
+    /* ABT_PRINT_CONFIG, ABT_ENV_PRINT_CONFIG */
+    return load_env_bool("PRINT_CONFIG", ABT_FALSE);
+}
+
+int ABTD_env_get_max_xstreams(void)
+{
+    const int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
+    /* ABT_MAX_NUM_XSTREAMS, ABT_ENV_MAX_NUM_XSTREAMS */
+    return load_env_int("MAX_NUM_XSTREAMS", num_cores, 1, ABTD_ENV_INT_MAX);
+}
+
+uint32_t ABTD_env_key_table_size(void)
+{
+    /* ABT_KEY_TABLE_SIZE, ABT_ENV_KEY_TABLE_SIZE */
+    return roundup_pow2_uint32(load_env_uint32("KEY_TABLE_SIZE",
+                                               ABTD_KEY_TABLE_DEFAULT_SIZE, 1,
+                                               ABTD_ENV_UINT32_MAX));
+}
+
+size_t ABTD_env_get_sys_pagesize(void)
+{
+    /* ABT_SYS_PAGE_SIZE, ABT_ENV_SYS_PAGE_SIZE
+     * System page size.  It must be 2^N. */
+    size_t sys_page_size = ABTD_SYS_PAGE_SIZE;
+#if HAVE_GETPAGESIZE
+    sys_page_size = getpagesize();
+#endif
+    return roundup_pow2_size(
+        load_env_size("SYS_PAGE_SIZE", sys_page_size, 64, ABTD_ENV_SIZE_MAX));
+}
+
+size_t ABTD_env_get_thread_stacksize(void)
+{
+    size_t default_thread_stacksize = ABT_CONFIG_DEFAULT_THREAD_STACKSIZE;
+    if (ABTD_env_get_stack_guard_mprotect(NULL)) {
+        /* Maximum 2 pages are used for mprotect(), so let's increase the
+         * default stack size. */
+        const size_t sys_page_size = ABTD_env_get_sys_pagesize();
+        default_thread_stacksize += sys_page_size * 2;
+    }
+    /* ABT_THREAD_STACKSIZE, ABT_ENV_THREAD_STACKSIZE */
+    return ABTU_roundup_size(load_env_size("THREAD_STACKSIZE",
+                                           default_thread_stacksize, 512,
+                                           ABTD_ENV_SIZE_MAX),
+                             ABT_CONFIG_STATIC_CACHELINE_SIZE);
+}
+
+size_t ABTD_env_get_sched_stacksize(void)
+{
+    size_t default_sched_stacksize = ABTD_SCHED_DEFAULT_STACKSIZE;
+    if (ABTD_env_get_stack_guard_mprotect(NULL)) {
+        /* Maximum 2 pages are used for mprotect(), so let's increase the
+         * default stack size. */
+        const size_t sys_page_size = ABTD_env_get_sys_pagesize();
+        default_sched_stacksize += sys_page_size * 2;
+    }
+    /* ABT_SCHED_STACKSIZE, ABT_ENV_SCHED_STACKSIZE */
+    return ABTU_roundup_size(load_env_size("SCHED_STACKSIZE",
+                                           default_sched_stacksize, 512,
+                                           ABTD_ENV_SIZE_MAX),
+                             ABT_CONFIG_STATIC_CACHELINE_SIZE);
+}
+
+uint32_t ABTD_env_get_sched_event_freq(void)
+{
+    /* ABT_SCHED_EVENT_FREQ, ABT_ENV_SCHED_EVENT_FREQ */
+    return load_env_uint32("SCHED_EVENT_FREQ", ABTD_SCHED_EVENT_FREQ, 1,
+                           ABTD_ENV_UINT32_MAX);
+}
+
+uint64_t ABTD_env_get_sched_sleep_nsec(void)
+{
+    /* ABT_SCHED_SLEEP_NSEC, ABT_ENV_SCHED_SLEEP_NSEC */
+    return load_env_uint64("SCHED_SLEEP_NSEC", ABTD_SCHED_SLEEP_NSEC, 0,
+                           ABTD_ENV_UINT64_MAX);
+}
+
+ABT_bool ABTD_env_get_stack_guard_mprotect(ABT_bool *is_strict)
+{
+    /* ABT_STACK_OVERFLOW_CHECK, ABT_ENV_STACK_OVERFLOW_CHECK */
+    const char *env = get_abt_env("STACK_OVERFLOW_CHECK");
+    ABT_bool strict_val, mprotect_val;
+    if (env) {
+        if (strcasecmp(env, "mprotect_strict") == 0) {
+            strict_val = ABT_TRUE;
+            mprotect_val = ABT_TRUE;
+        } else if (strcasecmp(env, "mprotect") == 0) {
+            strict_val = ABT_FALSE;
+            mprotect_val = ABT_TRUE;
+        } else {
+            /* Otherwise, disable mprotect-based stack guard. */
+            strict_val = ABT_FALSE;
+            mprotect_val = ABT_FALSE;
+        }
+    } else {
+        /* Set the default mode. */
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_MPROTECT
+        strict_val = ABT_FALSE;
+        mprotect_val = ABT_TRUE;
+#elif ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_MPROTECT_STRICT
+        strict_val = ABT_TRUE;
+        mprotect_val = ABT_TRUE;
+#else
+        strict_val = ABT_FALSE;
+        mprotect_val = ABT_FALSE;
+#endif
+    }
+    if (is_strict)
+        *is_strict = strict_val;
+    return mprotect_val;
 }
 
 /*****************************************************************************/

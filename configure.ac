@@ -227,6 +227,13 @@ AC_ARG_ENABLE([static-cacheline-size],
         <value>             - assume [value] bytes (e.g., <value> = 64)
 ],,[enable_static_cacheline_size=auto])
 
+# --enable-default-stacksize
+AC_ARG_ENABLE([default-stacksize],
+[  --enable-default-stacksize@<:@=SIZE@:>@
+                          set a default ULT stack size in bytes (default: 16384)
+                          ABT_THREAD_STACKSIZE=SIZE at run-time supersedes this setting.
+],,[enable_default_stacksize=16384])
+
 # --enable-ver20-api
 AC_ARG_ENABLE([ver20-api],
     AS_HELP_STRING([--enable-ver20-api],
@@ -246,14 +253,6 @@ AC_ARG_WITH([hugetlbfs],
 AC_ARG_WITH([libunwind],
     AS_HELP_STRING([--with-libunwind=PATH],
         [specify path where libunwind include directory and lib directory can be found]))
-
-# --enable-stack-unwind
-AC_ARG_ENABLE([stack-unwind],
-[  --enable-stack-unwind@<:@=OPTS@:>@ enable stack unwinding, which is disabled by default.
-        yes|verbose  - enable stack unwinding.  Dump the raw stack information too
-        unwind-only  - enable stack unwinding.  Do not dump the raw stack information
-        no|none      - disable stack unwinding
-],,[enable_stack_unwind=no])
 
 # --with-papi
 AC_ARG_WITH([papi],
@@ -816,6 +815,13 @@ fi
 AC_DEFINE_UNQUOTED(ABT_CONFIG_STATIC_CACHELINE_SIZE, [$static_cacheline_size],
                    [Define to use static cache-line size])
 
+# --enable-default-stacksize
+if test x"`echo $enable_default_stacksize | sed -e 's/[[0-9]]//g'`" != x"" ; then
+  # enable_default_stacksize is not numeric
+  AC_MSG_WARN([Unknown value $enable_default_stacksize for --enable-default-stacksize])
+  enable_default_stacksize=16384
+fi
+AC_DEFINE_UNQUOTED(ABT_CONFIG_DEFAULT_THREAD_STACKSIZE, [$enable_default_stacksize], [Define to set the default ULT stack size])
 
 # --with-lts
 if test "x$with_lts" != "x"; then

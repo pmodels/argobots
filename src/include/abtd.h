@@ -45,6 +45,18 @@ typedef struct ABTD_affinity_cpuset {
 
 /* Environment */
 void ABTD_env_init(ABTI_global *p_global);
+/* Following does not need p_global. */
+ABT_bool ABTD_env_get_use_debug(void);
+ABT_bool ABTD_env_get_use_logging(void);
+ABT_bool ABTD_env_get_print_config(void);
+int ABTD_env_get_max_xstreams(void);
+uint32_t ABTD_env_key_table_size(void);
+size_t ABTD_env_get_sys_pagesize(void);
+size_t ABTD_env_get_thread_stacksize(void);
+size_t ABTD_env_get_sched_stacksize(void);
+uint32_t ABTD_env_get_sched_event_freq(void);
+uint64_t ABTD_env_get_sched_sleep_nsec(void);
+ABT_bool ABTD_env_get_stack_guard_mprotect(ABT_bool *is_strict);
 
 /* ES Context */
 ABTU_ret_err int ABTD_xstream_context_create(void *(*f_xstream)(void *),

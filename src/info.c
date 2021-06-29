@@ -217,9 +217,12 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
     switch (query_kind) {
         case ABT_INFO_QUERY_KIND_ENABLED_DEBUG: {
-            ABTI_global *p_global;
-            ABTI_SETUP_GLOBAL(&p_global);
-            *((ABT_bool *)val) = p_global->use_debug;
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (p_global) {
+                *((ABT_bool *)val) = p_global->use_debug;
+            } else {
+                *((ABT_bool *)val) = ABTD_env_get_use_debug();
+            }
         } break;
         case ABT_INFO_QUERY_KIND_ENABLED_PRINT_ERRNO:
 #ifdef ABT_CONFIG_PRINT_ABT_ERRNO
@@ -229,9 +232,12 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_LOG: {
-            ABTI_global *p_global;
-            ABTI_SETUP_GLOBAL(&p_global);
-            *((ABT_bool *)val) = p_global->use_logging;
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (p_global) {
+                *((ABT_bool *)val) = p_global->use_logging;
+            } else {
+                *((ABT_bool *)val) = ABTD_env_get_use_logging();
+            }
         } break;
         case ABT_INFO_QUERY_KIND_ENABLED_VALGRIND:
 #ifdef HAVE_VALGRIND_SUPPORT
@@ -300,39 +306,58 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_PRINT_CONFIG: {
-            ABTI_global *p_global;
-            ABTI_SETUP_GLOBAL(&p_global);
-            *((ABT_bool *)val) = p_global->print_config;
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (p_global) {
+                *((ABT_bool *)val) = p_global->print_config;
+            } else {
+                *((ABT_bool *)val) = ABTD_env_get_print_config();
+            }
         } break;
         case ABT_INFO_QUERY_KIND_ENABLED_AFFINITY: {
             ABTI_global *p_global;
+            /* This check needs runtime check in ABT_init(). */
             ABTI_SETUP_GLOBAL(&p_global);
             *((ABT_bool *)val) = p_global->set_affinity;
         } break;
         case ABT_INFO_QUERY_KIND_MAX_NUM_XSTREAMS: {
-            ABTI_global *p_global;
-            ABTI_SETUP_GLOBAL(&p_global);
-            *((unsigned int *)val) = p_global->max_xstreams;
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (p_global) {
+                *((unsigned int *)val) = p_global->max_xstreams;
+            } else {
+                *((unsigned int *)val) = ABTD_env_get_max_xstreams();
+            }
         } break;
         case ABT_INFO_QUERY_KIND_DEFAULT_THREAD_STACKSIZE: {
-            ABTI_global *p_global;
-            ABTI_SETUP_GLOBAL(&p_global);
-            *((size_t *)val) = p_global->thread_stacksize;
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (p_global) {
+                *((size_t *)val) = p_global->thread_stacksize;
+            } else {
+                *((size_t *)val) = ABTD_env_get_thread_stacksize();
+            }
         } break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_STACKSIZE: {
-            ABTI_global *p_global;
-            ABTI_SETUP_GLOBAL(&p_global);
-            *((size_t *)val) = p_global->sched_stacksize;
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (p_global) {
+                *((size_t *)val) = p_global->sched_stacksize;
+            } else {
+                *((size_t *)val) = ABTD_env_get_sched_stacksize();
+            }
         } break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_EVENT_FREQ: {
-            ABTI_global *p_global;
-            ABTI_SETUP_GLOBAL(&p_global);
-            *((uint64_t *)val) = p_global->sched_event_freq;
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (p_global) {
+                *((uint64_t *)val) = p_global->sched_event_freq;
+            } else {
+                *((uint64_t *)val) = ABTD_env_get_sched_event_freq();
+            }
         } break;
         case ABT_INFO_QUERY_KIND_DEFAULT_SCHED_SLEEP_NSEC: {
-            ABTI_global *p_global;
-            ABTI_SETUP_GLOBAL(&p_global);
-            *((uint64_t *)val) = p_global->sched_sleep_nsec;
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (p_global) {
+                *((uint64_t *)val) = p_global->sched_sleep_nsec;
+            } else {
+                *((uint64_t *)val) = ABTD_env_get_sched_sleep_nsec();
+            }
         } break;
         case ABT_INFO_QUERY_KIND_ENABLED_TOOL:
 #ifndef ABT_CONFIG_DISABLE_TOOL_INTERFACE
@@ -359,19 +384,35 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_STACK_OVERFLOW_CHECK: {
-            ABTI_global *p_global;
-            ABTI_SETUP_GLOBAL(&p_global);
-            if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT) {
-                *((int *)val) = 2;
-            } else if (p_global->stack_guard_kind ==
-                       ABTI_STACK_GUARD_MPROTECT_STRICT) {
-                *((int *)val) = 3;
-            } else {
+            ABTI_global *p_global = ABTI_global_get_global_or_null();
+            if (p_global) {
+                if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT) {
+                    *((int *)val) = 2;
+                } else if (p_global->stack_guard_kind ==
+                           ABTI_STACK_GUARD_MPROTECT_STRICT) {
+                    *((int *)val) = 3;
+                } else {
 #if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
-                *((int *)val) = 1;
+                    *((int *)val) = 1;
 #else
-                *((int *)val) = 0;
+                    *((int *)val) = 0;
 #endif
+                }
+            } else {
+                ABT_bool is_strict;
+                if (ABTD_env_get_stack_guard_mprotect(&is_strict)) {
+                    if (is_strict) {
+                        *((int *)val) = 3;
+                    } else {
+                        *((int *)val) = 2;
+                    }
+                } else {
+#if ABT_CONFIG_STACK_CHECK_TYPE == ABTI_STACK_CHECK_TYPE_CANARY
+                    *((int *)val) = 1;
+#else
+                    *((int *)val) = 0;
+#endif
+                }
             }
         } break;
         case ABT_INFO_QUERY_KIND_WAIT_POLICY:
