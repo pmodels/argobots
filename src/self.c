@@ -296,8 +296,14 @@ int ABT_self_get_type(ABT_unit_type *type)
     /* By default, type is ABT_UNIT_TYPE_EXT in Argobots 1.x */
     *type = ABT_UNIT_TYPE_EXT;
     ABTI_SETUP_GLOBAL(NULL);
-    ABTI_xstream *p_local_xstream;
-    ABTI_SETUP_LOCAL_XSTREAM(&p_local_xstream);
+    /* Since ABT_ERR_INV_XSTREAM is a valid return, this should not be handled
+     * by ABTI_SETUP_LOCAL_XSTREAM, which warns the user when --enable-debug=err
+     * is set. */
+    ABTI_xstream *p_local_xstream =
+        ABTI_local_get_xstream_or_null(ABTI_local_get_local());
+    if (!p_local_xstream) {
+        return ABT_ERR_INV_XSTREAM;
+    }
     *type = ABTI_thread_type_get_type(p_local_xstream->p_thread->type);
 #else
     ABTI_UB_ASSERT(ABTI_initialized());
