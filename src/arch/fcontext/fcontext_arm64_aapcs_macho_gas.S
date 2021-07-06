@@ -48,7 +48,7 @@
 #include "abt_config.h"
 
 /*
-fcontext_t *switch_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+void switch_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
 */
 .text
 .globl  _switch_fcontext
@@ -100,9 +100,6 @@ _switch_fcontext:
     ldp  x27, x28, [sp, #0x80]
     ldp  x29, x30, [sp, #0x90]
 
-    /* set a return value (x0) to p_old_ctx (x1) */
-    mov  x0, x1
-
     /* load pc */
     ldr  x4, [sp, #0xa0]
 
@@ -112,7 +109,7 @@ _switch_fcontext:
     ret x4
 
 /*
-void jump_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+void jump_fcontext(fcontext_t *p_new_ctx);
 */
 .text
 .globl  _jump_fcontext
@@ -138,9 +135,6 @@ _jump_fcontext:
     ldp  x27, x28, [sp, #0x80]
     ldp  x29, x30, [sp, #0x90]
 
-    /* set a return value (x0) to p_old_ctx (x1) */
-    mov  x0, x1
-
     /* load pc */
     ldr  x4, [sp, #0xa0]
 
@@ -150,9 +144,9 @@ _jump_fcontext:
     ret  x4
 
 /*
-fcontext_t *init_and_switch_fcontext(fcontext_t *p_new_ctx,
-                                     void (*f_thread)(fcontext_t *),
-                                     void *p_stacktop, fcontext_t *p_old_ctx);
+void init_and_switch_fcontext(fcontext_t *p_new_ctx,
+                              void (*f_thread)(fcontext_t *),
+                              void *p_stacktop, fcontext_t *p_old_ctx);
 */
 .text
 .globl  _init_and_switch_fcontext
@@ -194,9 +188,8 @@ _init_and_switch_fcontext:
     blr  x1
 
 /*
-fcontext_t *init_and_jump_fcontext(fcontext_t *p_new_ctx,
-                                   void (*f_thread)(fcontext_t *),
-                                   void *p_stacktop);
+void init_and_jump_fcontext(fcontext_t *p_new_ctx,
+                            void (*f_thread)(fcontext_t *), void *p_stacktop);
 */
 .text
 .globl  _init_and_jump_fcontext
@@ -210,6 +203,201 @@ _init_and_jump_fcontext:
     /* call f_thread (x1). p_new_ctx (x0) has been already set */
     /* sp is 16-byte aligned (the ABI spec requires it) */
     blr  x1
+
+/*
+void switch_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                               fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+*/
+.text
+.globl  _switch_with_call_fcontext
+.balign 16
+_switch_with_call_fcontext:
+    /* prepare stack for GP + FPU */
+    sub  sp, sp, #0xb0
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* save d8 - d15 */
+    stp  d8,  d9,  [sp, #0x00]
+    stp  d10, d11, [sp, #0x10]
+    stp  d12, d13, [sp, #0x20]
+    stp  d14, d15, [sp, #0x30]
+#endif
+    /* save x19 - x30 */
+    stp  x19, x20, [sp, #0x40]
+    stp  x21, x22, [sp, #0x50]
+    stp  x23, x24, [sp, #0x60]
+    stp  x25, x26, [sp, #0x70]
+    stp  x27, x28, [sp, #0x80]
+    stp  x29, x30, [sp, #0x90]
+
+    /* save LR as PC */
+    str  x30, [sp, #0xa0]
+
+    /* store SP (pointing to context-data) in p_old_ctx (x3). */
+    /* STR cannot have sp as a target register */
+    mov  x4, sp
+    str  x4, [x3]
+
+    /* restore SP (pointing to context-data) from p_new_ctx (x2) */
+    /* LDR cannot have sp as a target register */
+    ldr  x5, [x2]
+    mov  sp, x5
+
+    /* call f_cb (x1).  cb_arg (x0) has already been set.
+     * all the caller-saved registers will be discarded. */
+    blr  x1
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* load d8 - d15 */
+    ldp  d8,  d9,  [sp, #0x00]
+    ldp  d10, d11, [sp, #0x10]
+    ldp  d12, d13, [sp, #0x20]
+    ldp  d14, d15, [sp, #0x30]
+#endif
+    /* load x19 - x30 */
+    ldp  x19, x20, [sp, #0x40]
+    ldp  x21, x22, [sp, #0x50]
+    ldp  x23, x24, [sp, #0x60]
+    ldp  x25, x26, [sp, #0x70]
+    ldp  x27, x28, [sp, #0x80]
+    ldp  x29, x30, [sp, #0x90]
+
+    /* load pc */
+    ldr  x4, [sp, #0xa0]
+
+    /* restore stack from GP + FPU */
+    add  sp, sp, #0xb0
+
+    ret  x4
+
+/*
+void jump_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                             fcontext_t *p_new_ctx);
+*/
+.text
+.globl  _jump_with_call_fcontext
+.balign 16
+_jump_with_call_fcontext:
+    /* restore SP (pointing to context-data) from p_new_ctx (x2) */
+    /* LDR cannot have sp as a target register */
+    ldr  x3, [x2]
+    mov  sp, x3
+
+    /* call f_cb (x1).  cb_arg (x0) has already been set.
+     * all the caller-saved registers will be discarded. */
+    blr  x1
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* load d8 - d15 */
+    ldp  d8,  d9,  [sp, #0x00]
+    ldp  d10, d11, [sp, #0x10]
+    ldp  d12, d13, [sp, #0x20]
+    ldp  d14, d15, [sp, #0x30]
+#endif
+    /* load x19 - x30 */
+    ldp  x19, x20, [sp, #0x40]
+    ldp  x21, x22, [sp, #0x50]
+    ldp  x23, x24, [sp, #0x60]
+    ldp  x25, x26, [sp, #0x70]
+    ldp  x27, x28, [sp, #0x80]
+    ldp  x29, x30, [sp, #0x90]
+
+    /* load pc */
+    ldr  x4, [sp, #0xa0]
+
+    /* restore stack from GP + FPU */
+    add  sp, sp, #0xb0
+
+    ret  x4
+
+/*
+void init_and_switch_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                                        fcontext_t *p_new_ctx,
+                                        void (*f_thread)(fcontext_t *),
+                                        void *p_stacktop,
+                                        fcontext_t *p_old_ctx);
+*/
+.text
+.globl  _init_and_switch_with_call_fcontext
+.balign 16
+_init_and_switch_with_call_fcontext:
+    /* prepare stack for GP + FPU */
+    sub  sp, sp, #0xb0
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* save d8 - d15 */
+    stp  d8,  d9,  [sp, #0x00]
+    stp  d10, d11, [sp, #0x10]
+    stp  d12, d13, [sp, #0x20]
+    stp  d14, d15, [sp, #0x30]
+#endif
+    /* save x19 - x30 */
+    stp  x19, x20, [sp, #0x40]
+    stp  x21, x22, [sp, #0x50]
+    stp  x23, x24, [sp, #0x60]
+    stp  x25, x26, [sp, #0x70]
+    stp  x27, x28, [sp, #0x80]
+    stp  x29, x30, [sp, #0x90]
+
+    /* save LR as PC */
+    str  x30, [sp, #0xa0]
+
+    /* store SP (pointing to context-data) in p_old_ctx (x5). */
+    /* STR cannot have sp as a target register */
+    mov  x6, sp
+    str  x6, [x5]
+
+    /* shift address in p_stacktop (x4) to lower 16 byte boundary */
+    and  x4, x4, ~0xF
+    /* restore SP (pointing to context-data) from p_stacktop (x4) */
+    sub  sp, x4, #0x10
+
+    /* save p_new_ctx (x2) in x19 (callee-saved) */
+    mov  x19, x2
+    /* save f_thread (x3) in x20 (callee-saved) */
+    mov  x20, x3
+
+    /* call f_cb (x1).  cb_arg (x0) has already been set.
+     * all the caller-saved registers will be discarded. */
+    blr  x1
+
+    /* set the first argument (x0) to p_new_ctx (x19) */
+    mov  x0, x19
+
+    /* call f_thread (x20). p_new_ctx (x0) has been already set */
+    /* sp is 16-byte aligned (the ABI spec requires it) */
+    blr  x20
+
+/*
+void init_and_jump_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                                      fcontext_t *p_new_ctx,
+                                      void (*f_thread)(fcontext_t *),
+                                      void *p_stacktop);
+*/
+.text
+.globl  _init_and_jump_with_call_fcontext
+.balign 16
+_init_and_jump_with_call_fcontext:
+    /* shift address in p_stacktop (x4) to lower 16 byte boundary */
+    and  x4, x4, ~0xF
+    /* restore SP (pointing to context-data) from p_stacktop (x4) */
+    sub  sp, x4, #0x10
+
+    /* save p_new_ctx (x2) in x19 (callee-saved) */
+    mov  x19, x2
+    /* save f_thread (x3) in x20 (callee-saved) */
+    mov  x20, x3
+
+    /* call f_cb (x1).  cb_arg (x0) has already been set.
+     * all the caller-saved registers will be discarded. */
+    blr  x1
+
+    /* set the first argument (x0) to p_new_ctx (x19) */
+    mov  x0, x19
+
+    /* call f_thread (x20). p_new_ctx (x0) has been already set */
+    /* sp is 16-byte aligned (the ABI spec requires it) */
+    blr  x20
 
 /*
 void peek_fcontext(void *arg, void (*f_peek)(void *), fcontext_t *p_target_ctx);

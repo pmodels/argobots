@@ -46,15 +46,8 @@
 #define ABTI_SCHED_REQ_REPLACE (1 << 2)
 
 #define ABTI_THREAD_REQ_JOIN (1 << 0)
-#define ABTI_THREAD_REQ_TERMINATE (1 << 1)
-#define ABTI_THREAD_REQ_CANCEL (1 << 2)
-#define ABTI_THREAD_REQ_MIGRATE (1 << 3)
-#define ABTI_THREAD_REQ_BLOCK (1 << 4)
-#define ABTI_THREAD_REQ_ORPHAN (1 << 5)
-#define ABTI_THREAD_REQ_NON_YIELD                                              \
-    (ABTI_THREAD_REQ_CANCEL | ABTI_THREAD_REQ_MIGRATE |                        \
-     ABTI_THREAD_REQ_TERMINATE | ABTI_THREAD_REQ_BLOCK |                       \
-     ABTI_THREAD_REQ_ORPHAN)
+#define ABTI_THREAD_REQ_CANCEL (1 << 1)
+#define ABTI_THREAD_REQ_MIGRATE (1 << 2)
 
 #define ABTI_THREAD_INIT_ID 0xFFFFFFFFFFFFFFFF
 #define ABTI_TASK_INIT_ID 0xFFFFFFFFFFFFFFFF
@@ -535,6 +528,11 @@ void ABTI_xstream_run_thread(ABTI_global *p_global,
 void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub);
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+ABTU_ret_err int ABTI_xstream_migrate_thread(ABTI_global *p_global,
+                                             ABTI_local *p_local,
+                                             ABTI_thread *p_thread);
+#endif
 
 /* Scheduler */
 ABT_sched_def *ABTI_sched_get_basic_def(void);
@@ -623,10 +621,6 @@ void ABTI_ythread_free_primary(ABTI_global *p_global, ABTI_local *p_local,
                                ABTI_ythread *p_ythread);
 void ABTI_ythread_free_root(ABTI_global *p_global, ABTI_local *p_local,
                             ABTI_ythread *p_ythread);
-void ABTI_ythread_set_blocked(ABTI_ythread *p_ythread);
-void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
-                          ABTI_ythread *p_ythread,
-                          ABT_sync_event_type sync_event_type, void *p_sync);
 void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread);
 void ABTI_ythread_print_stack(ABTI_global *p_global, ABTI_ythread *p_ythread,
                               FILE *p_os);

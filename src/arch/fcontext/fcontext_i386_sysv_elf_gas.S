@@ -20,7 +20,7 @@
 #include "abt_config.h"
 
 /*
-fcontext_t *switch_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+void switch_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
 */
 .text
 .globl switch_fcontext
@@ -72,13 +72,12 @@ switch_fcontext:
     /* restore return-address */
     popl  %edx
 
-    /* set p_old_ctx (EAX) as the return value. */
     /* indirect jump to context */
     jmp  *%edx
 .size switch_fcontext,.-switch_fcontext
 
 /*
-void jump_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+void jump_fcontext(fcontext_t *p_new_ctx);
 */
 .text
 .globl jump_fcontext
@@ -87,9 +86,6 @@ void jump_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
 jump_fcontext:
     /* load p_new_ctx (the first arg) to EDX */
     movl  0x4(%esp), %edx
-
-    /* load p_old_ctx (the second arg) to EAX */
-    movl  0x8(%esp), %eax
 
     /* restore ESP (pointing to context-data) from p_new_ctx (EDX) */
     movl  (%edx), %esp
@@ -112,15 +108,14 @@ jump_fcontext:
     /* restore return-address */
     popl  %edx
 
-    /* set p_old_ctx (EAX) as the return value. */
     /* indirect jump to context */
     jmp  *%edx
 .size jump_fcontext,.-jump_fcontext
 
 /*
-fcontext_t *init_and_switch_fcontext(fcontext_t *p_new_ctx,
-                                     void (*f_thread)(fcontext_t *),
-                                     void *p_stacktop, fcontext_t *p_old_ctx);
+void init_and_switch_fcontext(fcontext_t *p_new_ctx,
+                              void (*f_thread)(fcontext_t *),
+                              void *p_stacktop, fcontext_t *p_old_ctx);
 */
 .text
 .globl init_and_switch_fcontext
@@ -171,9 +166,8 @@ init_and_switch_fcontext:
 .size init_and_switch_fcontext,.-init_and_switch_fcontext
 
 /*
-fcontext_t *init_and_jump_fcontext(fcontext_t *p_new_ctx,
-                                   void (*f_thread)(fcontext_t *),
-                                   void *p_stacktop);
+void init_and_jump_fcontext(fcontext_t *p_new_ctx,
+                            void (*f_thread)(fcontext_t *), void *p_stacktop);
 */
 .text
 .globl init_and_jump_fcontext
@@ -201,6 +195,241 @@ init_and_jump_fcontext:
     /* indirect jump to context */
     jmp  *%edx
 .size init_and_jump_fcontext,.-init_and_jump_fcontext
+
+/*
+void switch_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                               fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+*/
+.text
+.globl switch_with_call_fcontext
+.align 2
+.type switch_with_call_fcontext,@function
+switch_with_call_fcontext:
+    pushl  %ebp  /* save EBP */
+    pushl  %ebx  /* save EBX */
+    pushl  %esi  /* save ESI */
+    pushl  %edi  /* save EDI */
+
+    /* prepare stack for FPU */
+    leal  -0x8(%esp), %esp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* save MMX control- and status-word */
+    stmxcsr  (%esp)
+    /* save x87 control-word */
+    fnstcw  0x4(%esp)
+#endif
+
+    /* load p_old_ctx (the fourth arg) to EAX */
+    movl  0x28(%esp), %eax
+
+    /* store ESP in p_old_ctx (EAX) */
+    movl  %esp, (%eax)
+
+    /* load p_new_ctx (the third arg) to EDX */
+    movl  0x24(%esp), %edx
+
+    /* load f_cb (the second arg) to ESI */
+    movl  0x20(%esp), %esi
+
+    /* load cb_arg (the first arg) to EDI */
+    movl  0x1c(%esp), %edi
+
+    /* restore ESP (pointing to context-data) from p_new_ctx (EDX) */
+    movl  (%edx), %esp
+
+    /* set the first arg to cb_arg (EDI).  Be aware of the alignment. */
+    leal   -0xc(%esp), %esp
+    pushl  %edi
+    /* call f_cb (ESI).  All the caller-saved registers will be discarded */
+    call  *%esi
+    /* restore ESP */
+    leal   0x10(%esp), %esp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* restore MMX control- and status-word */
+    ldmxcsr  (%esp)
+    /* restore x87 control-word */
+    fldcw  0x4(%esp)
+#endif
+
+    /* prepare stack for FPU */
+    leal  0x8(%esp), %esp
+
+    popl  %edi  /* restore EDI */
+    popl  %esi  /* restore ESI */
+    popl  %ebx  /* restore EBX */
+    popl  %ebp  /* restore EBP */
+
+    /* restore return-address */
+    popl  %edx
+
+    /* indirect jump to context */
+    jmp  *%edx
+.size switch_with_call_fcontext,.-switch_with_call_fcontext
+
+/*
+void jump_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                             fcontext_t *p_new_ctx);
+*/
+.text
+.globl jump_with_call_fcontext
+.align 2
+.type jump_with_call_fcontext,@function
+jump_with_call_fcontext:
+    /* load cb_arg (the first arg) to EDI */
+    movl  0x4(%esp), %edi
+
+    /* load f_cb (the second arg) to ESI */
+    movl  0x8(%esp), %esi
+
+    /* load p_new_ctx (the third arg) to EDX */
+    movl  0xc(%esp), %edx
+
+    /* restore ESP (pointing to context-data) from p_new_ctx (EDX) */
+    movl  (%edx), %esp
+
+    /* set the first arg to cb_arg (EDI).  Be aware of the alignment. */
+    leal   -0xc(%esp), %esp
+    pushl  %edi
+    /* call f_cb (ESI).  All the caller-saved registers will be discarded */
+    call  *%esi
+    /* restore ESP */
+    leal   0x10(%esp), %esp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* restore MMX control- and status-word */
+    ldmxcsr  (%esp)
+    /* restore x87 control-word */
+    fldcw  0x4(%esp)
+#endif
+
+    /* prepare stack for FPU */
+    leal  0x8(%esp), %esp
+
+    popl  %edi  /* restore EDI */
+    popl  %esi  /* restore ESI */
+    popl  %ebx  /* restore EBX */
+    popl  %ebp  /* restore EBP */
+
+    /* restore return-address */
+    popl  %edx
+
+    /* indirect jump to context */
+    jmp  *%edx
+.size jump_with_call_fcontext,.-jump_with_call_fcontext
+
+/*
+void init_and_switch_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                                        fcontext_t *p_new_ctx,
+                                        void (*f_thread)(fcontext_t *),
+                                        void *p_stacktop,
+                                        fcontext_t *p_old_ctx);
+*/
+.text
+.globl init_and_switch_with_call_fcontext
+.align 2
+.type init_and_switch_with_call_fcontext,@function
+init_and_switch_with_call_fcontext:
+    pushl  %ebp  /* save EBP */
+    pushl  %ebx  /* save EBX */
+    pushl  %esi  /* save ESI */
+    pushl  %edi  /* save EDI */
+
+    /* prepare stack for FPU */
+    leal  -0x8(%esp), %esp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* save MMX control- and status-word */
+    stmxcsr  (%esp)
+    /* save x87 control-word */
+    fnstcw  0x4(%esp)
+#endif
+
+    /* load p_old_ctx (the sixth arg) to EDX */
+    movl  0x30(%esp), %edx
+
+    /* store ESP in p_old_ctx (EDX) */
+    movl  %esp, (%edx)
+
+    /* load cb_arg (the first arg) to EDX */
+    movl  0x1c(%esp), %edx
+
+    /* load f_cb (the second arg) to EAX */
+    movl  0x20(%esp), %eax
+
+    /* load p_new_ctx (the third arg) to EDI (callee-saved) */
+    movl  0x24(%esp), %edi
+
+    /* set f_thread (the fourth arg) to ESI (callee-saved) */
+    movl  0x28(%esp), %esi
+
+    /* set p_stacktop (the fifth arg) to ESP */
+    movl  0x2c(%esp), %esp
+
+    /* shift address in ESP to lower 16 byte boundary */
+    andl  $-16, %esp
+
+    /* set the first arg to cb_arg (EDX).  Be aware of the alignment. */
+    leal   -0xc(%esp), %esp
+    pushl  %edx
+    /* call f_cb (EAX).  All the caller-saved registers will be discarded */
+    call  *%eax
+
+    /* for 16-byte function stack alignment, subtract 4 bytes */
+    leal  -0x4(%esp), %esp
+
+    /* set p_new_ctx (EDI) as the first argument. */
+    movl  %edi, 0x4(%esp)
+
+    /* indirect jump to context */
+    jmp  *%esi
+.size init_and_switch_with_call_fcontext,.-init_and_switch_with_call_fcontext
+
+/*
+void init_and_jump_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                                      fcontext_t *p_new_ctx,
+                                      void (*f_thread)(fcontext_t *),
+                                      void *p_stacktop);
+*/
+.text
+.globl init_and_jump_with_call_fcontext
+.align 2
+.type init_and_jump_with_call_fcontext,@function
+init_and_jump_with_call_fcontext:
+    /* load cb_arg (the first arg) to EDX */
+    movl  0x4(%esp), %edx
+
+    /* load f_cb (the second arg) to EAX */
+    movl  0x8(%esp), %eax
+
+    /* load p_new_ctx (the third arg) to EDI (callee-saved) */
+    movl  0xc(%esp), %edi
+
+    /* set f_thread (the fourth arg) to ESI (callee-saved) */
+    movl  0x10(%esp), %esi
+
+    /* set p_stacktop (the fifth arg) to ESP */
+    movl  0x14(%esp), %esp
+
+    /* shift address in ESP to lower 16 byte boundary */
+    andl  $-16, %esp
+
+    /* set the first arg to cb_arg (EDX).  Be aware of the alignment. */
+    leal   -0xc(%esp), %esp
+    pushl  %edx
+    /* call f_cb (EAX).  All the caller-saved registers will be discarded */
+    call  *%eax
+
+    /* for 16-byte function stack alignment, subtract 4 bytes */
+    leal  -0x4(%esp), %esp
+
+    /* set p_new_ctx (EDI) as the first argument. */
+    movl  %edi, 0x4(%esp)
+
+    /* indirect jump to context */
+    jmp  *%esi
+.size init_and_jump_with_call_fcontext,.-init_and_jump_with_call_fcontext
 
 /*
 void peek_fcontext(void *arg, void (*f_peek)(void *), fcontext_t *p_target_ctx);

@@ -1148,37 +1148,21 @@ int ABT_thread_yield_to(ABT_thread thread)
     }
 
     /* Remove the target ULT from the pool */
-    if (ABTI_IS_ERROR_CHECK_ENABLED) {
-        /* This is necessary to prevent the size of this pool from 0. */
-        ABTI_pool_inc_num_blocked(p_tar_ythread->thread.p_pool);
-    }
+    /* This is necessary to prevent the size of this pool from 0. */
+    ABTI_pool_inc_num_blocked(p_cur_ythread->thread.p_pool);
     int abt_errno = ABTI_pool_remove(p_tar_ythread->thread.p_pool,
                                      p_tar_ythread->thread.unit);
-    if (ABTI_IS_ERROR_CHECK_ENABLED) {
-        ABTI_pool_dec_num_blocked(p_tar_ythread->thread.p_pool);
-        ABTI_CHECK_ERROR(abt_errno);
+    if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        ABTI_pool_dec_num_blocked(p_cur_ythread->thread.p_pool);
+        ABTI_HANDLE_ERROR(abt_errno);
     }
-
-    ABTD_atomic_release_store_int(&p_cur_ythread->thread.state,
-                                  ABT_THREAD_STATE_READY);
-
-    /* This operation is corresponding to yield */
-    ABTI_event_ythread_yield(p_local_xstream, p_cur_ythread,
-                             p_cur_ythread->thread.p_parent,
-                             ABT_SYNC_EVENT_TYPE_USER, NULL);
-
-    /* Add the current thread to the pool again. */
-    ABTI_pool_push(p_cur_ythread->thread.p_pool, p_cur_ythread->thread.unit);
 
     /* We set the last ES */
     p_tar_ythread->thread.p_last_xstream = p_local_xstream;
 
     /* Switch the context */
-    ABTD_atomic_release_store_int(&p_tar_ythread->thread.state,
-                                  ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_switch_to_sibling(&p_local_xstream, p_cur_ythread,
-                                   p_tar_ythread, ABT_SYNC_EVENT_TYPE_USER,
-                                   NULL);
+    ABTI_ythread_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
+                          ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }
 
@@ -2502,9 +2486,6 @@ void ABTI_ythread_free_root(ABTI_global *p_global, ABTI_local *p_local,
 ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
                                      ABTI_ythread *p_ythread)
 {
-    /* Set the exit request */
-    ABTI_thread_set_request(&p_ythread->thread, ABTI_THREAD_REQ_TERMINATE);
-
     /* Terminate this ULT */
     ABTD_ythread_exit(p_local_xstream, p_ythread);
     ABTU_unreachable();
@@ -2963,41 +2944,19 @@ static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread)
     uint32_t req = ABTD_atomic_fetch_or_uint32(&p_ythread->thread.request,
                                                ABTI_THREAD_REQ_JOIN);
     if (req & ABTI_THREAD_REQ_JOIN) {
+        /* Fall-back to the yield-based join. */
         thread_join_yield_thread(&p_local_xstream, p_self, &p_ythread->thread);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
-        return;
-    }
-
-    ABTI_ythread_set_blocked(p_self);
-
-    /* Set the link in the context of the target ULT. This p_link might be
-     * read by p_ythread running on another ES in parallel, so release-store
-     * is needed here. */
-    ABTD_atomic_release_store_ythread_context_ptr(&p_ythread->ctx.p_link,
-                                                  &p_self->ctx);
-
-    /* Suspend the current ULT */
-    ABTI_ythread_suspend(&p_local_xstream, p_self,
-                         ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_ythread);
-    *pp_local = ABTI_xstream_get_local(p_local_xstream);
-
-    /* Resume */
-    /* If p_self's state is BLOCKED, the target ULT has terminated on the same
-     * ES as p_self's ES and the control has come from the target ULT.
-     * Otherwise, the target ULT had been migrated to a different ES, p_self
-     * has been resumed by p_self's scheduler.  In the latter case, we don't
-     * need to change p_self's state. */
-    if (ABTD_atomic_relaxed_load_int(&p_self->thread.state) ==
-        ABT_THREAD_STATE_BLOCKED) {
-        ABTD_atomic_release_store_int(&p_self->thread.state,
-                                      ABT_THREAD_STATE_RUNNING);
-        ABTI_pool_dec_num_blocked(p_self->thread.p_pool);
-        ABTI_event_thread_join(*pp_local, p_thread, &p_self->thread);
     } else {
-        /* Use a yield-based method. */
+        /* Suspend the current ULT */
+        ABTI_ythread_suspend_join(&p_local_xstream, p_self, p_ythread,
+                                  ABT_SYNC_EVENT_TYPE_THREAD_JOIN,
+                                  (void *)p_ythread);
+        /* This thread is resumed by a target thread.  Since this ULT is resumed
+         * before the target thread is fully terminated, let's wait for the
+         * completion. */
         thread_join_yield_thread(&p_local_xstream, p_self, &p_ythread->thread);
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
-        return;
     }
 }
 
@@ -3036,7 +2995,7 @@ static void thread_root_func(void *arg)
 
     if (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         /* Let us jump back to the primary thread (then finalize Argobots) */
-        ABTI_ythread_jump_to_primary(p_local_xstream, p_root_ythread,
+        ABTI_ythread_jump_to_primary(p_local_xstream,
                                      p_global->p_primary_ythread);
     }
 }
@@ -3084,7 +3043,7 @@ static void thread_main_sched_func(void *arg)
 
         /* If there is an exit or a cancel request, the ES terminates
          * regardless of remaining work units. */
-        if (request & (ABTI_THREAD_REQ_TERMINATE | ABTI_THREAD_REQ_CANCEL))
+        if (request & ABTI_THREAD_REQ_CANCEL)
             break;
 
         /* When join is requested, the ES terminates after finishing

@@ -144,20 +144,6 @@ static inline void ABTI_event_ythread_suspend_impl(
 #endif
 }
 
-static inline void ABTI_event_ythread_yield_or_suspend_impl(
-    ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread,
-    ABTI_thread *p_parent, ABT_sync_event_type sync_event_type, void *p_sync)
-{
-    if (ABTD_atomic_relaxed_load_uint32(&p_ythread->thread.request) &
-        ABTI_THREAD_REQ_BLOCK) {
-        ABTI_event_ythread_suspend_impl(p_local_xstream, p_ythread, p_parent,
-                                        sync_event_type, p_sync);
-    } else {
-        ABTI_event_ythread_yield_impl(p_local_xstream, p_ythread, p_parent,
-                                      sync_event_type, p_sync);
-    }
-}
-
 static inline void ABTI_event_ythread_resume_impl(ABTI_local *p_local,
                                                   ABTI_ythread *p_ythread,
                                                   ABTI_thread *p_caller)
@@ -230,9 +216,8 @@ static inline void ABTI_event_ythread_resume_impl(ABTI_local *p_local,
                                  sync_event_type, p_sync)                      \
     do {                                                                       \
         if (ABTI_ENABLE_EVENT_INTERFACE) {                                     \
-            ABTI_event_ythread_yield_or_suspend_impl(p_local_xstream,          \
-                                                     p_ythread, p_parent,      \
-                                                     sync_event_type, p_sync); \
+            ABTI_event_ythread_yield_impl(p_local_xstream, p_ythread,          \
+                                          p_parent, sync_event_type, p_sync);  \
         }                                                                      \
     } while (0)
 

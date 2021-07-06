@@ -80,10 +80,8 @@ ABTI_waitlist_wait_and_unlock(ABTI_local **pp_local, ABTI_waitlist *p_waitlist,
         p_waitlist->p_tail = &p_ythread->thread;
 
         /* Suspend the current ULT */
-        ABTI_ythread_set_blocked(p_ythread);
-        ABTD_spinlock_release(p_lock);
-        ABTI_ythread_suspend(&p_local_xstream, p_ythread,
-                             ABT_SYNC_EVENT_TYPE_EVENTUAL, p_sync);
+        ABTI_ythread_suspend_unlock(&p_local_xstream, p_ythread, p_lock,
+                                    sync_event_type, p_sync);
         /* Resumed. */
         *pp_local = ABTI_xstream_get_local(p_local_xstream);
     }

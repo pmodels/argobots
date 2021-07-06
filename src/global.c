@@ -320,15 +320,13 @@ ABTU_ret_err static int finailze_library(void)
                                            ABT_TOOL_EVENT_THREAD_NONE, NULL);
 #endif
 
-    /* Set the orphan request for the primary ULT */
-    ABTI_thread_set_request(p_self, ABTI_THREAD_REQ_ORPHAN);
     /* Finish the main scheduler of this local xstream. */
     ABTI_sched_finish(p_local_xstream->p_main_sched);
     /* p_self cannot join the main scheduler since p_self needs to be orphaned.
      * Let's wait till the main scheduler finishes.  This thread will be
      * scheduled when the main root thread finishes. */
-    ABTI_ythread_yield(&p_local_xstream, p_ythread, ABT_SYNC_EVENT_TYPE_OTHER,
-                       NULL);
+    ABTI_ythread_yield_orphan(&p_local_xstream, p_ythread,
+                              ABT_SYNC_EVENT_TYPE_OTHER, NULL);
     ABTI_ASSERT(p_local_xstream == ABTI_local_get_xstream(p_local));
     ABTI_ASSERT(p_local_xstream->p_thread == p_self);
 
