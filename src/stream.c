@@ -30,11 +30,6 @@ xstream_update_main_sched(ABTI_global *p_global,
                           ABTI_xstream **pp_local_xstream,
                           ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 static void *xstream_launch_root_ythread(void *p_xstream);
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-ABTU_ret_err static int xstream_migrate_thread(ABTI_global *p_global,
-                                               ABTI_local *p_local,
-                                               ABTI_thread *p_thread);
-#endif
 
 /** @defgroup ES Execution Stream
  * This group is for Execution Stream.
@@ -565,7 +560,7 @@ int ABT_xstream_exit(void)
     /* Terminate the main scheduler. */
     ABTD_atomic_fetch_or_uint32(&p_local_xstream->p_main_sched->p_ythread
                                      ->thread.request,
-                                ABTI_THREAD_REQ_TERMINATE);
+                                ABTI_THREAD_REQ_CANCEL);
     /* Terminate this ULT */
     ABTI_ythread_exit(p_local_xstream, p_ythread);
     ABTU_unreachable();
@@ -612,7 +607,7 @@ int ABT_xstream_cancel(ABT_xstream xstream)
     /* Terminate the main scheduler of the target xstream. */
     ABTD_atomic_fetch_or_uint32(&p_xstream->p_main_sched->p_ythread->thread
                                      .request,
-                                ABTI_THREAD_REQ_TERMINATE);
+                                ABTI_THREAD_REQ_CANCEL);
     return ABT_SUCCESS;
 }
 
@@ -1647,11 +1642,52 @@ void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
         ABTI_sched_finish(p_sched);
     }
 
-    if ((request & ABTI_THREAD_REQ_TERMINATE) ||
-        (request & ABTI_THREAD_REQ_CANCEL)) {
+    if (request & ABTI_THREAD_REQ_CANCEL) {
         ABTI_sched_exit(p_sched);
     }
 }
+
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+ABTU_ret_err int ABTI_xstream_migrate_thread(ABTI_global *p_global,
+                                             ABTI_local *p_local,
+                                             ABTI_thread *p_thread)
+{
+    int abt_errno;
+    ABTI_pool *p_pool;
+
+    ABTI_thread_mig_data *p_mig_data;
+    abt_errno =
+        ABTI_thread_get_mig_data(p_global, p_local, p_thread, &p_mig_data);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Extracting an argument embedded in a migration request. */
+    p_pool = ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
+
+    /* Change the associated pool */
+    abt_errno = ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* callback function */
+    if (p_mig_data->f_migration_cb) {
+        ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+        if (p_ythread) {
+            ABT_thread thread = ABTI_ythread_get_handle(p_ythread);
+            p_mig_data->f_migration_cb(thread, p_mig_data->p_migration_cb_arg);
+        }
+    }
+
+    /* If request is set, p_migration_pool has a valid pool pointer. */
+    ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&p_thread->request) &
+                ABTI_THREAD_REQ_MIGRATE);
+
+    /* Unset the migration request. */
+    ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
+
+    /* Add the unit to the scheduler's pool */
+    ABTI_pool_push(p_pool, p_thread->unit);
+    return ABT_SUCCESS;
+}
+#endif
 
 void ABTI_xstream_free(ABTI_global *p_global, ABTI_local *p_local,
                        ABTI_xstream *p_xstream, ABT_bool force_free)
@@ -1915,77 +1951,21 @@ static inline void xstream_schedule_ythread(ABTI_global *p_global,
     if (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
         ABTI_THREAD_REQ_MIGRATE) {
         int abt_errno =
-            xstream_migrate_thread(p_global,
-                                   ABTI_xstream_get_local(p_local_xstream),
-                                   &p_ythread->thread);
+            ABTI_xstream_migrate_thread(p_global,
+                                        ABTI_xstream_get_local(p_local_xstream),
+                                        &p_ythread->thread);
         if (!ABTI_IS_ERROR_CHECK_ENABLED || abt_errno == ABT_SUCCESS) {
             /* Migration succeeded, so we do not need to schedule p_ythread. */
             return;
         }
     }
 #endif
-
-    /* Change the last ES */
-    p_ythread->thread.p_last_xstream = p_local_xstream;
-
-    /* Change the ULT state */
-    ABTD_atomic_release_store_int(&p_ythread->thread.state,
-                                  ABT_THREAD_STATE_RUNNING);
-
     /* Switch the context.  Since the argument is pp_local_xstream,
      * p_local_xstream->p_thread must be yieldable. */
     ABTI_ythread *p_self = ABTI_thread_get_ythread(p_local_xstream->p_thread);
-    p_ythread =
-        ABTI_ythread_switch_to_child(pp_local_xstream, p_self, p_ythread);
+    ABTI_ythread_run_child(pp_local_xstream, p_self, p_ythread);
     /* The previous ULT (p_ythread) may not be the same as one to which the
      * context has been switched. */
-    /* The scheduler continues from here. */
-    p_local_xstream = *pp_local_xstream;
-
-    /* Request handling. */
-    /* We do not need to acquire-load request since all critical requests
-     * (BLOCK, ORPHAN, STOP, and NOPUSH) are written by p_ythread. CANCEL might
-     * be delayed. */
-    uint32_t request =
-        ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request);
-    if (request & ABTI_THREAD_REQ_TERMINATE) {
-        /* The ULT has completed its execution or it called the exit request. */
-        ABTI_xstream_terminate_thread(p_global,
-                                      ABTI_xstream_get_local(p_local_xstream),
-                                      &p_ythread->thread);
-#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
-    } else if (request & ABTI_THREAD_REQ_CANCEL) {
-        ABTD_ythread_cancel(p_local_xstream, p_ythread);
-        ABTI_xstream_terminate_thread(p_global,
-                                      ABTI_xstream_get_local(p_local_xstream),
-                                      &p_ythread->thread);
-#endif
-    } else if (!(request & ABTI_THREAD_REQ_NON_YIELD)) {
-        /* The ULT did not finish its execution.
-         * Change the state of current running ULT and
-         * add it to the pool again. */
-        ABTI_pool_add_thread(&p_ythread->thread);
-    } else if (request & ABTI_THREAD_REQ_BLOCK) {
-        ABTI_thread_unset_request(&p_ythread->thread, ABTI_THREAD_REQ_BLOCK);
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    } else if (request & ABTI_THREAD_REQ_MIGRATE) {
-        /* This is the case when the ULT requests migration of itself. */
-        int abt_errno =
-            xstream_migrate_thread(p_global,
-                                   ABTI_xstream_get_local(p_local_xstream),
-                                   &p_ythread->thread);
-        /* Migration is optional, so it is okay if it fails. */
-        (void)abt_errno;
-#endif
-    } else if (request & ABTI_THREAD_REQ_ORPHAN) {
-        /* The ULT is not pushed back to the pool and is disconnected from any
-         * pool. */
-        ABTI_thread_unset_request(&p_ythread->thread, ABTI_THREAD_REQ_ORPHAN);
-        ABTI_thread_unset_associated_pool(p_global, &p_ythread->thread);
-    } else {
-        ABTI_ASSERT(0);
-        ABTU_unreachable();
-    }
 }
 
 static inline void xstream_schedule_task(ABTI_global *p_global,
@@ -2028,48 +2008,6 @@ static inline void xstream_schedule_task(ABTI_global *p_global,
                                   ABTI_xstream_get_local(p_local_xstream),
                                   p_task);
 }
-
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-ABTU_ret_err static int xstream_migrate_thread(ABTI_global *p_global,
-                                               ABTI_local *p_local,
-                                               ABTI_thread *p_thread)
-{
-    int abt_errno;
-    ABTI_pool *p_pool;
-
-    ABTI_thread_mig_data *p_mig_data;
-    abt_errno =
-        ABTI_thread_get_mig_data(p_global, p_local, p_thread, &p_mig_data);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    /* Extracting an argument embedded in a migration request. */
-    p_pool = ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
-
-    /* Change the associated pool */
-    abt_errno = ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    /* callback function */
-    if (p_mig_data->f_migration_cb) {
-        ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-        if (p_ythread) {
-            ABT_thread thread = ABTI_ythread_get_handle(p_ythread);
-            p_mig_data->f_migration_cb(thread, p_mig_data->p_migration_cb_arg);
-        }
-    }
-
-    /* If request is set, p_migration_pool has a valid pool pointer. */
-    ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&p_thread->request) &
-                ABTI_THREAD_REQ_MIGRATE);
-
-    /* Unset the migration request. */
-    ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
-
-    /* Add the unit to the scheduler's pool */
-    ABTI_pool_push(p_pool, p_thread->unit);
-    return ABT_SUCCESS;
-}
-#endif
 
 static void xstream_init_main_sched(ABTI_xstream *p_xstream,
                                     ABTI_sched *p_sched)
@@ -2140,7 +2078,6 @@ static int xstream_update_main_sched(ABTI_global *p_global,
                 break;
             }
         }
-
         if (p_main_sched->p_replace_sched) {
             /* We need to overwrite the scheduler.  Free the existing one. */
             ABTI_ythread *p_waiter = p_main_sched->p_replace_waiter;
@@ -2156,19 +2093,17 @@ static int xstream_update_main_sched(ABTI_global *p_global,
             ABTI_ythread_set_ready(ABTI_xstream_get_local(*pp_local_xstream),
                                    p_waiter);
         }
-        ABTI_ythread_set_blocked(p_ythread);
         /* Set the replace scheduler */
         p_main_sched->p_replace_sched = p_sched;
         p_main_sched->p_replace_waiter = p_ythread;
-        /* Ask the current main scheduler to replace its scheduler */
-        ABTI_sched_set_request(p_main_sched, ABTI_SCHED_REQ_REPLACE);
 
         /* Switch to the current main scheduler.  The current ULT is pushed to
          * the new scheduler's pool so that when the new scheduler starts, this
          * ULT can be scheduled by the new scheduler.  The existing main
          * scheduler will be freed by ABTI_SCHED_REQ_RELEASE. */
-        ABTI_ythread_suspend(pp_local_xstream, p_ythread,
-                             ABT_SYNC_EVENT_TYPE_OTHER, NULL);
+        ABTI_ythread_suspend_replace_sched(pp_local_xstream, p_ythread,
+                                           p_main_sched,
+                                           ABT_SYNC_EVENT_TYPE_OTHER, NULL);
         return ABT_SUCCESS;
     }
 }

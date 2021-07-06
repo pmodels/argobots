@@ -34,7 +34,7 @@
 #include "abt_config.h"
 
 /*
-fcontext_t *switch_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+void switch_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
 */
 .text
 .globl _switch_fcontext
@@ -83,14 +83,11 @@ _switch_fcontext:
     /* restore return-address */
     popq  %r8
 
-    /* p_old_ctx (RSI) is set to a return value (RAX) */
-    movq  %rsi, %rax
-
     /* indirect jump to context */
     jmpq  *%r8
 
 /*
-void jump_fcontext(fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+void jump_fcontext(fcontext_t *p_new_ctx);
 */
 .text
 .globl _jump_fcontext
@@ -119,16 +116,13 @@ _jump_fcontext:
     /* restore return-address */
     popq  %r8
 
-    /* p_old_ctx (RSI) is set to a return value (RAX) */
-    movq  %rsi, %rax
-
     /* indirect jump to context */
     jmpq  *%r8
 
 /*
-fcontext_t *init_and_switch_fcontext(fcontext_t *p_new_ctx,
-                                     void (*f_thread)(fcontext_t *),
-                                     void *p_stacktop, fcontext_t *p_old_ctx);
+void init_and_switch_fcontext(fcontext_t *p_new_ctx,
+                              void (*f_thread)(fcontext_t *),
+                              void *p_stacktop, fcontext_t *p_old_ctx);
 */
 .text
 .globl _init_and_switch_fcontext
@@ -166,9 +160,8 @@ _init_and_switch_fcontext:
     jmpq *%rsi
 
 /*
-fcontext_t *init_and_jump_fcontext(fcontext_t *p_new_ctx,
-                                   void (*f_thread)(fcontext_t *),
-                                   void *p_stacktop);
+void init_and_jump_fcontext(fcontext_t *p_new_ctx,
+                            void (*f_thread)(fcontext_t *), void *p_stacktop);
 */
 .text
 .globl _init_and_jump_fcontext
@@ -184,6 +177,191 @@ _init_and_jump_fcontext:
     /* p_new_ctx (RDI) is passed as the first argument (RDI) of f_thread. */
     /* jump to a f_thread (RSI) */
     jmpq *%rsi
+
+/*
+void switch_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                               fcontext_t *p_new_ctx, fcontext_t *p_old_ctx);
+*/
+.text
+.globl _switch_with_call_fcontext
+.align 8
+_switch_with_call_fcontext:
+    pushq  %rbp  /* save RBP */
+    pushq  %rbx  /* save RBX */
+    pushq  %r15  /* save R15 */
+    pushq  %r14  /* save R14 */
+    pushq  %r13  /* save R13 */
+    pushq  %r12  /* save R12 */
+
+    /* prepare stack for FPU */
+    leaq  -0x8(%rsp), %rsp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* save MMX control- and status-word */
+    stmxcsr  (%rsp)
+    /* save x87 control-word */
+    fnstcw   0x4(%rsp)
+#endif
+
+    /* store RSP (pointing to context-data) in p_old_ctx (RCX) */
+    movq  %rsp, (%rcx)
+
+    /* restore RSP which is stored in p_new_ctx (RDX) */
+    movq  (%rdx), %rsp
+
+    /* call f_cb (RSI).  cb_arg (RDI) has already been set.
+     * all the caller-saved registers will be discarded */
+    callq *%rsi
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* restore MMX control- and status-word */
+    ldmxcsr  (%rsp)
+    /* restore x87 control-word */
+    fldcw  0x4(%rsp)
+#endif
+
+    /* prepare stack for FPU */
+    leaq  0x8(%rsp), %rsp
+
+    popq  %r12  /* restrore R12 */
+    popq  %r13  /* restrore R13 */
+    popq  %r14  /* restrore R14 */
+    popq  %r15  /* restrore R15 */
+    popq  %rbx  /* restrore RBX */
+    popq  %rbp  /* restrore RBP */
+
+    /* restore return-address */
+    popq  %r8
+
+    /* indirect jump to context */
+    jmpq  *%r8
+
+/*
+void jump_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                             fcontext_t *p_new_ctx);
+*/
+.text
+.globl _jump_with_call_fcontext
+.align 8
+_jump_with_call_fcontext:
+    /* restore RSP which is stored in p_new_ctx (RDX) */
+    movq  (%rdx), %rsp
+
+    /* call f_cb (RSI).  cb_arg (RDI) has already been set.
+     * all the caller-saved registers will be discarded */
+    callq *%rsi
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* restore MMX control- and status-word */
+    ldmxcsr  (%rsp)
+    /* restore x87 control-word */
+    fldcw  0x4(%rsp)
+#endif
+
+    /* prepare stack for FPU */
+    leaq  0x8(%rsp), %rsp
+
+    popq  %r12  /* restrore R12 */
+    popq  %r13  /* restrore R13 */
+    popq  %r14  /* restrore R14 */
+    popq  %r15  /* restrore R15 */
+    popq  %rbx  /* restrore RBX */
+    popq  %rbp  /* restrore RBP */
+
+    /* restore return-address */
+    popq  %r8
+
+    /* indirect jump to context */
+    jmpq  *%r8
+
+/*
+void init_and_switch_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                                        fcontext_t *p_new_ctx,
+                                        void (*f_thread)(fcontext_t *),
+                                        void *p_stacktop,
+                                        fcontext_t *p_old_ctx);
+*/
+.text
+.globl _init_and_switch_with_call_fcontext
+.align 8
+_init_and_switch_with_call_fcontext:
+    pushq  %rbp  /* save RBP */
+    pushq  %rbx  /* save RBX */
+    pushq  %r15  /* save R15 */
+    pushq  %r14  /* save R14 */
+    pushq  %r13  /* save R13 */
+    pushq  %r12  /* save R12 */
+
+    /* prepare stack for FPU */
+    leaq  -0x8(%rsp), %rsp
+
+#if ABTD_FCONTEXT_PRESERVE_FPU
+    /* save MMX control- and status-word */
+    stmxcsr  (%rsp)
+    /* save x87 control-word */
+    fnstcw   0x4(%rsp)
+#endif
+
+    /* store RSP (pointing to context-data) in p_old_ctx (R9) */
+    movq  %rsp, (%r9)
+
+    /* shift address in p_stacktop (R8) to lower 16 byte boundary */
+    andq  $-16, %r8
+
+    /* save p_new_ctx (RDX) in R12 (callee-saved) */
+    movq  %rdx, %r12
+    /* save f_thread (RCX) in R13 (callee-saved) */
+    movq  %rcx, %r13
+    /* set p_stacktop (R8) */
+    movq  %r8, %rsp
+
+    /* call f_cb (RSI).  cb_arg (RDI) has already been set.
+     * all the caller-saved registers will be discarded */
+    callq *%rsi
+
+    /* For 16-byte function stack alignment, subtract 8 bytes */
+    leaq -0x8(%rsp), %rsp
+
+    /* set the first argument (RDI) to p_new_ctx (R12) */
+    movq  %r12, %rdi
+
+    /* p_new_ctx (RDI) is passed as the first argument of f_thread. */
+    /* jump to a f_thread (R13) */
+    jmpq *%r13
+
+/*
+void init_and_jump_with_call_fcontext(void *cb_arg, void (*f_cb)(void *),
+                                      fcontext_t *p_new_ctx,
+                                      void (*f_thread)(fcontext_t *),
+                                      void *p_stacktop);
+*/
+.text
+.globl _init_and_jump_with_call_fcontext
+.align 8
+_init_and_jump_with_call_fcontext:
+    /* shift address in p_stacktop (R8) to lower 16 byte boundary */
+    andq  $-16, %r8
+
+    /* save p_new_ctx (RDX) in R12 (callee-saved) */
+    movq  %rdx, %r12
+    /* save f_thread (RCX) in R13 (callee-saved) */
+    movq  %rcx, %r13
+    /* set p_stacktop (R8) */
+    movq  %r8, %rsp
+
+    /* call f_cb (RSI).  cb_arg (RDI) has already been set.
+     * all the caller-saved registers will be discarded */
+    callq *%rsi
+
+    /* For 16-byte function stack alignment, subtract 8 bytes */
+    leaq -0x8(%rsp), %rsp
+
+    /* set the first argument (RDI) to p_new_ctx (R12) */
+    movq  %r12, %rdi
+
+    /* p_new_ctx (RDI) is passed as the first argument of f_thread. */
+    /* jump to a f_thread (R13) */
+    jmpq *%r13
 
 /*
 void peek_fcontext(void *arg, void (*f_peek)(void *), fcontext_t *p_target_ctx);
