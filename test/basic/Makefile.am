@@ -68,6 +68,7 @@ TESTS = \
 	barrier \
 	self_rank_id \
 	self_type \
+	self_yield_to \
 	ext_thread \
 	ext_thread2 \
 	ext_thread_barrier \
@@ -166,6 +167,7 @@ eventual_test_SOURCES = eventual_test.c
 barrier_SOURCES = barrier.c
 self_rank_id_SOURCES = self_rank_id.c
 self_type_SOURCES = self_type.c
+self_yield_to_SOURCES = self_yield_to.c
 ext_thread_SOURCES = ext_thread.c
 ext_thread2_SOURCES = ext_thread2.c
 ext_thread_barrier_SOURCES = ext_thread_barrier.c
@@ -250,6 +252,7 @@ testing:
 	./barrier
 	./self_rank_id
 	./self_type
+	./self_yield_to
 	./ext_thread
 	./ext_thread2
 	./ext_thread_barrier
