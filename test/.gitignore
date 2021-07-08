@@ -62,6 +62,7 @@ basic/eventual_create
 basic/eventual_test
 basic/barrier
 basic/self_rank_id
+basic/self_suspend_to
 basic/self_type
 basic/self_yield_to
 basic/ext_thread
