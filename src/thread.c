@@ -1161,8 +1161,8 @@ int ABT_thread_yield_to(ABT_thread thread)
     p_tar_ythread->thread.p_last_xstream = p_local_xstream;
 
     /* Switch the context */
-    ABTI_ythread_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
-                          ABT_SYNC_EVENT_TYPE_USER, NULL);
+    ABTI_ythread_thread_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
+                                 ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }
 
