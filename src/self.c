@@ -740,6 +740,68 @@ int ABT_self_suspend(void)
 
 /**
  * @ingroup SELF
+ * @brief   Suspend the calling ULT and jump to another ULT.
+ *
+ * \c ABT_self_suspend_to() suspends the execution of the calling ULT and
+ * schedules the ULT \c thread as a child thread of the calling ULT's parent.
+ * The calling ULT is not pushed to its associated pool and its state becomes
+ * blocked.  \c ABT_thread_resume() awakens the suspended ULT and pushes it back
+ * to its associated pool.  It is the user's responsibility to pop \c thread
+ * from its associated pool before calling this routine.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_NY{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{the caller}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ * \DOC_ERROR_INV_THREAD_CALLER{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ * \DOC_UNDEFINED_WORK_UNIT_IN_POOL{\c thread,
+ *                                  the pool associated with \c thread}
+ * \DOC_UNDEFINED_WORK_UNIT_NOT_READY{\c thread}
+ *
+ * @param[in] thread  handle to the target thread
+ * @return Error code
+ */
+int ABT_self_suspend_to(ABT_thread thread)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_cur_ythread;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_cur_ythread);
+
+    ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
+    ABTI_ythread *p_tar_ythread = ABTI_thread_get_ythread_or_null(p_tar_thread);
+    ABTI_CHECK_NULL_YTHREAD_PTR(p_tar_ythread);
+    ABTI_CHECK_TRUE(p_cur_ythread != p_tar_ythread, ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!(p_cur_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!(p_tar_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    ABTI_UB_ASSERT(!(p_tar_ythread->thread.p_pool->u_is_in_pool &&
+                     p_tar_ythread->thread.p_pool->u_is_in_pool(
+                         p_tar_ythread->thread.unit) == ABT_TRUE));
+
+    /* Switch the context */
+    ABTI_ythread_suspend_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
+                            ABT_SYNC_EVENT_TYPE_USER, NULL);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Terminate a calling ULT.
  *
  * \c ABT_self_exit() terminates the calling ULT.  This routine does not return

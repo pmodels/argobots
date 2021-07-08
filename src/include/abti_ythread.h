@@ -235,6 +235,20 @@ static inline void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
                                            (void *)p_ythread);
 }
 
+static inline void ABTI_ythread_suspend_to(ABTI_xstream **pp_local_xstream,
+                                           ABTI_ythread *p_self,
+                                           ABTI_ythread *p_ythread,
+                                           ABT_sync_event_type sync_event_type,
+                                           void *p_sync)
+{
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
+                               p_sync);
+    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_ythread,
+                                            ABTI_ythread_callback_suspend,
+                                            (void *)p_self);
+}
+
 void ABTI_ythread_callback_terminate(void *arg);
 
 ABTU_noreturn static inline void
