@@ -188,6 +188,21 @@ static inline void ABTI_ythread_yield(ABTI_xstream **pp_local_xstream,
                                            (void *)p_ythread);
 }
 
+static inline void ABTI_ythread_yield_to(ABTI_xstream **pp_local_xstream,
+                                         ABTI_ythread *p_self,
+                                         ABTI_ythread *p_ythread,
+                                         ABT_sync_event_type sync_event_type,
+                                         void *p_sync)
+{
+    ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
+                             sync_event_type, p_sync);
+    ABTD_atomic_release_store_int(&p_ythread->thread.state,
+                                  ABT_THREAD_STATE_RUNNING);
+    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_ythread,
+                                            ABTI_ythread_callback_yield,
+                                            (void *)p_self);
+}
+
 /* Old interface used for ABT_thread_yield_to() */
 void ABTI_ythread_callback_thread_yield_to(void *arg);
 

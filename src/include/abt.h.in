@@ -1888,6 +1888,7 @@ int ABT_self_get_last_pool_id(int *pool_id) ABT_API_PUBLIC;
 int ABT_self_set_associated_pool(ABT_pool pool) ABT_API_PUBLIC;
 int ABT_self_get_unit(ABT_unit *unit) ABT_API_PUBLIC;
 int ABT_self_yield(void) ABT_API_PUBLIC;
+int ABT_self_yield_to(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_self_suspend(void) ABT_API_PUBLIC;
 int ABT_self_exit(void) ABT_API_PUBLIC;
 int ABT_self_set_arg(void *arg) ABT_API_PUBLIC;
