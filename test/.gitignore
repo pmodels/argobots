@@ -61,6 +61,7 @@ basic/rwlock_writer_excl
 basic/eventual_create
 basic/eventual_test
 basic/barrier
+basic/self_exit_to
 basic/self_rank_id
 basic/self_suspend_to
 basic/self_type

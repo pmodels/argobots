@@ -66,6 +66,7 @@ TESTS = \
 	eventual_create \
 	eventual_test \
 	barrier \
+	self_exit_to \
 	self_rank_id \
 	self_suspend_to \
 	self_type \
@@ -166,6 +167,7 @@ future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 eventual_test_SOURCES = eventual_test.c
 barrier_SOURCES = barrier.c
+self_exit_to_SOURCES = self_exit_to.c
 self_rank_id_SOURCES = self_rank_id.c
 self_suspend_to_SOURCES = self_suspend_to.c
 self_type_SOURCES = self_type.c
@@ -252,6 +254,7 @@ testing:
 	./eventual_create
 	./eventual_test
 	./barrier
+	./self_exit_to
 	./self_rank_id
 	./self_suspend_to
 	./self_type
