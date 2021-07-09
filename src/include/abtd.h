@@ -100,6 +100,9 @@ void ABTD_affinity_list_free(ABTD_affinity_list *p_list);
 
 /* ULT Context */
 void ABTD_ythread_exit(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread);
+void ABTD_ythread_exit_to(ABTI_xstream *p_local_xstream,
+                          ABTI_ythread *p_cur_ythread,
+                          ABTI_ythread *p_tar_ythread);
 void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream,
                          ABTI_ythread *p_ythread);
 

@@ -116,6 +116,43 @@ void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
     ABTI_event_thread_cancel(p_local_xstream, &p_ythread->thread);
 }
 
+void ABTD_ythread_exit_to(ABTI_xstream *p_local_xstream,
+                          ABTI_ythread *p_cur_ythread,
+                          ABTI_ythread *p_tar_ythread)
+{
+    /* If other ULT is blocked to join the canceled ULT, we have to wake up the
+     * joiner ULT.  However, unlike the case when the ULT has finished its
+     * execution and calls ythread_terminate/exit, this caller of this function
+     * wants to jump to p_tar_ythread.  Therefore, we should not context switch
+     * to the joiner ULT. */
+    ABTD_ythread_context *p_ctx = &p_cur_ythread->ctx;
+
+    if (ABTD_atomic_acquire_load_ythread_context_ptr(&p_ctx->p_link)) {
+        /* If p_link is set, it means that other ULT has called the join. */
+        ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(
+            ABTD_atomic_relaxed_load_ythread_context_ptr(&p_ctx->p_link));
+        ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
+                               p_joiner);
+    } else {
+        uint32_t req =
+            ABTD_atomic_fetch_or_uint32(&p_cur_ythread->thread.request,
+                                        ABTI_THREAD_REQ_JOIN);
+        if (req & ABTI_THREAD_REQ_JOIN) {
+            /* This case means there has been a join request and the joiner has
+             * blocked.  We have to wake up the joiner ULT. */
+            while (ABTD_atomic_acquire_load_ythread_context_ptr(
+                       &p_ctx->p_link) == NULL)
+                ;
+            ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(
+                ABTD_atomic_relaxed_load_ythread_context_ptr(&p_ctx->p_link));
+            ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
+                                   p_joiner);
+        }
+    }
+    ABTI_ythread_terminate_to(p_local_xstream, p_cur_ythread, p_tar_ythread);
+    ABTU_unreachable();
+}
+
 void ABTD_ythread_print_context(ABTI_ythread *p_ythread, FILE *p_os, int indent)
 {
     ABTD_ythread_context *p_ctx = &p_ythread->ctx;

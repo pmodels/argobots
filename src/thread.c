@@ -1068,18 +1068,10 @@ int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
  * its associated pool.
  *
  * @note
- * This routine is experimental.  The details of this function may be updated in
- * the future.
- *
- * @changev20
- * \DOC_DESC_V1X_YIELD_TASK
- *
- * \DOC_DESC_V1X_YIELD_EXT
- * @endchangev20
+ * \DOC_NOTE_REPLACEMENT{\c ABT_self_yield_to()}
  *
  * @contexts
- * \DOC_V1X \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH\n
- * \DOC_V20 \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH
  *
  * @errors
  * \DOC_ERROR_SUCCESS
@@ -1090,8 +1082,6 @@ int ABT_thread_set_associated_pool(ABT_thread thread, ABT_pool pool)
  * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{a pool associated with \c thread,
  *                                     functions that are necessary for this
  *                                     routine}
- * \DOC_V20 \DOC_ERROR_INV_THREAD_NY
- * \DOC_V20 \DOC_ERROR_INV_XSTREAM_EXT
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -1110,7 +1100,6 @@ int ABT_thread_yield_to(ABT_thread thread)
 
     ABTI_xstream *p_local_xstream;
     ABTI_ythread *p_cur_ythread;
-#ifndef ABT_CONFIG_ENABLE_VER_20_API
     p_local_xstream = ABTI_local_get_xstream_or_null(ABTI_local_get_local());
     if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
         return ABT_SUCCESS;
@@ -1120,9 +1109,6 @@ int ABT_thread_yield_to(ABT_thread thread)
         if (!p_cur_ythread)
             return ABT_SUCCESS;
     }
-#else
-    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_cur_ythread);
-#endif
 
     ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
     ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
@@ -1161,8 +1147,8 @@ int ABT_thread_yield_to(ABT_thread thread)
     p_tar_ythread->thread.p_last_xstream = p_local_xstream;
 
     /* Switch the context */
-    ABTI_ythread_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
-                          ABT_SYNC_EVENT_TYPE_USER, NULL);
+    ABTI_ythread_thread_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
+                                 ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }
 
@@ -2488,6 +2474,15 @@ ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
 {
     /* Terminate this ULT */
     ABTD_ythread_exit(p_local_xstream, p_ythread);
+    ABTU_unreachable();
+}
+
+ABTU_noreturn void ABTI_ythread_exit_to(ABTI_xstream *p_local_xstream,
+                                        ABTI_ythread *p_cur_ythread,
+                                        ABTI_ythread *p_tar_ythread)
+{
+    /* Terminate this ULT */
+    ABTD_ythread_exit_to(p_local_xstream, p_cur_ythread, p_tar_ythread);
     ABTU_unreachable();
 }
 

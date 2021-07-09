@@ -617,6 +617,9 @@ ABTU_ret_err int ABTI_ythread_create_sched(ABTI_global *p_global,
                                            ABTI_sched *p_sched);
 ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
                                      ABTI_ythread *p_ythread);
+ABTU_noreturn void ABTI_ythread_exit_to(ABTI_xstream *p_local_xstream,
+                                        ABTI_ythread *p_cur_ythread,
+                                        ABTI_ythread *p_tar_ythread);
 void ABTI_ythread_free_primary(ABTI_global *p_global, ABTI_local *p_local,
                                ABTI_ythread *p_ythread);
 void ABTI_ythread_free_root(ABTI_global *p_global, ABTI_local *p_local,

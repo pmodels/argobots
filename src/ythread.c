@@ -34,7 +34,7 @@ void ABTI_ythread_callback_yield(void *arg)
 
 /* Before yield_to, p_prev->thread.p_pool's num_blocked must be incremented to
  * avoid making a pool empty. */
-void ABTI_ythread_callback_yield_to(void *arg)
+void ABTI_ythread_callback_thread_yield_to(void *arg)
 {
     // ABTI_event_ythread_yield(p_local_xstream, p_cur_ythread,
     //                      p_cur_ythread->thread.p_parent,
