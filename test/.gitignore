@@ -8,6 +8,8 @@ basic/xstream_rank
 basic/xstream_set_main_sched
 basic/thread_create
 basic/thread_create2
+basic/thread_create3
+basic/thread_create4
 basic/thread_create_on_xstream
 basic/thread_revive
 basic/thread_attr
