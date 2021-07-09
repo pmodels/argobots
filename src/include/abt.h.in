@@ -1785,6 +1785,8 @@ int ABT_unit_set_associated_pool(ABT_unit unit, ABT_pool pool) ABT_API_PUBLIC;
 /* User-level Thread (ULT) */
 int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
                       ABT_thread_attr attr, ABT_thread *newthread) ABT_API_PUBLIC;
+int ABT_thread_create_to(ABT_pool pool, void (*thread_func)(void *), void *arg,
+                         ABT_thread_attr attr, ABT_thread *newthread) ABT_API_PUBLIC;
 int ABT_thread_create_on_xstream(ABT_xstream xstream,
                       void (*thread_func)(void *), void *arg,
                       ABT_thread_attr attr, ABT_thread *newthread) ABT_API_PUBLIC;

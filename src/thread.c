@@ -8,6 +8,7 @@
 typedef enum {
     YTHREAD_CREATE_POOL_OP_NONE,
     YTHREAD_CREATE_POOL_OP_PUSH,
+    YTHREAD_CREATE_POOL_OP_INIT,
 } ythread_create_pool_op_kind;
 ABTU_ret_err static inline int
 ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
@@ -122,6 +123,92 @@ int ABT_thread_create(ABT_pool pool, void (*thread_func)(void *), void *arg,
     /* Return value */
     if (newthread)
         *newthread = ABTI_ythread_get_handle(p_newthread);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup ULT
+ * @brief   Create a new ULT and yield to it.
+ *
+ * \c ABT_thread_create_to() creates a new ULT, given by the attributes \c attr,
+ * associates it with the pool \c pool, and returns its handle through
+ * \c newthread.  Then, the calling ULT yields to the newly created ULT.  The
+ * calling ULT is pushed to its associated pool.  The newly created ULT calls
+ * \c thread_func() with \c arg.  If \c newthread is not NULL, \c newthread is
+ * updated before the created ULT calls \c thread_func().
+ *
+ * \c attr can be created by \c ABT_thread_attr_create().  If the user passes
+ * \c ABT_THREAD_ATTR_NULL for \c attr, the default ULT attribute is used.
+ *
+ * @note
+ * \DOC_NOTE_DEFAULT_THREAD_ATTRIBUTE
+ *
+ * This routine copies \c attr, so the user can free \c attr after this routine
+ * returns.
+ *
+ * If \c newthread is \c NULL, this routine creates an unnamed ULT.  An unnamed
+ * ULT is automatically released on the completion of \c thread_func().
+ * Otherwise, \c newthread must be explicitly freed by \c ABT_thread_free().
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{the caller}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ * \DOC_UNDEFINED_NULL_PTR{\c thread_func}
+ *
+ * @param[in]  pool         pool handle
+ * @param[in]  thread_func  function to be executed by a new ULT
+ * @param[in]  arg          argument for \c thread_func()
+ * @param[in]  attr         ULT attribute
+ * @param[out] newthread    ULT handle
+ * @return Error code
+ */
+int ABT_thread_create_to(ABT_pool pool, void (*thread_func)(void *), void *arg,
+                         ABT_thread_attr attr, ABT_thread *newthread)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread_func);
+
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_cur_ythread, *p_newthread;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_cur_ythread);
+    ABTI_CHECK_TRUE(!(p_cur_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    ABTI_thread_type unit_type =
+        (newthread != NULL)
+            ? (ABTI_THREAD_TYPE_YIELDABLE | ABTI_THREAD_TYPE_NAMED)
+            : ABTI_THREAD_TYPE_YIELDABLE;
+    int abt_errno =
+        ythread_create(p_global, ABTI_xstream_get_local(p_local_xstream),
+                       p_pool, thread_func, arg, ABTI_thread_attr_get_ptr(attr),
+                       unit_type, NULL, YTHREAD_CREATE_POOL_OP_INIT,
+                       &p_newthread);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Set a return value before context switching. */
+    if (newthread)
+        *newthread = ABTI_ythread_get_handle(p_newthread);
+
+    /* Yield to the target ULT. */
+    ABTI_ythread_yield_to(&p_local_xstream, p_cur_ythread, p_newthread,
+                          ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }
 
@@ -2737,7 +2824,8 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
     ABTD_atomic_relaxed_store_ptr(&p_newthread->thread.p_keytable, p_keytable);
 
     /* Create a wrapper unit */
-    if (pool_op == YTHREAD_CREATE_POOL_OP_PUSH) {
+    if (pool_op == YTHREAD_CREATE_POOL_OP_PUSH ||
+        pool_op == YTHREAD_CREATE_POOL_OP_INIT) {
         abt_errno =
             ABTI_thread_init_pool(p_global, &p_newthread->thread, p_pool);
         if (ABTI_IS_ERROR_CHECK_ENABLED &&
@@ -2753,8 +2841,10 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
                                      ? ABTI_local_get_xstream(p_local)->p_thread
                                      : NULL,
                                  p_pool);
-        /* Add this thread to the pool */
-        ABTI_pool_push(p_pool, p_newthread->thread.unit);
+        if (pool_op == YTHREAD_CREATE_POOL_OP_PUSH) {
+            /* Add this thread to the pool */
+            ABTI_pool_push(p_pool, p_newthread->thread.unit);
+        }
     } else {
         /* pool_op == YTHREAD_CREATE_POOL_OP_NONE */
         p_newthread->thread.p_pool = p_pool;
