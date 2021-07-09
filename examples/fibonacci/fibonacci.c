@@ -27,7 +27,7 @@ typedef struct {
     int ret;
 } fibonacci_arg_t;
 
-void fibonacci(void *arg)
+void fibonacci_pf(void *arg)
 {
     int n = ((fibonacci_arg_t *)arg)->n;
     int *p_ret = &((fibonacci_arg_t *)arg)->ret;
@@ -42,10 +42,34 @@ void fibonacci(void *arg)
         ABT_pool target_pool = pools[rank];
         ABT_thread child1;
         /* Calculate fib(n - 1). */
-        ABT_thread_create(target_pool, fibonacci, &child1_arg,
+        ABT_thread_create(target_pool, fibonacci_pf, &child1_arg,
                           ABT_THREAD_ATTR_NULL, &child1);
         /* Calculate fib(n - 2).  We do not create another ULT. */
-        fibonacci(&child2_arg);
+        fibonacci_pf(&child2_arg);
+        ABT_thread_free(&child1);
+        *p_ret = child1_arg.ret + child2_arg.ret;
+    }
+}
+
+void fibonacci_cf(void *arg)
+{
+    int n = ((fibonacci_arg_t *)arg)->n;
+    int *p_ret = &((fibonacci_arg_t *)arg)->ret;
+
+    if (n <= 1) {
+        *p_ret = 1;
+    } else {
+        fibonacci_arg_t child1_arg = { n - 1, 0 };
+        fibonacci_arg_t child2_arg = { n - 2, 0 };
+        int rank;
+        ABT_xstream_self_rank(&rank);
+        ABT_pool target_pool = pools[rank];
+        ABT_thread child1;
+        /* Calculate fib(n - 1). */
+        ABT_thread_create_to(target_pool, fibonacci_cf, &child1_arg,
+                             ABT_THREAD_ATTR_NULL, &child1);
+        /* Calculate fib(n - 2).  We do not create another ULT. */
+        fibonacci_cf(&child2_arg);
         ABT_thread_free(&child1);
         *p_ret = child1_arg.ret + child2_arg.ret;
     }
@@ -74,8 +98,9 @@ int main(int argc, char **argv)
     /* Read arguments. */
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int n = DEFAULT_N;
+    int is_child_first = 0;
     while (1) {
-        int opt = getopt(argc, argv, "he:n:");
+        int opt = getopt(argc, argv, "he:s:n:");
         if (opt == -1)
             break;
         switch (opt) {
@@ -85,9 +110,15 @@ int main(int argc, char **argv)
             case 'n':
                 n = atoi(optarg);
                 break;
+            case 's':
+                is_child_first = atoi(optarg);
+                break;
             case 'h':
             default:
-                printf("Usage: ./fibonacci [-e NUM_XSTREAMS] [-n N]\n");
+                printf("Usage: ./fibonacci [-e NUM_XSTREAMS] [-n N] "
+                       "[-s CREATE_TYPE]\n"
+                       "CREATE_TYPE = 0 : parent-first (ABT_thread_create)\n"
+                       "            = 1 : child-first(ABT_thread_create_to)\n");
                 return -1;
         }
     }
@@ -128,7 +159,11 @@ int main(int argc, char **argv)
     }
 
     fibonacci_arg_t arg = { n, 0 };
-    fibonacci(&arg);
+    if (is_child_first) {
+        fibonacci_cf(&arg);
+    } else {
+        fibonacci_pf(&arg);
+    }
     int ret = arg.ret;
     int ans = fibonacci_seq(n);
 

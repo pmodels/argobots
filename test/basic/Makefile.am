@@ -13,6 +13,8 @@ TESTS = \
 	xstream_set_main_sched \
 	thread_create \
 	thread_create2 \
+	thread_create3 \
+	thread_create4 \
 	thread_create_on_xstream \
 	thread_revive \
 	thread_attr \
@@ -114,6 +116,8 @@ xstream_rank_SOURCES = xstream_rank.c
 xstream_set_main_sched_SOURCES = xstream_set_main_sched.c
 thread_create_SOURCES = thread_create.c
 thread_create2_SOURCES = thread_create2.c
+thread_create3_SOURCES = thread_create3.c
+thread_create4_SOURCES = thread_create4.c
 thread_create_on_xstream_SOURCES = thread_create_on_xstream.c
 thread_revive_SOURCES = thread_revive.c
 thread_attr_SOURCES = thread_attr.c
@@ -201,6 +205,8 @@ testing:
 	./xstream_set_main_sched
 	./thread_create
 	./thread_create2
+	./thread_create3
+	./thread_create4
 	./thread_create_on_xstream
 	./thread_revive
 	./thread_attr

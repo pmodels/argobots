@@ -12,6 +12,7 @@ TESTS = \
 	stencil_forkjoin_divconq \
 	stencil_forkjoin_divconq_hrws \
 	stencil_forkjoin_divconq_rws \
+	stencil_forkjoin_divconq_rws_cf \
 	stencil_forkjoin_revive \
 	stencil_forkjoin_task \
 	stencil_forkjoin_task_revive \
@@ -32,6 +33,7 @@ stencil_forkjoin_SOURCES = stencil_forkjoin.c
 stencil_forkjoin_divconq_SOURCES = stencil_forkjoin_divconq.c
 stencil_forkjoin_divconq_hrws_SOURCES = stencil_forkjoin_divconq_hrws.c
 stencil_forkjoin_divconq_rws_SOURCES = stencil_forkjoin_divconq_rws.c
+stencil_forkjoin_divconq_rws_cf_SOURCES = stencil_forkjoin_divconq_rws_cf.c
 stencil_forkjoin_revive_SOURCES = stencil_forkjoin_revive.c
 stencil_forkjoin_task_SOURCES = stencil_forkjoin_task.c
 stencil_forkjoin_task_revive_SOURCES = stencil_forkjoin_task_revive.c

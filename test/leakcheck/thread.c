@@ -9,6 +9,12 @@
 #include "rtrace.h"
 #include "util.h"
 
+#ifdef ABT_ENABLE_VER_20_API
+#define ENABLED_VER_20_API 1
+#else
+#define ENABLED_VER_20_API 0
+#endif
+
 /* Check ABT_thread. */
 
 #define MAX_THREADS 8
@@ -22,8 +28,7 @@ void thread_func(void *arg)
     }
 }
 
-int create_thread_default(int push_to_pool, ABT_thread *p_thread,
-                          int must_succeed)
+int create_thread_default(int pool_op, ABT_thread *p_thread, int must_succeed)
 {
     int ret;
     ABT_xstream self_xstream;
@@ -31,12 +36,18 @@ int create_thread_default(int push_to_pool, ABT_thread *p_thread,
     assert(ret == ABT_SUCCESS);
     if (p_thread)
         *p_thread = (ABT_thread)RAND_PTR;
-    if (push_to_pool) {
+    if (pool_op == 0) {
         ABT_pool pool;
         ret = ABT_xstream_get_main_pools(self_xstream, 1, &pool);
         assert(ret == ABT_SUCCESS);
         ret = ABT_thread_create(pool, thread_func, (void *)&ret,
                                 ABT_THREAD_ATTR_NULL, p_thread);
+    } else if (pool_op == 1) {
+        ABT_pool pool;
+        ret = ABT_xstream_get_main_pools(self_xstream, 1, &pool);
+        assert(ret == ABT_SUCCESS);
+        ret = ABT_thread_create_to(pool, thread_func, (void *)&ret,
+                                   ABT_THREAD_ATTR_NULL, p_thread);
     } else {
         ret = ABT_thread_create_on_xstream(self_xstream, thread_func,
                                            (void *)&ret, ABT_THREAD_ATTR_NULL,
@@ -44,18 +55,17 @@ int create_thread_default(int push_to_pool, ABT_thread *p_thread,
     }
     assert(!must_succeed || ret == ABT_SUCCESS);
     if (ret != ABT_SUCCESS && p_thread) {
-#ifdef ABT_ENABLE_VER_20_API
-        assert(*p_thread == (ABT_thread)RAND_PTR);
-        *p_thread = ABT_THREAD_NULL;
-#else
-        assert(*p_thread == ABT_THREAD_NULL);
-#endif
+        if (ENABLED_VER_20_API || pool_op == 1) {
+            assert(*p_thread == (ABT_thread)RAND_PTR);
+            *p_thread = ABT_THREAD_NULL;
+        } else {
+            assert(*p_thread == ABT_THREAD_NULL);
+        }
     }
     return ret;
 }
 
-int create_thread_usersize(int push_to_pool, ABT_thread *p_thread,
-                           int must_succeed)
+int create_thread_usersize(int pool_op, ABT_thread *p_thread, int must_succeed)
 {
     int ret;
     ABT_thread_attr attr = (ABT_thread_attr)RAND_PTR;
@@ -77,31 +87,37 @@ int create_thread_usersize(int push_to_pool, ABT_thread *p_thread,
     assert(ret == ABT_SUCCESS);
     if (p_thread)
         *p_thread = (ABT_thread)RAND_PTR;
-    if (push_to_pool) {
+    if (pool_op == 0) {
         ABT_pool pool;
         ret = ABT_xstream_get_main_pools(self_xstream, 1, &pool);
         assert(ret == ABT_SUCCESS);
         ret =
             ABT_thread_create(pool, thread_func, (void *)&ret, attr, p_thread);
+    } else if (pool_op == 1) {
+        ABT_pool pool;
+        ret = ABT_xstream_get_main_pools(self_xstream, 1, &pool);
+        assert(ret == ABT_SUCCESS);
+        ret = ABT_thread_create_to(pool, thread_func, (void *)&ret, attr,
+                                   p_thread);
     } else {
         ret = ABT_thread_create_on_xstream(self_xstream, thread_func,
                                            (void *)&ret, attr, p_thread);
     }
     assert(!must_succeed || ret == ABT_SUCCESS);
     if (ret != ABT_SUCCESS && p_thread) {
-#ifdef ABT_ENABLE_VER_20_API
-        assert(*p_thread == (ABT_thread)RAND_PTR);
-        *p_thread = ABT_THREAD_NULL;
-#else
-        assert(*p_thread == ABT_THREAD_NULL);
-#endif
+        if (ENABLED_VER_20_API || pool_op == 1) {
+            assert(*p_thread == (ABT_thread)RAND_PTR);
+            *p_thread = ABT_THREAD_NULL;
+        } else {
+            assert(*p_thread == ABT_THREAD_NULL);
+        }
     }
     ret = ABT_thread_attr_free(&attr);
     assert(ret == ABT_SUCCESS && attr == ABT_THREAD_ATTR_NULL);
     return ret;
 }
 
-int create_thread_nonyieldable(int push_to_pool, ABT_thread *p_thread,
+int create_thread_nonyieldable(int pool_op, ABT_thread *p_thread,
                                int must_succeed)
 {
     int ret;
@@ -110,7 +126,8 @@ int create_thread_nonyieldable(int push_to_pool, ABT_thread *p_thread,
     assert(ret == ABT_SUCCESS);
     if (p_thread)
         *p_thread = (ABT_thread)RAND_PTR;
-    if (push_to_pool) {
+    if (pool_op == 0 || pool_op == 1) {
+        /* No ABT_task_create_to() */
         ABT_pool pool;
         ret = ABT_xstream_get_main_pools(self_xstream, 1, &pool);
         assert(ret == ABT_SUCCESS);
@@ -121,17 +138,17 @@ int create_thread_nonyieldable(int push_to_pool, ABT_thread *p_thread,
     }
     assert(!must_succeed || ret == ABT_SUCCESS);
     if (ret != ABT_SUCCESS && p_thread) {
-#ifdef ABT_ENABLE_VER_20_API
-        assert(*p_thread == (ABT_thread)RAND_PTR);
-        *p_thread = ABT_THREAD_NULL;
-#else
-        assert(*p_thread == ABT_TASK_NULL);
-#endif
+        if (ENABLED_VER_20_API) {
+            assert(*p_thread == (ABT_thread)RAND_PTR);
+            *p_thread = ABT_THREAD_NULL;
+        } else {
+            assert(*p_thread == ABT_TASK_NULL);
+        }
     }
     return ret;
 }
 
-void program(int push_to_pool, int named, int type, int must_succeed)
+void program(int pool_op, int named, int type, int must_succeed)
 {
     int ret;
     rtrace_set_enabled(0);
@@ -149,17 +166,15 @@ void program(int push_to_pool, int named, int type, int must_succeed)
 
     for (i = 0; i < MAX_THREADS; i++) {
         if (type == 0) {
-            ret =
-                create_thread_default(push_to_pool, named ? &threads[i] : NULL,
-                                      must_succeed);
+            ret = create_thread_default(pool_op, named ? &threads[i] : NULL,
+                                        must_succeed);
         } else if (type == 1) {
-            ret =
-                create_thread_usersize(push_to_pool, named ? &threads[i] : NULL,
-                                       must_succeed);
+            ret = create_thread_usersize(pool_op, named ? &threads[i] : NULL,
+                                         must_succeed);
         } else if (type == 2) {
-            ret = create_thread_nonyieldable(push_to_pool,
-                                             named ? &threads[i] : NULL,
-                                             must_succeed);
+            ret =
+                create_thread_nonyieldable(pool_op, named ? &threads[i] : NULL,
+                                           must_succeed);
         }
         assert(!must_succeed || ret == ABT_SUCCESS);
         if (ret != ABT_SUCCESS) {
@@ -196,17 +211,17 @@ int main()
     ret = setenv("MEM_MAX_NUM_DESCS", "4", 1);
     assert(ret == 0);
 
-    int push_to_pool, named, type;
-    for (push_to_pool = 0; push_to_pool <= 1; push_to_pool++) {
+    int pool_op, named, type;
+    for (pool_op = 0; pool_op <= 2; pool_op++) {
         for (named = 0; named <= 1; named++) {
             for (type = 0; type < 3; type++) {
                 do {
                     rtrace_start();
-                    program(push_to_pool, named, type, 0);
+                    program(pool_op, named, type, 0);
                 } while (!rtrace_stop());
 
                 /* If no failure, it should succeed again. */
-                program(push_to_pool, named, type, 1);
+                program(pool_op, named, type, 1);
             }
         }
     }
