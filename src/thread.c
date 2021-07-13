@@ -2566,23 +2566,6 @@ void ABTI_ythread_free_root(ABTI_global *p_global, ABTI_local *p_local,
     thread_free(p_global, p_local, &p_ythread->thread, ABT_FALSE);
 }
 
-ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
-                                     ABTI_ythread *p_ythread)
-{
-    /* Terminate this ULT */
-    ABTD_ythread_exit(p_local_xstream, p_ythread);
-    ABTU_unreachable();
-}
-
-ABTU_noreturn void ABTI_ythread_exit_to(ABTI_xstream *p_local_xstream,
-                                        ABTI_ythread *p_cur_ythread,
-                                        ABTI_ythread *p_tar_ythread)
-{
-    /* Terminate this ULT */
-    ABTD_ythread_exit_to(p_local_xstream, p_cur_ythread, p_tar_ythread);
-    ABTU_unreachable();
-}
-
 ABTU_ret_err int ABTI_thread_get_mig_data(ABTI_global *p_global,
                                           ABTI_local *p_local,
                                           ABTI_thread *p_thread,

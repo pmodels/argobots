@@ -1939,7 +1939,7 @@ static inline void xstream_schedule_ythread(ABTI_global *p_global,
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     if (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
         ABTI_THREAD_REQ_CANCEL) {
-        ABTD_ythread_cancel(p_local_xstream, p_ythread);
+        ABTI_ythread_cancel(p_local_xstream, p_ythread);
         ABTI_xstream_terminate_thread(p_global,
                                       ABTI_xstream_get_local(p_local_xstream),
                                       &p_ythread->thread);

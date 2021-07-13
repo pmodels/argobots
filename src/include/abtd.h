@@ -98,14 +98,6 @@ void ABTD_affinity_list_free(ABTD_affinity_list *p_list);
 
 #include "abtd_stream.h"
 
-/* ULT Context */
-void ABTD_ythread_exit(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread);
-void ABTD_ythread_exit_to(ABTI_xstream *p_local_xstream,
-                          ABTI_ythread *p_cur_ythread,
-                          ABTI_ythread *p_tar_ythread);
-void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream,
-                         ABTI_ythread *p_ythread);
-
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
 #include <time.h>
 typedef struct timespec ABTD_time;

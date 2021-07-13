@@ -243,7 +243,7 @@ static inline ABT_bool ythread_callback_handle_request(ABTI_ythread *p_prev)
     /* Check cancellation request. */
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     if (ABTU_unlikely(request & ABTI_THREAD_REQ_CANCEL)) {
-        ABTD_ythread_cancel(p_prev->thread.p_last_xstream, p_prev);
+        ABTI_ythread_cancel(p_prev->thread.p_last_xstream, p_prev);
         ABTI_xstream_terminate_thread(ABTI_global_get_global(),
                                       ABTI_xstream_get_local(
                                           p_prev->thread.p_last_xstream),
