@@ -22,9 +22,6 @@ static void ythread_unwind_stack(void *arg);
 
 void ABTI_ythread_callback_yield(void *arg)
 {
-    // ABTI_event_ythread_yield(p_local_xstream, p_cur_ythread,
-    //                      p_cur_ythread->thread.p_parent,
-    //                      ABT_SYNC_EVENT_TYPE_USER, NULL);
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
     if (ythread_callback_handle_request(p_prev))
         return;
@@ -36,9 +33,6 @@ void ABTI_ythread_callback_yield(void *arg)
  * avoid making a pool empty. */
 void ABTI_ythread_callback_thread_yield_to(void *arg)
 {
-    // ABTI_event_ythread_yield(p_local_xstream, p_cur_ythread,
-    //                      p_cur_ythread->thread.p_parent,
-    //                      ABT_SYNC_EVENT_TYPE_USER, NULL);
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
     /* p_prev->thread.p_pool is loaded before ABTI_pool_add_thread() to keep
      * num_blocked consistent. Otherwise, other threads might pop p_prev
