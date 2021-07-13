@@ -38,8 +38,8 @@ static inline ABT_thread ABTI_ythread_get_handle(ABTI_ythread *p_ythread)
 #endif
 }
 
-static inline void ABTI_ythread_set_ready(ABTI_local *p_local,
-                                          ABTI_ythread *p_ythread)
+static inline void ABTI_ythread_resume_and_push(ABTI_local *p_local,
+                                                ABTI_ythread *p_ythread)
 {
     /* The ULT must be in BLOCKED state. */
     ABTI_ASSERT(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==

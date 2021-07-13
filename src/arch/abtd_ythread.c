@@ -75,8 +75,8 @@ static inline void ythread_terminate(ABTI_xstream *p_local_xstream,
          * so that p_joiner's scheduler can resume it.  Note that the main
          * scheduler needs to jump back to the root scheduler, so the main
          * scheduler needs to take this path. */
-        ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
-                               p_joiner);
+        ABTI_ythread_resume_and_push(ABTI_xstream_get_local(p_local_xstream),
+                                     p_joiner);
     }
     /* The waiter has been resumed.  Let's switch to the parent. */
     ABTI_ythread_terminate(p_local_xstream, p_ythread);
@@ -96,8 +96,8 @@ void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
         /* If p_link is set, it means that other ULT has called the join. */
         ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(
             ABTD_atomic_relaxed_load_ythread_context_ptr(&p_ctx->p_link));
-        ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
-                               p_joiner);
+        ABTI_ythread_resume_and_push(ABTI_xstream_get_local(p_local_xstream),
+                                     p_joiner);
     } else {
         uint32_t req = ABTD_atomic_fetch_or_uint32(&p_ythread->thread.request,
                                                    ABTI_THREAD_REQ_JOIN);
@@ -109,8 +109,9 @@ void ABTD_ythread_cancel(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
                 ;
             ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(
                 ABTD_atomic_relaxed_load_ythread_context_ptr(&p_ctx->p_link));
-            ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
-                                   p_joiner);
+            ABTI_ythread_resume_and_push(ABTI_xstream_get_local(
+                                             p_local_xstream),
+                                         p_joiner);
         }
     }
     ABTI_event_thread_cancel(p_local_xstream, &p_ythread->thread);
@@ -131,8 +132,8 @@ void ABTD_ythread_exit_to(ABTI_xstream *p_local_xstream,
         /* If p_link is set, it means that other ULT has called the join. */
         ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(
             ABTD_atomic_relaxed_load_ythread_context_ptr(&p_ctx->p_link));
-        ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
-                               p_joiner);
+        ABTI_ythread_resume_and_push(ABTI_xstream_get_local(p_local_xstream),
+                                     p_joiner);
     } else {
         uint32_t req =
             ABTD_atomic_fetch_or_uint32(&p_cur_ythread->thread.request,
@@ -145,8 +146,9 @@ void ABTD_ythread_exit_to(ABTI_xstream *p_local_xstream,
                 ;
             ABTI_ythread *p_joiner = ABTI_ythread_context_get_ythread(
                 ABTD_atomic_relaxed_load_ythread_context_ptr(&p_ctx->p_link));
-            ABTI_ythread_set_ready(ABTI_xstream_get_local(p_local_xstream),
-                                   p_joiner);
+            ABTI_ythread_resume_and_push(ABTI_xstream_get_local(
+                                             p_local_xstream),
+                                         p_joiner);
         }
     }
     ABTI_ythread_terminate_to(p_local_xstream, p_cur_ythread, p_tar_ythread);

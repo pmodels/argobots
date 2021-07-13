@@ -1354,7 +1354,7 @@ int ABT_thread_resume(ABT_thread thread)
                    ABT_THREAD_STATE_BLOCKED);
 #endif
 
-    ABTI_ythread_set_ready(p_local, p_ythread);
+    ABTI_ythread_resume_and_push(p_local, p_ythread);
     return ABT_SUCCESS;
 }
 
@@ -3131,7 +3131,7 @@ static void thread_main_sched_func(void *arg)
              * has already been replaced. */
             p_sched = p_new_sched;
             /* Resume the waiter. */
-            ABTI_ythread_set_ready(p_local, p_waiter);
+            ABTI_ythread_resume_and_push(p_local, p_waiter);
         }
         ABTI_ASSERT(p_sched == p_local_xstream->p_main_sched);
         uint32_t request = ABTD_atomic_acquire_load_uint32(
