@@ -189,40 +189,39 @@ static inline ABT_bool ABTI_ythread_context_peek(ABTI_ythread *p_ythread,
 }
 
 static inline void ABTI_ythread_run_child(ABTI_xstream **pp_local_xstream,
-                                          ABTI_ythread *p_parent,
+                                          ABTI_ythread *p_self,
                                           ABTI_ythread *p_child)
 {
     ABTD_atomic_release_store_int(&p_child->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_switch_to_child_internal(pp_local_xstream, p_parent, p_child);
+    ABTI_ythread_switch_to_child_internal(pp_local_xstream, p_self, p_child);
 }
 
 void ABTI_ythread_callback_yield(void *arg);
 
 static inline void ABTI_ythread_yield(ABTI_xstream **pp_local_xstream,
-                                      ABTI_ythread *p_ythread,
+                                      ABTI_ythread *p_self,
                                       ABT_sync_event_type sync_event_type,
                                       void *p_sync)
 {
-    ABTI_event_ythread_yield(*pp_local_xstream, p_ythread,
-                             p_ythread->thread.p_parent, sync_event_type,
-                             p_sync);
-    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_ythread,
+    ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
+                             sync_event_type, p_sync);
+    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
                                            ABTI_ythread_callback_yield,
-                                           (void *)p_ythread);
+                                           (void *)p_self);
 }
 
 static inline void ABTI_ythread_yield_to(ABTI_xstream **pp_local_xstream,
                                          ABTI_ythread *p_self,
-                                         ABTI_ythread *p_ythread,
+                                         ABTI_ythread *p_target,
                                          ABT_sync_event_type sync_event_type,
                                          void *p_sync)
 {
     ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
                              sync_event_type, p_sync);
-    ABTD_atomic_release_store_int(&p_ythread->thread.state,
+    ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_ythread,
+    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_target,
                                             ABTI_ythread_callback_yield,
                                             (void *)p_self);
 }
@@ -232,43 +231,43 @@ void ABTI_ythread_callback_thread_yield_to(void *arg);
 
 static inline void
 ABTI_ythread_thread_yield_to(ABTI_xstream **pp_local_xstream,
-                             ABTI_ythread *p_self, ABTI_ythread *p_ythread,
+                             ABTI_ythread *p_self, ABTI_ythread *p_target,
                              ABT_sync_event_type sync_event_type, void *p_sync)
 {
     ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
                              sync_event_type, p_sync);
-    ABTD_atomic_release_store_int(&p_ythread->thread.state,
+    ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
     ABTI_ythread_switch_to_sibling_internal(
-        pp_local_xstream, p_self, p_ythread,
+        pp_local_xstream, p_self, p_target,
         ABTI_ythread_callback_thread_yield_to, (void *)p_self);
 }
 
 void ABTI_ythread_callback_suspend(void *arg);
 
 static inline void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
-                                        ABTI_ythread *p_ythread,
+                                        ABTI_ythread *p_self,
                                         ABT_sync_event_type sync_event_type,
                                         void *p_sync)
 {
-    ABTI_event_ythread_suspend(*pp_local_xstream, p_ythread,
-                               p_ythread->thread.p_parent, sync_event_type,
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_ythread,
+    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
                                            ABTI_ythread_callback_suspend,
-                                           (void *)p_ythread);
+                                           (void *)p_self);
 }
 
 static inline void ABTI_ythread_suspend_to(ABTI_xstream **pp_local_xstream,
                                            ABTI_ythread *p_self,
-                                           ABTI_ythread *p_ythread,
+                                           ABTI_ythread *p_target,
                                            ABT_sync_event_type sync_event_type,
                                            void *p_sync)
 {
     ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
                                p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_ythread,
+    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_target,
                                             ABTI_ythread_callback_suspend,
                                             (void *)p_self);
 }
@@ -276,27 +275,27 @@ static inline void ABTI_ythread_suspend_to(ABTI_xstream **pp_local_xstream,
 void ABTI_ythread_callback_terminate(void *arg);
 
 ABTU_noreturn static inline void
-ABTI_ythread_terminate(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
+ABTI_ythread_terminate(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self)
 {
-    ABTI_event_thread_finish(p_local_xstream, &p_ythread->thread,
-                             p_ythread->thread.p_parent);
-    ABTI_ythread_jump_to_parent_internal(p_local_xstream, p_ythread,
+    ABTI_event_thread_finish(p_local_xstream, &p_self->thread,
+                             p_self->thread.p_parent);
+    ABTI_ythread_jump_to_parent_internal(p_local_xstream, p_self,
                                          ABTI_ythread_callback_terminate,
-                                         (void *)p_ythread);
+                                         (void *)p_self);
     ABTU_unreachable();
 }
 
 ABTU_noreturn static inline void
-ABTI_ythread_terminate_to(ABTI_xstream *p_local_xstream,
-                          ABTI_ythread *p_ythread, ABTI_ythread *p_target)
+ABTI_ythread_terminate_to(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self,
+                          ABTI_ythread *p_target)
 {
-    ABTI_event_thread_finish(p_local_xstream, &p_ythread->thread,
-                             p_ythread->thread.p_parent);
+    ABTI_event_thread_finish(p_local_xstream, &p_self->thread,
+                             p_self->thread.p_parent);
     ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_ythread, p_target,
+    ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_self, p_target,
                                           ABTI_ythread_callback_terminate,
-                                          (void *)p_ythread);
+                                          (void *)p_self);
     ABTU_unreachable();
 }
 
@@ -309,14 +308,14 @@ void ABTI_ythread_callback_suspend_unlock(void *arg);
 
 static inline void
 ABTI_ythread_suspend_unlock(ABTI_xstream **pp_local_xstream,
-                            ABTI_ythread *p_ythread, ABTD_spinlock *p_lock,
+                            ABTI_ythread *p_self, ABTD_spinlock *p_lock,
                             ABT_sync_event_type sync_event_type, void *p_sync)
 {
-    ABTI_event_ythread_suspend(*pp_local_xstream, p_ythread,
-                               p_ythread->thread.p_parent, sync_event_type,
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_callback_suspend_unlock_arg arg = { p_ythread, p_lock };
-    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_ythread,
+    ABTI_ythread_callback_suspend_unlock_arg arg = { p_self, p_lock };
+    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
                                            ABTI_ythread_callback_suspend_unlock,
                                            (void *)&arg);
 }
@@ -350,32 +349,31 @@ typedef struct {
 void ABTI_ythread_callback_suspend_replace_sched(void *arg);
 
 static inline void ABTI_ythread_suspend_replace_sched(
-    ABTI_xstream **pp_local_xstream, ABTI_ythread *p_ythread,
+    ABTI_xstream **pp_local_xstream, ABTI_ythread *p_self,
     ABTI_sched *p_main_sched, ABT_sync_event_type sync_event_type, void *p_sync)
 {
-    ABTI_event_ythread_suspend(*pp_local_xstream, p_ythread,
-                               p_ythread->thread.p_parent, sync_event_type,
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_callback_suspend_replace_sched_arg arg = { p_ythread,
+    ABTI_ythread_callback_suspend_replace_sched_arg arg = { p_self,
                                                             p_main_sched };
     ABTI_ythread_switch_to_parent_internal(
-        pp_local_xstream, p_ythread,
-        ABTI_ythread_callback_suspend_replace_sched, (void *)&arg);
+        pp_local_xstream, p_self, ABTI_ythread_callback_suspend_replace_sched,
+        (void *)&arg);
 }
 
 void ABTI_ythread_callback_orphan(void *arg);
 
 static inline void
-ABTI_ythread_yield_orphan(ABTI_xstream **pp_local_xstream,
-                          ABTI_ythread *p_ythread,
+ABTI_ythread_yield_orphan(ABTI_xstream **pp_local_xstream, ABTI_ythread *p_self,
                           ABT_sync_event_type sync_event_type, void *p_sync)
 {
-    ABTI_event_ythread_suspend(*pp_local_xstream, p_ythread,
-                               p_ythread->thread.p_parent, sync_event_type,
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_ythread,
+    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
                                            ABTI_ythread_callback_orphan,
-                                           (void *)p_ythread);
+                                           (void *)p_self);
 }
 
 #endif /* ABTI_YTHREAD_H_INCLUDED */
