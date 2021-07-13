@@ -838,7 +838,7 @@ int ABT_self_exit(void)
  * @ingroup SELF
  * @brief   Terminate the calling ULT and jump to another ULT.
  *
- * \c ABT_self_suspend_to() terminates the calling ULT and schedules the ULT
+ * \c ABT_self_exit_to() terminates the calling ULT and schedules the ULT
  * \c thread as a child thread of the calling ULT's parent.   This routine does
  * not return if it succeeds.  It is the user's responsibility to pop \c thread
  * from its associated pool before calling this routine.
