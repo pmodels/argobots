@@ -624,7 +624,6 @@ void ABTI_ythread_free_primary(ABTI_global *p_global, ABTI_local *p_local,
                                ABTI_ythread *p_ythread);
 void ABTI_ythread_free_root(ABTI_global *p_global, ABTI_local *p_local,
                             ABTI_ythread *p_ythread);
-void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread);
 void ABTI_ythread_print_stack(ABTI_global *p_global, ABTI_ythread *p_ythread,
                               FILE *p_os);
 
