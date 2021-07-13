@@ -272,7 +272,7 @@ static inline void ABTI_ythread_suspend_to(ABTI_xstream **pp_local_xstream,
                                             (void *)p_self);
 }
 
-void ABTI_ythread_callback_terminate(void *arg);
+void ABTI_ythread_callback_exit(void *arg);
 
 static inline ABTI_ythread *
 ABTI_ythread_atomic_get_joiner(ABTI_ythread *p_ythread)
@@ -324,33 +324,10 @@ static inline void ABTI_ythread_resume_joiner(ABTI_xstream *p_local_xstream,
 }
 
 ABTU_noreturn static inline void
-ABTI_ythread_terminate(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self)
-{
-    ABTI_event_thread_finish(p_local_xstream, &p_self->thread,
-                             p_self->thread.p_parent);
-    ABTI_ythread_jump_to_parent_internal(p_local_xstream, p_self,
-                                         ABTI_ythread_callback_terminate,
-                                         (void *)p_self);
-    ABTU_unreachable();
-}
-
-ABTU_noreturn static inline void
-ABTI_ythread_terminate_to(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self,
-                          ABTI_ythread *p_target)
-{
-    ABTI_event_thread_finish(p_local_xstream, &p_self->thread,
-                             p_self->thread.p_parent);
-    ABTD_atomic_release_store_int(&p_target->thread.state,
-                                  ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_self, p_target,
-                                          ABTI_ythread_callback_terminate,
-                                          (void *)p_self);
-    ABTU_unreachable();
-}
-
-ABTU_noreturn static inline void
 ABTI_ythread_exit(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self)
 {
+    ABTI_event_thread_finish(p_local_xstream, &p_self->thread,
+                             p_self->thread.p_parent);
     ABTI_ythread *p_joiner = ABTI_ythread_atomic_get_joiner(p_self);
     if (p_joiner) {
 #ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
@@ -372,7 +349,12 @@ ABTI_ythread_exit(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self)
             ABTI_pool_dec_num_blocked(p_joiner->thread.p_pool);
             ABTI_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream),
                                       p_joiner, &p_self->thread);
-            ABTI_ythread_terminate_to(p_local_xstream, p_self, p_joiner);
+            ABTD_atomic_release_store_int(&p_joiner->thread.state,
+                                          ABT_THREAD_STATE_RUNNING);
+            ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_self,
+                                                  p_joiner,
+                                                  ABTI_ythread_callback_exit,
+                                                  (void *)p_self);
             ABTU_unreachable();
         } else {
             /* If the current ULT's associated ES is different from p_joiner's,
@@ -386,7 +368,9 @@ ABTI_ythread_exit(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self)
         }
     }
     /* The waiter has been resumed.  Let's switch to the parent. */
-    ABTI_ythread_terminate(p_local_xstream, p_self);
+    ABTI_ythread_jump_to_parent_internal(p_local_xstream, p_self,
+                                         ABTI_ythread_callback_exit,
+                                         (void *)p_self);
     ABTU_unreachable();
 }
 
@@ -400,7 +384,13 @@ ABTI_ythread_exit_to(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self,
      * wants to jump to p_target.  Therefore, we should not context switch to
      * the joiner ULT. */
     ABTI_ythread_resume_joiner(p_local_xstream, p_self);
-    ABTI_ythread_terminate_to(p_local_xstream, p_self, p_target);
+    ABTI_event_thread_finish(p_local_xstream, &p_self->thread,
+                             p_self->thread.p_parent);
+    ABTD_atomic_release_store_int(&p_target->thread.state,
+                                  ABT_THREAD_STATE_RUNNING);
+    ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_self, p_target,
+                                          ABTI_ythread_callback_exit,
+                                          (void *)p_self);
     ABTU_unreachable();
 }
 

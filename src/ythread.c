@@ -60,7 +60,7 @@ void ABTI_ythread_callback_suspend(void *arg)
                                   ABT_THREAD_STATE_BLOCKED);
 }
 
-void ABTI_ythread_callback_terminate(void *arg)
+void ABTI_ythread_callback_exit(void *arg)
 {
     /* Terminate this thread. */
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
