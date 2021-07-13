@@ -292,7 +292,7 @@ ABTI_ythread_terminate_to(ABTI_xstream *p_local_xstream,
 {
     ABTI_event_thread_finish(p_local_xstream, &p_ythread->thread,
                              p_ythread->thread.p_parent);
-    ABTD_atomic_release_store_int(&p_ythread->thread.state,
+    ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
     ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_ythread, p_target,
                                           ABTI_ythread_callback_terminate,
