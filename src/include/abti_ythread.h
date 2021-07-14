@@ -243,6 +243,34 @@ ABTI_ythread_thread_yield_to(ABTI_xstream **pp_local_xstream,
         ABTI_ythread_callback_thread_yield_to, (void *)p_self);
 }
 
+typedef struct {
+    ABTI_ythread *p_prev;
+    ABTI_ythread *p_next;
+} ABTI_ythread_callback_resume_yield_to_arg;
+
+void ABTI_ythread_callback_resume_yield_to(void *arg);
+
+static inline void
+ABTI_ythread_resume_yield_to(ABTI_xstream **pp_local_xstream,
+                             ABTI_ythread *p_self, ABTI_ythread *p_target,
+                             ABT_sync_event_type sync_event_type, void *p_sync)
+{
+    /* The ULT must be in BLOCKED state. */
+    ABTI_UB_ASSERT(ABTD_atomic_acquire_load_int(&p_target->thread.state) ==
+                   ABT_THREAD_STATE_BLOCKED);
+
+    ABTI_event_ythread_resume(ABTI_xstream_get_local(*pp_local_xstream),
+                              p_target, &p_self->thread);
+    ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
+                             sync_event_type, p_sync);
+    ABTD_atomic_release_store_int(&p_target->thread.state,
+                                  ABT_THREAD_STATE_RUNNING);
+    ABTI_ythread_callback_resume_yield_to_arg arg = { p_self, p_target };
+    ABTI_ythread_switch_to_sibling_internal(
+        pp_local_xstream, p_self, p_target,
+        ABTI_ythread_callback_resume_yield_to, (void *)&arg);
+}
+
 void ABTI_ythread_callback_suspend(void *arg);
 
 static inline void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
@@ -270,6 +298,34 @@ static inline void ABTI_ythread_suspend_to(ABTI_xstream **pp_local_xstream,
     ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_target,
                                             ABTI_ythread_callback_suspend,
                                             (void *)p_self);
+}
+
+typedef struct {
+    ABTI_ythread *p_prev;
+    ABTI_ythread *p_next;
+} ABTI_ythread_callback_resume_suspend_to_arg;
+
+void ABTI_ythread_callback_resume_suspend_to(void *arg);
+
+static inline void ABTI_ythread_resume_suspend_to(
+    ABTI_xstream **pp_local_xstream, ABTI_ythread *p_self,
+    ABTI_ythread *p_target, ABT_sync_event_type sync_event_type, void *p_sync)
+{
+    /* The ULT must be in BLOCKED state. */
+    ABTI_UB_ASSERT(ABTD_atomic_acquire_load_int(&p_target->thread.state) ==
+                   ABT_THREAD_STATE_BLOCKED);
+
+    ABTI_event_ythread_resume(ABTI_xstream_get_local(*pp_local_xstream),
+                              p_target, &p_self->thread);
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
+                               p_sync);
+    ABTD_atomic_release_store_int(&p_target->thread.state,
+                                  ABT_THREAD_STATE_RUNNING);
+    ABTI_ythread_callback_resume_suspend_to_arg arg = { p_self, p_target };
+    ABTI_ythread_switch_to_sibling_internal(
+        pp_local_xstream, p_self, p_target,
+        ABTI_ythread_callback_resume_suspend_to, (void *)&arg);
 }
 
 void ABTI_ythread_callback_exit(void *arg);
@@ -404,6 +460,36 @@ static inline void ABTI_ythread_cancel(ABTI_xstream *p_local_xstream,
      * context switch to the joiner ULT and need to always wake it up. */
     ABTI_ythread_resume_joiner(p_local_xstream, p_ythread);
     ABTI_event_thread_cancel(p_local_xstream, &p_ythread->thread);
+}
+
+typedef struct {
+    ABTI_ythread *p_prev;
+    ABTI_ythread *p_next;
+} ABTI_ythread_callback_resume_exit_to_arg;
+
+void ABTI_ythread_callback_resume_exit_to(void *arg);
+
+ABTU_noreturn static inline void
+ABTI_ythread_resume_exit_to(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self,
+                            ABTI_ythread *p_target)
+{
+    /* The ULT must be in BLOCKED state. */
+    ABTI_UB_ASSERT(ABTD_atomic_acquire_load_int(&p_target->thread.state) ==
+                   ABT_THREAD_STATE_BLOCKED);
+
+    ABTI_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream), p_target,
+                              &p_self->thread);
+    /* Wake up a joiner ULT attached to p_self. */
+    ABTI_ythread_resume_joiner(p_local_xstream, p_self);
+    ABTI_event_thread_finish(p_local_xstream, &p_self->thread,
+                             p_self->thread.p_parent);
+    ABTD_atomic_release_store_int(&p_target->thread.state,
+                                  ABT_THREAD_STATE_RUNNING);
+    ABTI_ythread_callback_resume_exit_to_arg arg = { p_self, p_target };
+    ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_self, p_target,
+                                          ABTI_ythread_callback_resume_exit_to,
+                                          (void *)&arg);
+    ABTU_unreachable();
 }
 
 typedef struct {
