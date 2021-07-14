@@ -70,6 +70,7 @@ TESTS = \
 	barrier \
 	self_exit_to \
 	self_rank_id \
+	self_resume_to \
 	self_suspend_to \
 	self_type \
 	self_yield_to \
@@ -173,6 +174,7 @@ eventual_test_SOURCES = eventual_test.c
 barrier_SOURCES = barrier.c
 self_exit_to_SOURCES = self_exit_to.c
 self_rank_id_SOURCES = self_rank_id.c
+self_resume_to_SOURCES = self_resume_to.c
 self_suspend_to_SOURCES = self_suspend_to.c
 self_type_SOURCES = self_type.c
 self_yield_to_SOURCES = self_yield_to.c
@@ -262,6 +264,7 @@ testing:
 	./barrier
 	./self_exit_to
 	./self_rank_id
+	./self_resume_to
 	./self_suspend_to
 	./self_type
 	./self_yield_to

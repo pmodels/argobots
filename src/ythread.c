@@ -48,6 +48,22 @@ void ABTI_ythread_callback_thread_yield_to(void *arg)
     ABTI_pool_dec_num_blocked(p_pool);
 }
 
+void ABTI_ythread_callback_resume_yield_to(void *arg)
+{
+    ABTI_ythread_callback_resume_yield_to_arg *p_arg =
+        (ABTI_ythread_callback_resume_yield_to_arg *)arg;
+    /* p_arg might point to the stack of the original ULT, so do not
+     * access it after that ULT becomes resumable. */
+    ABTI_ythread *p_prev = p_arg->p_prev;
+    ABTI_ythread *p_next = p_arg->p_next;
+    if (!ythread_callback_handle_request(p_prev)) {
+        /* Push this thread back to the pool. */
+        ABTI_pool_add_thread(&p_prev->thread);
+    }
+    /* Decrease the number of blocked threads. */
+    ABTI_pool_dec_num_blocked(p_next->thread.p_pool);
+}
+
 void ABTI_ythread_callback_suspend(void *arg)
 {
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
@@ -55,6 +71,29 @@ void ABTI_ythread_callback_suspend(void *arg)
         return;
     /* Increase the number of blocked threads */
     ABTI_pool_inc_num_blocked(p_prev->thread.p_pool);
+    /* Set this thread's state to BLOCKED. */
+    ABTD_atomic_release_store_int(&p_prev->thread.state,
+                                  ABT_THREAD_STATE_BLOCKED);
+}
+
+void ABTI_ythread_callback_resume_suspend_to(void *arg)
+{
+    ABTI_ythread_callback_resume_suspend_to_arg *p_arg =
+        (ABTI_ythread_callback_resume_suspend_to_arg *)arg;
+    /* p_arg might point to the stack of the original ULT, so do not
+     * access it after that ULT becomes resumable. */
+    ABTI_ythread *p_prev = p_arg->p_prev;
+    ABTI_ythread *p_next = p_arg->p_next;
+    if (ythread_callback_handle_request(p_prev))
+        return;
+    ABTI_pool *p_prev_pool = p_prev->thread.p_pool;
+    ABTI_pool *p_next_pool = p_next->thread.p_pool;
+    if (p_prev_pool != p_next_pool) {
+        /* Increase the number of blocked threads of p_prev's pool */
+        ABTI_pool_inc_num_blocked(p_prev_pool);
+        /* Decrease the number of blocked threads of p_next's pool */
+        ABTI_pool_dec_num_blocked(p_next_pool);
+    }
     /* Set this thread's state to BLOCKED. */
     ABTD_atomic_release_store_int(&p_prev->thread.state,
                                   ABT_THREAD_STATE_BLOCKED);
@@ -68,6 +107,23 @@ void ABTI_ythread_callback_exit(void *arg)
                                   ABTI_xstream_get_local(
                                       p_prev->thread.p_last_xstream),
                                   &p_prev->thread);
+}
+
+void ABTI_ythread_callback_resume_exit_to(void *arg)
+{
+    ABTI_ythread_callback_resume_exit_to_arg *p_arg =
+        (ABTI_ythread_callback_resume_exit_to_arg *)arg;
+    /* p_arg might point to the stack of the original ULT, so do not
+     * access it after that ULT becomes resumable. */
+    ABTI_ythread *p_prev = p_arg->p_prev;
+    ABTI_ythread *p_next = p_arg->p_next;
+    /* Terminate this thread. */
+    ABTI_xstream_terminate_thread(ABTI_global_get_global(),
+                                  ABTI_xstream_get_local(
+                                      p_prev->thread.p_last_xstream),
+                                  &p_prev->thread);
+    /* Decrease the number of blocked threads. */
+    ABTI_pool_dec_num_blocked(p_next->thread.p_pool);
 }
 
 void ABTI_ythread_callback_suspend_unlock(void *arg)

@@ -698,6 +698,61 @@ int ABT_self_yield_to(ABT_thread thread)
 
 /**
  * @ingroup SELF
+ * @brief   Yield the calling ULT to another suspended ULT.
+ *
+ * \c ABT_self_resume_yield_to() yields the calling ULT, resumes the ULT
+ * \c thread, and schedules \c thread as a child thread of the calling ULT's
+ * parent.  The calling ULT is pushed to its associated pool.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_NY{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{the caller}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ * \DOC_UNDEFINED_WORK_UNIT_UNSUSPENDED{\c thread}
+ *
+ * @param[in] thread  handle to the target ULT
+ * @return Error code
+ */
+int ABT_self_resume_yield_to(ABT_thread thread)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_cur_ythread;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_cur_ythread);
+
+    ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
+    ABTI_ythread *p_tar_ythread = ABTI_thread_get_ythread_or_null(p_tar_thread);
+    ABTI_CHECK_NULL_YTHREAD_PTR(p_tar_ythread);
+    ABTI_CHECK_TRUE(!(p_cur_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!(p_tar_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    ABTI_UB_ASSERT(p_cur_ythread != p_tar_ythread);
+    ABTI_UB_ASSERT(ABTD_atomic_acquire_load_int(&p_tar_ythread->thread.state) ==
+                   ABT_THREAD_STATE_BLOCKED);
+
+    /* Switch the context */
+    ABTI_ythread_resume_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
+                                 ABT_SYNC_EVENT_TYPE_USER, NULL);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Suspend the calling ULT.
  *
  * \c ABT_self_suspend() suspends the execution of the calling ULT and switches
@@ -802,6 +857,64 @@ int ABT_self_suspend_to(ABT_thread thread)
 
 /**
  * @ingroup SELF
+ * @brief   Suspend the calling ULT and jump to another suspended ULT.
+ *
+ * \c ABT_self_resume_suspend_to() suspends the execution of the calling ULT,
+ * resumes the ULT \c thread, and schedules \c thread as a child thread of the
+ * calling ULT's parent.  The calling ULT is not pushed to its associated pool
+ * and its state becomes blocked.  \c ABT_thread_resume() awakens the suspended
+ * ULT and pushes it back to its associated pool.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_NY{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{the caller}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ * \DOC_UNDEFINED_WORK_UNIT_UNSUSPENDED{\c thread}
+ *
+ * @param[in] thread  handle to the target ULT
+ * @return Error code
+ */
+int ABT_self_resume_suspend_to(ABT_thread thread)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_cur_ythread;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_cur_ythread);
+
+    ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
+    ABTI_ythread *p_tar_ythread = ABTI_thread_get_ythread_or_null(p_tar_thread);
+    ABTI_CHECK_NULL_YTHREAD_PTR(p_tar_ythread);
+    ABTI_CHECK_TRUE(!(p_cur_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!(p_tar_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    ABTI_UB_ASSERT(p_cur_ythread != p_tar_ythread);
+    ABTI_UB_ASSERT(ABTD_atomic_acquire_load_int(&p_tar_ythread->thread.state) ==
+                   ABT_THREAD_STATE_BLOCKED);
+
+    /* Switch the context */
+    ABTI_ythread_resume_suspend_to(&p_local_xstream, p_cur_ythread,
+                                   p_tar_ythread, ABT_SYNC_EVENT_TYPE_USER,
+                                   NULL);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Terminate a calling ULT.
  *
  * \c ABT_self_exit() terminates the calling ULT.  This routine does not return
@@ -890,6 +1003,61 @@ int ABT_self_exit_to(ABT_thread thread)
 
     /* Switch the context */
     ABTI_ythread_exit_to(p_local_xstream, p_cur_ythread, p_tar_ythread);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
+ * @brief   Terminate the calling ULT and jump to another suspended ULT.
+ *
+ * \c ABT_self_resume_exit_to() terminates the calling ULT, resumes the ULT
+ * \c thread, and schedules \c thread as a child thread of the calling ULT's
+ * parent.  This routine does not return if it succeeds.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_NY{\c thread}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{the caller}
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{\c thread}
+ * \DOC_ERROR_INV_THREAD_PRIMARY_ULT{the caller}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ * \DOC_UNDEFINED_WORK_UNIT_UNSUSPENDED{\c thread}
+ *
+ * @param[in] thread  handle to the target ULT
+ * @return Error code
+ */
+int ABT_self_resume_exit_to(ABT_thread thread)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_cur_ythread;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_cur_ythread);
+
+    ABTI_thread *p_tar_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_tar_thread);
+    ABTI_ythread *p_tar_ythread = ABTI_thread_get_ythread_or_null(p_tar_thread);
+    ABTI_CHECK_NULL_YTHREAD_PTR(p_tar_ythread);
+    ABTI_CHECK_TRUE(!(p_cur_ythread->thread.type &
+                      (ABTI_THREAD_TYPE_PRIMARY | ABTI_THREAD_TYPE_MAIN_SCHED)),
+                    ABT_ERR_INV_THREAD);
+    ABTI_CHECK_TRUE(!(p_tar_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    ABTI_UB_ASSERT(p_cur_ythread != p_tar_ythread);
+    ABTI_UB_ASSERT(ABTD_atomic_acquire_load_int(&p_tar_ythread->thread.state) ==
+                   ABT_THREAD_STATE_BLOCKED);
+
+    /* Switch the context */
+    ABTI_ythread_resume_exit_to(p_local_xstream, p_cur_ythread, p_tar_ythread);
     return ABT_SUCCESS;
 }
 
