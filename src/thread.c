@@ -482,6 +482,93 @@ int ABT_thread_revive(ABT_pool pool, void (*thread_func)(void *), void *arg,
 
 /**
  * @ingroup ULT
+ * @brief   Revive a terminated ULT and yield to it.
+ *
+ * \c ABT_thread_revive_to() revives the ULT \c thread with the new work-unit
+ * function \c thread_func() and its argument \c arg.  The revived work unit is
+ * associated with the pool \c pool.  Then, the calling ULT yields to the newly
+ * created ULT.  The calling ULT is pushed to its associated pool.  This routine
+ * does not change the attributes of \c thread.
+ *
+ * Although this routine takes a pointer of \c ABT_thread, the handle of
+ * \c thread is not updated by this routine.
+ *
+ * \c thread must be a terminated ULT that has not been freed.  A ULT that is
+ * blocked on by another caller may not be revived.
+ *
+ * @note
+ * Because an unnamed ULT will be freed immediately after its termination, an
+ * unnamed ULT cannot be revived.
+ *
+ * \DOC_DESC_ATOMICITY_WORK_UNIT_STATE
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_MAIN_SCHED_THREAD{the caller}
+ * \DOC_ERROR_INV_THREAD_PTR{\c thread}
+ * \DOC_ERROR_INV_THREAD_NY{\c thread}
+ * \DOC_ERROR_INV_THREAD_NOT_TERMINATED{\c thread}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread_func}
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{the caller}
+ * \DOC_UNDEFINED_WORK_UNIT_BLOCKED{\c thread, \c ABT_thread_free()}
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c thread}
+ *
+ * @param[in]      pool         pool handle
+ * @param[in]      thread_func  function to be executed by the ULT
+ * @param[in]      arg          argument for \c thread_func()
+ * @param[in,out]  thread       ULT handle
+ * @return Error code
+ */
+int ABT_thread_revive_to(ABT_pool pool, void (*thread_func)(void *), void *arg,
+                         ABT_thread *thread)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread_func);
+    ABTI_UB_ASSERT(thread);
+
+    ABTI_global *p_global = ABTI_global_get_global();
+    ABTI_xstream *p_local_xstream;
+    ABTI_ythread *p_self, *p_target;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_self);
+    ABTI_CHECK_TRUE(!(p_self->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
+                    ABT_ERR_INV_THREAD);
+    {
+        ABTI_thread *p_thread = ABTI_thread_get_ptr(*thread);
+        ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+        ABTI_CHECK_TRUE(ABTD_atomic_relaxed_load_int(&p_thread->state) ==
+                            ABT_THREAD_STATE_TERMINATED,
+                        ABT_ERR_INV_THREAD);
+        ABTI_CHECK_YIELDABLE(p_thread, &p_target, ABT_ERR_INV_THREAD);
+    }
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    int abt_errno =
+        thread_revive(p_global, ABTI_xstream_get_local(p_local_xstream), p_pool,
+                      thread_func, arg, THREAD_POOL_OP_INIT, &p_target->thread);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Yield to the target ULT. */
+    ABTI_ythread_yield_to(&p_local_xstream, p_self, p_target,
+                          ABT_SYNC_EVENT_TYPE_USER, NULL);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Free a work unit.
  *
  * \c ABT_thread_free() deallocates the resource used for the work unit
