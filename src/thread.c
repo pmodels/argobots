@@ -16,6 +16,9 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
                ABTI_thread_type thread_type, ABTI_sched *p_sched,
                ythread_create_pool_op_kind pool_op,
                ABTI_ythread **pp_newthread);
+ABTU_ret_err static inline int
+thread_revive(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
+              void (*thread_func)(void *), void *arg, ABTI_thread *p_thread);
 static inline void thread_join(ABTI_local **pp_local, ABTI_thread *p_thread);
 static inline void thread_free(ABTI_global *p_global, ABTI_local *p_local,
                                ABTI_thread *p_thread, ABT_bool free_unit);
@@ -475,8 +478,8 @@ int ABT_thread_revive(ABT_pool pool, void (*thread_func)(void *), void *arg,
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    int abt_errno = ABTI_thread_revive(p_global, p_local, p_pool, thread_func,
-                                       arg, p_thread);
+    int abt_errno =
+        thread_revive(p_global, p_local, p_pool, thread_func, arg, p_thread);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
@@ -2416,33 +2419,9 @@ ABTU_ret_err int ABTI_thread_revive(ABTI_global *p_global, ABTI_local *p_local,
 {
     ABTI_ASSERT(ABTD_atomic_relaxed_load_int(&p_thread->state) ==
                 ABT_THREAD_STATE_TERMINATED);
-    /* Set the new pool */
-    int abt_errno = ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
+    int abt_errno =
+        thread_revive(p_global, p_local, p_pool, thread_func, arg, p_thread);
     ABTI_CHECK_ERROR(abt_errno);
-
-    p_thread->f_thread = thread_func;
-    p_thread->p_arg = arg;
-
-    ABTD_atomic_relaxed_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
-    ABTD_atomic_relaxed_store_uint32(&p_thread->request, 0);
-    p_thread->p_last_xstream = NULL;
-    p_thread->p_parent = NULL;
-
-    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-    if (p_ythread) {
-        /* Create a ULT context */
-        ABTD_ythread_context_reinit(&p_ythread->ctx);
-    }
-
-    /* Invoke a thread revive event. */
-    ABTI_event_thread_revive(p_local, p_thread,
-                             ABTI_local_get_xstream_or_null(p_local)
-                                 ? ABTI_local_get_xstream(p_local)->p_thread
-                                 : NULL,
-                             p_pool);
-
-    /* Add this thread to the pool */
-    ABTI_pool_push(p_pool, p_thread->unit);
     return ABT_SUCCESS;
 }
 
@@ -2842,6 +2821,44 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
 
     /* Return value */
     *pp_newthread = p_newthread;
+    return ABT_SUCCESS;
+}
+
+ABTU_ret_err static inline int thread_revive(ABTI_global *p_global,
+                                             ABTI_local *p_local,
+                                             ABTI_pool *p_pool,
+                                             void (*thread_func)(void *),
+                                             void *arg, ABTI_thread *p_thread)
+{
+    ABTI_UB_ASSERT(ABTD_atomic_relaxed_load_int(&p_thread->state) ==
+                   ABT_THREAD_STATE_TERMINATED);
+    /* Set the new pool */
+    int abt_errno = ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    p_thread->f_thread = thread_func;
+    p_thread->p_arg = arg;
+
+    ABTD_atomic_relaxed_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
+    ABTD_atomic_relaxed_store_uint32(&p_thread->request, 0);
+    p_thread->p_last_xstream = NULL;
+    p_thread->p_parent = NULL;
+
+    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+    if (p_ythread) {
+        /* Create a ULT context */
+        ABTD_ythread_context_reinit(&p_ythread->ctx);
+    }
+
+    /* Invoke a thread revive event. */
+    ABTI_event_thread_revive(p_local, p_thread,
+                             ABTI_local_get_xstream_or_null(p_local)
+                                 ? ABTI_local_get_xstream(p_local)->p_thread
+                                 : NULL,
+                             p_pool);
+
+    /* Add this thread to the pool */
+    ABTI_pool_push(p_pool, p_thread->unit);
     return ABT_SUCCESS;
 }
 
