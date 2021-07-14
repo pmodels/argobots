@@ -45,15 +45,27 @@ int main(int argc, char *argv[])
         ATS_ERROR(ret, "ABT_pool_get_size");
         assert(size == 1);
 
-        ret = ABT_thread_free(&thread);
-        ATS_ERROR(ret, "ABT_thread_free");
+        ret = ABT_thread_join(thread);
+        ATS_ERROR(ret, "ABT_thread_join");
         assert(g_counter == 1);
 
-        /* Child-first (ABT_thread_create_to) */
-        ret = ABT_thread_create_to(main_pool, thread_func, NULL,
-                                   ABT_THREAD_ATTR_NULL, &thread);
-        ATS_ERROR(ret, "ABT_thread_create_to");
+        /* Parent-first (ABT_thread_revive) */
+        ret = ABT_thread_revive(main_pool, thread_func, NULL, &thread);
+        ATS_ERROR(ret, "ABT_thread_revive");
+        assert(g_counter == 1);
+
+        ret = ABT_pool_get_size(main_pool, &size);
+        ATS_ERROR(ret, "ABT_pool_get_size");
+        assert(size == 1);
+
+        ret = ABT_thread_join(thread);
+        ATS_ERROR(ret, "ABT_thread_join");
         assert(g_counter == 2);
+
+        /* Child-first (ABT_thread_revive_to) */
+        ret = ABT_thread_revive_to(main_pool, thread_func, NULL, &thread);
+        ATS_ERROR(ret, "ABT_thread_revive_to");
+        assert(g_counter == 3);
 
         ret = ABT_pool_get_size(main_pool, &size);
         ATS_ERROR(ret, "ABT_pool_get_size");
@@ -61,7 +73,47 @@ int main(int argc, char *argv[])
 
         ret = ABT_thread_free(&thread);
         ATS_ERROR(ret, "ABT_thread_free");
-        assert(g_counter == 2);
+        assert(g_counter == 3);
+
+        /* Child-first (ABT_thread_create_to) */
+        ret = ABT_thread_create_to(main_pool, thread_func, NULL,
+                                   ABT_THREAD_ATTR_NULL, &thread);
+        ATS_ERROR(ret, "ABT_thread_create_to");
+        assert(g_counter == 4);
+
+        ret = ABT_pool_get_size(main_pool, &size);
+        ATS_ERROR(ret, "ABT_pool_get_size");
+        assert(size == 0);
+
+        ret = ABT_thread_join(thread);
+        ATS_ERROR(ret, "ABT_thread_join");
+        assert(g_counter == 4);
+
+        /* Parent-first (ABT_thread_revive) */
+        ret = ABT_thread_revive(main_pool, thread_func, NULL, &thread);
+        ATS_ERROR(ret, "ABT_thread_revive");
+        assert(g_counter == 4);
+
+        ret = ABT_pool_get_size(main_pool, &size);
+        ATS_ERROR(ret, "ABT_pool_get_size");
+        assert(size == 1);
+
+        ret = ABT_thread_join(thread);
+        ATS_ERROR(ret, "ABT_thread_join");
+        assert(g_counter == 5);
+
+        /* Child-first (ABT_thread_revive_to) */
+        ret = ABT_thread_revive_to(main_pool, thread_func, NULL, &thread);
+        ATS_ERROR(ret, "ABT_thread_revive_to");
+        assert(g_counter == 6);
+
+        ret = ABT_pool_get_size(main_pool, &size);
+        ATS_ERROR(ret, "ABT_pool_get_size");
+        assert(size == 0);
+
+        ret = ABT_thread_free(&thread);
+        ATS_ERROR(ret, "ABT_thread_free");
+        assert(g_counter == 6);
     }
 
     /* Finalize */
