@@ -1063,6 +1063,57 @@ int ABT_self_resume_exit_to(ABT_thread thread)
 
 /**
  * @ingroup SELF
+ * @brief   Execute a work unit on the calling ULT
+ *
+ * \c ABT_self_schedule() runs the work unit \c thread as a child work unit on
+ * the calling ULT, which becomes a parent ULT.  If \c pool is not
+ * \c ABT_POOL_NULL, this routine associates \c thread with the pool \c pool
+ * before \c thread is scheduled.  The calling ULT will be resumed when a
+ * child work unit finishes or yields.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT_YIELDABLE \DOC_CONTEXT_CTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_XSTREAM_EXT
+ * \DOC_ERROR_INV_THREAD_NY
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_WORK_UNIT_NOT_READY{\c thread}
+ *
+ * @param[in] thread  work unit handle
+ * @param[in] pool    pool handle
+ * @return Error code
+ */
+int ABT_self_schedule(ABT_thread thread, ABT_pool pool)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    ABTI_global *p_global;
+    ABTI_SETUP_GLOBAL(&p_global);
+
+    ABTI_xstream *p_local_xstream;
+    ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, NULL);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    if (p_pool) {
+        int abt_errno =
+            ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
+        ABTI_CHECK_ERROR(abt_errno);
+    }
+    ABTI_ythread_schedule(p_global, &p_local_xstream, p_thread);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SELF
  * @brief   Set an argument for a work-unit function of the calling work unit
  *
  * \c ABT_self_set_arg() sets the argument \c arg for the caller's work-unit

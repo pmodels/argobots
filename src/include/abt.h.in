@@ -1900,6 +1900,7 @@ int ABT_self_resume_suspend_to(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_self_exit(void) ABT_API_PUBLIC;
 int ABT_self_exit_to(ABT_thread thread) ABT_API_PUBLIC;
 int ABT_self_resume_exit_to(ABT_thread thread) ABT_API_PUBLIC;
+int ABT_self_schedule(ABT_thread thread, ABT_pool pool) ABT_API_PUBLIC;
 int ABT_self_set_arg(void *arg) ABT_API_PUBLIC;
 int ABT_self_get_arg(void **arg) ABT_API_PUBLIC;
 int ABT_self_get_thread_func(void (**thread_func)(void *)) ABT_API_PUBLIC;
