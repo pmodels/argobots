@@ -92,6 +92,21 @@ void thread_create(void *arg)
     }
     ATS_printf(1, "[U%lu:E%u]: revived %d ULTs\n", id, rank, num_threads);
 
+    /* Join ULTs */
+    for (i = 0; i < num_threads; i++) {
+        ret = ABT_thread_join(threads[i]);
+        ATS_ERROR(ret, "ABT_thread_join");
+    }
+    ATS_printf(1, "[U%lu:E%u]: joined %d ULTs\n", id, rank, num_threads);
+
+    /* Revive-to ULTs with thread_func() */
+    for (i = 0; i < num_threads; i++) {
+        ret =
+            ABT_thread_revive_to(my_pool, thread_func, (void *)1, &threads[i]);
+        ATS_ERROR(ret, "ABT_thread_revive_to");
+    }
+    ATS_printf(1, "[U%lu:E%u]: revived %d ULTs\n", id, rank, num_threads);
+
     /* Join and free ULTs */
     for (i = 0; i < num_threads; i++) {
         ret = ABT_thread_free(&threads[i]);
