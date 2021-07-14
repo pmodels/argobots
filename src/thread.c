@@ -1354,7 +1354,7 @@ int ABT_thread_resume(ABT_thread thread)
                    ABT_THREAD_STATE_BLOCKED);
 #endif
 
-    ABTI_ythread_set_ready(p_local, p_ythread);
+    ABTI_ythread_resume_and_push(p_local, p_ythread);
     return ABT_SUCCESS;
 }
 
@@ -2566,23 +2566,6 @@ void ABTI_ythread_free_root(ABTI_global *p_global, ABTI_local *p_local,
     thread_free(p_global, p_local, &p_ythread->thread, ABT_FALSE);
 }
 
-ABTU_noreturn void ABTI_ythread_exit(ABTI_xstream *p_local_xstream,
-                                     ABTI_ythread *p_ythread)
-{
-    /* Terminate this ULT */
-    ABTD_ythread_exit(p_local_xstream, p_ythread);
-    ABTU_unreachable();
-}
-
-ABTU_noreturn void ABTI_ythread_exit_to(ABTI_xstream *p_local_xstream,
-                                        ABTI_ythread *p_cur_ythread,
-                                        ABTI_ythread *p_tar_ythread)
-{
-    /* Terminate this ULT */
-    ABTD_ythread_exit_to(p_local_xstream, p_cur_ythread, p_tar_ythread);
-    ABTU_unreachable();
-}
-
 ABTU_ret_err int ABTI_thread_get_mig_data(ABTI_global *p_global,
                                           ABTI_local *p_local,
                                           ABTI_thread *p_thread,
@@ -3131,7 +3114,7 @@ static void thread_main_sched_func(void *arg)
              * has already been replaced. */
             p_sched = p_new_sched;
             /* Resume the waiter. */
-            ABTI_ythread_set_ready(p_local, p_waiter);
+            ABTI_ythread_resume_and_push(p_local, p_waiter);
         }
         ABTI_ASSERT(p_sched == p_local_xstream->p_main_sched);
         uint32_t request = ABTD_atomic_acquire_load_uint32(

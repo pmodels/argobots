@@ -222,7 +222,7 @@ static inline void ABTI_waitlist_signal(ABTI_local *p_local,
 
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread) {
-            ABTI_ythread_set_ready(p_local, p_ythread);
+            ABTI_ythread_resume_and_push(p_local, p_ythread);
         } else {
             /* When p_thread is an external thread or a tasklet */
             ABTD_atomic_release_store_int(&p_thread->state,
@@ -254,7 +254,7 @@ static inline void ABTI_waitlist_broadcast(ABTI_local *p_local,
 
             ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
             if (p_ythread) {
-                ABTI_ythread_set_ready(p_local, p_ythread);
+                ABTI_ythread_resume_and_push(p_local, p_ythread);
             } else {
                 /* When p_thread is an external thread or a tasklet */
                 wakeup_nonyieldable = ABT_TRUE;

@@ -60,7 +60,7 @@ void ABTI_ythread_callback_suspend(void *arg)
                                   ABT_THREAD_STATE_BLOCKED);
 }
 
-void ABTI_ythread_callback_terminate(void *arg)
+void ABTI_ythread_callback_exit(void *arg)
 {
     /* Terminate this thread. */
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
@@ -135,29 +135,6 @@ void ABTI_ythread_callback_orphan(void *arg)
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
     ABTI_thread_unset_associated_pool(ABTI_global_get_global(),
                                       &p_prev->thread);
-}
-
-void ABTI_ythread_set_ready(ABTI_local *p_local, ABTI_ythread *p_ythread)
-{
-    /* The ULT must be in BLOCKED state. */
-    ABTI_ASSERT(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
-                ABT_THREAD_STATE_BLOCKED);
-
-    ABTI_event_ythread_resume(p_local, p_ythread,
-                              ABTI_local_get_xstream_or_null(p_local)
-                                  ? ABTI_local_get_xstream(p_local)->p_thread
-                                  : NULL);
-    /* p_ythread->thread.p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
-     * num_blocked consistent. Otherwise, other threads might pop p_ythread
-     * that has been pushed in ABTI_POOL_ADD_THREAD and change
-     * p_ythread->thread.p_pool by ABT_unit_set_associated_pool. */
-    ABTI_pool *p_pool = p_ythread->thread.p_pool;
-
-    /* Add the ULT to its associated pool */
-    ABTI_pool_add_thread(&p_ythread->thread);
-
-    /* Decrease the number of blocked threads */
-    ABTI_pool_dec_num_blocked(p_pool);
 }
 
 ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
@@ -266,7 +243,7 @@ static inline ABT_bool ythread_callback_handle_request(ABTI_ythread *p_prev)
     /* Check cancellation request. */
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     if (ABTU_unlikely(request & ABTI_THREAD_REQ_CANCEL)) {
-        ABTD_ythread_cancel(p_prev->thread.p_last_xstream, p_prev);
+        ABTI_ythread_cancel(p_prev->thread.p_last_xstream, p_prev);
         ABTI_xstream_terminate_thread(ABTI_global_get_global(),
                                       ABTI_xstream_get_local(
                                           p_prev->thread.p_last_xstream),

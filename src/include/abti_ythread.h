@@ -38,6 +38,30 @@ static inline ABT_thread ABTI_ythread_get_handle(ABTI_ythread *p_ythread)
 #endif
 }
 
+static inline void ABTI_ythread_resume_and_push(ABTI_local *p_local,
+                                                ABTI_ythread *p_ythread)
+{
+    /* The ULT must be in BLOCKED state. */
+    ABTI_ASSERT(ABTD_atomic_acquire_load_int(&p_ythread->thread.state) ==
+                ABT_THREAD_STATE_BLOCKED);
+
+    ABTI_event_ythread_resume(p_local, p_ythread,
+                              ABTI_local_get_xstream_or_null(p_local)
+                                  ? ABTI_local_get_xstream(p_local)->p_thread
+                                  : NULL);
+    /* p_ythread->thread.p_pool is loaded before ABTI_POOL_ADD_THREAD to keep
+     * num_blocked consistent. Otherwise, other threads might pop p_ythread
+     * that has been pushed in ABTI_POOL_ADD_THREAD and change
+     * p_ythread->thread.p_pool by ABT_unit_set_associated_pool. */
+    ABTI_pool *p_pool = p_ythread->thread.p_pool;
+
+    /* Add the ULT to its associated pool */
+    ABTI_pool_add_thread(&p_ythread->thread);
+
+    /* Decrease the number of blocked threads */
+    ABTI_pool_dec_num_blocked(p_pool);
+}
+
 static inline ABTI_ythread *
 ABTI_ythread_context_get_ythread(ABTD_ythread_context *p_ctx)
 {
@@ -165,40 +189,39 @@ static inline ABT_bool ABTI_ythread_context_peek(ABTI_ythread *p_ythread,
 }
 
 static inline void ABTI_ythread_run_child(ABTI_xstream **pp_local_xstream,
-                                          ABTI_ythread *p_parent,
+                                          ABTI_ythread *p_self,
                                           ABTI_ythread *p_child)
 {
     ABTD_atomic_release_store_int(&p_child->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_switch_to_child_internal(pp_local_xstream, p_parent, p_child);
+    ABTI_ythread_switch_to_child_internal(pp_local_xstream, p_self, p_child);
 }
 
 void ABTI_ythread_callback_yield(void *arg);
 
 static inline void ABTI_ythread_yield(ABTI_xstream **pp_local_xstream,
-                                      ABTI_ythread *p_ythread,
+                                      ABTI_ythread *p_self,
                                       ABT_sync_event_type sync_event_type,
                                       void *p_sync)
 {
-    ABTI_event_ythread_yield(*pp_local_xstream, p_ythread,
-                             p_ythread->thread.p_parent, sync_event_type,
-                             p_sync);
-    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_ythread,
+    ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
+                             sync_event_type, p_sync);
+    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
                                            ABTI_ythread_callback_yield,
-                                           (void *)p_ythread);
+                                           (void *)p_self);
 }
 
 static inline void ABTI_ythread_yield_to(ABTI_xstream **pp_local_xstream,
                                          ABTI_ythread *p_self,
-                                         ABTI_ythread *p_ythread,
+                                         ABTI_ythread *p_target,
                                          ABT_sync_event_type sync_event_type,
                                          void *p_sync)
 {
     ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
                              sync_event_type, p_sync);
-    ABTD_atomic_release_store_int(&p_ythread->thread.state,
+    ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_ythread,
+    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_target,
                                             ABTI_ythread_callback_yield,
                                             (void *)p_self);
 }
@@ -208,72 +231,179 @@ void ABTI_ythread_callback_thread_yield_to(void *arg);
 
 static inline void
 ABTI_ythread_thread_yield_to(ABTI_xstream **pp_local_xstream,
-                             ABTI_ythread *p_self, ABTI_ythread *p_ythread,
+                             ABTI_ythread *p_self, ABTI_ythread *p_target,
                              ABT_sync_event_type sync_event_type, void *p_sync)
 {
     ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
                              sync_event_type, p_sync);
-    ABTD_atomic_release_store_int(&p_ythread->thread.state,
+    ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
     ABTI_ythread_switch_to_sibling_internal(
-        pp_local_xstream, p_self, p_ythread,
+        pp_local_xstream, p_self, p_target,
         ABTI_ythread_callback_thread_yield_to, (void *)p_self);
 }
 
 void ABTI_ythread_callback_suspend(void *arg);
 
 static inline void ABTI_ythread_suspend(ABTI_xstream **pp_local_xstream,
-                                        ABTI_ythread *p_ythread,
+                                        ABTI_ythread *p_self,
                                         ABT_sync_event_type sync_event_type,
                                         void *p_sync)
 {
-    ABTI_event_ythread_suspend(*pp_local_xstream, p_ythread,
-                               p_ythread->thread.p_parent, sync_event_type,
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_ythread,
+    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
                                            ABTI_ythread_callback_suspend,
-                                           (void *)p_ythread);
+                                           (void *)p_self);
 }
 
 static inline void ABTI_ythread_suspend_to(ABTI_xstream **pp_local_xstream,
                                            ABTI_ythread *p_self,
-                                           ABTI_ythread *p_ythread,
+                                           ABTI_ythread *p_target,
                                            ABT_sync_event_type sync_event_type,
                                            void *p_sync)
 {
     ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
                                p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_ythread,
+    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_target,
                                             ABTI_ythread_callback_suspend,
                                             (void *)p_self);
 }
 
-void ABTI_ythread_callback_terminate(void *arg);
+void ABTI_ythread_callback_exit(void *arg);
+
+static inline ABTI_ythread *
+ABTI_ythread_atomic_get_joiner(ABTI_ythread *p_ythread)
+{
+    ABTD_ythread_context *p_ctx = &p_ythread->ctx;
+    ABTD_ythread_context *p_link =
+        ABTD_atomic_acquire_load_ythread_context_ptr(&p_ctx->p_link);
+    if (!p_link) {
+        uint32_t req = ABTD_atomic_fetch_or_uint32(&p_ythread->thread.request,
+                                                   ABTI_THREAD_REQ_JOIN);
+        if (!(req & ABTI_THREAD_REQ_JOIN)) {
+            /* This case means there is no join request. */
+            return NULL;
+        } else {
+            /* This case means a join request is issued and the joiner is
+             * setting p_link.  Wait for it. */
+            do {
+                p_link = ABTD_atomic_acquire_load_ythread_context_ptr(
+                    &p_ctx->p_link);
+            } while (!p_link);
+            return ABTI_ythread_context_get_ythread(p_link);
+        }
+    } else {
+        /* There is a join request. */
+        return ABTI_ythread_context_get_ythread(p_link);
+    }
+}
+
+static inline void ABTI_ythread_resume_joiner(ABTI_xstream *p_local_xstream,
+                                              ABTI_ythread *p_ythread)
+{
+    ABTI_ythread *p_joiner = ABTI_ythread_atomic_get_joiner(p_ythread);
+    if (p_joiner) {
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+        if (p_joiner->thread.type == ABTI_THREAD_TYPE_EXT) {
+            /* p_joiner is a non-yieldable thread (i.e., external thread). Wake
+             * up the waiter via the futex.  Note that p_arg is used to store
+             * futex (see thread_join_futexwait()). */
+            ABTD_futex_single *p_futex =
+                (ABTD_futex_single *)p_joiner->thread.p_arg;
+            ABTD_futex_resume(p_futex);
+            return;
+        }
+#endif
+        /* p_joiner is a yieldable thread */
+        ABTI_ythread_resume_and_push(ABTI_xstream_get_local(p_local_xstream),
+                                     p_joiner);
+    }
+}
 
 ABTU_noreturn static inline void
-ABTI_ythread_terminate(ABTI_xstream *p_local_xstream, ABTI_ythread *p_ythread)
+ABTI_ythread_exit(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self)
 {
-    ABTI_event_thread_finish(p_local_xstream, &p_ythread->thread,
-                             p_ythread->thread.p_parent);
-    ABTI_ythread_jump_to_parent_internal(p_local_xstream, p_ythread,
-                                         ABTI_ythread_callback_terminate,
-                                         (void *)p_ythread);
+    ABTI_event_thread_finish(p_local_xstream, &p_self->thread,
+                             p_self->thread.p_parent);
+    ABTI_ythread *p_joiner = ABTI_ythread_atomic_get_joiner(p_self);
+    if (p_joiner) {
+#ifndef ABT_CONFIG_ACTIVE_WAIT_POLICY
+        if (p_joiner->thread.type == ABTI_THREAD_TYPE_EXT) {
+            /* p_joiner is a non-yieldable thread (i.e., external thread). Wake
+             * up the waiter via the futex.  Note that p_arg is used to store
+             * futex (see thread_join_futexwait()). */
+            ABTD_futex_single *p_futex =
+                (ABTD_futex_single *)p_joiner->thread.p_arg;
+            ABTD_futex_resume(p_futex);
+        } else
+#endif
+            if (p_self->thread.p_last_xstream ==
+                    p_joiner->thread.p_last_xstream &&
+                !(p_self->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED)) {
+            /* Only when the current ULT is on the same ES as p_joiner's, we can
+             * jump to the joiner ULT.  Note that a parent ULT cannot be a
+             * joiner. */
+            ABTI_pool_dec_num_blocked(p_joiner->thread.p_pool);
+            ABTI_event_ythread_resume(ABTI_xstream_get_local(p_local_xstream),
+                                      p_joiner, &p_self->thread);
+            ABTD_atomic_release_store_int(&p_joiner->thread.state,
+                                          ABT_THREAD_STATE_RUNNING);
+            ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_self,
+                                                  p_joiner,
+                                                  ABTI_ythread_callback_exit,
+                                                  (void *)p_self);
+            ABTU_unreachable();
+        } else {
+            /* If the current ULT's associated ES is different from p_joiner's,
+             * we can't directly jump to p_joiner.  Instead, we wake up p_joiner
+             * here so that p_joiner's scheduler can resume it.  Note that the
+             * main scheduler needs to jump back to the root scheduler, so the
+             * main scheduler needs to take this path. */
+            ABTI_ythread_resume_and_push(ABTI_xstream_get_local(
+                                             p_local_xstream),
+                                         p_joiner);
+        }
+    }
+    /* The waiter has been resumed.  Let's switch to the parent. */
+    ABTI_ythread_jump_to_parent_internal(p_local_xstream, p_self,
+                                         ABTI_ythread_callback_exit,
+                                         (void *)p_self);
     ABTU_unreachable();
 }
 
 ABTU_noreturn static inline void
-ABTI_ythread_terminate_to(ABTI_xstream *p_local_xstream,
-                          ABTI_ythread *p_ythread, ABTI_ythread *p_target)
+ABTI_ythread_exit_to(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self,
+                     ABTI_ythread *p_target)
 {
-    ABTI_event_thread_finish(p_local_xstream, &p_ythread->thread,
-                             p_ythread->thread.p_parent);
-    ABTD_atomic_release_store_int(&p_ythread->thread.state,
+    /* If other ULT is blocked to join the canceled ULT, we have to wake up the
+     * joiner ULT.  However, unlike the case when the ULT has finished its
+     * execution and calls ythread_terminate/exit, this caller of this function
+     * wants to jump to p_target.  Therefore, we should not context switch to
+     * the joiner ULT. */
+    ABTI_ythread_resume_joiner(p_local_xstream, p_self);
+    ABTI_event_thread_finish(p_local_xstream, &p_self->thread,
+                             p_self->thread.p_parent);
+    ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_ythread, p_target,
-                                          ABTI_ythread_callback_terminate,
-                                          (void *)p_ythread);
+    ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_self, p_target,
+                                          ABTI_ythread_callback_exit,
+                                          (void *)p_self);
     ABTU_unreachable();
+}
+
+static inline void ABTI_ythread_cancel(ABTI_xstream *p_local_xstream,
+                                       ABTI_ythread *p_ythread)
+{
+    /* When we cancel a ULT, if other ULT is blocked to join the canceled ULT,
+     * we have to wake up the joiner ULT.  However, unlike the case when the
+     * ULT has finished its execution and calls ythread_terminate/exit,
+     * this function is called by the scheduler.  Therefore, we should not
+     * context switch to the joiner ULT and need to always wake it up. */
+    ABTI_ythread_resume_joiner(p_local_xstream, p_ythread);
+    ABTI_event_thread_cancel(p_local_xstream, &p_ythread->thread);
 }
 
 typedef struct {
@@ -285,14 +415,14 @@ void ABTI_ythread_callback_suspend_unlock(void *arg);
 
 static inline void
 ABTI_ythread_suspend_unlock(ABTI_xstream **pp_local_xstream,
-                            ABTI_ythread *p_ythread, ABTD_spinlock *p_lock,
+                            ABTI_ythread *p_self, ABTD_spinlock *p_lock,
                             ABT_sync_event_type sync_event_type, void *p_sync)
 {
-    ABTI_event_ythread_suspend(*pp_local_xstream, p_ythread,
-                               p_ythread->thread.p_parent, sync_event_type,
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_callback_suspend_unlock_arg arg = { p_ythread, p_lock };
-    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_ythread,
+    ABTI_ythread_callback_suspend_unlock_arg arg = { p_self, p_lock };
+    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
                                            ABTI_ythread_callback_suspend_unlock,
                                            (void *)&arg);
 }
@@ -326,32 +456,31 @@ typedef struct {
 void ABTI_ythread_callback_suspend_replace_sched(void *arg);
 
 static inline void ABTI_ythread_suspend_replace_sched(
-    ABTI_xstream **pp_local_xstream, ABTI_ythread *p_ythread,
+    ABTI_xstream **pp_local_xstream, ABTI_ythread *p_self,
     ABTI_sched *p_main_sched, ABT_sync_event_type sync_event_type, void *p_sync)
 {
-    ABTI_event_ythread_suspend(*pp_local_xstream, p_ythread,
-                               p_ythread->thread.p_parent, sync_event_type,
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_callback_suspend_replace_sched_arg arg = { p_ythread,
+    ABTI_ythread_callback_suspend_replace_sched_arg arg = { p_self,
                                                             p_main_sched };
     ABTI_ythread_switch_to_parent_internal(
-        pp_local_xstream, p_ythread,
-        ABTI_ythread_callback_suspend_replace_sched, (void *)&arg);
+        pp_local_xstream, p_self, ABTI_ythread_callback_suspend_replace_sched,
+        (void *)&arg);
 }
 
 void ABTI_ythread_callback_orphan(void *arg);
 
 static inline void
-ABTI_ythread_yield_orphan(ABTI_xstream **pp_local_xstream,
-                          ABTI_ythread *p_ythread,
+ABTI_ythread_yield_orphan(ABTI_xstream **pp_local_xstream, ABTI_ythread *p_self,
                           ABT_sync_event_type sync_event_type, void *p_sync)
 {
-    ABTI_event_ythread_suspend(*pp_local_xstream, p_ythread,
-                               p_ythread->thread.p_parent, sync_event_type,
+    ABTI_event_ythread_suspend(*pp_local_xstream, p_self,
+                               p_self->thread.p_parent, sync_event_type,
                                p_sync);
-    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_ythread,
+    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
                                            ABTI_ythread_callback_orphan,
-                                           (void *)p_ythread);
+                                           (void *)p_self);
 }
 
 #endif /* ABTI_YTHREAD_H_INCLUDED */

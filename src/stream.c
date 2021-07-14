@@ -1939,7 +1939,7 @@ static inline void xstream_schedule_ythread(ABTI_global *p_global,
 #ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
     if (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
         ABTI_THREAD_REQ_CANCEL) {
-        ABTD_ythread_cancel(p_local_xstream, p_ythread);
+        ABTI_ythread_cancel(p_local_xstream, p_ythread);
         ABTI_xstream_terminate_thread(p_global,
                                       ABTI_xstream_get_local(p_local_xstream),
                                       &p_ythread->thread);
@@ -2090,8 +2090,9 @@ static int xstream_update_main_sched(ABTI_global *p_global,
             p_main_sched->p_replace_waiter = NULL;
             /* Resume the waiter.  This waiter sees that the scheduler finished
              * immediately and was replaced by this new scheduler. */
-            ABTI_ythread_set_ready(ABTI_xstream_get_local(*pp_local_xstream),
-                                   p_waiter);
+            ABTI_ythread_resume_and_push(ABTI_xstream_get_local(
+                                             *pp_local_xstream),
+                                         p_waiter);
         }
         /* Set the replace scheduler */
         p_main_sched->p_replace_sched = p_sched;
