@@ -17,12 +17,6 @@ static ABT_bool xstream_set_new_rank(ABTI_global *p_global,
 static ABT_bool xstream_change_rank(ABTI_global *p_global,
                                     ABTI_xstream *p_xstream, int rank);
 static void xstream_return_rank(ABTI_global *p_global, ABTI_xstream *p_xstream);
-static inline void xstream_schedule_ythread(ABTI_global *p_global,
-                                            ABTI_xstream **pp_local_xstream,
-                                            ABTI_ythread *p_ythread);
-static inline void xstream_schedule_task(ABTI_global *p_global,
-                                         ABTI_xstream *p_local_xstream,
-                                         ABTI_thread *p_task);
 static void xstream_init_main_sched(ABTI_xstream *p_xstream,
                                     ABTI_sched *p_sched);
 ABTU_ret_err static int
@@ -1622,13 +1616,82 @@ void ABTI_xstream_run_thread(ABTI_global *p_global,
                              ABTI_xstream **pp_local_xstream,
                              ABTI_thread *p_thread)
 {
+    ABTI_xstream *p_local_xstream = *pp_local_xstream;
     if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
         /* Execute a ULT */
-        xstream_schedule_ythread(p_global, pp_local_xstream, p_ythread);
+#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
+        if (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
+            ABTI_THREAD_REQ_CANCEL) {
+            ABTI_ythread_cancel(p_local_xstream, p_ythread);
+            ABTI_xstream_terminate_thread(p_global,
+                                          ABTI_xstream_get_local(
+                                              p_local_xstream),
+                                          &p_ythread->thread);
+            return;
+        }
+#endif
+
+#ifndef ABT_CONFIG_DISABLE_MIGRATION
+        if (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
+            ABTI_THREAD_REQ_MIGRATE) {
+            int abt_errno = ABTI_xstream_migrate_thread(p_global,
+                                                        ABTI_xstream_get_local(
+                                                            p_local_xstream),
+                                                        &p_ythread->thread);
+            if (!ABTI_IS_ERROR_CHECK_ENABLED || abt_errno == ABT_SUCCESS) {
+                /* Migration succeeded, so we do not need to schedule p_ythread.
+                 */
+                return;
+            }
+        }
+#endif
+        /* Switch the context.  Since the argument is pp_local_xstream,
+         * p_local_xstream->p_thread must be yieldable. */
+        ABTI_ythread *p_self =
+            ABTI_thread_get_ythread(p_local_xstream->p_thread);
+        ABTI_ythread_run_child(pp_local_xstream, p_self, p_ythread);
+        /* The previous ULT (p_ythread) may not be the same as one to which the
+         * context has been switched. */
     } else {
         /* Execute a tasklet */
-        xstream_schedule_task(p_global, *pp_local_xstream, p_thread);
+#ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
+        if (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
+            ABTI_THREAD_REQ_CANCEL) {
+            ABTI_event_thread_cancel(p_local_xstream, p_thread);
+            ABTI_xstream_terminate_thread(p_global,
+                                          ABTI_xstream_get_local(
+                                              p_local_xstream),
+                                          p_thread);
+            return;
+        }
+#endif
+
+        /* Change the task state */
+        ABTD_atomic_release_store_int(&p_thread->state,
+                                      ABT_THREAD_STATE_RUNNING);
+
+        /* Set the associated ES */
+        p_thread->p_last_xstream = p_local_xstream;
+
+        /* Execute the task function */
+        ABTI_thread *p_sched_thread = p_local_xstream->p_thread;
+        p_local_xstream->p_thread = p_thread;
+        p_thread->p_parent = p_sched_thread;
+
+        /* Execute the task function */
+        ABTI_event_thread_run(p_local_xstream, p_thread, p_sched_thread,
+                              p_sched_thread);
+        p_thread->f_thread(p_thread->p_arg);
+        ABTI_event_thread_finish(p_local_xstream, p_thread, p_sched_thread);
+
+        /* Set the current running scheduler's thread */
+        p_local_xstream->p_thread = p_sched_thread;
+
+        /* Terminate the tasklet */
+        ABTI_xstream_terminate_thread(p_global,
+                                      ABTI_xstream_get_local(p_local_xstream),
+                                      p_thread);
     }
 }
 
@@ -1928,85 +1991,6 @@ ABTU_ret_err static int xstream_join(ABTI_local **pp_local,
     ABTI_ASSERT(ABTD_atomic_acquire_load_int(&p_xstream->state) ==
                 ABT_XSTREAM_STATE_TERMINATED);
     return ABT_SUCCESS;
-}
-
-static inline void xstream_schedule_ythread(ABTI_global *p_global,
-                                            ABTI_xstream **pp_local_xstream,
-                                            ABTI_ythread *p_ythread)
-{
-    ABTI_xstream *p_local_xstream = *pp_local_xstream;
-
-#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
-    if (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
-        ABTI_THREAD_REQ_CANCEL) {
-        ABTI_ythread_cancel(p_local_xstream, p_ythread);
-        ABTI_xstream_terminate_thread(p_global,
-                                      ABTI_xstream_get_local(p_local_xstream),
-                                      &p_ythread->thread);
-        return;
-    }
-#endif
-
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    if (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
-        ABTI_THREAD_REQ_MIGRATE) {
-        int abt_errno =
-            ABTI_xstream_migrate_thread(p_global,
-                                        ABTI_xstream_get_local(p_local_xstream),
-                                        &p_ythread->thread);
-        if (!ABTI_IS_ERROR_CHECK_ENABLED || abt_errno == ABT_SUCCESS) {
-            /* Migration succeeded, so we do not need to schedule p_ythread. */
-            return;
-        }
-    }
-#endif
-    /* Switch the context.  Since the argument is pp_local_xstream,
-     * p_local_xstream->p_thread must be yieldable. */
-    ABTI_ythread *p_self = ABTI_thread_get_ythread(p_local_xstream->p_thread);
-    ABTI_ythread_run_child(pp_local_xstream, p_self, p_ythread);
-    /* The previous ULT (p_ythread) may not be the same as one to which the
-     * context has been switched. */
-}
-
-static inline void xstream_schedule_task(ABTI_global *p_global,
-                                         ABTI_xstream *p_local_xstream,
-                                         ABTI_thread *p_task)
-{
-#ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
-    if (ABTD_atomic_acquire_load_uint32(&p_task->request) &
-        ABTI_THREAD_REQ_CANCEL) {
-        ABTI_event_thread_cancel(p_local_xstream, p_task);
-        ABTI_xstream_terminate_thread(p_global,
-                                      ABTI_xstream_get_local(p_local_xstream),
-                                      p_task);
-        return;
-    }
-#endif
-
-    /* Change the task state */
-    ABTD_atomic_release_store_int(&p_task->state, ABT_THREAD_STATE_RUNNING);
-
-    /* Set the associated ES */
-    p_task->p_last_xstream = p_local_xstream;
-
-    /* Execute the task function */
-    ABTI_thread *p_sched_thread = p_local_xstream->p_thread;
-    p_local_xstream->p_thread = p_task;
-    p_task->p_parent = p_sched_thread;
-
-    /* Execute the task function */
-    ABTI_event_thread_run(p_local_xstream, p_task, p_sched_thread,
-                          p_sched_thread);
-    p_task->f_thread(p_task->p_arg);
-    ABTI_event_thread_finish(p_local_xstream, p_task, p_sched_thread);
-
-    /* Set the current running scheduler's thread */
-    p_local_xstream->p_thread = p_sched_thread;
-
-    /* Terminate the tasklet */
-    ABTI_xstream_terminate_thread(p_global,
-                                  ABTI_xstream_get_local(p_local_xstream),
-                                  p_task);
 }
 
 static void xstream_init_main_sched(ABTI_xstream *p_xstream,
