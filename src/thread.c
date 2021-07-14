@@ -3157,7 +3157,7 @@ static void thread_root_func(void *arg)
             ABTI_xstream *p_xstream = p_local_xstream;
             ABTI_thread *p_thread =
                 ABTI_unit_get_thread_from_builtin_unit(unit);
-            ABTI_xstream_run_thread(p_global, &p_xstream, p_thread);
+            ABTI_ythread_schedule(p_global, &p_xstream, p_thread);
             /* The root thread must be executed on the same execution stream. */
             ABTI_ASSERT(p_xstream == p_local_xstream);
         }
