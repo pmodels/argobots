@@ -872,7 +872,7 @@ int ABT_thread_cancel(ABT_thread thread)
 {
     ABTI_UB_ASSERT(ABTI_initialized());
 
-#ifdef ABT_CONFIG_DISABLE_THREAD_CANCEL
+#ifdef ABT_CONFIG_DISABLE_CANCELLATION
     ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);

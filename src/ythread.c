@@ -288,7 +288,7 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
 /* Return ABT_TRUE if p_prev should terminate. */
 static inline ABT_bool ythread_callback_handle_request(ABTI_ythread *p_prev)
 {
-#if defined(ABT_CONFIG_DISABLE_THREAD_CANCEL) &&                               \
+#if defined(ABT_CONFIG_DISABLE_CANCELLATION) &&                                \
     defined(ABT_CONFIG_DISABLE_MIGRATION)
     return ABT_FALSE;
 #else
@@ -297,7 +297,7 @@ static inline ABT_bool ythread_callback_handle_request(ABTI_ythread *p_prev)
         ABTD_atomic_acquire_load_uint32(&p_prev->thread.request);
 
     /* Check cancellation request. */
-#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
+#ifndef ABT_CONFIG_DISABLE_CANCELLATION
     if (ABTU_unlikely(request & ABTI_THREAD_REQ_CANCEL)) {
         ABTI_ythread_cancel(p_prev->thread.p_last_xstream, p_prev);
         ABTI_xstream_terminate_thread(ABTI_global_get_global(),
@@ -306,7 +306,7 @@ static inline ABT_bool ythread_callback_handle_request(ABTI_ythread *p_prev)
                                       &p_prev->thread);
         return ABT_TRUE;
     }
-#endif /* !ABT_CONFIG_DISABLE_THREAD_CANCEL */
+#endif /* !ABT_CONFIG_DISABLE_CANCELLATION */
 
     /* Check migration request. */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION

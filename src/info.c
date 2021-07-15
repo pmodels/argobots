@@ -268,14 +268,14 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_THREAD_CANCEL:
-#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
+#ifndef ABT_CONFIG_DISABLE_CANCELLATION
             *((ABT_bool *)val) = ABT_TRUE;
 #else
             *((ABT_bool *)val) = ABT_FALSE;
 #endif
             break;
         case ABT_INFO_QUERY_KIND_ENABLED_TASK_CANCEL:
-#ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
+#ifndef ABT_CONFIG_DISABLE_CANCELLATION
             *((ABT_bool *)val) = ABT_TRUE;
 #else
             *((ABT_bool *)val) = ABT_FALSE;
@@ -1121,14 +1121,7 @@ void ABTI_info_print_config(ABTI_global *p_global, FILE *fp)
 #endif
                 "\n");
     fprintf(fp, " - thread cancellation: "
-#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
-                "enabled"
-#else
-                "disabled"
-#endif
-                "\n");
-    fprintf(fp, " - task cancellation: "
-#ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
+#ifndef ABT_CONFIG_DISABLE_CANCELLATION
                 "enabled"
 #else
                 "disabled"

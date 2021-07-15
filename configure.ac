@@ -179,9 +179,8 @@ AC_ARG_ENABLE([feature],
 [  --enable-feature@<:@=OPTS@:>@  enable/disable features.
                           "OPTS" is a list of comma separated names including
         all                 - all features always enabled (default)
-        no-thread-cancel    - disable ULT cancellation
-        no-task-cancel      - disable tasklet cancellation
-        no-migration        - disable ULT migrationtask
+        no-cancellation     - disable thread cancellation
+        no-migration        - disable thread migration
         no-ext-thread       - disable supporting external threads
         none|no             - disable all features above
 ],,[enable_feature=all])
@@ -626,16 +625,13 @@ IFS=","
 for option in $enable_feature ; do
     case "$option" in
         all|yes)
-            enable_thread_cancel=yes
-            enable_task_cancel=yes
+            enable_cancellation=yes
             enable_migration=yes
             enable_ext_thread=yes
         ;;
-        no-thread-cancel)
-            enable_thread_cancel=no
-        ;;
-        no-task-cancel)
-            enable_task_cancel=no
+        no-cancellation|no-thread-cancel|no-task-cancel)
+            # no-thread-cancel|no-task-cancel are old (-v1.1) options
+            enable_cancellation=no
         ;;
         no-migration)
             enable_migration=no
@@ -644,8 +640,7 @@ for option in $enable_feature ; do
             enable_ext_thread=no
         ;;
         none|no)
-            enable_thread_cancel=no
-            enable_task_cancel=no
+            enable_cancellation=no
             enable_migration=no
             enable_ext_thread=no
         ;;
@@ -658,17 +653,13 @@ for option in $enable_feature ; do
 done
 IFS="$save_IFS"
 
-AS_IF([test "x$enable_thread_cancel" = "xno"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_THREAD_CANCEL, 1,
-        [Define to disable ULT cancellation])])
-
-AS_IF([test "x$enable_task_cancel" = "xno"],
-    [AC_DEFINE(ABT_CONFIG_DISABLE_TASK_CANCEL, 1,
-        [Define to disable tasklet cancellation])])
+AS_IF([test "x$enable_cancellation" = "xno"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_CANCELLATION, 1,
+        [Define to disable thread cancellation])])
 
 AS_IF([test "x$enable_migration" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_MIGRATION, 1,
-        [Define to disable ULT migration])])
+        [Define to disable thread migration])])
 
 AS_IF([test "x$enable_ext_thread" = "xno"],
     [AC_DEFINE(ABT_CONFIG_DISABLE_EXT_THREAD, 1,

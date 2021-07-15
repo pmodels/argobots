@@ -576,7 +576,7 @@ static inline void ABTI_ythread_schedule(ABTI_global *p_global,
     if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
         /* Execute a ULT */
-#ifndef ABT_CONFIG_DISABLE_THREAD_CANCEL
+#ifndef ABT_CONFIG_DISABLE_CANCELLATION
         if (ABTD_atomic_acquire_load_uint32(&p_ythread->thread.request) &
             ABTI_THREAD_REQ_CANCEL) {
             ABTI_ythread_cancel(p_local_xstream, p_ythread);
@@ -611,7 +611,7 @@ static inline void ABTI_ythread_schedule(ABTI_global *p_global,
          * context has been switched. */
     } else {
         /* Execute a tasklet */
-#ifndef ABT_CONFIG_DISABLE_TASK_CANCEL
+#ifndef ABT_CONFIG_DISABLE_CANCELLATION
         if (ABTD_atomic_acquire_load_uint32(&p_thread->request) &
             ABTI_THREAD_REQ_CANCEL) {
             ABTI_event_thread_cancel(p_local_xstream, p_thread);
