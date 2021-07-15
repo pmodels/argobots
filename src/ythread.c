@@ -329,14 +329,40 @@ static inline int ythread_callback_handle_request(ABTI_ythread *p_prev,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     if (ABTU_unlikely(request & ABTI_THREAD_REQ_MIGRATE)) {
         /* This is the case when the ULT requests migration of itself. */
-        ABTD_atomic_release_store_int(&p_prev->thread.state,
-                                      ABT_THREAD_STATE_READY);
-        int abt_errno =
-            ABTI_xstream_migrate_thread(ABTI_global_get_global(),
-                                        ABTI_xstream_get_local(
-                                            p_prev->thread.p_last_xstream),
-                                        &p_prev->thread);
-        if (abt_errno != ABT_SUCCESS) {
+        ABTI_thread *p_thread = &p_prev->thread;
+        ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
+        int abt_errno;
+        ABTI_global *p_global = ABTI_global_get_global();
+        ABTI_local *p_local = ABTI_xstream_get_local(p_thread->p_last_xstream);
+
+        ABTI_thread_mig_data *p_mig_data;
+        abt_errno =
+            ABTI_thread_get_mig_data(p_global, p_local, p_thread, &p_mig_data);
+        if (abt_errno == ABT_SUCCESS) {
+            /* Extracting an argument embedded in a migration request. */
+            ABTI_pool *p_pool =
+                ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
+
+            /* Change the associated pool */
+            abt_errno =
+                ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
+            if (abt_errno == ABT_SUCCESS) {
+                /* Call a callback function */
+                if (p_mig_data->f_migration_cb && p_prev) {
+                    ABT_thread thread = ABTI_ythread_get_handle(p_prev);
+                    p_mig_data->f_migration_cb(thread,
+                                               p_mig_data->p_migration_cb_arg);
+                }
+                /* Unset the migration request. */
+                ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
+
+                /* Add the unit to the scheduler's pool */
+                ABTI_pool_push(p_pool, p_thread->unit);
+            } else {
+                /* Migration failed.  Push it back to its associated pool. */
+                ABTI_pool_add_thread(&p_prev->thread);
+            }
+        } else {
             /* Migration failed.  Let's push it back to its associated pool. */
             ABTI_pool_add_thread(&p_prev->thread);
         }
