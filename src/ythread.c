@@ -5,13 +5,6 @@
 
 #include "abti.h"
 
-#define YTHREAD_CALLBACK_HANDLE_REQUEST_NONE ((int)0x0)
-#define YTHREAD_CALLBACK_HANDLE_REQUEST_CANCELLED ((int)0x1)
-#define YTHREAD_CALLBACK_HANDLE_REQUEST_MIGRATED ((int)0x2)
-
-static inline int ythread_callback_handle_request(ABTI_ythread *p_prev,
-                                                  ABT_bool allow_termination);
-
 #ifdef ABT_CONFIG_ENABLE_STACK_UNWIND
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
@@ -28,8 +21,8 @@ static void ythread_unwind_stack(void *arg);
 void ABTI_ythread_callback_yield(void *arg)
 {
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
-    if (ythread_callback_handle_request(p_prev, ABT_TRUE) &
-        YTHREAD_CALLBACK_HANDLE_REQUEST_CANCELLED) {
+    if (ABTI_thread_handle_request(&p_prev->thread, ABT_TRUE) &
+        ABTI_THREAD_HANDLE_REQUEST_CANCELLED) {
         /* p_prev is terminated. */
     } else {
         /* Push p_prev back to the pool. */
@@ -47,8 +40,8 @@ void ABTI_ythread_callback_thread_yield_to(void *arg)
      * that has been pushed by ABTI_pool_add_thread() and change
      * p_prev->thread.p_pool by ABT_unit_set_associated_pool(). */
     ABTI_pool *p_pool = p_prev->thread.p_pool;
-    if (ythread_callback_handle_request(p_prev, ABT_TRUE) &
-        YTHREAD_CALLBACK_HANDLE_REQUEST_CANCELLED) {
+    if (ABTI_thread_handle_request(&p_prev->thread, ABT_TRUE) &
+        ABTI_THREAD_HANDLE_REQUEST_CANCELLED) {
         /* p_prev is terminated. */
     } else {
         /* Push p_prev back to the pool. */
@@ -68,8 +61,8 @@ void ABTI_ythread_callback_resume_yield_to(void *arg)
      * access it after that ULT becomes resumable. */
     ABTI_ythread *p_prev = p_arg->p_prev;
     ABTI_ythread *p_next = p_arg->p_next;
-    if (ythread_callback_handle_request(p_prev, ABT_TRUE) &
-        YTHREAD_CALLBACK_HANDLE_REQUEST_CANCELLED) {
+    if (ABTI_thread_handle_request(&p_prev->thread, ABT_TRUE) &
+        ABTI_THREAD_HANDLE_REQUEST_CANCELLED) {
         /* p_prev is terminated. */
     } else {
         /* Push this thread back to the pool. */
@@ -86,7 +79,7 @@ void ABTI_ythread_callback_suspend(void *arg)
      * migration) */
     ABTI_pool_inc_num_blocked(p_prev->thread.p_pool);
     /* Request handling.  p_prev->thread.p_pool might be changed. */
-    ythread_callback_handle_request(p_prev, ABT_FALSE);
+    ABTI_thread_handle_request(&p_prev->thread, ABT_FALSE);
     /* Set this thread's state to BLOCKED. */
     ABTD_atomic_release_store_int(&p_prev->thread.state,
                                   ABT_THREAD_STATE_BLOCKED);
@@ -109,7 +102,7 @@ void ABTI_ythread_callback_resume_suspend_to(void *arg)
         ABTI_pool_dec_num_blocked(p_next_pool);
     }
     /* Request handling.  p_prev->thread.p_pool might be changed. */
-    ythread_callback_handle_request(p_prev, ABT_FALSE);
+    ABTI_thread_handle_request(&p_prev->thread, ABT_FALSE);
     /* Set this thread's state to BLOCKED. */
     ABTD_atomic_release_store_int(&p_prev->thread.state,
                                   ABT_THREAD_STATE_BLOCKED);
@@ -153,7 +146,7 @@ void ABTI_ythread_callback_suspend_unlock(void *arg)
     /* Increase the number of blocked threads */
     ABTI_pool_inc_num_blocked(p_prev->thread.p_pool);
     /* Request handling.  p_prev->thread.p_pool might be changed. */
-    ythread_callback_handle_request(p_prev, ABT_FALSE);
+    ABTI_thread_handle_request(&p_prev->thread, ABT_FALSE);
     /* Set this thread's state to BLOCKED. */
     ABTD_atomic_release_store_int(&p_prev->thread.state,
                                   ABT_THREAD_STATE_BLOCKED);
@@ -172,7 +165,7 @@ void ABTI_ythread_callback_suspend_join(void *arg)
     /* Increase the number of blocked threads */
     ABTI_pool_inc_num_blocked(p_prev->thread.p_pool);
     /* Request handling.  p_prev->thread.p_pool might be changed. */
-    ythread_callback_handle_request(p_prev, ABT_FALSE);
+    ABTI_thread_handle_request(&p_prev->thread, ABT_FALSE);
     /* Set this thread's state to BLOCKED. */
     ABTD_atomic_release_store_int(&p_prev->thread.state,
                                   ABT_THREAD_STATE_BLOCKED);
@@ -194,7 +187,7 @@ void ABTI_ythread_callback_suspend_replace_sched(void *arg)
     /* Increase the number of blocked threads */
     ABTI_pool_inc_num_blocked(p_prev->thread.p_pool);
     /* Request handling.  p_prev->thread.p_pool might be changed. */
-    ythread_callback_handle_request(p_prev, ABT_FALSE);
+    ABTI_thread_handle_request(&p_prev->thread, ABT_FALSE);
     /* Set this thread's state to BLOCKED. */
     ABTD_atomic_release_store_int(&p_prev->thread.state,
                                   ABT_THREAD_STATE_BLOCKED);
@@ -301,48 +294,6 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
-
-static inline int ythread_callback_handle_request(ABTI_ythread *p_prev,
-                                                  ABT_bool allow_termination)
-{
-#if defined(ABT_CONFIG_DISABLE_CANCELLATION) &&                                \
-    defined(ABT_CONFIG_DISABLE_MIGRATION)
-    return YTHREAD_CALLBACK_HANDLE_REQUEST_NONE;
-#else
-    /* At least either cancellation or migration is enabled. */
-    const uint32_t request =
-        ABTD_atomic_acquire_load_uint32(&p_prev->thread.request);
-
-    /* Check cancellation request. */
-#ifndef ABT_CONFIG_DISABLE_CANCELLATION
-    if (allow_termination && ABTU_unlikely(request & ABTI_THREAD_REQ_CANCEL)) {
-        ABTI_thread_handle_request_cancel(ABTI_global_get_global(),
-                                          p_prev->thread.p_last_xstream,
-                                          &p_prev->thread);
-        return YTHREAD_CALLBACK_HANDLE_REQUEST_CANCELLED;
-    }
-#endif /* !ABT_CONFIG_DISABLE_CANCELLATION */
-
-    /* Check migration request. */
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-    if (ABTU_unlikely(request & ABTI_THREAD_REQ_MIGRATE)) {
-        /* This is the case when the ULT requests migration of itself. */
-        int abt_errno =
-            ABTI_thread_handle_request_migrate(ABTI_global_get_global(),
-                                               ABTI_xstream_get_local(
-                                                   p_prev->thread
-                                                       .p_last_xstream),
-                                               &p_prev->thread);
-        if (abt_errno == ABT_SUCCESS) {
-            return YTHREAD_CALLBACK_HANDLE_REQUEST_MIGRATED;
-        }
-        /* Migration failed. */
-    }
-#endif /* !ABT_CONFIG_DISABLE_MIGRATION */
-
-    return YTHREAD_CALLBACK_HANDLE_REQUEST_NONE;
-#endif
-}
 
 #ifdef ABT_CONFIG_ENABLE_STACK_UNWIND
 ABTU_no_sanitize_address static int ythread_unwind_stack_impl(FILE *fp)
