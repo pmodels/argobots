@@ -117,7 +117,7 @@ static void sched_run(ABT_sched sched)
             ++pop_count;
             if ((unit = ABTI_pool_pop(p_pool)) != ABT_UNIT_NULL) {
                 ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
-                ABTI_xstream_run_thread(p_global, &p_local_xstream, p_thread);
+                ABTI_ythread_schedule(p_global, &p_local_xstream, p_thread);
                 break;
             }
         }

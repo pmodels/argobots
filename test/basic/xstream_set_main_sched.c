@@ -50,7 +50,21 @@ void sched_run(ABT_sched sched)
             ret = ABT_pool_pop(p_data->pools[i], &unit);
             ATS_ERROR(ret, "ABT_pool_pop");
             if (unit != ABT_UNIT_NULL) {
-                ABT_xstream_run_unit(unit, p_data->pools[i]);
+                if (work_count % 3 == 0) {
+                    ABT_xstream_run_unit(unit, p_data->pools[i]);
+                } else if (work_count % 3 == 1) {
+                    ABT_thread thread;
+                    ret = ABT_unit_get_thread(unit, &thread);
+                    ATS_ERROR(ret, "ABT_unit_get_thread");
+                    ret = ABT_self_schedule(thread, ABT_POOL_NULL);
+                    ATS_ERROR(ret, "ABT_self_schedule");
+                } else {
+                    ABT_thread thread;
+                    ret = ABT_unit_get_thread(unit, &thread);
+                    ATS_ERROR(ret, "ABT_unit_get_thread");
+                    ret = ABT_self_schedule(thread, p_data->pools[i]);
+                    ATS_ERROR(ret, "ABT_self_schedule");
+                }
             }
         }
         if (++work_count >= 16) {
