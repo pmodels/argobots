@@ -598,10 +598,9 @@ static inline void ABTI_ythread_schedule(ABTI_global *p_global,
             p_local_xstream->p_thread = p_sched_thread;
 
             /* Terminate the tasklet */
-            ABTI_xstream_terminate_thread(p_global,
-                                          ABTI_xstream_get_local(
-                                              p_local_xstream),
-                                          p_thread);
+            ABTI_thread_terminate(p_global,
+                                  ABTI_xstream_get_local(p_local_xstream),
+                                  p_thread);
         }
     } else if (request_op == ABTI_THREAD_HANDLE_REQUEST_CANCELLED) {
         /* If p_thread is cancelled, there's nothing to do. */

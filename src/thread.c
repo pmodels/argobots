@@ -2662,9 +2662,8 @@ void ABTI_thread_handle_request_cancel(ABTI_global *p_global,
         ABTI_ythread_resume_joiner(p_local_xstream, p_ythread);
     }
     ABTI_event_thread_cancel(p_local_xstream, p_thread);
-    ABTI_xstream_terminate_thread(p_global,
-                                  ABTI_xstream_get_local(p_local_xstream),
-                                  p_thread);
+    ABTI_thread_terminate(p_global, ABTI_xstream_get_local(p_local_xstream),
+                          p_thread);
 }
 
 ABTU_ret_err int ABTI_thread_handle_request_migrate(ABTI_global *p_global,
