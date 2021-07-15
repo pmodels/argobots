@@ -316,11 +316,9 @@ static inline int ythread_callback_handle_request(ABTI_ythread *p_prev,
     /* Check cancellation request. */
 #ifndef ABT_CONFIG_DISABLE_CANCELLATION
     if (allow_termination && ABTU_unlikely(request & ABTI_THREAD_REQ_CANCEL)) {
-        ABTI_ythread_cancel(p_prev->thread.p_last_xstream, p_prev);
-        ABTI_xstream_terminate_thread(ABTI_global_get_global(),
-                                      ABTI_xstream_get_local(
-                                          p_prev->thread.p_last_xstream),
-                                      &p_prev->thread);
+        ABTI_thread_handle_request_cancel(ABTI_global_get_global(),
+                                          p_prev->thread.p_last_xstream,
+                                          &p_prev->thread);
         return YTHREAD_CALLBACK_HANDLE_REQUEST_CANCELLED;
     }
 #endif /* !ABT_CONFIG_DISABLE_CANCELLATION */
@@ -329,33 +327,14 @@ static inline int ythread_callback_handle_request(ABTI_ythread *p_prev,
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     if (ABTU_unlikely(request & ABTI_THREAD_REQ_MIGRATE)) {
         /* This is the case when the ULT requests migration of itself. */
-        ABTI_thread *p_thread = &p_prev->thread;
-        int abt_errno;
-        ABTI_global *p_global = ABTI_global_get_global();
-        ABTI_local *p_local = ABTI_xstream_get_local(p_thread->p_last_xstream);
-
-        ABTI_thread_mig_data *p_mig_data;
-        abt_errno =
-            ABTI_thread_get_mig_data(p_global, p_local, p_thread, &p_mig_data);
+        int abt_errno =
+            ABTI_thread_handle_request_migrate(ABTI_global_get_global(),
+                                               ABTI_xstream_get_local(
+                                                   p_prev->thread
+                                                       .p_last_xstream),
+                                               &p_prev->thread);
         if (abt_errno == ABT_SUCCESS) {
-            /* Extracting an argument embedded in a migration request. */
-            ABTI_pool *p_pool =
-                ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
-
-            /* Change the associated pool */
-            abt_errno =
-                ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
-            if (abt_errno == ABT_SUCCESS) {
-                /* Call a callback function */
-                if (p_mig_data->f_migration_cb && p_prev) {
-                    ABT_thread thread = ABTI_ythread_get_handle(p_prev);
-                    p_mig_data->f_migration_cb(thread,
-                                               p_mig_data->p_migration_cb_arg);
-                }
-                /* Unset the migration request. */
-                ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
-                return YTHREAD_CALLBACK_HANDLE_REQUEST_MIGRATED;
-            }
+            return YTHREAD_CALLBACK_HANDLE_REQUEST_MIGRATED;
         }
         /* Migration failed. */
     }

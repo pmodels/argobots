@@ -591,6 +591,12 @@ ABTU_ret_err int ABTI_thread_revive(ABTI_global *p_global, ABTI_local *p_local,
 void ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread);
 void ABTI_thread_free(ABTI_global *p_global, ABTI_local *p_local,
                       ABTI_thread *p_thread);
+void ABTI_thread_handle_request_cancel(ABTI_global *p_global,
+                                       ABTI_xstream *p_local_xstream,
+                                       ABTI_thread *p_thread);
+ABTU_ret_err int ABTI_thread_handle_request_migrate(ABTI_global *p_global,
+                                                    ABTI_local *p_local,
+                                                    ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 void ABTI_thread_reset_id(void);
 ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
