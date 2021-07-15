@@ -330,7 +330,6 @@ static inline int ythread_callback_handle_request(ABTI_ythread *p_prev,
     if (ABTU_unlikely(request & ABTI_THREAD_REQ_MIGRATE)) {
         /* This is the case when the ULT requests migration of itself. */
         ABTI_thread *p_thread = &p_prev->thread;
-        ABTD_atomic_release_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
         int abt_errno;
         ABTI_global *p_global = ABTI_global_get_global();
         ABTI_local *p_local = ABTI_xstream_get_local(p_thread->p_last_xstream);
@@ -355,18 +354,10 @@ static inline int ythread_callback_handle_request(ABTI_ythread *p_prev,
                 }
                 /* Unset the migration request. */
                 ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
-
-                /* Add the unit to the scheduler's pool */
-                ABTI_pool_push(p_pool, p_thread->unit);
-            } else {
-                /* Migration failed.  Push it back to its associated pool. */
-                ABTI_pool_add_thread(&p_prev->thread);
+                return YTHREAD_CALLBACK_HANDLE_REQUEST_MIGRATED;
             }
-        } else {
-            /* Migration failed.  Let's push it back to its associated pool. */
-            ABTI_pool_add_thread(&p_prev->thread);
         }
-        return YTHREAD_CALLBACK_HANDLE_REQUEST_MIGRATED;
+        /* Migration failed. */
     }
 #endif /* !ABT_CONFIG_DISABLE_MIGRATION */
 
