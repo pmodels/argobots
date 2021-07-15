@@ -450,18 +450,6 @@ ABTI_ythread_exit_to(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self,
     ABTU_unreachable();
 }
 
-static inline void ABTI_ythread_cancel(ABTI_xstream *p_local_xstream,
-                                       ABTI_ythread *p_ythread)
-{
-    /* When we cancel a ULT, if other ULT is blocked to join the canceled ULT,
-     * we have to wake up the joiner ULT.  However, unlike the case when the
-     * ULT has finished its execution and calls ythread_terminate/exit,
-     * this function is called by the scheduler.  Therefore, we should not
-     * context switch to the joiner ULT and need to always wake it up. */
-    ABTI_ythread_resume_joiner(p_local_xstream, p_ythread);
-    ABTI_event_thread_cancel(p_local_xstream, &p_ythread->thread);
-}
-
 typedef struct {
     ABTI_ythread *p_prev;
     ABTI_ythread *p_next;

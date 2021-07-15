@@ -525,11 +525,6 @@ void ABTI_xstream_schedule(void *p_arg);
 void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub);
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-ABTU_ret_err int ABTI_xstream_migrate_thread(ABTI_global *p_global,
-                                             ABTI_local *p_local,
-                                             ABTI_thread *p_thread);
-#endif
 
 /* Scheduler */
 ABT_sched_def *ABTI_sched_get_basic_def(void);
