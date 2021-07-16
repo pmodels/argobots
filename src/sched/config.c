@@ -104,6 +104,8 @@ ABT_sched_config_var ABT_sched_basic_freq = { .idx = -4,
  */
 int ABT_sched_config_create(ABT_sched_config *config, ...)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     int abt_errno;
     int i = 0;
     ABTI_sched_config *p_config;
@@ -147,7 +149,7 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
                 break;
             }
             default:
-                abt_errno = ABT_ERR_SCHED_CONFIG;
+                abt_errno = ABT_ERR_INV_ARG;
         }
         if (abt_errno != ABT_SUCCESS) {
             sched_config_free(p_config);
@@ -202,6 +204,8 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
  */
 int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     int idx;
     ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
     ABTI_CHECK_NULL_SCHED_CONFIG_PTR(p_config);
@@ -245,6 +249,8 @@ int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
  */
 int ABT_sched_config_free(ABT_sched_config *config)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(*config);
     ABTI_CHECK_NULL_SCHED_CONFIG_PTR(p_config);
 
