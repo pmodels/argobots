@@ -245,7 +245,7 @@ int ABT_sched_config_free(ABT_sched_config *config)
     ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(*config);
     ABTI_CHECK_NULL_SCHED_CONFIG_PTR(p_config);
 
-    ABTU_free(p_config);
+    sched_config_free(p_config);
 
     *config = ABT_SCHED_CONFIG_NULL;
 
