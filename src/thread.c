@@ -872,7 +872,7 @@ int ABT_thread_cancel(ABT_thread thread)
 {
     ABTI_UB_ASSERT(ABTI_initialized());
 
-#ifdef ABT_CONFIG_DISABLE_THREAD_CANCEL
+#ifdef ABT_CONFIG_DISABLE_CANCELLATION
     ABTI_HANDLE_ERROR(ABT_ERR_FEATURE_NA);
 #else
     ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
@@ -2648,6 +2648,49 @@ ABTU_ret_err int ABTI_thread_get_mig_data(ABTI_global *p_global,
         }
     }
     *pp_mig_data = p_mig_data;
+    return ABT_SUCCESS;
+}
+
+void ABTI_thread_handle_request_cancel(ABTI_global *p_global,
+                                       ABTI_xstream *p_local_xstream,
+                                       ABTI_thread *p_thread)
+{
+    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+    if (p_ythread) {
+        /* When we cancel a ULT, if other ULT is blocked to join the canceled
+         * ULT, we have to wake up the joiner ULT. */
+        ABTI_ythread_resume_joiner(p_local_xstream, p_ythread);
+    }
+    ABTI_event_thread_cancel(p_local_xstream, p_thread);
+    ABTI_thread_terminate(p_global, ABTI_xstream_get_local(p_local_xstream),
+                          p_thread);
+}
+
+ABTU_ret_err int ABTI_thread_handle_request_migrate(ABTI_global *p_global,
+                                                    ABTI_local *p_local,
+                                                    ABTI_thread *p_thread)
+{
+    int abt_errno;
+
+    ABTI_thread_mig_data *p_mig_data;
+    abt_errno =
+        ABTI_thread_get_mig_data(p_global, p_local, p_thread, &p_mig_data);
+    ABTI_CHECK_ERROR(abt_errno);
+
+    /* Extracting an argument embedded in a migration request. */
+    ABTI_pool *p_pool =
+        ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
+
+    /* Change the associated pool */
+    abt_errno = ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
+    ABTI_CHECK_ERROR(abt_errno);
+    /* Call a callback function */
+    if (p_mig_data->f_migration_cb) {
+        ABT_thread thread = ABTI_thread_get_handle(p_thread);
+        p_mig_data->f_migration_cb(thread, p_mig_data->p_migration_cb_arg);
+    }
+    /* Unset the migration request. */
+    ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
     return ABT_SUCCESS;
 }
 

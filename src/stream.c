@@ -1627,48 +1627,6 @@ void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched)
     }
 }
 
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-ABTU_ret_err int ABTI_xstream_migrate_thread(ABTI_global *p_global,
-                                             ABTI_local *p_local,
-                                             ABTI_thread *p_thread)
-{
-    int abt_errno;
-    ABTI_pool *p_pool;
-
-    ABTI_thread_mig_data *p_mig_data;
-    abt_errno =
-        ABTI_thread_get_mig_data(p_global, p_local, p_thread, &p_mig_data);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    /* Extracting an argument embedded in a migration request. */
-    p_pool = ABTD_atomic_relaxed_load_ptr(&p_mig_data->p_migration_pool);
-
-    /* Change the associated pool */
-    abt_errno = ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
-    ABTI_CHECK_ERROR(abt_errno);
-
-    /* callback function */
-    if (p_mig_data->f_migration_cb) {
-        ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-        if (p_ythread) {
-            ABT_thread thread = ABTI_ythread_get_handle(p_ythread);
-            p_mig_data->f_migration_cb(thread, p_mig_data->p_migration_cb_arg);
-        }
-    }
-
-    /* If request is set, p_migration_pool has a valid pool pointer. */
-    ABTI_ASSERT(ABTD_atomic_acquire_load_uint32(&p_thread->request) &
-                ABTI_THREAD_REQ_MIGRATE);
-
-    /* Unset the migration request. */
-    ABTI_thread_unset_request(p_thread, ABTI_THREAD_REQ_MIGRATE);
-
-    /* Add the unit to the scheduler's pool */
-    ABTI_pool_push(p_pool, p_thread->unit);
-    return ABT_SUCCESS;
-}
-#endif
-
 void ABTI_xstream_free(ABTI_global *p_global, ABTI_local *p_local,
                        ABTI_xstream *p_xstream, ABT_bool force_free)
 {

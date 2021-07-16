@@ -525,11 +525,6 @@ void ABTI_xstream_schedule(void *p_arg);
 void ABTI_xstream_check_events(ABTI_xstream *p_xstream, ABTI_sched *p_sched);
 void ABTI_xstream_print(ABTI_xstream *p_xstream, FILE *p_os, int indent,
                         ABT_bool print_sub);
-#ifndef ABT_CONFIG_DISABLE_MIGRATION
-ABTU_ret_err int ABTI_xstream_migrate_thread(ABTI_global *p_global,
-                                             ABTI_local *p_local,
-                                             ABTI_thread *p_thread);
-#endif
 
 /* Scheduler */
 ABT_sched_def *ABTI_sched_get_basic_def(void);
@@ -591,6 +586,12 @@ ABTU_ret_err int ABTI_thread_revive(ABTI_global *p_global, ABTI_local *p_local,
 void ABTI_thread_join(ABTI_local **pp_local, ABTI_thread *p_thread);
 void ABTI_thread_free(ABTI_global *p_global, ABTI_local *p_local,
                       ABTI_thread *p_thread);
+void ABTI_thread_handle_request_cancel(ABTI_global *p_global,
+                                       ABTI_xstream *p_local_xstream,
+                                       ABTI_thread *p_thread);
+ABTU_ret_err int ABTI_thread_handle_request_migrate(ABTI_global *p_global,
+                                                    ABTI_local *p_local,
+                                                    ABTI_thread *p_thread);
 void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent);
 void ABTI_thread_reset_id(void);
 ABT_unit_id ABTI_thread_get_id(ABTI_thread *p_thread);
