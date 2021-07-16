@@ -255,6 +255,112 @@ int ABT_sched_config_free(ABT_sched_config *config)
     return ABT_SUCCESS;
 }
 
+/**
+ * @ingroup SCHED_CONFIG
+ * @brief   Register a value to a scheduler configuration.
+ *
+ * \c ABT_sched_config_set() associated a value pointed to by the value \c val
+ * with the index \c idx in the scheduler configuration \c config.  This routine
+ * overwrites a value and its type if a value has already been associated with
+ * \c idx.
+ *
+ * @note
+ * For example, this routine can be called as follows to set a value that is
+ * corresponding to \c idx = \a 1.
+ * @code{.c}
+ * const ABT_sched_config_var var = { 1, ABT_SCHED_CONFIG_INT };
+ * int val = 10;
+ * ABT_sched_config_set(&config, var.idx, var.type, &val);
+ * @endcode
+ *
+ * If \c value is \c NULL, this routine deletes a value associated with \c idx
+ * if such exists.
+ *
+ * @note
+ * This routine returns \c ABT_SUCCESS even if \c value is \c NULL but no value
+ * is associated with \c idx.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_SCHED_CONFIG_TYPE{\c type}
+ * \DOC_ERROR_INV_SCHED_CONFIG_HANDLE{\c config}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c config}
+ *
+ * @param[in]  config  scheduler configuration handle
+ * @param[in]  idx     index of a target value
+ * @param[in]  type    type of a target value
+ * @param[in]  val     target value
+ * @return Error code
+ */
+int ABT_sched_config_set(ABT_sched_config config, int idx,
+                         ABT_sched_config_type type, const void *val)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
+    ABTI_CHECK_NULL_SCHED_CONFIG_PTR(p_config);
+    int abt_errno = sched_config_set(p_config, idx, type, val);
+    ABTI_CHECK_ERROR(abt_errno);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SCHED_CONFIG
+ * @brief   Retrieve a value from a scheduler configuration.
+ *
+ * \c ABT_sched_config_get() reads a value associated with the index \c idx of
+ * \c ABT_sched_config_var from the scheduler configuration \c config.  If
+ * \c val is not \c NULL, \c val is set to the value.  If \c type is not
+ * \c NULL, \c type is set to the type of the value.
+ *
+ * @note
+ * For example, this routine can be called as follows to get a value that is
+ * corresponding to \c idx = \a 1.
+ * @code{.c}
+ * const ABT_sched_config_var var = { 1, ABT_SCHED_CONFIG_INT };
+ * int val;
+ * ABT_sched_config_type type;
+ * ABT_sched_config_get(&config, var.idx, &type, &val);
+ * assert(type == var.type);
+ * @endcode
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_SCHED_CONFIG_INDEX{\c config, \c idx}
+ * \DOC_ERROR_INV_SCHED_CONFIG_HANDLE{\c config}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c config}
+ *
+ * @param[in]  config  scheduler configuration handle
+ * @param[in]  idx     index of a target value
+ * @param[out] type    type of a target value
+ * @param[out] val     target value
+ * @return Error code
+ */
+int ABT_sched_config_get(ABT_sched_config config, int idx,
+                         ABT_sched_config_type *type, void *val)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
+    ABTI_CHECK_NULL_SCHED_CONFIG_PTR(p_config);
+    int abt_errno = sched_config_get(p_config, idx, type, val);
+    ABTI_CHECK_ERROR(abt_errno);
+    return ABT_SUCCESS;
+}
+
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/

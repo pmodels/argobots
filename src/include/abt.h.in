@@ -1755,6 +1755,10 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop) ABT_API_PUBLIC;
 int ABT_sched_config_create(ABT_sched_config *config, ...) ABT_API_PUBLIC;
 int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...) ABT_API_PUBLIC;
 int ABT_sched_config_free(ABT_sched_config *config) ABT_API_PUBLIC;
+int ABT_sched_config_set(ABT_sched_config config, int idx,
+                         ABT_sched_config_type type, const void *val) ABT_API_PUBLIC;
+int ABT_sched_config_get(ABT_sched_config config, int idx,
+                         ABT_sched_config_type *p_type, void *val) ABT_API_PUBLIC;
 
 /* Pool */
 int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
