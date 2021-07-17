@@ -628,7 +628,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_self.h"
 #include "abti_pool.h"
 #include "abti_sched.h"
-#include "abti_config.h"
+#include "abti_sched_config.h"
 #include "abti_stream.h"
 #include "abti_thread.h"
 #include "abti_unit.h"
