@@ -10,7 +10,10 @@
 #include <string.h>
 
 static inline size_t sched_config_type_size(ABT_sched_config_type type);
-ABTU_ret_err static int sched_config_add(ABTI_sched_config *p_config, int idx,
+ABTU_ret_err static int sched_config_get(const ABTI_sched_config *p_config,
+                                         int idx, ABT_sched_config_type *p_type,
+                                         void *p_val);
+ABTU_ret_err static int sched_config_set(ABTI_sched_config *p_config, int idx,
                                          ABT_sched_config_type type,
                                          const void *p_val);
 static void sched_config_free(ABTI_sched_config *p_config);
@@ -101,6 +104,8 @@ ABT_sched_config_var ABT_sched_basic_freq = { .idx = -4,
  */
 int ABT_sched_config_create(ABT_sched_config *config, ...)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     int abt_errno;
     int i = 0;
     ABTI_sched_config *p_config;
@@ -126,25 +131,25 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
         switch (var.type) {
             case ABT_SCHED_CONFIG_INT: {
                 int int_val = va_arg(varg_list, int);
-                abt_errno = sched_config_add(p_config, idx,
+                abt_errno = sched_config_set(p_config, idx,
                                              ABT_SCHED_CONFIG_INT, &int_val);
                 break;
             }
             case ABT_SCHED_CONFIG_DOUBLE: {
                 double double_val = va_arg(varg_list, double);
                 abt_errno =
-                    sched_config_add(p_config, idx, ABT_SCHED_CONFIG_DOUBLE,
+                    sched_config_set(p_config, idx, ABT_SCHED_CONFIG_DOUBLE,
                                      &double_val);
                 break;
             }
             case ABT_SCHED_CONFIG_PTR: {
                 void *ptr_val = va_arg(varg_list, void *);
-                abt_errno = sched_config_add(p_config, idx,
+                abt_errno = sched_config_set(p_config, idx,
                                              ABT_SCHED_CONFIG_PTR, &ptr_val);
                 break;
             }
             default:
-                abt_errno = ABT_ERR_SCHED_CONFIG;
+                abt_errno = ABT_ERR_INV_ARG;
         }
         if (abt_errno != ABT_SUCCESS) {
             sched_config_free(p_config);
@@ -199,6 +204,8 @@ int ABT_sched_config_create(ABT_sched_config *config, ...)
  */
 int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     int idx;
     ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
     ABTI_CHECK_NULL_SCHED_CONFIG_PTR(p_config);
@@ -208,7 +215,7 @@ int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
     for (idx = 0; idx < num_vars; idx++) {
         void *ptr = va_arg(varg_list, void *);
         if (ptr) {
-            int abt_errno = ABTI_sched_config_read(p_config, idx, ptr);
+            int abt_errno = sched_config_get(p_config, idx, NULL, ptr);
             /* It's okay even if there's no associated value. */
             (void)abt_errno;
         }
@@ -242,13 +249,121 @@ int ABT_sched_config_read(ABT_sched_config config, int num_vars, ...)
  */
 int ABT_sched_config_free(ABT_sched_config *config)
 {
+    ABTI_UB_ASSERT(ABTI_initialized());
+
     ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(*config);
     ABTI_CHECK_NULL_SCHED_CONFIG_PTR(p_config);
 
-    ABTU_free(p_config);
+    sched_config_free(p_config);
 
     *config = ABT_SCHED_CONFIG_NULL;
 
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SCHED_CONFIG
+ * @brief   Register a value to a scheduler configuration.
+ *
+ * \c ABT_sched_config_set() associated a value pointed to by the value \c val
+ * with the index \c idx in the scheduler configuration \c config.  This routine
+ * overwrites a value and its type if a value has already been associated with
+ * \c idx.
+ *
+ * @note
+ * For example, this routine can be called as follows to set a value that is
+ * corresponding to \c idx = \a 1.
+ * @code{.c}
+ * const ABT_sched_config_var var = { 1, ABT_SCHED_CONFIG_INT };
+ * int val = 10;
+ * ABT_sched_config_set(&config, var.idx, var.type, &val);
+ * @endcode
+ *
+ * If \c value is \c NULL, this routine deletes a value associated with \c idx
+ * if such exists.
+ *
+ * @note
+ * This routine returns \c ABT_SUCCESS even if \c value is \c NULL but no value
+ * is associated with \c idx.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_SCHED_CONFIG_TYPE{\c type}
+ * \DOC_ERROR_INV_SCHED_CONFIG_HANDLE{\c config}
+ * \DOC_ERROR_RESOURCE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c config}
+ *
+ * @param[in]  config  scheduler configuration handle
+ * @param[in]  idx     index of a target value
+ * @param[in]  type    type of a target value
+ * @param[in]  val     target value
+ * @return Error code
+ */
+int ABT_sched_config_set(ABT_sched_config config, int idx,
+                         ABT_sched_config_type type, const void *val)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
+    ABTI_CHECK_NULL_SCHED_CONFIG_PTR(p_config);
+    int abt_errno = sched_config_set(p_config, idx, type, val);
+    ABTI_CHECK_ERROR(abt_errno);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup SCHED_CONFIG
+ * @brief   Retrieve a value from a scheduler configuration.
+ *
+ * \c ABT_sched_config_get() reads a value associated with the index \c idx of
+ * \c ABT_sched_config_var from the scheduler configuration \c config.  If
+ * \c val is not \c NULL, \c val is set to the value.  If \c type is not
+ * \c NULL, \c type is set to the type of the value.
+ *
+ * @note
+ * For example, this routine can be called as follows to get a value that is
+ * corresponding to \c idx = \a 1.
+ * @code{.c}
+ * const ABT_sched_config_var var = { 1, ABT_SCHED_CONFIG_INT };
+ * int val;
+ * ABT_sched_config_type type;
+ * ABT_sched_config_get(&config, var.idx, &type, &val);
+ * assert(type == var.type);
+ * @endcode
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_ARG_SCHED_CONFIG_INDEX{\c config, \c idx}
+ * \DOC_ERROR_INV_SCHED_CONFIG_HANDLE{\c config}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_THREAD_UNSAFE{\c config}
+ *
+ * @param[in]  config  scheduler configuration handle
+ * @param[in]  idx     index of a target value
+ * @param[out] type    type of a target value
+ * @param[out] val     target value
+ * @return Error code
+ */
+int ABT_sched_config_get(ABT_sched_config config, int idx,
+                         ABT_sched_config_type *type, void *val)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_sched_config *p_config = ABTI_sched_config_get_ptr(config);
+    ABTI_CHECK_NULL_SCHED_CONFIG_PTR(p_config);
+    int abt_errno = sched_config_get(p_config, idx, type, val);
+    ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
 
@@ -259,32 +374,44 @@ int ABT_sched_config_free(ABT_sched_config *config)
 ABTU_ret_err int ABTI_sched_config_read(const ABTI_sched_config *p_config,
                                         int idx, void *p_val)
 {
-    int table_index = ((idx % ABTI_SCHED_CONFIG_HTABLE_SIZE) +
-                       ABTI_SCHED_CONFIG_HTABLE_SIZE) %
-                      ABTI_SCHED_CONFIG_HTABLE_SIZE;
-    if (p_config->elements[table_index].idx == ABTI_SCHED_CONFIG_UNUSED_INDEX) {
-        return ABT_ERR_OTHER;
-    } else {
-        const ABTI_sched_config_element *p_element =
-            &p_config->elements[table_index];
-        while (p_element) {
-            if (p_element->idx == idx) {
-                memcpy(p_val, p_element->val,
-                       sched_config_type_size(p_element->type));
-                return ABT_SUCCESS;
-            } else {
-                p_element = p_element->p_next;
-            }
-        }
-        return ABT_ERR_OTHER;
-    }
+    return sched_config_get(p_config, idx, NULL, p_val);
 }
 
 /*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
-ABTU_ret_err static int sched_config_add(ABTI_sched_config *p_config, int idx,
+ABTU_ret_err static int sched_config_get(const ABTI_sched_config *p_config,
+                                         int idx, ABT_sched_config_type *p_type,
+                                         void *p_val)
+{
+    int table_index = ((idx % ABTI_SCHED_CONFIG_HTABLE_SIZE) +
+                       ABTI_SCHED_CONFIG_HTABLE_SIZE) %
+                      ABTI_SCHED_CONFIG_HTABLE_SIZE;
+    if (p_config->elements[table_index].idx == ABTI_SCHED_CONFIG_UNUSED_INDEX) {
+        return ABT_ERR_INV_ARG;
+    } else {
+        const ABTI_sched_config_element *p_element =
+            &p_config->elements[table_index];
+        while (p_element) {
+            if (p_element->idx == idx) {
+                if (p_val) {
+                    memcpy(p_val, p_element->val,
+                           sched_config_type_size(p_element->type));
+                }
+                if (p_type) {
+                    *p_type = p_element->type;
+                }
+                return ABT_SUCCESS;
+            } else {
+                p_element = p_element->p_next;
+            }
+        }
+        return ABT_ERR_INV_ARG;
+    }
+}
+
+ABTU_ret_err static int sched_config_set(ABTI_sched_config *p_config, int idx,
                                          ABT_sched_config_type type,
                                          const void *p_val)
 {
@@ -292,31 +419,57 @@ ABTU_ret_err static int sched_config_add(ABTI_sched_config *p_config, int idx,
                        ABTI_SCHED_CONFIG_HTABLE_SIZE) %
                       ABTI_SCHED_CONFIG_HTABLE_SIZE;
     if (p_config->elements[table_index].idx == ABTI_SCHED_CONFIG_UNUSED_INDEX) {
-        p_config->elements[table_index].idx = idx;
-        p_config->elements[table_index].type = type;
-        memcpy(p_config->elements[table_index].val, p_val,
-               sched_config_type_size(type));
+        if (p_val) {
+            /* Newly add. */
+            p_config->elements[table_index].idx = idx;
+            p_config->elements[table_index].type = type;
+            memcpy(p_config->elements[table_index].val, p_val,
+                   sched_config_type_size(type));
+        }
     } else {
         ABTI_sched_config_element *p_element = &p_config->elements[table_index];
+        ABTI_sched_config_element **pp_element = NULL;
         while (p_element) {
             if (p_element->idx == idx) {
-                /* Update. */
-                p_element->type = type;
-                memcpy(p_element->val, p_val, sched_config_type_size(type));
+                if (p_val) {
+                    /* Update. */
+                    p_element->type = type;
+                    memcpy(p_element->val, p_val, sched_config_type_size(type));
+                } else {
+                    /* Remove the element. */
+                    if (pp_element) {
+                        *pp_element = p_element->p_next;
+                        ABTU_free(p_element);
+                    } else {
+                        ABTI_sched_config_element *p_next = p_element->p_next;
+                        if (p_next) {
+                            memcpy(p_element, p_next,
+                                   sizeof(ABTI_sched_config_element));
+                            ABTU_free(p_next);
+                        } else {
+                            p_element->idx = ABTI_SCHED_CONFIG_UNUSED_INDEX;
+                        }
+                    }
+                }
                 break;
             } else if (!p_element->p_next) {
-                ABTI_sched_config_element *p_new_element;
-                int abt_errno =
-                    ABTU_calloc(1, sizeof(ABTI_sched_config_element),
-                                (void **)&p_new_element);
-                ABTI_CHECK_ERROR(abt_errno);
-                p_new_element->idx = idx;
-                p_new_element->type = type;
-                memcpy(p_new_element->val, p_val, sched_config_type_size(type));
-                p_element->p_next = p_new_element;
+                if (p_val) {
+                    /* Newly add. */
+                    ABTI_sched_config_element *p_new_element;
+                    int abt_errno =
+                        ABTU_calloc(1, sizeof(ABTI_sched_config_element),
+                                    (void **)&p_new_element);
+                    ABTI_CHECK_ERROR(abt_errno);
+                    p_new_element->idx = idx;
+                    p_new_element->type = type;
+                    memcpy(p_new_element->val, p_val,
+                           sched_config_type_size(type));
+                    p_element->p_next = p_new_element;
+                }
                 break;
             } else {
-                p_element = p_element->p_next;
+                pp_element = &p_element->p_next;
+                p_element = *pp_element;
             }
         }
     }

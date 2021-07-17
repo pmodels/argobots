@@ -1980,7 +1980,11 @@ ALIASES += DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{2}="\c ABT_ERR_INV_ARG is retur
 
 ALIASES += DOC_ERROR_INV_ARG_NEG{1}="\c ABT_ERR_INV_ARG is returned if \1 is negative.\n"
 
-ALIASES += DOC_ERROR_INV_ARG_SCHED_CONFIG_TYPE="\c ABT_ERR_INV_ARG is returned if a variable of type \c ABT_sched_config_var in the given list has an invalid \c type.\n"
+ALIASES += DOC_ERROR_INV_ARG_SCHED_CONFIG_INDEX{2}="\c ABT_ERR_INV_ARG is returned if \1 does not have a value associated with \2.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_SCHED_CONFIG_TYPE="\c ABT_ERR_INV_ARG is returned if \c type of the given \c ABT_sched_config_var is invalid.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_SCHED_CONFIG_TYPE{1}="\c ABT_ERR_INV_ARG is returned if \1 is invalid.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_ZERO{1}="\c ABT_ERR_INV_ARG is returned if \1 is zero.\n"
 
