@@ -264,6 +264,26 @@ int ABT_pool_config_get(ABT_pool_config config, int key,
 }
 
 /*****************************************************************************/
+/* Private APIs                                                              */
+/*****************************************************************************/
+
+ABTU_ret_err int ABTI_pool_config_read(const ABTI_pool_config *p_config,
+                                       int key, void *p_val)
+{
+    int found;
+    pool_config_element data;
+    ABTU_hashtable_get(p_config->p_table, key, &data, &found);
+    if (found) {
+        if (p_val) {
+            pool_config_read_element(&data, p_val);
+        }
+        return ABT_SUCCESS;
+    } else {
+        return ABT_ERR_INV_ARG;
+    }
+}
+
+/*****************************************************************************/
 /* Internal static functions                                                 */
 /*****************************************************************************/
 

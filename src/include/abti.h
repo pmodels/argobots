@@ -558,6 +558,10 @@ ABTU_ret_err int ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
 
+/* Pool config */
+ABTU_ret_err int ABTI_pool_config_read(const ABTI_pool_config *p_config,
+                                       int key, void *p_val);
+
 /* Work Unit */
 void ABTI_unit_init_hash_table(ABTI_global *p_global);
 void ABTI_unit_finalize_hash_table(ABTI_global *p_global);

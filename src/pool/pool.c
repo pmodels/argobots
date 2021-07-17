@@ -5,8 +5,9 @@
 
 #include "abti.h"
 
-ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
-                                    ABT_bool automatic, ABT_bool is_builtin,
+ABTU_ret_err static int pool_create(ABTI_pool_def *def,
+                                    ABTI_pool_config *p_config,
+                                    ABT_bool def_automatic, ABT_bool is_builtin,
                                     ABTI_pool **pp_newpool);
 
 /** @defgroup POOL Pool
@@ -19,13 +20,7 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
  *
  * \c ABT_pool_create() creates a new pool, given by the pool definition
  * (\c def) and a pool configuration (\c config), and returns its handle through
- * \c newpool.  If \c p_init is not \c NULL, this routine calls \c p_init() with
- * \c newpool as the first argument and \c config as the second argument.  This
- * routine returns an error returned by \c p_init() if \c p_init() does not
- * return \c ABT_SUCCESS.
- *
- * \c config is passed as the second argument of the initialization function of
- * the pool.
+ * \c newpool.
  *
  * \c def must define all the non-optional functions.  See \c #ABT_pool_def for
  * details.
@@ -37,12 +32,21 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
  * Specifically, any explicit or implicit context-switching operation in a pool
  * function may cause undefined behavior.
  *
+ * \c newpool can be configured via \c config.  If the user passes
+ * \c ABT_POOL_CONFIG_NULL for \c config, the default configuration is used.
+ * If \c p_init is not \c NULL, this routine calls \c p_init() with
+ * \c newpool as the first argument and \c config as the second argument.  This
+ * routine returns an error returned by \c p_init() if \c p_init() does not
+ * return \c ABT_SUCCESS.
+ *
+ * @note
+ * \DOC_NOTE_DEFAULT_POOL_CONFIG
+ *
  * This routine copies \c def and \c config, so the user can free \c def and
  * \c config after this routine returns.
  *
- * The created pool is not automatically freed, so \c newpool must be freed by
- * \c ABT_pool_free() after its use unless \c newpool is associated with the
- * main scheduler of the primary execution stream.
+ * \DOC_DESC_POOL_AUTOMATIC{\c newpool} By default \c newpool created by this
+ * routine is not automatically freed.
  *
  * @note
  * \DOC_NOTE_EFFECT_ABT_FINALIZE
@@ -108,8 +112,10 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     internal_def.p_print_all = def->p_print_all;
 
     ABTI_pool *p_newpool;
-    int abt_errno =
-        pool_create(&internal_def, config, ABT_FALSE, ABT_FALSE, &p_newpool);
+    ABTI_pool_config *p_config = ABTI_pool_config_get_ptr(config);
+    const ABT_bool def_automatic = ABT_FALSE;
+    int abt_errno = pool_create(&internal_def, p_config, def_automatic,
+                                ABT_FALSE, &p_newpool);
     ABTI_CHECK_ERROR(abt_errno);
 
     *newpool = ABTI_pool_get_handle(p_newpool);
@@ -935,8 +941,7 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
     }
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = pool_create(&def, ABT_POOL_CONFIG_NULL, automatic, ABT_TRUE,
-                            pp_newpool);
+    abt_errno = pool_create(&def, NULL, automatic, ABT_TRUE, pp_newpool);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
@@ -1009,14 +1014,27 @@ void ABTI_pool_reset_id(void)
 /*****************************************************************************/
 
 static inline uint64_t pool_get_new_id(void);
-ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
-                                    ABT_bool automatic, ABT_bool is_builtin,
+ABTU_ret_err static int pool_create(ABTI_pool_def *def,
+                                    ABTI_pool_config *p_config,
+                                    ABT_bool def_automatic, ABT_bool is_builtin,
                                     ABTI_pool **pp_newpool)
 {
     int abt_errno;
     ABTI_pool *p_pool;
     abt_errno = ABTU_malloc(sizeof(ABTI_pool), (void **)&p_pool);
     ABTI_CHECK_ERROR(abt_errno);
+
+    /* Read the config and set the configured parameter */
+    ABT_bool automatic = def_automatic;
+    if (p_config) {
+        int automatic_val = 0;
+        abt_errno =
+            ABTI_pool_config_read(p_config, ABT_pool_config_automatic.key,
+                                  &automatic_val);
+        if (abt_errno == ABT_SUCCESS) {
+            automatic = (automatic_val == 0) ? ABT_FALSE : ABT_TRUE;
+        }
+    }
 
     p_pool->access = def->access;
     p_pool->automatic = automatic;
@@ -1042,6 +1060,7 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def, ABT_pool_config config,
 
     /* Configure the pool */
     if (p_pool->p_init) {
+        ABT_pool_config config = ABTI_pool_config_get_handle(p_config);
         abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
         if (abt_errno != ABT_SUCCESS) {
             ABTU_free(p_pool);
