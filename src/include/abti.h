@@ -57,9 +57,6 @@
 #define ABTI_UNIT_HASH_TABLE_SIZE_EXP 8 /* N -> 2^N table entries */
 #define ABTI_UNIT_HASH_TABLE_SIZE ((size_t)(1 << ABTI_UNIT_HASH_TABLE_SIZE_EXP))
 
-#define ABTI_SCHED_CONFIG_HTABLE_SIZE 8
-#define ABTI_SCHED_CONFIG_UNUSED_INDEX INT_MIN
-
 #define ABTI_STACK_CHECK_TYPE_NONE 0
 #define ABTI_STACK_CHECK_TYPE_CANARY 1
 #define ABTI_STACK_CHECK_TYPE_MPROTECT 2
@@ -116,7 +113,6 @@ typedef struct ABTI_local_func ABTI_local_func;
 typedef struct ABTI_xstream ABTI_xstream;
 typedef enum ABTI_xstream_type ABTI_xstream_type;
 typedef struct ABTI_sched ABTI_sched;
-typedef struct ABTI_sched_config_element ABTI_sched_config_element;
 typedef struct ABTI_sched_config ABTI_sched_config;
 typedef enum ABTI_sched_used ABTI_sched_used;
 typedef void *ABTI_sched_id;       /* Scheduler id */
@@ -319,17 +315,8 @@ struct ABTI_sched {
 #endif
 };
 
-struct ABTI_sched_config_element {
-    int idx;                    /* Index of this element. */
-    ABT_sched_config_type type; /* Element type. */
-    char val[sizeof(double) > sizeof(void *)
-                 ? sizeof(double)
-                 : sizeof(void *)];    /* Memory for double, int, or pointer */
-    ABTI_sched_config_element *p_next; /* Next element. */
-};
-
 struct ABTI_sched_config {
-    ABTI_sched_config_element elements[ABTI_SCHED_CONFIG_HTABLE_SIZE];
+    ABTU_hashtable *p_table;
 };
 
 struct ABTI_pool {
