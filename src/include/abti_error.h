@@ -190,6 +190,15 @@
         }                                                                      \
     } while (0)
 
+#define ABTI_CHECK_NULL_POOL_CONFIG_PTR(p)                                     \
+    do {                                                                       \
+        if (ABTI_IS_ERROR_CHECK_ENABLED &&                                     \
+            ABTU_unlikely(p == (ABTI_pool_config *)NULL)) {                    \
+            HANDLE_ERROR_FUNC_WITH_CODE(ABT_ERR_INV_POOL_CONFIG);              \
+            return ABT_ERR_INV_POOL_CONFIG;                                    \
+        }                                                                      \
+    } while (0)
+
 #define ABTI_CHECK_NULL_SCHED_PTR(p)                                           \
     do {                                                                       \
         if (ABTI_IS_ERROR_CHECK_ENABLED &&                                     \

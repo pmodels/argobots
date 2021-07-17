@@ -1980,6 +1980,12 @@ ALIASES += DOC_ERROR_INV_ARG_INV_TOOL_QUERY_KIND{2}="\c ABT_ERR_INV_ARG is retur
 
 ALIASES += DOC_ERROR_INV_ARG_NEG{1}="\c ABT_ERR_INV_ARG is returned if \1 is negative.\n"
 
+ALIASES += DOC_ERROR_INV_ARG_POOL_CONFIG_INDEX{2}="\c ABT_ERR_INV_ARG is returned if \1 does not have a value associated with \2.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_POOL_CONFIG_TYPE="\c ABT_ERR_INV_ARG is returned if \c type of the given \c ABT_pool_config_var is invalid.\n"
+
+ALIASES += DOC_ERROR_INV_ARG_POOL_CONFIG_TYPE{1}="\c ABT_ERR_INV_ARG is returned if \1 is invalid.\n"
+
 ALIASES += DOC_ERROR_INV_ARG_SCHED_CONFIG_INDEX{2}="\c ABT_ERR_INV_ARG is returned if \1 does not have a value associated with \2.\n"
 
 ALIASES += DOC_ERROR_INV_ARG_SCHED_CONFIG_TYPE="\c ABT_ERR_INV_ARG is returned if \c type of the given \c ABT_sched_config_var is invalid.\n"
@@ -2021,6 +2027,10 @@ ALIASES += DOC_ERROR_INV_MUTEX_HANDLE{1}="\c ABT_ERR_INV_MUTEX is returned if \1
 ALIASES += DOC_ERROR_INV_MUTEX_PTR{1}="\c ABT_ERR_INV_MUTEX is returned if \1 points to \c ABT_MUTEX_NULL.\n"
 
 ALIASES += DOC_ERROR_INV_POOL_ACCESS{1}="\c ABT_ERR_INV_POOL_ACCESS is returned if \1 is not a valid pool access type.\n"
+
+ALIASES += DOC_ERROR_INV_POOL_CONFIG_HANDLE{1}="\c ABT_ERR_INV_POOL_CONFIG is returned if \1 is \c ABT_SCHED_POOL_NULL.\n"
+
+ALIASES += DOC_ERROR_INV_POOL_CONFIG_PTR{1}="\c ABT_ERR_INV_POOL_CONFIG is returned if \1 points to \c ABT_SCHED_POOL_NULL.\n"
 
 ALIASES += DOC_ERROR_INV_POOL_HANDLE{1}="\c ABT_ERR_INV_POOL is returned if \1 is \c ABT_POOL_NULL.\n"
 
@@ -2162,7 +2172,9 @@ ALIASES += DOC_NOTE_DEFAULT_MUTEX_ATTRIBUTE="To check the details of the default
 
 ALIASES += DOC_NOTE_DEFAULT_POOL="To see the details of the default pool, please check \c ABT_pool_create()."
 
-ALIASES += DOC_NOTE_DEFAULT_POOL_CONFIG=""
+ALIASES += DOC_NOTE_DEFAULT_POOL_AUTOMATIC="To see the details of whether the pool is automatically freed or not, please check \c ABT_pool_create()."
+
+ALIASES += DOC_NOTE_DEFAULT_POOL_CONFIG=""To see the details of the default pool configuration, please check \c ABT_pool_config_create()."
 
 ALIASES += DOC_NOTE_DEFAULT_SCHED="To see the details of the default scheduler, please check \c ABT_sched_create()."
 

@@ -119,6 +119,7 @@ typedef void *ABTI_sched_id;       /* Scheduler id */
 typedef uintptr_t ABTI_sched_kind; /* Scheduler kind */
 typedef struct ABTI_pool ABTI_pool;
 typedef struct ABTI_pool_def ABTI_pool_def;
+typedef struct ABTI_pool_config ABTI_pool_config;
 typedef struct ABTI_thread ABTI_thread;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_ythread ABTI_ythread;
@@ -361,6 +362,10 @@ struct ABTI_pool_def {
     ABT_pool_remove_fn p_remove;
     ABT_pool_free_fn p_free;
     ABT_pool_print_all_fn p_print_all;
+};
+
+struct ABTI_pool_config {
+    ABTU_hashtable *p_table;
 };
 
 struct ABTI_thread {
@@ -627,6 +632,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_global.h"
 #include "abti_self.h"
 #include "abti_pool.h"
+#include "abti_pool_config.h"
 #include "abti_sched.h"
 #include "abti_sched_config.h"
 #include "abti_stream.h"
