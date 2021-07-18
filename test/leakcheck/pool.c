@@ -81,11 +81,6 @@ int pool_free(ABT_pool pool)
 
 ABT_pool create_pool(int automatic, int must_succeed)
 {
-    if (automatic) {
-        /* Currently there's no way to create an automatic pool using
-         * ABT_pool_create(). */
-        return ABT_POOL_NULL;
-    }
     int ret;
     ABT_pool pool = (ABT_pool)RAND_PTR;
 
@@ -110,7 +105,31 @@ ABT_pool create_pool(int automatic, int must_succeed)
     pool_def.p_free = pool_free;
     pool_def.p_print_all = NULL;
 
-    ret = ABT_pool_create(&pool_def, ABT_POOL_CONFIG_NULL, &pool);
+    ABT_pool_config config = (ABT_pool_config)RAND_PTR;
+    if (automatic) {
+        /* Create a configuration. */
+        ret = ABT_pool_config_create(&config);
+        assert(!must_succeed || ret == ABT_SUCCESS);
+        if (ret != ABT_SUCCESS) {
+            assert(config == (ABT_pool_config)RAND_PTR);
+            return ABT_POOL_NULL;
+        }
+        const int automatic_val = 1;
+        ret = ABT_pool_config_set(config, ABT_pool_config_automatic.key,
+                                  ABT_pool_config_automatic.type,
+                                  (const void *)&automatic_val);
+        assert(!must_succeed || ret == ABT_SUCCESS);
+        if (ret != ABT_SUCCESS) {
+            ret = ABT_pool_config_free(&config);
+            assert(ret == ABT_SUCCESS && config == ABT_POOL_CONFIG_NULL);
+            return ABT_POOL_NULL;
+        }
+    } else {
+        /* By default, a pool created by ABT_pool_create() is not automatically
+         * freed. */
+        config = ABT_POOL_CONFIG_NULL;
+    }
+    ret = ABT_pool_create(&pool_def, config, &pool);
     assert(!must_succeed || ret == ABT_SUCCESS);
     if (ret != ABT_SUCCESS) {
 #ifdef ABT_ENABLE_VER_20_API
@@ -118,7 +137,11 @@ ABT_pool create_pool(int automatic, int must_succeed)
 #else
         assert(pool == ABT_POOL_NULL);
 #endif
-        return ABT_POOL_NULL;
+        pool = ABT_POOL_NULL;
+    }
+    if (config != ABT_POOL_CONFIG_NULL) {
+        ret = ABT_pool_config_free(&config);
+        assert(ret == ABT_SUCCESS && config == ABT_POOL_CONFIG_NULL);
     }
     return pool;
 }

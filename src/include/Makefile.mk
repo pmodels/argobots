@@ -17,7 +17,6 @@ noinst_HEADERS = \
 	include/abti.h \
 	include/abti_barrier.h \
 	include/abti_cond.h \
-	include/abti_config.h \
 	include/abti_error.h \
 	include/abti_event.h \
 	include/abti_eventual.h \
@@ -32,7 +31,9 @@ noinst_HEADERS = \
 	include/abti_mutex_attr.h \
 	include/abti_rwlock.h \
 	include/abti_pool.h \
+	include/abti_pool_config.h \
 	include/abti_sched.h \
+	include/abti_sched_config.h \
 	include/abti_self.h \
 	include/abti_stream.h \
 	include/abti_stream_barrier.h \

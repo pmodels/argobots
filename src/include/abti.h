@@ -57,9 +57,6 @@
 #define ABTI_UNIT_HASH_TABLE_SIZE_EXP 8 /* N -> 2^N table entries */
 #define ABTI_UNIT_HASH_TABLE_SIZE ((size_t)(1 << ABTI_UNIT_HASH_TABLE_SIZE_EXP))
 
-#define ABTI_SCHED_CONFIG_HTABLE_SIZE 8
-#define ABTI_SCHED_CONFIG_UNUSED_INDEX INT_MIN
-
 #define ABTI_STACK_CHECK_TYPE_NONE 0
 #define ABTI_STACK_CHECK_TYPE_CANARY 1
 #define ABTI_STACK_CHECK_TYPE_MPROTECT 2
@@ -116,13 +113,13 @@ typedef struct ABTI_local_func ABTI_local_func;
 typedef struct ABTI_xstream ABTI_xstream;
 typedef enum ABTI_xstream_type ABTI_xstream_type;
 typedef struct ABTI_sched ABTI_sched;
-typedef struct ABTI_sched_config_element ABTI_sched_config_element;
 typedef struct ABTI_sched_config ABTI_sched_config;
 typedef enum ABTI_sched_used ABTI_sched_used;
 typedef void *ABTI_sched_id;       /* Scheduler id */
 typedef uintptr_t ABTI_sched_kind; /* Scheduler kind */
 typedef struct ABTI_pool ABTI_pool;
 typedef struct ABTI_pool_def ABTI_pool_def;
+typedef struct ABTI_pool_config ABTI_pool_config;
 typedef struct ABTI_thread ABTI_thread;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
 typedef struct ABTI_ythread ABTI_ythread;
@@ -319,17 +316,8 @@ struct ABTI_sched {
 #endif
 };
 
-struct ABTI_sched_config_element {
-    int idx;                    /* Index of this element. */
-    ABT_sched_config_type type; /* Element type. */
-    char val[sizeof(double) > sizeof(void *)
-                 ? sizeof(double)
-                 : sizeof(void *)];    /* Memory for double, int, or pointer */
-    ABTI_sched_config_element *p_next; /* Next element. */
-};
-
 struct ABTI_sched_config {
-    ABTI_sched_config_element elements[ABTI_SCHED_CONFIG_HTABLE_SIZE];
+    ABTU_hashtable *p_table;
 };
 
 struct ABTI_pool {
@@ -374,6 +362,10 @@ struct ABTI_pool_def {
     ABT_pool_remove_fn p_remove;
     ABT_pool_free_fn p_free;
     ABT_pool_print_all_fn p_print_all;
+};
+
+struct ABTI_pool_config {
+    ABTU_hashtable *p_table;
 };
 
 struct ABTI_thread {
@@ -566,6 +558,10 @@ ABTU_ret_err int ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
 
+/* Pool config */
+ABTU_ret_err int ABTI_pool_config_read(const ABTI_pool_config *p_config,
+                                       int key, void *p_val);
+
 /* Work Unit */
 void ABTI_unit_init_hash_table(ABTI_global *p_global);
 void ABTI_unit_finalize_hash_table(ABTI_global *p_global);
@@ -640,8 +636,9 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_global.h"
 #include "abti_self.h"
 #include "abti_pool.h"
+#include "abti_pool_config.h"
 #include "abti_sched.h"
-#include "abti_config.h"
+#include "abti_sched_config.h"
 #include "abti_stream.h"
 #include "abti_thread.h"
 #include "abti_unit.h"

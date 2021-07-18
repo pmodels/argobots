@@ -336,4 +336,26 @@ ABTU_ret_err int ABTU_atoui64(const char *str, uint64_t *p_val,
 ABTU_ret_err int ABTU_atosz(const char *str, size_t *p_val,
                             ABT_bool *p_overflow);
 
+/* Simple hash table */
+
+typedef struct ABTU_hashtable_element {
+    int key;
+    struct ABTU_hashtable_element *p_next;
+    char *data;
+} ABTU_hashtable_element;
+
+typedef struct ABTU_hashtable {
+    size_t num_entries;
+    size_t data_size;
+} ABTU_hashtable;
+
+ABTU_ret_err int ABTU_hashtable_create(size_t num_entries, size_t data_size,
+                                       ABTU_hashtable **pp_hashtable);
+void ABTU_hashtable_free(ABTU_hashtable *p_hashtable);
+void ABTU_hashtable_get(const ABTU_hashtable *p_hashtable, int key, void *data,
+                        int *found);
+ABTU_ret_err int ABTU_hashtable_set(ABTU_hashtable *p_hashtable, int key,
+                                    const void *data, int *overwritten);
+void ABTU_hashtable_delete(ABTU_hashtable *p_hashtable, int key, int *deleted);
+
 #endif /* ABTU_H_INCLUDED */

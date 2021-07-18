@@ -930,20 +930,16 @@ int ABT_xstream_set_main_sched(ABT_xstream xstream, ABT_sched sched)
  *
  * \c ABT_xstream_set_main_sched() sets the predefined scheduler \c predefined
  * as the main scheduler of the execution stream \c xstream.  The functionality
- * provided by this routine is the same as the combination of
+ * provided by this routine when it succeeds is the same as the combination of
  * \c ABT_sched_create_basic() and \c ABT_xstream_set_main_sched().
  *
  * @code{.c}
  * int ABT_xstream_set_main_sched_basic(...) {
- *   int abt_errno;
- *   ABT_sched sched = ABT_SCHED_NULL;
- *   abt_errno = ABT_sched_create_basic(predef, num_pools, pools,
- *                                      ABT_SCHED_CONFIG_NULL, sched);
- *   if (abt_errno == ABT_SUCCESS)
- *     abt_errno = ABT_xstream_set_main_sched(xstream, sched);
- *   if (abt_errno != ABT_SUCCESS && sched != ABT_SCHED_NULL)
- *     ABT_sched_free(&sched);
- *   return abt_errno;
+ *   ABT_sched sched;
+ *   ABT_sched_create_basic(predef, num_pools, pools, ABT_SCHED_CONFIG_NULL,
+ *                          &sched);
+ *   ABT_xstream_set_main_sched(xstream, sched);
+ *   return ABT_SUCCESS;
  * }
  * @endcode
  *
@@ -1005,6 +1001,14 @@ int ABT_xstream_set_main_sched_basic(ABT_xstream xstream,
     abt_errno = xstream_update_main_sched(p_global, &p_local_xstream, p_xstream,
                                           p_sched);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
+        int i;
+        for (i = 0; i < num_pools; i++) {
+            if (pools[i] != ABT_POOL_NULL) {
+                /* Avoid freeing user-given pools. */
+                ABTI_pool_release(ABTI_pool_get_ptr(p_sched->pools[i]));
+                p_sched->pools[i] = ABT_POOL_NULL;
+            }
+        }
         ABTI_sched_free(p_global, ABTI_local_get_local_uninlined(), p_sched,
                         ABT_FALSE);
         ABTI_HANDLE_ERROR(abt_errno);

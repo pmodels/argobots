@@ -166,6 +166,11 @@ extern "C" {
 #define ABT_ERR_INV_POOL_ACCESS    14
 /**
  * @ingroup ERROR_CODE
+ * @brief   Error code: invalid pool configuration.
+ */
+#define ABT_ERR_INV_POOL_CONFIG    56
+/**
+ * @ingroup ERROR_CODE
  * @brief   Error code: invalid work unit for scheduling.
  */
 #define ABT_ERR_INV_UNIT           15
@@ -1400,6 +1405,46 @@ typedef struct {
     ABT_sched_get_migr_pool_fn get_migr_pool;
 } ABT_sched_def;
 
+/**
+ * @ingroup POOL_CONFIG
+ * @brief   A struct that sets and gets a pool configuration.
+ */
+typedef enum {
+    /** Parameter of type int */
+    ABT_POOL_CONFIG_INT    = 0,
+    /** Parameter of type double */
+    ABT_POOL_CONFIG_DOUBLE = 1,
+    /** Parameter of type pointer */
+    ABT_POOL_CONFIG_PTR    = 2,
+} ABT_pool_config_type;
+
+/**
+ * @ingroup POOL_CONFIG
+ * @brief   A struct that sets and gets a pool configuration.
+ */
+typedef struct {
+    /**
+     * A key of a configuration variable.  It must be non-negative as negative
+     * keys are reserved for the Argobots internal use.
+     */
+    int key;
+    /** Type of a configuration variable. */
+    ABT_pool_config_type type;
+} ABT_pool_config_var;
+
+/**
+ * @ingroup POOL_CONFIG
+ * @var     ABT_pool_config_automatic
+ * @brief   Predefined ABT_pool_config_var to configure whether the pool is
+ *          freed automatically or not.
+ * @hideinitializer
+ *
+ * Its type is int.  If the value is non-zero, the pool is freed automatically
+ * after its associated objects are released.  If the value is zero, the pool is
+ * configured to be not freed automatically by the Argobots runtime.
+ */
+extern const ABT_pool_config_var ABT_pool_config_automatic ABT_API_PUBLIC;
+
 /* Pool Functions */
 typedef ABT_unit_type (*ABT_unit_get_type_fn)(ABT_unit);
 typedef ABT_thread    (*ABT_unit_get_thread_fn)(ABT_unit);
@@ -1781,6 +1826,14 @@ int ABT_pool_set_data(ABT_pool pool, void *data) ABT_API_PUBLIC;
 int ABT_pool_get_data(ABT_pool pool, void **data) ABT_API_PUBLIC;
 int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched) ABT_API_PUBLIC;
 int ABT_pool_get_id(ABT_pool pool, int *id) ABT_API_PUBLIC;
+
+/* Pool config */
+int ABT_pool_config_create(ABT_pool_config *config) ABT_API_PUBLIC;
+int ABT_pool_config_free(ABT_pool_config *config) ABT_API_PUBLIC;
+int ABT_pool_config_set(ABT_pool_config config, int key, ABT_pool_config_type type,
+                        const void *val) ABT_API_PUBLIC;
+int ABT_pool_config_get(ABT_pool_config config, int key,
+                        ABT_pool_config_type *p_type, void *val) ABT_API_PUBLIC;
 
 /* Work Unit */
 int ABT_unit_get_thread(ABT_unit unit, ABT_thread *thread) ABT_API_PUBLIC;

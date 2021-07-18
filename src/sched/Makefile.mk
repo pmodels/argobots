@@ -6,8 +6,8 @@
 abt_sources += \
 	sched/basic.c \
 	sched/basic_wait.c \
-	sched/config.c \
 	sched/prio.c \
+	sched/randws.c \
 	sched/sched.c \
-	sched/randws.c
+	sched/sched_config.c
 

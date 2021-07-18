@@ -3,10 +3,10 @@
  * See COPYRIGHT in top-level directory.
  */
 
-#ifndef ABTI_CONFIG_H_INCLUDED
-#define ABTI_CONFIG_H_INCLUDED
+#ifndef ABTI_SCHED_CONFIG_H_INCLUDED
+#define ABTI_SCHED_CONFIG_H_INCLUDED
 
-/* Inlined functions for Config */
+/* Inlined functions for scheduler config */
 
 static inline ABTI_sched_config *
 ABTI_sched_config_get_ptr(ABT_sched_config config)
@@ -40,4 +40,4 @@ ABTI_sched_config_get_handle(ABTI_sched_config *p_config)
 #endif
 }
 
-#endif /* ABTI_CONFIG_H_INCLUDED */
+#endif /* ABTI_SCHED_CONFIG_H_INCLUDED */
