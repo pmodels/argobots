@@ -56,7 +56,7 @@ static inline void ABTI_ythread_resume_and_push(ABTI_local *p_local,
     ABTI_pool *p_pool = p_ythread->thread.p_pool;
 
     /* Add the ULT to its associated pool */
-    ABTI_pool_add_thread(&p_ythread->thread);
+    ABTI_pool_add_thread(&p_ythread->thread, ABT_POOL_CONTEXT_OP_THREAD_RESUME);
 
     /* Decrease the number of blocked threads */
     ABTI_pool_dec_num_blocked(p_pool);
@@ -646,7 +646,7 @@ static inline void ABTI_ythread_schedule(ABTI_global *p_global,
         /* If p_thread is cancelled, there's nothing to do. */
     } else if (request_op == ABTI_THREAD_HANDLE_REQUEST_MIGRATED) {
         /* If p_thread is migrated, let's push p_thread back to its pool. */
-        ABTI_pool_add_thread(p_thread);
+        ABTI_pool_add_thread(p_thread, ABT_POOL_CONTEXT_OP_THREAD_MIGRATE);
     }
 }
 

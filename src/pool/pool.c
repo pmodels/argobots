@@ -425,7 +425,7 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    *p_unit = ABTI_pool_pop(p_pool);
+    *p_unit = ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OP_POOL_OTHER);
     return ABT_SUCCESS;
 }
 
@@ -487,7 +487,8 @@ int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
     ABTI_CHECK_TRUE(p_pool->p_pop_wait, ABT_ERR_POOL);
 
-    *p_unit = ABTI_pool_pop_wait(p_pool, time_secs);
+    *p_unit =
+        ABTI_pool_pop_wait(p_pool, time_secs, ABT_POOL_CONTEXT_OP_POOL_OTHER);
     return ABT_SUCCESS;
 }
 
@@ -552,7 +553,7 @@ int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-    ABTI_CHECK_TRUE(p_pool->p_pop_timedwait, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_pool->p_pop_timedwait_old, ABT_ERR_POOL);
 
     *p_unit = ABTI_pool_pop_timedwait(p_pool, abstime_secs);
     return ABT_SUCCESS;
@@ -613,7 +614,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     ABTI_CHECK_ERROR(abt_errno);
     /* ABTI_unit_set_associated_pool() might change unit, so "unit" must be read
      * again from p_thread. */
-    ABTI_pool_push(p_pool, p_thread->unit);
+    ABTI_pool_push(p_pool, p_thread->unit, ABT_POOL_CONTEXT_OP_POOL_OTHER);
     return ABT_SUCCESS;
 }
 
@@ -663,7 +664,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-    ABTI_CHECK_TRUE(p_pool->p_remove, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_pool->p_remove_old, ABT_ERR_POOL);
 
     /* unit must be in this pool, so we do not need to reset its associated
      * pool. */
@@ -1013,6 +1014,102 @@ void ABTI_pool_reset_id(void)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
+static ABT_unit pool_create_unit_wrapper(ABT_pool pool, ABT_thread thread)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->u_create_from_thread_old(thread);
+}
+
+static void pool_free_unit_wrapper(ABT_pool pool, ABT_unit unit)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    p_pool->u_free_old(&unit);
+}
+
+static ABT_bool pool_is_empty_wrapper(ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    size_t size = p_pool->p_get_size_old(pool);
+    return (size == 0) ? ABT_TRUE : ABT_FALSE;
+}
+
+static ABT_unit pool_pop_wrapper(ABT_pool pool, ABT_pool_context context)
+{
+    (void)context;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->p_pop_old(pool);
+}
+
+static void pool_push_wrapper(ABT_pool pool, ABT_unit unit,
+                              ABT_pool_context context)
+{
+    (void)context;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    p_pool->p_push_old(pool, unit);
+}
+
+static int pool_init_wrapper(ABT_pool pool, ABT_pool_config config)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->p_init_old(pool, config);
+}
+
+static void pool_free_wrapper(ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    p_pool->p_free_old(pool);
+}
+
+static size_t pool_get_size_wrapper(ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->p_get_size_old(pool);
+}
+
+static ABT_unit pool_pop_wait_wrapper(ABT_pool pool, double time_secs,
+                                      ABT_pool_context context)
+{
+    (void)context;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->p_pop_wait_old(pool, time_secs);
+}
+
+static void pool_pop_many_wrapper(ABT_pool pool, ABT_unit *units,
+                                  size_t max_units, size_t *num_popped,
+                                  ABT_pool_context context)
+{
+    (void)context;
+    size_t i;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    for (i = 0; i < max_units; i++) {
+        ABT_unit unit = p_pool->p_pop_old(pool);
+        if (unit != ABT_UNIT_NULL) {
+            units[i] = unit;
+        } else {
+            break;
+        }
+    }
+    *num_popped = i;
+}
+
+static void pool_push_many_wrapper(ABT_pool pool, const ABT_unit *units,
+                                   size_t num_units, ABT_pool_context context)
+{
+    (void)context;
+    size_t i;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    for (i = 0; i < num_units; i++) {
+        p_pool->p_push_old(pool, units[i]);
+    }
+}
+
+static void pool_print_all_wrapper(ABT_pool pool, void *arg,
+                                   void (*print_f)(void *, ABT_unit))
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    p_pool->p_print_all_old(pool, arg, print_f);
+}
+
 static inline uint64_t pool_get_new_id(void);
 ABTU_ret_err static int pool_create(ABTI_pool_def *def,
                                     ABTI_pool_config *p_config,
@@ -1043,19 +1140,38 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def,
     ABTD_atomic_release_store_int32(&p_pool->num_blocked, 0);
     p_pool->data = NULL;
 
-    /* Set up the pool functions from def */
-    p_pool->u_is_in_pool = def->u_is_in_pool;
-    p_pool->u_create_from_thread = def->u_create_from_thread;
-    p_pool->u_free = def->u_free;
-    p_pool->p_init = def->p_init;
-    p_pool->p_get_size = def->p_get_size;
-    p_pool->p_push = def->p_push;
-    p_pool->p_pop = def->p_pop;
-    p_pool->p_pop_wait = def->p_pop_wait;
-    p_pool->p_pop_timedwait = def->p_pop_timedwait;
-    p_pool->p_remove = def->p_remove;
-    p_pool->p_free = def->p_free;
-    p_pool->p_print_all = def->p_print_all;
+    /* Save old pool functions from def */
+    p_pool->u_create_from_thread_old = def->u_create_from_thread;
+    p_pool->u_free_old = def->u_free;
+    p_pool->p_init_old = def->p_init;
+    p_pool->p_get_size_old = def->p_get_size;
+    p_pool->p_push_old = def->p_push;
+    p_pool->p_pop_old = def->p_pop;
+    p_pool->p_pop_wait_old = def->p_pop_wait;
+    p_pool->p_free_old = def->p_free;
+    p_pool->p_print_all_old = def->p_print_all;
+
+    /* Create new pool functions */
+    p_pool->p_create_unit = pool_create_unit_wrapper;
+    p_pool->p_free_unit = pool_free_unit_wrapper;
+    p_pool->p_is_empty = pool_is_empty_wrapper;
+    p_pool->p_pop = pool_pop_wrapper;
+    p_pool->p_push = pool_push_wrapper;
+    p_pool->p_pop_many = pool_pop_many_wrapper;
+    p_pool->p_push_many = pool_push_many_wrapper;
+    p_pool->p_get_size = pool_get_size_wrapper;
+    /* New pool functions (optional) */
+    p_pool->p_init = p_pool->p_init_old ? pool_init_wrapper : NULL;
+    p_pool->p_free = p_pool->p_free_old ? pool_free_wrapper : NULL;
+    p_pool->p_pop_wait = p_pool->p_pop_wait_old ? pool_pop_wait_wrapper : NULL;
+    p_pool->p_print_all =
+        p_pool->p_print_all_old ? pool_print_all_wrapper : NULL;
+
+    /* Backward compatibility */
+    p_pool->u_is_in_pool_old = def->u_is_in_pool;
+    p_pool->p_pop_timedwait_old = def->p_pop_timedwait;
+    p_pool->p_remove_old = def->p_remove;
+
     p_pool->id = pool_get_new_id();
 
     /* Configure the pool */

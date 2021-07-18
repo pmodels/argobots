@@ -1301,15 +1301,16 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_CHECK_TRUE(p_cur_ythread != p_tar_ythread, ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(!(p_cur_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
                     ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->u_is_in_pool, ABT_ERR_POOL);
-    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->p_remove, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->u_is_in_pool_old,
+                    ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->p_remove_old, ABT_ERR_POOL);
 
     /* If the target thread is not in READY, we don't yield.  Note that ULT can
      * be regarded as 'ready' only if its state is READY and it has been
      * pushed into a pool. Since we set ULT's state to READY and then push it
      * into a pool, we check them in the reverse order, i.e., check if the ULT
      * is inside a pool and the its state. */
-    if (!(p_tar_ythread->thread.p_pool->u_is_in_pool(
+    if (!(p_tar_ythread->thread.p_pool->u_is_in_pool_old(
               p_tar_ythread->thread.unit) == ABT_TRUE &&
           ABTD_atomic_acquire_load_int(&p_tar_ythread->thread.state) ==
               ABT_THREAD_STATE_READY)) {
@@ -2931,7 +2932,8 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
                                  p_pool);
         if (pool_op == THREAD_POOL_OP_PUSH) {
             /* Add this thread to the pool */
-            ABTI_pool_push(p_pool, p_newthread->thread.unit);
+            ABTI_pool_push(p_pool, p_newthread->thread.unit,
+                           ABT_POOL_CONTEXT_OP_THREAD_CREATE);
         }
     } else {
         /* pool_op == THREAD_POOL_OP_NONE */
@@ -2984,7 +2986,8 @@ thread_revive(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
 
     if (pool_op == THREAD_POOL_OP_PUSH) {
         /* Add this thread to the pool */
-        ABTI_pool_push(p_pool, p_thread->unit);
+        ABTI_pool_push(p_pool, p_thread->unit,
+                       ABT_POOL_CONTEXT_OP_THREAD_REVIVE);
     }
     return ABT_SUCCESS;
 }
@@ -3199,7 +3202,8 @@ static void thread_root_func(void *arg)
     ABTI_pool *p_root_pool = p_local_xstream->p_root_pool;
 
     do {
-        ABT_unit unit = ABTI_pool_pop(p_root_pool);
+        ABT_unit unit =
+            ABTI_pool_pop(p_root_pool, ABT_POOL_CONTEXT_OWNER_PRIMARY);
         if (unit != ABT_UNIT_NULL) {
             ABTI_xstream *p_xstream = p_local_xstream;
             ABTI_thread *p_thread =

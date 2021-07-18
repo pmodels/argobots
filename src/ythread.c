@@ -18,7 +18,8 @@ static void ythread_unwind_stack(void *arg);
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-static inline void ythread_callback_yield_impl(void *arg)
+static inline void ythread_callback_yield_impl(void *arg,
+                                               ABT_pool_context context)
 {
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
     if (ABTI_thread_handle_request(&p_prev->thread, ABT_TRUE) &
@@ -26,33 +27,33 @@ static inline void ythread_callback_yield_impl(void *arg)
         /* p_prev is terminated. */
     } else {
         /* Push p_prev back to the pool. */
-        ABTI_pool_add_thread(&p_prev->thread);
+        ABTI_pool_add_thread(&p_prev->thread, context);
     }
 }
 
 void ABTI_ythread_callback_yield_user_yield(void *arg)
 {
-    ythread_callback_yield_impl(arg);
+    ythread_callback_yield_impl(arg, ABT_POOL_CONTEXT_OP_THREAD_YIELD);
 }
 
 void ABTI_ythread_callback_yield_loop(void *arg)
 {
-    ythread_callback_yield_impl(arg);
+    ythread_callback_yield_impl(arg, ABT_POOL_CONTEXT_OP_THREAD_YIELD_LOOP);
 }
 
 void ABTI_ythread_callback_yield_user_yield_to(void *arg)
 {
-    ythread_callback_yield_impl(arg);
+    ythread_callback_yield_impl(arg, ABT_POOL_CONTEXT_OP_THREAD_YIELD_TO);
 }
 
 void ABTI_ythread_callback_yield_create_to(void *arg)
 {
-    ythread_callback_yield_impl(arg);
+    ythread_callback_yield_impl(arg, ABT_POOL_CONTEXT_OP_THREAD_CREATE_TO);
 }
 
 void ABTI_ythread_callback_yield_revive_to(void *arg)
 {
-    ythread_callback_yield_impl(arg);
+    ythread_callback_yield_impl(arg, ABT_POOL_CONTEXT_OP_THREAD_REVIVE_TO);
 }
 
 /* Before yield_to, p_prev->thread.p_pool's num_blocked must be incremented to
@@ -70,7 +71,8 @@ void ABTI_ythread_callback_thread_yield_to(void *arg)
         /* p_prev is terminated. */
     } else {
         /* Push p_prev back to the pool. */
-        ABTI_pool_add_thread(&p_prev->thread);
+        ABTI_pool_add_thread(&p_prev->thread,
+                             ABT_POOL_CONTEXT_OP_THREAD_YIELD_TO);
     }
     /* Decrease the number of blocked threads of the original pool (i.e., before
      * migration), which has been increased by p_prev to avoid making a pool
@@ -91,7 +93,8 @@ void ABTI_ythread_callback_resume_yield_to(void *arg)
         /* p_prev is terminated. */
     } else {
         /* Push this thread back to the pool. */
-        ABTI_pool_add_thread(&p_prev->thread);
+        ABTI_pool_add_thread(&p_prev->thread,
+                             ABT_POOL_CONTEXT_OP_THREAD_RESUME_YIELD_TO);
     }
     /* Decrease the number of blocked threads of p_next's pool. */
     ABTI_pool_dec_num_blocked(p_next->thread.p_pool);

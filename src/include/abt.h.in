@@ -1445,6 +1445,43 @@ typedef struct {
  */
 extern const ABT_pool_config_var ABT_pool_config_automatic ABT_API_PUBLIC;
 
+typedef uint64_t ABT_pool_context;
+#define ABT_POOL_CONTEXT_PRIO_DEFAULT_PRIO ((ABT_pool_context)0x0)
+#define ABT_POOL_CONTEXT_PRIO_HIGH_PRIO ((ABT_pool_context)0x1)
+#define ABT_POOL_CONTEXT_PRIO_LOW_PRIO ((ABT_pool_context)0x2)
+#define ABT_POOL_CONTEXT_OWNER_DEFAULT ((ABT_pool_context)0x0)
+#define ABT_POOL_CONTEXT_OWNER_PRIMARY ((ABT_pool_context)0x100)
+#define ABT_POOL_CONTEXT_OWNER_SECONDARY ((ABT_pool_context)0x200)
+#define ABT_POOL_CONTEXT_OP_POOL_OTHER ((ABT_pool_context)0x0)
+#define ABT_POOL_CONTEXT_OP_THREAD_CREATE ((ABT_pool_context)0x1000)
+#define ABT_POOL_CONTEXT_OP_THREAD_CREATE_TO ((ABT_pool_context)0x2000)
+#define ABT_POOL_CONTEXT_OP_THREAD_REVIVE ((ABT_pool_context)0x4000)
+#define ABT_POOL_CONTEXT_OP_THREAD_REVIVE_TO ((ABT_pool_context)0x8000)
+#define ABT_POOL_CONTEXT_OP_THREAD_YIELD ((ABT_pool_context)0x10000)
+#define ABT_POOL_CONTEXT_OP_THREAD_YIELD_TO ((ABT_pool_context)0x20000)
+#define ABT_POOL_CONTEXT_OP_THREAD_RESUME_YIELD_TO ((ABT_pool_context)0x40000)
+#define ABT_POOL_CONTEXT_OP_THREAD_YIELD_LOOP ((ABT_pool_context)0x80000)
+#define ABT_POOL_CONTEXT_OP_THREAD_RESUME ((ABT_pool_context)0x100000)
+#define ABT_POOL_CONTEXT_OP_THREAD_MIGRATE ((ABT_pool_context)0x200000)
+
+/* Pool Functions */
+typedef ABT_unit (*ABT_pool_user_create_unit_fn)(ABT_pool, ABT_thread);
+typedef void (*ABT_pool_user_free_unit_fn)(ABT_pool, ABT_unit);
+typedef ABT_bool (*ABT_pool_user_is_empty_fn)(ABT_pool);
+typedef ABT_unit (*ABT_pool_user_pop_fn)(ABT_pool, ABT_pool_context);
+typedef void (*ABT_pool_user_push_fn)(ABT_pool, ABT_unit, ABT_pool_context);
+typedef int (*ABT_pool_user_init_fn)(ABT_pool, ABT_pool_config);
+typedef void (*ABT_pool_user_free_fn)(ABT_pool);
+typedef size_t (*ABT_pool_user_get_size_fn)(ABT_pool);
+typedef ABT_unit (*ABT_pool_user_pop_wait_fn)(ABT_pool, double,
+                                              ABT_pool_context);
+typedef void (*ABT_pool_user_pop_many_fn)(ABT_pool, ABT_unit *, size_t,
+                                          size_t *, ABT_pool_context);
+typedef void (*ABT_pool_user_push_many_fn)(ABT_pool, const ABT_unit *, size_t,
+                                           ABT_pool_context);
+typedef void (*ABT_pool_user_print_all_fn)(ABT_pool, void *arg,
+                                           void (*)(void *, ABT_unit));
+
 /* Pool Functions */
 typedef ABT_unit_type (*ABT_unit_get_type_fn)(ABT_unit);
 typedef ABT_thread    (*ABT_unit_get_thread_fn)(ABT_unit);

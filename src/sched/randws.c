@@ -106,7 +106,7 @@ static void sched_run(ABT_sched sched)
         /* Execute one work unit from the scheduler's pool */
         ABT_pool pool = pools[0];
         ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-        unit = ABTI_pool_pop(p_pool);
+        unit = ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OWNER_PRIMARY);
         if (unit != ABT_UNIT_NULL) {
             ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
             ABTI_ythread_schedule(p_global, &p_local_xstream, p_thread);
@@ -117,7 +117,7 @@ static void sched_run(ABT_sched sched)
                 (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
             pool = pools[target];
             p_pool = ABTI_pool_get_ptr(pool);
-            unit = ABTI_pool_pop(p_pool);
+            unit = ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OWNER_SECONDARY);
             if (unit != ABT_UNIT_NULL) {
                 ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
                 ABTI_ythread_schedule(p_global, &p_local_xstream, p_thread);

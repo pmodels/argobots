@@ -50,34 +50,39 @@ static inline void ABTI_pool_dec_num_blocked(ABTI_pool *p_pool)
     ABTD_atomic_fetch_sub_int32(&p_pool->num_blocked, 1);
 }
 
-static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit)
+static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit,
+                                  ABT_pool_context context)
 {
     /* Push unit into pool */
     LOG_DEBUG_POOL_PUSH(p_pool, unit);
-    p_pool->p_push(ABTI_pool_get_handle(p_pool), unit);
+    p_pool->p_push(ABTI_pool_get_handle(p_pool), unit, context);
 }
 
-static inline void ABTI_pool_add_thread(ABTI_thread *p_thread)
+static inline void ABTI_pool_add_thread(ABTI_thread *p_thread,
+                                        ABT_pool_context context)
 {
     /* Set the ULT's state as READY. The relaxed version is used since the state
      * is synchronized by the following pool operation. */
     ABTD_atomic_relaxed_store_int(&p_thread->state, ABT_THREAD_STATE_READY);
     /* Add the ULT to the associated pool */
-    ABTI_pool_push(p_thread->p_pool, p_thread->unit);
+    ABTI_pool_push(p_thread->p_pool, p_thread->unit, context);
 }
 
 ABTU_ret_err static inline int ABTI_pool_remove(ABTI_pool *p_pool,
                                                 ABT_unit unit)
 {
     LOG_DEBUG_POOL_REMOVE(p_pool, unit);
-    return p_pool->p_remove(ABTI_pool_get_handle(p_pool), unit);
+    ABTI_UB_ASSERT(p_pool->p_remove_old);
+    return p_pool->p_remove_old(ABTI_pool_get_handle(p_pool), unit);
 }
 
-static inline ABT_unit ABTI_pool_pop_wait(ABTI_pool *p_pool, double time_secs)
+static inline ABT_unit ABTI_pool_pop_wait(ABTI_pool *p_pool, double time_secs,
+                                          ABT_pool_context context)
 {
     ABT_unit unit;
 
-    unit = p_pool->p_pop_wait(ABTI_pool_get_handle(p_pool), time_secs);
+    ABTI_UB_ASSERT(p_pool->p_pop_wait);
+    unit = p_pool->p_pop_wait(ABTI_pool_get_handle(p_pool), time_secs, context);
     LOG_DEBUG_POOL_POP(p_pool, unit);
 
     return unit;
@@ -88,17 +93,20 @@ static inline ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool,
 {
     ABT_unit unit;
 
-    unit = p_pool->p_pop_timedwait(ABTI_pool_get_handle(p_pool), abstime_secs);
+    ABTI_UB_ASSERT(p_pool->p_pop_timedwait_old);
+    unit =
+        p_pool->p_pop_timedwait_old(ABTI_pool_get_handle(p_pool), abstime_secs);
     LOG_DEBUG_POOL_POP(p_pool, unit);
 
     return unit;
 }
 
-static inline ABT_unit ABTI_pool_pop(ABTI_pool *p_pool)
+static inline ABT_unit ABTI_pool_pop(ABTI_pool *p_pool,
+                                     ABT_pool_context context)
 {
     ABT_unit unit;
 
-    unit = p_pool->p_pop(ABTI_pool_get_handle(p_pool));
+    unit = p_pool->p_pop(ABTI_pool_get_handle(p_pool), context);
     LOG_DEBUG_POOL_POP(p_pool, unit);
 
     return unit;
