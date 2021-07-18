@@ -85,6 +85,7 @@ static inline void ABTI_mutex_lock_no_recursion(ABTI_local **pp_local,
     if (p_ythread) {
         while (ABTD_spinlock_try_acquire(&p_mutex->lock)) {
             ABTI_ythread_yield(&p_local_xstream, p_ythread,
+                               ABTI_YTHREAD_YIELD_KIND_YIELD_LOOP,
                                ABT_SYNC_EVENT_TYPE_MUTEX, (void *)p_mutex);
             *pp_local = ABTI_xstream_get_local(p_local_xstream);
         }

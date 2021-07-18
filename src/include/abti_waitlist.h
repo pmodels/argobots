@@ -128,8 +128,9 @@ static inline ABT_bool ABTI_waitlist_wait_timedout_and_unlock(
                 ABTD_spinlock_acquire(p_lock);
                 goto timeout;
             }
-            ABTI_ythread_yield(&p_local_xstream, p_ythread, sync_event_type,
-                               p_sync);
+            ABTI_ythread_yield(&p_local_xstream, p_ythread,
+                               ABTI_YTHREAD_YIELD_KIND_YIELD_LOOP,
+                               sync_event_type, p_sync);
             *pp_local = ABTI_xstream_get_local(p_local_xstream);
         }
     } else {

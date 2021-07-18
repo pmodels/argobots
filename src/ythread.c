@@ -18,7 +18,7 @@ static void ythread_unwind_stack(void *arg);
 /* Private APIs                                                              */
 /*****************************************************************************/
 
-void ABTI_ythread_callback_yield(void *arg)
+static inline void ythread_callback_yield_impl(void *arg)
 {
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
     if (ABTI_thread_handle_request(&p_prev->thread, ABT_TRUE) &
@@ -28,6 +28,31 @@ void ABTI_ythread_callback_yield(void *arg)
         /* Push p_prev back to the pool. */
         ABTI_pool_add_thread(&p_prev->thread);
     }
+}
+
+void ABTI_ythread_callback_yield_user_yield(void *arg)
+{
+    ythread_callback_yield_impl(arg);
+}
+
+void ABTI_ythread_callback_yield_loop(void *arg)
+{
+    ythread_callback_yield_impl(arg);
+}
+
+void ABTI_ythread_callback_yield_user_yield_to(void *arg)
+{
+    ythread_callback_yield_impl(arg);
+}
+
+void ABTI_ythread_callback_yield_create_to(void *arg)
+{
+    ythread_callback_yield_impl(arg);
+}
+
+void ABTI_ythread_callback_yield_revive_to(void *arg)
+{
+    ythread_callback_yield_impl(arg);
 }
 
 /* Before yield_to, p_prev->thread.p_pool's num_blocked must be incremented to

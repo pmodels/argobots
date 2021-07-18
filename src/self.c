@@ -631,7 +631,8 @@ int ABT_self_yield(void)
     ABTI_ythread *p_ythread;
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
 
-    ABTI_ythread_yield(&p_local_xstream, p_ythread, ABT_SYNC_EVENT_TYPE_USER,
+    ABTI_ythread_yield(&p_local_xstream, p_ythread,
+                       ABTI_YTHREAD_YIELD_KIND_USER, ABT_SYNC_EVENT_TYPE_USER,
                        NULL);
     return ABT_SUCCESS;
 }
@@ -692,6 +693,7 @@ int ABT_self_yield_to(ABT_thread thread)
 
     /* Switch the context */
     ABTI_ythread_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
+                          ABTI_YTHREAD_YIELD_TO_KIND_USER,
                           ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }
@@ -747,6 +749,7 @@ int ABT_self_resume_yield_to(ABT_thread thread)
 
     /* Switch the context */
     ABTI_ythread_resume_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
+                                 ABTI_YTHREAD_RESUME_YIELD_TO_KIND_USER,
                                  ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }

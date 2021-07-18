@@ -209,6 +209,7 @@ int ABT_thread_create_to(ABT_pool pool, void (*thread_func)(void *), void *arg,
 
     /* Yield to the target ULT. */
     ABTI_ythread_yield_to(&p_local_xstream, p_cur_ythread, p_newthread,
+                          ABTI_YTHREAD_YIELD_TO_KIND_CREATE_TO,
                           ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }
@@ -563,6 +564,7 @@ int ABT_thread_revive_to(ABT_pool pool, void (*thread_func)(void *), void *arg,
 
     /* Yield to the target ULT. */
     ABTI_ythread_yield_to(&p_local_xstream, p_self, p_target,
+                          ABTI_YTHREAD_YIELD_TO_KIND_REVIVE_TO,
                           ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }
@@ -1385,7 +1387,8 @@ int ABT_thread_yield(void)
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
 #endif
 
-    ABTI_ythread_yield(&p_local_xstream, p_ythread, ABT_SYNC_EVENT_TYPE_USER,
+    ABTI_ythread_yield(&p_local_xstream, p_ythread,
+                       ABTI_YTHREAD_YIELD_KIND_USER, ABT_SYNC_EVENT_TYPE_USER,
                        NULL);
     return ABT_SUCCESS;
 }
@@ -3107,6 +3110,7 @@ static void thread_join_yield_thread(ABTI_xstream **pp_local_xstream,
     while (ABTD_atomic_acquire_load_int(&p_thread->state) !=
            ABT_THREAD_STATE_TERMINATED) {
         ABTI_ythread_yield(pp_local_xstream, p_self,
+                           ABTI_YTHREAD_YIELD_KIND_YIELD_LOOP,
                            ABT_SYNC_EVENT_TYPE_THREAD_JOIN, (void *)p_thread);
     }
     ABTI_event_thread_join(ABTI_xstream_get_local(*pp_local_xstream), p_thread,
