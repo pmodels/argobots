@@ -364,18 +364,33 @@ struct ABTI_pool {
 
 struct ABTI_pool_def {
     ABT_pool_access access;
-    ABT_unit_is_in_pool_fn u_is_in_pool;
-    ABT_unit_create_from_thread_fn u_create_from_thread;
-    ABT_unit_free_fn u_free;
-    ABT_pool_init_fn p_init;
-    ABT_pool_get_size_fn p_get_size;
-    ABT_pool_push_fn p_push;
-    ABT_pool_pop_fn p_pop;
-    ABT_pool_pop_wait_fn p_pop_wait;
-    ABT_pool_pop_timedwait_fn p_pop_timedwait;
-    ABT_pool_remove_fn p_remove;
-    ABT_pool_free_fn p_free;
-    ABT_pool_print_all_fn p_print_all;
+    ABT_bool old_def;
+    /* New functions (old_def == ABT_FALSE) */
+    ABT_pool_user_create_unit_fn p_create_unit;
+    ABT_pool_user_free_unit_fn p_free_unit;
+    ABT_pool_user_is_empty_fn p_is_empty;
+    ABT_pool_user_pop_fn p_pop;
+    ABT_pool_user_push_fn p_push;
+    ABT_pool_user_init_fn p_init;
+    ABT_pool_user_free_fn p_free;
+    ABT_pool_user_get_size_fn p_get_size;
+    ABT_pool_user_pop_wait_fn p_pop_wait;
+    ABT_pool_user_pop_many_fn p_pop_many;
+    ABT_pool_user_push_many_fn p_push_many;
+    ABT_pool_user_print_all_fn p_print_all;
+    /* For backward compatibility (old_def == ABT_TRUE) */
+    ABT_unit_is_in_pool_fn u_is_in_pool_old;
+    ABT_unit_create_from_thread_fn u_create_from_thread_old;
+    ABT_unit_free_fn u_free_old;
+    ABT_pool_init_fn p_init_old;
+    ABT_pool_get_size_fn p_get_size_old;
+    ABT_pool_push_fn p_push_old;
+    ABT_pool_pop_fn p_pop_old;
+    ABT_pool_pop_wait_fn p_pop_wait_old;
+    ABT_pool_pop_timedwait_fn p_pop_timedwait_old;
+    ABT_pool_remove_fn p_remove_old;
+    ABT_pool_free_fn p_free_old;
+    ABT_pool_print_all_fn p_print_all_old;
 };
 
 struct ABTI_pool_config {

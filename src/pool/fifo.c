@@ -68,22 +68,23 @@ ABTU_ret_err static inline int spinlock_acquire_if_not_empty(data_t *p_data)
 ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
                                         ABTI_pool_def *p_def)
 {
+    p_def->old_def = ABT_TRUE;
     /* Definitions according to the access type */
     /* FIXME: need better implementation, e.g., lock-free one */
     switch (access) {
         case ABT_POOL_ACCESS_PRIV:
-            p_def->p_push = pool_push_private;
-            p_def->p_pop = pool_pop_private;
-            p_def->p_remove = pool_remove_private;
+            p_def->p_push_old = pool_push_private;
+            p_def->p_pop_old = pool_pop_private;
+            p_def->p_remove_old = pool_remove_private;
             break;
 
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_MPSC:
         case ABT_POOL_ACCESS_SPMC:
         case ABT_POOL_ACCESS_MPMC:
-            p_def->p_push = pool_push_shared;
-            p_def->p_pop = pool_pop_shared;
-            p_def->p_remove = pool_remove_shared;
+            p_def->p_push_old = pool_push_shared;
+            p_def->p_pop_old = pool_pop_shared;
+            p_def->p_remove_old = pool_remove_shared;
             break;
 
         default:
@@ -92,15 +93,15 @@ ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
 
     /* Common definitions regardless of the access type */
     p_def->access = access;
-    p_def->p_init = pool_init;
-    p_def->p_free = pool_free;
-    p_def->p_get_size = pool_get_size;
-    p_def->p_pop_wait = pool_pop_wait;
-    p_def->p_pop_timedwait = pool_pop_timedwait;
-    p_def->p_print_all = pool_print_all;
-    p_def->u_is_in_pool = unit_is_in_pool;
-    p_def->u_create_from_thread = unit_create_from_thread;
-    p_def->u_free = unit_free;
+    p_def->p_init_old = pool_init;
+    p_def->p_free_old = pool_free;
+    p_def->p_get_size_old = pool_get_size;
+    p_def->p_pop_wait_old = pool_pop_wait;
+    p_def->p_pop_timedwait_old = pool_pop_timedwait;
+    p_def->p_print_all_old = pool_print_all;
+    p_def->u_is_in_pool_old = unit_is_in_pool;
+    p_def->u_create_from_thread_old = unit_create_from_thread;
+    p_def->u_free_old = unit_free;
 
     return ABT_SUCCESS;
 }

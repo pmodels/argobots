@@ -93,23 +93,24 @@ int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
     /* Copy def */
     ABTI_pool_def internal_def;
 
+    internal_def.old_def = ABT_TRUE;
     internal_def.access = def->access;
-    internal_def.u_is_in_pool = def->u_is_in_pool;
-    internal_def.u_create_from_thread = def->u_create_from_thread;
-    internal_def.u_free = def->u_free;
-    internal_def.p_init = def->p_init;
-    internal_def.p_get_size = def->p_get_size;
-    internal_def.p_push = def->p_push;
-    internal_def.p_pop = def->p_pop;
+    internal_def.u_is_in_pool_old = def->u_is_in_pool;
+    internal_def.u_create_from_thread_old = def->u_create_from_thread;
+    internal_def.u_free_old = def->u_free;
+    internal_def.p_init_old = def->p_init;
+    internal_def.p_get_size_old = def->p_get_size;
+    internal_def.p_push_old = def->p_push;
+    internal_def.p_pop_old = def->p_pop;
 #ifdef ABT_CONFIG_ENABLE_VER_20_API
-    internal_def.p_pop_wait = def->p_pop_wait;
+    internal_def.p_pop_wait_old = def->p_pop_wait;
 #else
-    internal_def.p_pop_wait = NULL;
+    internal_def.p_pop_wait_old = NULL;
 #endif
-    internal_def.p_pop_timedwait = def->p_pop_timedwait;
-    internal_def.p_remove = def->p_remove;
-    internal_def.p_free = def->p_free;
-    internal_def.p_print_all = def->p_print_all;
+    internal_def.p_pop_timedwait_old = def->p_pop_timedwait;
+    internal_def.p_remove_old = def->p_remove;
+    internal_def.p_free_old = def->p_free;
+    internal_def.p_print_all_old = def->p_print_all;
 
     ABTI_pool *p_newpool;
     ABTI_pool_config *p_config = ABTI_pool_config_get_ptr(config);
@@ -1140,38 +1141,57 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def,
     ABTD_atomic_release_store_int32(&p_pool->num_blocked, 0);
     p_pool->data = NULL;
 
-    /* Save old pool functions from def */
-    p_pool->u_create_from_thread_old = def->u_create_from_thread;
-    p_pool->u_free_old = def->u_free;
-    p_pool->p_init_old = def->p_init;
-    p_pool->p_get_size_old = def->p_get_size;
-    p_pool->p_push_old = def->p_push;
-    p_pool->p_pop_old = def->p_pop;
-    p_pool->p_pop_wait_old = def->p_pop_wait;
-    p_pool->p_free_old = def->p_free;
-    p_pool->p_print_all_old = def->p_print_all;
+    if (def->old_def) {
+        /* Save old pool functions from def */
+        p_pool->u_create_from_thread_old = def->u_create_from_thread_old;
+        p_pool->u_free_old = def->u_free_old;
+        p_pool->p_init_old = def->p_init_old;
+        p_pool->p_get_size_old = def->p_get_size_old;
+        p_pool->p_push_old = def->p_push_old;
+        p_pool->p_pop_old = def->p_pop_old;
+        p_pool->p_pop_wait_old = def->p_pop_wait_old;
+        p_pool->p_free_old = def->p_free_old;
+        p_pool->p_print_all_old = def->p_print_all_old;
 
-    /* Create new pool functions */
-    p_pool->p_create_unit = pool_create_unit_wrapper;
-    p_pool->p_free_unit = pool_free_unit_wrapper;
-    p_pool->p_is_empty = pool_is_empty_wrapper;
-    p_pool->p_pop = pool_pop_wrapper;
-    p_pool->p_push = pool_push_wrapper;
-    p_pool->p_pop_many = pool_pop_many_wrapper;
-    p_pool->p_push_many = pool_push_many_wrapper;
-    p_pool->p_get_size = pool_get_size_wrapper;
-    /* New pool functions (optional) */
-    p_pool->p_init = p_pool->p_init_old ? pool_init_wrapper : NULL;
-    p_pool->p_free = p_pool->p_free_old ? pool_free_wrapper : NULL;
-    p_pool->p_pop_wait = p_pool->p_pop_wait_old ? pool_pop_wait_wrapper : NULL;
-    p_pool->p_print_all =
-        p_pool->p_print_all_old ? pool_print_all_wrapper : NULL;
+        /* Create new pool functions */
+        p_pool->p_create_unit = pool_create_unit_wrapper;
+        p_pool->p_free_unit = pool_free_unit_wrapper;
+        p_pool->p_is_empty = pool_is_empty_wrapper;
+        p_pool->p_pop = pool_pop_wrapper;
+        p_pool->p_push = pool_push_wrapper;
+        p_pool->p_pop_many = pool_pop_many_wrapper;
+        p_pool->p_push_many = pool_push_many_wrapper;
+        p_pool->p_get_size = pool_get_size_wrapper;
+        /* New pool functions (optional) */
+        p_pool->p_init = p_pool->p_init_old ? pool_init_wrapper : NULL;
+        p_pool->p_free = p_pool->p_free_old ? pool_free_wrapper : NULL;
+        p_pool->p_pop_wait =
+            p_pool->p_pop_wait_old ? pool_pop_wait_wrapper : NULL;
+        p_pool->p_print_all =
+            p_pool->p_print_all_old ? pool_print_all_wrapper : NULL;
 
-    /* Backward compatibility */
-    p_pool->u_is_in_pool_old = def->u_is_in_pool;
-    p_pool->p_pop_timedwait_old = def->p_pop_timedwait;
-    p_pool->p_remove_old = def->p_remove;
-
+        /* Backward compatibility */
+        p_pool->u_is_in_pool_old = def->u_is_in_pool_old;
+        p_pool->p_pop_timedwait_old = def->p_pop_timedwait_old;
+        p_pool->p_remove_old = def->p_remove_old;
+    } else {
+        p_pool->p_create_unit = def->p_create_unit;
+        p_pool->p_free_unit = def->p_free_unit;
+        p_pool->p_is_empty = def->p_is_empty;
+        p_pool->p_pop = def->p_pop;
+        p_pool->p_push = def->p_push;
+        p_pool->p_init = def->p_init;
+        p_pool->p_free = def->p_free;
+        p_pool->p_get_size = def->p_get_size;
+        p_pool->p_pop_wait = def->p_pop_wait;
+        p_pool->p_pop_many = def->p_pop_many;
+        p_pool->p_push_many = def->p_push_many;
+        p_pool->p_print_all = def->p_print_all;
+        /* Backward compatibility */
+        p_pool->u_is_in_pool_old = def->u_is_in_pool_old;
+        p_pool->p_pop_timedwait_old = def->p_pop_timedwait_old;
+        p_pool->p_remove_old = def->p_remove_old;
+    }
     p_pool->id = pool_get_new_id();
 
     /* Configure the pool */
