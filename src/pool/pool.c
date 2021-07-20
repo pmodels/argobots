@@ -22,8 +22,12 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def,
  * (\c def) and a pool configuration (\c config), and returns its handle through
  * \c newpool.
  *
- * \c def must define all the non-optional functions.  See \c #ABT_pool_def for
- * details.
+ * \c def must define all the non-optional functions.  See
+ * \c ABT_pool_user_def_create() for details.
+ *
+ * @note
+ * \c #ABT_pool_def is kept for compatibility.  The user is highly recommended
+ * to use \c ABT_pool_user_def instead.
  *
  * The caller of each pool function is undefined, so a program that relies on
  * the caller of pool functions is non-conforming.
@@ -61,11 +65,11 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def,
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_USR_POOL_INIT{\c p_init()}
+ * \DOC_ERROR_INV_POOL_USER_DEF_HANDLE{\c def}
  * \DOC_ERROR_RESOURCE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
- * \DOC_UNDEFINED_NULL_PTR{\c def}
  * \DOC_UNDEFINED_NULL_PTR{any non-optional pool function of \c def}
  * \DOC_UNDEFINED_NULL_PTR{\c newpool}
  *
@@ -74,43 +78,59 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def,
  * @param[out] newpool  pool handle
  * @return Error code
  */
-int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
+int ABT_pool_create(ABT_pool_user_def def, ABT_pool_config config,
                     ABT_pool *newpool)
 {
     ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_UB_ASSERT(newpool);
     ABTI_UB_ASSERT(def);
-    ABTI_UB_ASSERT(def->u_create_from_thread);
-    ABTI_UB_ASSERT(def->u_free);
-    ABTI_UB_ASSERT(def->p_get_size);
-    ABTI_UB_ASSERT(def->p_push);
-    ABTI_UB_ASSERT(def->p_pop);
-
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newpool to NULL on error. */
     *newpool = ABT_POOL_NULL;
 #endif
     /* Copy def */
     ABTI_pool_def internal_def;
-
-    internal_def.old_def = ABT_TRUE;
-    internal_def.access = def->access;
-    internal_def.u_is_in_pool_old = def->u_is_in_pool;
-    internal_def.u_create_from_thread_old = def->u_create_from_thread;
-    internal_def.u_free_old = def->u_free;
-    internal_def.p_init_old = def->p_init;
-    internal_def.p_get_size_old = def->p_get_size;
-    internal_def.p_push_old = def->p_push;
-    internal_def.p_pop_old = def->p_pop;
+    if (ABTI_pool_user_def_is_new(def)) {
+        ABTI_pool_user_def *p_def = ABTI_pool_user_def_get_ptr(def);
+        ABTI_CHECK_NULL_POOL_USER_DEF_PTR(p_def);
+        internal_def.old_def = ABT_FALSE;
+        internal_def.p_create_unit = p_def->p_create_unit;
+        internal_def.p_free_unit = p_def->p_free_unit;
+        internal_def.p_is_empty = p_def->p_is_empty;
+        internal_def.p_pop = p_def->p_pop;
+        internal_def.p_push = p_def->p_push;
+        internal_def.p_init = p_def->p_init;
+        internal_def.p_free = p_def->p_free;
+        internal_def.p_get_size = p_def->p_get_size;
+        internal_def.p_pop_wait = p_def->p_pop_wait;
+        internal_def.p_pop_many = p_def->p_pop_many;
+        internal_def.p_push_many = p_def->p_push_many;
+        internal_def.p_print_all = p_def->p_print_all;
+    } else {
+        ABTI_UB_ASSERT(def->u_create_from_thread);
+        ABTI_UB_ASSERT(def->u_free);
+        ABTI_UB_ASSERT(def->p_get_size);
+        ABTI_UB_ASSERT(def->p_push);
+        ABTI_UB_ASSERT(def->p_pop);
+        internal_def.old_def = ABT_TRUE;
+        internal_def.access = def->access;
+        internal_def.u_is_in_pool_old = def->u_is_in_pool;
+        internal_def.u_create_from_thread_old = def->u_create_from_thread;
+        internal_def.u_free_old = def->u_free;
+        internal_def.p_init_old = def->p_init;
+        internal_def.p_get_size_old = def->p_get_size;
+        internal_def.p_push_old = def->p_push;
+        internal_def.p_pop_old = def->p_pop;
 #ifdef ABT_CONFIG_ENABLE_VER_20_API
-    internal_def.p_pop_wait_old = def->p_pop_wait;
+        internal_def.p_pop_wait_old = def->p_pop_wait;
 #else
-    internal_def.p_pop_wait_old = NULL;
+        internal_def.p_pop_wait_old = NULL;
 #endif
-    internal_def.p_pop_timedwait_old = def->p_pop_timedwait;
-    internal_def.p_remove_old = def->p_remove;
-    internal_def.p_free_old = def->p_free;
-    internal_def.p_print_all_old = def->p_print_all;
+        internal_def.p_pop_timedwait_old = def->p_pop_timedwait;
+        internal_def.p_remove_old = def->p_remove;
+        internal_def.p_free_old = def->p_free;
+        internal_def.p_print_all_old = def->p_print_all;
+    }
 
     ABTI_pool *p_newpool;
     ABTI_pool_config *p_config = ABTI_pool_config_get_ptr(config);

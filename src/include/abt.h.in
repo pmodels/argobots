@@ -171,6 +171,11 @@ extern "C" {
 #define ABT_ERR_INV_POOL_CONFIG    56
 /**
  * @ingroup ERROR_CODE
+ * @brief   Error code: invalid pool definition.
+ */
+#define ABT_ERR_INV_POOL_USER_DEF  57
+/**
+ * @ingroup ERROR_CODE
  * @brief   Error code: invalid work unit for scheduling.
  */
 #define ABT_ERR_INV_UNIT           15
@@ -770,6 +775,7 @@ struct ABT_sched_opaque;
 struct ABT_sched_config_opaque;
 struct ABT_pool_opaque;
 struct ABT_pool_config_opaque;
+struct ABT_pool_def;
 struct ABT_unit_opaque;
 struct ABT_thread_opaque;
 struct ABT_thread_attr_opaque;
@@ -861,6 +867,11 @@ typedef enum ABT_pool_kind                  ABT_pool_kind;
  * @brief   Pool access type.
  */
 typedef enum ABT_pool_access                ABT_pool_access;
+/**
+ * @ingroup POOL
+ * @brief   Pool definition.
+ */
+typedef struct ABT_pool_def *               ABT_pool_user_def;
 /**
  * @ingroup UNIT
  * @brief   Work unit handle type for scheduling.
@@ -1056,6 +1067,7 @@ typedef enum ABT_sync_event_type            ABT_sync_event_type;
 #define ABT_BARRIER_NULL         ((ABT_barrier)        NULL)
 #define ABT_TIMER_NULL           ((ABT_timer)          NULL)
 #define ABT_TOOL_CONTEXT_NULL    ((ABT_tool_context)   NULL)
+#define ABT_POOL_USER_DEF_NULL   ((ABT_pool_user_def)  NULL)
 #else
 #define ABT_XSTREAM_NULL         ((ABT_xstream)        (0x01))
 #define ABT_XSTREAM_BARRIER_NULL ((ABT_xstream_barrier)(0x02))
@@ -1077,6 +1089,7 @@ typedef enum ABT_sync_event_type            ABT_sync_event_type;
 #define ABT_BARRIER_NULL         ((ABT_barrier)        (0x12))
 #define ABT_TIMER_NULL           ((ABT_timer)          (0x13))
 #define ABT_TOOL_CONTEXT_NULL    ((ABT_tool_context)   (0x14))
+#define ABT_POOL_USER_DEF_NULL   ((ABT_pool_user_def)  (0x15))
 #endif
 
 /**
@@ -1445,40 +1458,477 @@ typedef struct {
  */
 extern const ABT_pool_config_var ABT_pool_config_automatic ABT_API_PUBLIC;
 
+/**
+ * @ingroup POOL
+ * @brief   A pool context value
+ *
+ * \c ABT_pool_context hints a context of a pool operation.  The underlying pool
+ * implementation can use this hint to adapt its behavior.
+ *
+ * @note
+ * The built-in pools assume that at most one of the \c ABT_POOL_CONTEXT_PRIO
+ * flags, at most one of the \c ABT_POOL_CONTEXT_OP flags corresponding to a
+ * pool operation, and at most one of the \c ABT_POOL_CONTEXT_OWNER flags are
+ * set to a pool context value.  A user-defined pool is recommended to follow
+ * the same hint as one used by the built-in pools, but it is not mandatory.
+ */
 typedef uint64_t ABT_pool_context;
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a default priority.
+ *
+ * \c ABT_POOL_CONTEXT_PRIO_DEFAULT_PRIO hints a default priority.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_POP_PUSH
+ * \DOC_DESC_POOL_CONTEXT_IMPL_DEF_PRIO
+ */
 #define ABT_POOL_CONTEXT_PRIO_DEFAULT_PRIO ((ABT_pool_context)0x0)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a high priority.
+ *
+ * \c ABT_POOL_CONTEXT_PRIO_HIGH_PRIO hints a high priority.  An expected
+ * behavior is that a pop operation with this flag gets a unit of high priority
+ * while a push operation with this flag sets a target unit to high priority so
+ * that the unit will be popped before other units of lower priority.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_POP_PUSH
+ * \DOC_DESC_POOL_CONTEXT_IMPL_DEF_PRIO
+ */
 #define ABT_POOL_CONTEXT_PRIO_HIGH_PRIO ((ABT_pool_context)0x1)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a low priority.
+ *
+ * \c ABT_POOL_CONTEXT_PRIO_LOW_PRIO hints a low priority.  An expected behavior
+ * is that a pop operation with this flag gets a unit of low priority while a
+ * push operation with this flag sets a target unit to low priority so that the
+ * unit will be popped after other units of higher priority.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_POP_PUSH
+ * \DOC_DESC_POOL_CONTEXT_IMPL_DEF_PRIO
+ */
 #define ABT_POOL_CONTEXT_PRIO_LOW_PRIO ((ABT_pool_context)0x2)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a default ownership of a pool.
+ *
+ * \c ABT_POOL_CONTEXT_OWNER_DEFAULT hints that a caller has a default ownership
+ * of a pool.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_POP_PUSH
+ */
 #define ABT_POOL_CONTEXT_OWNER_DEFAULT ((ABT_pool_context)0x0)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a primary ownership of a pool.
+ *
+ * \c ABT_POOL_CONTEXT_OWNER_DEFAULT hints that a caller is a primary owner of a
+ * pool.  A primary owner accesses a pool more frequently than secondary owners.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_POP_PUSH
+ *
+ * @note
+ * In a typical random work-stealing setting, a scheduler would hint
+ * \c ABT_POOL_CONTEXT_OWNER_PRIMARY to access its own pool (i.e., a local
+ * pool).
+ */
 #define ABT_POOL_CONTEXT_OWNER_PRIMARY ((ABT_pool_context)0x100)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a secondary ownership of a pool.
+ *
+ * \c ABT_POOL_CONTEXT_OWNER_DEFAULT hints that a caller is a secondary owner of
+ * a pool.  A secondary owner accesses a pool less frequently than primary
+ * owners.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_POP_PUSH
+ *
+ * @note
+ * In a typical random work-stealing setting, a scheduler would hint
+ * \c ABT_POOL_CONTEXT_OWNER_SECONDARY to access a pool that is not owned (i.e.,
+ * a remote pool).
+ */
 #define ABT_POOL_CONTEXT_OWNER_SECONDARY ((ABT_pool_context)0x200)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints an unspecified pool operation.
+ *
+ * \c ABT_POOL_CONTEXT_OP_POOL_OTHER hints an unspecified pool operation that is
+ * categorized as none of the other predefined pool operations.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_POP_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_POOL_OTHER ((ABT_pool_context)0x0)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation in a thread creation routine
+ *          without a yield operation.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_CREATE hints a pool push operation in a thread
+ * creation routine that does not follow a yield operation to a newly created
+ * thread.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_CREATE ((ABT_pool_context)0x1000)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation in a thread creation routine with
+ *          a yield operation.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_CREATE_TO hints a pool push operation in a
+ * thread creation routine that follows a yield operation to a newly created
+ * thread.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_CREATE_TO ((ABT_pool_context)0x2000)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation in a thread revival routine
+ *          without a yield operation.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_REVIVE hints a pool push operation in a thread
+ * revival routine that does not follow a yield operation to a revived thread.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_REVIVE ((ABT_pool_context)0x4000)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation in a thread revival routine with
+ *          a yield operation.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_REVIVE_TO hints a pool push operation in a
+ * thread revival routine that follows a yield operation to a newly created
+ * thread.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_REVIVE_TO ((ABT_pool_context)0x8000)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation in a thread yield routine.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_YIELD hints a pool push operation in a thread
+ * yield routine.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_YIELD ((ABT_pool_context)0x10000)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation in a thread yield-to routine.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_YIELD_TO hints a pool push operation in a
+ * thread yield-to routine.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_YIELD_TO ((ABT_pool_context)0x20000)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation in a thread resume-yield-to
+ *          routine.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_RESUME_YIELD_TO hints a pool push operation in
+ * a thread resume-yield-to routine.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_RESUME_YIELD_TO ((ABT_pool_context)0x40000)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation in a yield operation in a
+ *          synchronization loop.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_YIELD_LOOP hints a pool push operation in
+ * an internal yield operation in a loop for synchronization.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_YIELD_LOOP ((ABT_pool_context)0x80000)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation in a thread resume routine.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_RESUME hints a pool push operation in a thread
+ * resume routine.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_RESUME ((ABT_pool_context)0x100000)
+/**
+ * @ingroup POOL
+ * @brief   A flag that hints a push operation for thread migration.
+ *
+ * \c ABT_POOL_CONTEXT_OP_THREAD_MIGRATE hints a pool push operation for thread
+ * migration.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_PUSH
+ */
 #define ABT_POOL_CONTEXT_OP_THREAD_MIGRATE ((ABT_pool_context)0x200000)
 
 /* Pool Functions */
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    ABT_unit (*ABT_pool_user_create_unit_fn)(ABT_pool, ABT_thread)
+ * @brief Function that creates an \c ABT_unit handle that is associated with an
+ *        \c ABT_thread handle.
+ *
+ * \c ABT_pool_user_create_unit_fn() creates a user-defined \c ABT_unit handle
+ * that is associated with the work-unit \c thread where \c thread is associated
+ * with the pool \c pool.  \c thread is neither \c ABT_THREAD_NULL nor
+ * \c ABT_TASK_NULL.  The returned value must point to a 4-byte aligned memory
+ * address that is unique in the system.  This function may return
+ * \c ABT_UNIT_NULL if creation fails.
+ *
+ * @note
+ * Specifically, the Argobots implementation assumes that 1. the first 2 least
+ * significant bits are zero and 2. all ABT_unit values are unique.  Both
+ * requirements are satisfied if \c ABT_unit points to a 4-byte aligned memory
+ * block.  An \c ABT_thread handle also satisfies these requirements.
+ *
+ * The user must implement \c ABT_pool_user_create_unit_fn() to implement a
+ * pool.
+ *
+ * A caller of \c ABT_pool_user_create_unit_fn() is undefined, so a program that
+ * relies on a caller of this routine is non-conforming.
+ */
 typedef ABT_unit (*ABT_pool_user_create_unit_fn)(ABT_pool, ABT_thread);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    void (*ABT_pool_user_free_unit_fn)(ABT_pool pool, ABT_unit unit)
+ * @brief Function that frees an \c ABT_unit handle.
+ *
+ * \c ABT_pool_user_free_unit_fn() frees the work unit \c unit that is created
+ * by its corresponding \c ABT_pool_user_create_unit_fn().  \c unit belongs to
+ * the pool \c pool.  Its associated entity (i.e., \c ABT_thread) is freed by
+ * the Argobots runtime.  \c ABT_UNIT_NULL is never passed as \c unit to this
+ * routine.
+ *
+ * The user must implement \c ABT_pool_user_free_unit_fn() to implement a pool.
+ *
+ * A caller of \c ABT_pool_user_free_unit_fn() is undefined, so a program that
+ * relies on a caller of this routine is non-conforming.
+ */
 typedef void (*ABT_pool_user_free_unit_fn)(ABT_pool, ABT_unit);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    ABT_bool (*ABT_pool_user_is_empty_fn)(ABT_pool pool)
+ * @brief Function that returns if a pool is empty.
+ *
+ * \c ABT_pool_user_is_empty_fn() returns \c ABT_TRUE if the pool \c pool is
+ * empty.  Otherwise, it returns \c ABT_FALSE.  The Argobots runtime assumes
+ * that the number of work units in \c pool is zero if this routine returns
+ * \c ABT_TRUE.
+ *
+ * The user must implement \c ABT_pool_user_is_empty_fn() to implement a pool.
+ *
+ * A caller of \c ABT_pool_user_is_empty_fn() is undefined, so a program that
+ * relies on a caller of this routine is non-conforming.
+ */
 typedef ABT_bool (*ABT_pool_user_is_empty_fn)(ABT_pool);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    ABT_unit (*ABT_pool_user_pop_fn)(ABT_pool pool,
+ *                                         ABT_pool_context context)
+ * @brief Function that pops a work unit from a pool.
+ *
+ * \c ABT_pool_user_pop_fn() pops a work unit from the pool \c pool and returns
+ * it.  The implementation of this routine may change its behavior based on the
+ * pool context \c context.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_IMPL{\c context}
+ *
+ * The user must implement \c ABT_pool_user_pop_fn() to implement a pool.
+ *
+ * A caller of \c ABT_pool_user_pop_fn() is undefined, so a program that relies
+ * on a caller of this routine is non-conforming.
+ */
 typedef ABT_unit (*ABT_pool_user_pop_fn)(ABT_pool, ABT_pool_context);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    void (*ABT_pool_user_push_fn)(ABT_pool pool, ABT_unit unit,
+ *                                      ABT_pool_context context)
+ * @brief Function that pushes a work unit to a pool.
+ *
+ * \c ABT_pool_user_push_fn() pushes the work unit \c unit to the pool \c pool.
+ * \c unit must be stored in \c pool and able to be popped by a pop function
+ * (e.g., \c ABT_pool_user_pop_fn()) later.  The implementation of this routine
+ * may change its behavior based on the pool context \c context.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_IMPL{\c context}
+ *
+ * The user must implement \c ABT_pool_user_push_fn() to implement a pool.
+ *
+ * A caller of \c ABT_pool_user_push_fn() is undefined, so a program that relies
+ * on a caller of this routine is non-conforming.
+ */
 typedef void (*ABT_pool_user_push_fn)(ABT_pool, ABT_unit, ABT_pool_context);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    int (*ABT_pool_user_init_fn)(ABT_pool pool,
+ *                                     ABT_pool_config pool_config)
+ * @brief Function that creates a pool.
+ *
+ * \c ABT_pool_user_init_fn() sets up the pool \c pool with the pool
+ * configuration \c pool_config.  \c ABT_pool_user_init_fn() may return a value
+ * other than \c ABT_SUCCESS if creation fails.
+ *
+ * \c ABT_pool_user_init_fn() is optional, so the user may set
+ * \c ABT_pool_user_init_fn to \c NULL.
+ *
+ * A caller of \c ABT_pool_user_init_fn() is undefined, so a program that relies
+ * on a caller of this routine is non-conforming.
+ */
 typedef int (*ABT_pool_user_init_fn)(ABT_pool, ABT_pool_config);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    void (*ABT_pool_user_free_fn)(ABT_pool pool)
+ * @brief Function that frees a pool.
+ *
+ * \c ABT_pool_user_free_fn() frees the pool \c pool and its associated
+ * resources.
+ *
+ * \c ABT_pool_user_free_fn() is optional, so the user may set
+ * \c ABT_pool_user_free_fn to \c NULL.
+ *
+ * A caller of \c ABT_pool_user_free_fn() is undefined, so a program that relies
+ * on a caller of this routine is non-conforming.
+ */
 typedef void (*ABT_pool_user_free_fn)(ABT_pool);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    size_t (*ABT_pool_user_get_size_fn)(ABT_pool pool)
+ * @brief Function that returns the number of work units in a pool.
+ *
+ * \c ABT_pool_user_get_size_fn() returns the size of the pool \c pool.  The
+ * Argobots runtime assumes that the size indicates the number of work units in
+ * \c pool.
+ *
+ * \c ABT_pool_user_get_size_fn() is optional, so the user may set
+ * \c ABT_pool_user_get_size_fn to \c NULL.
+ *
+ * A caller of \c ABT_pool_user_get_size_fn() is undefined, so a program that
+ * relies on a caller of this routine is non-conforming.
+ */
 typedef size_t (*ABT_pool_user_get_size_fn)(ABT_pool);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    ABT_unit (*ABT_pool_user_pop_wait_fn)(ABT_pool pool, double time_secs,
+ *                                              ABT_pool_context context)
+ * @brief Function that pops a work unit from a pool with wait.
+ *
+ * \c ABT_pool_user_pop_wait_fn() pops a work unit from the pool \c pool and
+ * returns it.  If no work unit exists in \c pool, \c ABT_UNIT_NULL must be
+ * returned.  \c time_secs hints at the duration in seconds that indicates how
+ * long the caller should wait on \c pool until a work unit is added to \c pool
+ * when \c pool is empty.  The implementation of this routine may change its
+ * behavior based on the pool context \c context.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_IMPL{\c context}
+ *
+ * \c ABT_pool_user_pop_wait_fn() is optional, so the user may set
+ * ABT_pool_user_pop_wait_fn to \c NULL.
+ *
+ * A caller of \c ABT_pool_user_pop_wait_fn() is undefined, so a program that
+ * relies on a caller of this routine is non-conforming.
+ */
 typedef ABT_unit (*ABT_pool_user_pop_wait_fn)(ABT_pool, double,
                                               ABT_pool_context);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    void (*ABT_pool_user_pop_many_fn)(ABT_pool pool, ABT_unit *units,
+ *                                          size_t max_units,
+ *                                          size_t *num_popped,
+ *                                          ABT_pool_context context)
+ * @brief Function that pops work units from a pool.
+ *
+ * \c ABT_pool_user_pop_many_fn() pops multiple work units from the pool \c pool
+ * and returns them through \c units.  This routine pops at maximum \c max_units
+ * work units from the pool and returns the number of popped units to
+ * \c num_popped where \c num_popped is not \c NULL.  The popped units are
+ * stored in \c units at indices from 0 to \c num_popped - 1.  This routine may
+ * not modify elements of \c units at indices from \c num_popped to
+ * \c max_units.  The implementation of this routine may change its behavior
+ * based on the pool context \c context.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_IMPL{\c context}
+ *
+ * \c ABT_pool_user_pop_many_fn() is optional, so the user may set
+ * \c ABT_pool_user_pop_many_fn to \c NULL.
+ *
+ * A caller of \c ABT_pool_user_pop_many_fn() is undefined, so a program that
+ * relies on a caller of this routine is non-conforming.
+ */
 typedef void (*ABT_pool_user_pop_many_fn)(ABT_pool, ABT_unit *, size_t,
                                           size_t *, ABT_pool_context);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    void (*ABT_pool_user_push_many_fn)(ABT_pool pool,
+ *                                           const ABT_unit *units,
+ *                                           size_t num_units,
+ *                                           ABT_pool_context context)
+ * @brief Function that pushes work units to a pool.
+ *
+ * \c ABT_pool_user_push_many_fn() pushes multiple work units to the pool
+ * \c pool.  \c num_units specifies the number of work units in \c units.
+ * \c units must be stored in \c pool and able to be popped by a pop function
+ * (e.g., \c ABT_pool_user_pop_fn()) later.  The implementation of this routine
+ * may change its behavior based on the pool context \c context.
+ *
+ * @note
+ * \DOC_DESC_POOL_CONTEXT_IMPL{\c context}
+ *
+ * \c ABT_pool_user_push_many_fn() is optional, so the user may set
+ * \c ABT_pool_user_push_many_fn to \c NULL.
+ *
+ * A caller of \c ABT_pool_user_push_many_fn() is undefined, so a program that
+ * relies on a caller of this routine is non-conforming.
+ */
 typedef void (*ABT_pool_user_push_many_fn)(ABT_pool, const ABT_unit *, size_t,
                                            ABT_pool_context);
+/**
+ * @ingroup POOL_USER_DEF
+ * @fn    void (*ABT_pool_user_print_all_fn)(ABT_pool pool, void *arg,
+ *                                           void (*print_f)(void *, ABT_unit))
+ * @brief Function that applies a user-given function to all work units in a
+ *        pool.
+ *
+ * \c ABT_pool_user_print_all_fn() applies \c print_f() to all work units in the
+ * pool \c pool.  \c print_f() is called with the user-given argument \c arg and
+ * a work unit handle.  The caller guarantees that \c print_f() does not modify
+ * the states of \c pool and work units in \c pool.
+ *
+ * \c ABT_pool_user_print_all_fn() is optional, so the user may set
+ * \c ABT_pool_user_print_all_fn to \c NULL.
+ *
+ * A caller of \c ABT_pool_user_print_all_fn() is undefined, so a program that
+ * relies on a caller of this routine is non-conforming.
+ */
 typedef void (*ABT_pool_user_print_all_fn)(ABT_pool, void *arg,
                                            void (*)(void *, ABT_unit));
 
@@ -1505,7 +1955,7 @@ typedef int           (*ABT_pool_print_all_fn)(ABT_pool, void *arg,
  * @ingroup POOL
  * @brief   A struct that defines a pool.
  */
-typedef struct {
+struct ABT_pool_def {
     /**
      * @brief Access type.
      *
@@ -1759,7 +2209,8 @@ typedef struct {
      * the caller of \c p_print_all() is non-conforming.
      */
     ABT_pool_print_all_fn     p_print_all;
-} ABT_pool_def;
+};
+typedef struct ABT_pool_def ABT_pool_def;
 
 /* Tool callback type. */
 typedef void (*ABT_tool_thread_callback_fn)(ABT_thread, ABT_xstream, uint64_t event,
@@ -1843,7 +2294,7 @@ int ABT_sched_config_get(ABT_sched_config config, int idx,
                          ABT_sched_config_type *p_type, void *val) ABT_API_PUBLIC;
 
 /* Pool */
-int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
+int ABT_pool_create(ABT_pool_user_def def, ABT_pool_config config,
                     ABT_pool *newpool) ABT_API_PUBLIC;
 int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                           ABT_bool automatic, ABT_pool *newpool) ABT_API_PUBLIC;
@@ -1871,6 +2322,29 @@ int ABT_pool_config_set(ABT_pool_config config, int key, ABT_pool_config_type ty
                         const void *val) ABT_API_PUBLIC;
 int ABT_pool_config_get(ABT_pool_config config, int key,
                         ABT_pool_config_type *p_type, void *val) ABT_API_PUBLIC;
+
+/* Pool definition */
+int ABT_pool_user_def_create(ABT_pool_user_create_unit_fn p_create_unit,
+                             ABT_pool_user_free_unit_fn p_free_unit,
+                             ABT_pool_user_is_empty_fn p_is_empty,
+                             ABT_pool_user_pop_fn p_pop,
+                             ABT_pool_user_push_fn p_push,
+                             ABT_pool_user_def *newdef) ABT_API_PUBLIC;
+int ABT_pool_user_def_free(ABT_pool_user_def *def) ABT_API_PUBLIC;
+int ABT_pool_user_def_set_init(ABT_pool_user_def def,
+                               ABT_pool_user_init_fn p_init) ABT_API_PUBLIC;
+int ABT_pool_user_def_set_free(ABT_pool_user_def def,
+                               ABT_pool_user_free_fn p_free) ABT_API_PUBLIC;
+int ABT_pool_user_def_set_get_size(ABT_pool_user_def def,
+                                   ABT_pool_user_get_size_fn p_get_size) ABT_API_PUBLIC;
+int ABT_pool_user_def_set_pop_wait(ABT_pool_user_def def,
+                                   ABT_pool_user_pop_wait_fn p_pop_wait) ABT_API_PUBLIC;
+int ABT_pool_user_def_set_pop_many(ABT_pool_user_def def,
+                                   ABT_pool_user_pop_many_fn p_pop_many) ABT_API_PUBLIC;
+int ABT_pool_user_def_set_push_many(ABT_pool_user_def def,
+                                    ABT_pool_user_push_many_fn p_push_many) ABT_API_PUBLIC;
+int ABT_pool_user_def_set_print_all(ABT_pool_user_def def,
+                                    ABT_pool_user_print_all_fn p_print_all) ABT_API_PUBLIC;
 
 /* Work Unit */
 int ABT_unit_get_thread(ABT_unit unit, ABT_thread *thread) ABT_API_PUBLIC;

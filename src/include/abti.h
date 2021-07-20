@@ -119,6 +119,7 @@ typedef void *ABTI_sched_id;       /* Scheduler id */
 typedef uintptr_t ABTI_sched_kind; /* Scheduler kind */
 typedef struct ABTI_pool ABTI_pool;
 typedef struct ABTI_pool_def ABTI_pool_def;
+typedef struct ABTI_pool_user_def ABTI_pool_user_def;
 typedef struct ABTI_pool_config ABTI_pool_config;
 typedef struct ABTI_thread ABTI_thread;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
@@ -393,6 +394,30 @@ struct ABTI_pool_def {
     ABT_pool_print_all_fn p_print_all_old;
 };
 
+struct ABTI_pool_user_def {
+    ABT_pool_access dummy_access;
+    ABT_unit_get_type_fn dummy_fn1;
+    ABT_unit_get_thread_fn dummy_fn2;
+    ABT_unit_get_task_fn dummy_fn3;
+    ABT_unit_is_in_pool_fn dummy_fn4;
+    ABT_unit_create_from_thread_fn
+        symbol; /* This value is to check if ABT_pool_user_def points to
+                   ABTI_pool_user_def or ABT_pool_def. */
+
+    ABT_pool_user_create_unit_fn p_create_unit;
+    ABT_pool_user_free_unit_fn p_free_unit;
+    ABT_pool_user_is_empty_fn p_is_empty;
+    ABT_pool_user_pop_fn p_pop;
+    ABT_pool_user_push_fn p_push;
+    ABT_pool_user_init_fn p_init;
+    ABT_pool_user_free_fn p_free;
+    ABT_pool_user_get_size_fn p_get_size;
+    ABT_pool_user_pop_wait_fn p_pop_wait;
+    ABT_pool_user_pop_many_fn p_pop_many;
+    ABT_pool_user_push_many_fn p_push_many;
+    ABT_pool_user_print_all_fn p_print_all;
+};
+
 struct ABTI_pool_config {
     ABTU_hashtable *p_table;
 };
@@ -589,6 +614,9 @@ void ABTI_pool_reset_id(void);
 ABTU_ret_err int ABTI_pool_config_read(const ABTI_pool_config *p_config,
                                        int key, void *p_val);
 
+/* Pool definition */
+ABT_bool ABTI_pool_user_def_is_new(const ABT_pool_user_def def);
+
 /* Work Unit */
 void ABTI_unit_init_hash_table(ABTI_global *p_global);
 void ABTI_unit_finalize_hash_table(ABTI_global *p_global);
@@ -664,6 +692,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_self.h"
 #include "abti_pool.h"
 #include "abti_pool_config.h"
+#include "abti_pool_user_def.h"
 #include "abti_sched.h"
 #include "abti_sched_config.h"
 #include "abti_stream.h"
