@@ -296,6 +296,41 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
 
 /**
  * @ingroup POOL
+ * @brief   Check if a pool is empty.
+ *
+ * \c ABT_pool_is_empty() returns whether the pool \c pool is or not through
+ * \c is_empty.  If \c pool is empty, \c ABT_TRUE is set to \c is_empty.
+ * Otherwise, \c ABT_FALSE is set to \c is_empty.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c is_empty}
+ *
+ * @param[in]  pool      pool handle
+ * @param[out] is_empty  emptiness of a pool
+ * @return Error code
+ */
+int ABT_pool_is_empty(ABT_pool pool, ABT_bool *is_empty)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(is_empty);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    *is_empty = ABTI_pool_is_empty(p_pool);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup POOL
  * @brief   Get the total size of a pool.
  *
  * \c ABT_pool_get_total_size() returns the total size of the pool \c pool

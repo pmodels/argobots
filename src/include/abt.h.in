@@ -2300,6 +2300,7 @@ int ABT_pool_create_basic(ABT_pool_kind kind, ABT_pool_access access,
                           ABT_bool automatic, ABT_pool *newpool) ABT_API_PUBLIC;
 int ABT_pool_free(ABT_pool *pool) ABT_API_PUBLIC;
 int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access) ABT_API_PUBLIC;
+int ABT_pool_is_empty(ABT_pool pool, ABT_bool *is_empty) ABT_API_PUBLIC;
 int ABT_pool_get_size(ABT_pool pool, size_t *size) ABT_API_PUBLIC;
 int ABT_pool_get_total_size(ABT_pool pool, size_t *size) ABT_API_PUBLIC;
 int ABT_pool_pop(ABT_pool pool, ABT_unit *unit) ABT_API_PUBLIC;
