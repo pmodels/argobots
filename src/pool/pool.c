@@ -236,7 +236,7 @@ int ABT_pool_free(ABT_pool *pool)
     ABT_pool h_pool = *pool;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(h_pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-    ABTI_UB_ASSERT(p_pool->p_get_size(h_pool) == 0);
+    ABTI_UB_ASSERT(ABTI_pool_is_empty(p_pool));
 
     ABTI_pool_free(p_pool);
 
@@ -306,6 +306,7 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c p_get_size()}
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -322,6 +323,7 @@ int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->p_get_size, ABT_ERR_POOL);
 
     *size = ABTI_pool_get_total_size(p_pool);
     return ABT_SUCCESS;
@@ -352,6 +354,7 @@ int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c p_get_size()}
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -368,6 +371,7 @@ int ABT_pool_get_size(ABT_pool pool, size_t *size)
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->p_get_size, ABT_ERR_POOL);
 
     *size = ABTI_pool_get_size(p_pool);
     return ABT_SUCCESS;
@@ -991,6 +995,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
                 "%*saccess        : %s\n"
                 "%*sautomatic     : %s\n"
                 "%*snum_scheds    : %d\n"
+                "%*sis_empty      : %s\n"
                 "%*ssize          : %zu\n"
                 "%*snum_blocked   : %d\n"
                 "%*sdata          : %p\n",
@@ -998,9 +1003,10 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
                 access, indent, "",
                 (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent, "",
                 ABTD_atomic_acquire_load_int32(&p_pool->num_scheds), indent, "",
-                ABTI_pool_get_size(p_pool), indent, "",
-                ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), indent,
-                "", p_pool->data);
+                (ABTI_pool_is_empty(p_pool) ? "TRUE" : "FALSE"), indent, "",
+                (p_pool->p_get_size ? ABTI_pool_get_size(p_pool) : 0), indent,
+                "", ABTD_atomic_acquire_load_int32(&p_pool->num_blocked),
+                indent, "", p_pool->data);
     }
     fflush(p_os);
 }

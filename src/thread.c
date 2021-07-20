@@ -3278,7 +3278,7 @@ static void thread_main_sched_func(void *arg)
          * execution of all work units. */
         if ((ABTD_atomic_relaxed_load_uint32(&p_sched->request) &
              ABTI_SCHED_REQ_FINISH) &&
-            ABTI_sched_get_effective_size(p_local, p_sched) == 0) {
+            !ABTI_sched_has_unit(p_sched)) {
             break;
         }
     }

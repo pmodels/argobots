@@ -127,8 +127,14 @@ static inline int32_t ABTI_pool_release(ABTI_pool *p_pool)
     return ABTD_atomic_fetch_sub_int32(&p_pool->num_scheds, 1) - 1;
 }
 
+static inline ABT_bool ABTI_pool_is_empty(ABTI_pool *p_pool)
+{
+    return p_pool->p_is_empty(ABTI_pool_get_handle(p_pool));
+}
+
 static inline size_t ABTI_pool_get_size(ABTI_pool *p_pool)
 {
+    ABTI_UB_ASSERT(p_pool->p_get_size);
     return p_pool->p_get_size(ABTI_pool_get_handle(p_pool));
 }
 
