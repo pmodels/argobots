@@ -69,11 +69,11 @@ int ABT_pool_user_def_create(ABT_pool_user_create_unit_fn p_create_unit,
 
     ABTI_UB_ASSERT(p_newdef->symbol == NULL); /* This value must be NULL. */
     /* Set values */
-    p_newdef->p_create_unit = p_create_unit;
-    p_newdef->p_free_unit = p_free_unit;
-    p_newdef->p_is_empty = p_is_empty;
-    p_newdef->p_pop = p_pop;
-    p_newdef->p_push = p_push;
+    p_newdef->required_def.p_create_unit = p_create_unit;
+    p_newdef->required_def.p_free_unit = p_free_unit;
+    p_newdef->required_def.p_is_empty = p_is_empty;
+    p_newdef->required_def.p_pop = p_pop;
+    p_newdef->required_def.p_push = p_push;
 
     *newdef = ABTI_pool_user_def_get_handle(p_newdef);
     return ABT_SUCCESS;
@@ -147,7 +147,7 @@ int ABT_pool_user_def_set_init(ABT_pool_user_def def,
     ABTI_pool_user_def *p_def = ABTI_pool_user_def_get_ptr(def);
     ABTI_CHECK_NULL_POOL_USER_DEF_PTR(p_def);
 
-    p_def->p_init = p_init;
+    p_def->optional_def.p_init = p_init;
     return ABT_SUCCESS;
 }
 
@@ -182,7 +182,7 @@ int ABT_pool_user_def_set_free(ABT_pool_user_def def,
     ABTI_pool_user_def *p_def = ABTI_pool_user_def_get_ptr(def);
     ABTI_CHECK_NULL_POOL_USER_DEF_PTR(p_def);
 
-    p_def->p_free = p_free;
+    p_def->optional_def.p_free = p_free;
     return ABT_SUCCESS;
 }
 
@@ -217,7 +217,7 @@ int ABT_pool_user_def_set_get_size(ABT_pool_user_def def,
     ABTI_pool_user_def *p_def = ABTI_pool_user_def_get_ptr(def);
     ABTI_CHECK_NULL_POOL_USER_DEF_PTR(p_def);
 
-    p_def->p_get_size = p_get_size;
+    p_def->optional_def.p_get_size = p_get_size;
     return ABT_SUCCESS;
 }
 
@@ -252,7 +252,7 @@ int ABT_pool_user_def_set_pop_wait(ABT_pool_user_def def,
     ABTI_pool_user_def *p_def = ABTI_pool_user_def_get_ptr(def);
     ABTI_CHECK_NULL_POOL_USER_DEF_PTR(p_def);
 
-    p_def->p_pop_wait = p_pop_wait;
+    p_def->optional_def.p_pop_wait = p_pop_wait;
     return ABT_SUCCESS;
 }
 
@@ -287,7 +287,7 @@ int ABT_pool_user_def_set_pop_many(ABT_pool_user_def def,
     ABTI_pool_user_def *p_def = ABTI_pool_user_def_get_ptr(def);
     ABTI_CHECK_NULL_POOL_USER_DEF_PTR(p_def);
 
-    p_def->p_pop_many = p_pop_many;
+    p_def->optional_def.p_pop_many = p_pop_many;
     return ABT_SUCCESS;
 }
 
@@ -322,7 +322,7 @@ int ABT_pool_user_def_set_push_many(ABT_pool_user_def def,
     ABTI_pool_user_def *p_def = ABTI_pool_user_def_get_ptr(def);
     ABTI_CHECK_NULL_POOL_USER_DEF_PTR(p_def);
 
-    p_def->p_push_many = p_push_many;
+    p_def->optional_def.p_push_many = p_push_many;
     return ABT_SUCCESS;
 }
 
@@ -357,7 +357,7 @@ int ABT_pool_user_def_set_print_all(ABT_pool_user_def def,
     ABTI_pool_user_def *p_def = ABTI_pool_user_def_get_ptr(def);
     ABTI_CHECK_NULL_POOL_USER_DEF_PTR(p_def);
 
-    p_def->p_print_all = p_print_all;
+    p_def->optional_def.p_print_all = p_print_all;
     return ABT_SUCCESS;
 }
 

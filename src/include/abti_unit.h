@@ -67,12 +67,13 @@ ABTI_unit_set_associated_pool(ABTI_global *p_global, ABT_unit unit,
             /* The new pool is a user-defined pool. */
             ABT_pool pool = ABTI_pool_get_handle(p_pool);
             ABT_unit new_unit =
-                p_pool->p_create_unit(pool, ABTI_thread_get_handle(p_thread));
+                p_pool->required_def.p_create_unit(pool, ABTI_thread_get_handle(
+                                                             p_thread));
             if (new_unit == ABT_UNIT_NULL)
                 return ABT_ERR_OTHER;
             int ret = ABTI_unit_map_thread(p_global, new_unit, p_thread);
             if (ret != ABT_SUCCESS) {
-                p_pool->p_free_unit(pool, new_unit);
+                p_pool->required_def.p_free_unit(pool, new_unit);
                 return ret;
             }
             p_thread->unit = new_unit;
@@ -89,7 +90,7 @@ ABTI_unit_set_associated_pool(ABTI_global *p_global, ABT_unit unit,
              * existing mapping. */
             ABTI_unit_unmap_thread(p_global, unit);
             ABT_pool old_pool = ABTI_pool_get_handle(p_thread->p_pool);
-            p_thread->p_pool->p_free_unit(old_pool, unit);
+            p_thread->p_pool->required_def.p_free_unit(old_pool, unit);
             ABTI_unit_init_builtin(p_thread);
             p_thread->p_pool = p_pool;
             *pp_thread = p_thread;
@@ -102,17 +103,18 @@ ABTI_unit_set_associated_pool(ABTI_global *p_global, ABT_unit unit,
             /* Both are associated with different custom pools. */
             ABT_pool pool = ABTI_pool_get_handle(p_pool);
             ABT_unit new_unit =
-                p_pool->p_create_unit(pool, ABTI_thread_get_handle(p_thread));
+                p_pool->required_def.p_create_unit(pool, ABTI_thread_get_handle(
+                                                             p_thread));
             if (new_unit == ABT_UNIT_NULL)
                 return ABT_ERR_OTHER;
             int ret = ABTI_unit_map_thread(p_global, new_unit, p_thread);
             if (ret != ABT_SUCCESS) {
-                p_pool->p_free_unit(pool, new_unit);
+                p_pool->required_def.p_free_unit(pool, new_unit);
                 return ret;
             }
             ABTI_unit_unmap_thread(p_global, unit);
             ABT_pool old_pool = ABTI_pool_get_handle(p_thread->p_pool);
-            p_thread->p_pool->p_free_unit(old_pool, unit);
+            p_thread->p_pool->required_def.p_free_unit(old_pool, unit);
             p_thread->unit = new_unit;
             p_thread->p_pool = p_pool;
             *pp_thread = p_thread;
@@ -134,12 +136,13 @@ ABTU_ret_err static inline int ABTI_thread_init_pool(ABTI_global *p_global,
     } else {
         ABT_pool pool = ABTI_pool_get_handle(p_pool);
         ABT_unit new_unit =
-            p_pool->p_create_unit(pool, ABTI_thread_get_handle(p_thread));
+            p_pool->required_def.p_create_unit(pool, ABTI_thread_get_handle(
+                                                         p_thread));
         if (new_unit == ABT_UNIT_NULL)
             return ABT_ERR_OTHER;
         int ret = ABTI_unit_map_thread(p_global, new_unit, p_thread);
         if (ret != ABT_SUCCESS) {
-            p_pool->p_free_unit(pool, new_unit);
+            p_pool->required_def.p_free_unit(pool, new_unit);
             return ret;
         }
         p_thread->unit = new_unit;
@@ -162,12 +165,13 @@ ABTI_thread_set_associated_pool(ABTI_global *p_global, ABTI_thread *p_thread,
         /* The new unit is associated with a custom pool.  Add a new mapping. */
         ABT_pool pool = ABTI_pool_get_handle(p_pool);
         ABT_unit new_unit =
-            p_pool->p_create_unit(pool, ABTI_thread_get_handle(p_thread));
+            p_pool->required_def.p_create_unit(pool, ABTI_thread_get_handle(
+                                                         p_thread));
         if (new_unit == ABT_UNIT_NULL)
             return ABT_ERR_OTHER;
         int ret = ABTI_unit_map_thread(p_global, new_unit, p_thread);
         if (ret != ABT_SUCCESS) {
-            p_pool->p_free_unit(pool, new_unit);
+            p_pool->required_def.p_free_unit(pool, new_unit);
             return ret;
         }
         p_thread->unit = new_unit;
@@ -178,7 +182,7 @@ ABTI_thread_set_associated_pool(ABTI_global *p_global, ABTI_thread *p_thread,
          * mapping. */
         ABTI_unit_unmap_thread(p_global, unit);
         ABT_pool old_pool = ABTI_pool_get_handle(p_thread->p_pool);
-        p_thread->p_pool->p_free_unit(old_pool, unit);
+        p_thread->p_pool->required_def.p_free_unit(old_pool, unit);
         ABTI_unit_init_builtin(p_thread);
         p_thread->p_pool = p_pool;
         return ABT_SUCCESS;
@@ -189,17 +193,18 @@ ABTI_thread_set_associated_pool(ABTI_global *p_global, ABTI_thread *p_thread,
         /* Both are associated with different custom pools. */
         ABT_pool pool = ABTI_pool_get_handle(p_pool);
         ABT_unit new_unit =
-            p_pool->p_create_unit(pool, ABTI_thread_get_handle(p_thread));
+            p_pool->required_def.p_create_unit(pool, ABTI_thread_get_handle(
+                                                         p_thread));
         if (new_unit == ABT_UNIT_NULL)
             return ABT_ERR_OTHER;
         int ret = ABTI_unit_map_thread(p_global, new_unit, p_thread);
         if (ret != ABT_SUCCESS) {
-            p_pool->p_free_unit(pool, new_unit);
+            p_pool->required_def.p_free_unit(pool, new_unit);
             return ret;
         }
         ABTI_unit_unmap_thread(p_global, unit);
         ABT_pool old_pool = ABTI_pool_get_handle(p_thread->p_pool);
-        p_thread->p_pool->p_free_unit(old_pool, unit);
+        p_thread->p_pool->required_def.p_free_unit(old_pool, unit);
         p_thread->unit = new_unit;
         p_thread->p_pool = p_pool;
         return ABT_SUCCESS;
@@ -213,7 +218,7 @@ static inline void ABTI_thread_unset_associated_pool(ABTI_global *p_global,
     if (ABTU_unlikely(!ABTI_unit_is_builtin(unit))) {
         ABTI_unit_unmap_thread(p_global, unit);
         ABT_pool old_pool = ABTI_pool_get_handle(p_thread->p_pool);
-        p_thread->p_pool->p_free_unit(old_pool, unit);
+        p_thread->p_pool->required_def.p_free_unit(old_pool, unit);
     }
 #if ABTI_IS_ERROR_CHECK_ENABLED
     p_thread->unit = ABT_UNIT_NULL;

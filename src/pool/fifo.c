@@ -36,10 +36,10 @@ static ABT_unit pool_create_unit(ABT_pool pool, ABT_thread thread);
 static void pool_free_unit(ABT_pool pool, ABT_unit unit);
 
 /* For backward compatibility */
-static int pool_remove_old_shared(ABT_pool pool, ABT_unit unit);
-static int pool_remove_old_private(ABT_pool pool, ABT_unit unit);
-static ABT_unit pool_pop_timedwait_old(ABT_pool pool, double abstime_secs);
-static ABT_bool pool_unit_is_in_pool_old(ABT_unit unit);
+static int pool_remove_shared(ABT_pool pool, ABT_unit unit);
+static int pool_remove_private(ABT_pool pool, ABT_unit unit);
+static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs);
+static ABT_bool pool_unit_is_in_pool(ABT_unit unit);
 
 struct data {
     ABTD_spinlock mutex;
@@ -80,30 +80,32 @@ ABTU_ret_err static inline int spinlock_acquire_if_not_empty(data_t *p_data)
 }
 
 /* Obtain the FIFO pool definition according to the access type */
-ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
-                                        ABTI_pool_def *p_def)
+ABTU_ret_err int
+ABTI_pool_get_fifo_def(ABT_pool_access access,
+                       ABTI_pool_required_def *p_required_def,
+                       ABTI_pool_optional_def *p_optional_def,
+                       ABTI_pool_deprecated_def *p_deprecated_def)
 {
-    p_def->old_def = ABT_FALSE;
     /* Definitions according to the access type */
     /* FIXME: need better implementation, e.g., lock-free one */
     switch (access) {
         case ABT_POOL_ACCESS_PRIV:
-            p_def->p_push = pool_push_private;
-            p_def->p_pop = pool_pop_private;
-            p_def->p_push_many = pool_push_many_private;
-            p_def->p_pop_many = pool_pop_many_private;
-            p_def->p_remove_old = pool_remove_old_private;
+            p_required_def->p_push = pool_push_private;
+            p_required_def->p_pop = pool_pop_private;
+            p_optional_def->p_push_many = pool_push_many_private;
+            p_optional_def->p_pop_many = pool_pop_many_private;
+            p_deprecated_def->p_remove = pool_remove_private;
             break;
 
         case ABT_POOL_ACCESS_SPSC:
         case ABT_POOL_ACCESS_MPSC:
         case ABT_POOL_ACCESS_SPMC:
         case ABT_POOL_ACCESS_MPMC:
-            p_def->p_push = pool_push_shared;
-            p_def->p_pop = pool_pop_shared;
-            p_def->p_push_many = pool_push_many_shared;
-            p_def->p_pop_many = pool_pop_many_shared;
-            p_def->p_remove_old = pool_remove_old_shared;
+            p_required_def->p_push = pool_push_shared;
+            p_required_def->p_pop = pool_pop_shared;
+            p_optional_def->p_push_many = pool_push_many_shared;
+            p_optional_def->p_pop_many = pool_pop_many_shared;
+            p_deprecated_def->p_remove = pool_remove_shared;
             break;
 
         default:
@@ -111,18 +113,17 @@ ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
     }
 
     /* Common definitions regardless of the access type */
-    p_def->access = access;
-    p_def->p_init = pool_init;
-    p_def->p_free = pool_free;
-    p_def->p_is_empty = pool_is_empty;
-    p_def->p_get_size = pool_get_size;
-    p_def->p_pop_wait = pool_pop_wait;
-    p_def->p_print_all = pool_print_all;
-    p_def->p_create_unit = pool_create_unit;
-    p_def->p_free_unit = pool_free_unit;
+    p_optional_def->p_init = pool_init;
+    p_optional_def->p_free = pool_free;
+    p_required_def->p_is_empty = pool_is_empty;
+    p_optional_def->p_get_size = pool_get_size;
+    p_optional_def->p_pop_wait = pool_pop_wait;
+    p_optional_def->p_print_all = pool_print_all;
+    p_required_def->p_create_unit = pool_create_unit;
+    p_required_def->p_free_unit = pool_free_unit;
 
-    p_def->p_pop_timedwait_old = pool_pop_timedwait_old;
-    p_def->u_is_in_pool_old = pool_unit_is_in_pool_old;
+    p_deprecated_def->p_pop_timedwait = pool_pop_timedwait;
+    p_deprecated_def->u_is_in_pool = pool_unit_is_in_pool;
     return ABT_SUCCESS;
 }
 
@@ -308,7 +309,7 @@ static ABT_unit pool_pop_wait(ABT_pool pool, double time_secs,
     }
 }
 
-static ABT_unit pool_pop_timedwait_old(ABT_pool pool, double abstime_secs)
+static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
@@ -389,7 +390,7 @@ static void pool_pop_many_private(ABT_pool pool, ABT_unit *units,
     *num_popped = i;
 }
 
-static inline int pool_remove_old_unsafe(data_t *p_data, ABTI_thread *p_thread)
+static inline int pool_remove_unsafe(data_t *p_data, ABTI_thread *p_thread)
 {
     ABTI_CHECK_TRUE(p_data->num_threads != 0, ABT_ERR_POOL);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) == 1,
@@ -416,23 +417,23 @@ static inline int pool_remove_old_unsafe(data_t *p_data, ABTI_thread *p_thread)
     return ABT_SUCCESS;
 }
 
-static int pool_remove_old_shared(ABT_pool pool, ABT_unit unit)
+static int pool_remove_shared(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
     ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
     ABTD_spinlock_acquire(&p_data->mutex);
-    int abt_errno = pool_remove_old_unsafe(p_data, p_thread);
+    int abt_errno = pool_remove_unsafe(p_data, p_thread);
     ABTD_spinlock_release(&p_data->mutex);
     return abt_errno;
 }
 
-static int pool_remove_old_private(ABT_pool pool, ABT_unit unit)
+static int pool_remove_private(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
     ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
-    return pool_remove_old_unsafe(p_data, p_thread);
+    return pool_remove_unsafe(p_data, p_thread);
 }
 
 static void pool_print_all(ABT_pool pool, void *arg,
@@ -463,7 +464,7 @@ static void pool_print_all(ABT_pool pool, void *arg,
 
 /* Unit functions */
 
-static ABT_bool pool_unit_is_in_pool_old(ABT_unit unit)
+static ABT_bool pool_unit_is_in_pool(ABT_unit unit)
 {
     ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
     return ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) ? ABT_TRUE

@@ -1301,16 +1301,17 @@ int ABT_thread_yield_to(ABT_thread thread)
     ABTI_CHECK_TRUE(p_cur_ythread != p_tar_ythread, ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(!(p_cur_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
                     ABT_ERR_INV_THREAD);
-    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->u_is_in_pool_old,
+    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->deprecated_def.u_is_in_pool,
                     ABT_ERR_POOL);
-    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->p_remove_old, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_tar_ythread->thread.p_pool->deprecated_def.p_remove,
+                    ABT_ERR_POOL);
 
     /* If the target thread is not in READY, we don't yield.  Note that ULT can
      * be regarded as 'ready' only if its state is READY and it has been
      * pushed into a pool. Since we set ULT's state to READY and then push it
      * into a pool, we check them in the reverse order, i.e., check if the ULT
      * is inside a pool and the its state. */
-    if (!(p_tar_ythread->thread.p_pool->u_is_in_pool_old(
+    if (!(p_tar_ythread->thread.p_pool->deprecated_def.u_is_in_pool(
               p_tar_ythread->thread.unit) == ABT_TRUE &&
           ABTD_atomic_acquire_load_int(&p_tar_ythread->thread.state) ==
               ABT_THREAD_STATE_READY)) {

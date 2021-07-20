@@ -55,7 +55,7 @@ static inline void ABTI_pool_push(ABTI_pool *p_pool, ABT_unit unit,
 {
     /* Push unit into pool */
     LOG_DEBUG_POOL_PUSH(p_pool, unit);
-    p_pool->p_push(ABTI_pool_get_handle(p_pool), unit, context);
+    p_pool->required_def.p_push(ABTI_pool_get_handle(p_pool), unit, context);
 }
 
 static inline void ABTI_pool_add_thread(ABTI_thread *p_thread,
@@ -72,8 +72,8 @@ ABTU_ret_err static inline int ABTI_pool_remove(ABTI_pool *p_pool,
                                                 ABT_unit unit)
 {
     LOG_DEBUG_POOL_REMOVE(p_pool, unit);
-    ABTI_UB_ASSERT(p_pool->p_remove_old);
-    return p_pool->p_remove_old(ABTI_pool_get_handle(p_pool), unit);
+    ABTI_UB_ASSERT(p_pool->deprecated_def.p_remove);
+    return p_pool->deprecated_def.p_remove(ABTI_pool_get_handle(p_pool), unit);
 }
 
 static inline ABT_unit ABTI_pool_pop_wait(ABTI_pool *p_pool, double time_secs,
@@ -81,8 +81,9 @@ static inline ABT_unit ABTI_pool_pop_wait(ABTI_pool *p_pool, double time_secs,
 {
     ABT_unit unit;
 
-    ABTI_UB_ASSERT(p_pool->p_pop_wait);
-    unit = p_pool->p_pop_wait(ABTI_pool_get_handle(p_pool), time_secs, context);
+    ABTI_UB_ASSERT(p_pool->optional_def.p_pop_wait);
+    unit = p_pool->optional_def.p_pop_wait(ABTI_pool_get_handle(p_pool),
+                                           time_secs, context);
     LOG_DEBUG_POOL_POP(p_pool, unit);
 
     return unit;
@@ -93,9 +94,9 @@ static inline ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool,
 {
     ABT_unit unit;
 
-    ABTI_UB_ASSERT(p_pool->p_pop_timedwait_old);
-    unit =
-        p_pool->p_pop_timedwait_old(ABTI_pool_get_handle(p_pool), abstime_secs);
+    ABTI_UB_ASSERT(p_pool->deprecated_def.p_pop_timedwait);
+    unit = p_pool->deprecated_def.p_pop_timedwait(ABTI_pool_get_handle(p_pool),
+                                                  abstime_secs);
     LOG_DEBUG_POOL_POP(p_pool, unit);
 
     return unit;
@@ -106,7 +107,7 @@ static inline ABT_unit ABTI_pool_pop(ABTI_pool *p_pool,
 {
     ABT_unit unit;
 
-    unit = p_pool->p_pop(ABTI_pool_get_handle(p_pool), context);
+    unit = p_pool->required_def.p_pop(ABTI_pool_get_handle(p_pool), context);
     LOG_DEBUG_POOL_POP(p_pool, unit);
 
     return unit;
@@ -129,13 +130,13 @@ static inline int32_t ABTI_pool_release(ABTI_pool *p_pool)
 
 static inline ABT_bool ABTI_pool_is_empty(ABTI_pool *p_pool)
 {
-    return p_pool->p_is_empty(ABTI_pool_get_handle(p_pool));
+    return p_pool->required_def.p_is_empty(ABTI_pool_get_handle(p_pool));
 }
 
 static inline size_t ABTI_pool_get_size(ABTI_pool *p_pool)
 {
-    ABTI_UB_ASSERT(p_pool->p_get_size);
-    return p_pool->p_get_size(ABTI_pool_get_handle(p_pool));
+    ABTI_UB_ASSERT(p_pool->optional_def.p_get_size);
+    return p_pool->optional_def.p_get_size(ABTI_pool_get_handle(p_pool));
 }
 
 static inline size_t ABTI_pool_get_total_size(ABTI_pool *p_pool)

@@ -126,10 +126,10 @@ static void sched_run(ABT_sched sched)
         if (!run_cnt_nowait) {
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pools[0]);
             ABT_unit unit;
-            if (p_pool->p_pop_wait) {
+            if (p_pool->optional_def.p_pop_wait) {
                 unit = ABTI_pool_pop_wait(p_pool, 0.1,
                                           ABT_POOL_CONTEXT_OP_POOL_OTHER);
-            } else if (p_pool->p_pop_timedwait_old) {
+            } else if (p_pool->deprecated_def.p_pop_timedwait) {
                 unit = ABTI_pool_pop_timedwait(p_pool, ABTI_get_wtime() + 0.1);
             } else {
                 /* No "wait" pop, so let's use a normal one. */

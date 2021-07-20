@@ -1281,7 +1281,7 @@ ABTU_ret_err static int info_print_thread_stacks_in_pool(ABTI_global *p_global,
         fflush(fp);
         return ABT_SUCCESS;
     }
-    ABTI_CHECK_TRUE(p_pool->p_print_all, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_pool->optional_def.p_print_all, ABT_ERR_POOL);
 
     ABT_pool pool = ABTI_pool_get_handle(p_pool);
 
@@ -1289,7 +1289,7 @@ ABTU_ret_err static int info_print_thread_stacks_in_pool(ABTI_global *p_global,
     struct info_print_unit_arg_t arg;
     arg.p_global = p_global;
     arg.fp = fp;
-    p_pool->p_print_all(pool, &arg, info_print_unit);
+    p_pool->optional_def.p_print_all(pool, &arg, info_print_unit);
     fflush(fp);
     return ABT_SUCCESS;
 }

@@ -25,9 +25,9 @@ static ABT_unit pool_create_unit(ABT_pool pool, ABT_thread thread);
 static void pool_free_unit(ABT_pool pool, ABT_unit unit);
 
 /* For backward compatibility */
-static int pool_remove_old(ABT_pool pool, ABT_unit unit);
-static ABT_unit pool_pop_timedwait_old(ABT_pool pool, double abstime_secs);
-static ABT_bool pool_unit_is_in_pool_old(ABT_unit unit);
+static int pool_remove(ABT_pool pool, ABT_unit unit);
+static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs);
+static ABT_bool pool_unit_is_in_pool(ABT_unit unit);
 
 struct data {
     pthread_mutex_t mutex;
@@ -44,27 +44,28 @@ static inline data_t *pool_get_data_ptr(void *p_data)
     return (data_t *)p_data;
 }
 
-ABTU_ret_err int ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
-                                             ABTI_pool_def *p_def)
+ABTU_ret_err int
+ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
+                            ABTI_pool_required_def *p_required_def,
+                            ABTI_pool_optional_def *p_optional_def,
+                            ABTI_pool_deprecated_def *p_deprecated_def)
 {
-    p_def->old_def = ABT_FALSE;
-    p_def->access = access;
-    p_def->p_init = pool_init;
-    p_def->p_free = pool_free;
-    p_def->p_is_empty = pool_is_empty;
-    p_def->p_get_size = pool_get_size;
-    p_def->p_push = pool_push;
-    p_def->p_pop = pool_pop;
-    p_def->p_pop_wait = pool_pop_wait;
-    p_def->p_push_many = pool_push_many;
-    p_def->p_pop_many = pool_pop_many;
-    p_def->p_print_all = pool_print_all;
-    p_def->p_create_unit = pool_create_unit;
-    p_def->p_free_unit = pool_free_unit;
+    p_optional_def->p_init = pool_init;
+    p_optional_def->p_free = pool_free;
+    p_required_def->p_is_empty = pool_is_empty;
+    p_optional_def->p_get_size = pool_get_size;
+    p_required_def->p_push = pool_push;
+    p_required_def->p_pop = pool_pop;
+    p_optional_def->p_pop_wait = pool_pop_wait;
+    p_optional_def->p_push_many = pool_push_many;
+    p_optional_def->p_pop_many = pool_pop_many;
+    p_optional_def->p_print_all = pool_print_all;
+    p_required_def->p_create_unit = pool_create_unit;
+    p_required_def->p_free_unit = pool_free_unit;
 
-    p_def->p_pop_timedwait_old = pool_pop_timedwait_old;
-    p_def->u_is_in_pool_old = pool_unit_is_in_pool_old;
-    p_def->p_remove_old = pool_remove_old;
+    p_deprecated_def->p_pop_timedwait = pool_pop_timedwait;
+    p_deprecated_def->u_is_in_pool = pool_unit_is_in_pool;
+    p_deprecated_def->p_remove = pool_remove;
     return ABT_SUCCESS;
 }
 
@@ -258,7 +259,7 @@ static inline void convert_double_sec_to_timespec(struct timespec *ts_out,
     ts_out->tv_nsec = (long)((seconds - ts_out->tv_sec) * 1000000000.0);
 }
 
-static ABT_unit pool_pop_timedwait_old(ABT_pool pool, double abstime_secs)
+static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
@@ -311,7 +312,7 @@ static void pool_pop_many(ABT_pool pool, ABT_unit *units, size_t max_units,
     }
 }
 
-static int pool_remove_old(ABT_pool pool, ABT_unit unit)
+static int pool_remove(ABT_pool pool, ABT_unit unit)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
@@ -364,7 +365,7 @@ static void pool_print_all(ABT_pool pool, void *arg,
 
 /* Unit functions */
 
-static ABT_bool pool_unit_is_in_pool_old(ABT_unit unit)
+static ABT_bool pool_unit_is_in_pool(ABT_unit unit)
 {
     ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
     return ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) ? ABT_TRUE

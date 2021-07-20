@@ -615,7 +615,7 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
     size_t p;
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        ABTI_CHECK_TRUE(p_pool->p_get_size, ABT_ERR_POOL);
+        ABTI_CHECK_TRUE(p_pool->optional_def.p_get_size, ABT_ERR_POOL);
     }
 
     /* Sum up all the sizes */
@@ -680,7 +680,7 @@ int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
     size_t p;
     for (p = 0; p < p_sched->num_pools; p++) {
         ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        ABTI_CHECK_TRUE(p_pool->p_get_size, ABT_ERR_POOL);
+        ABTI_CHECK_TRUE(p_pool->optional_def.p_get_size, ABT_ERR_POOL);
     }
 
     /* Sum up all the sizes */
