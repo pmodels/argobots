@@ -148,10 +148,8 @@ static void sched_run(ABT_sched sched)
          * be processed in a timely manner. */
         if (!run_cnt_nowait || (++work_count >= event_freq)) {
             ABTI_xstream_check_events(p_local_xstream, p_sched);
-            ABTI_local *p_local = ABTI_xstream_get_local(p_local_xstream);
-            if (ABTI_sched_has_to_stop(&p_local, p_sched) == ABT_TRUE)
+            if (ABTI_sched_has_to_stop(p_sched) == ABT_TRUE)
                 break;
-            p_local_xstream = ABTI_local_get_xstream(p_local);
             work_count = 0;
         }
     }

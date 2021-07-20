@@ -562,7 +562,7 @@ void ABTI_sched_free(ABTI_global *p_global, ABTI_local *p_local,
                      ABTI_sched *p_sched, ABT_bool force_free);
 ABTU_ret_err int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *,
                                                ABTI_pool **);
-ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched);
+ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched);
 ABT_bool ABTI_sched_has_unit(ABTI_sched *p_sched);
 void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                       ABT_bool print_sub);

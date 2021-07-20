@@ -487,14 +487,13 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *stop = ABT_FALSE;
 #endif
-    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
-    ABTI_CHECK_TRUE(p_local, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(ABTI_local_get_local(), ABT_ERR_INV_XSTREAM);
 #endif
 
-    *stop = ABTI_sched_has_to_stop(&p_local, p_sched);
+    *stop = ABTI_sched_has_to_stop(p_sched);
     return ABT_SUCCESS;
 }
 
@@ -923,7 +922,7 @@ void ABTI_sched_free(ABTI_global *p_global, ABTI_local *p_local,
     ABTU_free(p_sched);
 }
 
-ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
+ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched)
 {
     /* Check exit request */
     if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
