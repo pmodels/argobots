@@ -11,7 +11,8 @@
 
 /* Check ABT_pool. */
 
-#define POOL_KIND_USER ((ABT_pool_kind)999)
+#define POOL_KIND_USER ((ABT_pool_kind)998)
+#define POOL_KIND_USER2 ((ABT_pool_kind)999)
 
 ABT_unit unit_create_from_thread(ABT_thread thread)
 {
@@ -21,6 +22,16 @@ ABT_unit unit_create_from_thread(ABT_thread thread)
 void unit_free(ABT_unit *p_unit)
 {
     (void)p_unit;
+}
+
+ABT_unit pool_create_unit(ABT_pool pool, ABT_thread thread)
+{
+    return (ABT_unit)thread;
+}
+
+void pool_free_unit(ABT_pool pool, ABT_unit unit)
+{
+    (void)unit;
 }
 
 typedef struct {
@@ -49,7 +60,15 @@ size_t pool_get_size(ABT_pool pool)
     return pool_data->num_units;
 }
 
-void pool_push(ABT_pool pool, ABT_unit unit)
+ABT_bool pool_is_empty(ABT_pool pool)
+{
+    pool_data_t *pool_data;
+    int ret = ABT_pool_get_data(pool, (void **)&pool_data);
+    assert(ret == ABT_SUCCESS);
+    return pool_data->num_units == 0 ? ABT_TRUE : ABT_FALSE;
+}
+
+void pool_push_old(ABT_pool pool, ABT_unit unit)
 {
     /* Very simple: no lock, fixed size.  This implementation is for simplicity,
      * so don't use it in a real program unless you know what you are really
@@ -60,7 +79,12 @@ void pool_push(ABT_pool pool, ABT_unit unit)
     pool_data->units[pool_data->num_units++] = unit;
 }
 
-ABT_unit pool_pop(ABT_pool pool)
+void pool_push(ABT_pool pool, ABT_unit unit, ABT_pool_context context)
+{
+    pool_push_old(pool, unit);
+}
+
+ABT_unit pool_pop_old(ABT_pool pool)
 {
     pool_data_t *pool_data;
     int ret = ABT_pool_get_data(pool, (void **)&pool_data);
@@ -70,7 +94,12 @@ ABT_unit pool_pop(ABT_pool pool)
     return pool_data->units[--pool_data->num_units];
 }
 
-int pool_free(ABT_pool pool)
+ABT_unit pool_pop(ABT_pool pool, ABT_pool_context context)
+{
+    return pool_pop_old(pool);
+}
+
+int pool_free_old(ABT_pool pool)
 {
     pool_data_t *pool_data;
     int ret = ABT_pool_get_data(pool, (void **)&pool_data);
@@ -79,7 +108,80 @@ int pool_free(ABT_pool pool)
     return ABT_SUCCESS;
 }
 
+void pool_free(ABT_pool pool)
+{
+    pool_data_t *pool_data;
+    int ret = ABT_pool_get_data(pool, (void **)&pool_data);
+    assert(ret == ABT_SUCCESS);
+    free(pool_data);
+}
+
 ABT_pool create_pool(int automatic, int must_succeed)
+{
+    int ret;
+    ABT_pool pool = (ABT_pool)RAND_PTR;
+
+    ABT_pool_user_def def = (ABT_pool_user_def)RAND_PTR;
+    ret = ABT_pool_user_def_create(pool_create_unit, pool_free_unit,
+                                   pool_is_empty, pool_pop, pool_push, &def);
+    assert(!must_succeed || ret == ABT_SUCCESS);
+    if (ret != ABT_SUCCESS) {
+        assert(def == (ABT_pool_user_def)RAND_PTR);
+        return ABT_POOL_NULL;
+    }
+    ret = ABT_pool_user_def_set_init(def, pool_init);
+    assert(ret == ABT_SUCCESS);
+    ret = ABT_pool_user_def_set_free(def, pool_free);
+    assert(ret == ABT_SUCCESS);
+
+    ABT_pool_config config = (ABT_pool_config)RAND_PTR;
+    if (automatic) {
+        /* Create a configuration. */
+        ret = ABT_pool_config_create(&config);
+        assert(!must_succeed || ret == ABT_SUCCESS);
+        if (ret != ABT_SUCCESS) {
+            assert(config == (ABT_pool_config)RAND_PTR);
+            ret = ABT_pool_user_def_free(&def);
+            assert(ret == ABT_SUCCESS && def == ABT_POOL_USER_DEF_NULL);
+            return ABT_POOL_NULL;
+        }
+        const int automatic_val = 1;
+        ret = ABT_pool_config_set(config, ABT_pool_config_automatic.key,
+                                  ABT_pool_config_automatic.type,
+                                  (const void *)&automatic_val);
+        assert(!must_succeed || ret == ABT_SUCCESS);
+        if (ret != ABT_SUCCESS) {
+            ret = ABT_pool_config_free(&config);
+            assert(ret == ABT_SUCCESS && config == ABT_POOL_CONFIG_NULL);
+            ret = ABT_pool_user_def_free(&def);
+            assert(ret == ABT_SUCCESS && def == ABT_POOL_USER_DEF_NULL);
+            return ABT_POOL_NULL;
+        }
+    } else {
+        /* By default, a pool created by ABT_pool_create() is not automatically
+         * freed. */
+        config = ABT_POOL_CONFIG_NULL;
+    }
+    ret = ABT_pool_create(def, config, &pool);
+    assert(!must_succeed || ret == ABT_SUCCESS);
+    if (ret != ABT_SUCCESS) {
+#ifdef ABT_ENABLE_VER_20_API
+        assert(pool == (ABT_pool)RAND_PTR);
+#else
+        assert(pool == ABT_POOL_NULL);
+#endif
+        pool = ABT_POOL_NULL;
+    }
+    if (config != ABT_POOL_CONFIG_NULL) {
+        ret = ABT_pool_config_free(&config);
+        assert(ret == ABT_SUCCESS && config == ABT_POOL_CONFIG_NULL);
+    }
+    ret = ABT_pool_user_def_free(&def);
+    assert(ret == ABT_SUCCESS && def == ABT_POOL_USER_DEF_NULL);
+    return pool;
+}
+
+ABT_pool create_pool_old(int automatic, int must_succeed)
 {
     int ret;
     ABT_pool pool = (ABT_pool)RAND_PTR;
@@ -95,14 +197,14 @@ ABT_pool create_pool(int automatic, int must_succeed)
     pool_def.u_free = unit_free;
     pool_def.p_init = pool_init;
     pool_def.p_get_size = pool_get_size;
-    pool_def.p_push = pool_push;
-    pool_def.p_pop = pool_pop;
+    pool_def.p_push = pool_push_old;
+    pool_def.p_pop = pool_pop_old;
 #ifdef ABT_ENABLE_VER_20_API
     pool_def.p_pop_wait = NULL;
 #endif
     pool_def.p_pop_timedwait = NULL;
     pool_def.p_remove = NULL;
-    pool_def.p_free = pool_free;
+    pool_def.p_free = pool_free_old;
     pool_def.p_print_all = NULL;
 
     ABT_pool_config config = (ABT_pool_config)RAND_PTR;
@@ -176,6 +278,8 @@ void program(ABT_pool_kind kind, int automatic, int type, int must_succeed)
     ABT_pool pool;
     if (kind == POOL_KIND_USER) {
         pool = create_pool(automatic, must_succeed);
+    } else if (kind == POOL_KIND_USER2) {
+        pool = create_pool_old(automatic, must_succeed);
     } else {
         pool = create_pool_basic(kind, automatic, must_succeed);
     }
@@ -269,7 +373,7 @@ int main()
     rtrace_init();
 
     int i, automatic, type;
-    ABT_pool_kind kinds[] = { ABT_POOL_FIFO, POOL_KIND_USER };
+    ABT_pool_kind kinds[] = { ABT_POOL_FIFO, POOL_KIND_USER, POOL_KIND_USER2 };
     /* Checking all takes too much time. */
     for (i = 0; i < (int)(sizeof(kinds) / sizeof(kinds[0])); i++) {
         for (automatic = 0; automatic <= 1; automatic++) {
