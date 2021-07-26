@@ -118,7 +118,11 @@ typedef enum ABTI_sched_used ABTI_sched_used;
 typedef void *ABTI_sched_id;       /* Scheduler id */
 typedef uintptr_t ABTI_sched_kind; /* Scheduler kind */
 typedef struct ABTI_pool ABTI_pool;
-typedef struct ABTI_pool_def ABTI_pool_def;
+typedef struct ABTI_pool_required_def ABTI_pool_required_def;
+typedef struct ABTI_pool_optional_def ABTI_pool_optional_def;
+typedef struct ABTI_pool_deprecated_def ABTI_pool_deprecated_def;
+typedef struct ABTI_pool_old_def ABTI_pool_old_def;
+typedef struct ABTI_pool_user_def ABTI_pool_user_def;
 typedef struct ABTI_pool_config ABTI_pool_config;
 typedef struct ABTI_thread ABTI_thread;
 typedef struct ABTI_thread_attr ABTI_thread_attr;
@@ -320,6 +324,47 @@ struct ABTI_sched_config {
     ABTU_hashtable *p_table;
 };
 
+struct ABTI_pool_required_def {
+    /* Required pool operations */
+    ABT_pool_user_create_unit_fn p_create_unit;
+    ABT_pool_user_free_unit_fn p_free_unit;
+    ABT_pool_user_is_empty_fn p_is_empty;
+    ABT_pool_user_pop_fn p_pop;
+    ABT_pool_user_push_fn p_push;
+};
+
+struct ABTI_pool_optional_def {
+    /* Optional pool operations */
+    ABT_pool_user_init_fn p_init;
+    ABT_pool_user_free_fn p_free;
+    ABT_pool_user_get_size_fn p_get_size;
+    ABT_pool_user_pop_wait_fn p_pop_wait;
+    ABT_pool_user_pop_many_fn p_pop_many;
+    ABT_pool_user_push_many_fn p_push_many;
+    ABT_pool_user_print_all_fn p_print_all;
+};
+
+struct ABTI_pool_deprecated_def {
+    /* Pool operations that might be directly called even now, but
+     * deprecated.  All operations are optional. */
+    ABT_unit_is_in_pool_fn u_is_in_pool;
+    ABT_pool_pop_timedwait_fn p_pop_timedwait;
+    ABT_pool_remove_fn p_remove;
+};
+
+struct ABTI_pool_old_def {
+    /* Pool operations that are not directly called now. */
+    ABT_unit_create_from_thread_fn u_create_from_thread;
+    ABT_unit_free_fn u_free;
+    ABT_pool_init_fn p_init;
+    ABT_pool_get_size_fn p_get_size;
+    ABT_pool_push_fn p_push;
+    ABT_pool_pop_fn p_pop;
+    ABT_pool_pop_wait_fn p_pop_wait;
+    ABT_pool_free_fn p_free;
+    ABT_pool_print_all_fn p_print_all;
+};
+
 struct ABTI_pool {
     ABT_pool_access access; /* Access mode */
     ABT_bool automatic;     /* To know if automatic data free */
@@ -330,38 +375,23 @@ struct ABTI_pool {
     void *data;                    /* Specific data */
     uint64_t id;                   /* ID */
 
-    /* Functions to manage units */
-    ABT_unit_is_in_pool_fn u_is_in_pool;
-    ABT_unit_create_from_thread_fn u_create_from_thread;
-    ABT_unit_free_fn u_free;
-
-    /* Functions to manage the pool */
-    ABT_pool_init_fn p_init;
-    ABT_pool_get_size_fn p_get_size;
-    ABT_pool_push_fn p_push;
-    ABT_pool_pop_fn p_pop;
-    ABT_pool_pop_wait_fn p_pop_wait;
-    ABT_pool_pop_timedwait_fn p_pop_timedwait;
-    ABT_pool_remove_fn p_remove;
-    ABT_pool_free_fn p_free;
-    ABT_pool_print_all_fn p_print_all;
+    ABTI_pool_required_def required_def;
+    ABTI_pool_optional_def optional_def;
+    ABTI_pool_deprecated_def deprecated_def;
+    ABTI_pool_old_def old_def;
 };
 
-struct ABTI_pool_def {
-    ABT_pool_access access;
-    ABT_unit_get_thread_fn u_get_thread;
-    ABT_unit_is_in_pool_fn u_is_in_pool;
-    ABT_unit_create_from_thread_fn u_create_from_thread;
-    ABT_unit_free_fn u_free;
-    ABT_pool_init_fn p_init;
-    ABT_pool_get_size_fn p_get_size;
-    ABT_pool_push_fn p_push;
-    ABT_pool_pop_fn p_pop;
-    ABT_pool_pop_wait_fn p_pop_wait;
-    ABT_pool_pop_timedwait_fn p_pop_timedwait;
-    ABT_pool_remove_fn p_remove;
-    ABT_pool_free_fn p_free;
-    ABT_pool_print_all_fn p_print_all;
+struct ABTI_pool_user_def {
+    ABT_pool_access dummy_access;
+    ABT_unit_get_type_fn dummy_fn1;
+    ABT_unit_get_thread_fn dummy_fn2;
+    ABT_unit_get_task_fn dummy_fn3;
+    ABT_unit_is_in_pool_fn dummy_fn4;
+    ABT_unit_create_from_thread_fn
+        symbol; /* This value is to check if ABT_pool_user_def points to
+                   ABTI_pool_user_def or ABT_pool_def. */
+    ABTI_pool_required_def required_def;
+    ABTI_pool_optional_def optional_def;
 };
 
 struct ABTI_pool_config {
@@ -533,10 +563,8 @@ void ABTI_sched_free(ABTI_global *p_global, ABTI_local *p_local,
                      ABTI_sched *p_sched, ABT_bool force_free);
 ABTU_ret_err int ABTI_sched_get_migration_pool(ABTI_sched *, ABTI_pool *,
                                                ABTI_pool **);
-ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched);
-size_t ABTI_sched_get_size(ABTI_sched *p_sched);
-size_t ABTI_sched_get_total_size(ABTI_sched *p_sched);
-size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched);
+ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched);
+ABT_bool ABTI_sched_has_unit(ABTI_sched *p_sched);
 void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                       ABT_bool print_sub);
 void ABTI_sched_reset_id(void);
@@ -551,16 +579,25 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
                                         ABT_bool automatic,
                                         ABTI_pool **pp_newpool);
 void ABTI_pool_free(ABTI_pool *p_pool);
-ABTU_ret_err int ABTI_pool_get_fifo_def(ABT_pool_access access,
-                                        ABTI_pool_def *p_def);
-ABTU_ret_err int ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
-                                             ABTI_pool_def *p_def);
+ABTU_ret_err int
+ABTI_pool_get_fifo_def(ABT_pool_access access,
+                       ABTI_pool_required_def *p_required_def,
+                       ABTI_pool_optional_def *p_optional_def,
+                       ABTI_pool_deprecated_def *p_deprecated_def);
+ABTU_ret_err int
+ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
+                            ABTI_pool_required_def *p_required_def,
+                            ABTI_pool_optional_def *p_optional_def,
+                            ABTI_pool_deprecated_def *p_deprecated_def);
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
 
 /* Pool config */
 ABTU_ret_err int ABTI_pool_config_read(const ABTI_pool_config *p_config,
                                        int key, void *p_val);
+
+/* Pool definition */
+ABT_bool ABTI_pool_user_def_is_new(const ABT_pool_user_def def);
 
 /* Work Unit */
 void ABTI_unit_init_hash_table(ABTI_global *p_global);
@@ -637,6 +674,7 @@ void ABTI_info_check_print_all_thread_stacks(void);
 #include "abti_self.h"
 #include "abti_pool.h"
 #include "abti_pool_config.h"
+#include "abti_pool_user_def.h"
 #include "abti_sched.h"
 #include "abti_sched_config.h"
 #include "abti_stream.h"

@@ -32,6 +32,16 @@ void unit_free(ABT_unit *p_unit)
     free(*p_unit);
 }
 
+ABT_unit pool_create_unit(ABT_pool pool, ABT_thread thread)
+{
+    return unit_create_from_thread(thread);
+}
+
+void pool_free_unit(ABT_pool pool, ABT_unit unit)
+{
+    unit_free(&unit);
+}
+
 typedef struct {
     int num_units;
     ABT_unit units[16];
@@ -56,7 +66,15 @@ size_t pool_get_size(ABT_pool pool)
     return pool_data->num_units;
 }
 
-void pool_push(ABT_pool pool, ABT_unit unit)
+ABT_bool pool_is_empty(ABT_pool pool)
+{
+    pool_data_t *pool_data;
+    int ret = ABT_pool_get_data(pool, (void **)&pool_data);
+    assert(ret == ABT_SUCCESS);
+    return pool_data->num_units == 0 ? ABT_TRUE : ABT_FALSE;
+}
+
+void pool_push_old(ABT_pool pool, ABT_unit unit)
 {
     /* Very simple: no lock, fixed size.  This implementation is for simplicity,
      * so don't use it in a real program unless you know what you are really
@@ -67,7 +85,12 @@ void pool_push(ABT_pool pool, ABT_unit unit)
     pool_data->units[pool_data->num_units++] = unit;
 }
 
-ABT_unit pool_pop(ABT_pool pool)
+void pool_push(ABT_pool pool, ABT_unit unit, ABT_pool_context context)
+{
+    pool_push_old(pool, unit);
+}
+
+ABT_unit pool_pop_old(ABT_pool pool)
 {
     pool_data_t *pool_data;
     int ret = ABT_pool_get_data(pool, (void **)&pool_data);
@@ -77,7 +100,12 @@ ABT_unit pool_pop(ABT_pool pool)
     return pool_data->units[--pool_data->num_units];
 }
 
-int pool_free(ABT_pool pool)
+ABT_unit pool_pop(ABT_pool pool, ABT_pool_context context)
+{
+    return pool_pop_old(pool);
+}
+
+int pool_free_old(ABT_pool pool)
 {
     pool_data_t *pool_data;
     int ret = ABT_pool_get_data(pool, (void **)&pool_data);
@@ -86,7 +114,36 @@ int pool_free(ABT_pool pool)
     return ABT_SUCCESS;
 }
 
+void pool_free(ABT_pool pool)
+{
+    pool_data_t *pool_data;
+    int ret = ABT_pool_get_data(pool, (void **)&pool_data);
+    assert(ret == ABT_SUCCESS);
+    free(pool_data);
+}
+
 ABT_pool create_pool(void)
+{
+    int ret;
+    ABT_pool pool;
+
+    ABT_pool_user_def def = (ABT_pool_user_def)RAND_PTR;
+    ret = ABT_pool_user_def_create(pool_create_unit, pool_free_unit,
+                                   pool_is_empty, pool_pop, pool_push, &def);
+    assert(ret == ABT_SUCCESS);
+    ret = ABT_pool_user_def_set_init(def, pool_init);
+    assert(ret == ABT_SUCCESS);
+    ret = ABT_pool_user_def_set_free(def, pool_free);
+    assert(ret == ABT_SUCCESS);
+
+    ret = ABT_pool_create(def, ABT_POOL_CONFIG_NULL, &pool);
+    assert(ret == ABT_SUCCESS);
+    ret = ABT_pool_user_def_free(&def);
+    assert(ret == ABT_SUCCESS && def == ABT_POOL_USER_DEF_NULL);
+    return pool;
+}
+
+ABT_pool create_pool_old(void)
 {
     int ret;
     ABT_pool pool;
@@ -102,14 +159,14 @@ ABT_pool create_pool(void)
     pool_def.u_free = unit_free;
     pool_def.p_init = pool_init;
     pool_def.p_get_size = pool_get_size;
-    pool_def.p_push = pool_push;
-    pool_def.p_pop = pool_pop;
+    pool_def.p_push = pool_push_old;
+    pool_def.p_pop = pool_pop_old;
 #ifdef ABT_ENABLE_VER_20_API
     pool_def.p_pop_wait = NULL;
 #endif
     pool_def.p_pop_timedwait = NULL;
     pool_def.p_remove = NULL;
-    pool_def.p_free = pool_free;
+    pool_def.p_free = pool_free_old;
     pool_def.p_print_all = NULL;
 
     ret = ABT_pool_create(&pool_def, ABT_POOL_CONFIG_NULL, &pool);
@@ -144,10 +201,29 @@ void program(int use_predef, int must_succeed)
     assert(ret == ABT_SUCCESS);
     /* Pool creation should be covered by other tests. */
     ABT_pool pools[2];
-    pools[0] = create_pool();
-    if (!use_predef) {
+    if (use_predef == 0) {
+        pools[0] = create_pool();
         pools[1] = create_pool();
+    } else if (use_predef == 1) {
+        pools[0] = create_pool();
+        pools[1] = create_pool_old();
+    } else if (use_predef == 2) {
+        pools[0] = create_pool_old();
+        pools[1] = create_pool_old();
+    } else if (use_predef == 3) {
+        pools[0] = create_pool();
+        ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC,
+                                    ABT_FALSE, &pools[1]);
+        assert(ret == ABT_SUCCESS);
+    } else if (use_predef == 4) {
+        pools[0] = create_pool_old();
+        ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC,
+                                    ABT_FALSE, &pools[1]);
+        assert(ret == ABT_SUCCESS);
     } else {
+        ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC,
+                                    ABT_FALSE, &pools[0]);
+        assert(ret == ABT_SUCCESS);
         ret = ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC,
                                     ABT_FALSE, &pools[1]);
         assert(ret == ABT_SUCCESS);
@@ -216,7 +292,7 @@ int main()
     rtrace_init();
 
     int use_predef;
-    for (use_predef = 0; use_predef <= 1; use_predef++) {
+    for (use_predef = 0; use_predef <= 5; use_predef++) {
         do {
             rtrace_start();
             program(use_predef, 0);

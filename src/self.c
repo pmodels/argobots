@@ -631,7 +631,8 @@ int ABT_self_yield(void)
     ABTI_ythread *p_ythread;
     ABTI_SETUP_LOCAL_YTHREAD(&p_local_xstream, &p_ythread);
 
-    ABTI_ythread_yield(&p_local_xstream, p_ythread, ABT_SYNC_EVENT_TYPE_USER,
+    ABTI_ythread_yield(&p_local_xstream, p_ythread,
+                       ABTI_YTHREAD_YIELD_KIND_USER, ABT_SYNC_EVENT_TYPE_USER,
                        NULL);
     return ABT_SUCCESS;
 }
@@ -686,12 +687,10 @@ int ABT_self_yield_to(ABT_thread thread)
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(!(p_tar_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
                     ABT_ERR_INV_THREAD);
-    ABTI_UB_ASSERT(!(p_tar_ythread->thread.p_pool->u_is_in_pool &&
-                     p_tar_ythread->thread.p_pool->u_is_in_pool(
-                         p_tar_ythread->thread.unit) == ABT_TRUE));
 
     /* Switch the context */
     ABTI_ythread_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
+                          ABTI_YTHREAD_YIELD_TO_KIND_USER,
                           ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }
@@ -747,6 +746,7 @@ int ABT_self_resume_yield_to(ABT_thread thread)
 
     /* Switch the context */
     ABTI_ythread_resume_yield_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
+                                 ABTI_YTHREAD_RESUME_YIELD_TO_KIND_USER,
                                  ABT_SYNC_EVENT_TYPE_USER, NULL);
     return ABT_SUCCESS;
 }
@@ -845,9 +845,6 @@ int ABT_self_suspend_to(ABT_thread thread)
                     ABT_ERR_INV_THREAD);
     ABTI_CHECK_TRUE(!(p_tar_ythread->thread.type & ABTI_THREAD_TYPE_MAIN_SCHED),
                     ABT_ERR_INV_THREAD);
-    ABTI_UB_ASSERT(!(p_tar_ythread->thread.p_pool->u_is_in_pool &&
-                     p_tar_ythread->thread.p_pool->u_is_in_pool(
-                         p_tar_ythread->thread.unit) == ABT_TRUE));
 
     /* Switch the context */
     ABTI_ythread_suspend_to(&p_local_xstream, p_cur_ythread, p_tar_ythread,
@@ -997,9 +994,6 @@ int ABT_self_exit_to(ABT_thread thread)
     ABTI_CHECK_TRUE(!(p_tar_ythread->thread.type &
                       (ABTI_THREAD_TYPE_MAIN_SCHED | ABTI_THREAD_TYPE_PRIMARY)),
                     ABT_ERR_INV_THREAD);
-    ABTI_UB_ASSERT(!(p_tar_ythread->thread.p_pool->u_is_in_pool &&
-                     p_tar_ythread->thread.p_pool->u_is_in_pool(
-                         p_tar_ythread->thread.unit) == ABT_TRUE));
 
     /* Switch the context */
     ABTI_ythread_exit_to(p_local_xstream, p_cur_ythread, p_tar_ythread);

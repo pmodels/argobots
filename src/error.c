@@ -106,7 +106,8 @@ int ABT_error_get_str(int err, char *str, size_t *len)
                                      "ABT_ERR_INV_ARG",
                                      "ABT_ERR_SYS",
                                      "ABT_ERR_CPUID",
-                                     "ABT_ERR_INV_POOL_CONFIG" };
+                                     "ABT_ERR_INV_POOL_CONFIG",
+                                     "ABT_ERR_INV_POOL_USER_DEF" };
 
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     ABTI_CHECK_TRUE(err >= ABT_SUCCESS &&

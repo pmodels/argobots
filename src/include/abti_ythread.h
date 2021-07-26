@@ -56,7 +56,7 @@ static inline void ABTI_ythread_resume_and_push(ABTI_local *p_local,
     ABTI_pool *p_pool = p_ythread->thread.p_pool;
 
     /* Add the ULT to its associated pool */
-    ABTI_pool_add_thread(&p_ythread->thread);
+    ABTI_pool_add_thread(&p_ythread->thread, ABT_POOL_CONTEXT_OP_THREAD_RESUME);
 
     /* Decrease the number of blocked threads */
     ABTI_pool_dec_num_blocked(p_pool);
@@ -197,33 +197,66 @@ static inline void ABTI_ythread_run_child(ABTI_xstream **pp_local_xstream,
     ABTI_ythread_switch_to_child_internal(pp_local_xstream, p_self, p_child);
 }
 
-void ABTI_ythread_callback_yield(void *arg);
+typedef enum {
+    ABTI_YTHREAD_YIELD_KIND_USER,
+    ABTI_YTHREAD_YIELD_KIND_YIELD_LOOP,
+} ABTI_ythread_yield_kind;
+
+typedef enum {
+    ABTI_YTHREAD_YIELD_TO_KIND_USER,
+    ABTI_YTHREAD_YIELD_TO_KIND_CREATE_TO,
+    ABTI_YTHREAD_YIELD_TO_KIND_REVIVE_TO,
+} ABTI_ythread_yield_to_kind;
+
+void ABTI_ythread_callback_yield_user_yield(void *arg);
+void ABTI_ythread_callback_yield_loop(void *arg);
+void ABTI_ythread_callback_yield_user_yield_to(void *arg);
+void ABTI_ythread_callback_yield_create_to(void *arg);
+void ABTI_ythread_callback_yield_revive_to(void *arg);
 
 static inline void ABTI_ythread_yield(ABTI_xstream **pp_local_xstream,
                                       ABTI_ythread *p_self,
+                                      ABTI_ythread_yield_kind kind,
                                       ABT_sync_event_type sync_event_type,
                                       void *p_sync)
 {
     ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
                              sync_event_type, p_sync);
-    ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
-                                           ABTI_ythread_callback_yield,
-                                           (void *)p_self);
+    if (kind == ABTI_YTHREAD_YIELD_KIND_USER) {
+        ABTI_ythread_switch_to_parent_internal(
+            pp_local_xstream, p_self, ABTI_ythread_callback_yield_user_yield,
+            (void *)p_self);
+    } else {
+        ABTI_UB_ASSERT(kind == ABTI_YTHREAD_YIELD_KIND_YIELD_LOOP);
+        ABTI_ythread_switch_to_parent_internal(pp_local_xstream, p_self,
+                                               ABTI_ythread_callback_yield_loop,
+                                               (void *)p_self);
+    }
 }
 
-static inline void ABTI_ythread_yield_to(ABTI_xstream **pp_local_xstream,
-                                         ABTI_ythread *p_self,
-                                         ABTI_ythread *p_target,
-                                         ABT_sync_event_type sync_event_type,
-                                         void *p_sync)
+static inline void
+ABTI_ythread_yield_to(ABTI_xstream **pp_local_xstream, ABTI_ythread *p_self,
+                      ABTI_ythread *p_target, ABTI_ythread_yield_to_kind kind,
+                      ABT_sync_event_type sync_event_type, void *p_sync)
 {
     ABTI_event_ythread_yield(*pp_local_xstream, p_self, p_self->thread.p_parent,
                              sync_event_type, p_sync);
     ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_switch_to_sibling_internal(pp_local_xstream, p_self, p_target,
-                                            ABTI_ythread_callback_yield,
-                                            (void *)p_self);
+    if (kind == ABTI_YTHREAD_YIELD_TO_KIND_USER) {
+        ABTI_ythread_switch_to_sibling_internal(
+            pp_local_xstream, p_self, p_target,
+            ABTI_ythread_callback_yield_user_yield_to, (void *)p_self);
+    } else if (kind == ABTI_YTHREAD_YIELD_TO_KIND_CREATE_TO) {
+        ABTI_ythread_switch_to_sibling_internal(
+            pp_local_xstream, p_self, p_target,
+            ABTI_ythread_callback_yield_create_to, (void *)p_self);
+    } else {
+        ABTI_UB_ASSERT(kind == ABTI_YTHREAD_YIELD_TO_KIND_REVIVE_TO);
+        ABTI_ythread_switch_to_sibling_internal(
+            pp_local_xstream, p_self, p_target,
+            ABTI_ythread_callback_yield_revive_to, (void *)p_self);
+    }
 }
 
 /* Old interface used for ABT_thread_yield_to() */
@@ -238,6 +271,7 @@ ABTI_ythread_thread_yield_to(ABTI_xstream **pp_local_xstream,
                              sync_event_type, p_sync);
     ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
+
     ABTI_ythread_switch_to_sibling_internal(
         pp_local_xstream, p_self, p_target,
         ABTI_ythread_callback_thread_yield_to, (void *)p_self);
@@ -250,9 +284,14 @@ typedef struct {
 
 void ABTI_ythread_callback_resume_yield_to(void *arg);
 
+typedef enum {
+    ABTI_YTHREAD_RESUME_YIELD_TO_KIND_USER,
+} ABTI_ythread_resume_yield_to_kind;
+
 static inline void
 ABTI_ythread_resume_yield_to(ABTI_xstream **pp_local_xstream,
                              ABTI_ythread *p_self, ABTI_ythread *p_target,
+                             ABTI_ythread_resume_yield_to_kind kind,
                              ABT_sync_event_type sync_event_type, void *p_sync)
 {
     /* The ULT must be in BLOCKED state. */
@@ -265,6 +304,7 @@ ABTI_ythread_resume_yield_to(ABTI_xstream **pp_local_xstream,
                              sync_event_type, p_sync);
     ABTD_atomic_release_store_int(&p_target->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
+    ABTI_UB_ASSERT(kind == ABTI_YTHREAD_RESUME_YIELD_TO_KIND_USER);
     ABTI_ythread_callback_resume_yield_to_arg arg = { p_self, p_target };
     ABTI_ythread_switch_to_sibling_internal(
         pp_local_xstream, p_self, p_target,
@@ -606,7 +646,7 @@ static inline void ABTI_ythread_schedule(ABTI_global *p_global,
         /* If p_thread is cancelled, there's nothing to do. */
     } else if (request_op == ABTI_THREAD_HANDLE_REQUEST_MIGRATED) {
         /* If p_thread is migrated, let's push p_thread back to its pool. */
-        ABTI_pool_add_thread(p_thread);
+        ABTI_pool_add_thread(p_thread, ABT_POOL_CONTEXT_OP_THREAD_MIGRATE);
     }
 }
 

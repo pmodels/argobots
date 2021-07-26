@@ -44,6 +44,7 @@ basic/sched_config
 basic/sched_user_ws
 basic/pool_config
 basic/pool_custom
+basic/pool_user_def
 basic/sync_no_contention
 basic/main_sched
 basic/mutex

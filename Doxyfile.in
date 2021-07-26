@@ -1872,6 +1872,16 @@ ALIASES += DOC_DESC_ATOMICITY_XSTREAM_STATE="Management of states of execution s
 
 ALIASES += DOC_DESC_POOL_AUTOMATIC{1}="If \1 is not configured to be automatically freed, it is the user's responsibility to free \1 after its use unless \c 1 is associated with the main scheduler of the primary execution stream.  If \1 is configured to be automatically freed, \1 is automatically freed when all schedulers associated with \1 is freed.  If the user never associates \1 with a scheduler (e.g., by \c ABT_sched_create()), it is the user's responsibility to free \1."
 
+ALIASES += DOC_DESC_POOL_CONTEXT_POP_PUSH="This context value is intended for both pop and push operations."
+
+ALIASES += DOC_DESC_POOL_CONTEXT_PUSH="This context value is intended for push operations."
+
+ALIASES += DOC_DESC_POOL_CONTEXT_IMPL{1}="The routine must perform the required functionality regardless of the value of \1."
+
+ALIASES += DOC_DESC_POOL_CONTEXT_IMPL_DEF_OWNER="Each pool implementation defines its specific behavior.  Some pool implementations might not respect the user's owner setting."
+
+ALIASES += DOC_DESC_POOL_CONTEXT_IMPL_DEF_PRIO="Each pool implementation defines its specific behavior.  Some pool implementations might not respect the user's priority setting."
+
 ALIASES += DOC_DESC_SCHED_AUTOMATIC{1}="If \1 is not configured to be automatically freed, it is the user's responsibility to free \1 after its use unless \c 1 is associated with the main scheduler of the primary execution stream.  If \1 is configured to be automatically freed, \1 is automatically freed when a work unit associated with \1 is freed.  If the user never associates \1 with a work unit (e.g., by \c ABT_pool_add_sched() or \c ABT_xstream_set_main_sched()), it is the user's responsibility to free \1."
 
 ALIASES += DOC_DESC_TIMER_RESOLUTION="The resolution of elapsed time depends on the clock resolution of the system."
@@ -2039,6 +2049,10 @@ ALIASES += DOC_ERROR_INV_POOL_HANDLE{1}="\c ABT_ERR_INV_POOL is returned if \1 i
 ALIASES += DOC_ERROR_INV_POOL_KIND{1}="\c ABT_ERR_INV_POOL_KIND is returned if \1 is not a valid pool kind.\n"
 
 ALIASES += DOC_ERROR_INV_POOL_PTR{1}="\c ABT_ERR_INV_POOL is returned if \1 points to \c ABT_POOL_NULL.\n"
+
+ALIASES += DOC_ERROR_INV_POOL_USER_DEF_HANDLE{1}="\c ABT_ERR_INV_POOL_USER_DEF is returned if \1 is \c ABT_POOL_USER_DEF_NULL.\n"
+
+ALIASES += DOC_ERROR_INV_POOL_USER_DEF_PTR{1}="\c ABT_ERR_INV_POOL_USER_DEF is returned if \1 points to \c ABT_POOL_USER_DEF_NULL.\n"
 
 ALIASES += DOC_ERROR_INV_RWLOCK_HANDLE{1}="\c ABT_ERR_INV_RWLOCK is returned if \1 is \c ABT_RWLOCK_NULL.\n"
 

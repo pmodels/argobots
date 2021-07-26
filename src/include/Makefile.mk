@@ -32,6 +32,7 @@ noinst_HEADERS = \
 	include/abti_rwlock.h \
 	include/abti_pool.h \
 	include/abti_pool_config.h \
+	include/abti_pool_user_def.h \
 	include/abti_sched.h \
 	include/abti_sched_config.h \
 	include/abti_self.h \

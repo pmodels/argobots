@@ -611,7 +611,7 @@ ABTU_ret_err static int task_create(ABTI_global *p_global, ABTI_local *p_local,
                              p_pool);
 
     /* Add this task to the scheduler's pool */
-    ABTI_pool_push(p_pool, p_newtask->unit);
+    ABTI_pool_push(p_pool, p_newtask->unit, ABT_POOL_CONTEXT_OP_THREAD_CREATE);
 
     /* Return value */
     *pp_newtask = p_newtask;

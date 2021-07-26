@@ -487,14 +487,13 @@ int ABT_sched_has_to_stop(ABT_sched sched, ABT_bool *stop)
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     *stop = ABT_FALSE;
 #endif
-    ABTI_local *p_local = ABTI_local_get_local();
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
-    ABTI_CHECK_TRUE(p_local, ABT_ERR_INV_XSTREAM);
+    ABTI_CHECK_TRUE(ABTI_local_get_local(), ABT_ERR_INV_XSTREAM);
 #endif
 
-    *stop = ABTI_sched_has_to_stop(&p_local, p_sched);
+    *stop = ABTI_sched_has_to_stop(p_sched);
     return ABT_SUCCESS;
 }
 
@@ -590,6 +589,8 @@ int ABT_sched_get_data(ABT_sched sched, void **data)
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_SCHED_HANDLE{\c sched}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{one of the associated pools,
+ *                                     \c p_get_size()}
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -610,8 +611,20 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    /* Check availability of p_get_size() */
+    size_t p;
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        ABTI_CHECK_TRUE(p_pool->optional_def.p_get_size, ABT_ERR_POOL);
+    }
 
-    *size = ABTI_sched_get_size(p_sched);
+    /* Sum up all the sizes */
+    size_t pool_size = 0;
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        pool_size += ABTI_pool_get_size(p_pool);
+    }
+    *size = pool_size;
     return ABT_SUCCESS;
 }
 
@@ -641,6 +654,8 @@ int ABT_sched_get_size(ABT_sched sched, size_t *size)
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_SCHED_HANDLE{\c sched}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{one of the associated pools,
+ *                                     \c p_get_size()}
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -661,26 +676,26 @@ int ABT_sched_get_total_size(ABT_sched sched, size_t *size)
 
     ABTI_sched *p_sched = ABTI_sched_get_ptr(sched);
     ABTI_CHECK_NULL_SCHED_PTR(p_sched);
+    /* Check availability of p_get_size() */
+    size_t p;
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        ABTI_CHECK_TRUE(p_pool->optional_def.p_get_size, ABT_ERR_POOL);
+    }
 
-    *size = ABTI_sched_get_total_size(p_sched);
+    /* Sum up all the sizes */
+    size_t pool_size = 0;
+    for (p = 0; p < p_sched->num_pools; p++) {
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
+        pool_size += ABTI_pool_get_total_size(p_pool);
+    }
+    *size = pool_size;
     return ABT_SUCCESS;
 }
 
 /*****************************************************************************/
 /* Private APIs                                                              */
 /*****************************************************************************/
-
-size_t ABTI_sched_get_size(ABTI_sched *p_sched)
-{
-    size_t pool_size = 0, p;
-
-    for (p = 0; p < p_sched->num_pools; p++) {
-        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        pool_size += ABTI_pool_get_size(p_pool);
-    }
-
-    return pool_size;
-}
 
 void ABTI_sched_finish(ABTI_sched *p_sched)
 {
@@ -907,7 +922,7 @@ void ABTI_sched_free(ABTI_global *p_global, ABTI_local *p_local,
     ABTU_free(p_sched);
 }
 
-ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
+ABT_bool ABTI_sched_has_to_stop(ABTI_sched *p_sched)
 {
     /* Check exit request */
     if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
@@ -915,16 +930,50 @@ ABT_bool ABTI_sched_has_to_stop(ABTI_local **pp_local, ABTI_sched *p_sched)
         return ABT_TRUE;
     }
 
-    if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0) {
+    if (!ABTI_sched_has_unit(p_sched)) {
         if (ABTD_atomic_acquire_load_uint32(&p_sched->request) &
             (ABTI_SCHED_REQ_FINISH | ABTI_SCHED_REQ_REPLACE)) {
             /* Check join request */
-            if (ABTI_sched_get_effective_size(*pp_local, p_sched) == 0)
+            if (!ABTI_sched_has_unit(p_sched))
                 return ABT_TRUE;
         } else if (p_sched->used == ABTI_SCHED_IN_POOL) {
             /* Let's finish it anyway.
              * TODO: think about the condition. */
             return ABT_TRUE;
+        }
+    }
+    return ABT_FALSE;
+}
+
+ABT_bool ABTI_sched_has_unit(ABTI_sched *p_sched)
+{
+    /* ABTI_sched_has_unit() does not count the number of blocked ULTs if a pool
+     * has more than one consumer or the caller ES is not the latest consumer.
+     * This is necessary when the ES associated with the target scheduler has to
+     * be joined and the pool is shared between different schedulers associated
+     * with different ESs. */
+    size_t p, num_pools = p_sched->num_pools;
+    for (p = 0; p < num_pools; p++) {
+        ABT_pool pool = p_sched->pools[p];
+        ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+        if (!ABTI_pool_is_empty(p_pool))
+            return ABT_TRUE;
+        switch (p_pool->access) {
+            case ABT_POOL_ACCESS_PRIV:
+                if (ABTD_atomic_acquire_load_int32(&p_pool->num_blocked))
+                    return ABT_TRUE;
+                break;
+            case ABT_POOL_ACCESS_SPSC:
+            case ABT_POOL_ACCESS_MPSC:
+            case ABT_POOL_ACCESS_SPMC:
+            case ABT_POOL_ACCESS_MPMC:
+                if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1) {
+                    if (ABTD_atomic_acquire_load_int32(&p_pool->num_blocked))
+                        return ABT_TRUE;
+                }
+                break;
+            default:
+                break;
         }
     }
     return ABT_FALSE;
@@ -946,53 +995,6 @@ ABTU_ret_err int ABTI_sched_get_migration_pool(ABTI_sched *p_sched,
         *pp_pool = p_pool;
     }
     return ABT_SUCCESS;
-}
-
-size_t ABTI_sched_get_total_size(ABTI_sched *p_sched)
-{
-    size_t pool_size = 0, p;
-
-    for (p = 0; p < p_sched->num_pools; p++) {
-        ABTI_pool *p_pool = ABTI_pool_get_ptr(p_sched->pools[p]);
-        pool_size += ABTI_pool_get_total_size(p_pool);
-    }
-
-    return pool_size;
-}
-
-/* Compared to \c ABTI_sched_get_total_size, ABTI_sched_get_effective_size does
- * not count the number of blocked ULTs if a pool has more than one consumer or
- * the caller ES is not the latest consumer. This is necessary when the ES
- * associated with the target scheduler has to be joined and the pool is shared
- * between different schedulers associated with different ESs. */
-size_t ABTI_sched_get_effective_size(ABTI_local *p_local, ABTI_sched *p_sched)
-{
-    size_t pool_size = 0, p;
-
-    for (p = 0; p < p_sched->num_pools; p++) {
-        ABT_pool pool = p_sched->pools[p];
-        ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-        pool_size += ABTI_pool_get_size(p_pool);
-        switch (p_pool->access) {
-            case ABT_POOL_ACCESS_PRIV:
-                pool_size +=
-                    ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
-                break;
-            case ABT_POOL_ACCESS_SPSC:
-            case ABT_POOL_ACCESS_MPSC:
-            case ABT_POOL_ACCESS_SPMC:
-            case ABT_POOL_ACCESS_MPMC:
-                if (ABTD_atomic_acquire_load_int32(&p_pool->num_scheds) == 1) {
-                    pool_size +=
-                        ABTD_atomic_acquire_load_int32(&p_pool->num_blocked);
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    return pool_size;
 }
 
 void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
@@ -1042,8 +1044,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 "%*sautomatic: %s\n"
                 "%*srequest  : 0x%x\n"
                 "%*snum_pools: %zu\n"
-                "%*ssize     : %zu\n"
-                "%*stot_size : %zu\n"
+                "%*shas_unit : %s\n"
                 "%*sthread   : %p\n"
                 "%*sdata     : %p\n",
                 indent, "", (void *)p_sched,
@@ -1054,8 +1055,7 @@ void ABTI_sched_print(ABTI_sched *p_sched, FILE *p_os, int indent,
                 "", (p_sched->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent,
                 "", ABTD_atomic_acquire_load_uint32(&p_sched->request), indent,
                 "", p_sched->num_pools, indent, "",
-                ABTI_sched_get_size(p_sched), indent, "",
-                ABTI_sched_get_total_size(p_sched), indent, "",
+                (ABTI_sched_has_unit(p_sched) ? "TRUE" : "FALSE"), indent, "",
                 (void *)p_sched->p_ythread, indent, "", p_sched->data);
         if (print_sub == ABT_TRUE) {
             size_t i;

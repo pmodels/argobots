@@ -111,7 +111,8 @@ static void sched_run(ABT_sched sched)
             ABT_pool pool = pools[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
             /* Pop one work unit */
-            ABT_unit unit = ABTI_pool_pop(p_pool);
+            ABT_unit unit =
+                ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OP_POOL_OTHER);
             if (unit != ABT_UNIT_NULL) {
                 ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
                 ABTI_ythread_schedule(p_global, &p_local_xstream, p_thread);
@@ -125,13 +126,14 @@ static void sched_run(ABT_sched sched)
         if (!run_cnt_nowait) {
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pools[0]);
             ABT_unit unit;
-            if (p_pool->p_pop_wait) {
-                unit = ABTI_pool_pop_wait(p_pool, 0.1);
-            } else if (p_pool->p_pop_timedwait) {
+            if (p_pool->optional_def.p_pop_wait) {
+                unit = ABTI_pool_pop_wait(p_pool, 0.1,
+                                          ABT_POOL_CONTEXT_OP_POOL_OTHER);
+            } else if (p_pool->deprecated_def.p_pop_timedwait) {
                 unit = ABTI_pool_pop_timedwait(p_pool, ABTI_get_wtime() + 0.1);
             } else {
                 /* No "wait" pop, so let's use a normal one. */
-                unit = ABTI_pool_pop(p_pool);
+                unit = ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OP_POOL_OTHER);
             }
             if (unit != ABT_UNIT_NULL) {
                 ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
@@ -146,10 +148,8 @@ static void sched_run(ABT_sched sched)
          * be processed in a timely manner. */
         if (!run_cnt_nowait || (++work_count >= event_freq)) {
             ABTI_xstream_check_events(p_local_xstream, p_sched);
-            ABTI_local *p_local = ABTI_xstream_get_local(p_local_xstream);
-            if (ABTI_sched_has_to_stop(&p_local, p_sched) == ABT_TRUE)
+            if (ABTI_sched_has_to_stop(p_sched) == ABT_TRUE)
                 break;
-            p_local_xstream = ABTI_local_get_xstream(p_local);
             work_count = 0;
         }
     }

@@ -5,10 +5,18 @@
 
 #include "abti.h"
 
-ABTU_ret_err static int pool_create(ABTI_pool_def *def,
-                                    ABTI_pool_config *p_config,
-                                    ABT_bool def_automatic, ABT_bool is_builtin,
-                                    ABTI_pool **pp_newpool);
+ABTU_ret_err static int pool_create(
+    ABT_pool_access access, const ABTI_pool_required_def *p_required_def,
+    const ABTI_pool_optional_def *p_optional_def,
+    const ABTI_pool_deprecated_def *p_deprecated_def,
+    const ABTI_pool_old_def *p_old_def, ABTI_pool_config *p_config,
+    ABT_bool def_automatic, ABT_bool is_builtin, ABTI_pool **pp_newpool);
+static void
+pool_create_def_from_old_def(const ABT_pool_def *p_def,
+                             ABTI_pool_old_def *p_old_def,
+                             ABTI_pool_required_def *p_required_def,
+                             ABTI_pool_optional_def *p_optional_def,
+                             ABTI_pool_deprecated_def *p_deprecated_def);
 
 /** @defgroup POOL Pool
  * This group is for Pool.
@@ -22,8 +30,12 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def,
  * (\c def) and a pool configuration (\c config), and returns its handle through
  * \c newpool.
  *
- * \c def must define all the non-optional functions.  See \c #ABT_pool_def for
- * details.
+ * \c def must define all the non-optional functions.  See
+ * \c ABT_pool_user_def_create() for details.
+ *
+ * @note
+ * \c #ABT_pool_def is kept for compatibility.  The user is highly recommended
+ * to use \c ABT_pool_user_def instead.
  *
  * The caller of each pool function is undefined, so a program that relies on
  * the caller of pool functions is non-conforming.
@@ -61,11 +73,11 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def,
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_USR_POOL_INIT{\c p_init()}
+ * \DOC_ERROR_INV_POOL_USER_DEF_HANDLE{\c def}
  * \DOC_ERROR_RESOURCE
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
- * \DOC_UNDEFINED_NULL_PTR{\c def}
  * \DOC_UNDEFINED_NULL_PTR{any non-optional pool function of \c def}
  * \DOC_UNDEFINED_NULL_PTR{\c newpool}
  *
@@ -74,48 +86,53 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def,
  * @param[out] newpool  pool handle
  * @return Error code
  */
-int ABT_pool_create(ABT_pool_def *def, ABT_pool_config config,
+int ABT_pool_create(ABT_pool_user_def def, ABT_pool_config config,
                     ABT_pool *newpool)
 {
     ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_UB_ASSERT(newpool);
     ABTI_UB_ASSERT(def);
-    ABTI_UB_ASSERT(def->u_create_from_thread);
-    ABTI_UB_ASSERT(def->u_free);
-    ABTI_UB_ASSERT(def->p_get_size);
-    ABTI_UB_ASSERT(def->p_push);
-    ABTI_UB_ASSERT(def->p_pop);
-
 #ifndef ABT_CONFIG_ENABLE_VER_20_API
     /* Argobots 1.x sets newpool to NULL on error. */
     *newpool = ABT_POOL_NULL;
 #endif
+    ABT_pool_access access;
+    ABTI_pool_required_def required_def, *p_required_def;
+    ABTI_pool_optional_def optional_def, *p_optional_def;
+    ABTI_pool_deprecated_def deprecated_def, *p_deprecated_def;
+    ABTI_pool_old_def old_def, *p_old_def;
     /* Copy def */
-    ABTI_pool_def internal_def;
-
-    internal_def.access = def->access;
-    internal_def.u_is_in_pool = def->u_is_in_pool;
-    internal_def.u_create_from_thread = def->u_create_from_thread;
-    internal_def.u_free = def->u_free;
-    internal_def.p_init = def->p_init;
-    internal_def.p_get_size = def->p_get_size;
-    internal_def.p_push = def->p_push;
-    internal_def.p_pop = def->p_pop;
-#ifdef ABT_CONFIG_ENABLE_VER_20_API
-    internal_def.p_pop_wait = def->p_pop_wait;
-#else
-    internal_def.p_pop_wait = NULL;
-#endif
-    internal_def.p_pop_timedwait = def->p_pop_timedwait;
-    internal_def.p_remove = def->p_remove;
-    internal_def.p_free = def->p_free;
-    internal_def.p_print_all = def->p_print_all;
+    if (ABTI_pool_user_def_is_new(def)) {
+        /* New ABTI_pool_user_def */
+        access = ABT_POOL_ACCESS_MPMC;
+        ABTI_pool_user_def *p_def = ABTI_pool_user_def_get_ptr(def);
+        ABTI_CHECK_NULL_POOL_USER_DEF_PTR(p_def);
+        p_required_def = &p_def->required_def;
+        p_optional_def = &p_def->optional_def;
+        p_deprecated_def = NULL;
+        p_old_def = NULL;
+    } else {
+        /* Old ABT_pool_def */
+        ABTI_UB_ASSERT(def->u_create_from_thread);
+        ABTI_UB_ASSERT(def->u_free);
+        ABTI_UB_ASSERT(def->p_get_size);
+        ABTI_UB_ASSERT(def->p_push);
+        ABTI_UB_ASSERT(def->p_pop);
+        access = def->access;
+        pool_create_def_from_old_def(def, &old_def, &required_def,
+                                     &optional_def, &deprecated_def);
+        p_required_def = &required_def;
+        p_optional_def = &optional_def;
+        p_deprecated_def = &deprecated_def;
+        p_old_def = &old_def;
+    }
 
     ABTI_pool *p_newpool;
     ABTI_pool_config *p_config = ABTI_pool_config_get_ptr(config);
     const ABT_bool def_automatic = ABT_FALSE;
-    int abt_errno = pool_create(&internal_def, p_config, def_automatic,
-                                ABT_FALSE, &p_newpool);
+    int abt_errno =
+        pool_create(access, p_required_def, p_optional_def, p_deprecated_def,
+                    p_old_def, p_config, def_automatic, ABT_FALSE, &p_newpool);
     ABTI_CHECK_ERROR(abt_errno);
 
     *newpool = ABTI_pool_get_handle(p_newpool);
@@ -235,7 +252,7 @@ int ABT_pool_free(ABT_pool *pool)
     ABT_pool h_pool = *pool;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(h_pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-    ABTI_UB_ASSERT(p_pool->p_get_size(h_pool) == 0);
+    ABTI_UB_ASSERT(ABTI_pool_is_empty(p_pool));
 
     ABTI_pool_free(p_pool);
 
@@ -279,6 +296,41 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
 
 /**
  * @ingroup POOL
+ * @brief   Check if a pool is empty.
+ *
+ * \c ABT_pool_is_empty() returns whether the pool \c pool is or not through
+ * \c is_empty.  If \c pool is empty, \c ABT_TRUE is set to \c is_empty.
+ * Otherwise, \c ABT_FALSE is set to \c is_empty.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c is_empty}
+ *
+ * @param[in]  pool      pool handle
+ * @param[out] is_empty  emptiness of a pool
+ * @return Error code
+ */
+int ABT_pool_is_empty(ABT_pool pool, ABT_bool *is_empty)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(is_empty);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+
+    *is_empty = ABTI_pool_is_empty(p_pool);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup POOL
  * @brief   Get the total size of a pool.
  *
  * \c ABT_pool_get_total_size() returns the total size of the pool \c pool
@@ -305,6 +357,7 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access)
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c p_get_size()}
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -321,6 +374,7 @@ int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->optional_def.p_get_size, ABT_ERR_POOL);
 
     *size = ABTI_pool_get_total_size(p_pool);
     return ABT_SUCCESS;
@@ -351,6 +405,7 @@ int ABT_pool_get_total_size(ABT_pool pool, size_t *size)
  * @errors
  * \DOC_ERROR_SUCCESS
  * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c p_get_size()}
  *
  * @undefined
  * \DOC_UNDEFINED_UNINIT
@@ -367,6 +422,7 @@ int ABT_pool_get_size(ABT_pool pool, size_t *size)
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->optional_def.p_get_size, ABT_ERR_POOL);
 
     *size = ABTI_pool_get_size(p_pool);
     return ABT_SUCCESS;
@@ -425,7 +481,7 @@ int ABT_pool_pop(ABT_pool pool, ABT_unit *p_unit)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
 
-    *p_unit = ABTI_pool_pop(p_pool);
+    *p_unit = ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OP_POOL_OTHER);
     return ABT_SUCCESS;
 }
 
@@ -485,9 +541,10 @@ int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *p_unit, double time_secs)
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-    ABTI_CHECK_TRUE(p_pool->p_pop_wait, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_pool->optional_def.p_pop_wait, ABT_ERR_POOL);
 
-    *p_unit = ABTI_pool_pop_wait(p_pool, time_secs);
+    *p_unit =
+        ABTI_pool_pop_wait(p_pool, time_secs, ABT_POOL_CONTEXT_OP_POOL_OTHER);
     return ABT_SUCCESS;
 }
 
@@ -552,7 +609,7 @@ int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *p_unit, double abstime_secs)
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-    ABTI_CHECK_TRUE(p_pool->p_pop_timedwait, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_pool->deprecated_def.p_pop_timedwait, ABT_ERR_POOL);
 
     *p_unit = ABTI_pool_pop_timedwait(p_pool, abstime_secs);
     return ABT_SUCCESS;
@@ -613,7 +670,7 @@ int ABT_pool_push(ABT_pool pool, ABT_unit unit)
     ABTI_CHECK_ERROR(abt_errno);
     /* ABTI_unit_set_associated_pool() might change unit, so "unit" must be read
      * again from p_thread. */
-    ABTI_pool_push(p_pool, p_thread->unit);
+    ABTI_pool_push(p_pool, p_thread->unit, ABT_POOL_CONTEXT_OP_POOL_OTHER);
     return ABT_SUCCESS;
 }
 
@@ -663,7 +720,7 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit)
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-    ABTI_CHECK_TRUE(p_pool->p_remove, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_pool->deprecated_def.p_remove, ABT_ERR_POOL);
 
     /* unit must be in this pool, so we do not need to reset its associated
      * pool. */
@@ -723,9 +780,9 @@ int ABT_pool_print_all(ABT_pool pool, void *arg,
 
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     ABTI_CHECK_NULL_POOL_PTR(p_pool);
-    ABTI_CHECK_TRUE(p_pool->p_print_all, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(p_pool->optional_def.p_print_all, ABT_ERR_POOL);
 
-    p_pool->p_print_all(pool, arg, print_fn);
+    p_pool->optional_def.p_print_all(pool, arg, print_fn);
     return ABT_SUCCESS;
 }
 
@@ -920,20 +977,25 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
                                         ABTI_pool **pp_newpool)
 {
     int abt_errno;
-    ABTI_pool_def def;
-
     ABTI_CHECK_TRUE(access == ABT_POOL_ACCESS_PRIV ||
                         access == ABT_POOL_ACCESS_SPSC ||
                         access == ABT_POOL_ACCESS_MPSC ||
                         access == ABT_POOL_ACCESS_SPMC ||
                         access == ABT_POOL_ACCESS_MPMC,
                     ABT_ERR_INV_POOL_ACCESS);
+
+    ABTI_pool_required_def required_def;
+    ABTI_pool_optional_def optional_def;
+    ABTI_pool_deprecated_def deprecated_def;
     switch (kind) {
         case ABT_POOL_FIFO:
-            abt_errno = ABTI_pool_get_fifo_def(access, &def);
+            abt_errno = ABTI_pool_get_fifo_def(access, &required_def,
+                                               &optional_def, &deprecated_def);
             break;
         case ABT_POOL_FIFO_WAIT:
-            abt_errno = ABTI_pool_get_fifo_wait_def(access, &def);
+            abt_errno =
+                ABTI_pool_get_fifo_wait_def(access, &required_def,
+                                            &optional_def, &deprecated_def);
             break;
         default:
             abt_errno = ABT_ERR_INV_POOL_KIND;
@@ -941,7 +1003,9 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
     }
     ABTI_CHECK_ERROR(abt_errno);
 
-    abt_errno = pool_create(&def, NULL, automatic, ABT_TRUE, pp_newpool);
+    abt_errno =
+        pool_create(access, &required_def, &optional_def, &deprecated_def, NULL,
+                    NULL, automatic, ABT_TRUE, pp_newpool);
     ABTI_CHECK_ERROR(abt_errno);
     return ABT_SUCCESS;
 }
@@ -949,8 +1013,8 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
 void ABTI_pool_free(ABTI_pool *p_pool)
 {
     ABT_pool h_pool = ABTI_pool_get_handle(p_pool);
-    if (p_pool->p_free) {
-        p_pool->p_free(h_pool);
+    if (p_pool->optional_def.p_free) {
+        p_pool->optional_def.p_free(h_pool);
     }
     ABTU_free(p_pool);
 }
@@ -989,6 +1053,7 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
                 "%*saccess        : %s\n"
                 "%*sautomatic     : %s\n"
                 "%*snum_scheds    : %d\n"
+                "%*sis_empty      : %s\n"
                 "%*ssize          : %zu\n"
                 "%*snum_blocked   : %d\n"
                 "%*sdata          : %p\n",
@@ -996,7 +1061,10 @@ void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
                 access, indent, "",
                 (p_pool->automatic == ABT_TRUE) ? "TRUE" : "FALSE", indent, "",
                 ABTD_atomic_acquire_load_int32(&p_pool->num_scheds), indent, "",
-                ABTI_pool_get_size(p_pool), indent, "",
+                (ABTI_pool_is_empty(p_pool) ? "TRUE" : "FALSE"), indent, "",
+                (p_pool->optional_def.p_get_size ? ABTI_pool_get_size(p_pool)
+                                                 : 0),
+                indent, "",
                 ABTD_atomic_acquire_load_int32(&p_pool->num_blocked), indent,
                 "", p_pool->data);
     }
@@ -1013,11 +1081,158 @@ void ABTI_pool_reset_id(void)
 /* Internal static functions                                                 */
 /*****************************************************************************/
 
+static ABT_unit pool_create_unit_wrapper(ABT_pool pool, ABT_thread thread)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->old_def.u_create_from_thread(thread);
+}
+
+static void pool_free_unit_wrapper(ABT_pool pool, ABT_unit unit)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    p_pool->old_def.u_free(&unit);
+}
+
+static ABT_bool pool_is_empty_wrapper(ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    size_t size = p_pool->old_def.p_get_size(pool);
+    return (size == 0) ? ABT_TRUE : ABT_FALSE;
+}
+
+static ABT_unit pool_pop_wrapper(ABT_pool pool, ABT_pool_context context)
+{
+    (void)context;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->old_def.p_pop(pool);
+}
+
+static void pool_push_wrapper(ABT_pool pool, ABT_unit unit,
+                              ABT_pool_context context)
+{
+    (void)context;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    p_pool->old_def.p_push(pool, unit);
+}
+
+static int pool_init_wrapper(ABT_pool pool, ABT_pool_config config)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->old_def.p_init(pool, config);
+}
+
+static void pool_free_wrapper(ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    p_pool->old_def.p_free(pool);
+}
+
+static size_t pool_get_size_wrapper(ABT_pool pool)
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->old_def.p_get_size(pool);
+}
+
+static ABT_unit pool_pop_wait_wrapper(ABT_pool pool, double time_secs,
+                                      ABT_pool_context context)
+{
+    (void)context;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    return p_pool->old_def.p_pop_wait(pool, time_secs);
+}
+
+static void pool_pop_many_wrapper(ABT_pool pool, ABT_unit *units,
+                                  size_t max_units, size_t *num_popped,
+                                  ABT_pool_context context)
+{
+    (void)context;
+    size_t i;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    for (i = 0; i < max_units; i++) {
+        ABT_unit unit = p_pool->old_def.p_pop(pool);
+        if (unit != ABT_UNIT_NULL) {
+            units[i] = unit;
+        } else {
+            break;
+        }
+    }
+    *num_popped = i;
+}
+
+static void pool_push_many_wrapper(ABT_pool pool, const ABT_unit *units,
+                                   size_t num_units, ABT_pool_context context)
+{
+    (void)context;
+    size_t i;
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    for (i = 0; i < num_units; i++) {
+        p_pool->old_def.p_push(pool, units[i]);
+    }
+}
+
+static void pool_print_all_wrapper(ABT_pool pool, void *arg,
+                                   void (*print_f)(void *, ABT_unit))
+{
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    p_pool->old_def.p_print_all(pool, arg, print_f);
+}
+
+static void
+pool_create_def_from_old_def(const ABT_pool_def *p_def,
+                             ABTI_pool_old_def *p_old_def,
+                             ABTI_pool_required_def *p_required_def,
+                             ABTI_pool_optional_def *p_optional_def,
+                             ABTI_pool_deprecated_def *p_deprecated_def)
+{
+    /* Create p_old_def*/
+    p_old_def->u_create_from_thread = p_def->u_create_from_thread;
+    p_old_def->u_free = p_def->u_free;
+    p_old_def->p_init = p_def->p_init;
+    p_old_def->p_get_size = p_def->p_get_size;
+    p_old_def->p_push = p_def->p_push;
+    p_old_def->p_pop = p_def->p_pop;
+#ifdef ABT_CONFIG_ENABLE_VER_20_API
+    p_old_def->p_pop_wait = p_def->p_pop_wait;
+#else
+    p_old_def->p_pop_wait = NULL;
+#endif
+    p_old_def->p_free = p_def->p_free;
+    p_old_def->p_print_all = p_def->p_print_all;
+
+    /* Set up p_required_def */
+    p_required_def->p_create_unit = pool_create_unit_wrapper;
+    p_required_def->p_free_unit = pool_free_unit_wrapper;
+    p_required_def->p_is_empty = pool_is_empty_wrapper;
+    p_required_def->p_pop = pool_pop_wrapper;
+    p_required_def->p_push = pool_push_wrapper;
+
+    /* Set up p_optional_def */
+    /* Must be created from ABT_pool_def */
+    p_optional_def->p_get_size = pool_get_size_wrapper;
+    p_optional_def->p_pop_many = pool_pop_many_wrapper;
+    p_optional_def->p_push_many = pool_push_many_wrapper;
+    /* Optional */
+    p_optional_def->p_init = p_old_def->p_init ? pool_init_wrapper : NULL;
+    p_optional_def->p_free = p_old_def->p_free ? pool_free_wrapper : NULL;
+    p_optional_def->p_pop_wait =
+        p_old_def->p_pop_wait ? pool_pop_wait_wrapper : NULL;
+    p_optional_def->p_print_all =
+        p_old_def->p_print_all ? pool_print_all_wrapper : NULL;
+
+    /* Set up p_deprecated_def */
+    p_deprecated_def->u_is_in_pool = p_def->u_is_in_pool;
+    p_deprecated_def->p_pop_timedwait = p_def->p_pop_timedwait;
+    p_deprecated_def->p_remove = p_def->p_remove;
+}
+
 static inline uint64_t pool_get_new_id(void);
-ABTU_ret_err static int pool_create(ABTI_pool_def *def,
-                                    ABTI_pool_config *p_config,
-                                    ABT_bool def_automatic, ABT_bool is_builtin,
-                                    ABTI_pool **pp_newpool)
+ABTU_ret_err static int
+pool_create(ABT_pool_access access,
+            const ABTI_pool_required_def *p_required_def,
+            const ABTI_pool_optional_def *p_optional_def,
+            const ABTI_pool_deprecated_def *p_deprecated_def,
+            const ABTI_pool_old_def *p_old_def, ABTI_pool_config *p_config,
+            ABT_bool def_automatic, ABT_bool is_builtin, ABTI_pool **pp_newpool)
 {
     int abt_errno;
     ABTI_pool *p_pool;
@@ -1036,32 +1251,38 @@ ABTU_ret_err static int pool_create(ABTI_pool_def *def,
         }
     }
 
-    p_pool->access = def->access;
+    p_pool->access = access;
     p_pool->automatic = automatic;
     p_pool->is_builtin = is_builtin;
     ABTD_atomic_release_store_int32(&p_pool->num_scheds, 0);
     ABTD_atomic_release_store_int32(&p_pool->num_blocked, 0);
     p_pool->data = NULL;
-
-    /* Set up the pool functions from def */
-    p_pool->u_is_in_pool = def->u_is_in_pool;
-    p_pool->u_create_from_thread = def->u_create_from_thread;
-    p_pool->u_free = def->u_free;
-    p_pool->p_init = def->p_init;
-    p_pool->p_get_size = def->p_get_size;
-    p_pool->p_push = def->p_push;
-    p_pool->p_pop = def->p_pop;
-    p_pool->p_pop_wait = def->p_pop_wait;
-    p_pool->p_pop_timedwait = def->p_pop_timedwait;
-    p_pool->p_remove = def->p_remove;
-    p_pool->p_free = def->p_free;
-    p_pool->p_print_all = def->p_print_all;
+    memcpy(&p_pool->required_def, p_required_def,
+           sizeof(ABTI_pool_required_def));
+    if (p_optional_def) {
+        memcpy(&p_pool->optional_def, p_optional_def,
+               sizeof(ABTI_pool_optional_def));
+    } else {
+        memset(&p_pool->optional_def, 0, sizeof(ABTI_pool_optional_def));
+    }
+    if (p_deprecated_def) {
+        memcpy(&p_pool->deprecated_def, p_deprecated_def,
+               sizeof(ABTI_pool_deprecated_def));
+    } else {
+        memset(&p_pool->deprecated_def, 0, sizeof(ABTI_pool_deprecated_def));
+    }
+    if (p_old_def) {
+        memcpy(&p_pool->old_def, p_old_def, sizeof(ABTI_pool_old_def));
+    } else {
+        memset(&p_pool->old_def, 0, sizeof(ABTI_pool_old_def));
+    }
     p_pool->id = pool_get_new_id();
 
     /* Configure the pool */
-    if (p_pool->p_init) {
+    if (p_pool->optional_def.p_init) {
         ABT_pool_config config = ABTI_pool_config_get_handle(p_config);
-        abt_errno = p_pool->p_init(ABTI_pool_get_handle(p_pool), config);
+        abt_errno =
+            p_pool->optional_def.p_init(ABTI_pool_get_handle(p_pool), config);
         if (abt_errno != ABT_SUCCESS) {
             ABTU_free(p_pool);
             return abt_errno;
