@@ -11,7 +11,7 @@ struct ABTD_ythread_context {
                                              * pointer to uctx */
     ABTD_ythread_context_atomic_ptr p_link; /* pointer to scheduler context */
     ucontext_t uctx;                        /* ucontext pointed by p_ctx */
-    void *p_stack;                          /* Stack pointer. */
+    void *p_stacktop;                       /* Stack pointer (top). */
     size_t stacksize;                       /* Stack size. */
     /* Call-back functions. */
     void (*f_cb)(void *);
@@ -61,10 +61,10 @@ static void ABTD_ucontext_wrapper(int arg1, int arg2)
 }
 
 static inline void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
-                                             void *p_stack, size_t stacksize)
+                                             void *p_stacktop, size_t stacksize)
 {
     p_ctx->p_ctx = NULL;
-    p_ctx->p_stack = p_stack;
+    p_ctx->p_stacktop = p_stacktop;
     p_ctx->stacksize = stacksize;
     int ret = getcontext(&p_ctx->uctx);
     ABTI_ASSERT(ret == 0); /* getcontext() should not return an error. */
@@ -79,9 +79,10 @@ static inline void ABTD_ythread_context_reinit(ABTD_ythread_context *p_ctx)
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
 }
 
-static inline void *ABTD_ythread_context_get_stack(ABTD_ythread_context *p_ctx)
+static inline void *
+ABTD_ythread_context_get_stacktop(ABTD_ythread_context *p_ctx)
 {
-    return p_ctx->p_stack;
+    return p_ctx->p_stacktop;
 }
 
 static inline size_t
@@ -95,7 +96,8 @@ static inline void ABTDI_ythread_context_make(ABTD_ythread_context *p_ctx)
     p_ctx->p_ctx = &p_ctx->uctx;
     /* uc_link is not used. */
     p_ctx->uctx.uc_link = NULL;
-    p_ctx->uctx.uc_stack.ss_sp = p_ctx->p_stack;
+    void *p_stack = (void *)(((char *)p_ctx->p_stacktop) - p_ctx->stacksize);
+    p_ctx->uctx.uc_stack.ss_sp = p_stack;
     p_ctx->uctx.uc_stack.ss_size = p_ctx->stacksize;
 
 #if SIZEOF_VOID_P == 8

@@ -2465,9 +2465,14 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
 #endif
 
     if (p_ythread) {
-        thread_attr.p_stack = ABTD_ythread_context_get_stack(&p_ythread->ctx);
-        thread_attr.stacksize =
-            ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
+        void *p_stacktop = ABTD_ythread_context_get_stacktop(&p_ythread->ctx);
+        size_t stacksize = ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
+        if (p_stacktop) {
+            thread_attr.p_stack = (void *)(((char *)p_stacktop) - stacksize);
+        } else {
+            thread_attr.p_stack = NULL;
+        }
+        thread_attr.stacksize = stacksize;
     } else {
         thread_attr.p_stack = NULL;
         thread_attr.stacksize = 0;
@@ -2776,11 +2781,11 @@ void ABTI_thread_print(ABTI_thread *p_thread, FILE *p_os, int indent)
         if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
             ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
             fprintf(p_os,
-                    "%*sstack      : %p\n"
+                    "%*sstacktop   : %p\n"
                     "%*sstacksize  : %zu\n",
-                    indent, "", ABTD_ythread_context_get_stack(&p_ythread->ctx),
                     indent, "",
-                    ABTD_ythread_context_get_stacksize(&p_ythread->ctx));
+                    ABTD_ythread_context_get_stacktop(&p_ythread->ctx), indent,
+                    "", ABTD_ythread_context_get_stacksize(&p_ythread->ctx));
         }
     }
     fflush(p_os);
@@ -2863,10 +2868,12 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
             ABTI_CHECK_ERROR(abt_errno);
         } else {
             /* 4. A thread that uses a user-allocated stack. */
-            abt_errno = ABTI_mem_alloc_ythread_mempool_desc(p_global, p_local,
-                                                            p_attr->stacksize,
-                                                            p_attr->p_stack,
-                                                            &p_newthread);
+            void *p_stacktop =
+                (void *)((char *)(p_attr->p_stack) + p_attr->stacksize);
+            abt_errno =
+                ABTI_mem_alloc_ythread_mempool_desc(p_global, p_local,
+                                                    p_attr->stacksize,
+                                                    p_stacktop, &p_newthread);
             ABTI_CHECK_ERROR(abt_errno);
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION

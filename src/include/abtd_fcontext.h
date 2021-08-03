@@ -78,10 +78,9 @@ static void ABTD_ythread_context_func_wrapper(fcontext_t *p_fctx)
 }
 
 static inline void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
-                                             void *p_stack, size_t stacksize)
+                                             void *p_stacktop, size_t stacksize)
 {
     ABTDI_fcontext_init(&p_ctx->ctx);
-    void *p_stacktop = (void *)(((char *)p_stack) + stacksize);
     p_ctx->p_stacktop = p_stacktop;
     p_ctx->stacksize = stacksize;
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
@@ -93,10 +92,10 @@ static inline void ABTD_ythread_context_reinit(ABTD_ythread_context *p_ctx)
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
 }
 
-static inline void *ABTD_ythread_context_get_stack(ABTD_ythread_context *p_ctx)
+static inline void *
+ABTD_ythread_context_get_stacktop(ABTD_ythread_context *p_ctx)
 {
-    void *p_stack = (void *)(((char *)p_ctx->p_stacktop) - p_ctx->stacksize);
-    return p_stack;
+    return p_ctx->p_stacktop;
 }
 
 static inline size_t
