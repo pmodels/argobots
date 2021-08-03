@@ -121,13 +121,14 @@ static inline int ABTI_thread_handle_request(ABTI_thread *p_thread,
 }
 
 static inline void ABTI_thread_terminate(ABTI_global *p_global,
-                                         ABTI_local *p_local,
+                                         ABTI_xstream *p_local_xstream,
                                          ABTI_thread *p_thread)
 {
     if (!(p_thread->type & ABTI_THREAD_TYPE_NAMED)) {
         ABTD_atomic_release_store_int(&p_thread->state,
                                       ABT_THREAD_STATE_TERMINATED);
-        ABTI_thread_free(p_global, p_local, p_thread);
+        ABTI_thread_free(p_global, ABTI_xstream_get_local(p_local_xstream),
+                         p_thread);
     } else {
         /* NOTE: We set the ULT's state as TERMINATED after checking refcount
          * because the ULT can be freed on a different ES.  In other words, we

@@ -141,8 +141,7 @@ void ABTI_ythread_callback_exit(void *arg)
     /* Terminate this thread. */
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
     ABTI_thread_terminate(ABTI_global_get_global(),
-                          ABTI_xstream_get_local(p_prev->thread.p_last_xstream),
-                          &p_prev->thread);
+                          p_prev->thread.p_last_xstream, &p_prev->thread);
 }
 
 void ABTI_ythread_callback_resume_exit_to(void *arg)
@@ -155,8 +154,7 @@ void ABTI_ythread_callback_resume_exit_to(void *arg)
     ABTI_ythread *p_next = p_arg->p_next;
     /* Terminate this thread. */
     ABTI_thread_terminate(ABTI_global_get_global(),
-                          ABTI_xstream_get_local(p_prev->thread.p_last_xstream),
-                          &p_prev->thread);
+                          p_prev->thread.p_last_xstream, &p_prev->thread);
     /* Decrease the number of blocked threads. */
     ABTI_pool_dec_num_blocked(p_next->thread.p_pool);
 }
