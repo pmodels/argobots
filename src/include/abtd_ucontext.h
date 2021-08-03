@@ -117,7 +117,7 @@ static inline void ABTDI_ythread_context_make(ABTD_ythread_context *p_ctx)
 static inline ABT_bool
 ABTD_ythread_context_is_started(const ABTD_ythread_context *p_ctx)
 {
-    return p_new->p_ctx ? ABT_TRUE : ABT_FALSE;
+    return p_ctx->p_ctx ? ABT_TRUE : ABT_FALSE;
 }
 
 static inline void ABTD_ythread_context_switch(ABTD_ythread_context *p_old,
