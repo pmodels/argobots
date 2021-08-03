@@ -582,7 +582,7 @@ ABTU_ret_err static int task_create(ABTI_global *p_global, ABTI_local *p_local,
     ABTI_CHECK_ERROR(abt_errno);
     abt_errno = ABTI_thread_init_pool(p_global, p_newtask, p_pool);
     if (ABTI_IS_ERROR_CHECK_ENABLED && abt_errno != ABT_SUCCESS) {
-        ABTI_mem_free_nythread(p_global, p_local, p_newtask);
+        ABTI_mem_free_thread(p_global, p_local, p_newtask);
         ABTI_HANDLE_ERROR(abt_errno);
     }
 

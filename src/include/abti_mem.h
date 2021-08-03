@@ -150,30 +150,31 @@ ABTU_ret_err static inline int ABTI_mem_alloc_nythread(ABTI_local *p_local,
     return ABT_SUCCESS;
 }
 
-static inline void ABTI_mem_free_nythread(ABTI_global *p_global,
-                                          ABTI_local *p_local,
-                                          ABTI_thread *p_thread)
+static inline void ABTI_mem_free_nythread_mempool_impl(ABTI_global *p_global,
+                                                       ABTI_local *p_local,
+                                                       ABTI_thread *p_thread)
 {
-    /* Return stack. */
+    /* Return a descriptor. */
 #ifdef ABT_CONFIG_USE_MEM_POOL
-    if (p_thread->type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
-        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+#ifdef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* Came from a memory pool. */
+    ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_thread);
+#else
+    if (p_local_xstream) {
         /* Came from a memory pool. */
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (p_local_xstream == NULL) {
-            /* Return a stack to the global pool. */
-            ABTD_spinlock_acquire(&p_global->mem_pool_desc_lock);
-            ABTI_mem_pool_free(&p_global->mem_pool_desc_ext, p_thread);
-            ABTD_spinlock_release(&p_global->mem_pool_desc_lock);
-            return;
-        }
-#endif
         ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_thread);
-        return;
+    } else {
+        /* Return a stack to the global pool. */
+        ABTD_spinlock_acquire(&p_global->mem_pool_desc_lock);
+        ABTI_mem_pool_free(&p_global->mem_pool_desc_ext, p_thread);
+        ABTD_spinlock_release(&p_global->mem_pool_desc_lock);
     }
 #endif
-    /* p_thread was allocated by malloc() */
-    ABTU_free(p_thread);
+#else /* !ABT_CONFIG_USE_MEM_POOL */
+    /* If a memory pool is disabled, this function should not be called. */
+    ABTI_ASSERT(0);
+#endif
 }
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
@@ -330,7 +331,7 @@ static inline void ABTI_mem_free_thread(ABTI_global *p_global,
                                       ABTD_ythread_context_get_stack(
                                           &p_ythread->ctx),
                                       ABT_TRUE);
-        ABTI_mem_free_nythread(p_global, p_local, p_thread);
+        ABTI_mem_free_nythread_mempool_impl(p_global, p_local, p_thread);
     } else if (p_thread->type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
         ABTI_mem_unregister_stack(p_global,
