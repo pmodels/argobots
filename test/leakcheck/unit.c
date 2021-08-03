@@ -293,10 +293,13 @@ int main()
 
     int use_predef;
     for (use_predef = 0; use_predef <= 5; use_predef++) {
-        do {
-            rtrace_start();
-            program(use_predef, 0);
-        } while (!rtrace_stop());
+
+        if (use_rtrace()) {
+            do {
+                rtrace_start();
+                program(use_predef, 0);
+            } while (!rtrace_stop());
+        }
         /* If no failure, it should succeed again. */
         program(use_predef, 1);
     }

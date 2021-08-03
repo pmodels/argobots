@@ -386,10 +386,13 @@ int main()
     for (i = 0; i < (int)(sizeof(predefs) / sizeof(predefs[0])); i++) {
         for (automatic = 0; automatic <= 1; automatic++) {
             for (type = 0; type < 7; type++) {
-                do {
-                    rtrace_start();
-                    program(predefs[i], automatic, type, 0);
-                } while (!rtrace_stop());
+
+                if (use_rtrace()) {
+                    do {
+                        rtrace_start();
+                        program(predefs[i], automatic, type, 0);
+                    } while (!rtrace_stop());
+                }
 
                 /* If no failure, it should succeed again. */
                 program(predefs[i], automatic, type, 1);
@@ -404,10 +407,13 @@ int main()
          i++) {
         for (automatic = 0; automatic <= 1; automatic++) {
             for (type = 0; type < 2; type++) { /* Only check 0 and 1. */
-                do {
-                    rtrace_start();
-                    program(extra_predefs[i], automatic, type, 0);
-                } while (!rtrace_stop());
+
+                if (use_rtrace()) {
+                    do {
+                        rtrace_start();
+                        program(extra_predefs[i], automatic, type, 0);
+                    } while (!rtrace_stop());
+                }
 
                 /* If no failure, it should succeed again. */
                 program(extra_predefs[i], automatic, type, 1);

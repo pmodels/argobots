@@ -77,10 +77,12 @@ int main()
     setup_env();
     rtrace_init();
 
-    do {
-        rtrace_start();
-        program(0);
-    } while (!rtrace_stop());
+    if (use_rtrace()) {
+        do {
+            rtrace_start();
+            program(0);
+        } while (!rtrace_stop());
+    }
 
     /* If no failure, it should succeed again. */
     program(1);

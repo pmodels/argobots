@@ -176,10 +176,12 @@ int main()
 
     int type;
     for (type = 0; type < 2; type++) {
-        do {
-            rtrace_start();
-            program(type, 0);
-        } while (!rtrace_stop());
+        if (use_rtrace()) {
+            do {
+                rtrace_start();
+                program(type, 0);
+            } while (!rtrace_stop());
+        }
 
         /* If no failure, it should succeed again. */
         program(type, 1);

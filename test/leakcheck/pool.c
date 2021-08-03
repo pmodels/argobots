@@ -378,10 +378,12 @@ int main()
     for (i = 0; i < (int)(sizeof(kinds) / sizeof(kinds[0])); i++) {
         for (automatic = 0; automatic <= 1; automatic++) {
             for (type = 0; type < 4; type++) {
-                do {
-                    rtrace_start();
-                    program(kinds[i], automatic, type, 0);
-                } while (!rtrace_stop());
+                if (use_rtrace()) {
+                    do {
+                        rtrace_start();
+                        program(kinds[i], automatic, type, 0);
+                    } while (!rtrace_stop());
+                }
 
                 /* If no failure, it should succeed again. */
                 program(kinds[i], automatic, type, 1);
@@ -393,10 +395,12 @@ int main()
     for (i = 0; i < (int)(sizeof(extra_kinds) / sizeof(extra_kinds[0])); i++) {
         for (automatic = 0; automatic <= 1; automatic++) {
             for (type = 0; type < 1; type++) {
-                do {
-                    rtrace_start();
-                    program(extra_kinds[i], automatic, type, 0);
-                } while (!rtrace_stop());
+                if (use_rtrace()) {
+                    do {
+                        rtrace_start();
+                        program(extra_kinds[i], automatic, type, 0);
+                    } while (!rtrace_stop());
+                }
 
                 /* If no failure, it should succeed again. */
                 program(extra_kinds[i], automatic, type, 1);
