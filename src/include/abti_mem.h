@@ -125,47 +125,29 @@ static inline void ABTI_mem_unregister_stack(const ABTI_global *p_global,
     ABTI_VALGRIND_UNREGISTER_STACK(p_stack);
 }
 
-ABTU_ret_err static inline int
-ABTI_mem_alloc_nythread_malloc(ABTI_thread **pp_thread)
-{
-    ABTI_thread *p_thread;
-    int abt_errno =
-        ABTU_malloc(ABTI_MEM_POOL_DESC_ELEM_SIZE, (void **)&p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
-    p_thread->type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
-    *pp_thread = p_thread;
-    return ABT_SUCCESS;
-}
-
-#ifdef ABT_CONFIG_USE_MEM_POOL
-ABTU_ret_err static inline int
-ABTI_mem_alloc_nythread_mempool(ABTI_local *p_local, ABTI_thread **pp_thread)
-{
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        /* For external threads */
-        return ABTI_mem_alloc_nythread_malloc(pp_thread);
-    }
-    /* Find the page that has an empty block */
-    ABTI_STATIC_ASSERT(sizeof(ABTI_thread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE);
-    ABTI_thread *p_thread;
-    int abt_errno = ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc,
-                                        (void **)&p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
-    p_thread->type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
-    *pp_thread = p_thread;
-    return ABT_SUCCESS;
-}
-#endif
-
 ABTU_ret_err static inline int ABTI_mem_alloc_nythread(ABTI_local *p_local,
                                                        ABTI_thread **pp_thread)
 {
+    ABTI_STATIC_ASSERT(sizeof(ABTI_thread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE);
+    ABTI_thread *p_thread;
 #ifdef ABT_CONFIG_USE_MEM_POOL
-    return ABTI_mem_alloc_nythread_mempool(p_local, pp_thread);
-#else
-    return ABTI_mem_alloc_nythread_malloc(pp_thread);
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+    if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
+        /* It's not called on an external thread.  Use a memory pool. */
+        int abt_errno = ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc,
+                                            (void **)&p_thread);
+        ABTI_CHECK_ERROR(abt_errno);
+        p_thread->type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
+    } else
 #endif
+    {
+        int abt_errno =
+            ABTU_malloc(ABTI_MEM_POOL_DESC_ELEM_SIZE, (void **)&p_thread);
+        ABTI_CHECK_ERROR(abt_errno);
+        p_thread->type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
+    }
+    *pp_thread = p_thread;
+    return ABT_SUCCESS;
 }
 
 static inline void ABTI_mem_free_nythread(ABTI_global *p_global,
