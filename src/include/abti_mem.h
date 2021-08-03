@@ -12,7 +12,7 @@
  * used to determine whether the descriptor is allocated externally (i.e.,
  * malloc()) or taken from a memory pool. */
 #define ABTI_MEM_POOL_DESC_ELEM_SIZE                                           \
-    ABTU_roundup_size(sizeof(ABTI_thread), ABT_CONFIG_STATIC_CACHELINE_SIZE)
+    ABTU_roundup_size(sizeof(ABTI_ythread), ABT_CONFIG_STATIC_CACHELINE_SIZE)
 
 enum {
     ABTI_MEM_LP_MALLOC = 0,
@@ -147,6 +147,7 @@ ABTI_mem_alloc_nythread_mempool(ABTI_local *p_local, ABTI_thread **pp_thread)
         return ABTI_mem_alloc_nythread_malloc(pp_thread);
     }
     /* Find the page that has an empty block */
+    ABTI_STATIC_ASSERT(sizeof(ABTI_thread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE);
     ABTI_thread *p_thread;
     int abt_errno = ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc,
                                         (void **)&p_thread);
@@ -298,18 +299,13 @@ ABTI_mem_alloc_ythread_mempool_desc(ABTI_global *p_global, ABTI_local *p_local,
                                     ABTI_ythread **pp_ythread)
 {
     ABTI_ythread *p_ythread;
-    if (sizeof(ABTI_ythread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE) {
-        /* Use a descriptor pool for ABT_thread. */
-        ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
-        int abt_errno =
-            ABTI_mem_alloc_nythread(p_local, (ABTI_thread **)&p_ythread);
-        ABTI_CHECK_ERROR(abt_errno);
-    } else {
-        /* Do not allocate stack, but Valgrind registration is preferred. */
-        int abt_errno = ABTU_malloc(sizeof(ABTI_ythread), (void **)&p_ythread);
-        ABTI_CHECK_ERROR(abt_errno);
-        p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
-    }
+
+    /* Use a descriptor pool for ABT_ythread. */
+    ABTI_STATIC_ASSERT(sizeof(ABTI_ythread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE);
+    ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
+    int abt_errno =
+        ABTI_mem_alloc_nythread(p_local, (ABTI_thread **)&p_ythread);
+    ABTI_CHECK_ERROR(abt_errno);
     /* Initialize the context. */
     ABTD_ythread_context_init(&p_ythread->ctx, p_stack, stacksize);
     ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_TRUE);
