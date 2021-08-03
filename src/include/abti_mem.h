@@ -265,10 +265,10 @@ ABTI_mem_alloc_ythread_default(ABTI_global *p_global, ABTI_local *p_local,
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
 ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack(
-    ABTI_global *p_global, ABTI_local *p_local, ABTI_thread_attr *p_attr,
-    ABTI_ythread **pp_ythread)
+    ABTI_global *p_global, ABTI_local *p_local, size_t stacksize,
+    ABTI_thread_attr *p_attr, ABTI_ythread **pp_ythread)
 {
-    size_t stacksize = p_global->thread_stacksize;
+    ABTI_UB_ASSERT(stacksize == p_global->thread_stacksize);
     ABTI_ythread *p_ythread;
     void *p_stack;
     /* If an external thread allocates a stack, we use ABTU_malloc. */

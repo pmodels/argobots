@@ -41,12 +41,10 @@ ABTI_thread_attr_get_handle(ABTI_thread_attr *p_attr)
 
 static inline void ABTI_thread_attr_init(ABTI_thread_attr *p_attr,
                                          void *p_stack, size_t stacksize,
-                                         ABTI_thread_type thread_type,
                                          ABT_bool migratable)
 {
     p_attr->p_stack = p_stack;
     p_attr->stacksize = stacksize;
-    p_attr->thread_type = thread_type;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     p_attr->migratable = migratable;
     p_attr->f_cb = NULL;

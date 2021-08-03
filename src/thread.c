@@ -361,9 +361,7 @@ int ABT_thread_create_many(int num_threads, ABT_pool *pool_list,
     if (attr != ABT_THREAD_ATTR_NULL) {
         /* This implies that the stack is given by a user.  Since threads
          * cannot use the same stack region, this is illegal. */
-        ABTI_CHECK_TRUE(!(ABTI_thread_attr_get_ptr(attr)->thread_type &
-                          (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC |
-                           ABTI_THREAD_TYPE_MEM_MALLOC_DESC)),
+        ABTI_CHECK_TRUE(ABTI_thread_attr_get_ptr(attr)->p_stack == NULL,
                         ABT_ERR_INV_THREAD_ATTR);
     }
 
@@ -2474,7 +2472,6 @@ int ABT_thread_get_attr(ABT_thread thread, ABT_thread_attr *attr)
         thread_attr.p_stack = NULL;
         thread_attr.stacksize = 0;
     }
-    thread_attr.thread_type = p_thread->type;
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     thread_attr.migratable =
         (p_thread->type & ABTI_THREAD_TYPE_MIGRATABLE) ? ABT_TRUE : ABT_FALSE;
@@ -2526,8 +2523,7 @@ ABTU_ret_err int ABTI_ythread_create_primary(ABTI_global *p_global,
 
     /* Allocate a ULT object */
 
-    ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
-                          ABT_FALSE);
+    ABTI_thread_attr_init(&attr, NULL, 0, ABT_FALSE);
 
     /* Although this primary ULT is running now, we add this primary ULT to the
      * pool so that the scheduler can schedule the primary ULT when the primary
@@ -2550,12 +2546,10 @@ ABTU_ret_err int ABTI_ythread_create_root(ABTI_global *p_global,
     if (p_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         /* Create a thread with its stack */
         ABTI_thread_attr_init(&attr, NULL, p_global->sched_stacksize,
-                              ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK,
                               ABT_FALSE);
     } else {
         /* For secondary ESs, the stack of an OS thread is used. */
-        ABTI_thread_attr_init(&attr, NULL, 0, ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC,
-                              ABT_FALSE);
+        ABTI_thread_attr_init(&attr, NULL, 0, ABT_FALSE);
     }
     ABTI_ythread *p_root_ythread;
     int abt_errno =
@@ -2575,8 +2569,7 @@ ABTU_ret_err int ABTI_ythread_create_main_sched(ABTI_global *p_global,
     ABTI_thread_attr attr;
 
     /* Allocate a ULT object and its stack */
-    ABTI_thread_attr_init(&attr, NULL, p_global->sched_stacksize,
-                          ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK, ABT_FALSE);
+    ABTI_thread_attr_init(&attr, NULL, p_global->sched_stacksize, ABT_FALSE);
     int abt_errno =
         ythread_create(p_global, p_local, p_xstream->p_root_pool,
                        thread_main_sched_func, NULL, &attr,
@@ -2596,8 +2589,7 @@ ABTU_ret_err int ABTI_ythread_create_sched(ABTI_global *p_global,
     ABTI_thread_attr attr;
 
     /* Allocate a ULT object and its stack */
-    ABTI_thread_attr_init(&attr, NULL, p_global->sched_stacksize,
-                          ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK, ABT_FALSE);
+    ABTI_thread_attr_init(&attr, NULL, p_global->sched_stacksize, ABT_FALSE);
     int abt_errno = ythread_create(p_global, p_local, p_pool,
                                    (void (*)(void *))p_sched->run,
                                    (void *)ABTI_sched_get_handle(p_sched),
@@ -2834,28 +2826,47 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
         thread_type |= ABTI_THREAD_TYPE_MIGRATABLE;
 #endif
     } else {
-        ABTI_thread_type attr_type = p_attr->thread_type;
-        if (attr_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK) {
+        /*
+         * There are four memory management types for ULTs.
+         * 1. A thread that uses a stack of a default size.
+         *  -> size == p_global->thread_stacksize, p_stack == NULL
+         * 2. A thread that uses a stack of a non-default size.
+         *  -> size != 0, size != p_global->thread_stacksize, p_stack == NULL
+         * 3. A thread that uses OS-level thread's stack (e.g., a primary ULT).
+         *  -> size == 0, p_stack = NULL
+         * 4. A thread that uses a user-allocated stack.
+         *  -> p_stack != NULL
+         * Only 1. is important for the performance.
+         */
+        if (ABTU_likely(p_attr->p_stack == NULL)) {
+            const size_t default_stacksize = p_global->thread_stacksize;
+            const size_t stacksize = p_attr->stacksize;
+            if (ABTU_likely(stacksize == default_stacksize)) {
+                /* 1. A thread that uses a stack of a default size. */
 #ifdef ABT_CONFIG_USE_MEM_POOL
-            abt_errno =
-                ABTI_mem_alloc_ythread_mempool_desc_stack(p_global, p_local,
-                                                          p_attr, &p_newthread);
-            ABTI_CHECK_ERROR(abt_errno);
+                abt_errno =
+                    ABTI_mem_alloc_ythread_mempool_desc_stack(p_global, p_local,
+                                                              stacksize, p_attr,
+                                                              &p_newthread);
 #else
-            abt_errno =
-                ABTI_mem_alloc_ythread_malloc_desc_stack(p_global, p_attr,
-                                                         &p_newthread);
+                abt_errno =
+                    ABTI_mem_alloc_ythread_malloc_desc_stack(p_global, p_attr,
+                                                             &p_newthread);
 #endif
-            ABTI_CHECK_ERROR(abt_errno);
-        } else if (attr_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
-            abt_errno =
-                ABTI_mem_alloc_ythread_malloc_desc_stack(p_global, p_attr,
-                                                         &p_newthread);
+            } else if (stacksize != 0) {
+                /* 2. A thread that uses a stack of a non-default size. */
+                abt_errno =
+                    ABTI_mem_alloc_ythread_malloc_desc_stack(p_global, p_attr,
+                                                             &p_newthread);
+            } else {
+                /* 3. A thread that uses OS-level thread's stack */
+                abt_errno =
+                    ABTI_mem_alloc_ythread_mempool_desc(p_global, p_local,
+                                                        p_attr, &p_newthread);
+            }
             ABTI_CHECK_ERROR(abt_errno);
         } else {
-            ABTI_ASSERT(attr_type & (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC |
-                                     ABTI_THREAD_TYPE_MEM_MALLOC_DESC));
-            /* Let's try to use mempool first since it performs better. */
+            /* 4. A thread that uses a user-allocated stack. */
             abt_errno =
                 ABTI_mem_alloc_ythread_mempool_desc(p_global, p_local, p_attr,
                                                     &p_newthread);

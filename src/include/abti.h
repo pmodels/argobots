@@ -416,9 +416,8 @@ struct ABTI_thread {
 };
 
 struct ABTI_thread_attr {
-    void *p_stack;                /* Stack address */
-    size_t stacksize;             /* Stack size (in bytes) */
-    ABTI_thread_type thread_type; /* Thread type */
+    void *p_stack;    /* Stack address */
+    size_t stacksize; /* Stack size (in bytes) */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABT_bool migratable;              /* Migratability */
     void (*f_cb)(ABT_thread, void *); /* Callback function */
