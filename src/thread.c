@@ -2843,17 +2843,10 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
             const size_t stacksize = p_attr->stacksize;
             if (ABTU_likely(stacksize == default_stacksize)) {
                 /* 1. A thread that uses a stack of a default size. */
-#ifdef ABT_CONFIG_USE_MEM_POOL
                 abt_errno =
                     ABTI_mem_alloc_ythread_mempool_desc_stack(p_global, p_local,
                                                               stacksize,
                                                               &p_newthread);
-#else
-                abt_errno =
-                    ABTI_mem_alloc_ythread_malloc_desc_stack(p_global,
-                                                             stacksize,
-                                                             &p_newthread);
-#endif
             } else if (stacksize != 0) {
                 /* 2. A thread that uses a stack of a non-default size. */
                 abt_errno =
