@@ -215,10 +215,13 @@ int main()
     for (pool_op = 0; pool_op <= 2; pool_op++) {
         for (named = 0; named <= 1; named++) {
             for (type = 0; type < 3; type++) {
-                do {
-                    rtrace_start();
-                    program(pool_op, named, type, 0);
-                } while (!rtrace_stop());
+
+                if (use_rtrace()) {
+                    do {
+                        rtrace_start();
+                        program(pool_op, named, type, 0);
+                    } while (!rtrace_stop());
+                }
 
                 /* If no failure, it should succeed again. */
                 program(pool_op, named, type, 1);

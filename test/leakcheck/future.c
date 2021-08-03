@@ -136,13 +136,17 @@ int main()
 {
     setup_env();
     rtrace_init();
-    do {
-        rtrace_start();
-        program(0);
-    } while (!rtrace_stop());
-    rtrace_finalize();
+
+    if (use_rtrace()) {
+        do {
+            rtrace_start();
+            program(0);
+        } while (!rtrace_stop());
+    }
 
     /* If no failure, it should succeed again. */
     program(1);
+
+    rtrace_finalize();
     return 0;
 }

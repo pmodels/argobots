@@ -631,6 +631,8 @@ enum ABT_info_query_kind {
     ABT_INFO_QUERY_KIND_ENABLED_STACK_OVERFLOW_CHECK,
     /** Wait policy */
     ABT_INFO_QUERY_KIND_WAIT_POLICY,
+    /** Whether a ULT stack is lazily allocated by default or not */
+    ABT_INFO_QUERY_KIND_ENABLED_LAZY_STACK_ALLOC,
 };
 
 /**

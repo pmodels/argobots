@@ -1609,8 +1609,8 @@ void ABTI_xstream_start_primary(ABTI_global *p_global,
 
     /* Context switch to the root thread. */
     p_xstream->p_root_ythread->thread.p_last_xstream = p_xstream;
-    ABTD_ythread_context_switch(&p_ythread->ctx,
-                                &p_xstream->p_root_ythread->ctx);
+    ABTI_ythread_context_switch(*pp_local_xstream, p_ythread,
+                                p_xstream->p_root_ythread);
     /* Come back to the primary thread.  Now this thread is executed on top of
      * the main scheduler, which is running on the root thread. */
     (*pp_local_xstream)->p_thread = &p_ythread->thread;
@@ -1731,7 +1731,11 @@ static void *xstream_launch_root_ythread(void *p_xstream)
     ABTI_ythread *p_root_ythread = p_local_xstream->p_root_ythread;
     p_local_xstream->p_thread = &p_local_xstream->p_root_ythread->thread;
     p_root_ythread->thread.p_last_xstream = p_local_xstream;
+
+    /* Run the root thread. */
     p_root_ythread->thread.f_thread(p_root_ythread->thread.p_arg);
+    ABTI_thread_terminate(ABTI_global_get_global(), p_local_xstream,
+                          &p_root_ythread->thread);
 
     /* Reset the current ES and its local info. */
     ABTI_local_set_xstream(NULL);

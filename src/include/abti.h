@@ -88,15 +88,36 @@ enum ABTI_stack_guard {
 #define ABTI_THREAD_TYPE_NAMED ((ABTI_thread_type)(0x1 << 5))
 #define ABTI_THREAD_TYPE_MIGRATABLE ((ABTI_thread_type)(0x1 << 6))
 
+/* Memory management.  Only one flag must be set. */
+/* Only a thread descriptor is allocated.  It is from a memory pool.
+ * This thread does not have a ULT stack allocated by the Argobots runtime. */
 #define ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC ((ABTI_thread_type)(0x1 << 7))
+/* Only a thread descriptor is allocated.  It is allocated by malloc().
+ * This thread does not have a ULT stack allocated by the Argobots runtime. */
 #define ABTI_THREAD_TYPE_MEM_MALLOC_DESC ((ABTI_thread_type)(0x1 << 8))
+/* Both a thread descriptor and a ULT stack are allocated together from a memory
+ * pool. */
 #define ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK ((ABTI_thread_type)(0x1 << 9))
+/* Both a thread descriptor and a ULT stack are allocated together by malloc().
+ */
 #define ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK ((ABTI_thread_type)(0x1 << 10))
+/* Both a thread descriptor and a ULT stack are allocated separately.  A memory
+ * pool is used for a descriptor.   A ULT stack is lazily allocated from a
+ * memory pool (so p_stack can be NULL). */
+#define ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_MEMPOOL_LAZY_STACK                   \
+    ((ABTI_thread_type)(0x1 << 11))
+/* Both a thread descriptor and a ULT stack are allocated separately.  A memory
+ * pool is used for a descriptor.   A ULT stack is lazily allocated from a
+ * memory pool (so p_stack can be NULL). */
+#define ABTI_THREAD_TYPE_MEM_MALLOC_DESC_MEMPOOL_LAZY_STACK                    \
+    ((ABTI_thread_type)(0x1 << 12))
 
 #define ABTI_THREAD_TYPES_MEM                                                  \
     (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC | ABTI_THREAD_TYPE_MEM_MALLOC_DESC |    \
      ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK |                                 \
-     ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK)
+     ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK |                                  \
+     ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_MEMPOOL_LAZY_STACK |                    \
+     ABTI_THREAD_TYPE_MEM_MALLOC_DESC_MEMPOOL_LAZY_STACK)
 
 /* ABTI_MUTEX_ATTR_NONE must be 0. See ABT_MUTEX_INITIALIZER. */
 #define ABTI_MUTEX_ATTR_NONE 0
@@ -416,9 +437,8 @@ struct ABTI_thread {
 };
 
 struct ABTI_thread_attr {
-    void *p_stack;                /* Stack address */
-    size_t stacksize;             /* Stack size (in bytes) */
-    ABTI_thread_type thread_type; /* Thread type */
+    void *p_stack;    /* Stack address */
+    size_t stacksize; /* Stack size (in bytes) */
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
     ABT_bool migratable;              /* Migratability */
     void (*f_cb)(ABT_thread, void *); /* Callback function */

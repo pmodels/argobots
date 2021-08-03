@@ -12,7 +12,7 @@
  * used to determine whether the descriptor is allocated externally (i.e.,
  * malloc()) or taken from a memory pool. */
 #define ABTI_MEM_POOL_DESC_ELEM_SIZE                                           \
-    ABTU_roundup_size(sizeof(ABTI_thread), ABT_CONFIG_STATIC_CACHELINE_SIZE)
+    ABTU_roundup_size(sizeof(ABTI_ythread), ABT_CONFIG_STATIC_CACHELINE_SIZE)
 
 enum {
     ABTI_MEM_LP_MALLOC = 0,
@@ -53,10 +53,12 @@ static inline void ABTI_mem_check_stack_canary(void *p_stack)
 }
 #endif
 
+/* p_stack can be NULL. */
 static inline void ABTI_mem_register_stack(const ABTI_global *p_global,
-                                           void *p_stack, size_t stacksize,
+                                           void *p_stacktop, size_t stacksize,
                                            ABT_bool mprotect_if_needed)
 {
+    void *p_stack = (void *)(((char *)p_stacktop) - stacksize);
     if (mprotect_if_needed) {
         if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
             p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
@@ -90,9 +92,10 @@ static inline void ABTI_mem_register_stack(const ABTI_global *p_global,
 }
 
 static inline void ABTI_mem_unregister_stack(const ABTI_global *p_global,
-                                             void *p_stack,
+                                             void *p_stacktop, size_t stacksize,
                                              ABT_bool mprotect_if_needed)
 {
+    void *p_stack = (void *)(((char *)p_stacktop) - stacksize);
     if (mprotect_if_needed) {
         if (p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT ||
             p_global->stack_guard_kind == ABTI_STACK_GUARD_MPROTECT_STRICT) {
@@ -124,78 +127,119 @@ static inline void ABTI_mem_unregister_stack(const ABTI_global *p_global,
     ABTI_VALGRIND_UNREGISTER_STACK(p_stack);
 }
 
-ABTU_ret_err static inline int
-ABTI_mem_alloc_nythread_malloc(ABTI_thread **pp_thread)
-{
-    ABTI_thread *p_thread;
-    int abt_errno =
-        ABTU_malloc(ABTI_MEM_POOL_DESC_ELEM_SIZE, (void **)&p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
-    p_thread->type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
-    *pp_thread = p_thread;
-    return ABT_SUCCESS;
-}
-
-#ifdef ABT_CONFIG_USE_MEM_POOL
-ABTU_ret_err static inline int
-ABTI_mem_alloc_nythread_mempool(ABTI_local *p_local, ABTI_thread **pp_thread)
-{
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        /* For external threads */
-        return ABTI_mem_alloc_nythread_malloc(pp_thread);
-    }
-    /* Find the page that has an empty block */
-    ABTI_thread *p_thread;
-    int abt_errno = ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc,
-                                        (void **)&p_thread);
-    ABTI_CHECK_ERROR(abt_errno);
-    p_thread->type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
-    *pp_thread = p_thread;
-    return ABT_SUCCESS;
-}
-#endif
-
 ABTU_ret_err static inline int ABTI_mem_alloc_nythread(ABTI_local *p_local,
                                                        ABTI_thread **pp_thread)
 {
+    ABTI_STATIC_ASSERT(sizeof(ABTI_thread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE);
+    ABTI_thread *p_thread;
 #ifdef ABT_CONFIG_USE_MEM_POOL
-    return ABTI_mem_alloc_nythread_mempool(p_local, pp_thread);
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+    if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
+        /* It's not called on an external thread.  Use a memory pool. */
+        int abt_errno = ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc,
+                                            (void **)&p_thread);
+        ABTI_CHECK_ERROR(abt_errno);
+        p_thread->type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
+    } else
+#endif
+    {
+        int abt_errno =
+            ABTU_malloc(ABTI_MEM_POOL_DESC_ELEM_SIZE, (void **)&p_thread);
+        ABTI_CHECK_ERROR(abt_errno);
+        p_thread->type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
+    }
+    *pp_thread = p_thread;
+    return ABT_SUCCESS;
+}
+
+static inline void ABTI_mem_free_nythread_mempool_impl(ABTI_global *p_global,
+                                                       ABTI_local *p_local,
+                                                       ABTI_thread *p_thread)
+{
+    /* Return a descriptor. */
+#ifdef ABT_CONFIG_USE_MEM_POOL
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+#ifdef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* Came from a memory pool. */
+    ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_thread);
 #else
-    return ABTI_mem_alloc_nythread_malloc(pp_thread);
+    if (p_local_xstream) {
+        /* Came from a memory pool. */
+        ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_thread);
+    } else {
+        /* Return a stack to the global pool. */
+        ABTD_spinlock_acquire(&p_global->mem_pool_desc_lock);
+        ABTI_mem_pool_free(&p_global->mem_pool_desc_ext, p_thread);
+        ABTD_spinlock_release(&p_global->mem_pool_desc_lock);
+    }
+#endif
+#else /* !ABT_CONFIG_USE_MEM_POOL */
+    /* If a memory pool is disabled, this function should not be called. */
+    ABTI_ASSERT(0);
 #endif
 }
 
-static inline void ABTI_mem_free_nythread(ABTI_global *p_global,
-                                          ABTI_local *p_local,
-                                          ABTI_thread *p_thread)
+ABTU_ret_err static inline int
+ABTI_mem_alloc_ythread_desc_impl(ABTI_local *p_local, ABT_bool use_lazy_stack,
+                                 ABTI_ythread **pp_ythread)
 {
-    /* Return stack. */
+    ABTI_STATIC_ASSERT(sizeof(ABTI_ythread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE);
+    ABTI_ythread *p_ythread;
 #ifdef ABT_CONFIG_USE_MEM_POOL
-    if (p_thread->type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
-        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-        /* Came from a memory pool. */
-#ifndef ABT_CONFIG_DISABLE_EXT_THREAD
-        if (p_local_xstream == NULL) {
-            /* Return a stack to the global pool. */
-            ABTD_spinlock_acquire(&p_global->mem_pool_desc_lock);
-            ABTI_mem_pool_free(&p_global->mem_pool_desc_ext, p_thread);
-            ABTD_spinlock_release(&p_global->mem_pool_desc_lock);
-            return;
-        }
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+    if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
+        /* It's not called on an external thread.  Use a memory pool. */
+        int abt_errno = ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_desc,
+                                            (void **)&p_ythread);
+        ABTI_CHECK_ERROR(abt_errno);
+        p_ythread->thread.type =
+            use_lazy_stack
+                ? ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_MEMPOOL_LAZY_STACK
+                : ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
+    } else
 #endif
-        ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_thread);
-        return;
+    {
+        int abt_errno =
+            ABTU_malloc(ABTI_MEM_POOL_DESC_ELEM_SIZE, (void **)&p_ythread);
+        ABTI_CHECK_ERROR(abt_errno);
+        p_ythread->thread.type =
+            use_lazy_stack ? ABTI_THREAD_TYPE_MEM_MALLOC_DESC_MEMPOOL_LAZY_STACK
+                           : ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
+    }
+    *pp_ythread = p_ythread;
+    return ABT_SUCCESS;
+}
+
+static inline void ABTI_mem_free_ythread_desc_mempool_impl(
+    ABTI_global *p_global, ABTI_local *p_local, ABTI_ythread *p_ythread)
+{
+    /* Return a descriptor. */
+#ifdef ABT_CONFIG_USE_MEM_POOL
+    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+#ifdef ABT_CONFIG_DISABLE_EXT_THREAD
+    /* Came from a memory pool. */
+    ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_ythread);
+#else
+    if (p_local_xstream) {
+        /* Came from a memory pool. */
+        ABTI_mem_pool_free(&p_local_xstream->mem_pool_desc, p_ythread);
+    } else {
+        /* Return a stack to the global pool. */
+        ABTD_spinlock_acquire(&p_global->mem_pool_desc_lock);
+        ABTI_mem_pool_free(&p_global->mem_pool_desc_ext, p_ythread);
+        ABTD_spinlock_release(&p_global->mem_pool_desc_lock);
     }
 #endif
-    /* p_thread was allocated by malloc() */
-    ABTU_free(p_thread);
+#else /* !ABT_CONFIG_USE_MEM_POOL */
+    /* If a memory pool is disabled, this function should not be called. */
+    ABTI_ASSERT(0);
+#endif
 }
 
 #ifdef ABT_CONFIG_USE_MEM_POOL
 ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
     ABTI_mem_pool_local_pool *p_mem_pool_stack, size_t stacksize,
-    ABTI_ythread **pp_ythread, void **pp_stack)
+    ABTI_ythread **pp_ythread, void **pp_stacktop)
 {
     /* stacksize must be a multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE. */
     ABTI_ASSERT((stacksize & (ABT_CONFIG_STATIC_CACHELINE_SIZE - 1)) == 0);
@@ -203,14 +247,14 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
     int abt_errno = ABTI_mem_pool_alloc(p_mem_pool_stack, &p_ythread);
     ABTI_CHECK_ERROR(abt_errno);
 
-    *pp_stack = (void *)(((char *)p_ythread) - stacksize);
+    *pp_stacktop = (void *)p_ythread;
     *pp_ythread = (ABTI_ythread *)p_ythread;
     return ABT_SUCCESS;
 }
 #endif
 
 ABTU_ret_err static inline int ABTI_mem_alloc_ythread_malloc_desc_stack_impl(
-    size_t stacksize, ABTI_ythread **pp_ythread, void **pp_stack)
+    size_t stacksize, ABTI_ythread **pp_ythread, void **pp_stacktop)
 {
     /* stacksize must be a multiple of ABT_CONFIG_STATIC_CACHELINE_SIZE. */
     size_t alloc_stacksize =
@@ -220,9 +264,72 @@ ABTU_ret_err static inline int ABTI_mem_alloc_ythread_malloc_desc_stack_impl(
         ABTU_malloc(alloc_stacksize + sizeof(ABTI_ythread), (void **)&p_stack);
     ABTI_CHECK_ERROR(abt_errno);
 
-    *pp_stack = (void *)p_stack;
+    *pp_stacktop = (void *)(p_stack + alloc_stacksize);
     *pp_ythread = (ABTI_ythread *)(p_stack + alloc_stacksize);
     return ABT_SUCCESS;
+}
+
+ABTU_ret_err static inline int
+ABTI_mem_alloc_ythread_mempool_desc_stack(ABTI_global *p_global,
+                                          ABTI_local *p_local, size_t stacksize,
+                                          ABTI_ythread **pp_ythread)
+{
+    ABTI_UB_ASSERT(stacksize == p_global->thread_stacksize);
+    ABTI_ythread *p_ythread;
+#ifdef ABT_CONFIG_USE_MEM_POOL
+#ifdef ABT_CONFIG_DISABLE_LAZY_STACK_ALLOC
+    const ABT_bool use_lazy_stack = ABT_FALSE;
+#else
+    const ABT_bool use_lazy_stack = ABT_TRUE;
+#endif
+    if (use_lazy_stack) {
+        /* Only allocate a descriptor here. */
+        int abt_errno =
+            ABTI_mem_alloc_ythread_desc_impl(p_local, ABT_TRUE, &p_ythread);
+        ABTI_CHECK_ERROR(abt_errno);
+        /* Initialize the context. */
+        ABTD_ythread_context_init_lazy(&p_ythread->ctx, stacksize);
+        *pp_ythread = p_ythread;
+        return ABT_SUCCESS;
+    } else {
+        void *p_stacktop;
+        /* Allocate a ULT stack and a descriptor together. */
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
+        if (!ABTI_IS_EXT_THREAD_ENABLED || p_local_xstream) {
+            int abt_errno = ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
+                &p_local_xstream->mem_pool_stack, stacksize, &p_ythread,
+                &p_stacktop);
+            ABTI_CHECK_ERROR(abt_errno);
+            p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
+            ABTI_mem_register_stack(p_global, p_stacktop, stacksize, ABT_FALSE);
+        } else {
+            /* If an external thread allocates a stack, we use ABTU_malloc. */
+            int abt_errno =
+                ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize,
+                                                              &p_ythread,
+                                                              &p_stacktop);
+            ABTI_CHECK_ERROR(abt_errno);
+            p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
+            ABTI_mem_register_stack(p_global, p_stacktop, stacksize, ABT_TRUE);
+        }
+        /* Initialize the context. */
+        ABTD_ythread_context_init(&p_ythread->ctx, p_stacktop, stacksize);
+        *pp_ythread = p_ythread;
+        return ABT_SUCCESS;
+    }
+#else
+    void *p_stacktop;
+    int abt_errno =
+        ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
+                                                      &p_stacktop);
+    ABTI_CHECK_ERROR(abt_errno);
+    p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
+    ABTI_mem_register_stack(p_global, p_stacktop, stacksize, ABT_TRUE);
+    /* Initialize the context. */
+    ABTD_ythread_context_init(&p_ythread->ctx, p_stacktop, stacksize);
+    *pp_ythread = p_ythread;
+    return ABT_SUCCESS;
+#endif
 }
 
 ABTU_ret_err static inline int
@@ -230,112 +337,44 @@ ABTI_mem_alloc_ythread_default(ABTI_global *p_global, ABTI_local *p_local,
                                ABTI_ythread **pp_ythread)
 {
     size_t stacksize = p_global->thread_stacksize;
-    ABTI_ythread *p_ythread;
-    void *p_stack;
-    /* If an external thread allocates a stack, we use ABTU_malloc. */
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        int abt_errno =
-            ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
-                                                          &p_stack);
-        ABTI_CHECK_ERROR(abt_errno);
-        p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
-        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_TRUE);
-    } else {
-#ifdef ABT_CONFIG_USE_MEM_POOL
-        int abt_errno = ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
-            &p_local_xstream->mem_pool_stack, stacksize, &p_ythread, &p_stack);
-        ABTI_CHECK_ERROR(abt_errno);
-        p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
-        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_FALSE);
-#else
-        int abt_errno =
-            ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
-                                                          &p_stack);
-        ABTI_CHECK_ERROR(abt_errno);
-        p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
-        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_TRUE);
-#endif
-    }
-    /* Initialize members of ABTI_thread_attr. */
-    ABTD_ythread_context_init(&p_ythread->ctx, p_stack, stacksize);
-    *pp_ythread = p_ythread;
-    return ABT_SUCCESS;
+    return ABTI_mem_alloc_ythread_mempool_desc_stack(p_global, p_local,
+                                                     stacksize, pp_ythread);
 }
-
-#ifdef ABT_CONFIG_USE_MEM_POOL
-ABTU_ret_err static inline int ABTI_mem_alloc_ythread_mempool_desc_stack(
-    ABTI_global *p_global, ABTI_local *p_local, ABTI_thread_attr *p_attr,
-    ABTI_ythread **pp_ythread)
-{
-    size_t stacksize = p_global->thread_stacksize;
-    ABTI_ythread *p_ythread;
-    void *p_stack;
-    /* If an external thread allocates a stack, we use ABTU_malloc. */
-    ABTI_xstream *p_local_xstream = ABTI_local_get_xstream_or_null(p_local);
-    if (ABTI_IS_EXT_THREAD_ENABLED && p_local_xstream == NULL) {
-        int abt_errno =
-            ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
-                                                          &p_stack);
-        ABTI_CHECK_ERROR(abt_errno);
-        p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
-        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_TRUE);
-    } else {
-        int abt_errno = ABTI_mem_alloc_ythread_mempool_desc_stack_impl(
-            &p_local_xstream->mem_pool_stack, stacksize, &p_ythread, &p_stack);
-        ABTI_CHECK_ERROR(abt_errno);
-        p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
-        ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_FALSE);
-    }
-    /* Copy members of p_attr. */
-    ABTD_ythread_context_init(&p_ythread->ctx, p_stack, stacksize);
-    *pp_ythread = p_ythread;
-    return ABT_SUCCESS;
-}
-#endif
 
 ABTU_ret_err static inline int ABTI_mem_alloc_ythread_malloc_desc_stack(
-    ABTI_global *p_global, ABTI_thread_attr *p_attr, ABTI_ythread **pp_ythread)
+    ABTI_global *p_global, size_t stacksize, ABTI_ythread **pp_ythread)
 {
-    size_t stacksize = p_attr->stacksize;
     ABTI_ythread *p_ythread;
-    void *p_stack;
+    void *p_stacktop;
     int abt_errno =
         ABTI_mem_alloc_ythread_malloc_desc_stack_impl(stacksize, &p_ythread,
-                                                      &p_stack);
+                                                      &p_stacktop);
     ABTI_CHECK_ERROR(abt_errno);
 
-    /* Copy members of p_attr. */
+    /* Initialize the context. */
     p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
-    ABTD_ythread_context_init(&p_ythread->ctx, p_stack, stacksize);
-    ABTI_mem_register_stack(p_global, p_stack, stacksize, ABT_TRUE);
+    ABTD_ythread_context_init(&p_ythread->ctx, p_stacktop, stacksize);
+    ABTI_mem_register_stack(p_global, p_stacktop, stacksize, ABT_TRUE);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
 
 ABTU_ret_err static inline int
 ABTI_mem_alloc_ythread_mempool_desc(ABTI_global *p_global, ABTI_local *p_local,
-                                    ABTI_thread_attr *p_attr,
+                                    size_t stacksize, void *p_stacktop,
                                     ABTI_ythread **pp_ythread)
 {
     ABTI_ythread *p_ythread;
-    if (sizeof(ABTI_ythread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE) {
-        /* Use a descriptor pool for ABT_thread. */
-        ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
-        int abt_errno =
-            ABTI_mem_alloc_nythread(p_local, (ABTI_thread **)&p_ythread);
-        ABTI_CHECK_ERROR(abt_errno);
-    } else {
-        /* Do not allocate stack, but Valgrind registration is preferred. */
-        int abt_errno = ABTU_malloc(sizeof(ABTI_ythread), (void **)&p_ythread);
-        ABTI_CHECK_ERROR(abt_errno);
-        p_ythread->thread.type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC;
-    }
-    /* Copy members of p_attr. */
-    ABTD_ythread_context_init(&p_ythread->ctx, p_attr->p_stack,
-                              p_attr->stacksize);
-    ABTI_mem_register_stack(p_global, p_attr->p_stack, p_attr->stacksize,
-                            ABT_TRUE);
+
+    /* Use a descriptor pool for ABT_ythread. */
+    ABTI_STATIC_ASSERT(sizeof(ABTI_ythread) <= ABTI_MEM_POOL_DESC_ELEM_SIZE);
+    ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
+    int abt_errno =
+        ABTI_mem_alloc_nythread(p_local, (ABTI_thread **)&p_ythread);
+    ABTI_CHECK_ERROR(abt_errno);
+    /* Initialize the context. */
+    ABTD_ythread_context_init(&p_ythread->ctx, p_stacktop, stacksize);
+    ABTI_mem_register_stack(p_global, p_stacktop, stacksize, ABT_TRUE);
     *pp_ythread = p_ythread;
     return ABT_SUCCESS;
 }
@@ -349,7 +388,9 @@ static inline void ABTI_mem_free_thread(ABTI_global *p_global,
     if (p_thread->type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
         ABTI_mem_unregister_stack(p_global,
-                                  ABTD_ythread_context_get_stack(
+                                  ABTD_ythread_context_get_stacktop(
+                                      &p_ythread->ctx),
+                                  ABTD_ythread_context_get_stacksize(
                                       &p_ythread->ctx),
                                   ABT_FALSE);
 
@@ -367,33 +408,91 @@ static inline void ABTI_mem_free_thread(ABTI_global *p_global,
         ABTI_mem_pool_free(&p_local_xstream->mem_pool_stack, p_ythread);
     } else
 #endif
-        if (p_thread->type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
-        /* Non-yieldable thread or yieldable thread without stack. */
+        if (p_thread->type &
+            ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_MEMPOOL_LAZY_STACK) {
+        ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
+        /* If it is a lazy stack ULT, it should not have a stack. */
+        ABTI_UB_ASSERT(!ABTD_ythread_context_has_stack(&p_ythread->ctx));
+        ABTI_mem_free_ythread_desc_mempool_impl(p_global, p_local, p_ythread);
+    } else if (p_thread->type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
+        /* Non-yieldable thread or yieldable thread without stack.  */
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
-        if (p_ythread)
+        if (p_ythread) {
             ABTI_mem_unregister_stack(p_global,
-                                      ABTD_ythread_context_get_stack(
+                                      ABTD_ythread_context_get_stacktop(
+                                          &p_ythread->ctx),
+                                      ABTD_ythread_context_get_stacksize(
                                           &p_ythread->ctx),
                                       ABT_TRUE);
-        ABTI_mem_free_nythread(p_global, p_local, p_thread);
+            ABTI_mem_free_ythread_desc_mempool_impl(p_global, p_local,
+                                                    p_ythread);
+        } else {
+            ABTI_mem_free_nythread_mempool_impl(p_global, p_local, p_thread);
+        }
     } else if (p_thread->type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
-        ABTI_mem_unregister_stack(p_global,
-                                  ABTD_ythread_context_get_stack(
-                                      &p_ythread->ctx),
-                                  ABT_TRUE);
-        ABTU_free(ABTD_ythread_context_get_stack(&p_ythread->ctx));
+        void *p_stacktop = ABTD_ythread_context_get_stacktop(&p_ythread->ctx);
+        size_t stacksize = ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
+        ABTI_mem_unregister_stack(p_global, p_stacktop, stacksize, ABT_TRUE);
+        void *p_stack = (void *)(((char *)p_stacktop) - stacksize);
+        ABTU_free(p_stack);
+    } else if (p_thread->type &
+               ABTI_THREAD_TYPE_MEM_MALLOC_DESC_MEMPOOL_LAZY_STACK) {
+        ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
+        /* If it is a lazy stack ULT, it should not have a stack. */
+        ABTI_UB_ASSERT(!ABTD_ythread_context_has_stack(&p_ythread->ctx));
+        ABTU_free(p_ythread);
     } else {
         ABTI_ASSERT(p_thread->type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC);
         ABTI_STATIC_ASSERT(offsetof(ABTI_ythread, thread) == 0);
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
         if (p_ythread)
             ABTI_mem_unregister_stack(p_global,
-                                      ABTD_ythread_context_get_stack(
+                                      ABTD_ythread_context_get_stacktop(
+                                          &p_ythread->ctx),
+                                      ABTD_ythread_context_get_stacksize(
                                           &p_ythread->ctx),
                                       ABT_TRUE);
         ABTU_free(p_thread);
     }
+}
+
+ABTU_ret_err static inline int
+ABTI_mem_alloc_ythread_mempool_stack(ABTI_xstream *p_local_xstream,
+                                     ABTI_ythread *p_ythread)
+{
+#ifdef ABT_CONFIG_USE_MEM_POOL
+    ABTI_UB_ASSERT(p_ythread->thread.type &
+                   (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_MEMPOOL_LAZY_STACK |
+                    ABTI_THREAD_TYPE_MEM_MALLOC_DESC_MEMPOOL_LAZY_STACK));
+    void *p_stacktop;
+    int abt_errno =
+        ABTI_mem_pool_alloc(&p_local_xstream->mem_pool_stack, &p_stacktop);
+    ABTI_CHECK_ERROR(abt_errno);
+    ABTD_ythread_context_lazy_set_stack(&p_ythread->ctx, p_stacktop);
+    return ABT_SUCCESS;
+#else
+    /* This function should not be called. */
+    ABTI_ASSERT(0);
+    return 0;
+#endif
+}
+
+static inline void
+ABTI_mem_free_ythread_mempool_stack(ABTI_xstream *p_local_xstream,
+                                    ABTI_ythread *p_ythread)
+{
+#ifdef ABT_CONFIG_USE_MEM_POOL
+    ABTI_UB_ASSERT(p_ythread->thread.type &
+                   (ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_MEMPOOL_LAZY_STACK |
+                    ABTI_THREAD_TYPE_MEM_MALLOC_DESC_MEMPOOL_LAZY_STACK));
+    void *p_stacktop = ABTD_ythread_context_get_stacktop(&p_ythread->ctx);
+    ABTD_ythread_context_lazy_unset_stack(&p_ythread->ctx);
+    ABTI_mem_pool_free(&p_local_xstream->mem_pool_stack, p_stacktop);
+#else
+    /* This function should not be called. */
+    ABTI_ASSERT(0);
+#endif
 }
 
 /* Generic scalable memory pools.  It uses a memory pool for ABTI_thread.

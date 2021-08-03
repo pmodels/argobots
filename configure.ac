@@ -174,6 +174,12 @@ AC_ARG_ENABLE([aligned-alloc],
         [do not use aligned memory allocation]),,
         [enable_aligned_alloc=yes])
 
+# --enable-lazy-stack-alloc
+AC_ARG_ENABLE([lazy-stack-alloc],
+    AS_HELP_STRING([--enable-lazy-stack-alloc],
+        [lazily allocate and eagerly release ULT stacks]),,
+        [enable_lazy_stack_alloc=no])
+
 # --enable-feature
 AC_ARG_ENABLE([feature],
 [  --enable-feature@<:@=OPTS@:>@  enable/disable features.
@@ -618,6 +624,10 @@ AS_IF([test "x$enable_aligned_alloc" != "xno"],
     [AC_DEFINE(ABT_CONFIG_USE_ALIGNED_ALLOC, 1,
         [Define to allocate objects aligned to the cache line size])])
 
+# --enable-lazy-stack-alloc
+AS_IF([test "x$enable_lazy_stack_alloc" != "xyes"],
+    [AC_DEFINE(ABT_CONFIG_DISABLE_LAZY_STACK_ALLOC, 1,
+        [Define to disable lazy stack allocation])])
 
 # --enable-feature
 save_IFS="$IFS"

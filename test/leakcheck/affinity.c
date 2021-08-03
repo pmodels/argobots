@@ -38,10 +38,12 @@ int main()
          i++) {
         int ret = setenv("ABT_SET_AFFINITY", legal_affinity_strs[i], 1);
         assert(ret == 0);
-        do {
-            rtrace_start();
-            program(0);
-        } while (!rtrace_stop());
+        if (use_rtrace()) {
+            do {
+                rtrace_start();
+                program(0);
+            } while (!rtrace_stop());
+        }
         /* If no failure, it should succeed again. */
         program(1);
     }
@@ -51,10 +53,12 @@ int main()
          i++) {
         int ret = setenv("ABT_SET_AFFINITY", illegal_affinity_strs[i], 1);
         assert(ret == 0);
-        do {
-            rtrace_start();
-            program(0);
-        } while (!rtrace_stop());
+        if (use_rtrace()) {
+            do {
+                rtrace_start();
+                program(0);
+            } while (!rtrace_stop());
+        }
         /* If no failure, it should succeed again. */
         program(1);
     }

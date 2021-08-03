@@ -186,6 +186,12 @@ static void info_trigger_print_all_thread_stacks(
  *   if the wait policy of Argobots is passive.  \c val is set to 1 if the wait
  *   policy of Argobots is active.
  *
+ * - \c ABT_INFO_QUERY_KIND_ENABLED_LAZY_STACK_ALLOC
+ *
+ *   \c val must be a pointer to a variable of type \c ABT_bool.  \c val is set
+ *   to \c ABT_TRUE if Argobots is configured to enable lazy allocation for ULT
+ *   stacks by default.  Otherwise, \c val is set to \c ABT_FALSE.
+ *
  * @changev20
  * \DOC_DESC_V1X_RETURN_INFO_IF_POSSIBLE
  * @endchangev20
@@ -420,6 +426,13 @@ int ABT_info_query_config(ABT_info_query_kind query_kind, void *val)
             *((int *)val) = 1;
 #else
             *((int *)val) = 0;
+#endif
+            break;
+        case ABT_INFO_QUERY_KIND_ENABLED_LAZY_STACK_ALLOC:
+#ifdef ABT_CONFIG_DISABLE_LAZY_STACK_ALLOC
+            *((ABT_bool *)val) = ABT_FALSE;
+#else
+            *((ABT_bool *)val) = ABT_TRUE;
 #endif
             break;
         default:

@@ -65,7 +65,7 @@ int ABT_thread_attr_create(ABT_thread_attr *newattr)
 
     /* Default values */
     ABTI_thread_attr_init(p_newattr, NULL, p_global->thread_stacksize,
-                          ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK, ABT_TRUE);
+                          ABT_TRUE);
     *newattr = ABTI_thread_attr_get_handle(p_newattr);
     return ABT_SUCCESS;
 }
@@ -391,30 +391,15 @@ void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
     if (p_attr == NULL) {
         fprintf(p_os, "%*sULT attr: [NULL ATTR]\n", indent, "");
     } else {
-        const char *stacktype;
-        if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC) {
-            stacktype = "MEMPOOL_DESC";
-        } else if (p_attr->thread_type & ABTI_THREAD_TYPE_MEM_MALLOC_DESC) {
-            stacktype = "MALLOC_DESC";
-        } else if (p_attr->thread_type &
-                   ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK) {
-            stacktype = "MEMPOOL_DESC_STACK";
-        } else if (p_attr->thread_type &
-                   ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK) {
-            stacktype = "MALLOC_DESC_STACK";
-        } else {
-            stacktype = "UNKNOWN";
-        }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
         fprintf(p_os,
                 "%*sULT attr: ["
                 "stack:%p "
                 "stacksize:%zu "
-                "stacktype:%s "
                 "migratable:%s "
                 "cb_arg:%p"
                 "]\n",
-                indent, "", p_attr->p_stack, p_attr->stacksize, stacktype,
+                indent, "", p_attr->p_stack, p_attr->stacksize,
                 (p_attr->migratable == ABT_TRUE ? "TRUE" : "FALSE"),
                 p_attr->p_cb_arg);
 #else
@@ -422,9 +407,8 @@ void ABTI_thread_attr_print(ABTI_thread_attr *p_attr, FILE *p_os, int indent)
                 "%*sULT attr: ["
                 "stack:%p "
                 "stacksize:%zu "
-                "stacktype:%s "
                 "]\n",
-                indent, "", p_attr->p_stack, p_attr->stacksize, stacktype);
+                indent, "", p_attr->p_stack, p_attr->stacksize);
 #endif
     }
     fflush(p_os);
@@ -450,30 +434,12 @@ static void thread_attr_set_stack(ABTI_global *p_global,
                                   ABTI_thread_attr *p_attr, void *stackaddr,
                                   size_t stacksize)
 {
-    /* Get the best thread type. */
-    ABTI_thread_type new_thread_type;
     if (stackaddr != NULL) {
         /* This check must be done by the caller. */
         ABTI_ASSERT(((uintptr_t)stackaddr & 0x7) == 0);
         /* Only a descriptor will be allocated from a memory pool.  A stack
          * is given by the user. */
-        new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC;
-    } else {
-        if (stacksize == p_global->thread_stacksize) {
-            /* Both a stack and a descriptor will be allocated from a memory
-             * pool. */
-            new_thread_type = ABTI_THREAD_TYPE_MEM_MEMPOOL_DESC_STACK;
-        } else {
-            /* The stack must be allocated by malloc().  Let's allocate both
-             * a stack and a descriptor together by a single malloc(). */
-            new_thread_type = ABTI_THREAD_TYPE_MEM_MALLOC_DESC_STACK;
-        }
     }
-
-    /* Unset the stack type and set new_thread_type. */
-    p_attr->thread_type &= ~ABTI_THREAD_TYPES_MEM;
-    p_attr->thread_type |= new_thread_type;
-
     p_attr->p_stack = stackaddr;
     p_attr->stacksize = stacksize;
 }

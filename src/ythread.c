@@ -141,8 +141,7 @@ void ABTI_ythread_callback_exit(void *arg)
     /* Terminate this thread. */
     ABTI_ythread *p_prev = (ABTI_ythread *)arg;
     ABTI_thread_terminate(ABTI_global_get_global(),
-                          ABTI_xstream_get_local(p_prev->thread.p_last_xstream),
-                          &p_prev->thread);
+                          p_prev->thread.p_last_xstream, &p_prev->thread);
 }
 
 void ABTI_ythread_callback_resume_exit_to(void *arg)
@@ -155,8 +154,7 @@ void ABTI_ythread_callback_resume_exit_to(void *arg)
     ABTI_ythread *p_next = p_arg->p_next;
     /* Terminate this thread. */
     ABTI_thread_terminate(ABTI_global_get_global(),
-                          ABTI_xstream_get_local(p_prev->thread.p_last_xstream),
-                          &p_prev->thread);
+                          p_prev->thread.p_last_xstream, &p_prev->thread);
     /* Decrease the number of blocked threads. */
     ABTI_pool_dec_num_blocked(p_next->thread.p_pool);
 }
@@ -235,9 +233,9 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
 {
     ABTD_ythread_print_context(p_ythread, p_os, 0);
     fprintf(p_os,
-            "stack     : %p\n"
+            "stacktop  : %p\n"
             "stacksize : %" PRIu64 "\n",
-            ABTD_ythread_context_get_stack(&p_ythread->ctx),
+            ABTD_ythread_context_get_stacktop(&p_ythread->ctx),
             (uint64_t)ABTD_ythread_context_get_stacksize(&p_ythread->ctx));
 
 #ifdef ABT_CONFIG_ENABLE_STACK_UNWIND
@@ -262,17 +260,17 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
     }
 #endif
 
-    void *p_stack = ABTD_ythread_context_get_stack(&p_ythread->ctx);
+    void *p_stacktop = ABTD_ythread_context_get_stacktop(&p_ythread->ctx);
     size_t i, j,
         stacksize = ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
-    if (stacksize == 0 || p_stack == NULL) {
+    if (stacksize == 0 || p_stacktop == NULL) {
         /* Some threads do not have p_stack (e.g., the main thread) */
         fprintf(p_os, "no stack\n");
         fflush(0);
         return;
     }
-
     if (p_global->print_raw_stack) {
+        void *p_stack = (void *)(((char *)p_stacktop) - stacksize);
         char buffer[32];
         const size_t value_width = 8;
         const int num_bytes = sizeof(buffer);

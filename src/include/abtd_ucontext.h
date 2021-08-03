@@ -11,7 +11,7 @@ struct ABTD_ythread_context {
                                              * pointer to uctx */
     ABTD_ythread_context_atomic_ptr p_link; /* pointer to scheduler context */
     ucontext_t uctx;                        /* ucontext pointed by p_ctx */
-    void *p_stack;                          /* Stack pointer. */
+    void *p_stacktop;                       /* Stack pointer (top). */
     size_t stacksize;                       /* Stack size. */
     /* Call-back functions. */
     void (*f_cb)(void *);
@@ -61,14 +61,33 @@ static void ABTD_ucontext_wrapper(int arg1, int arg2)
 }
 
 static inline void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
-                                             void *p_stack, size_t stacksize)
+                                             void *p_stacktop, size_t stacksize)
 {
     p_ctx->p_ctx = NULL;
-    p_ctx->p_stack = p_stack;
+    p_ctx->p_stacktop = p_stacktop;
     p_ctx->stacksize = stacksize;
     int ret = getcontext(&p_ctx->uctx);
     ABTI_ASSERT(ret == 0); /* getcontext() should not return an error. */
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
+}
+
+static inline void ABTD_ythread_context_init_lazy(ABTD_ythread_context *p_ctx,
+                                                  size_t stacksize)
+{
+    ABTD_ythread_context_init(p_ctx, NULL, stacksize);
+}
+
+static inline void
+ABTD_ythread_context_lazy_set_stack(ABTD_ythread_context *p_ctx,
+                                    void *p_stacktop)
+{
+    p_ctx->p_stacktop = p_stacktop;
+}
+
+static inline void
+ABTD_ythread_context_lazy_unset_stack(ABTD_ythread_context *p_ctx)
+{
+    p_ctx->p_stacktop = NULL;
 }
 
 static inline void ABTD_ythread_context_reinit(ABTD_ythread_context *p_ctx)
@@ -79,9 +98,16 @@ static inline void ABTD_ythread_context_reinit(ABTD_ythread_context *p_ctx)
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
 }
 
-static inline void *ABTD_ythread_context_get_stack(ABTD_ythread_context *p_ctx)
+static inline void *
+ABTD_ythread_context_get_stacktop(ABTD_ythread_context *p_ctx)
 {
-    return p_ctx->p_stack;
+    return p_ctx->p_stacktop;
+}
+
+static inline ABT_bool
+ABTD_ythread_context_has_stack(const ABTD_ythread_context *p_ctx)
+{
+    return p_ctx->p_stacktop ? ABT_TRUE : ABT_FALSE;
 }
 
 static inline size_t
@@ -95,7 +121,8 @@ static inline void ABTDI_ythread_context_make(ABTD_ythread_context *p_ctx)
     p_ctx->p_ctx = &p_ctx->uctx;
     /* uc_link is not used. */
     p_ctx->uctx.uc_link = NULL;
-    p_ctx->uctx.uc_stack.ss_sp = p_ctx->p_stack;
+    void *p_stack = (void *)(((char *)p_ctx->p_stacktop) - p_ctx->stacksize);
+    p_ctx->uctx.uc_stack.ss_sp = p_stack;
     p_ctx->uctx.uc_stack.ss_size = p_ctx->stacksize;
 
 #if SIZEOF_VOID_P == 8
@@ -112,13 +139,16 @@ static inline void ABTDI_ythread_context_make(ABTD_ythread_context *p_ctx)
     p_ctx->is_peeked = ABT_FALSE;
 }
 
+static inline ABT_bool
+ABTD_ythread_context_is_started(const ABTD_ythread_context *p_ctx)
+{
+    return p_ctx->p_ctx ? ABT_TRUE : ABT_FALSE;
+}
+
 static inline void ABTD_ythread_context_switch(ABTD_ythread_context *p_old,
                                                ABTD_ythread_context *p_new)
 {
-    if (p_new->p_ctx == NULL) {
-        /* First time. */
-        ABTDI_ythread_context_make(p_new);
-    }
+    ABTI_UB_ASSERT(ABTD_ythread_context_is_started(p_new));
     p_old->is_peeked = ABT_FALSE;
     p_old->p_ctx = &p_old->uctx;
     p_new->f_cb = NULL;
@@ -132,15 +162,30 @@ static inline void ABTD_ythread_context_switch(ABTD_ythread_context *p_old,
     ABTDI_ucontext_check_peeked(p_old);
 }
 
+static inline void
+ABTD_ythread_context_start_and_switch(ABTD_ythread_context *p_old,
+                                      ABTD_ythread_context *p_new)
+{
+    ABTI_UB_ASSERT(!ABTD_ythread_context_is_started(p_new));
+    ABTDI_ythread_context_make(p_new);
+    ABTD_ythread_context_switch(p_old, p_new);
+}
+
 ABTU_noreturn static inline void
 ABTD_ythread_context_jump(ABTD_ythread_context *p_new)
 {
-    if (p_new->p_ctx == NULL) {
-        /* First time. */
-        ABTDI_ythread_context_make(p_new);
-    }
+    ABTI_UB_ASSERT(ABTD_ythread_context_is_started(p_new));
     int ret = setcontext(&p_new->uctx);
     ABTI_ASSERT(ret == 0); /* setcontext() should not return an error. */
+    ABTU_unreachable();
+}
+
+ABTU_noreturn static inline void
+ABTD_ythread_context_start_and_jump(ABTD_ythread_context *p_new)
+{
+    ABTI_UB_ASSERT(!ABTD_ythread_context_is_started(p_new));
+    ABTDI_ythread_context_make(p_new);
+    ABTD_ythread_context_jump(p_new);
     ABTU_unreachable();
 }
 
@@ -149,10 +194,7 @@ ABTD_ythread_context_switch_with_call(ABTD_ythread_context *p_old,
                                       ABTD_ythread_context *p_new,
                                       void (*f_cb)(void *), void *cb_arg)
 {
-    if (p_new->p_ctx == NULL) {
-        /* First time. */
-        ABTDI_ythread_context_make(p_new);
-    }
+    ABTI_UB_ASSERT(ABTD_ythread_context_is_started(p_new));
     p_old->is_peeked = ABT_FALSE;
     p_old->p_ctx = &p_old->uctx;
     p_new->f_cb = f_cb;
@@ -167,18 +209,33 @@ ABTD_ythread_context_switch_with_call(ABTD_ythread_context *p_old,
     ABTDI_ucontext_check_peeked(p_old);
 }
 
+static inline void ABTD_ythread_context_start_and_switch_with_call(
+    ABTD_ythread_context *p_old, ABTD_ythread_context *p_new,
+    void (*f_cb)(void *), void *cb_arg)
+{
+    ABTI_UB_ASSERT(!ABTD_ythread_context_is_started(p_new));
+    ABTDI_ythread_context_make(p_new);
+    ABTD_ythread_context_switch_with_call(p_old, p_new, f_cb, cb_arg);
+}
+
 ABTU_noreturn static inline void
 ABTD_ythread_context_jump_with_call(ABTD_ythread_context *p_new,
                                     void (*f_cb)(void *), void *cb_arg)
 {
-    if (p_new->p_ctx == NULL) {
-        /* First time. */
-        ABTDI_ythread_context_make(p_new);
-    }
+    ABTI_UB_ASSERT(ABTD_ythread_context_is_started(p_new));
     p_new->f_cb = f_cb;
     p_new->cb_arg = cb_arg;
     int ret = setcontext(&p_new->uctx);
     ABTI_ASSERT(ret == 0); /* setcontext() should not return an error. */
+    ABTU_unreachable();
+}
+
+ABTU_noreturn static inline void ABTD_ythread_context_start_and_jump_with_call(
+    ABTD_ythread_context *p_new, void (*f_cb)(void *), void *cb_arg)
+{
+    ABTI_UB_ASSERT(!ABTD_ythread_context_is_started(p_new));
+    ABTDI_ythread_context_make(p_new);
+    ABTD_ythread_context_jump_with_call(p_new, f_cb, cb_arg);
     ABTU_unreachable();
 }
 
