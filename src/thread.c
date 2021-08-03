@@ -2846,30 +2846,33 @@ ythread_create(ABTI_global *p_global, ABTI_local *p_local, ABTI_pool *p_pool,
 #ifdef ABT_CONFIG_USE_MEM_POOL
                 abt_errno =
                     ABTI_mem_alloc_ythread_mempool_desc_stack(p_global, p_local,
-                                                              stacksize, p_attr,
+                                                              stacksize,
                                                               &p_newthread);
 #else
                 abt_errno =
-                    ABTI_mem_alloc_ythread_malloc_desc_stack(p_global, p_attr,
+                    ABTI_mem_alloc_ythread_malloc_desc_stack(p_global,
+                                                             stacksize,
                                                              &p_newthread);
 #endif
             } else if (stacksize != 0) {
                 /* 2. A thread that uses a stack of a non-default size. */
                 abt_errno =
-                    ABTI_mem_alloc_ythread_malloc_desc_stack(p_global, p_attr,
+                    ABTI_mem_alloc_ythread_malloc_desc_stack(p_global,
+                                                             stacksize,
                                                              &p_newthread);
             } else {
                 /* 3. A thread that uses OS-level thread's stack */
                 abt_errno =
-                    ABTI_mem_alloc_ythread_mempool_desc(p_global, p_local,
-                                                        p_attr, &p_newthread);
+                    ABTI_mem_alloc_ythread_mempool_desc(p_global, p_local, 0,
+                                                        NULL, &p_newthread);
             }
             ABTI_CHECK_ERROR(abt_errno);
         } else {
             /* 4. A thread that uses a user-allocated stack. */
-            abt_errno =
-                ABTI_mem_alloc_ythread_mempool_desc(p_global, p_local, p_attr,
-                                                    &p_newthread);
+            abt_errno = ABTI_mem_alloc_ythread_mempool_desc(p_global, p_local,
+                                                            p_attr->stacksize,
+                                                            p_attr->p_stack,
+                                                            &p_newthread);
             ABTI_CHECK_ERROR(abt_errno);
         }
 #ifndef ABT_CONFIG_DISABLE_MIGRATION
