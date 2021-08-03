@@ -71,6 +71,25 @@ static inline void ABTD_ythread_context_init(ABTD_ythread_context *p_ctx,
     ABTD_atomic_relaxed_store_ythread_context_ptr(&p_ctx->p_link, NULL);
 }
 
+static inline void ABTD_ythread_context_init_lazy(ABTD_ythread_context *p_ctx,
+                                                  size_t stacksize)
+{
+    ABTD_ythread_context_init(p_ctx, NULL, stacksize);
+}
+
+static inline void
+ABTD_ythread_context_lazy_set_stack(ABTD_ythread_context *p_ctx,
+                                    void *p_stacktop)
+{
+    p_ctx->p_stacktop = p_stacktop;
+}
+
+static inline void
+ABTD_ythread_context_lazy_unset_stack(ABTD_ythread_context *p_ctx)
+{
+    p_ctx->p_stacktop = NULL;
+}
+
 static inline void ABTD_ythread_context_reinit(ABTD_ythread_context *p_ctx)
 {
     p_ctx->p_ctx = NULL;
@@ -83,6 +102,12 @@ static inline void *
 ABTD_ythread_context_get_stacktop(ABTD_ythread_context *p_ctx)
 {
     return p_ctx->p_stacktop;
+}
+
+static inline ABT_bool
+ABTD_ythread_context_has_stack(const ABTD_ythread_context *p_ctx)
+{
+    return p_ctx->p_stacktop ? ABT_TRUE : ABT_FALSE;
 }
 
 static inline size_t

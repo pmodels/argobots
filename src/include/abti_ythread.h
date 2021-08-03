@@ -68,48 +68,75 @@ ABTI_ythread_context_get_ythread(ABTD_ythread_context *p_ctx)
     return (ABTI_ythread *)(((char *)p_ctx) - offsetof(ABTI_ythread, ctx));
 }
 
-ABTU_noreturn static inline void ABTI_ythread_context_jump(ABTI_ythread *p_new)
+ABTU_noreturn static inline void
+ABTI_ythread_context_jump(ABTI_xstream *p_local_xstream, ABTI_ythread *p_new)
 {
     if (ABTD_ythread_context_is_started(&p_new->ctx)) {
         ABTD_ythread_context_jump(&p_new->ctx);
     } else {
+        if (!ABTD_ythread_context_has_stack(&p_new->ctx)) {
+            int ret =
+                ABTI_mem_alloc_ythread_mempool_stack(p_local_xstream, p_new);
+            /* FIXME: this error should be propagated to the caller. */
+            ABTI_ASSERT(ret == ABT_SUCCESS);
+        }
         ABTD_ythread_context_start_and_jump(&p_new->ctx);
     }
     ABTU_unreachable();
 }
 
-static inline void ABTI_ythread_context_switch(ABTI_ythread *p_old,
+static inline void ABTI_ythread_context_switch(ABTI_xstream *p_local_xstream,
+                                               ABTI_ythread *p_old,
                                                ABTI_ythread *p_new)
 {
     if (ABTD_ythread_context_is_started(&p_new->ctx)) {
         ABTD_ythread_context_switch(&p_old->ctx, &p_new->ctx);
     } else {
+        if (!ABTD_ythread_context_has_stack(&p_new->ctx)) {
+            int ret =
+                ABTI_mem_alloc_ythread_mempool_stack(p_local_xstream, p_new);
+            /* FIXME: this error should be propagated to the caller. */
+            ABTI_ASSERT(ret == ABT_SUCCESS);
+        }
         ABTD_ythread_context_start_and_switch(&p_old->ctx, &p_new->ctx);
     }
 }
 
 ABTU_noreturn static inline void
-ABTI_ythread_context_jump_with_call(ABTI_ythread *p_new, void (*f_cb)(void *),
+ABTI_ythread_context_jump_with_call(ABTI_xstream *p_local_xstream,
+                                    ABTI_ythread *p_new, void (*f_cb)(void *),
                                     void *cb_arg)
 {
     if (ABTD_ythread_context_is_started(&p_new->ctx)) {
         ABTD_ythread_context_jump_with_call(&p_new->ctx, f_cb, cb_arg);
     } else {
+        if (!ABTD_ythread_context_has_stack(&p_new->ctx)) {
+            int ret =
+                ABTI_mem_alloc_ythread_mempool_stack(p_local_xstream, p_new);
+            /* FIXME: this error should be propagated to the caller. */
+            ABTI_ASSERT(ret == ABT_SUCCESS);
+        }
         ABTD_ythread_context_start_and_jump_with_call(&p_new->ctx, f_cb,
                                                       cb_arg);
     }
     ABTU_unreachable();
 }
 
-static inline void ABTI_ythread_context_switch_with_call(ABTI_ythread *p_old,
-                                                         ABTI_ythread *p_new,
-                                                         void (*f_cb)(void *),
-                                                         void *cb_arg)
+static inline void
+ABTI_ythread_context_switch_with_call(ABTI_xstream *p_local_xstream,
+                                      ABTI_ythread *p_old, ABTI_ythread *p_new,
+                                      void (*f_cb)(void *), void *cb_arg)
 {
     if (ABTD_ythread_context_is_started(&p_new->ctx)) {
         ABTD_ythread_context_switch_with_call(&p_old->ctx, &p_new->ctx, f_cb,
                                               cb_arg);
     } else {
+        if (!ABTD_ythread_context_has_stack(&p_new->ctx)) {
+            int ret =
+                ABTI_mem_alloc_ythread_mempool_stack(p_local_xstream, p_new);
+            /* FIXME: this error should be propagated to the caller. */
+            ABTI_ASSERT(ret == ABT_SUCCESS);
+        }
         ABTD_ythread_context_start_and_switch_with_call(&p_old->ctx,
                                                         &p_new->ctx, f_cb,
                                                         cb_arg);
@@ -127,7 +154,7 @@ ABTI_ythread_switch_to_child_internal(ABTI_xstream **pp_local_xstream,
     p_local_xstream->p_thread = &p_new->thread;
     p_new->thread.p_last_xstream = p_local_xstream;
     /* Context switch starts. */
-    ABTI_ythread_context_switch(p_old, p_new);
+    ABTI_ythread_context_switch(p_local_xstream, p_old, p_new);
     /* Context switch finishes. */
     *pp_local_xstream = p_old->thread.p_last_xstream;
 }
@@ -142,7 +169,7 @@ ABTI_ythread_jump_to_sibling_internal(ABTI_xstream *p_local_xstream,
                           p_new->thread.p_parent);
     p_local_xstream->p_thread = &p_new->thread;
     p_new->thread.p_last_xstream = p_local_xstream;
-    ABTI_ythread_context_jump_with_call(p_new, f_cb, cb_arg);
+    ABTI_ythread_context_jump_with_call(p_local_xstream, p_new, f_cb, cb_arg);
     ABTU_unreachable();
 }
 
@@ -157,7 +184,8 @@ static inline void ABTI_ythread_switch_to_sibling_internal(
     p_local_xstream->p_thread = &p_new->thread;
     p_new->thread.p_last_xstream = p_local_xstream;
     /* Context switch starts. */
-    ABTI_ythread_context_switch_with_call(p_old, p_new, f_cb, cb_arg);
+    ABTI_ythread_context_switch_with_call(p_local_xstream, p_old, p_new, f_cb,
+                                          cb_arg);
     /* Context switch finishes. */
     *pp_local_xstream = p_old->thread.p_last_xstream;
 }
@@ -170,7 +198,7 @@ ABTI_ythread_jump_to_parent_internal(ABTI_xstream *p_local_xstream,
     ABTI_ythread *p_new = ABTI_thread_get_ythread(p_old->thread.p_parent);
     p_local_xstream->p_thread = &p_new->thread;
     ABTI_ASSERT(p_new->thread.p_last_xstream == p_local_xstream);
-    ABTI_ythread_context_jump_with_call(p_new, f_cb, cb_arg);
+    ABTI_ythread_context_jump_with_call(p_local_xstream, p_new, f_cb, cb_arg);
     ABTU_unreachable();
 }
 
@@ -184,7 +212,8 @@ ABTI_ythread_switch_to_parent_internal(ABTI_xstream **pp_local_xstream,
     p_local_xstream->p_thread = &p_new->thread;
     ABTI_ASSERT(p_new->thread.p_last_xstream == p_local_xstream);
     /* Context switch starts. */
-    ABTI_ythread_context_switch_with_call(p_old, p_new, f_cb, cb_arg);
+    ABTI_ythread_context_switch_with_call(p_local_xstream, p_old, p_new, f_cb,
+                                          cb_arg);
     /* Context switch finishes. */
     *pp_local_xstream = p_old->thread.p_last_xstream;
 }
@@ -507,8 +536,8 @@ ABTU_noreturn static inline void ABTI_ythread_exit_to_primary(
     p_primary->thread.p_last_xstream = p_local_xstream;
     ABTD_atomic_release_store_int(&p_primary->thread.state,
                                   ABT_THREAD_STATE_RUNNING);
-    ABTI_ythread_context_jump_with_call(p_primary, ABTI_ythread_callback_exit,
-                                        p_self);
+    ABTI_ythread_context_jump_with_call(p_local_xstream, p_primary,
+                                        ABTI_ythread_callback_exit, p_self);
     ABTU_unreachable();
 }
 
