@@ -116,15 +116,6 @@ static inline void ABTI_ythread_context_switch_with_call(ABTI_ythread *p_old,
     }
 }
 
-ABTU_noreturn static inline void
-ABTI_ythread_jump_to_primary(ABTI_xstream *p_local_xstream, ABTI_ythread *p_new)
-{
-    p_local_xstream->p_thread = &p_new->thread;
-    p_new->thread.p_last_xstream = p_local_xstream;
-    ABTI_ythread_context_jump(p_new);
-    ABTU_unreachable();
-}
-
 static inline void
 ABTI_ythread_switch_to_child_internal(ABTI_xstream **pp_local_xstream,
                                       ABTI_ythread *p_old, ABTI_ythread *p_new)
@@ -504,6 +495,20 @@ ABTI_ythread_exit_to(ABTI_xstream *p_local_xstream, ABTI_ythread *p_self,
     ABTI_ythread_jump_to_sibling_internal(p_local_xstream, p_self, p_target,
                                           ABTI_ythread_callback_exit,
                                           (void *)p_self);
+    ABTU_unreachable();
+}
+
+ABTU_noreturn static inline void ABTI_ythread_exit_to_primary(
+    ABTI_global *p_global, ABTI_xstream *p_local_xstream, ABTI_ythread *p_self)
+{
+    /* No need to call a callback function. */
+    ABTI_ythread *p_primary = p_global->p_primary_ythread;
+    p_local_xstream->p_thread = &p_primary->thread;
+    p_primary->thread.p_last_xstream = p_local_xstream;
+    ABTD_atomic_release_store_int(&p_primary->thread.state,
+                                  ABT_THREAD_STATE_RUNNING);
+    ABTI_ythread_context_jump_with_call(p_primary, ABTI_ythread_callback_exit,
+                                        p_self);
     ABTU_unreachable();
 }
 

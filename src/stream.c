@@ -1730,7 +1730,11 @@ static void *xstream_launch_root_ythread(void *p_xstream)
     ABTI_ythread *p_root_ythread = p_local_xstream->p_root_ythread;
     p_local_xstream->p_thread = &p_local_xstream->p_root_ythread->thread;
     p_root_ythread->thread.p_last_xstream = p_local_xstream;
+
+    /* Run the root thread. */
     p_root_ythread->thread.f_thread(p_root_ythread->thread.p_arg);
+    ABTI_thread_terminate(ABTI_global_get_global(), p_local_xstream,
+                          &p_root_ythread->thread);
 
     /* Reset the current ES and its local info. */
     ABTI_local_set_xstream(NULL);

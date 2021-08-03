@@ -2551,11 +2551,13 @@ ABTU_ret_err int ABTI_ythread_create_root(ABTI_global *p_global,
         /* For secondary ESs, the stack of an OS thread is used. */
         ABTI_thread_attr_init(&attr, NULL, 0, ABT_FALSE);
     }
+    const ABTI_thread_type thread_type = ABTI_THREAD_TYPE_YIELDABLE |
+                                         ABTI_THREAD_TYPE_ROOT |
+                                         ABTI_THREAD_TYPE_NAMED;
     ABTI_ythread *p_root_ythread;
     int abt_errno =
         ythread_create(p_global, p_local, NULL, thread_root_func, NULL, &attr,
-                       ABTI_THREAD_TYPE_YIELDABLE | ABTI_THREAD_TYPE_ROOT, NULL,
-                       THREAD_POOL_OP_NONE, &p_root_ythread);
+                       thread_type, NULL, THREAD_POOL_OP_NONE, &p_root_ythread);
     ABTI_CHECK_ERROR(abt_errno);
     *pp_root_ythread = p_root_ythread;
     return ABT_SUCCESS;
@@ -3230,8 +3232,7 @@ static void thread_root_func(void *arg)
 
     if (p_local_xstream->type == ABTI_XSTREAM_TYPE_PRIMARY) {
         /* Let us jump back to the primary thread (then finalize Argobots) */
-        ABTI_ythread_jump_to_primary(p_local_xstream,
-                                     p_global->p_primary_ythread);
+        ABTI_ythread_exit_to_primary(p_global, p_local_xstream, p_root_ythread);
     }
 }
 
