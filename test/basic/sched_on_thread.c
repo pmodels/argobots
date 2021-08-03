@@ -49,28 +49,47 @@ void root_func(void *arg)
         ATS_ERROR(ret, "ABT_xstream_self_rank");
 
         /* Get a unit and schedule it. */
-        ABT_unit unit;
-        ret = ABT_pool_pop(pools[rank], &unit);
-        ATS_ERROR(ret, "ABT_pool_pop");
-
-        if (unit != ABT_UNIT_NULL) {
-            if (idx % 3 == 0) {
-                ret = ABT_xstream_run_unit(unit, pools[rank]);
-                ATS_ERROR(ret, "ABT_xstream_run_unit");
-            } else if (idx % 3 == 1) {
-                ABT_thread thread;
-                ret = ABT_unit_get_thread(unit, &thread);
-                ATS_ERROR(ret, "ABT_unit_get_thread");
-                ret = ABT_self_schedule(thread, ABT_POOL_NULL);
-                ATS_ERROR(ret, "ABT_self_schedule");
-            } else {
-                ABT_thread thread;
-                ret = ABT_unit_get_thread(unit, &thread);
-                ATS_ERROR(ret, "ABT_unit_get_thread");
-                ret = ABT_self_schedule(thread, pools[rank]);
-                ATS_ERROR(ret, "ABT_self_schedule");
+        ABT_bool scheduled = ABT_FALSE;
+        if (idx % 5 < 3) {
+            ABT_unit unit;
+            ret = ABT_pool_pop(pools[rank], &unit);
+            ATS_ERROR(ret, "ABT_pool_pop");
+            if (unit != ABT_UNIT_NULL) {
+                scheduled = ABT_TRUE;
+                if (idx % 5 == 0) {
+                    ret = ABT_xstream_run_unit(unit, pools[rank]);
+                    ATS_ERROR(ret, "ABT_xstream_run_unit");
+                } else if (idx % 5 == 1) {
+                    ABT_thread thread;
+                    ret = ABT_unit_get_thread(unit, &thread);
+                    ATS_ERROR(ret, "ABT_unit_get_thread");
+                    ret = ABT_self_schedule(thread, ABT_POOL_NULL);
+                    ATS_ERROR(ret, "ABT_self_schedule");
+                } else {
+                    ABT_thread thread;
+                    ret = ABT_unit_get_thread(unit, &thread);
+                    ATS_ERROR(ret, "ABT_unit_get_thread");
+                    ret = ABT_self_schedule(thread, pools[rank]);
+                    ATS_ERROR(ret, "ABT_self_schedule");
+                }
             }
         } else {
+            /* idx == 3 or 4 */
+            ABT_thread thread;
+            ret = ABT_pool_pop_thread(pools[rank], &thread);
+            ATS_ERROR(ret, "ABT_pool_pop_thread");
+            if (thread != ABT_THREAD_NULL) {
+                scheduled = ABT_TRUE;
+                if (idx % 5 == 3) {
+                    ret = ABT_self_schedule(thread, ABT_POOL_NULL);
+                    ATS_ERROR(ret, "ABT_self_schedule");
+                } else {
+                    ret = ABT_self_schedule(thread, pools[rank]);
+                    ATS_ERROR(ret, "ABT_self_schedule");
+                }
+            }
+        }
+        if (!scheduled) {
             ret = ABT_thread_yield();
             ATS_ERROR(ret, "ABT_thread_yield");
         }
