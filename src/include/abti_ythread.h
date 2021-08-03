@@ -70,22 +70,34 @@ ABTI_ythread_context_get_ythread(ABTD_ythread_context *p_ctx)
 
 ABTU_noreturn static inline void ABTI_ythread_context_jump(ABTI_ythread *p_new)
 {
-    ABTD_ythread_context_jump(&p_new->ctx);
+    if (ABTD_ythread_context_is_started(&p_new->ctx)) {
+        ABTD_ythread_context_jump(&p_new->ctx);
+    } else {
+        ABTD_ythread_context_start_and_jump(&p_new->ctx);
+    }
     ABTU_unreachable();
 }
 
 static inline void ABTI_ythread_context_switch(ABTI_ythread *p_old,
                                                ABTI_ythread *p_new)
 {
-    ABTD_ythread_context_switch(&p_old->ctx, &p_new->ctx);
-    /* Return the previous thread. */
+    if (ABTD_ythread_context_is_started(&p_new->ctx)) {
+        ABTD_ythread_context_switch(&p_old->ctx, &p_new->ctx);
+    } else {
+        ABTD_ythread_context_start_and_switch(&p_old->ctx, &p_new->ctx);
+    }
 }
 
 ABTU_noreturn static inline void
 ABTI_ythread_context_jump_with_call(ABTI_ythread *p_new, void (*f_cb)(void *),
                                     void *cb_arg)
 {
-    ABTD_ythread_context_jump_with_call(&p_new->ctx, f_cb, cb_arg);
+    if (ABTD_ythread_context_is_started(&p_new->ctx)) {
+        ABTD_ythread_context_jump_with_call(&p_new->ctx, f_cb, cb_arg);
+    } else {
+        ABTD_ythread_context_start_and_jump_with_call(&p_new->ctx, f_cb,
+                                                      cb_arg);
+    }
     ABTU_unreachable();
 }
 
@@ -94,9 +106,14 @@ static inline void ABTI_ythread_context_switch_with_call(ABTI_ythread *p_old,
                                                          void (*f_cb)(void *),
                                                          void *cb_arg)
 {
-    ABTD_ythread_context_switch_with_call(&p_old->ctx, &p_new->ctx, f_cb,
-                                          cb_arg);
-    /* Return the previous thread. */
+    if (ABTD_ythread_context_is_started(&p_new->ctx)) {
+        ABTD_ythread_context_switch_with_call(&p_old->ctx, &p_new->ctx, f_cb,
+                                              cb_arg);
+    } else {
+        ABTD_ythread_context_start_and_switch_with_call(&p_old->ctx,
+                                                        &p_new->ctx, f_cb,
+                                                        cb_arg);
+    }
 }
 
 ABTU_noreturn static inline void
