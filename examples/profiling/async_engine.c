@@ -120,16 +120,18 @@ void sched_run(ABT_sched sched)
     ABT_sched_get_pools(sched, 1, 0, &op_pool);
 
     while (1) {
-        ABT_unit unit;
+        ABT_thread thread;
         if (g_wait_mode == 0) {
-            ABT_pool_pop(op_pool, &unit);
+            ABT_pool_pop_thread(op_pool, &thread);
         } else {
-            ABT_pool_pop_wait(op_pool, &unit, POOL_POP_WAIT_SEC);
+            ABT_pool_pop_wait_thread(op_pool, &thread, POOL_POP_WAIT_SEC);
         }
-        if (unit != ABT_UNIT_NULL) {
-            ABT_xstream_run_unit(unit, op_pool);
+        if (thread != ABT_THREAD_NULL) {
+            /* If pool is set to ABT_POOL_NULL, the thread will go back to its
+             * original pool if it yields. */
+            ABT_self_schedule(thread, ABT_POOL_NULL);
         }
-        if (++work_count >= 128 || (g_wait_mode && unit == ABT_UNIT_NULL)) {
+        if (++work_count >= 128 || (g_wait_mode && thread == ABT_THREAD_NULL)) {
             ABT_bool stop;
             ABT_sched_has_to_stop(sched, &stop);
             if (stop == ABT_TRUE)

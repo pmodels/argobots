@@ -94,7 +94,6 @@ static void sched_run(ABT_sched sched)
     sched_data_t *p_data;
     int num_pools;
     ABT_pool *pools;
-    ABT_unit unit;
     int target;
     ABT_bool stop;
     unsigned seed = time(NULL);
@@ -106,16 +105,20 @@ static void sched_run(ABT_sched sched)
 
     while (1) {
         /* Execute one work unit from the scheduler's pool */
-        ABT_pool_pop(pools[0], &unit);
-        if (unit != ABT_UNIT_NULL) {
-            ABT_xstream_run_unit(unit, pools[0]);
+        ABT_thread thread;
+        ABT_pool_pop_thread(pools[0], &thread);
+        if (thread != ABT_THREAD_NULL) {
+            /* "thread" is associated with its original pool (pools[0]). */
+            ABT_self_schedule(thread, ABT_POOL_NULL);
         } else if (num_pools > 1) {
             /* Steal a work unit from other pools */
             target =
                 (num_pools == 2) ? 1 : (rand_r(&seed) % (num_pools - 1) + 1);
-            ABT_pool_pop(pools[target], &unit);
-            if (unit != ABT_UNIT_NULL) {
-                ABT_xstream_run_unit(unit, pools[target]);
+            ABT_pool_pop_thread(pools[target], &thread);
+            if (thread != ABT_THREAD_NULL) {
+                /* "thread" is associated with its original pool
+                 * (pools[target]). */
+                ABT_self_schedule(thread, pools[target]);
             }
         }
 
