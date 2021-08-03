@@ -99,6 +99,8 @@ ABTI_tool_event_thread(ABTI_local *p_local, uint64_t event_code,
                        ABTI_pool *p_pool, ABTI_thread *p_parent,
                        ABT_sync_event_type sync_event_type, void *p_sync_object)
 {
+    if (p_thread->type & ABTI_THREAD_TYPE_ROOT)
+        return; /* A root thread should not be exposed to the user. */
     ABTI_global *p_global = gp_ABTI_global;
     while (1) {
         uint64_t current_mask = ABTD_atomic_acquire_load_uint64(
