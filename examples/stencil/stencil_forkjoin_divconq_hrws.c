@@ -66,33 +66,33 @@ void sched_run(ABT_sched sched)
     ABT_sched_get_pools(sched, num_pools, 0, pools);
 
     while (1) {
-        ABT_unit unit;
+        ABT_thread thread;
         /* Try to pop a ULT from a local pool*/
-        ABT_pool_pop(pools[0], &unit);
-        if (unit != ABT_UNIT_NULL) {
-            ABT_xstream_run_unit(unit, pools[0]);
+        ABT_pool_pop_thread(pools[0], &thread);
+        if (thread != ABT_THREAD_NULL) {
+            ABT_self_schedule(thread, pools[0]);
             goto EVENT_CHECK;
         }
         if (num_pools > 1) {
             /* If failed, try to pop a ULT from level-1 pools several times */
             int repeat = 0;
-            while (repeat++ < 2 && unit == ABT_UNIT_NULL) {
+            while (repeat++ < 2 && thread == ABT_THREAD_NULL) {
                 unsigned rand_val = rand_r(&seed);
                 int victim = rand_val % (num_pools / 2);
-                ABT_pool_pop(pools[victim], &unit);
+                ABT_pool_pop_thread(pools[victim], &thread);
             }
-            if (unit != ABT_UNIT_NULL) {
-                ABT_xstream_run_unit(unit, pools[0]);
+            if (thread != ABT_THREAD_NULL) {
+                ABT_self_schedule(thread, pools[0]);
                 goto EVENT_CHECK;
             }
             /* If failed, try to pop a ULT from all the pools */
             {
                 unsigned rand_val = rand_r(&seed);
                 int victim = rand_val % num_pools;
-                ABT_pool_pop(pools[victim], &unit);
+                ABT_pool_pop_thread(pools[victim], &thread);
             }
-            if (unit != ABT_UNIT_NULL) {
-                ABT_xstream_run_unit(unit, pools[0]);
+            if (thread != ABT_THREAD_NULL) {
+                ABT_self_schedule(thread, pools[0]);
             }
         }
     EVENT_CHECK:

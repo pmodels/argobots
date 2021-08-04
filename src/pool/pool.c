@@ -17,6 +17,18 @@ pool_create_def_from_old_def(const ABT_pool_def *p_def,
                              ABTI_pool_required_def *p_required_def,
                              ABTI_pool_optional_def *p_optional_def,
                              ABTI_pool_deprecated_def *p_deprecated_def);
+static inline int pool_pop_thread_ex(ABT_pool pool, ABT_thread *thread,
+                                     ABT_pool_context pool_ctx);
+static inline int pool_pop_threads_ex(ABT_pool pool, ABT_thread *threads,
+                                      size_t len, size_t *num,
+                                      ABT_pool_context pool_ctx);
+static inline int pool_push_thread_ex(ABT_pool pool, ABT_thread thread,
+                                      ABT_pool_context pool_ctx);
+static inline int pool_push_threads_ex(ABT_pool pool, const ABT_thread *threads,
+                                       size_t num, ABT_pool_context pool_ctx);
+static inline int pool_pop_wait_thread_ex(ABT_pool pool, ABT_thread *thread,
+                                          double time_secs,
+                                          ABT_pool_context pool_ctx);
 
 /** @defgroup POOL Pool
  * This group is for Pool.
@@ -425,6 +437,394 @@ int ABT_pool_get_size(ABT_pool pool, size_t *size)
     ABTI_CHECK_TRUE(p_pool->optional_def.p_get_size, ABT_ERR_POOL);
 
     *size = ABTI_pool_get_size(p_pool);
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Pop a work unit from a pool.
+ *
+ * The functionality of this routine is the same as \c ABT_pool_pop_thread_ex()
+ * while \c ABT_POOL_CONTEXT_OP_POOL_OTHER is passed as \c pool_ctx.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ *
+ * @param[in]  pool    pool handle
+ * @param[out] thread  work unit handle
+ * @return Error code
+ */
+int ABT_pool_pop_thread(ABT_pool pool, ABT_thread *thread)
+{
+    return pool_pop_thread_ex(pool, thread, ABT_POOL_CONTEXT_OP_POOL_OTHER);
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Pop a work unit from a pool.
+ *
+ * \c ABT_pool_pop_thread_ex() pops a work unit from the pool \c pool and sets
+ * it to \c thread.  The pool context \c pool_ctx is passed to \c pool.  If the
+ * underlying pool implementation successfully pops a work unit, this routine
+ * sets \c thread to a work unit handle associated with the returned
+ * \c ABT_unit.  Otherwise, this routine sets \c thread to \c ABT_THREAD_NULL.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ *
+ * @param[in]  pool      pool handle
+ * @param[out] p_unit    work unit handle
+ * @param[in]  pool_ctx  pool context
+ * @return Error code
+ */
+int ABT_pool_pop_thread_ex(ABT_pool pool, ABT_thread *thread,
+                           ABT_pool_context pool_ctx)
+{
+    return pool_pop_thread_ex(pool, thread, pool_ctx);
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Pop work units from a pool.
+ *
+ * The functionality of this routine is the same as \c ABT_pool_pop_threads_ex()
+ * while \c ABT_POOL_CONTEXT_OP_POOL_OTHER is passed as \c pool_ctx.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c ABT_pool_user_pop_many_fn}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c threads, \c len is positive}
+ * \DOC_UNDEFINED_NULL_PTR{\c num}
+ *
+ * @param[in]  pool    pool handle
+ * @param[out] thread  work unit handle
+ * @return Error code
+ */
+int ABT_pool_pop_threads(ABT_pool pool, ABT_thread *threads, size_t len,
+                         size_t *num)
+{
+    return pool_pop_threads_ex(pool, threads, len, num,
+                               ABT_POOL_CONTEXT_OP_POOL_OTHER);
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Pop work units from a pool.
+ *
+ * \c ABT_pool_pop_thread_ex() pops at most \c len work units from the pool
+ * \c pool and sets them to \c threads.  The number of popped work units is set
+ * to \c num.  The pool context \c pool_ctx is passed to \c pool.
+ *
+ * If the underlying pool implementation successfully pops work units, this
+ * routine sets the first \c num elements of \c threads to work unit handles
+ * associated with the returned \c ABT_unit.
+ *
+ * @note
+ * \DOC_NOTE_NO_PADDING{\c threads, \c len}
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c ABT_pool_user_pop_many_fn}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c threads}
+ * \DOC_UNDEFINED_NULL_PTR{\c num}
+ *
+ * @param[in]  pool      pool handle
+ * @param[out] threads   work unit handles
+ * @param[in]  len       the number of \c threads entries
+ * @param[out] num       the number of popped work units
+ * @param[in]  pool_ctx  pool context
+ * @return Error code
+ */
+int ABT_pool_pop_threads_ex(ABT_pool pool, ABT_thread *threads, size_t len,
+                            size_t *num, ABT_pool_context pool_ctx)
+{
+    return pool_pop_threads_ex(pool, threads, len, num, pool_ctx);
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Push a work unit to a pool.
+ *
+ * The functionality of this routine is the same as \c ABT_pool_push_thread_ex()
+ * while \c ABT_POOL_CONTEXT_OP_POOL_OTHER is passed as \c pool_ctx.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] pool    pool handle
+ * @param[in] thread  work unit handle
+ * @return Error code
+ */
+int ABT_pool_push_thread(ABT_pool pool, ABT_thread thread)
+{
+    return pool_push_thread_ex(pool, thread, ABT_POOL_CONTEXT_OP_POOL_OTHER);
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Push a work unit to a pool.
+ *
+ * \c ABT_pool_push_thread_ex() pushes the work unit \c thread to the pool
+ * \c pool.  The pool context \c pool_ctx is passed to \c pool.  If \c thread
+ * is \c ABT_THREAD_NULL, this routine does not push a work unit and returns
+ * \c ABT_SUCCESS.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in] pool      pool handle
+ * @param[in] thread    work unit handle
+ * @param[in] pool_ctx  pool context
+ * @return Error code
+ */
+int ABT_pool_push_thread_ex(ABT_pool pool, ABT_thread thread,
+                            ABT_pool_context pool_ctx)
+{
+    return pool_push_thread_ex(pool, thread, pool_ctx);
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Push work units to a pool.
+ *
+ * The functionality of this routine is the same as
+ * \c ABT_pool_push_threads_ex() while \c ABT_POOL_CONTEXT_OP_POOL_OTHER is
+ * passed as \c pool_ctx.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c ABT_pool_user_push_many_fn}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR_CONDITIONAL{\c threads, \c num is positive}
+ *
+ * @param[in] pool     pool handle
+ * @param[in] threads  work unit handles
+ * @param[in] num      the number of work unit handles
+ * @return Error code
+ */
+int ABT_pool_push_threads(ABT_pool pool, const ABT_thread *threads, size_t num)
+{
+    return pool_push_threads_ex(pool, threads, num,
+                                ABT_POOL_CONTEXT_OP_POOL_OTHER);
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Push work units to a pool.
+ *
+ * \c ABT_pool_push_threads_ex() pushes \c num work units stored in \c threads
+ * to the pool \c pool.  The pool context \c pool_ctx is passed to \c pool.
+ * This routine ignores \c ABT_THREAD_NULL.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_RESOURCE
+ * \DOC_ERROR_RESOURCE_UNIT_CREATE
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c ABT_pool_user_push_many_fn}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR_CONDITIONAL{\c threads, \c num is positive}
+ *
+ * @param[in] pool      pool handle
+ * @param[in] threads   work unit handles
+ * @param[in] num       the number of work unit handles
+ * @param[in] pool_ctx  pool context
+ * @return Error code
+ */
+int ABT_pool_push_threads_ex(ABT_pool pool, const ABT_thread *threads,
+                             size_t num, ABT_pool_context pool_ctx)
+{
+    return pool_push_threads_ex(pool, threads, num, pool_ctx);
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Pop a work unit from a pool.
+ *
+ * The functionality of this routine is the same as
+ * \c ABT_pool_pop_wait_thread_ex() while \c ABT_POOL_CONTEXT_OP_POOL_OTHER is
+ * passed as \c pool_ctx.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c ABT_pool_user_pop_wait_fn}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ *
+ * @param[in]  pool       pool handle
+ * @param[out] thread     work unit handle
+ * @param[in]  time_secs  duration of waiting time (seconds)
+ * @return Error code
+ */
+int ABT_pool_pop_wait_thread(ABT_pool pool, ABT_thread *thread,
+                             double time_secs)
+{
+    return pool_pop_wait_thread_ex(pool, thread, time_secs,
+                                   ABT_POOL_CONTEXT_OP_POOL_OTHER);
+}
+
+/**
+ * @ingroup POOL
+ * @brief   Pop a work unit from a pool.
+ *
+ * \c ABT_pool_pop_wait_thread_ex() pops a work unit from the pool \c pool and
+ * sets it to \c thread.  The pool context \c pool_ctx is passed to \c pool.
+ * This routine might block on \c pool to wait for up to \c time_sec seconds
+ * when \c pool does not have a work unit to return.
+ *
+ * If the underlying pool implementation successfully pops a work unit, this
+ * routine sets \c thread to a work unit handle associated with the returned
+ * \c ABT_unit.  Otherwise, this routine sets \c thread to \c ABT_THREAD_NULL.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c ABT_pool_user_pop_wait_fn}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c thread}
+ *
+ * @param[in]  pool       pool handle
+ * @param[out] thread     work unit handle
+ * @param[in]  time_secs  duration of waiting time (seconds)
+ * @param[in]  pool_ctx   pool context
+ * @return Error code
+ */
+int ABT_pool_pop_wait_thread_ex(ABT_pool pool, ABT_thread *thread,
+                                double time_secs, ABT_pool_context pool_ctx)
+{
+    return pool_pop_wait_thread_ex(pool, thread, time_secs, pool_ctx);
+}
+
+typedef struct {
+    void *arg;
+    void (*print_fn)(void *arg, ABT_thread);
+} pool_print_all_threads_wrapper_arg_t;
+
+static void pool_print_all_threads_wrapper(void *arg, ABT_unit unit)
+{
+    pool_print_all_threads_wrapper_arg_t *p_arg =
+        (pool_print_all_threads_wrapper_arg_t *)arg;
+    ABTI_global *p_global = ABTI_global_get_global();
+    ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+    ABT_thread thread = ABTI_thread_get_handle(p_thread);
+    p_arg->print_fn(p_arg->arg, thread);
+}
+/**
+ * @ingroup POOL
+ * @brief   Apply a print function to every work unit in a pool.
+ *
+ * \c ABT_pool_print_all_threads() calls \c print_fn() for every work unit in
+ * the pool \c pool.  \c print_fn() is called with \c arg as its first argument
+ * and the handle of the work unit as the second argument.
+ *
+ * @note
+ * As the name of the argument implies, \c print_fn() may not have any side
+ * effect; \c ABT_pool_print_all_threads() is for debugging and profiling.  For
+ * example, changing the state of \c ABT_thread in \c print_fn() is forbidden.
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_POOL_HANDLE{\c pool}
+ * \DOC_ERROR_POOL_UNSUPPORTED_FEATURE{\c pool, \c ABT_pool_user_print_all_fn}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c print_fn}
+ * \DOC_UNDEFINED_CHANGE_STATE{\c print_fn()}
+ *
+ * @param[in] pool      pool handle
+ * @param[in] arg       argument passed to \c print_fn
+ * @param[in] print_fn  user-defined print function
+ * @return Error code
+ */
+int ABT_pool_print_all_threads(ABT_pool pool, void *arg,
+                               void (*print_fn)(void *arg, ABT_thread))
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(print_fn);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->optional_def.p_print_all, ABT_ERR_POOL);
+
+    pool_print_all_threads_wrapper_arg_t wrapper_arg = { arg, print_fn };
+    p_pool->optional_def.p_print_all(pool, (void *)&wrapper_arg,
+                                     pool_print_all_threads_wrapper);
     return ABT_SUCCESS;
 }
 
@@ -1295,4 +1695,142 @@ pool_create(ABT_pool_access access,
 static inline uint64_t pool_get_new_id(void)
 {
     return (uint64_t)ABTD_atomic_fetch_add_uint64(&g_pool_id, 1);
+}
+
+static inline int pool_pop_thread_ex(ABT_pool pool, ABT_thread *thread,
+                                     ABT_pool_context pool_ctx)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABT_unit unit = ABTI_pool_pop(p_pool, pool_ctx);
+    if (unit != ABT_UNIT_NULL) {
+        ABTI_global *p_global = ABTI_global_get_global();
+        ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+        *thread = ABTI_thread_get_handle(p_thread);
+    } else {
+        *thread = ABT_THREAD_NULL;
+    }
+    return ABT_SUCCESS;
+}
+
+static inline int pool_pop_threads_ex(ABT_pool pool, ABT_thread *threads,
+                                      size_t len, size_t *num,
+                                      ABT_pool_context pool_ctx)
+{
+    ABTI_STATIC_ASSERT(sizeof(ABT_unit) == sizeof(ABT_thread));
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(threads || len == 0);
+    ABTI_UB_ASSERT(num);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->optional_def.p_pop_many, ABT_ERR_POOL);
+
+    if (len > 0) {
+        ABTI_pool_pop_many(p_pool, (ABT_unit *)threads, len, num, pool_ctx);
+        /* Translate units to threads. */
+        size_t num_popped = *num;
+        if (num_popped > 0) {
+            size_t i;
+            ABTI_global *p_global = ABTI_global_get_global();
+            for (i = 0; i < num_popped; i++) {
+                ABTI_thread *p_thread =
+                    ABTI_unit_get_thread(p_global, (ABT_unit)threads[i]);
+                threads[i] = ABTI_thread_get_handle(p_thread);
+            }
+        }
+    }
+    return ABT_SUCCESS;
+}
+
+static inline int pool_push_thread_ex(ABT_pool pool, ABT_thread thread,
+                                      ABT_pool_context pool_ctx)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+
+    if (p_thread) {
+        ABTI_global *p_global = ABTI_global_get_global();
+        int abt_errno =
+            ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
+        ABTI_CHECK_ERROR(abt_errno);
+        ABTI_pool_push(p_pool, p_thread->unit, pool_ctx);
+    }
+    return ABT_SUCCESS;
+}
+
+static inline int pool_push_threads_ex(ABT_pool pool, const ABT_thread *threads,
+                                       size_t num, ABT_pool_context pool_ctx)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(threads || num == 0);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->optional_def.p_push_many, ABT_ERR_POOL);
+
+    if (num > 0) {
+        ABTI_global *p_global = ABTI_global_get_global();
+        int abt_errno;
+        ABT_unit *push_units, push_units_buffer[64];
+        if (num > sizeof(push_units_buffer) / sizeof(push_units_buffer[0])) {
+            abt_errno =
+                ABTU_malloc(sizeof(ABT_unit) * num, (void **)&push_units);
+            ABTI_CHECK_ERROR(abt_errno);
+        } else {
+            push_units = push_units_buffer;
+        }
+
+        size_t i, num_units = 0;
+        for (i = 0; i < num; i++) {
+            /* FIXME: the following can break the intermediate mapping if an
+             * error happens. */
+            ABTI_thread *p_thread = ABTI_thread_get_ptr(threads[i]);
+            ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+            if (p_thread) {
+                abt_errno =
+                    ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
+                if (abt_errno != ABT_SUCCESS) {
+                    if (push_units != push_units_buffer)
+                        ABTU_free(push_units);
+                    ABTI_HANDLE_ERROR(abt_errno);
+                }
+                push_units[num_units++] = p_thread->unit;
+            }
+        }
+        if (num_units > 0) {
+            ABTI_pool_push_many(p_pool, push_units, num_units, pool_ctx);
+        }
+        if (push_units != push_units_buffer)
+            ABTU_free(push_units);
+    }
+    return ABT_SUCCESS;
+}
+
+static inline int pool_pop_wait_thread_ex(ABT_pool pool, ABT_thread *thread,
+                                          double time_secs,
+                                          ABT_pool_context pool_ctx)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(thread);
+
+    ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
+    ABTI_CHECK_NULL_POOL_PTR(p_pool);
+    ABTI_CHECK_TRUE(p_pool->optional_def.p_pop_wait, ABT_ERR_POOL);
+
+    ABT_unit unit = ABTI_pool_pop_wait(p_pool, time_secs, pool_ctx);
+    if (unit != ABT_UNIT_NULL) {
+        ABTI_global *p_global = ABTI_global_get_global();
+        ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+        *thread = ABTI_thread_get_handle(p_thread);
+    } else {
+        *thread = ABT_THREAD_NULL;
+    }
+    return ABT_SUCCESS;
 }

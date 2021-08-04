@@ -283,6 +283,80 @@ int main(int argc, char *argv[])
         assert(unit == ABT_UNIT_NULL && g_expect.pop_wait_out == unit);
     }
 
+    /* ABT_pool_pop_thread() */
+    {
+        int pop_counter = g_expect.pop_counter;
+        ABT_thread thread;
+        g_expect.pop_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        ret = ABT_pool_pop_thread(pool, &thread);
+        ATS_ERROR(ret, "ABT_pool_pop_thread");
+        assert(g_expect.pop_counter == pop_counter + 1);
+        assert(thread == ABT_THREAD_NULL && g_expect.pop_out == ABT_UNIT_NULL);
+    }
+
+    /* ABT_pool_pop_thread_ex() */
+    {
+        int pop_counter = g_expect.pop_counter;
+        ABT_thread thread;
+        g_expect.pop_context_in = (ABT_pool_context)777;
+        ret = ABT_pool_pop_thread_ex(pool, &thread, (ABT_pool_context)777);
+        ATS_ERROR(ret, "ABT_pool_pop_thread_ex");
+        assert(g_expect.pop_counter == pop_counter + 1);
+        assert(thread == ABT_THREAD_NULL && g_expect.pop_out == ABT_UNIT_NULL);
+    }
+
+    /* ABT_pool_pop_threads() */
+    {
+        int pop_many_counter = g_expect.pop_many_counter;
+        ABT_thread threads[3];
+        g_expect.pop_many_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        size_t num, len = sizeof(threads) / sizeof(threads[0]);
+        ret = ABT_pool_pop_threads(pool, threads, len, &num);
+        ATS_ERROR(ret, "ABT_pool_pop_threads");
+        assert(g_expect.pop_many_counter == pop_many_counter + 1);
+        assert(num == 0 && g_expect.pop_many_num_popped_out == 0);
+    }
+
+    /* ABT_pool_pop_threads_ex() */
+    {
+        int pop_many_counter = g_expect.pop_many_counter;
+        ABT_thread threads[3];
+        g_expect.pop_many_context_in = (ABT_pool_context)777;
+        size_t num, len = sizeof(threads) / sizeof(threads[0]);
+        ret = ABT_pool_pop_threads_ex(pool, threads, len, &num,
+                                      (ABT_pool_context)777);
+        ATS_ERROR(ret, "ABT_pool_pop_threads_ex");
+        assert(g_expect.pop_many_counter == pop_many_counter + 1);
+        assert(num == 0 && g_expect.pop_many_num_popped_out == 0);
+    }
+
+    /* ABT_pool_pop_wait_thread() */
+    {
+        int pop_wait_counter = g_expect.pop_wait_counter;
+        ABT_thread thread;
+        g_expect.pop_wait_time_secs_in = 1.0;
+        g_expect.pop_wait_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        ret = ABT_pool_pop_wait_thread(pool, &thread, 1.0);
+        ATS_ERROR(ret, "ABT_pool_pop_wait_thread");
+        assert(g_expect.pop_wait_counter == pop_wait_counter + 1);
+        assert(thread == ABT_THREAD_NULL &&
+               g_expect.pop_wait_out == ABT_UNIT_NULL);
+    }
+
+    /* ABT_pool_pop_wait_thread_ex() */
+    {
+        int pop_wait_counter = g_expect.pop_wait_counter;
+        ABT_thread thread;
+        g_expect.pop_wait_time_secs_in = 1.0;
+        g_expect.pop_wait_context_in = (ABT_pool_context)777;
+        ret = ABT_pool_pop_wait_thread_ex(pool, &thread, 1.0,
+                                          (ABT_pool_context)777);
+        ATS_ERROR(ret, "ABT_pool_pop_wait_thread_ex");
+        assert(g_expect.pop_wait_counter == pop_wait_counter + 1);
+        assert(thread == ABT_THREAD_NULL &&
+               g_expect.pop_wait_out == ABT_UNIT_NULL);
+    }
+
     /* ABT_pool_print_all() */
     {
         int print_all_counter = g_expect.print_all_counter;
@@ -350,6 +424,81 @@ int main(int argc, char *argv[])
 
         int free_unit_counter = g_expect.free_unit_counter;
         g_expect.free_unit_in = unit;
+        ret = ABT_thread_free(&thread);
+        ATS_ERROR(ret, "ABT_thread_free");
+        assert(g_expect.free_unit_counter == free_unit_counter + 1);
+    }
+
+    /* ABT_pool_push_thread(), ABT_pool_push_thread_ex(),
+     * ABT_pool_push_threads(), and ABT_pool_push_threads_ex() */
+    {
+        ABT_thread thread;
+        int create_unit_counter = g_expect.create_unit_counter;
+        int push_counter = g_expect.push_counter;
+        g_expect.push_context_in = ABT_POOL_CONTEXT_OP_THREAD_CREATE;
+        ret = ABT_thread_create(pool, empty_func, NULL, ABT_THREAD_ATTR_NULL,
+                                &thread);
+        ATS_ERROR(ret, "ABT_thread_create");
+        assert(g_expect.create_unit_counter == create_unit_counter + 1);
+        assert(g_expect.push_counter == push_counter + 1);
+
+        ABT_thread popped_thread;
+        int pop_counter = g_expect.pop_counter;
+        g_expect.pop_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        ret = ABT_pool_pop_thread(pool, &popped_thread);
+        ATS_ERROR(ret, "ABT_pool_pop_thread");
+        assert(g_expect.pop_counter == pop_counter + 1);
+        assert(thread == popped_thread);
+
+        g_expect.push_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        ret = ABT_pool_push_thread(pool, thread);
+        ATS_ERROR(ret, "ABT_pool_push_thread");
+        assert(g_expect.push_counter == push_counter + 2);
+
+        g_expect.pop_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        ret = ABT_pool_pop_thread(pool, &popped_thread);
+        ATS_ERROR(ret, "ABT_pool_pop_thread");
+        assert(g_expect.pop_counter == pop_counter + 2);
+        assert(thread == popped_thread);
+
+        g_expect.push_context_in = (ABT_pool_context)777;
+        ret = ABT_pool_push_thread_ex(pool, thread, (ABT_pool_context)777);
+        ATS_ERROR(ret, "ABT_pool_push_thread_ex");
+        assert(g_expect.push_counter == push_counter + 3);
+
+        g_expect.pop_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        ret = ABT_pool_pop_thread(pool, &popped_thread);
+        ATS_ERROR(ret, "ABT_pool_pop_thread");
+        assert(g_expect.pop_counter == pop_counter + 3);
+        assert(thread == popped_thread);
+
+        int push_many_counter = g_expect.push_many_counter;
+        g_expect.push_many_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        ret = ABT_pool_push_threads(pool, &thread, 1);
+        ATS_ERROR(ret, "ABT_pool_push_threads");
+        assert(g_expect.push_many_counter == push_many_counter + 1);
+
+        g_expect.pop_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        ret = ABT_pool_pop_thread(pool, &popped_thread);
+        ATS_ERROR(ret, "ABT_pool_pop_thread");
+        assert(g_expect.pop_counter == pop_counter + 4);
+        assert(thread == popped_thread);
+
+        g_expect.push_many_context_in = (ABT_pool_context)777;
+        ret = ABT_pool_push_threads_ex(pool, &thread, 1, (ABT_pool_context)777);
+        ATS_ERROR(ret, "ABT_pool_push_threads_ex");
+        assert(g_expect.push_many_counter == push_many_counter + 2);
+
+        g_expect.pop_context_in = ABT_POOL_CONTEXT_OP_POOL_OTHER;
+        ret = ABT_pool_pop_thread(pool, &popped_thread);
+        ATS_ERROR(ret, "ABT_pool_pop_thread");
+        assert(g_expect.pop_counter == pop_counter + 5);
+        assert(thread == popped_thread);
+
+        ret = ABT_self_schedule(thread, pool);
+        ATS_ERROR(ret, "ABT_self_schedule");
+
+        int free_unit_counter = g_expect.free_unit_counter;
         ret = ABT_thread_free(&thread);
         ATS_ERROR(ret, "ABT_thread_free");
         assert(g_expect.free_unit_counter == free_unit_counter + 1);

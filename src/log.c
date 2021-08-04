@@ -169,4 +169,22 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
     }
 }
 
+void ABTI_log_pool_pop_many(ABTI_pool *p_pool, const ABT_unit *units,
+                            size_t num)
+{
+    size_t i;
+    for (i = 0; i < num; i++) {
+        ABTI_log_pool_pop(p_pool, units[i]);
+    }
+}
+
+void ABTI_log_pool_push_many(ABTI_pool *p_pool, const ABT_unit *units,
+                             size_t num)
+{
+    size_t i;
+    for (i = 0; i < num; i++) {
+        ABTI_log_pool_push(p_pool, units[i]);
+    }
+}
+
 #endif /* ABT_CONFIG_USE_DEBUG_LOG */

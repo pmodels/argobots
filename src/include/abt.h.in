@@ -2305,6 +2305,33 @@ int ABT_pool_get_access(ABT_pool pool, ABT_pool_access *access) ABT_API_PUBLIC;
 int ABT_pool_is_empty(ABT_pool pool, ABT_bool *is_empty) ABT_API_PUBLIC;
 int ABT_pool_get_size(ABT_pool pool, size_t *size) ABT_API_PUBLIC;
 int ABT_pool_get_total_size(ABT_pool pool, size_t *size) ABT_API_PUBLIC;
+int ABT_pool_pop_thread(ABT_pool pool, ABT_thread *thread) ABT_API_PUBLIC;
+int ABT_pool_pop_thread_ex(ABT_pool pool, ABT_thread *thread,
+                           ABT_pool_context pool_ctx) ABT_API_PUBLIC;
+int ABT_pool_pop_threads(ABT_pool pool, ABT_thread *threads, size_t len,
+                         size_t *num) ABT_API_PUBLIC;
+int ABT_pool_pop_threads_ex(ABT_pool pool, ABT_thread *threads, size_t len,
+                            size_t *num, ABT_pool_context pool_ctx) ABT_API_PUBLIC;
+int ABT_pool_push_thread(ABT_pool pool, ABT_thread thread) ABT_API_PUBLIC;
+int ABT_pool_push_thread_ex(ABT_pool pool, ABT_thread thread,
+                            ABT_pool_context pool_ctx) ABT_API_PUBLIC;
+int ABT_pool_push_threads(ABT_pool pool, const ABT_thread *threads,
+                          size_t num) ABT_API_PUBLIC;
+int ABT_pool_push_threads_ex(ABT_pool pool, const ABT_thread *threads,
+                             size_t num, ABT_pool_context pool_ctx) ABT_API_PUBLIC;
+int ABT_pool_pop_wait_thread(ABT_pool pool, ABT_thread *thread,
+                             double time_secs) ABT_API_PUBLIC;
+int ABT_pool_pop_wait_thread_ex(ABT_pool pool, ABT_thread *thread,
+                                double time_secs,
+                                ABT_pool_context pool_ctx) ABT_API_PUBLIC;
+int ABT_pool_print_all_threads(ABT_pool pool, void *arg,
+                               void (*print_fn)(void *arg, ABT_thread)) ABT_API_PUBLIC;
+int ABT_pool_set_data(ABT_pool pool, void *data) ABT_API_PUBLIC;
+int ABT_pool_get_data(ABT_pool pool, void **data) ABT_API_PUBLIC;
+int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched) ABT_API_PUBLIC;
+int ABT_pool_get_id(ABT_pool pool, int *id) ABT_API_PUBLIC;
+
+/* Old Pool API.  Use ABT_pool_xxx_thread() instead. */
 int ABT_pool_pop(ABT_pool pool, ABT_unit *unit) ABT_API_PUBLIC;
 int ABT_pool_pop_wait(ABT_pool pool, ABT_unit *unit, double time_secs) ABT_API_PUBLIC;
 int ABT_pool_pop_timedwait(ABT_pool pool, ABT_unit *unit, double abstime_secs)
@@ -2313,10 +2340,6 @@ int ABT_pool_remove(ABT_pool pool, ABT_unit unit) ABT_API_PUBLIC;
 int ABT_pool_push(ABT_pool pool, ABT_unit unit) ABT_API_PUBLIC;
 int ABT_pool_print_all(ABT_pool pool, void *arg,
                        void (*print_fn)(void *arg, ABT_unit)) ABT_API_PUBLIC;
-int ABT_pool_set_data(ABT_pool pool, void *data) ABT_API_PUBLIC;
-int ABT_pool_get_data(ABT_pool pool, void **data) ABT_API_PUBLIC;
-int ABT_pool_add_sched(ABT_pool pool, ABT_sched sched) ABT_API_PUBLIC;
-int ABT_pool_get_id(ABT_pool pool, int *id) ABT_API_PUBLIC;
 
 /* Pool config */
 int ABT_pool_config_create(ABT_pool_config *config) ABT_API_PUBLIC;

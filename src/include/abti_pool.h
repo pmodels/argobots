@@ -113,6 +113,25 @@ static inline ABT_unit ABTI_pool_pop(ABTI_pool *p_pool,
     return unit;
 }
 
+static inline void ABTI_pool_pop_many(ABTI_pool *p_pool, ABT_unit *units,
+                                      size_t len, size_t *num,
+                                      ABT_pool_context context)
+{
+    ABTI_UB_ASSERT(p_pool->optional_def.p_pop_many);
+    p_pool->optional_def.p_pop_many(ABTI_pool_get_handle(p_pool), units, len,
+                                    num, context);
+    LOG_DEBUG_POOL_POP_MANY(p_pool, units, *num);
+}
+
+static inline void ABTI_pool_push_many(ABTI_pool *p_pool, const ABT_unit *units,
+                                       size_t num, ABT_pool_context context)
+{
+    ABTI_UB_ASSERT(p_pool->optional_def.p_push_many);
+    p_pool->optional_def.p_push_many(ABTI_pool_get_handle(p_pool), units, num,
+                                     context);
+    LOG_DEBUG_POOL_PUSH_MANY(p_pool, units, num);
+}
+
 /* Increase num_scheds to mark the pool as having another scheduler. If the
  * pool is not available, it returns ABT_ERR_INV_POOL_ACCESS.  */
 static inline void ABTI_pool_retain(ABTI_pool *p_pool)
