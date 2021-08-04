@@ -76,51 +76,37 @@ ABTU_ret_err static inline int ABTI_pool_remove(ABTI_pool *p_pool,
     return p_pool->deprecated_def.p_remove(ABTI_pool_get_handle(p_pool), unit);
 }
 
-static inline ABT_unit ABTI_pool_pop_wait(ABTI_pool *p_pool, double time_secs,
-                                          ABT_pool_context context)
+static inline ABT_thread ABTI_pool_pop_wait(ABTI_pool *p_pool, double time_secs,
+                                            ABT_pool_context context)
 {
-    ABT_unit unit;
-
     ABTI_UB_ASSERT(p_pool->optional_def.p_pop_wait);
-    unit = p_pool->optional_def.p_pop_wait(ABTI_pool_get_handle(p_pool),
-                                           time_secs, context);
-    LOG_DEBUG_POOL_POP(p_pool, unit);
-
-    return unit;
+    ABT_thread thread =
+        p_pool->optional_def.p_pop_wait(ABTI_pool_get_handle(p_pool), time_secs,
+                                        context);
+    LOG_DEBUG_POOL_POP(p_pool, thread);
+    return thread;
 }
 
-static inline ABT_unit ABTI_pool_pop_timedwait(ABTI_pool *p_pool,
-                                               double abstime_secs)
+/* Defined in pool.c */
+ABT_thread ABTI_pool_pop_timedwait(ABTI_pool *p_pool, double abstime_secs);
+
+static inline ABT_thread ABTI_pool_pop(ABTI_pool *p_pool,
+                                       ABT_pool_context context)
 {
-    ABT_unit unit;
-
-    ABTI_UB_ASSERT(p_pool->deprecated_def.p_pop_timedwait);
-    unit = p_pool->deprecated_def.p_pop_timedwait(ABTI_pool_get_handle(p_pool),
-                                                  abstime_secs);
-    LOG_DEBUG_POOL_POP(p_pool, unit);
-
-    return unit;
+    ABT_thread thread =
+        p_pool->required_def.p_pop(ABTI_pool_get_handle(p_pool), context);
+    LOG_DEBUG_POOL_POP(p_pool, thread);
+    return thread;
 }
 
-static inline ABT_unit ABTI_pool_pop(ABTI_pool *p_pool,
-                                     ABT_pool_context context)
-{
-    ABT_unit unit;
-
-    unit = p_pool->required_def.p_pop(ABTI_pool_get_handle(p_pool), context);
-    LOG_DEBUG_POOL_POP(p_pool, unit);
-
-    return unit;
-}
-
-static inline void ABTI_pool_pop_many(ABTI_pool *p_pool, ABT_unit *units,
+static inline void ABTI_pool_pop_many(ABTI_pool *p_pool, ABT_thread *threads,
                                       size_t len, size_t *num,
                                       ABT_pool_context context)
 {
     ABTI_UB_ASSERT(p_pool->optional_def.p_pop_many);
-    p_pool->optional_def.p_pop_many(ABTI_pool_get_handle(p_pool), units, len,
+    p_pool->optional_def.p_pop_many(ABTI_pool_get_handle(p_pool), threads, len,
                                     num, context);
-    LOG_DEBUG_POOL_POP_MANY(p_pool, units, *num);
+    LOG_DEBUG_POOL_POP_MANY(p_pool, threads, *num);
 }
 
 static inline void ABTI_pool_push_many(ABTI_pool *p_pool, const ABT_unit *units,

@@ -1259,20 +1259,19 @@ struct info_pool_set_t {
     size_t len;
 };
 
-static void info_print_unit(void *arg, ABT_unit unit)
+static void info_print_unit(void *arg, ABT_thread thread)
 {
     /* This function may not have any side effect on unit because it is passed
      * to p_print_all. */
     struct info_print_unit_arg_t *p_arg;
     p_arg = (struct info_print_unit_arg_t *)arg;
     FILE *fp = p_arg->fp;
-    ABTI_thread *p_thread =
-        ABTI_unit_get_thread(ABTI_global_get_global(), unit);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
 
     if (!p_thread) {
-        fprintf(fp, "=== unknown (%p) ===\n", (void *)unit);
+        fprintf(fp, "=== unknown (%p) ===\n", (void *)thread);
     } else if (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) {
-        fprintf(fp, "=== ULT (%p) ===\n", (void *)unit);
+        fprintf(fp, "=== ULT (%p) ===\n", (void *)thread);
         ABTI_ythread *p_ythread = ABTI_thread_get_ythread(p_thread);
         ABT_unit_id thread_id = ABTI_thread_get_id(&p_ythread->thread);
         fprintf(fp,
@@ -1281,7 +1280,7 @@ static void info_print_unit(void *arg, ABT_unit unit)
                 (uint64_t)thread_id, (void *)&p_ythread->ctx);
         ABTI_ythread_print_stack(p_arg->p_global, p_ythread, fp);
     } else {
-        fprintf(fp, "=== tasklet (%p) ===\n", (void *)unit);
+        fprintf(fp, "=== tasklet (%p) ===\n", (void *)thread);
     }
 }
 

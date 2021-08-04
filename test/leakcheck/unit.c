@@ -100,9 +100,14 @@ ABT_unit pool_pop_old(ABT_pool pool)
     return pool_data->units[--pool_data->num_units];
 }
 
-ABT_unit pool_pop(ABT_pool pool, ABT_pool_context context)
+ABT_thread pool_pop(ABT_pool pool, ABT_pool_context context)
 {
-    return pool_pop_old(pool);
+    ABT_unit unit = pool_pop_old(pool);
+    if (unit != ABT_UNIT_NULL) {
+        return ((unit_t *)unit)->thread;
+    } else {
+        return ABT_THREAD_NULL;
+    }
 }
 
 int pool_free_old(ABT_pool pool)

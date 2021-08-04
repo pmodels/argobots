@@ -1767,7 +1767,7 @@ typedef ABT_bool (*ABT_pool_user_is_empty_fn)(ABT_pool);
  * A caller of \c ABT_pool_user_pop_fn() is undefined, so a program that relies
  * on a caller of this routine is non-conforming.
  */
-typedef ABT_unit (*ABT_pool_user_pop_fn)(ABT_pool, ABT_pool_context);
+typedef ABT_thread (*ABT_pool_user_pop_fn)(ABT_pool, ABT_pool_context);
 /**
  * @ingroup POOL_USER_DEF
  * @fn    void (*ABT_pool_user_push_fn)(ABT_pool pool, ABT_unit unit,
@@ -1858,23 +1858,23 @@ typedef size_t (*ABT_pool_user_get_size_fn)(ABT_pool);
  * A caller of \c ABT_pool_user_pop_wait_fn() is undefined, so a program that
  * relies on a caller of this routine is non-conforming.
  */
-typedef ABT_unit (*ABT_pool_user_pop_wait_fn)(ABT_pool, double,
-                                              ABT_pool_context);
+typedef ABT_thread (*ABT_pool_user_pop_wait_fn)(ABT_pool, double,
+                                                ABT_pool_context);
 /**
  * @ingroup POOL_USER_DEF
- * @fn    void (*ABT_pool_user_pop_many_fn)(ABT_pool pool, ABT_unit *units,
- *                                          size_t max_units,
+ * @fn    void (*ABT_pool_user_pop_many_fn)(ABT_pool pool, ABT_thread *threads,
+ *                                          size_t max_threads,
  *                                          size_t *num_popped,
  *                                          ABT_pool_context context)
  * @brief Function that pops work units from a pool.
  *
  * \c ABT_pool_user_pop_many_fn() pops multiple work units from the pool \c pool
- * and returns them through \c units.  This routine pops at maximum \c max_units
- * work units from the pool and returns the number of popped units to
- * \c num_popped where \c num_popped is not \c NULL.  The popped units are
- * stored in \c units at indices from 0 to \c num_popped - 1.  This routine may
- * not modify elements of \c units at indices from \c num_popped to
- * \c max_units.  The implementation of this routine may change its behavior
+ * and returns them through \c threads.  This routine pops at maximum
+ * \c max_units work units from the pool and returns the number of popped work
+ * units to \c num_popped where \c num_popped is not \c NULL.  The popped work
+ * units are stored in \c threads at indices from 0 to \c num_popped - 1.  This
+ * routine may not modify elements of \c threads at indices from \c num_popped
+ * to \c max_threads.  The implementation of this routine may change its behavior
  * based on the pool context \c context.
  *
  * @note
@@ -1886,7 +1886,7 @@ typedef ABT_unit (*ABT_pool_user_pop_wait_fn)(ABT_pool, double,
  * A caller of \c ABT_pool_user_pop_many_fn() is undefined, so a program that
  * relies on a caller of this routine is non-conforming.
  */
-typedef void (*ABT_pool_user_pop_many_fn)(ABT_pool, ABT_unit *, size_t,
+typedef void (*ABT_pool_user_pop_many_fn)(ABT_pool, ABT_thread *, size_t,
                                           size_t *, ABT_pool_context);
 /**
  * @ingroup POOL_USER_DEF
@@ -1916,7 +1916,7 @@ typedef void (*ABT_pool_user_push_many_fn)(ABT_pool, const ABT_unit *, size_t,
 /**
  * @ingroup POOL_USER_DEF
  * @fn    void (*ABT_pool_user_print_all_fn)(ABT_pool pool, void *arg,
- *                                           void (*print_f)(void *, ABT_unit))
+ *                                           void (*print_f)(void *, ABT_thread))
  * @brief Function that applies a user-given function to all work units in a
  *        pool.
  *
@@ -1932,7 +1932,7 @@ typedef void (*ABT_pool_user_push_many_fn)(ABT_pool, const ABT_unit *, size_t,
  * relies on a caller of this routine is non-conforming.
  */
 typedef void (*ABT_pool_user_print_all_fn)(ABT_pool, void *arg,
-                                           void (*)(void *, ABT_unit));
+                                           void (*)(void *, ABT_thread));
 
 /* Pool Functions */
 typedef ABT_unit_type (*ABT_unit_get_type_fn)(ABT_unit);

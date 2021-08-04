@@ -526,11 +526,11 @@ void pool3_push(ABT_pool pool, ABT_unit unit, ABT_pool_context context)
     queue_push(&pool3_queue, p_unit);
 }
 
-ABT_unit pool3_pop(ABT_pool pool, ABT_pool_context context)
+ABT_thread pool3_pop(ABT_pool pool, ABT_pool_context context)
 {
     assert(g_pool3 == pool);
     unit_t *p_unit = queue_pop(&pool3_queue);
-    return p_unit ? ((ABT_unit)p_unit) : ABT_UNIT_NULL;
+    return p_unit ? p_unit->thread : ABT_THREAD_NULL;
 }
 
 void pool3_free(ABT_pool pool)
@@ -606,11 +606,11 @@ void pool4_push(ABT_pool pool, ABT_unit unit, ABT_pool_context context)
     queue_push(&pool4_queue, p_unit);
 }
 
-ABT_unit pool4_pop(ABT_pool pool, ABT_pool_context context)
+ABT_thread pool4_pop(ABT_pool pool, ABT_pool_context context)
 {
     assert(g_pool4 == pool);
     unit_t *p_unit = queue_pop(&pool4_queue);
-    return p_unit ? ((ABT_unit)p_unit) : ABT_UNIT_NULL;
+    return p_unit ? p_unit->thread : ABT_THREAD_NULL;
 }
 
 void pool4_free(ABT_pool pool)

@@ -111,10 +111,10 @@ static void sched_run(ABT_sched sched)
             ABT_pool pool = pools[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
             /* Pop one work unit */
-            ABT_unit unit =
+            ABT_thread thread =
                 ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OP_POOL_OTHER);
-            if (unit != ABT_UNIT_NULL) {
-                ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+            if (thread != ABT_THREAD_NULL) {
+                ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
                 ABTI_ythread_schedule(p_global, &p_local_xstream, p_thread);
                 run_cnt_nowait++;
                 break;
@@ -125,18 +125,19 @@ static void sched_run(ABT_sched sched)
          * above. */
         if (!run_cnt_nowait) {
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pools[0]);
-            ABT_unit unit;
+            ABT_thread thread;
             if (p_pool->optional_def.p_pop_wait) {
-                unit = ABTI_pool_pop_wait(p_pool, 0.1,
-                                          ABT_POOL_CONTEXT_OP_POOL_OTHER);
+                thread = ABTI_pool_pop_wait(p_pool, 0.1,
+                                            ABT_POOL_CONTEXT_OP_POOL_OTHER);
             } else if (p_pool->deprecated_def.p_pop_timedwait) {
-                unit = ABTI_pool_pop_timedwait(p_pool, ABTI_get_wtime() + 0.1);
+                thread =
+                    ABTI_pool_pop_timedwait(p_pool, ABTI_get_wtime() + 0.1);
             } else {
                 /* No "wait" pop, so let's use a normal one. */
-                unit = ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OP_POOL_OTHER);
+                thread = ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OP_POOL_OTHER);
             }
-            if (unit != ABT_UNIT_NULL) {
-                ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+            if (thread != ABT_THREAD_NULL) {
+                ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
                 ABTI_ythread_schedule(p_global, &p_local_xstream, p_thread);
                 break;
             }

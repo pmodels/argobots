@@ -111,10 +111,10 @@ static void sched_run(ABT_sched sched)
         for (i = 0; i < num_pools; i++) {
             ABT_pool pool = pools[i];
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
-            ABT_unit unit =
+            ABT_thread thread =
                 ABTI_pool_pop(p_pool, ABT_POOL_CONTEXT_OP_POOL_OTHER);
-            if (unit != ABT_UNIT_NULL) {
-                ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+            if (thread != ABT_THREAD_NULL) {
+                ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
                 ABTI_ythread_schedule(p_global, &p_local_xstream, p_thread);
                 CNT_INC(run_cnt);
                 break;

@@ -149,15 +149,15 @@ void ABTI_log_pool_remove(ABTI_pool *p_pool, ABT_unit unit)
     }
 }
 
-void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
+void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_thread thread)
 {
     ABTI_global *p_global = ABTI_global_get_global_or_null();
     if (!p_global || p_global->use_logging == ABT_FALSE)
         return;
-    if (unit == ABT_UNIT_NULL)
+    if (thread == ABT_THREAD_NULL)
         return;
 
-    ABTI_thread *p_thread = ABTI_unit_get_thread(p_global, unit);
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
     char unit_type = (p_thread->type & ABTI_THREAD_TYPE_YIELDABLE) ? 'U' : 'T';
     if (p_thread->p_last_xstream) {
         ABTI_log_debug("[%c%" PRIu64 ":E%d] popped from P%" PRIu64 "\n",
@@ -169,12 +169,12 @@ void ABTI_log_pool_pop(ABTI_pool *p_pool, ABT_unit unit)
     }
 }
 
-void ABTI_log_pool_pop_many(ABTI_pool *p_pool, const ABT_unit *units,
+void ABTI_log_pool_pop_many(ABTI_pool *p_pool, const ABT_thread *threads,
                             size_t num)
 {
     size_t i;
     for (i = 0; i < num; i++) {
-        ABTI_log_pool_pop(p_pool, units[i]);
+        ABTI_log_pool_pop(p_pool, threads[i]);
     }
 }
 
