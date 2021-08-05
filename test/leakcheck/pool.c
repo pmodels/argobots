@@ -396,7 +396,7 @@ int main()
         }
     }
 
-    ABT_pool_kind extra_kinds[] = { ABT_POOL_FIFO_WAIT };
+    ABT_pool_kind extra_kinds[] = { ABT_POOL_FIFO_WAIT, ABT_POOL_RANDWS };
     for (i = 0; i < (int)(sizeof(extra_kinds) / sizeof(extra_kinds[0])); i++) {
         for (automatic = 0; automatic <= 1; automatic++) {
             for (type = 0; type < 1; type++) {

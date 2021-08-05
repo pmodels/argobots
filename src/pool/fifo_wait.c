@@ -4,6 +4,7 @@
  */
 
 #include "abti.h"
+#include "thread_queue.h"
 
 /* FIFO_WAIT pool implementation */
 
@@ -33,10 +34,7 @@ static ABT_bool pool_unit_is_in_pool(ABT_unit unit);
 struct data {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
-    size_t num_threads;
-    ABTI_thread *p_head;
-    ABTI_thread *p_tail;
-    ABTD_atomic_int is_empty; /* Whether the pool is empty or not. */
+    thread_queue_t queue;
 };
 typedef struct data data_t;
 
@@ -93,14 +91,9 @@ static int pool_init(ABT_pool pool, ABT_pool_config config)
         ABTU_free(p_data);
         return ABT_ERR_SYS;
     }
-
-    p_data->num_threads = 0;
-    p_data->p_head = NULL;
-    p_data->p_tail = NULL;
-    ABTD_atomic_relaxed_store_int(&p_data->is_empty, 1);
+    thread_queue_init(&p_data->queue);
 
     p_pool->data = p_data;
-
     return abt_errno;
 }
 
@@ -108,7 +101,7 @@ static void pool_free(ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-
+    thread_queue_free(&p_data->queue);
     pthread_mutex_destroy(&p_data->mutex);
     pthread_cond_destroy(&p_data->cond);
     ABTU_free(p_data);
@@ -118,37 +111,14 @@ static ABT_bool pool_is_empty(ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    return ABTD_atomic_acquire_load_int(&p_data->is_empty) ? ABT_TRUE
-                                                           : ABT_FALSE;
+    return thread_queue_is_empty(&p_data->queue);
 }
 
 static size_t pool_get_size(ABT_pool pool)
 {
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    return p_data->num_threads;
-}
-
-static inline void pool_push_unsafe(data_t *p_data, ABTI_thread *p_thread)
-{
-    if (p_data->num_threads == 0) {
-        p_thread->p_prev = p_thread;
-        p_thread->p_next = p_thread;
-        p_data->p_head = p_thread;
-        p_data->p_tail = p_thread;
-        p_data->num_threads = 1;
-        ABTD_atomic_release_store_int(&p_data->is_empty, 0);
-    } else {
-        ABTI_thread *p_head = p_data->p_head;
-        ABTI_thread *p_tail = p_data->p_tail;
-        p_tail->p_next = p_thread;
-        p_head->p_prev = p_thread;
-        p_thread->p_prev = p_tail;
-        p_thread->p_next = p_head;
-        p_data->p_tail = p_thread;
-        p_data->num_threads++;
-    }
-    ABTD_atomic_release_store_int(&p_thread->is_in_pool, 1);
+    return thread_queue_get_size(&p_data->queue);
 }
 
 static void pool_push(ABT_pool pool, ABT_unit unit, ABT_pool_context context)
@@ -159,7 +129,7 @@ static void pool_push(ABT_pool pool, ABT_unit unit, ABT_pool_context context)
     ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
 
     pthread_mutex_lock(&p_data->mutex);
-    pool_push_unsafe(p_data, p_thread);
+    thread_queue_push_tail(&p_data->queue, p_thread);
     pthread_cond_signal(&p_data->cond);
     pthread_mutex_unlock(&p_data->mutex);
 }
@@ -177,7 +147,7 @@ static void pool_push_many(ABT_pool pool, const ABT_unit *units,
         for (i = 0; i < num_units; i++) {
             ABTI_thread *p_thread =
                 ABTI_unit_get_thread_from_builtin_unit(units[i]);
-            pool_push_unsafe(p_data, p_thread);
+            thread_queue_push_tail(&p_data->queue, p_thread);
         }
         if (num_units == 1) {
             /* Wake up a single waiter. */
@@ -190,31 +160,6 @@ static void pool_push_many(ABT_pool pool, const ABT_unit *units,
     }
 }
 
-static inline ABT_thread pool_pop_unsafe(data_t *p_data)
-{
-    if (p_data->num_threads > 0) {
-        ABTI_thread *p_thread = p_data->p_head;
-        if (p_data->num_threads == 1) {
-            p_data->p_head = NULL;
-            p_data->p_tail = NULL;
-            p_data->num_threads = 0;
-            ABTD_atomic_release_store_int(&p_data->is_empty, 1);
-        } else {
-            p_thread->p_prev->p_next = p_thread->p_next;
-            p_thread->p_next->p_prev = p_thread->p_prev;
-            p_data->p_head = p_thread->p_next;
-            p_data->num_threads--;
-        }
-
-        p_thread->p_prev = NULL;
-        p_thread->p_next = NULL;
-        ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
-        return ABTI_thread_get_handle(p_thread);
-    } else {
-        return ABT_THREAD_NULL;
-    }
-}
-
 static ABT_thread pool_pop_wait(ABT_pool pool, double time_secs,
                                 ABT_pool_context context)
 {
@@ -222,7 +167,7 @@ static ABT_thread pool_pop_wait(ABT_pool pool, double time_secs,
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
     pthread_mutex_lock(&p_data->mutex);
-    if (!p_data->num_threads) {
+    if (thread_queue_is_empty(&p_data->queue)) {
 #if defined(ABT_CONFIG_USE_CLOCK_GETTIME)
         struct timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
@@ -248,9 +193,9 @@ static ABT_thread pool_pop_wait(ABT_pool pool, double time_secs,
         }
 #endif
     }
-    ABT_thread thread = pool_pop_unsafe(p_data);
+    ABTI_thread *p_thread = thread_queue_pop_head(&p_data->queue);
     pthread_mutex_unlock(&p_data->mutex);
-    return thread;
+    return ABTI_thread_get_handle(p_thread);
 }
 
 static inline void convert_double_sec_to_timespec(struct timespec *ts_out,
@@ -265,15 +210,15 @@ static ABT_unit pool_pop_timedwait(ABT_pool pool, double abstime_secs)
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
     pthread_mutex_lock(&p_data->mutex);
-    if (!p_data->num_threads) {
+    if (thread_queue_is_empty(&p_data->queue)) {
         struct timespec ts;
         convert_double_sec_to_timespec(&ts, abstime_secs);
         pthread_cond_timedwait(&p_data->cond, &p_data->mutex, &ts);
     }
-    ABT_thread thread = pool_pop_unsafe(p_data);
+    ABTI_thread *p_thread = thread_queue_pop_head(&p_data->queue);
     pthread_mutex_unlock(&p_data->mutex);
-    if (thread != ABT_THREAD_NULL) {
-        return ABTI_unit_get_builtin_unit(ABTI_thread_get_ptr(thread));
+    if (p_thread) {
+        return ABTI_unit_get_builtin_unit(p_thread);
     } else {
         return ABT_UNIT_NULL;
     }
@@ -284,11 +229,11 @@ static ABT_thread pool_pop(ABT_pool pool, ABT_pool_context context)
     (void)context;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    if (ABTD_atomic_acquire_load_int(&p_data->is_empty) == 0) {
+    if (!thread_queue_is_empty(&p_data->queue)) {
         pthread_mutex_lock(&p_data->mutex);
-        ABT_thread thread = pool_pop_unsafe(p_data);
+        ABTI_thread *p_thread = thread_queue_pop_head(&p_data->queue);
         pthread_mutex_unlock(&p_data->mutex);
-        return thread;
+        return ABTI_thread_get_handle(p_thread);
     } else {
         return ABT_THREAD_NULL;
     }
@@ -301,15 +246,14 @@ static void pool_pop_many(ABT_pool pool, ABT_thread *threads,
     (void)context;
     ABTI_pool *p_pool = ABTI_pool_get_ptr(pool);
     data_t *p_data = pool_get_data_ptr(p_pool->data);
-    if (max_threads != 0 &&
-        ABTD_atomic_acquire_load_int(&p_data->is_empty) == 0) {
+    if (max_threads != 0 && !thread_queue_is_empty(&p_data->queue)) {
         pthread_mutex_lock(&p_data->mutex);
         size_t i;
         for (i = 0; i < max_threads; i++) {
-            ABT_thread thread = pool_pop_unsafe(p_data);
-            if (thread == ABT_THREAD_NULL)
+            ABTI_thread *p_thread = thread_queue_pop_head(&p_data->queue);
+            if (!p_thread)
                 break;
-            threads[i] = thread;
+            threads[i] = ABTI_thread_get_handle(p_thread);
         }
         *num_popped = i;
         pthread_mutex_unlock(&p_data->mutex);
@@ -324,31 +268,14 @@ static int pool_remove(ABT_pool pool, ABT_unit unit)
     data_t *p_data = pool_get_data_ptr(p_pool->data);
     ABTI_thread *p_thread = ABTI_unit_get_thread_from_builtin_unit(unit);
 
-    ABTI_CHECK_TRUE(p_data->num_threads != 0, ABT_ERR_POOL);
+    ABTI_CHECK_TRUE(!thread_queue_is_empty(&p_data->queue), ABT_ERR_POOL);
     ABTI_CHECK_TRUE(ABTD_atomic_acquire_load_int(&p_thread->is_in_pool) == 1,
                     ABT_ERR_POOL);
 
     pthread_mutex_lock(&p_data->mutex);
-    if (p_data->num_threads == 1) {
-        p_data->p_head = NULL;
-        p_data->p_tail = NULL;
-        p_data->num_threads = 0;
-        ABTD_atomic_release_store_int(&p_data->is_empty, 1);
-    } else {
-        p_thread->p_prev->p_next = p_thread->p_next;
-        p_thread->p_next->p_prev = p_thread->p_prev;
-        if (p_thread == p_data->p_head) {
-            p_data->p_head = p_thread->p_next;
-        } else if (p_thread == p_data->p_tail) {
-            p_data->p_tail = p_thread->p_prev;
-        }
-        p_data->num_threads--;
-    }
-    ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
+    int abt_errno = thread_queue_remove(&p_data->queue, p_thread);
     pthread_mutex_unlock(&p_data->mutex);
-    p_thread->p_prev = NULL;
-    p_thread->p_next = NULL;
-    return ABT_SUCCESS;
+    return abt_errno;
 }
 
 static void pool_print_all(ABT_pool pool, void *arg,
@@ -358,14 +285,7 @@ static void pool_print_all(ABT_pool pool, void *arg,
     data_t *p_data = pool_get_data_ptr(p_pool->data);
 
     pthread_mutex_lock(&p_data->mutex);
-    size_t num_threads = p_data->num_threads;
-    ABTI_thread *p_thread = p_data->p_head;
-    while (num_threads--) {
-        ABTI_ASSERT(p_thread);
-        ABT_thread thread = ABTI_thread_get_handle(p_thread);
-        print_fn(arg, thread);
-        p_thread = p_thread->p_next;
-    }
+    thread_queue_print_all(&p_data->queue, arg, print_fn);
     pthread_mutex_unlock(&p_data->mutex);
 }
 

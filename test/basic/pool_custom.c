@@ -19,7 +19,7 @@ ABT_pool create_pool4(void);
 
 #define DEFAULT_NUM_XSTREAMS 3
 #define DEFAULT_NUM_THREADS 200
-#define NUM_POOLS 6
+#define NUM_POOLS 7
 
 void thread_func(void *arg)
 {
@@ -51,15 +51,20 @@ ABT_pool create_pool(int pool_type)
                                   ABT_FALSE, &newpool);
         ATS_ERROR(ret, "ABT_pool_create_basic");
     } else if (pool_type == 2) {
+        /* Built-in RANDWS pool. */
+        int ret = ABT_pool_create_basic(ABT_POOL_RANDWS, ABT_POOL_ACCESS_MPMC,
+                                        ABT_FALSE, &newpool);
+        ATS_ERROR(ret, "ABT_pool_create_basic");
+    } else if (pool_type == 3) {
         /* ABT_pool_def-based pool (pool 1). */
         newpool = create_pool1();
-    } else if (pool_type == 3) {
+    } else if (pool_type == 4) {
         /* ABT_pool_def-based pool (pool 2). */
         newpool = create_pool2();
-    } else if (pool_type == 4) {
+    } else if (pool_type == 5) {
         /* ABTI_pool_user_def-based pool (pool 3). */
         newpool = create_pool3();
-    } else if (pool_type == 5) {
+    } else if (pool_type == 6) {
         /* ABTI_pool_user_def-based pool (poo; 4). */
         newpool = create_pool4();
     }

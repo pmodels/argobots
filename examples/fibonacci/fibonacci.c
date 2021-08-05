@@ -99,8 +99,9 @@ int main(int argc, char **argv)
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
     int n = DEFAULT_N;
     int is_child_first = 0;
+    int is_randws = 0;
     while (1) {
-        int opt = getopt(argc, argv, "he:s:n:");
+        int opt = getopt(argc, argv, "he:s:n:p:");
         if (opt == -1)
             break;
         switch (opt) {
@@ -113,12 +114,18 @@ int main(int argc, char **argv)
             case 's':
                 is_child_first = atoi(optarg);
                 break;
+            case 'p':
+                is_randws = atoi(optarg);
+                break;
             case 'h':
             default:
                 printf("Usage: ./fibonacci [-e NUM_XSTREAMS] [-n N] "
                        "[-s CREATE_TYPE]\n"
                        "CREATE_TYPE = 0 : parent-first (ABT_thread_create)\n"
-                       "            = 1 : child-first(ABT_thread_create_to)\n");
+                       "            = 1 : child-first(ABT_thread_create_to)\n"
+                       "[-p POOL_TYPE]\n"
+                       "POOL_TYPE = 0 : FIFO (ABT_POOL_FIFO)\n"
+                       "          = 1 : RANDWS (ABT_POOL_RANDWS)\n");
                 return -1;
         }
     }
@@ -134,8 +141,13 @@ int main(int argc, char **argv)
 
     /* Create pools. */
     for (i = 0; i < num_xstreams; i++) {
-        ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE,
-                              &pools[i]);
+        if (is_randws) {
+            ABT_pool_create_basic(ABT_POOL_RANDWS, ABT_POOL_ACCESS_MPMC,
+                                  ABT_TRUE, &pools[i]);
+        } else {
+            ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE,
+                                  &pools[i]);
+        }
     }
 
     /* Create schedulers. */
@@ -144,7 +156,7 @@ int main(int argc, char **argv)
         for (j = 0; j < num_xstreams; j++) {
             tmp[j] = pools[(i + j) % num_xstreams];
         }
-        ABT_sched_create_basic(ABT_SCHED_DEFAULT, num_xstreams, tmp,
+        ABT_sched_create_basic(ABT_SCHED_RANDWS, num_xstreams, tmp,
                                ABT_SCHED_CONFIG_NULL, &scheds[i]);
         free(tmp);
     }
@@ -158,14 +170,20 @@ int main(int argc, char **argv)
         ABT_xstream_create(scheds[i], &xstreams[i]);
     }
 
-    fibonacci_arg_t arg = { n, 0 };
-    if (is_child_first) {
-        fibonacci_cf(&arg);
-    } else {
-        fibonacci_pf(&arg);
+    int ret, ans = fibonacci_seq(n);
+    for (i = 0; i < 5; i++) {
+        double t1 = ABT_get_wtime();
+        fibonacci_arg_t arg = { n, 0 };
+        if (is_child_first) {
+            fibonacci_cf(&arg);
+        } else {
+            fibonacci_pf(&arg);
+        }
+        ret = arg.ret;
+        double t2 = ABT_get_wtime();
+        printf("elapsed time: %.3f [ms] (fib(%d) = %d (ans: %d))\n",
+               (t2 - t1) * 1.0e3, n, ret, ans);
     }
-    int ret = arg.ret;
-    int ans = fibonacci_seq(n);
 
     /* Join secondary execution streams. */
     for (i = 1; i < num_xstreams; i++) {
@@ -182,6 +200,5 @@ int main(int argc, char **argv)
     free(scheds);
 
     /* Check the results. */
-    printf("Fibonacci(%d) = %d (ans: %d)\n", n, ret, ans);
     return ret != ans ? -1 : 0;
 }

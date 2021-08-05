@@ -522,7 +522,31 @@ enum ABT_pool_kind {
      *
      * If the user does not know how \c ABT_POOL_FIFO_WAIT works,
      * \c ABT_POOL_FIFO is recommended. */
-    ABT_POOL_FIFO_WAIT
+    ABT_POOL_FIFO_WAIT,
+    /**
+     * Random work-stealing pool which is often adopted by fine-grained task
+     * parallel runtime systems such as Cilk.
+     *
+     * Create push                       Non-create push (e.g., yield/resume)
+     *            \                     /
+     *             (head) <- <- <- (tail)
+     *            /                     \
+     *   Local pop                       Remote pop
+     *
+     * Specifically, if one of the following flags is set to ABT_pool_context, a
+     * work unit is pushed to the head.
+     *  - ABT_POOL_CONTEXT_OP_THREAD_CREATE
+     *  - ABT_POOL_CONTEXT_OP_THREAD_CREATE_TO
+     *  - ABT_POOL_CONTEXT_OP_THREAD_REVIVE
+     *  - ABT_POOL_CONTEXT_OP_THREAD_REVIVE_TO
+     * Otherwise, a work unit is pushed to the tail.
+     *
+     * If ABT_POOL_CONTEXT_OWNER_SECONDARY is set to ABT_pool_context, a work
+     * unit is popped from the tail.  Otherwise, a work unit is popped from the
+     * head.
+     *
+     * The user is recommended to use this pool with ABT_SCHED_RANDWS. */
+    ABT_POOL_RANDWS
 };
 
 /**
