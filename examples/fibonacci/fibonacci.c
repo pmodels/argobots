@@ -170,14 +170,20 @@ int main(int argc, char **argv)
         ABT_xstream_create(scheds[i], &xstreams[i]);
     }
 
-    fibonacci_arg_t arg = { n, 0 };
-    if (is_child_first) {
-        fibonacci_cf(&arg);
-    } else {
-        fibonacci_pf(&arg);
+    int ret, ans = fibonacci_seq(n);
+    for (i = 0; i < 5; i++) {
+        double t1 = ABT_get_wtime();
+        fibonacci_arg_t arg = { n, 0 };
+        if (is_child_first) {
+            fibonacci_cf(&arg);
+        } else {
+            fibonacci_pf(&arg);
+        }
+        ret = arg.ret;
+        double t2 = ABT_get_wtime();
+        printf("elapsed time: %.3f [ms] (fib(%d) = %d (ans: %d))\n",
+               (t2 - t1) * 1.0e3, n, ret, ans);
     }
-    int ret = arg.ret;
-    int ans = fibonacci_seq(n);
 
     /* Join secondary execution streams. */
     for (i = 1; i < num_xstreams; i++) {
@@ -194,6 +200,5 @@ int main(int argc, char **argv)
     free(scheds);
 
     /* Check the results. */
-    printf("Fibonacci(%d) = %d (ans: %d)\n", n, ret, ans);
     return ret != ans ? -1 : 0;
 }
