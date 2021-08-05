@@ -1824,7 +1824,6 @@ static inline int pool_push_threads_ex(ABT_pool pool, const ABT_thread *threads,
             /* FIXME: the following can break the intermediate mapping if an
              * error happens. */
             ABTI_thread *p_thread = ABTI_thread_get_ptr(threads[i]);
-            ABTI_CHECK_NULL_THREAD_PTR(p_thread);
             if (p_thread) {
                 abt_errno =
                     ABTI_thread_set_associated_pool(p_global, p_thread, p_pool);
