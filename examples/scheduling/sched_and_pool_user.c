@@ -245,6 +245,7 @@ typedef struct pool_t pool_t;
 struct unit_t {
     unit_t *p_prev;
     unit_t *p_next;
+    ABT_thread thread;
 };
 
 struct pool_t {
@@ -259,6 +260,7 @@ static ABT_unit pool_create_unit(ABT_pool pool, ABT_thread thread)
     unit_t *p_unit = (unit_t *)calloc(1, sizeof(unit_t));
     if (!p_unit)
         return ABT_UNIT_NULL;
+    p_unit->thread = thread;
     return (ABT_unit)p_unit;
 }
 
@@ -275,7 +277,7 @@ static ABT_bool pool_is_empty(ABT_pool pool)
     return p_pool->p_head ? ABT_FALSE : ABT_TRUE;
 }
 
-static ABT_unit pool_pop(ABT_pool pool, ABT_pool_context context)
+static ABT_thread pool_pop(ABT_pool pool, ABT_pool_context context)
 {
     pool_t *p_pool;
     ABT_pool_get_data(pool, (void **)&p_pool);
@@ -299,8 +301,8 @@ static ABT_unit pool_pop(ABT_pool pool, ABT_pool_context context)
     }
     pthread_mutex_unlock(&p_pool->lock);
     if (!p_unit)
-        return ABT_UNIT_NULL;
-    return (ABT_unit)p_unit;
+        return ABT_THREAD_NULL;
+    return p_unit->thread;
 }
 
 static void pool_push(ABT_pool pool, ABT_unit unit, ABT_pool_context context)

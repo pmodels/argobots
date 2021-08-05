@@ -3218,12 +3218,11 @@ static void thread_root_func(void *arg)
     ABTI_pool *p_root_pool = p_local_xstream->p_root_pool;
 
     do {
-        ABT_unit unit =
+        ABT_thread thread =
             ABTI_pool_pop(p_root_pool, ABT_POOL_CONTEXT_OWNER_PRIMARY);
-        if (unit != ABT_UNIT_NULL) {
+        if (thread != ABT_THREAD_NULL) {
             ABTI_xstream *p_xstream = p_local_xstream;
-            ABTI_thread *p_thread =
-                ABTI_unit_get_thread_from_builtin_unit(unit);
+            ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
             ABTI_ythread_schedule(p_global, &p_xstream, p_thread);
             /* The root thread must be executed on the same execution stream. */
             ABTI_ASSERT(p_xstream == p_local_xstream);
