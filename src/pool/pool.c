@@ -1411,6 +1411,11 @@ ABTU_ret_err int ABTI_pool_create_basic(ABT_pool_kind kind,
                 ABTI_pool_get_fifo_wait_def(access, &required_def,
                                             &optional_def, &deprecated_def);
             break;
+        case ABT_POOL_RANDWS:
+            abt_errno =
+                ABTI_pool_get_randws_def(access, &required_def, &optional_def,
+                                         &deprecated_def);
+            break;
         default:
             abt_errno = ABT_ERR_INV_POOL_KIND;
             break;

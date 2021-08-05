@@ -609,6 +609,11 @@ ABTI_pool_get_fifo_wait_def(ABT_pool_access access,
                             ABTI_pool_required_def *p_required_def,
                             ABTI_pool_optional_def *p_optional_def,
                             ABTI_pool_deprecated_def *p_deprecated_def);
+ABTU_ret_err int
+ABTI_pool_get_randws_def(ABT_pool_access access,
+                         ABTI_pool_required_def *p_required_def,
+                         ABTI_pool_optional_def *p_optional_def,
+                         ABTI_pool_deprecated_def *p_deprecated_def);
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent);
 void ABTI_pool_reset_id(void);
 

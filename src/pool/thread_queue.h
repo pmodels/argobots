@@ -66,6 +66,29 @@ static inline size_t thread_queue_get_size(const thread_queue_t *p_queue)
     return p_queue->num_threads;
 }
 
+static inline void thread_queue_push_head(thread_queue_t *p_queue,
+                                          ABTI_thread *p_thread)
+{
+    if (p_queue->num_threads == 0) {
+        p_thread->p_prev = p_thread;
+        p_thread->p_next = p_thread;
+        p_queue->p_head = p_thread;
+        p_queue->p_tail = p_thread;
+        p_queue->num_threads = 1;
+        ABTD_atomic_release_store_int(&p_queue->is_empty, 0);
+    } else {
+        ABTI_thread *p_head = p_queue->p_head;
+        ABTI_thread *p_tail = p_queue->p_tail;
+        p_tail->p_next = p_thread;
+        p_head->p_prev = p_thread;
+        p_thread->p_prev = p_tail;
+        p_thread->p_next = p_head;
+        p_queue->p_head = p_thread;
+        p_queue->num_threads++;
+    }
+    ABTD_atomic_release_store_int(&p_thread->is_in_pool, 1);
+}
+
 static inline void thread_queue_push_tail(thread_queue_t *p_queue,
                                           ABTI_thread *p_thread)
 {
@@ -102,6 +125,31 @@ static inline ABTI_thread *thread_queue_pop_head(thread_queue_t *p_queue)
             p_thread->p_prev->p_next = p_thread->p_next;
             p_thread->p_next->p_prev = p_thread->p_prev;
             p_queue->p_head = p_thread->p_next;
+            p_queue->num_threads--;
+        }
+
+        p_thread->p_prev = NULL;
+        p_thread->p_next = NULL;
+        ABTD_atomic_release_store_int(&p_thread->is_in_pool, 0);
+        return p_thread;
+    } else {
+        return NULL;
+    }
+}
+
+static inline ABTI_thread *thread_queue_pop_tail(thread_queue_t *p_queue)
+{
+    if (p_queue->num_threads > 0) {
+        ABTI_thread *p_thread = p_queue->p_tail;
+        if (p_queue->num_threads == 1) {
+            p_queue->p_head = NULL;
+            p_queue->p_tail = NULL;
+            p_queue->num_threads = 0;
+            ABTD_atomic_release_store_int(&p_queue->is_empty, 1);
+        } else {
+            p_thread->p_prev->p_next = p_thread->p_next;
+            p_thread->p_next->p_prev = p_thread->p_prev;
+            p_queue->p_tail = p_thread->p_prev;
             p_queue->num_threads--;
         }
 
