@@ -44,6 +44,9 @@ int ABT_eventual_create(int nbytes, ABT_eventual *neweventual)
     ABTI_UB_ASSERT(ABTI_initialized());
     ABTI_UB_ASSERT(neweventual);
 
+    /* Check if the size of ABT_eventual_memory is okay. */
+    ABTI_STATIC_ASSERT(sizeof(ABTI_eventual) <= sizeof(ABT_eventual_memory));
+
     int abt_errno;
     ABTI_eventual *p_eventual;
     ABTI_CHECK_TRUE(nbytes >= 0, ABT_ERR_INV_ARG);
