@@ -220,10 +220,10 @@ AC_ARG_ENABLE([wait-policy],
         passive      - suspend CPU cores on blocking.  It increases latency.
 ],,[enable_wait_policy=auto])
 
-# --disable-simple-mutex
+# --enable-simple-mutex
 AC_ARG_ENABLE([simple-mutex],
-    AS_HELP_STRING([--disable-simple-mutex], [use an experimental mutex implementation]),,
-    [enable_simple_mutex=yes])
+    AS_HELP_STRING([--enable-simple-mutex], [use an old yield-based mutex implementation]),,
+    [enable_simple_mutex=no])
 
 # --enable-static-cacheline-size
 AC_ARG_ENABLE([static-cacheline-size],
@@ -787,10 +787,10 @@ AS_IF([test "x$enable_wait_policy" = "xactive"],
       [AC_DEFINE(ABT_CONFIG_ACTIVE_WAIT_POLICY, 1,
                  [Define to enable the active wait policy])])
 
-# --disable-simple-mutex
+# --enable-simple-mutex
 AS_IF([test "x$enable_simple_mutex" = "xyes"],
       [AC_DEFINE(ABT_CONFIG_USE_SIMPLE_MUTEX, 1,
-                 [Define to use a simple mutex implementation])])
+                 [Define to use an old yield-based mutex implementation])])
 
 
 # --enable-static-cacheline-size
