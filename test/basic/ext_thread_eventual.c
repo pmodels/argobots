@@ -21,8 +21,9 @@
 typedef struct {
     ABT_eventual eventual;
     int counter;
+    ABT_bool is_dynamic;
 } eventual_set;
-eventual_set g_eventual_sets[1];
+eventual_set g_eventual_sets[2];
 int g_iter = DEFAULT_NUM_ITER;
 ABT_barrier g_barrier;
 
@@ -45,15 +46,14 @@ void thread_func(void *arg)
                 if (i == 0) {
                     g_eventual_sets[j].counter = 0;
                 } else {
-                    assert(g_eventual_sets[j].counter ==
-                           i * NUM_EVENTUAL_SETS + j);
+                    assert(g_eventual_sets[j].counter == i);
                 }
                 g_eventual_sets[j].counter += 1;
                 ABT_eventual_set(g_eventual_sets[j].eventual, NULL, 0);
             } else {
                 ABT_eventual_wait(g_eventual_sets[j].eventual, NULL);
             }
-            assert(g_eventual_sets[j].counter == i * NUM_EVENTUAL_SETS + j + 1);
+            assert(g_eventual_sets[j].counter == i + 1);
             ABT_barrier_wait(g_barrier);
             if (p_arg->tid == g_iter % p_arg->num_total_threads) {
                 ABT_eventual_reset(g_eventual_sets[j].eventual);
@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
     int i, kind, ret;
     int num_total_threads = DEFAULT_NUM_TOTAL_THREADS;
     int num_xstreams = DEFAULT_NUM_XSTREAMS;
+    ABT_eventual_memory eventual_mem = ABT_EVENTUAL_INITIALIZER;
 
     /* Read arguments. */
     ATS_read_args(argc, argv);
@@ -111,6 +112,10 @@ int main(int argc, char *argv[])
     /* Set up eventual and g_barrier. */
     ret = ABT_eventual_create(0, &g_eventual_sets[0].eventual);
     ATS_ERROR(ret, "ABT_eventual_create");
+    g_eventual_sets[0].is_dynamic = ABT_TRUE;
+    g_eventual_sets[1].eventual = ABT_EVENTUAL_MEMORY_GET_HANDLE(&eventual_mem);
+    g_eventual_sets[1].is_dynamic = ABT_FALSE;
+
     ret = ABT_barrier_create(num_total_threads, &g_barrier);
     ATS_ERROR(ret, "ABT_barrier_create");
 
@@ -185,8 +190,12 @@ int main(int argc, char *argv[])
     }
 
     /* Free eventual and g_barrier. */
-    ret = ABT_eventual_free(&g_eventual_sets[0].eventual);
-    ATS_ERROR(ret, "ABT_eventual_free");
+    for (i = 0; i < NUM_EVENTUAL_SETS; i++) {
+        if (g_eventual_sets[i].is_dynamic) {
+            ret = ABT_eventual_free(&g_eventual_sets[i].eventual);
+            ATS_ERROR(ret, "ABT_eventual_free");
+        }
+    }
     ret = ABT_barrier_free(&g_barrier);
     ATS_ERROR(ret, "ABT_barrier_free");
 
