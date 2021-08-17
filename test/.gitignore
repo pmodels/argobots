@@ -63,6 +63,7 @@ basic/rwlock_reader_incl
 basic/rwlock_reader_writer_excl
 basic/rwlock_writer_excl
 basic/eventual_create
+basic/eventual_static
 basic/eventual_test
 basic/barrier
 basic/self_exit_to

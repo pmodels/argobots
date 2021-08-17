@@ -1265,6 +1265,71 @@ typedef struct {
     ((ABT_cond)p_cond_memory)
 
 /**
+ * @ingroup EVENTUAL
+ * @brief   A struct that can be converted to \c ABT_eventual.
+ * @hideinitializer
+ *
+ * \c ABT_eventual_memory is a struct to statically allocate and initialize
+ * \c ABT_eventual.  \c ABT_eventual_memory can be statically initialized by
+ * \c ABT_EVENTUAL_INITIALIZER and converted to \c ABT_eventual by
+ * \c ABT_EVENTUAL_MEMORY_GET_HANDLE().
+ *
+ * The initialized \c ABT_eventual does not hold a memory buffer, so the user
+ * may not set a value of the statically initialized \c ABT_eventual by
+ * \c ABT_eventual_set()
+ *
+ * \c dummy may not be accessed by a user.
+ */
+typedef struct {
+    int dummy[16];
+} ABT_eventual_memory;
+
+/**
+ * @ingroup EVENTUAL
+ * @brief   Initialize \c ABT_eventual_memory.
+ *
+ * \c ABT_EVENTUAL_INITIALIZER statically initializes \c ABT_eventual_memory.
+
+ * The following example shows how to use \c ABT_EVENTUAL_INITIALIZER.
+ * @code{.c}
+ * ABT_eventual_memory eventual_mem = ABT_EVENTUAL_INITIALIZER;
+ *
+ * void thread(void *)
+ * {
+ *     ABT_eventual eventual = ABT_EVENTUAL_MEMORY_GET_HANDLE(&eventual_mem);
+ *     if (...) {
+ *         ABT_eventual_wait(eventual);
+ *     } else {
+ *         [...];
+ *         ABT_eventual_set(eventual, NULL, 0);
+ *     }
+ * }
+ * @endcode
+ *
+ * \c ABT_eventual_memory that is in use may not be initialized again.
+ */
+#define ABT_EVENTUAL_INITIALIZER                                               \
+    { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
+
+/**
+ * @ingroup EVENTUAL
+ * @brief   Obtain \c ABT_eventual from \c ABT_eventual_memory.
+ *
+ * \c ABT_EVENTUAL_MEMORY_GET_HANDLE() takes the pointer \c p_eventual_memory,
+ * which points to \c ABT_eventual_memory, and returns \c ABT_eventual that
+ * internally uses \c p_eventual_memory to store the data.  If the memory
+ * pointed to by \c p_eventual_memory is not properly initialized, it returns a
+ * corrupted eventual.
+ *
+ * \c ABT_eventual obtained by \c ABT_EVENTUAL_MEMORY_GET_HANDLE() may not be
+ * freed by \c ABT_eventual_free().  The lifetime of \c ABT_eventual obtained by
+ * \c ABT_EVENTUAL_MEMORY_GET_HANDLE() is the same as that of
+ * \c ABT_eventual_memory.
+ */
+#define ABT_EVENTUAL_MEMORY_GET_HANDLE(p_eventual_memory)                      \
+    ((ABT_eventual)p_eventual_memory)
+
+/**
  * @ingroup SCHED_CONFIG
  * @brief   A struct that sets and gets a scheduler configuration.
  */
