@@ -1444,11 +1444,15 @@ ABT_thread ABTI_pool_pop_timedwait(ABTI_pool *p_pool, double abstime_secs)
     ABT_unit unit =
         p_pool->deprecated_def.p_pop_timedwait(ABTI_pool_get_handle(p_pool),
                                                abstime_secs);
-    ABTI_thread *p_thread =
-        ABTI_unit_get_thread(ABTI_global_get_global(), unit);
-    ABT_thread thread = ABTI_thread_get_handle(p_thread);
-    LOG_DEBUG_POOL_POP(p_pool, thread);
-    return thread;
+    if (unit == ABT_UNIT_NULL) {
+        return ABT_THREAD_NULL;
+    } else {
+        ABTI_thread *p_thread =
+            ABTI_unit_get_thread(ABTI_global_get_global(), unit);
+        ABT_thread thread = ABTI_thread_get_handle(p_thread);
+        LOG_DEBUG_POOL_POP(p_pool, thread);
+        return thread;
+    }
 }
 
 void ABTI_pool_print(ABTI_pool *p_pool, FILE *p_os, int indent)
