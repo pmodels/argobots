@@ -1108,6 +1108,11 @@ AS_IF([test x"$use_huge_page" = x"yes"],
 # check for the availability of int128 CAS. It is hard to get availability of
 # instructions (and compiler support), so we rely on AC_RUN_IFELSE().
 atomic_int128_cas_mode="disabled"
+# Note: temporarily prepend the source directory to the include path so that
+# the following configure test can locate abtd_asm_int128_cas.h regardless
+# of where the configure script is executed.
+SAVE_CFLAGS="$CFLAGS"
+CFLAGS="-I$srcdir $CFLAGS"
 AC_RUN_IFELSE([AC_LANG_PROGRAM([#include "src/include/asm/abtd_asm_int128_cas.h"],[
 __int128 val, old, neu;
 int ret1, ret2;
@@ -1117,6 +1122,7 @@ val = 0, old = 1, neu = 1;
 ret2 = !ABTD_asm_bool_cas_weak_int128(&val, old, neu) && (val == 0);
 return !(ret1 && ret2);
 ])], [AC_DEFINE(ABT_CONFIG_HAVE_ATOMIC_INT128, 1, [Define if 128-bit CAS is supported.])])
+CFLAGS="$SAVE_CFLAGS"
 
 AM_CONDITIONAL([ABT_USE_INT128_ATOMIC], [test "x$ABT_CONFIG_HAVE_ATOMIC_INT128" != "x"])
 
