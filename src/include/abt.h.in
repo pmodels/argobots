@@ -2309,6 +2309,87 @@ typedef void (*ABT_tool_thread_callback_fn)(ABT_thread, ABT_xstream, uint64_t ev
 typedef void (*ABT_tool_task_callback_fn)(ABT_task, ABT_xstream, uint64_t event,
                                           ABT_tool_context context, void *user_arg);
 
+/**
+ * @ingroup SCHED
+ * @brief   A struct that defines the scheduling policy for an associated pool.
+ */
+typedef struct {
+  /**
+   * @brief Pool priority.
+   *
+   * This value determines the relative priority of the associated pool when
+   * the scheduler is selecting between multiple ready pools. The scheduler
+   * will favor pools with lower priority. Value must be non-negative.
+   */
+  int priority;
+  /**
+   * @brief Minimum number of successful attempts.
+   *
+   * This value determines how many work units will be pulled from this pool
+   * before returning to the scheduler to check for interrupts and/or higher
+   * priority pools that may have become ready.
+   */
+  int min_successes;
+  /**
+   * @brief Maximum number of successful attempts.
+   *
+   * This value determines the maximum number of work units will be executed
+   * from this pool before the pool is timed-out to allow for the scheduler
+   * to check other pools.
+   */
+  int max_successes;
+  /**
+   * @brief Scheduler event number at which this pool becomes ready.
+   *
+   * This value determines the point in time that this pool becomes ready
+   * after being timed-out. It is specified in terms of number of work units
+   * that the scheduler has executed.
+   */
+  int ready_at;
+  /**
+   * @brief Timeout value when the scheduler fails to pop a work unit.
+   *
+   * This value determines how many work units the scheduler should execute
+   * from OTHER pools before this pool becomes ready again in the case where
+   * the scheduler fails to execute a work unit from this pool (because the
+   * pool has become empty).
+   */
+  int fail_timeout;
+  /**
+   * @brief Timeout value after the maximum number of successful pops.
+   *
+   * This value determines how many work units the scheduler should execute
+   * from OTHER pools before this pool becomes ready again in the case where
+   * the scheduler has executed the maximum number of events from this pool,
+   * as specified by max_successes.
+   */
+  int success_timeout;
+  /**
+   * @brief Walltime at which this pool becomes ready after a timeout.
+   *
+   * This value determines the walltime at which this pool becomes ready
+   * again after a timeout. It works in conjunction with ready_at. For a pool
+   * to be ready, it must have reached both the ready_at_wt walltime and the
+   * ready_at scheduler event number.
+   */
+  double ready_at_wt;
+  /**
+   * @brief Timeout value (in seconds) when the scheduler fails to pop.
+   *
+   * This value determines how many seconds this pool will be timed out
+   * in the case where the scheduler fails to pop an work unit from this pool.
+   */
+  double fail_timeout_wt;
+  /**
+   * @brief Timeout value (in seconds) after the maximum successful pops.
+   *
+   * This value determines how many seconds this pool will be timed out
+   * in the case where the scheduler fails pops the maximum number of work
+   * units from this pool as determined by max_successes.
+   */
+  double success_timeout_wt;
+} ABT_sched_policy;
+
 /* Init & Finalize */
 int ABT_init(int argc, char **argv) ABT_API_PUBLIC;
 int ABT_finalize(void) ABT_API_PUBLIC;
@@ -2363,6 +2444,9 @@ int ABT_sched_create(ABT_sched_def *def, int num_pools, ABT_pool *pools,
 int ABT_sched_create_basic(ABT_sched_predef predef, int num_pools,
                            ABT_pool *pools, ABT_sched_config config,
                            ABT_sched *newsched) ABT_API_PUBLIC;
+void ABT_sched_create_reg(int num_pools, ABT_pool *pools,
+                          int num_policies, ABT_sched_policy *policies,
+                          ABT_sched *newsched) ABT_API_PUBLIC;
 int ABT_sched_free(ABT_sched *sched) ABT_API_PUBLIC;
 int ABT_sched_set_data(ABT_sched sched, void *data) ABT_API_PUBLIC;
 int ABT_sched_get_data(ABT_sched sched, void **data) ABT_API_PUBLIC;
