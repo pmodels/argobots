@@ -1373,10 +1373,20 @@ ABTU_ret_err static int print_all_thread_stacks(ABTI_global *p_global, FILE *fp)
     size_t i;
     int abt_errno;
     struct info_pool_set_t pool_set;
+    struct tm *tm = NULL;
+    time_t seconds;
 
     abt_errno = info_initialize_pool_set(&pool_set);
     ABTI_CHECK_ERROR(abt_errno);
     ABTI_xstream *p_xstream = p_global->p_xstream_head;
+
+    seconds = (time_t)ABT_get_wtime();
+    tm = localtime(&seconds);
+    ABTI_ASSERT(tm != NULL);
+    fprintf(fp, "Start of ULT stacks dump %04d/%02d/%02d-%02d:%02d:%02d\n",
+	    tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour,
+	    tm->tm_min, tm->tm_sec);
+
     while (p_xstream) {
         ABTI_sched *p_main_sched = p_xstream->p_main_sched;
         fprintf(fp, "= xstream[%d] (%p) =\n", p_xstream->rank,
@@ -1404,6 +1414,14 @@ ABTU_ret_err static int print_all_thread_stacks(ABTI_global *p_global, FILE *fp)
         if (abt_errno != ABT_SUCCESS)
             fprintf(fp, "  Failed to print (errno = %d).\n", abt_errno);
     }
+
+    seconds = (time_t)ABT_get_wtime();
+    tm = localtime(&seconds);
+    ABTI_ASSERT(tm != NULL);
+    fprintf(fp, "End of ULT stacks dump %04d/%02d/%02d-%02d:%02d:%02d\n",
+	    tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour,
+	    tm->tm_min, tm->tm_sec);
+
     info_finalize_pool_set(&pool_set);
     return ABT_SUCCESS;
 }
