@@ -1384,8 +1384,8 @@ ABTU_ret_err static int print_all_thread_stacks(ABTI_global *p_global, FILE *fp)
     tm = localtime(&seconds);
     ABTI_ASSERT(tm != NULL);
     fprintf(fp, "Start of ULT stacks dump %04d/%02d/%02d-%02d:%02d:%02d\n",
-	    tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour,
-	    tm->tm_min, tm->tm_sec);
+            tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour,
+            tm->tm_min, tm->tm_sec);
 
     while (p_xstream) {
         ABTI_sched *p_main_sched = p_xstream->p_main_sched;
@@ -1419,8 +1419,8 @@ ABTU_ret_err static int print_all_thread_stacks(ABTI_global *p_global, FILE *fp)
     tm = localtime(&seconds);
     ABTI_ASSERT(tm != NULL);
     fprintf(fp, "End of ULT stacks dump %04d/%02d/%02d-%02d:%02d:%02d\n",
-	    tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour,
-	    tm->tm_min, tm->tm_sec);
+            tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour,
+            tm->tm_min, tm->tm_sec);
 
     info_finalize_pool_set(&pool_set);
     return ABT_SUCCESS;
