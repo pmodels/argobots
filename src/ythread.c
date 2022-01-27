@@ -274,6 +274,8 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
         char buffer[32];
         const size_t value_width = 8;
         const int num_bytes = sizeof(buffer);
+        static const char zero[sizeof(buffer)];
+        ABT_bool full_zeroes = ABT_FALSE, multi_lines = ABT_FALSE;
 
         for (i = 0; i < stacksize; i += num_bytes) {
             if (stacksize >= i + num_bytes) {
@@ -282,6 +284,23 @@ ABTU_no_sanitize_address void ABTI_ythread_print_stack(ABTI_global *p_global,
                 memset(buffer, 0, num_bytes);
                 memcpy(buffer, &((uint8_t *)p_stack)[i], stacksize - i);
             }
+
+            /* pack full lines of zeroes */
+            if (!memcmp(zero, buffer, sizeof(buffer))) {
+                if (!full_zeroes) {
+                    full_zeroes = ABT_TRUE;
+                } else {
+                    multi_lines = ABT_TRUE;
+                    continue;
+                }
+            } else {
+                full_zeroes = ABT_FALSE;
+                if (multi_lines) {
+                    fprintf(p_os, "*\n");
+                    multi_lines = ABT_FALSE;
+                }
+            }
+
             /* Print the stack address */
 #if SIZEOF_VOID_P == 8
             fprintf(p_os, "%016" PRIxPTR ":",
