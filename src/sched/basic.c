@@ -111,6 +111,9 @@ static void sched_run(ABT_sched sched)
     num_pools = p_data->num_pools;
     pools = p_data->pools;
 
+    if (num_pools == 0)
+        return;
+
     while (1) {
         for (i = 0; i < num_pools; i++) {
             ABTI_pool *p_pool = ABTI_pool_get_ptr(pools[i]);

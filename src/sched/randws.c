@@ -99,6 +99,9 @@ static void sched_run(ABT_sched sched)
     num_pools = p_sched->num_pools;
     pools = p_data->pools;
 
+    if (num_pools == 0)
+        return;
+
     while (1) {
         CNT_INIT(run_cnt, 0);
 

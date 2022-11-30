@@ -103,6 +103,9 @@ static void sched_run(ABT_sched sched)
     num_pools = p_data->num_pools;
     pools = p_data->pools;
 
+    if (num_pools == 0)
+        return;
+
     while (1) {
         run_cnt_nowait = 0;
 
