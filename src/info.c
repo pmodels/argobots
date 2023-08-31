@@ -1097,7 +1097,8 @@ void ABTI_info_check_print_all_thread_stacks(void)
 
     /* Decrement the barrier value. */
     int dec_value = ABTD_atomic_fetch_sub_int(&print_stack_barrier, 1);
-    if (dec_value == 0) {
+    /* previous value should be 1 ! */
+    if (dec_value == 1) {
         /* The last execution stream resets the flag. */
         ABTD_atomic_release_store_int(&print_stack_flag,
                                       PRINT_STACK_FLAG_UNSET);
