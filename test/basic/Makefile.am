@@ -50,6 +50,7 @@ TESTS = \
 	pool_config \
 	pool_custom \
 	pool_user_def \
+	pool_user_def_legacy \
 	sync_no_contention \
 	main_sched \
 	mutex \
@@ -157,6 +158,7 @@ sched_user_ws_SOURCES = sched_user_ws.c
 pool_config_SOURCES = pool_config.c
 pool_custom_SOURCES = pool_custom.c
 pool_user_def_SOURCES = pool_user_def.c
+pool_user_def_legacy_SOURCES = pool_user_def_legacy.c
 sync_no_contention_SOURCES = sync_no_contention.c
 main_sched_SOURCES = main_sched.c
 mutex_SOURCES = mutex.c
@@ -250,6 +252,7 @@ testing:
 	./pool_config
 	./pool_custom
 	./pool_user_def
+	./pool_user_def_legacy
 	./sync_no_contention
 	./main_sched
 	./mutex
