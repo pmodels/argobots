@@ -2180,6 +2180,69 @@ int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize)
 
 /**
  * @ingroup ULT
+ * @brief   Get stack address and size of a work unit.
+ *
+ * \c ABT_thread_get_stack() returns the stack address and stack size of the
+ * work unit \c thread through \c stackaddr and \c stacksize.  If \c thread
+ * does not have a stack managed by the Argobots runtime (e.g., a tasklet or
+ * the primary ULT), both \c stackaddr and \c stacksize are set to 0 and NULL,
+ * respectively.
+ *
+ * Either \c stackaddr or \c stacksize may be \c NULL.  In this case, the
+ * corresponding value is not returned.
+ *
+ * @note
+ * This function directly accesses the stack information without allocating
+ * a thread attribute object, making it more efficient than using
+ * \c ABT_thread_get_attr() followed by \c ABT_thread_attr_get_stack().
+ *
+ * @contexts
+ * \DOC_CONTEXT_INIT \DOC_CONTEXT_NOCTXSWITCH
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_THREAD_HANDLE{\c thread}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ *
+ * @param[in]  thread     work unit handle
+ * @param[out] stackaddr  stack address (base of stack)
+ * @param[out] stacksize  stack size in bytes
+ * @return Error code
+ */
+int ABT_thread_get_stack(ABT_thread thread, void **stackaddr, size_t *stacksize)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+
+    ABTI_thread *p_thread = ABTI_thread_get_ptr(thread);
+    ABTI_CHECK_NULL_THREAD_PTR(p_thread);
+    ABTI_ythread *p_ythread = ABTI_thread_get_ythread_or_null(p_thread);
+
+    if (p_ythread) {
+        void *p_stacktop = ABTD_ythread_context_get_stacktop(&p_ythread->ctx);
+        size_t size = ABTD_ythread_context_get_stacksize(&p_ythread->ctx);
+        if (stackaddr) {
+            if (p_stacktop) {
+                *stackaddr = (void *)(((char *)p_stacktop) - size);
+            } else {
+                *stackaddr = NULL;
+            }
+        }
+        if (stacksize) {
+            *stacksize = size;
+        }
+    } else {
+        if (stackaddr)
+            *stackaddr = NULL;
+        if (stacksize)
+            *stacksize = 0;
+    }
+    return ABT_SUCCESS;
+}
+
+/**
+ * @ingroup ULT
  * @brief   Get ID of a work unit
  *
  * \c ABT_thread_get_id() returns the ID of the work unit \c thread through

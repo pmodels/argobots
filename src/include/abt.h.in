@@ -2512,6 +2512,7 @@ int ABT_thread_is_unnamed(ABT_thread thread, ABT_bool *is_unnamed) ABT_API_PUBLI
 int ABT_thread_equal(ABT_thread thread1, ABT_thread thread2, ABT_bool *result)
                      ABT_API_PUBLIC;
 int ABT_thread_get_stacksize(ABT_thread thread, size_t *stacksize) ABT_API_PUBLIC;
+int ABT_thread_get_stack(ABT_thread thread, void **stackaddr, size_t *stacksize) ABT_API_PUBLIC;
 int ABT_thread_get_id(ABT_thread thread, ABT_unit_id *thread_id) ABT_API_PUBLIC;
 int ABT_thread_set_arg(ABT_thread thread, void *arg) ABT_API_PUBLIC;
 int ABT_thread_get_arg(ABT_thread thread, void **arg) ABT_API_PUBLIC;
