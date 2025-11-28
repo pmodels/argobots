@@ -30,6 +30,7 @@ TESTS = \
 	thread_data \
 	thread_data2 \
 	thread_id \
+	thread_get_stack \
 	task_create \
 	task_create_on_xstream \
 	task_revive \
@@ -138,6 +139,7 @@ thread_migrate_SOURCES = thread_migrate.c
 thread_data_SOURCES = thread_data.c
 thread_data2_SOURCES = thread_data2.c
 thread_id_SOURCES = thread_id.c
+thread_get_stack_SOURCES = thread_get_stack.c
 task_create_SOURCES = task_create.c
 task_create_on_xstream_SOURCES = task_create_on_xstream.c
 task_revive_SOURCES = task_revive.c
