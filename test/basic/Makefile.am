@@ -70,6 +70,7 @@ TESTS = \
 	eventual_create \
 	eventual_static \
 	eventual_test \
+	eventual_timedwait \
 	barrier \
 	self_exit_to \
 	self_rank_id \
@@ -177,6 +178,7 @@ future_create_SOURCES = future_create.c
 eventual_create_SOURCES = eventual_create.c
 eventual_static_SOURCES = eventual_static.c
 eventual_test_SOURCES = eventual_test.c
+eventual_timedwait_SOURCES = eventual_timedwait.c
 barrier_SOURCES = barrier.c
 self_exit_to_SOURCES = self_exit_to.c
 self_rank_id_SOURCES = self_rank_id.c
