@@ -77,8 +77,8 @@ void eventual_success_test(void *arg)
     if (ret == ABT_SUCCESS) {
         g_success_counter++;
         int *result = (int *)value;
-        ATS_printf(1, "[U%d:E%d] eventual signaled, value=%d\n",
-                   (int)tid, eid, result ? *result : -1);
+        ATS_printf(1, "[U%d:E%d] eventual signaled, value=%d\n", (int)tid, eid,
+                   result ? *result : -1);
     } else if (ret == ABT_ERR_COND_TIMEDOUT) {
         ATS_printf(1, "[U%d:E%d] unexpected timeout\n", (int)tid, eid);
     } else {
@@ -125,8 +125,10 @@ int main(int argc, char *argv[])
 
     xstreams = (ABT_xstream *)malloc(num_xstreams * sizeof(ABT_xstream));
     pools = (ABT_pool *)malloc(num_xstreams * sizeof(ABT_pool));
-    timeout_threads = (ABT_thread *)malloc(num_timeout_threads * sizeof(ABT_thread));
-    success_threads = (ABT_thread *)malloc(num_success_threads * sizeof(ABT_thread));
+    timeout_threads =
+        (ABT_thread *)malloc(num_timeout_threads * sizeof(ABT_thread));
+    success_threads =
+        (ABT_thread *)malloc(num_success_threads * sizeof(ABT_thread));
 
     /* Create an eventual */
     ret = ABT_eventual_create(sizeof(int), &eventual);
@@ -172,7 +174,8 @@ int main(int argc, char *argv[])
     ret = ABT_eventual_reset(eventual);
     ATS_ERROR(ret, "ABT_eventual_reset");
 
-    /* Test 2: Success threads - create threads that wait with future deadline */
+    /* Test 2: Success threads - create threads that wait with future deadline
+     */
     ATS_printf(1, "\n=== Test 2: Success test (with signal) ===\n");
     for (i = 0; i < num_success_threads; i++) {
         ret = ABT_thread_create(pools[pidx], eventual_success_test, NULL,
@@ -191,8 +194,8 @@ int main(int argc, char *argv[])
     /* Signal the eventual */
     ret = ABT_eventual_set(eventual, &test_value, sizeof(int));
     ATS_ERROR(ret, "ABT_eventual_set");
-    ATS_printf(1, "[U%d:E%d] eventual_set with value=%d\n",
-               (int)tid, eid, test_value);
+    ATS_printf(1, "[U%d:E%d] eventual_set with value=%d\n", (int)tid, eid,
+               test_value);
 
     /* Wait for success threads to complete */
     for (i = 0; i < num_success_threads; i++) {
@@ -214,7 +217,9 @@ int main(int argc, char *argv[])
     ret = ABT_eventual_timedwait(eventual, &value, &ts);
     if (ret == ABT_SUCCESS) {
         int *result = (int *)value;
-        ATS_printf(1, "[U%d:E%d] already ready eventual returned immediately, value=%d\n",
+        ATS_printf(1,
+                   "[U%d:E%d] already ready eventual returned immediately, "
+                   "value=%d\n",
                    (int)tid, eid, result ? *result : -1);
         if (result && *result == test_value) {
             ATS_printf(1, "Value matches expected value\n");
@@ -253,7 +258,8 @@ int main(int argc, char *argv[])
 
     if (!failed) {
         ATS_printf(1, "\n=== All tests passed ===\n");
-        ATS_printf(1, "Timeouts: %d/%d\n", g_timeout_counter, expected_timeouts);
+        ATS_printf(1, "Timeouts: %d/%d\n", g_timeout_counter,
+                   expected_timeouts);
         ATS_printf(1, "Success: %d/%d\n", g_success_counter, expected_success);
     }
 
