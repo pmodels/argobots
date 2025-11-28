@@ -205,6 +205,110 @@ int ABT_eventual_wait(ABT_eventual eventual, void **value)
     return ABT_SUCCESS;
 }
 
+static inline double convert_timespec_to_sec(const struct timespec *p_ts)
+{
+    double secs;
+    secs = ((double)p_ts->tv_sec) + 1.0e-9 * ((double)p_ts->tv_nsec);
+    return secs;
+}
+
+/**
+ * @ingroup EVENTUAL
+ * @brief   Wait on an eventual with a timeout.
+ *
+ * \c ABT_eventual_timedwait() blocks the caller until the eventual \c eventual
+ * is signaled by \c ABT_eventual_set() or until the absolute timeout specified
+ * by \c abstime is reached. If the eventual is already ready when this function
+ * is called, the caller will not be blocked and the value will be returned
+ * immediately.
+ *
+ * If \c value is not \c NULL, \c value is set to the memory buffer of
+ * \c eventual.  If \c value is not \c NULL but the size of the memory buffer of
+ * \c eventual (i.e., \c nbytes passed to \c ABT_eventual_create()) is zero,
+ * \c value is set to \c NULL.
+ *
+ * The memory buffer pointed to by \c value is deallocated when \c eventual is
+ * freed by \c ABT_eventual_free().  The memory buffer is properly aligned for
+ * storage of any type of object that has the given size.  If the data written
+ * by \c ABT_eventual_set() is smaller than the size of the memory buffer of
+ * \c eventual, the contents of the memory buffer that was not written by
+ * \c ABT_eventual_set() are undefined.  The contents of the memory buffer get
+ * undefined if either \c ABT_eventual_set() or \c ABT_eventual_reset() is
+ * called for \c eventual.  The memory buffer is read-only, so rewriting the
+ * contents of the obtained memory buffer causes undefined behavior.
+ *
+ * \DOC_DESC_ATOMICITY_EVENTUAL_READINESS
+ *
+ * @changev20
+ * \DOC_DESC_V1X_NOTASK{\c ABT_ERR_EVENTUAL}
+ * @endchangev20
+ *
+ * @contexts
+ * \DOC_V1X \DOC_CONTEXT_INIT_NOTASK \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{
+ * \c eventual is not ready}\n
+ * \DOC_V20 \DOC_CONTEXT_INIT \DOC_CONTEXT_CTXSWITCH_CONDITIONAL{\c eventual is
+ *                                                               not ready}
+ *
+ * @errors
+ * \DOC_ERROR_SUCCESS
+ * \DOC_ERROR_INV_EVENTUAL_HANDLE{\c eventual}
+ * \DOC_ERROR_COND_TIMEDOUT
+ * \DOC_V1X \DOC_ERROR_TASK{\c ABT_ERR_EVENTUAL}
+ *
+ * @undefined
+ * \DOC_UNDEFINED_UNINIT
+ * \DOC_UNDEFINED_NULL_PTR{\c abstime}
+ * \DOC_UNDEFINED_EVENTUAL_BUFFER{\c eventual, \c value}
+ *
+ * @param[in]  eventual  eventual handle
+ * @param[out] value     memory buffer of the eventual
+ * @param[in]  abstime   absolute timeout
+ * @return Error code
+ */
+int ABT_eventual_timedwait(ABT_eventual eventual, void **value,
+                           const struct timespec *abstime)
+{
+    ABTI_UB_ASSERT(ABTI_initialized());
+    ABTI_UB_ASSERT(abstime);
+
+    ABTI_local *p_local = ABTI_local_get_local();
+    ABTI_eventual *p_eventual = ABTI_eventual_get_ptr(eventual);
+    ABTI_CHECK_NULL_EVENTUAL_PTR(p_eventual);
+
+#ifndef ABT_CONFIG_ENABLE_VER_20_API
+    /* This routine cannot be called by a tasklet. */
+    if (ABTI_IS_ERROR_CHECK_ENABLED && p_local) {
+        ABTI_xstream *p_local_xstream = ABTI_local_get_xstream(p_local);
+        ABTI_CHECK_TRUE(p_local_xstream->p_thread->type &
+                            ABTI_THREAD_TYPE_YIELDABLE,
+                        ABT_ERR_EVENTUAL);
+    }
+#endif
+
+    double tar_time = convert_timespec_to_sec(abstime);
+
+    ABTD_spinlock_acquire(&p_eventual->lock);
+    if (p_eventual->ready == ABT_FALSE) {
+        ABT_bool is_timedout =
+            ABTI_waitlist_wait_timedout_and_unlock(&p_local,
+                                                   &p_eventual->waitlist,
+                                                   &p_eventual->lock, tar_time,
+                                                   ABT_SYNC_EVENT_TYPE_EVENTUAL,
+                                                   (void *)p_eventual);
+        if (is_timedout) {
+            return ABT_ERR_COND_TIMEDOUT;
+        }
+    } else {
+        ABTD_spinlock_release(&p_eventual->lock);
+    }
+    /* This value is updated outside the critical section, but it is okay since
+     * the "pointer" to the memory buffer is constant and there is no way to
+     * avoid updating this memory buffer by ABT_eventual_set() etc. */
+    if (value)
+        *value = p_eventual->value;
+    return ABT_SUCCESS;
+}
+
 /**
  * @ingroup EVENTUAL
  * @brief   Check if an eventual is ready.
