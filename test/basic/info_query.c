@@ -56,7 +56,7 @@ void info_query_all(ABT_bool init)
     while (p_query) {
         if (!(p_query->need_init && !init)) {
             const int idx = p_query->buffer_idx++;
-            int32_t *ptr = (int32_t *)(&p_query->buffers[1 + (idx)*3]);
+            int32_t *ptr = (int32_t *)(&p_query->buffers[1 + (idx) * 3]);
             ptr[-1] = 0x77777777;
             ptr[0] = 0x77777777;
             ptr[1] = 0x77777777;

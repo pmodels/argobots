@@ -222,6 +222,14 @@ int ABT_cond_wait(ABT_cond cond, ABT_mutex mutex)
  * Unlike other implementations of condition variables, a spurious wakeup never
  * occurs.
  *
+ * @note
+ * This function exhibits significantly higher CPU utilization than
+ * ABT_cond_wait() when blocking, even with the BASIC_WAIT scheduler. This
+ * is because Argobots lacks a user-space timeout mechanism, requiring
+ * continuous rescheduling of the caller to poll for `abstime`. The
+ * `--enable-sched-sleep` option can mitigate this, but it introduces a
+ * latency penalty for some workloads.
+ *
  * @contexts
  * \DOC_CONTEXT_ANY \DOC_CONTEXT_CTXSWITCH
  *

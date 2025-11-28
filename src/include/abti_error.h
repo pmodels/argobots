@@ -34,7 +34,7 @@
 
 #define ABTI_STATIC_ASSERT(cond)                                               \
     do {                                                                       \
-        ((void)sizeof(char[2 * !!(cond)-1]));                                  \
+        ((void)sizeof(char[2 * !!(cond) - 1]));                                \
     } while (0)
 
 #ifdef ABT_CONFIG_PRINT_ABT_ERRNO
