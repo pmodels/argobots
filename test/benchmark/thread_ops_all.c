@@ -8,7 +8,7 @@
 #include "abt.h"
 #include "abttest.h"
 
-//#define TEST_MIGRATE_TO
+// #define TEST_MIGRATE_TO
 #define USE_JOIN_MANY
 #ifdef USE_JOIN_MANY
 #define ABT_THREAD_JOIN_MANY(n, tl) ABT_thread_join_many(n, tl)
